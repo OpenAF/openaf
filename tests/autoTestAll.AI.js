@@ -1,6 +1,18 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    var __cloneForTest = function(v) {
+        return jsonParse(stringify(v, __, ""), __, __, true);
+    };
+
+    var __makeOpenAISse = function(events) {
+        return af.fromString2InputStream(events.map(r => "data: " + stringify(r, __, "") + "\n\n").join("") + "data: [DONE]\n\n");
+    };
+
+    var __makeOllamaStream = function(events) {
+        return af.fromString2InputStream(events.map(r => stringify(r, __, "")).join("\n") + "\n");
+    };
+
     exports.testAIPerceptronXOR = function() {
         ow.loadAI();
         var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]});
@@ -341,5 +353,283 @@
 
         var res = ow.ai.cluster({ numberOfClusters: 3, type: 'kmeans' }).classify(vectors);
         ow.test.assert(_.uniq(res.assignments).length, 3, "KMeans didn't classify correctly after data was normalized.");
+    };
+
+    exports.testAIGPTPromptArgumentRouting = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key" });
+        var promptCalls = [];
+        var rawCalls = [];
+        var streamCalls = [];
+        var rawStreamCalls = [];
+
+        g.model.prompt = function() {
+            promptCalls.push(Array.prototype.slice.call(arguments));
+            return "ok";
+        };
+        g.model.rawPrompt = function() {
+            rawCalls.push(Array.prototype.slice.call(arguments));
+            return { ok: true };
+        };
+        g.model.promptStream = function() {
+            streamCalls.push(Array.prototype.slice.call(arguments));
+            return "stream-ok";
+        };
+        g.model.rawPromptStream = function() {
+            rawStreamCalls.push(Array.prototype.slice.call(arguments));
+            return { content: "stream-raw-ok", events: [] };
+        };
+
+        var tools = [ { type: "function", function: { name: "echo" } } ];
+        var onPromptDelta = function() {};
+        var onRawDelta = function() {};
+
+        ow.test.assert(g.prompt("hello", "user", "gpt-test", 0.15, tools), "ok", "Problem calling GPT prompt wrapper.");
+        ow.test.assert(promptCalls[0], [ "hello", "gpt-test", 0.15, false, tools ], "Problem routing GPT prompt wrapper arguments.");
+
+        g.rawPrompt("hello", "gpt-test", 0.2, true, tools);
+        ow.test.assert(rawCalls[0], [ "hello", "gpt-test", 0.2, true, tools ], "Problem routing GPT rawPrompt wrapper arguments.");
+
+        ow.test.assert(g.promptStream("hello", "user", "gpt-test", 0.3, false, tools, onPromptDelta), "stream-ok", "Problem calling GPT promptStream wrapper.");
+        ow.test.assert(streamCalls[0], [ "hello", "gpt-test", 0.3, false, tools, onPromptDelta ], "Problem routing GPT promptStream wrapper arguments.");
+
+        g.rawPromptStream("hello", "gpt-test", 0.4, false, tools, onRawDelta);
+        ow.test.assert(rawStreamCalls[0], [ "hello", "gpt-test", 0.4, false, tools, onRawDelta ], "Problem routing GPT rawPromptStream wrapper arguments.");
+    };
+
+    exports.testAIOpenAIToolRecursionNoDuplication = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-test" });
+        var requests = [];
+        g.setTool("echo", "Echo", { type: "object", properties: { value: { type: "number" } } }, function(args) {
+            return { echoed: args.value };
+        });
+
+        g.model._request = function(url, body) {
+            requests.push(__cloneForTest(body));
+            if (requests.length == 1) {
+                return {
+                    choices: [
+                        {
+                            message: {
+                                tool_calls: [
+                                    {
+                                        id: "call-1",
+                                        type: "function",
+                                        function: {
+                                            name: "echo",
+                                            arguments: "{\"value\":7}"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                };
+            }
+
+            return {
+                choices: [
+                    {
+                        finish_reason: "stop",
+                        message: { content: "done" }
+                    }
+                ]
+            };
+        };
+
+        var res = g.rawPrompt("use tool", "gpt-test", 0.1, false, [ "echo" ]);
+        ow.test.assert(res.choices[0].message.content, "done", "Problem finishing OpenAI tool recursion.");
+        ow.test.assert(requests.length, 2, "Problem with number of OpenAI tool recursion requests.");
+        ow.test.assert(requests[1].messages.length, 3, "Problem duplicating OpenAI tool recursion messages.");
+        ow.test.assert(requests[1].messages[1].tool_calls[0].id, "call-1", "Problem preserving OpenAI tool call id.");
+        ow.test.assert(requests[1].messages[2].tool_call_id, "call-1", "Problem preserving OpenAI tool result id.");
+    };
+
+    exports.testAIOpenAIStreamingToolRecursionNoDuplication = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-test" });
+        var requests = [];
+        g.setTool("echo", "Echo", { type: "object", properties: { value: { type: "number" } } }, function(args) {
+            return { echoed: args.value };
+        });
+
+        g.model._requestStream = function(url, body) {
+            requests.push(__cloneForTest(body));
+            if (requests.length == 1) {
+                return __makeOpenAISse([
+                    {
+                        choices: [
+                            {
+                                delta: {
+                                    tool_calls: [
+                                        {
+                                            index: 0,
+                                            id: "call-2",
+                                            type: "function",
+                                            function: {
+                                                name: "echo",
+                                                arguments: "{\"value\":8}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        choices: [
+                            {
+                                finish_reason: "tool_calls",
+                                delta: {}
+                            }
+                        ]
+                    }
+                ]);
+            }
+
+            return __makeOpenAISse([
+                {
+                    choices: [
+                        {
+                            delta: { content: "done" }
+                        }
+                    ]
+                },
+                {
+                    choices: [
+                        {
+                            finish_reason: "stop",
+                            delta: {}
+                        }
+                    ]
+                }
+            ]);
+        };
+
+        var res = g.rawPromptStream("use tool", "gpt-test", 0.1, false, [ "echo" ]);
+        ow.test.assert(res.content, "done", "Problem finishing OpenAI streaming tool recursion.");
+        ow.test.assert(requests.length, 2, "Problem with number of OpenAI streaming tool recursion requests.");
+        ow.test.assert(requests[1].messages.length, 3, "Problem duplicating OpenAI streaming tool recursion messages.");
+        ow.test.assert(requests[1].messages[1].tool_calls[0].id, "call-2", "Problem preserving OpenAI streaming tool call id.");
+        ow.test.assert(requests[1].messages[2].tool_call_id, "call-2", "Problem preserving OpenAI streaming tool result id.");
+    };
+
+    exports.testAIOllamaStreamingToolExecutionAndConversationIds = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("ollama", { url: "http://127.0.0.1:11434", model: "llama-test" });
+        var requests = [];
+        g.setTool("echo", "Echo", { type: "object", properties: { value: { type: "number" } } }, function(args) {
+            return { echoed: args.value };
+        });
+
+        g.model._requestStream = function(url, body) {
+            requests.push(__cloneForTest(body));
+            if (requests.length == 1) {
+                return __makeOllamaStream([
+                    {
+                        message: {
+                            content: "",
+                            tool_calls: [
+                                {
+                                    id: "call-3",
+                                    function: {
+                                        name: "echo",
+                                        arguments: "{\"value\":9}"
+                                    }
+                                }
+                            ]
+                        },
+                        done: true
+                    }
+                ]);
+            }
+
+            return __makeOllamaStream([
+                {
+                    message: {
+                        content: "done"
+                    },
+                    done: true
+                }
+            ]);
+        };
+
+        var res = g.rawPromptStream("use tool", "llama-test", 0.1, false, g.model.tools);
+        ow.test.assert(res.content, "done", "Problem finishing Ollama streaming tool recursion.");
+        ow.test.assert(requests.length, 2, "Problem with number of Ollama streaming tool recursion requests.");
+        ow.test.assert(requests[1].messages.length, 3, "Problem duplicating Ollama streaming tool recursion messages.");
+        ow.test.assert(requests[1].messages[1].tool_calls[0].id, "call-3", "Problem preserving Ollama streaming tool call id.");
+        ow.test.assert(requests[1].messages[2].tool_call_id, "call-3", "Problem preserving Ollama streaming tool result id.");
+
+        var g2 = new ow.ai.gpt("ollama", { url: "http://127.0.0.1:11434", model: "llama-test" });
+        g2.setConversation([
+            {
+                role: "assistant",
+                content: "",
+                tool_calls: [
+                    {
+                        id: "call-4",
+                        function: {
+                            name: "echo",
+                            arguments: "{\"value\":1}"
+                        }
+                    }
+                ]
+            },
+            {
+                role: "tool",
+                content: "{\"echoed\":1}",
+                tool_call_id: "call-4"
+            }
+        ]);
+
+        var exported = g2.exportConversation();
+        ow.test.assert(exported[0].toolCalls[0].id, "call-4", "Problem exporting Ollama tool call ids.");
+        ow.test.assert(exported[1].toolResults[0].id, "call-4", "Problem exporting Ollama tool result ids.");
+
+        var g3 = new ow.ai.gpt("ollama", { url: "http://127.0.0.1:11434", model: "llama-test" });
+        g3.importConversation(exported);
+        var imported = g3.getConversation();
+        ow.test.assert(imported[0].tool_calls[0].id, "call-4", "Problem importing Ollama tool call ids.");
+        ow.test.assert(imported[1].tool_call_id, "call-4", "Problem importing Ollama tool result ids.");
+    };
+
+    exports.testAIOllamaStreamingWarmsModelOnFreshConversation = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("ollama", { url: "http://127.0.0.1:11434", model: "llama-test" });
+        var warmRequests = [];
+        var streamRequests = [];
+        var deltas = [];
+
+        g.model._request = function(url, body) {
+            warmRequests.push({ url: url, body: __cloneForTest(body) });
+            return { done: true };
+        };
+
+        g.model._requestStream = function(url, body) {
+            streamRequests.push({ url: url, body: __cloneForTest(body) });
+            return __makeOllamaStream([
+                { message: { content: "part-1" }, done: false },
+                { message: { content: "part-2" }, done: true }
+            ]);
+        };
+
+        var res = g.rawPromptStream("stream me", "llama-test", 0.1, false, [], function(delta) {
+            deltas.push(delta);
+        });
+
+        ow.test.assert(warmRequests.length, 1, "Problem warming Ollama before the first streaming request.");
+        ow.test.assert(warmRequests[0].url, "/api/chat", "Problem using the Ollama chat endpoint for warmup.");
+        ow.test.assert(warmRequests[0].body.messages, [], "Problem keeping the Ollama warmup request side-effect free.");
+        ow.test.assert(streamRequests.length, 1, "Problem executing the streamed Ollama request after warmup.");
+        ow.test.assert(streamRequests[0].body.messages, [ { role: "user", content: "stream me" } ], "Problem preserving the first streamed Ollama prompt after warmup.");
+        ow.test.assert(deltas, [ "part-1", "part-2" ], "Problem preserving Ollama streaming deltas after warmup.");
+        ow.test.assert(res.content, "part-1part-2", "Problem aggregating Ollama streaming content after warmup.");
     };
 })();
