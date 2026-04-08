@@ -50,7 +50,40 @@
     };
 
     exports.testWordWrap = function() {
-        ow.test.assert(ow.format.string.wordWrap("a long text to serve as an example", 10, "-"), "a long-text to-serve as-an example", "Problem with word wrap.");        
+        ow.test.assert(ow.format.string.wordWrap("a long text to serve as an example", 10, "-"), "a long-text to-serve as-an example", "Problem with word wrap.");
+
+        var wrappedAnsi = ow.format.string.wordWrap(ansiColor("RED", "1234 5678 90"), 6);
+        ow.test.assert(wrappedAnsi.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, ""), "1234\n5678\n90", "Problem with word wrap and ANSI sequences.");
+        wrappedAnsi.split("\n").forEach(line => {
+            ow.test.assert(visibleLength(line) <= 6, true, "Problem with ANSI-aware wrapped line width.");
+        });
+
+        ow.test.assert(ow.format.string.wordWrap("alpha 😀 beta 😀 gamma", 10), "alpha 😀\nbeta 😀\ngamma", "Problem with word wrap and emoji width.");
+    };
+
+    exports.testWithMDWrap = function() {
+        var _oldCon = __con;
+        var _oldConStatus = __conStatus;
+
+        __con = {
+            getTerminal: () => ({
+                getWidth: () => 10
+            })
+        };
+        __conStatus = true;
+
+        try {
+            var rendered = ow.format.withMD("alpha 😀 **beta** 😀 gamma");
+            var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+
+            ow.test.assert(plain, "alpha 😀\nbeta 😀\ngamma", "Problem with markdown paragraph wrap.");
+            rendered.split("\n").forEach(line => {
+                ow.test.assert(visibleLength(line) <= 10, true, "Problem with markdown paragraph wrapped line width.");
+            });
+        } finally {
+            __con = _oldCon;
+            __conStatus = _oldConStatus;
+        }
     };
 
     exports.testPad = function() {

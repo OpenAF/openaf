@@ -4735,17 +4735,88 @@ const inherit = function(Child, Parent) {
  */
 const __visibleLength = "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"
 var __visibleLength2
+const __visibleLengthAnsiRE = /\033(?:\[[0-9;?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\))/g
+const __visibleLengthIsControl = cp => (
+	(cp >= 0 && cp <= 0x1F) ||
+	(cp >= 0x7F && cp <= 0x9F)
+)
+const __visibleLengthIsCombining = cp => (
+	(cp >= 0x0300 && cp <= 0x036F) ||
+	(cp >= 0x1AB0 && cp <= 0x1AFF) ||
+	(cp >= 0x1DC0 && cp <= 0x1DFF) ||
+	(cp >= 0x20D0 && cp <= 0x20FF) ||
+	(cp >= 0xFE20 && cp <= 0xFE2F)
+)
+const __visibleLengthIsEmojiModifier = cp => (
+	(cp >= 0x1F3FB && cp <= 0x1F3FF) ||
+	cp == 0xFE0E || cp == 0xFE0F ||
+	cp == 0x20E3
+)
+const __visibleLengthIsRegionalIndicator = cp => cp >= 0x1F1E6 && cp <= 0x1F1FF
+const __visibleLengthIsWide = cp => (
+	cp >= 0x1100 && (
+		cp <= 0x115F ||
+		cp == 0x2329 || cp == 0x232A ||
+		(cp >= 0x2E80 && cp <= 0xA4CF && cp != 0x303F) ||
+		(cp >= 0xAC00 && cp <= 0xD7A3) ||
+		(cp >= 0xF900 && cp <= 0xFAFF) ||
+		(cp >= 0xFE10 && cp <= 0xFE19) ||
+		(cp >= 0xFE30 && cp <= 0xFE6F) ||
+		(cp >= 0xFF00 && cp <= 0xFF60) ||
+		(cp >= 0xFFE0 && cp <= 0xFFE6) ||
+		(cp >= 0x1F300 && cp <= 0x1FAFF) ||
+		(cp >= 0x20000 && cp <= 0x3FFFD)
+	)
+)
+const __visibleLengthCodePointWidth = cp => {
+	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || cp == 0x200D) return 0
+	return __visibleLengthIsWide(cp) ? 2 : 1
+}
 const visibleLength = str => {
-	if (isUnDef(__visibleLength2)) __visibleLength2 = af.fromBytes2String(io.gunzip(af.fromBase64(__visibleLength)))
-	
-	str = str.replace(/\033\[[0-9;]*m/g, "")
+	str = String(str).replace(__visibleLengthAnsiRE, "")
 	var l = 0
-	for(var i = 0; i < str.length; i++) {
-		var _c = str.charCodeAt(i)
-		if (_c <= 254)
-			l += 1
-		else
-			l += Number(__visibleLength2[str.charCodeAt(i) - 32])
+	for(var i = 0; i < str.length; ) {
+		var cp = str.codePointAt(i)
+		if (isUnDef(cp)) break
+
+		i += cp > 0xFFFF ? 2 : 1
+		if (__visibleLengthIsControl(cp)) continue
+
+		if (__visibleLengthIsRegionalIndicator(cp)) {
+			var nextRegional = str.codePointAt(i)
+			if (__visibleLengthIsRegionalIndicator(nextRegional)) i += nextRegional > 0xFFFF ? 2 : 1
+			l += 2
+			continue
+		}
+
+		var width = __visibleLengthCodePointWidth(cp)
+		var joinedEmoji = false
+		var keycapEmoji = false
+
+		while(i < str.length) {
+			var nextCp = str.codePointAt(i)
+			if (__visibleLengthIsCombining(nextCp) || __visibleLengthIsEmojiModifier(nextCp)) {
+				if (nextCp == 0x20E3) keycapEmoji = true
+				i += nextCp > 0xFFFF ? 2 : 1
+				continue
+			}
+			if (nextCp == 0x200D) {
+				joinedEmoji = true
+				i += 1
+				if (i < str.length) {
+					var zwjCp = str.codePointAt(i)
+					if (isDef(zwjCp)) {
+						width = Math.max(width, __visibleLengthCodePointWidth(zwjCp))
+						i += zwjCp > 0xFFFF ? 2 : 1
+						continue
+					}
+				}
+			}
+			break
+		}
+
+		if (joinedEmoji || keycapEmoji) width = Math.max(width, 2)
+		l += width
 	}
 	return l
 }
@@ -8503,6 +8574,13 @@ const $jsonrpc = function (aOptions) {
 		mcpSessionId: __
 	}
 
+	const _mcpInfo = {
+		session: _session,
+		lastRequest: __,
+		lastResponse: __,
+		lastResponseHeaders: __
+	}
+
 	const _captureSessionFromHeaders = headers => {
 		var _sid = _pickHeaderCaseInsensitive(headers, "mcp-session-id")
 		if (isDef(_sid) && String(_sid).length > 0) {
@@ -8680,6 +8758,11 @@ const $jsonrpc = function (aOptions) {
 		},
 		exec: (aMethod, aParams, aNotification, aExecOptions) => {
 			aExecOptions = _$(aExecOptions, "aExecOptions").isMap().default({})
+			_mcpInfo.lastRequest = {
+				method: _$(aMethod, "aMethod").isString().default(__),
+				params: _$(aParams, "aParams").isMap().default({}),
+				notification: !!aNotification
+			}
 			switch (aOptions.type) {
 				case "dummy":
 					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
@@ -8690,11 +8773,15 @@ const $jsonrpc = function (aOptions) {
 					if (isMap(aOptions.options.fns)) {
 						if (isFunction(aOptions.options.fns[aMethod])) {
 							var _res = aOptions.options.fns[aMethod](aParams)
-							_debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
+							_mcpInfo.lastResponse = { jsonrpc: "2.0", result: _res }
+							_mcpInfo.lastResponseHeaders = __
+							_debug("jsonrpc dummy <- " + stringify(_mcpInfo.lastResponse, __, ""))
 							if (aMethod == "initialize" && !aNotification) _r._info = _res
 							return _res
 						} else {
-							_debug("jsonrpc dummy <- " + stringify({ error: "Method not found" }, __, ""))
+							_mcpInfo.lastResponse = { jsonrpc: "2.0", error: { code: -32601, message: "Method not found" } }
+							_mcpInfo.lastResponseHeaders = __
+							_debug("jsonrpc dummy <- " + stringify(_mcpInfo.lastResponse, __, ""))
 							throw new Error("Method not found")
 						}
 					}
@@ -8730,6 +8817,8 @@ const $jsonrpc = function (aOptions) {
 						_res = _r._r[_id]
 						delete _r._r[_id]
 					}
+					_mcpInfo.lastResponse = _res
+					_mcpInfo.lastResponseHeaders = __
 					if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
 					return isDef(_res) && isDef(_res.result) ? _res.result : _res
 				case "sse":
@@ -8774,6 +8863,8 @@ const $jsonrpc = function (aOptions) {
 						if (!!aNotification) {
 							var _notificationRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
 							_captureSessionFromHeaders(_http.responseHeaders())
+							_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
+							_mcpInfo.lastResponse = __
 							if (isDef(_notificationRes) && "function" === typeof _notificationRes.close) {
 								try { _notificationRes.close() } catch(e) {}
 							}
@@ -8781,6 +8872,7 @@ const $jsonrpc = function (aOptions) {
 						}
 						var _streamRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
 						_captureSessionFromHeaders(_http.responseHeaders())
+						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
 						var _events = _r._readSSE(_streamRes)
 						res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isUnDef(r.id)).shift()
 						if (isUnDef(res) && _events.length > 0) res = _events[0]
@@ -8789,7 +8881,9 @@ const $jsonrpc = function (aOptions) {
 						_restOptions.httpClient = _http
 						res = $rest(_restOptions).post(aOptions.url, _req)
 						_captureSessionFromHeaders(_http.responseHeaders())
+						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
 					}
+					_mcpInfo.lastResponse = res
 					// Notifications do not expect a reply
 					if (!!aNotification) return
 					_debug("jsonrpc <- " + stringify(res, __, ""))
@@ -8802,6 +8896,7 @@ const $jsonrpc = function (aOptions) {
 			}
 		},
 		getInfo: () => _r._info,
+		getClientInfo: () => merge({}, _mcpInfo),
 		destroy: () => {
 			if (_r._copies.get() > 0) {
 				_r._copies.dec()
@@ -9004,6 +9099,31 @@ const $mcp = function(aOptions) {
 		toolName = _$(toolName, "aOptions.blacklist[]").isString().$_()
 		_toolBlacklist[toolName] = true
 	})
+
+	const _buildSyntheticCapabilities = fns => {
+		var _caps = {}
+		fns = _$(fns, "fns").isMap().default({})
+		var _fnNames = Object.keys(fns)
+		var _hasCustomTools = _fnNames.some(name => ["tools/list", "tools/call", "initialize", "notifications/initialized"].indexOf(name) < 0)
+		if (_hasCustomTools || isDef(fns["tools/list"]) || isDef(fns["tools/call"])) _caps.tools = { listChanged: false }
+		if (isDef(fns["prompts/list"]) || isDef(fns["prompts/get"])) _caps.prompts = { listChanged: false }
+		if (isDef(fns["resources/list"]) || isDef(fns["resources/read"]) || isDef(fns["resources/templates/list"])) _caps.resources = { listChanged: false }
+		if (isDef(fns["logging/setLevel"])) _caps.logging = {}
+		if (isDef(fns["agents/list"]) || isDef(fns["agents/get"]) || isDef(fns["agents/send"])) _caps.agents = {}
+		return _caps
+	}
+
+	const _buildSyntheticInitializeResult = opts => {
+		opts = _$(opts, "opts").isMap().default({})
+		var _result = {
+			protocolVersion: _$(opts.protocolVersion, "opts.protocolVersion").isString().default(aOptions.protocolVersion)
+		}
+		var _serverInfo = _$(opts.serverInfo, "opts.serverInfo").isMap().default(__)
+		var _capabilities = _$(opts.capabilities, "opts.capabilities").isMap().default(__)
+		if (isMap(_serverInfo)) _result.serverInfo = clone(_serverInfo)
+		if (isMap(_capabilities)) _result.capabilities = clone(_capabilities)
+		return _result
+	}
 
 	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
 	const _isToolBlacklisted = toolName => _toolBlacklist[toolName] === true
@@ -9256,12 +9376,51 @@ const $mcp = function(aOptions) {
 		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
 		aOptions.options.job     = _$(aOptions.options.job, "aOptions.options.job").isString().$_()
 		aOptions.options.args    = _$(aOptions.options.args, "aOptions.options.args").isMap().default({})
+		aOptions.options.tplDesc = _$(aOptions.options.tplDesc, "aOptions.options.tplDesc").isBoolean().default(false)
+		aOptions.options.toolPrefix = _$(aOptions.options.toolPrefix, "aOptions.options.toolPrefix").isString().default("")
+		aOptions.options.description = _$(aOptions.options.description, "aOptions.options.description").isMap().default({})
 		aOptions.options.fns     = _$(aOptions.options.fns, "aOptions.options.fns").isMap().default({})
 		aOptions.options.fnsMeta = _$(aOptions.options.fnsMeta, "aOptions.options.fnsMeta").isMap().default({})
 		aOptions.options.init    = _$(aOptions.options.init, "aOptions.options.init").default(__)
 
 		// Load jobs from the oJob 
-		var fnsMeta = {}, fns = {} 
+		var fnsMeta = {}, fns = {}, _initMeta = {} 
+		var _applyTemplate = (meta, allStrings) => {
+			if (!aOptions.options.tplDesc) return meta
+			var _walk = obj => {
+				if (isString(obj) && allStrings) return $t(obj, aOptions.options.args)
+				if (isArray(obj)) return obj.map(_walk)
+				if (isMap(obj)) {
+					Object.keys(obj).forEach(k => {
+						if (isString(obj[k]) && (allStrings || k == "description")) {
+							obj[k] = $t(obj[k], aOptions.options.args)
+						} else {
+							obj[k] = _walk(obj[k])
+						}
+					})
+				}
+				return obj
+			}
+			return _walk(meta)
+		}
+		var _applyTemplateToDescriptions = meta => _applyTemplate(meta, false)
+		var _prefixToolName = n => (aOptions.options.toolPrefix.length > 0 ? aOptions.options.toolPrefix + n : n)
+		var _resolveToolName = n => {
+			if (aOptions.options.toolPrefix.length > 0 && isString(n) && n.startsWith(aOptions.options.toolPrefix)) {
+				return n.substring(aOptions.options.toolPrefix.length)
+			}
+			return n
+		}
+		var _toToolMeta = k => {
+			var _meta = isDef(fnsMeta[k]) ? _applyTemplateToDescriptions(clone(fnsMeta[k])) : {
+				name: k,
+				description: k,
+				inputSchema: {}
+			}
+			if (!isMap(_meta)) _meta = { name: k, description: String(_meta), inputSchema: {} }
+			_meta.name = _prefixToolName(k)
+			return _meta
+		}
 		var jobsTemp = io.createTempFile("ojob_mcp_", ".yaml")
 		var jobsPreD = aOptions.options.job.endsWith(".json") ? io.readFileJSON(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job) : io.readFileYAML(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job)
 		if (isDef(jobsPreD.ojob) && isDef(jobsPreD.ojob.daemon)) delete jobsPreD.ojob.daemon
@@ -9318,22 +9477,60 @@ const $mcp = function(aOptions) {
 			throw new Error("Invalid oJob data loaded from " + aOptions.options.job)
 		}
 
+		var _serverInfoEntries = searchKeys(jobsPreD, "serverInfo")
+		if (isMap(_serverInfoEntries)) {
+			var _serverInfoKey = Object.keys(_serverInfoEntries).find(k => isMap(_serverInfoEntries[k]))
+			if (isDef(_serverInfoKey)) _initMeta.serverInfo = clone(_serverInfoEntries[_serverInfoKey])
+		}
+		var _capabilitiesEntries = searchKeys(jobsPreD, "capabilities")
+		if (isMap(_capabilitiesEntries)) {
+			var _capabilitiesKey = Object.keys(_capabilitiesEntries).find(k => isMap(_capabilitiesEntries[k]))
+			if (isDef(_capabilitiesKey)) _initMeta.capabilities = clone(_capabilitiesEntries[_capabilitiesKey])
+		}
+		var _protocolVersionEntries = searchKeys(jobsPreD, "protocolVersion")
+		if (isMap(_protocolVersionEntries)) {
+			var _protocolVersionKey = Object.keys(_protocolVersionEntries).find(k => isString(_protocolVersionEntries[k]))
+			if (isDef(_protocolVersionKey)) _initMeta.protocolVersion = String(_protocolVersionEntries[_protocolVersionKey])
+		}
+		var _descriptionEntries = searchKeys(jobsPreD, "description")
+		if (isMap(_descriptionEntries)) {
+			var _descriptionKey = Object.keys(_descriptionEntries).find(k => isMap(_descriptionEntries[k]))
+			if (isDef(_descriptionKey)) _initMeta.description = clone(_descriptionEntries[_descriptionKey])
+		}
+
 		aOptions.type = "dummy"
 		aOptions.options.fnsMeta = fnsMeta
+		aOptions.options.description = _applyTemplate(clone(merge({
+			protocolVersion: aOptions.protocolVersion,
+			serverInfo: {
+				name: "OpenAF oJob MCP",
+				title: "OpenAF oJob MCP server",
+				version: "1.0.0"
+			},
+			capabilities: {
+				prompts: { listChanged: true },
+				tools: { listChanged: true }
+			}
+		}, _$( _initMeta.description, "_initMeta.description").isMap().default({}), aOptions.options.description)), true)
+		aOptions.options.serverInfo = _$(aOptions.options.serverInfo, "aOptions.options.serverInfo").isMap().default(_$( _initMeta.serverInfo, "_initMeta.serverInfo").isMap().default({
+			name: "OpenAF oJob MCP",
+			version: "1.0.0"
+		}))
+		aOptions.options.capabilities = _$(aOptions.options.capabilities, "aOptions.options.capabilities").isMap().default(_$( _initMeta.capabilities, "_initMeta.capabilities").isMap().default(_buildSyntheticCapabilities(fns)))
+		aOptions.options.protocolVersion = _$(aOptions.options.protocolVersion, "aOptions.options.protocolVersion").isString().default(_$( _initMeta.protocolVersion, "_initMeta.protocolVersion").isString().default(aOptions.protocolVersion))
 		aOptions.options.fns["tools/list"] = params => {
 			return { 
 				tools: Object.keys(fns)
 				       .filter(k => k != "tools/list" && k != "tools/call" && k != "initialize" && k != "notifications/initialized")
-				       .map(k => {
-					return fnsMeta[k] || { name: k, description: "No description available" }
-				})
+				       .map(k => _toToolMeta(k))
 			}
 		}
 		aOptions.options.fns["tools/call"] = params => {
-			return $job(fns[params.name], params.arguments)
+			var _toolName = _resolveToolName(params.name)
+			return $job(fns[_toolName], params.arguments)
 		}
 		aOptions.options.fns["initialize"] = params => {
-			return { protocolVersion: "2024-11-05" }
+			return merge(_buildSyntheticInitializeResult(aOptions.options), aOptions.options.description)
 		}
 		aOptions.options.fns["notifications/initialized"] = params => {
 			return {}
@@ -9342,6 +9539,12 @@ const $mcp = function(aOptions) {
 		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
 		aOptions.options.fns     = _$(aOptions.options.fns, "aOptions.options.fns").isMap().default({})
 		aOptions.options.fnsMeta = _$(aOptions.options.fnsMeta, "aOptions.options.fnsMeta").isMap().default({})
+		aOptions.options.serverInfo = _$(aOptions.options.serverInfo, "aOptions.options.serverInfo").isMap().default({
+			name: "OpenAF Dummy MCP",
+			version: "1.0.0"
+		})
+		aOptions.options.capabilities = _$(aOptions.options.capabilities, "aOptions.options.capabilities").isMap().default(_buildSyntheticCapabilities(aOptions.options.fns))
+		aOptions.options.protocolVersion = _$(aOptions.options.protocolVersion, "aOptions.options.protocolVersion").isString().default(aOptions.protocolVersion)
 
 		aOptions.options.fns["tools/list"] = params => {
 			return { 
@@ -9356,7 +9559,7 @@ const $mcp = function(aOptions) {
 			return aOptions.options.fns[params.name](params.arguments)
 		}
 		aOptions.options.fns["initialize"] = params => {
-			return { protocolVersion: "2024-11-05" }
+			return _buildSyntheticInitializeResult(aOptions.options)
 		}
 		aOptions.options.fns["notifications/initialized"] = params => {
 			return {}
@@ -9448,6 +9651,13 @@ const $mcp = function(aOptions) {
             }
         },
         getInfo: () => _r._initResult,
+		getClientInfo: () => {
+			var _clientInfo = _jsonrpc.getClientInfo()
+			if (isMap(_r._initResult)) {
+				_clientInfo.initialize = clone(_r._initResult)
+			}
+			return _clientInfo
+		},
 		listTools: () => {
             if (!_r._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
@@ -9503,7 +9713,7 @@ const $mcp = function(aOptions) {
 		 * <key>$mcp.listAgents() : Map</key>
 		 * Lists all available A2A agents from the MCP server.\
 		 * Returns a map with an 'agents' array containing agent metadata (id, name, title, version, tags, capabilities).\
-		 * Must call initialize() first.\
+			return _buildSyntheticInitializeResult(aOptions.options)
 		 * \
 		 * Example:\
 		 * \

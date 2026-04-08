@@ -75,6 +75,31 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testKMeans;  
 
+   - name: AI::GPT prompt argument routing
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIGPTPromptArgumentRouting;
+
+   - name: AI::OpenAI tool recursion without duplication
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIToolRecursionNoDuplication;
+
+   - name: AI::OpenAI streaming tool recursion without duplication
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIStreamingToolRecursionNoDuplication;
+
+   - name: AI::Ollama streaming tool execution and ids
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOllamaStreamingToolExecutionAndConversationIds;
+
+   - name: AI::Ollama streaming warmup on fresh conversation
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOllamaStreamingWarmsModelOnFreshConversation;
+
 todo:
    # ow.ai tests
    # -----------
@@ -91,3 +116,8 @@ todo:
    - AI::Test ID3
    - AI::Test C45
    - AI::Test KMeans
+   - AI::GPT prompt argument routing
+   - AI::OpenAI tool recursion without duplication
+   - AI::OpenAI streaming tool recursion without duplication
+   - AI::Ollama streaming tool execution and ids
+   - AI::Ollama streaming warmup on fresh conversation
