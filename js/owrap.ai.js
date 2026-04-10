@@ -3506,8 +3506,16 @@ OpenWrap.ai.prototype.gpt.prototype.jsonPromptWithStats = function(aPrompt, aMod
 OpenWrap.ai.prototype.gpt.prototype.jsonPromptWithStatsRaw = function(aPrompt, aModel, aTemperature, tools) {
     this.setInstructions("json")
 
-    var out = this.model.prompt(aPrompt, aModel, aTemperature, true, tools)
-    var parsed = isString(out) ? jsonParse(out, __, __, true) : out
+    var out = this.model.rawPrompt(aPrompt, aModel, aTemperature, true, tools)
+    var normalized = out
+    if (isMap(out)) {
+        if (isMap(out.message) && isString(out.message.content)) {
+            normalized = out.message.content
+        } else if (isString(out.response)) {
+            normalized = out.response
+        }
+    }
+    var parsed = isString(normalized) ? jsonParse(normalized, __, __, true) : normalized
     return { response: parsed, raw: out, stats: this.getLastStats() }
 }
 
