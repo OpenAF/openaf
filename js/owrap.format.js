@@ -3648,15 +3648,17 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
 
 /**
  * <odoc>
- * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
+ * <key>ow.format.withMD(aString, defaultAnsi, aLineWidth) : String</key>
  * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
- * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
+ * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi) and provide aLineWidth
+ * to override the detected console width when line width is needed.
  * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets, numbered lines, links and blocks.
  * </odoc>
  */
-OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
+OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth) {
     aString = String(aString)
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("")
+	aLineWidth = _$(aLineWidth, "aLineWidth").isNumber().default(__)
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "")
 
 	// Theme set
@@ -3771,12 +3773,14 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	res = res.replace(/^####+ (.+)/mg, ansiColor(__colorFormat.md.heads.h4, "$1") + da)
 	
 	__conStatus || __initializeCon()
-	var _aSize
+	var _aSize = aLineWidth
 
-	if (isDef(__con)) {
-		_aSize = __con.getTerminal().getWidth()
-	} else {
-		_aSize = 80
+	if (isUnDef(_aSize)) {
+		if (isDef(__con)) {
+			_aSize = __con.getTerminal().getWidth()
+		} else {
+			_aSize = 80
+		}
 	}
 	var _tWidth = _aSize
 	var _linkRep = ansiColor(__colorFormat.md.link.text, "$1") + " " + ansiColor(__colorFormat.md.link.url, "($2)")
@@ -3817,7 +3821,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 
 		// side line render
 		if (/^(\> .+)$/.test(l)) {
-			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, __colorFormat.md.note.line, __colorFormat.md.note.text, _noteTheme)))
+			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", _aSize, __colorFormat.md.note.line, __colorFormat.md.note.text, _noteTheme)), _aSize)
 		}
 
 		// if not a code block or a table then it should be paragraph
@@ -3832,7 +3836,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
-			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), __, __colorFormat.md.codeBlock.line, __colorFormat.md.codeBlock.text, _sideLineThemes[__colorFormat.md.codeBlock.theme]))
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), _aSize, __colorFormat.md.codeBlock.line, __colorFormat.md.codeBlock.text, _sideLineThemes[__colorFormat.md.codeBlock.theme]))
 		})
 	}
 
