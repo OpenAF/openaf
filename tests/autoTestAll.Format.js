@@ -86,6 +86,31 @@
         }
     };
 
+    exports.testWithMDWrapOverride = function() {
+        var _oldCon = __con;
+        var _oldConStatus = __conStatus;
+
+        __con = {
+            getTerminal: () => ({
+                getWidth: () => 20
+            })
+        };
+        __conStatus = true;
+
+        try {
+            var rendered = ow.format.withMD("alpha 😀 **beta** 😀 gamma", __, 10);
+            var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+
+            ow.test.assert(plain, "alpha 😀\nbeta 😀\ngamma", "Problem with markdown paragraph wrap override.");
+            rendered.split("\n").forEach(line => {
+                ow.test.assert(visibleLength(line) <= 10, true, "Problem with markdown paragraph wrapped line width override.");
+            });
+        } finally {
+            __con = _oldCon;
+            __conStatus = _oldConStatus;
+        }
+    };
+
     exports.testPad = function() {
         ow.test.assert(ow.format.string.leftPad(".", 2, "-") + ow.format.string.rightPad(".", 2, "-"), "-..-", "Problem with left and right padding.");        
     };
