@@ -4119,14 +4119,15 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 		res += ansiColor(ansiLine, aTheme.ltop);
 		if (isDef(aTheme.rtop)) {
 			var sp = (isDef(aTheme.tmiddle) ? aTheme.tmiddle : " ");
-			if (isString(aExtra.header) && aExtra.header.length < (aSize - 4)) {
+			var _headerWidth = isString(aExtra.header) ? ansiLength(aExtra.header) : __
+			if (isString(aExtra.header) && _headerWidth < (aSize - 4)) {
 				if (aExtra.headerAlign == "right") {
-					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.header), sp))
+					res += ansiColor(ansiLine, repeat(aSize - 4 - _headerWidth, sp))
 					res += aExtra.header
 					res += ansiColor(ansiLine, repeat(2, sp))
 				}
 				if (aExtra.headerAlign == "center") {
-					var _l = aSize - 4 - ansiLength(aExtra.header)
+					var _l = aSize - 4 - _headerWidth
 					res += ansiColor(ansiLine, repeat(Math.floor(_l / 2) +1, sp))
 					res += aExtra.header
 					res += ansiColor(ansiLine, repeat(Math.round(_l / 2) +1, sp))
@@ -4134,7 +4135,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 				if (isUnDef(aExtra.headerAlign) || aExtra.headerAlign == "left") {
 					res += ansiColor(ansiLine, repeat(2, sp))
 					res += aExtra.header
-					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.header), sp))
+					res += ansiColor(ansiLine, repeat(aSize - 4 - _headerWidth, sp))
 				}
 			} else {
 				res += ansiColor(ansiLine, repeat(aSize - 2, sp));
@@ -4167,14 +4168,15 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
                 res += ansiColor(ansiLine, aTheme.lbottom);
 		if (isDef(aTheme.rbottom)) {
 			var sp = (isDef(aTheme.bmiddle) ? aTheme.bmiddle : " ");
-			if (isString(aExtra.footer) && aExtra.footer.length < (aSize - 4)) {
+			var _footerWidth = isString(aExtra.footer) ? ansiLength(aExtra.footer) : __
+			if (isString(aExtra.footer) && _footerWidth < (aSize - 4)) {
 				if (aExtra.footerAlign == "right") {
-					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.footer), sp))
+					res += ansiColor(ansiLine, repeat(aSize - 4 - _footerWidth, sp))
 					res += aExtra.footer
 					res += ansiColor(ansiLine, repeat(2, sp))
 				}
 				if (aExtra.footerAlign == "center") {
-					var _l = aSize - 4 - ansiLength(aExtra.footer)
+					var _l = aSize - 4 - _footerWidth
 					res += ansiColor(ansiLine, repeat(Math.floor(_l / 2) +1, sp))
 					res += aExtra.footer
 					res += ansiColor(ansiLine, repeat(Math.round(_l / 2) +1, sp))
@@ -4182,7 +4184,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 				if (isUnDef(aExtra.footerAlign) || aExtra.footerAlign == "left") {
 					res += ansiColor(ansiLine, repeat(2, sp))
 					res += aExtra.footer
-					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.footer), sp))
+					res += ansiColor(ansiLine, repeat(aSize - 4 - _footerWidth, sp))
 				}
 			} else {
 				res += ansiColor(ansiLine, repeat(aSize - 2, sp))
