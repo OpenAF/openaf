@@ -4098,7 +4098,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	aSize = _$(aSize, "aSize").isNumber().default(__);
 	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
 
-	var res = ansiColor("RESET", "\r");
+	var res = ansiColor("RESET", "");
  
 	if (isUnDef(aSize)) {
 		__conStatus || __initializeCon(); 
@@ -4150,10 +4150,11 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 			if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", "")
 			res += (isDef(ansiText) ? ansiColor(ansiText, " " + l) : " " + l);
 			if (isDef(aTheme.rmiddle)) {
-				var _spl = aSize - ansiLength(l) - 3
+				var _lineWidth = visibleLength(ow.format.string._stripAnsi(l))
+				var _spl = aSize - _lineWidth - 3
 				if (_spl < 0) _spl = 0
-				var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(_spl, ' ')) : repeat(_spl, ' '));
-				res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
+				var sp = repeat(_spl, ' ')
+				res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp)
 				res += ansiColor("RESET", "") + ansiColor(ansiLine, aTheme.rmiddle);
 			}
 			if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
