@@ -3739,6 +3739,14 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
 	if (cblocks != null) 
 		cblocks.forEach((b, i) => {
+			var bIdx = res.indexOf(b)
+			if (bIdx > 0) {
+				var lineStart = res.lastIndexOf("\n", bIdx - 1) + 1
+				var leadingWS = res.slice(lineStart, bIdx).match(/^[ \t]+/) ? res.slice(lineStart, bIdx).match(/^[ \t]+/)[0] : ""
+				if (leadingWS.length > 0 && lineStart + leadingWS.length === bIdx) {
+					res = res.slice(0, lineStart) + res.slice(lineStart + leadingWS.length)
+				}
+			}
 			res = res.replace(b, "```$$" + i + "```")
 		})
 
