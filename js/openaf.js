@@ -1154,7 +1154,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 	// Prepare aux functions
 	var _clr = __, _ac = __, _al = __
 	if (!_aOptions.noansi) {
-		_dt = aO => {
+		let _dt = aO => {
 			if (null == aO) return "null"
 			try {
 				if ("function" === typeof aO.getClass && "[object JavaObject]" === Object.prototype.toString.call(aO)) return "java"
@@ -1207,7 +1207,6 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		var _acCFstring = _ac(__colorFormat.string, "").replace("\u001b[m", "")
 		var _acCFboolean = _ac(__colorFormat.boolean, "").replace("\u001b[m", "")
 		var _acCFdate = _ac(__colorFormat.date, "").replace("\u001b[m", "")
-		var _acCFstring  = _ac(__colorFormat.string, "").replace("\u001b[m", "")
 		_al  = m => (__flags.VISIBLELENGTH ? visibleLength(m) : m.replace(/\033\[[0-9;]*m/g, "").length)
 	} else {
 		_clr = s => s
@@ -1323,7 +1322,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			let repeatResult = _ac("", ("undefined" !== typeof vsize ? " ".repeat(vsize - lv+1) : " "))
 
 			let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
-			let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
+			let reset = __ansiColorCache["RESET"]
 			let suffix
 
 			if ("undefined" !== typeof aM[k] && aM[k] != null && ("[object Object]" == Object.prototype.toString.call(aM[k]) || Array.isArray(aM[k]))) {
@@ -1335,7 +1334,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			//} catch(e) {
 			//	printErr(e)
 			//}
-		})
+		}, __, isSub)
 		//out = _out.getKeys().sort((a, b) => a - b).map(k => _out.get(k))
 		//_out.clear()
 		//_out = __
