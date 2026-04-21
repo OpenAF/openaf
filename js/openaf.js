@@ -9402,7 +9402,7 @@ const $mcp = function(aOptions) {
 			}
 			return _walk(meta)
 		}
-		var _applyTemplateToDescriptions = meta => _applyTemplate(meta, false)
+		var _applyTemplateToMeta = meta => _applyTemplate(meta, true)
 		var _prefixToolName = n => (aOptions.options.toolPrefix.length > 0 ? aOptions.options.toolPrefix + n : n)
 		var _resolveToolName = n => {
 			if (aOptions.options.toolPrefix.length > 0 && isString(n) && n.startsWith(aOptions.options.toolPrefix)) {
@@ -9411,7 +9411,7 @@ const $mcp = function(aOptions) {
 			return n
 		}
 		var _toToolMeta = k => {
-			var _meta = isDef(fnsMeta[k]) ? _applyTemplateToDescriptions(clone(fnsMeta[k])) : {
+			var _meta = isDef(fnsMeta[k]) ? _applyTemplateToMeta(clone(fnsMeta[k])) : {
 				name: k,
 				description: k,
 				inputSchema: {}
