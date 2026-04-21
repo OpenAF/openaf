@@ -228,7 +228,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                         if (isDef(matchTc)) { name = matchTc.name; break }
                                     }
                                 }
-                                toolResults.push({ id: tr.tool_call_id || "", name: name, result: tr.content })
+                                toolResults.push({ id: tr.tool_call_id || "", name: tr.tool_name || name, result: tr.content })
                                 i++
                             }
                             _result.push({ role: "user", content: null, toolResults: toolResults })

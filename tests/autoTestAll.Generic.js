@@ -453,37 +453,47 @@
 
     exports.testAwait = function() {
         sync(() => {
-            var state = 0, err1, err2, ini = now()
-            var p1 = $doV(() => {
-                $await("testF").wait(30000)
-                ow.test.assert(state, 1, "Problem with await (1)")
-                //sleep(150, true);
-                $await("test1").notify()
-                $await("testF2").wait(30000)
-                ow.test.assert(state, 2, "Problem with await (2)")
-            }).catch(e => {
-                err1 = e;
-            })
-            
-            while(p1 == 0 && !p1.executing && now() - ini < 60000) sleep(50, true)
-    
-            var p2 = $doV(() => {
-                state = 1
-                $await("testF").notify()
-                $await("test1").wait(5000)
-                state = 2
-                $await("testF2").notify()
-            }).catch(e => {
-                err2 = e;
-            });
-    
-    
-            $doWait($doAll([p1, p2]));
-            if (isDef(err1)) throw err1;
-            if (isDef(err2)) throw err2;
+            var state = 0, err1, err2
+            var testId = "__testAwait_" + nowNano() + "_" + Math.floor(Math.random() * 1000000)
+            var gate1 = testId + "_gate1"
+            var gate2 = testId + "_gate2"
+            var ack   = testId + "_ack"
+            var ready = $atomic(0)
 
-            $await("testF").destroy()
-            $await("testF2").destroy()
+            try {
+                var p1 = $doV(() => {
+                    ready.set(1)
+                    $await(gate1).wait(30000)
+                    ow.test.assert(state, 1, "Problem with await (1)")
+                    $await(ack).notify()
+                    $await(gate2).wait(30000)
+                    ow.test.assert(state, 2, "Problem with await (2)")
+                }).catch(e => {
+                    err1 = e;
+                })
+
+                var ini = now()
+                while(ready.get() != 1 && now() - ini < 60000) sleep(50, true)
+                ow.test.assert(ready.get(), 1, "Problem preparing await synchronization test.")
+
+                var p2 = $doV(() => {
+                    state = 1
+                    $await(gate1).notify()
+                    $await(ack).wait(30000)
+                    state = 2
+                    $await(gate2).notify()
+                }).catch(e => {
+                    err2 = e;
+                });
+
+                $doWait($doAll([p1, p2]));
+                if (isDef(err1)) throw err1;
+                if (isDef(err2)) throw err2;
+            } finally {
+                $await(gate1).destroy()
+                $await(gate2).destroy()
+                $await(ack).destroy()
+            }
         })
     };
 

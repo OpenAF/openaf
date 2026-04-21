@@ -518,6 +518,24 @@
         ow.test.assert(requests[1].messages[2].tool_call_id, "call-2", "Problem preserving OpenAI streaming tool result id.");
     };
 
+    exports.testAIOpenAIExportConversationFallsBackToToolName = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-test" });
+        g.setConversation([
+            {
+                role: "tool",
+                content: "{\"echoed\":1}",
+                tool_call_id: "call-5",
+                tool_name: "echo"
+            }
+        ]);
+
+        var exported = g.exportConversation();
+        ow.test.assert(exported[0].toolResults[0].id, "call-5", "Problem exporting OpenAI tool result ids without a matching tool call.");
+        ow.test.assert(exported[0].toolResults[0].name, "echo", "Problem falling back to the original OpenAI tool name during export.");
+    };
+
     exports.testAIOllamaStreamingToolExecutionAndConversationIds = function() {
         ow.loadAI();
 

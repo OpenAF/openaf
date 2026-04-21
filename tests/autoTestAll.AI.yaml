@@ -90,6 +90,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIOpenAIStreamingToolRecursionNoDuplication;
 
+   - name: AI::OpenAI export conversation falls back to tool name
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIExportConversationFallsBackToToolName;
+
    - name: AI::Ollama streaming tool execution and ids
      from: AI::Init
      to  : oJob Test
@@ -119,5 +124,6 @@ todo:
    - AI::GPT prompt argument routing
    - AI::OpenAI tool recursion without duplication
    - AI::OpenAI streaming tool recursion without duplication
+   - AI::OpenAI export conversation falls back to tool name
    - AI::Ollama streaming tool execution and ids
    - AI::Ollama streaming warmup on fresh conversation
