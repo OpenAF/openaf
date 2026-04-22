@@ -105,6 +105,41 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testVizBenchmarkRender;
 
+   - name: Format::Viz create canvas
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizCreateCanvas;
+
+   - name: Format::Viz layout
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizLayout;
+
+   - name: Format::Print sparkline
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintSparkline;
+
+   - name: Format::Print histogram
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintHistogram;
+
+   - name: Format::Print dashboard
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintDashboard;
+
    - name: Format::Date diff
      from: Format::Init
      to  : oJob Test
@@ -188,7 +223,14 @@ jobs:
      deps:
      - Format::Load Format
      exec: args.func = args.tests.timeAbbreviation
-     
+
+   - name: Format::Grid
+     from: Format::Init
+     to  : oJob Test
+     deps:
+     - Format::Load Format
+     exec: args.func = args.tests.testGrid
+
 todo:
    # Format tests
    # ------------
@@ -208,6 +250,12 @@ todo:
    - Format::Terminal capabilities
    - Format::Viz frame diff
    - Format::Viz benchmark
+   - Format::Viz create canvas
+   - Format::Viz layout
+   - Format::Print sparkline
+   - Format::Print histogram
+   - Format::Print dashboard
+   - Format::Grid
    - Format::Date diff
    - Format::Cron
    - Format::Conversions
