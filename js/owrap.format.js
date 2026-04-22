@@ -3833,7 +3833,8 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 
 		// side line render
 		if (/^(\> .+)$/.test(l)) {
-			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", _aSize, __colorFormat.md.note.line, _withColor(__colorFormat.md.note.text, aBgColor), _noteTheme)), _aSize)
+			var note = l.match(/^\> (.+)$/)
+			return ow.format.withSideLine(note[1], _aSize, __colorFormat.md.note.line, _withColor(__colorFormat.md.note.text, aBgColor), _noteTheme)
 		}
 
 		// if not a code block or a table then it should be paragraph

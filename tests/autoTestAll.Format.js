@@ -136,6 +136,15 @@
         }
     };
 
+    exports.testWithMDBlockquoteSingleSideLine = function() {
+        var rendered = ow.format.withMD("> some comment", __, 20);
+        var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = plain.split("\n");
+
+        ow.test.assert(lines.length, 1, "Problem with markdown blockquote rendering lines.");
+        ow.test.assert(lines[0], "│ some comment", "Problem with markdown blockquote rendering a single side line.");
+    };
+
     exports.testWithSideLineUnicodeHeaderFooter = function() {
         var rendered = ow.format.withSideLine("x", 8, __, __, ow.format.withSideLineThemes().closedRect, {
             header: "🇵🇹",

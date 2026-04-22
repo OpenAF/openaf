@@ -23,7 +23,13 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testOAuthAuthorizationCodeTokenExchange;
 
+   - name: MCP::oJob tplDesc renders all tool metadata strings
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testOJobTplDescRendersAllToolMetadataStrings;
+
 todo:
    - MCP::OAuth discovery with client credentials
    - MCP::OAuth authorization URL includes resource and PKCE
    - MCP::OAuth authorization code token exchange includes resource and verifier
+   - MCP::oJob tplDesc renders all tool metadata strings
