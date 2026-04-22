@@ -167,6 +167,33 @@
         ow.test.assert(ow.format.string.leftPad(".", 2, "-") + ow.format.string.rightPad(".", 2, "-"), "-..-", "Problem with left and right padding.");        
     };
 
+    exports.testTermCapabilities = function() {
+        var caps = ow.format.term.getCapabilities({ refresh: true });
+        ow.test.assert(isMap(caps), true, "Problem with terminal capabilities map.");
+        ow.test.assert(isNumber(caps.width), true, "Problem with terminal capabilities width.");
+        ow.test.assert(isNumber(caps.height), true, "Problem with terminal capabilities height.");
+        ow.test.assert(isString(caps.colorMode), true, "Problem with terminal capabilities color mode.");
+
+        var palette = ow.format.term.getPalette("16", { accent: "MAGENTA" });
+        ow.test.assert(palette.accent, "MAGENTA", "Problem with palette override.");
+        ow.test.assert(isDef(palette.positive), true, "Problem with palette base values.");
+    };
+
+    exports.testVizDiffFrames = function() {
+        var diff = ow.format.viz.diffFrames("A\nB", "A\nC");
+        ow.test.assert(isMap(diff), true, "Problem with diffFrames return map.");
+        ow.test.assert(diff.changedLines, 1, "Problem with changed lines detection.");
+        ow.test.assert(diff.lines, 2, "Problem with output lines count.");
+        ow.test.assert(isString(diff.patch), true, "Problem with output patch generation.");
+    };
+
+    exports.testVizBenchmarkRender = function() {
+        var res = ow.format.viz.benchmarkRender(i => repeat(5, String(i)), { iterations: 5 });
+        ow.test.assert(res.iterations, 5, "Problem with benchmark iterations.");
+        ow.test.assert(isNumber(res.avgMs), true, "Problem with benchmark avgMs.");
+        ow.test.assert(res.maxMs >= res.minMs, true, "Problem with benchmark max/min.");
+    };
+
     exports.testDateDiff = function() {
         ow.test.assert(ow.format.dateDiff.inMonths(ow.format.toDate("201512310000", "yyyyMMddHHmm"), ow.format.toDate("201601010000", "yyyyMMddHHmm")), 1, "Problem with dateDiff.inMonths");
         ow.test.assert(ow.format.dateDiff.inDays(ow.format.toDate("201512310000", "yyyyMMddHHmm"), ow.format.toDate("201601010000", "yyyyMMddHHmm")), 1, "Problem with dateDiff.inDays");
