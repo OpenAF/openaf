@@ -1212,18 +1212,32 @@ OpenWrap.format.prototype.string = {
 	/**
 	 * <odoc>
 	 * <key>ow.format.string.grid(aMatrix, aX, aY, aBgPattern, shouldReturn) : String</key>
-	 * Will generate a aX per aY grid to be displayed with aBgPattern (defaults to " "). Each grid cell will use the contents on aMatrix
-	 * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in-cell spacing, a type (either map, table,
-	 * chart, area, bar, func, sparkline, histogram, progress, md or text) and a title. If shouldReturn = true it will just return the
-	 * string content instead of trying to print it. Rendering is delegated to ow.format.printDashboard per cell.\
-	 * Extra options per type:\
+	 * Renders a live terminal grid composed of cells defined by aMatrix (an array of rows, each row an array of cell maps).
+	 * aX sets the height per row in lines (defaults to terminal height / number of rows), aY sets the total width in characters
+	 * (defaults to terminal width). aBgPattern is the background fill character (defaults to " "). If shouldReturn = true the
+	 * result is returned as a string instead of printed with cursor-up (for live-update loops).\
 	 * \
-	 *  chart    : the 'obj' check printChart format string\
-	 *  bar      : the 'obj' check printBars format string; 'max'; 'min'; 'indicator'; 'space'\
-	 *  sparkline: the 'obj' is a series array (see ow.format.printSparkline)\
-	 *  histogram: the 'obj' is a values array (see ow.format.printHistogram)\
-	 *  progress : the 'obj' is a number or { value, max, min } map\
+	 * Each cell is a map with the following fields:\
 	 * \
+	 *   obj    : the data to render (type-dependent, see below)\
+	 *   type   : rendering type — map, tree, table, chart, area, bar, func, sparkline, histogram, progress, md or text (default: tree for maps/arrays, text otherwise)\
+	 *   title  : optional column heading rendered as "> title ────" above the cell content\
+	 *   xspan  : number of columns this cell spans horizontally (default: 1)\
+	 *   yspan  : number of rows this cell spans vertically (default: 1)\
+	 * \
+	 * Per-type 'obj' format and extra options:\
+	 * \
+	 *   text/md    : obj is a string; md renders markdown\
+	 *   map        : obj is a map rendered with printMap\
+	 *   tree/table : obj is a map or array rendered with ow.format\
+	 *   chart/area : obj is a printChart format string\
+	 *   bar        : obj is a printBars format string (e.g. "int 42:red:label"); supports max, min, indicator, space\
+	 *   func       : obj is a JS function body string receiving mx (height) and my (width), must return a string\
+	 *   sparkline  : obj is a number array or multi-series array (see ow.format.printSparkline)\
+	 *   histogram  : obj is a number array (see ow.format.printHistogram)\
+	 *   progress   : obj is a number or { value, max, min } map\
+	 * \
+	 * Each cell delegates rendering to ow.format.printDashboard.\
 	 * </odoc>
 	 */
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
