@@ -8,6 +8,8 @@ OpenWrap.format = function() {
 }
 
 if (typeof __owWithMdCache === "undefined") var __owWithMdCache
+if (typeof __owFormatTermCapabilitiesCache === "undefined") var __owFormatTermCapabilitiesCache
+if (typeof __owFormatLiveSessions === "undefined") var __owFormatLiveSessions = {}
 
 OpenWrap.format.prototype.string = {
 	// from: https://dmitripavlutin.com/what-every-javascript-developer-should-know-about-unicode/
@@ -1025,7 +1027,8 @@ OpenWrap.format.prototype.string = {
 	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator, aSpace, aHead) {
 		if (isUnDef(aIndicator)) aIndicator = ansiColor("BOLD", '━')
 		if (isUnDef(aSpace))     aSpace = ansiColor("FAINT", '─')
-		if (isUnDef(aSize))      aSize = (__conStatus ? __con.getTerminal().getWidth() : 5); else aSize = (aSize < 0 && __conStatus ? __con.getTerminal().getWidth() + aSize : aSize )
+		var __caps = isDef(ow) && isDef(ow.format) && isDef(ow.format.term) ? ow.format.term.getCapabilities() : __
+		if (isUnDef(aSize))      aSize = (isDef(__caps) ? __caps.width : (__conStatus ? __con.getTerminal().getWidth() : 5)); else aSize = (aSize < 0 ? (isDef(__caps) ? __caps.width + aSize : (__conStatus ? __con.getTerminal().getWidth() + aSize : aSize)) : aSize )
 		if (isUnDef(aMax))       aMax = aOrigPos
 		if (isUnDef(aMin))       aMin = 0
 	
@@ -1223,9 +1226,10 @@ OpenWrap.format.prototype.string = {
 		plugin("Console")
 		var _con_ = new Console()
 		_$(aElems, "aElems").isArray().$_()
+		var _caps = isDef(ow) && isDef(ow.format) && isDef(ow.format.term) ? ow.format.term.getCapabilities() : __
 
-		aY = Number(_$(aY, "width").isNumber().default(_con_.getConsoleReader().getTerminal().getWidth()))
-		aX = Number(_$(aX, "height").isNumber().default(Math.round(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)))
+		aY = Number(_$(aY, "width").isNumber().default(isDef(_caps) ? _caps.width : _con_.getConsoleReader().getTerminal().getWidth()))
+		aX = Number(_$(aX, "height").isNumber().default(Math.round((isDef(_caps) ? _caps.height : _con_.getConsoleReader().getTerminal().getHeight()) / aElems.length - 1)))
 	
 		var elems = [], l = 0, ignore = []
 		aElems.forEach(line => {
@@ -1533,6 +1537,293 @@ OpenWrap.format.prototype.syms = function() {
  * </odoc>
  */
 OpenWrap.format.prototype.bool = (aValue, isLight, anExtra) => ow.format.string.bool(aValue, isLight, anExtra)
+
+/**
+ * <odoc>
+ * <key>ow.format.term.getCapabilities(aOptions) : Map</key>
+ * Returns a map with terminal capabilities, including width/height, tty/ansi availability and color depth.
+ * Results are cached unless aOptions.refresh = true.
+ * </odoc>
+ */
+OpenWrap.format.prototype.term = {
+	getCapabilities: function(aOptions) {
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		if (isDef(__owFormatTermCapabilitiesCache) && aOptions.refresh !== true) return clone(__owFormatTermCapabilitiesCache)
+
+		var env = java.lang.System.getenv()
+		var _n = v => {
+			try {
+				return Number(v)
+			} catch(e) {
+				return __
+			}
+		}
+
+		var _termW = _n(env.get("COLUMNS")), _termH = _n(env.get("LINES"))
+		var _isTTY = (java.lang.System.console() != null)
+		var _ansi = false
+		var _unicode = true
+		var _term = String(env.get("TERM") || "")
+		var _colorDepth = 0
+
+		try {
+			__conStatus || __initializeCon()
+			if (isDef(__con) && isDef(__con.getTerminal())) {
+				_termW = Number(__con.getTerminal().getWidth())
+				_termH = Number(__con.getTerminal().getHeight())
+			}
+		} catch(e) {}
+
+		try {
+			if (isUnDef(__conAnsi)) __initializeCon()
+			_ansi = __conAnsi && _isTTY
+		} catch(e) {
+			_ansi = _isTTY
+		}
+
+		var _lang = String(env.get("LANG") || "")
+		if (_lang.toUpperCase().indexOf("ASCII") >= 0) _unicode = false
+
+		if (isDef(env.get("NO_COLOR"))) {
+			_colorDepth = 0
+		} else if (String(env.get("COLORTERM") || "").match(/24bit|truecolor/i)) {
+			_colorDepth = 16777216
+		} else if (_term.match(/256color/i)) {
+			_colorDepth = 256
+		} else if (_ansi) {
+			_colorDepth = 16
+		}
+
+		__owFormatTermCapabilitiesCache = {
+			isTTY: _isTTY,
+			ansi: _ansi,
+			width: _$(aOptions.width).isNumber().default(_termW > 0 ? _termW : 80),
+			height: _$(aOptions.height).isNumber().default(_termH > 0 ? _termH : 24),
+			colorDepth: _colorDepth,
+			colorMode: (_colorDepth >= 16777216 ? "truecolor" : (_colorDepth >= 256 ? "256" : (_colorDepth >= 16 ? "16" : "none"))),
+			unicode: _unicode,
+			term: _term,
+			timestamp: nowUTC()
+		}
+
+		return clone(__owFormatTermCapabilitiesCache)
+	},
+	getPalette: function(mode, overrides) {
+		mode = _$(mode, "mode").isString().default("auto")
+		overrides = _$(overrides, "overrides").isMap().default({})
+		var caps = this.getCapabilities()
+		if (mode == "auto") mode = caps.colorMode
+
+		var palettes = {
+			none: {
+				title: "",
+				accent: "",
+				positive: "",
+				warning: "",
+				negative: "",
+				muted: "",
+				gridLine: ""
+			},
+			"16": {
+				title: "BOLD",
+				accent: "CYAN",
+				positive: "GREEN",
+				warning: "YELLOW",
+				negative: "RED",
+				muted: "FAINT",
+				gridLine: "FAINT,WHITE"
+			},
+			"256": {
+				title: "BOLD",
+				accent: "FG(39)",
+				positive: "FG(76)",
+				warning: "FG(214)",
+				negative: "FG(196)",
+				muted: "FG(244)",
+				gridLine: "FG(240)"
+			},
+			truecolor: {
+				title: "BOLD",
+				accent: "RGB(80,180,255)",
+				positive: "RGB(80,220,120)",
+				warning: "RGB(255,200,90)",
+				negative: "RGB(255,110,110)",
+				muted: "RGB(160,160,170)",
+				gridLine: "RGB(120,120,130)"
+			}
+		}
+
+		var base = clone(_$(palettes[mode], "palette").isMap().default(palettes.none))
+		return merge(base, overrides)
+	}
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.viz.diffFrames(aPreviousFrame, aNextFrame, aOptions) : Map</key>
+ * Produces a terminal patch for replacing aPreviousFrame with aNextFrame and returns metadata for changed lines.
+ * </odoc>
+ */
+OpenWrap.format.prototype.viz = {
+	diffFrames: function(aPreviousFrame, aNextFrame, aOptions) {
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		var _prev = String(_$(aPreviousFrame).default("")).split(/\r?\n/)
+		var _next = String(_$(aNextFrame).default("")).split(/\r?\n/)
+		if (_prev.length == 1 && _prev[0] == "") _prev = []
+		if (_next.length == 1 && _next[0] == "") _next = []
+
+		var _max = Math.max(_prev.length, _next.length)
+		var changed = 0
+		var patch = ""
+		var clearLine = _$(aOptions.clearLine).isBoolean().default(true) ? "\033[2K" : ""
+
+		if (_prev.length > 1) patch += ow.format.string.ansiMoveUp(_prev.length - 1)
+		patch += "\r"
+
+		for(var i = 0; i < _max; i++) {
+			var _p = _$( _prev[i] ).default("")
+			var _n = _$( _next[i] ).default("")
+			if (_p != _n) changed++
+
+			patch += clearLine + _n
+			if (i < _max - 1) patch += "\n"
+		}
+
+		return {
+			patch: patch,
+			changedLines: changed,
+			lines: _next.length,
+			isFullRewrite: true
+		}
+	},
+	watchResize: function(aCallback, aOptions) {
+		_$(aCallback, "aCallback").isFunction().$_()
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		var interval = _$(aOptions.interval).isNumber().default(250)
+		var _last = ow.format.term.getCapabilities({ refresh: true })
+		var _active = true
+		var _timer = new java.util.Timer(true)
+
+		var _task = new JavaAdapter(java.util.TimerTask, {
+			run: function() {
+				if (!_active) return
+				var _now = ow.format.term.getCapabilities({ refresh: true })
+				if (_now.width != _last.width || _now.height != _last.height) {
+					var _prev = _last
+					_last = _now
+					aCallback(_now, _prev)
+				}
+			}
+		})
+		_timer.scheduleAtFixedRate(_task, interval, interval)
+
+		return {
+			stop: function() {
+				_active = false
+				try { _timer.cancel() } catch(e) {}
+			}
+		}
+	},
+	live: function(aRendererFn, aOptions) {
+		_$(aRendererFn, "aRendererFn").isFunction().$_()
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+
+		var id = "live-" + nowNano()
+		var fps = _$(aOptions.fps).isNumber().default(8)
+		var interval = Math.max(25, Math.round(1000 / (fps <= 0 ? 1 : fps)))
+		var useDiff = _$(aOptions.diff).isBoolean().default(true)
+		var autoStart = _$(aOptions.autoStart).isBoolean().default(true)
+		var _frame = 0, _active = false, _rendering = false
+		var _prev = ""
+		var _stats = { dropped: 0, rendered: 0, errors: 0, avgRenderMs: 0 }
+		var _timer = new java.util.Timer(true), _watch = __
+
+		var _renderOnce = force => {
+			if (!_active && !force) return
+			if (_rendering) { _stats.dropped++; return }
+			_rendering = true
+			var _t = now()
+			try {
+				var _caps = ow.format.term.getCapabilities({ refresh: true })
+				var out = aRendererFn({
+					id: id,
+					frame: _frame,
+					size: { width: _caps.width, height: _caps.height },
+					capabilities: _caps,
+					prevFrame: _prev
+				})
+				out = String(_$(out).default(""))
+				if (useDiff) {
+					var _d = ow.format.viz.diffFrames(_prev, out)
+					if (_d.patch.length > 0) printnl(_d.patch)
+				} else {
+					if (_prev.length > 0) printnl(ow.format.string.ansiMoveUp(_prev.split(/\r?\n/).length - 1) + "\r")
+					printnl(out)
+				}
+				_prev = out
+				_frame++
+				_stats.rendered++
+			} catch(e) {
+				_stats.errors++
+				if (isFunction(aOptions.onError)) aOptions.onError(e)
+			} finally {
+				var _took = now() - _t
+				_stats.avgRenderMs = ((_stats.avgRenderMs * Math.max(_stats.rendered - 1, 0)) + _took) / Math.max(_stats.rendered, 1)
+				_rendering = false
+			}
+		}
+
+		var _start = () => {
+			if (_active) return
+			_active = true
+			__owFormatLiveSessions[id] = true
+			var _task = new JavaAdapter(java.util.TimerTask, { run: () => _renderOnce(false) })
+			_timer.scheduleAtFixedRate(_task, 0, interval)
+			if (_$(aOptions.watchResize).isBoolean().default(true)) {
+				_watch = ow.format.viz.watchResize(() => _renderOnce(false), { interval: Math.max(100, Math.round(interval / 2)) })
+			}
+		}
+
+		var _stop = () => {
+			_active = false
+			delete __owFormatLiveSessions[id]
+			try { _timer.cancel() } catch(e) {}
+			if (isDef(_watch) && isFunction(_watch.stop)) _watch.stop()
+			if (isFunction(aOptions.onStop)) aOptions.onStop({ id: id, stats: clone(_stats), frames: _frame })
+		}
+
+		var _ctrl = {
+			id: id,
+			start: _start,
+			stop: _stop,
+			update: () => _renderOnce(true),
+			stats: () => merge(clone(_stats), { active: _active, frame: _frame, interval: interval })
+		}
+
+		if (autoStart) _start()
+		return _ctrl
+	},
+	benchmarkRender: function(aRendererFn, aOptions) {
+		_$(aRendererFn, "aRendererFn").isFunction().$_()
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		var iterations = _$(aOptions.iterations).isNumber().default(50)
+		var times = []
+		for(var i = 0; i < iterations; i++) {
+			var _t = now()
+			aRendererFn(i)
+			times.push(now() - _t)
+		}
+		times.sort((a, b) => a - b)
+		return {
+			iterations: iterations,
+			minMs: times[0],
+			maxMs: times[times.length - 1],
+			p50Ms: times[Math.floor(times.length * 0.50)],
+			p95Ms: times[Math.floor(times.length * 0.95)],
+			avgMs: times.reduce((a, b) => a + b, 0) / times.length
+		}
+	}
+}
 
 /**
  * <odoc>

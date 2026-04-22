@@ -80,9 +80,30 @@ jobs:
    - name: Format::String pad
      from: Format::Init
      to  : oJob Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPad; 
+     exec: args.func = args.tests.testPad;
+
+   - name: Format::Terminal capabilities
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testTermCapabilities;
+
+   - name: Format::Viz frame diff
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizDiffFrames;
+
+   - name: Format::Viz benchmark
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizBenchmarkRender;
 
    - name: Format::Date diff
      from: Format::Init
@@ -184,6 +205,9 @@ todo:
    - Format::Word wrap
    - Format::Markdown wrap
    - Format::String pad
+   - Format::Terminal capabilities
+   - Format::Viz frame diff
+   - Format::Viz benchmark
    - Format::Date diff
    - Format::Cron
    - Format::Conversions
