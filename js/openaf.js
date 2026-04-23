@@ -1693,16 +1693,40 @@ const __ansiColorPrep = function(aAnsi) {
 	var jansi = JavaImporter(Packages.org.fusesource.jansi)
 	var aString = "RRR"
 
+	// Extract color patterns first to handle commas inside parentheses
+	var colorPatterns = []
+	var tempStr = aAnsi.replace(/(BG_RGB|FG_RGB|RGB|BG|FG)\([^)]*\)/gi, function(match) {
+		colorPatterns.push(match)
+		return "___COLOR_" + (colorPatterns.length - 1) + "___"
+	})
+
 	var nAnsi = []
-	aAnsi.split(",").forEach(r => {
-		if (r.startsWith("BG(")) {
-			var bg = r.match(/BG\((\d+)\)/)
+	tempStr.split(",").forEach(r => {
+		var _r = r.trim().toUpperCase()
+		
+		// Restore color patterns from placeholders
+		_r = _r.replace(/___COLOR_(\d+)___/g, function(match, index) {
+			return colorPatterns[parseInt(index)]
+		})
+
+		var _rLower = _r.toLowerCase()
+		if (_rLower.startsWith("bg_rgb(")) {
+			var bgRgb = _rLower.match(/bg_rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+			if (!isNull(bgRgb)) aString = "\033[48;2;" + bgRgb[1] + ";" + bgRgb[2] + ";" + bgRgb[3] + "m" + aString
+		} else if (_rLower.startsWith("fg_rgb(")) {
+			var fgRgb = _rLower.match(/fg_rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+			if (!isNull(fgRgb)) aString = "\033[38;2;" + fgRgb[1] + ";" + fgRgb[2] + ";" + fgRgb[3] + "m" + aString
+		} else if (_rLower.startsWith("rgb(")) {
+			var rgb = _rLower.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+			if (!isNull(rgb)) aString = "\033[38;2;" + rgb[1] + ";" + rgb[2] + ";" + rgb[3] + "m" + aString
+		} else if (_rLower.startsWith("bg(")) {
+			var bg = _rLower.match(/bg\((\d+)\)/)
 			if (!isNull(bg)) aString = "\033[48;5;" + bg[1] + "m" + aString
-		} else if (r.startsWith("FG(")) {
-			var fg = r.match(/FG\((\d+)\)/)
+		} else if (_rLower.startsWith("fg(")) {
+			var fg = _rLower.match(/fg\((\d+)\)/)
 			if (!isNull(fg)) aString = "\033[38;5;" + fg[1] + "m" + aString
 		} else {
-			nAnsi.push(r)
+			nAnsi.push(_r)
 		}
 	})
 
