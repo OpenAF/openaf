@@ -4919,7 +4919,7 @@ var $from = function(a) {
  * semver(version, operation, argument)\
  * progress(value, max, min, size, indicator, space),\
  * to_csv(array, options), from_csv(str, options)\
- * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
+ * ch(name, op, arg1, arg2), chq(name, op, max, value), path(obj, jmespath), opath(jmespath)\
  * to_ms(date), timeagoAbbr(x)\
  * env(str), envs(regex)\
  * oafp(json/slon), oafpd(obj, json/slon)\
@@ -5534,6 +5534,42 @@ const $path = function(aObj, aPath, customFunctions) {
 				return ar2
 			},
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
+		},
+		chq: {
+			_func: ar => {
+				ow.loadCh()
+
+				var chName = ar[0], op = ar[1], max = Number(af.fromJSSLON(ar[2])), value = af.fromJSSLON(ar[3])
+				if ($ch().list().indexOf(chName) < 0) $ch(chName).create()
+
+				var _r 
+				switch(op) {
+				case "push":
+				case "add":
+					$ch(chName).push({
+						__pathq: nowNano(),
+						__pathqu: genUUID()
+					}, value)
+
+					while (isNumber(max) && max >= 0 && $ch(chName).size() > max) {
+						$ch(chName).shift()
+					}
+					_r= $ch(chName).getAll()
+					break
+				case "pop"  : _r = $ch(chName).pop(); break
+				case "shift": _r = $ch(chName).shift(); break
+				case "size" : _r = $ch(chName).size(); break
+				case "get"  :
+				case "all"  : _r = $ch(chName).getAll(); break
+				}
+
+				if (isArray(_r)) {
+				  return _r.map(r => r.value || r)
+				} else {
+				  return _r || value
+				}
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.number ] }, { types: [ jmespath.types.any ] } ]
 		}
 	}, customFunctions)
 	customFunctions = merge({
