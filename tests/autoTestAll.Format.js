@@ -243,6 +243,17 @@
         ow.test.assert(empty.indexOf("empty") >= 0, true, "Problem with empty histogram fallback.");
     };
 
+    exports.testPrintBulletValueFormats = function() {
+        var raw = ow.format.printBullet({ value: 1536, label: "raw" }, { width: 30, palette: "none" });
+        ow.test.assert(raw.indexOf("1536") >= 0, true, "Problem with printBullet raw values.");
+
+        var si = ow.format.printBullet({ value: 1536, label: "si" }, { width: 30, palette: "none", valueFormat: "si" });
+        ow.test.assert(si.indexOf("1.54k") >= 0, true, "Problem with printBullet SI abbreviated values.");
+
+        var bytes = ow.format.printBullet({ value: 1536, label: "bytes" }, { width: 30, palette: "none", valueFormat: "bytes" });
+        ow.test.assert(bytes.indexOf("1.5 KB") >= 0, true, "Problem with printBullet byte abbreviated values.");
+    };
+
     exports.testPrintDashboard = function() {
         var dash = ow.format.printDashboard([
             { type: "text", data: "Hello", title: "A" },

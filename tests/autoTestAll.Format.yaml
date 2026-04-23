@@ -133,6 +133,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testPrintHistogram;
 
+   - name: Format::Print bullet value formats
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintBulletValueFormats;
+
    - name: Format::Print dashboard
      from: Format::Init
      to  : oJob Test
@@ -254,6 +261,7 @@ todo:
    - Format::Viz layout
    - Format::Print sparkline
    - Format::Print histogram
+   - Format::Print bullet value formats
    - Format::Print dashboard
    - Format::Grid
    - Format::Date diff

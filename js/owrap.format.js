@@ -1231,12 +1231,12 @@ OpenWrap.format.prototype.string = {
 	 *   map        : obj is a map rendered with printMap\
 	 *   tree/table : obj is a map or array rendered with ow.format\
 	 *   chart/area : obj is a printChart format string\
-	 *   bar        : obj is a printBars format string (e.g. "int 42:red:label"); supports max, min, indicator, space\
+	 *   bar        : obj is a printBars format string (e.g. "int 42:red:label"); delegates to printBars and supports max, min, indicator, space\
 	 *   func       : obj is a JS function body string receiving mx (height) and my (width), must return a string\
 	 *   sparkline  : obj is a number array or multi-series array (see ow.format.printSparkline)\
 	 *   histogram  : obj is a number array (see ow.format.printHistogram)\
 	 *   heatmap    : obj is a number matrix or { values, xLabels, yLabels } (see ow.format.printHeatmap)\
-	 *   bullet     : obj is a map or array of maps with { value, target, min, max, ranges, label } (see ow.format.printBullet)\
+	 *   bullet     : obj is a map or array of maps with { value, target, min, max, ranges, label }; supports target, ranges, label, unit, showValue and valueFormat in options (see ow.format.printBullet)\
 	 *   scatter    : obj is an array of [x,y] or { x, y, symbol, color } points (see ow.format.printScatter)\
 	 *   boxplot    : obj is a number array or array of { values, label } series (see ow.format.printBoxplot)\
 	 *   timeline   : obj is an array of { label, start, end, color, status } events (see ow.format.printTimeline)\
@@ -2165,7 +2165,8 @@ OpenWrap.format.prototype.printHeatmap = function(values, aOptions) {
  * <odoc>
  * <key>ow.format.printBullet(values, aOptions) : String</key>
  * Returns one or more bullet graphs from a map or array of maps with { value, target, min, max, ranges, label }.
- * aOptions: width, palette, min, max, target, ranges, label, unit, showValue (default true).
+ * aOptions: width, palette, min, max, target, ranges, label, unit, showValue (default true),
+ * valueFormat ("raw", "si" or "bytes"; default "raw").
  * </odoc>
  */
 OpenWrap.format.prototype.printBullet = function(values, aOptions) {
@@ -2181,18 +2182,31 @@ OpenWrap.format.prototype.printBullet = function(values, aOptions) {
 	var _pal      = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
 	var width     = Math.max(8, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
 	var showValue = _$(aOptions.showValue).isBoolean().default(true)
+	var valueFormat = _$(aOptions.valueFormat).isString().default("raw").toLowerCase()
 	var valueC    = _$(aOptions.color).isString().default(_pal.accent)
 	var targetC   = _$(aOptions.targetColor).isString().default(_pal.warning || _pal.negative)
 	var mutedC    = _$(aOptions.rangeColor).isString().default(_pal.muted)
 	var goodC     = _$(aOptions.goodColor).isString().default(_pal.positive)
 	var _paint    = (_caps.colorMode !== "none") ? function(c, txt) { return (isString(c) && c !== "") ? ansiColor(c, txt) : txt } : function(c, txt) { return txt }
+	var _formatValue = function(aValue, aUnit) {
+		var _value = Number(_$(aValue).default(0))
+		var _unit = String(_$(aUnit).default(""))
+		switch(valueFormat) {
+		case "si":
+			return String(ow.format.toAbbreviation(_value)) + _unit
+		case "bytes":
+			return String(ow.format.toBytesAbbreviation(_value)) + _unit
+		default:
+			return String(_value) + _unit
+		}
+	}
 
 	var labelW = Math.min(18, items.reduce(function(m, item) {
 		return Math.max(m, ansiLength(String(_$(item.label).default(_$(aOptions.label).default("")))))
 	}, 0))
 	var valueW = showValue ? items.reduce(function(m, item) {
 		var unit = String(_$(item.unit).default(_$(aOptions.unit).default("")))
-		return Math.max(m, ansiLength(String(_$(item.value).default("")) + unit))
+		return Math.max(m, ansiLength(_formatValue(_$(item.value).default(0), unit)))
 	}, 0) + 1 : 0
 	var barW = Math.max(4, width - (labelW > 0 ? labelW + 1 : 0) - valueW)
 	var rangeChars = _caps.unicode ? ["░", "▒", "▓"] : [".", "-", "="]
@@ -2230,7 +2244,7 @@ OpenWrap.format.prototype.printBullet = function(values, aOptions) {
 			line = label + repeat(Math.max(0, labelW - ansiLength(label)), " ") + " " + line
 		}
 		if (showValue) {
-			var vtxt = String(value) + unit
+			var vtxt = _formatValue(value, unit)
 			line += " " + repeat(Math.max(0, valueW - 1 - ansiLength(vtxt)), " ") + vtxt
 		}
 		return line
@@ -2553,7 +2567,22 @@ OpenWrap.format.prototype.printStatusMatrix = function(values, aOptions) {
  * <key>ow.format.printDashboard(widgets, aOptions) : String</key>
  * Returns a multi-widget dashboard string. widgets is an array (or 2D array for explicit grid rows) of widget maps
  * with fields: type, data, title, span (proportional column width, default 1), options. Supported types: table, tree,
- * chart, sparkline, histogram, heatmap, bullet, scatter, boxplot, timeline, statusMatrix, progress, text, md, map, area, bar, func.
+ * chart, sparkline, histogram, heatmap, bullet, scatter, boxplot, timeline, statusMatrix, progress, text, md, map, area, bar, func.\
+ * \
+ * Per-widget notes:\
+ * \
+ *   chart      : data is a printChart format string\
+ *   area       : data is consumed by ow.format.string.chart\
+ *   bar        : data is a printBars format string; options can include max, min, indicator, space\
+ *   bullet     : data is consumed by ow.format.printBullet; options can include min, max, target, ranges, label, unit, showValue, valueFormat\
+ *   sparkline  : data is consumed by ow.format.printSparkline\
+ *   histogram  : data is consumed by ow.format.printHistogram\
+ *   heatmap    : data is consumed by ow.format.printHeatmap\
+ *   scatter    : data is consumed by ow.format.printScatter\
+ *   boxplot    : data is consumed by ow.format.printBoxplot\
+ *   timeline   : data is consumed by ow.format.printTimeline\
+ *   statusMatrix : data is consumed by ow.format.printStatusMatrix\
+ * \
  * aOptions: width, height, columns (auto if 0), border (default true), borderColor, borderStyle, palette.
  * </odoc>
  */
