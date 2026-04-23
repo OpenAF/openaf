@@ -21,8 +21,9 @@ OpenAF is a comprehensive JavaScript framework that extends the Mozilla Rhino Ja
 11. [Additional Core Shortcuts & Utilities](#additional-core-shortcuts--utilities)
 12. [Metrics API (ow.metrics)](#metrics-api-owmetrics)
 13. [$path – JMESPath Inspired Query & Transform](#$path--jmespath-inspired-query--transform)
-14. [Additional ow.* Highlights](#additional-ow-highlights)
-15. [Putting It Together: Authoring a New oJob from Scratch](#putting-it-together-authoring-a-new-ojob-from-scratch)
+14. [Terminal Visualization & Live Dashboards](#terminal-visualization--live-dashboards)
+15. [Additional ow.* Highlights](#additional-ow-highlights)
+16. [Putting It Together: Authoring a New oJob from Scratch](#putting-it-together-authoring-a-new-ojob-from-scratch)
 
 ---
 
@@ -178,6 +179,16 @@ ow.format.toBytesAbbreviation(1048576);   // "1 MB"
 
 // Network utilities
 ow.format.testPort("127.0.0.1", 8080, 5000);  // Test if port is open
+
+// Terminal capabilities and palettes
+var caps = ow.format.term.getCapabilities();   // { width, height, colorMode, unicode, isTTY, ... }
+var pal = ow.format.term.getPalette("auto");   // Semantic colors resolved for the current terminal
+
+// Terminal widgets
+print(ow.format.printBullet({ label: "disk", value: 5368709120, max: 10737418240, target: 8589934592 }, {
+  width: 48,
+  valueFormat: "bytes"
+}));
 ```
 
 ### ow.obj - Object Utilities and REST Client
@@ -922,6 +933,90 @@ var custom = {
 };
 $path(10, "inc(@)", custom); // 11
 ```
+
+OpenAF also ships built-in custom functions for channel-aware expressions. The recent addition is `chq(name, op, max, value)`, which gives `$path(...)` queue semantics backed by a named channel:
+
+```javascript
+$path({ id: 1 }, "chq('__events', 'push', `3`, @)");  // push into queue, keep at most 3 entries
+$path({}, "chq('__events', 'size', `3`, @)");         // current queue size
+$path({}, "chq('__events', 'get', `3`, @)");          // full queue contents
+$path({}, "chq('__events', 'shift', `3`, @)");        // remove oldest entry
+$path({}, "chq('__events', 'pop', `3`, @)");          // remove newest entry
+```
+
+Use `chq(...)` when an expression needs a lightweight rolling buffer or event queue without dropping down into imperative channel code.
+
+## Terminal Visualization & Live Dashboards
+
+The April 2026 formatting work added a terminal-focused visualization layer on top of `ow.format`. It is intended for CLI dashboards, status views, quick exploratory output and streaming monitors.
+
+### Terminal capability and palette helpers
+
+```javascript
+ow.loadFormat();
+
+var caps = ow.format.term.getCapabilities();
+// caps.isTTY, caps.width, caps.height, caps.unicode, caps.colorMode
+
+var palette = ow.format.term.getPalette("auto");
+// palette.accent, palette.warning, palette.positive, palette.negative, palette.muted, palette.gridLine
+```
+
+`getCapabilities()` auto-detects width, height, ANSI color depth (`none`, `16`, `256`, `truecolor`) and Unicode support. `getPalette()` resolves semantic colors for the current terminal and supports overrides.
+
+### Compact renderers
+
+```javascript
+print(ow.format.printHeatmap([[1, 2, 3], [3, 2, 1]], { width: 20, legend: true }));
+print(ow.format.printScatter([[0, 0], [1, 2], [2, 1]], { width: 24, height: 8, xLabel: "x" }));
+print(ow.format.printTimeline([
+  { label: "build", start: "2026-04-23T10:00:00Z", end: "2026-04-23T10:02:00Z", status: "ok" },
+  { label: "test",  start: "2026-04-23T10:02:00Z", end: "2026-04-23T10:05:00Z", status: "warn" }
+], { width: 48 }));
+```
+
+Available renderers:
+
+- `printSparkline(series, options)` for inline trends
+- `printHistogram(values, options)` for distributions
+- `printHeatmap(values, options)` for matrix intensity views
+- `printBullet(values, options)` for KPI/goal tracking, including `valueFormat: "raw" | "si" | "bytes"`
+- `printScatter(points, options)` for XY points
+- `printBoxplot(values, options)` for spread and outliers
+- `printTimeline(events, options)` for interval/event ranges
+- `printStatusMatrix(values, options)` for compact health/status grids
+- `printDashboard(widgets, options)` for multi-widget layouts
+
+### Dashboard composition
+
+`ow.format.string.grid(...)` now forwards terminal widget cell options to `ow.format.printDashboard(...)`, so dashboards can be composed either directly or through grid cells:
+
+```javascript
+print(ow.format.printDashboard([
+  [
+    { type: "bullet", title: "Storage", data: { value: 5368709120, max: 10737418240, target: 8589934592 }, options: { valueFormat: "bytes" } },
+    { type: "sparkline", title: "Latency", data: [12, 14, 10, 18, 11, 9] }
+  ],
+  [
+    { type: "statusMatrix", title: "Services", data: { values: [["ok", "warn"], ["ok", "error"]], xLabels: ["a", "b"], yLabels: ["api", "db"] } }
+  ]
+], { width: 80, border: true }));
+```
+
+### Live updates
+
+```javascript
+var live = ow.format.viz.live(function(ctx) {
+  return ow.format.printDashboard([
+    { type: "sparkline", title: "frame", data: [ctx.frame % 10, (ctx.frame + 3) % 10, (ctx.frame + 6) % 10] }
+  ], { width: ctx.size.width, height: 6 });
+}, { fps: 4 });
+
+// later
+live.stop();
+```
+
+Use `ow.format.viz.diffFrames(...)` for patch generation, `ow.format.viz.watchResize(...)` to react to terminal size changes, and `ow.format.viz.createCanvas(...)` / `ow.format.viz.layout` when building custom renderers.
 
 ## Additional ow.* Highlights
 
