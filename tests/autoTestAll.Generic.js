@@ -145,6 +145,20 @@
         ow.test.assert($path({}, "div(`6`, `3`)"), 2, "Problem with $path div")
         ow.test.assert($path({}, "mod(`6`, `3`)"), 0, "Problem with $path mod")
         ow.test.assert($path({}, "range(`2`)"), [ 1, 2 ], "Problem with $path range")
+
+        var chqName = "__test_path_chq"
+        if ($ch().list().indexOf(chqName) >= 0) $ch(chqName).destroy()
+
+        ow.test.assert($path({ v: 1 }, "chq('__test_path_chq', 'push', `2`, @)"), [{ v: 1 }], "Problem with $path chq first push")
+        ow.test.assert($path({ v: 2 }, "chq('__test_path_chq', 'push', `2`, @)"), [{ v: 1 }, { v: 2 }], "Problem with $path chq second push")
+        ow.test.assert($path({ v: 3 }, "chq('__test_path_chq', 'push', `2`, @)"), [{ v: 2 }, { v: 3 }], "Problem with $path chq max trimming")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'size', `2`, @)"), 2, "Problem with $path chq size")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'get', `2`, @)"), [{ v: 2 }, { v: 3 }], "Problem with $path chq get")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'shift', `2`, @)"), { v: 2 }, "Problem with $path chq shift")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'pop', `2`, @)"), { v: 3 }, "Problem with $path chq pop")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'size', `2`, @)"), 0, "Problem with $path chq final size")
+
+        $ch(chqName).destroy()
     }
 
     exports.testGetSet = function() {
