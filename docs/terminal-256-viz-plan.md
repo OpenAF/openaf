@@ -1,4 +1,27 @@
-# Terminal 256-Color Data Visualization Expansion Plan
+# Terminal Visualization Expansion Plan And Status
+
+## Implementation Status (2026-04-23)
+
+This document started as a plan. Most of the MVP and a meaningful part of the follow-up work are now implemented in `js/owrap.format.js`.
+
+### Implemented
+
+- `ow.format.term.getCapabilities()` and `ow.format.term.getPalette()`
+- `ow.format.viz.diffFrames()`, `watchResize()`, `live()`, `createCanvas()` and `viz.layout`
+- `printSparkline`, `printHistogram`, `printHeatmap`, `printBullet`, `printScatter`, `printBoxplot`, `printTimeline` and `printStatusMatrix`
+- `printDashboard(...)` multi-widget composition
+- `ow.format.string.grid(...)` support for `sparkline`, `histogram`, `heatmap`, `bullet`, `scatter`, `boxplot`, `timeline`, `statusMatrix`, `progress`, `md` and `text`
+- RGB ANSI preparation support plus 16/256/truecolor palette-aware rendering
+- `printBullet(..., { valueFormat: "raw" | "si" | "bytes" })`
+
+### Still Open / Partial
+
+- `diffFrames(...)` currently rewrites the full frame while still returning changed-line metadata; it is not yet a minimal line/segment patcher
+- no dedicated `render(buffer, { diffFrom })` helper separate from `viz.live(...)`
+- no documented `printTable` cell formatter bridge yet beyond the dashboard/grid composition path
+- no formal benchmark suite or snapshot-test corpus dedicated to the new renderers
+
+The sections below keep the original design intent so remaining work can still be tracked against the shipped surface area.
 
 ## Goals
 

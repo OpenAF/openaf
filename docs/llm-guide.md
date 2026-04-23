@@ -180,7 +180,14 @@ var custom = {
   }
 };
 $path(10, "inc(@)", custom);  // 11
+
+// Built-in channel queue helper
+$path({ event: "a" }, "chq('__llm_events', 'push', `5`, @)");
+$path({}, "chq('__llm_events', 'get', `5`, @)");
+$path({}, "chq('__llm_events', 'shift', `5`, @)");
 ```
+
+Use `chq(...)` when generated code needs a rolling queue inside a declarative `$path(...)` pipeline. Prefer it over ad-hoc global arrays when the surrounding code already uses channels.
 
 #### 5. `$ch` - Channel Operations
 
@@ -255,7 +262,32 @@ var data = $sh("cat data.json").getJson(0);
 var yaml = $sh("cat config.yaml").getYaml(0);
 ```
 
-#### 8. `$tb` - Thread Box (Timeout Control)
+#### 8. Terminal Visualization
+
+When generating CLI-oriented OpenAF code, prefer `ow.format` renderers over manual ANSI assembly:
+
+```javascript
+ow.loadFormat();
+
+print(ow.format.printBullet({ label: "mem", value: 4294967296, max: 8589934592, target: 6442450944 }, {
+  width: 48,
+  valueFormat: "bytes"
+}));
+
+print(ow.format.printDashboard([
+  { type: "sparkline", title: "latency", data: [12, 10, 18, 9, 11] },
+  { type: "statusMatrix", title: "services", data: { values: [["ok", "warn"], ["ok", "error"]] } }
+], { width: 72 }));
+```
+
+Prefer these helpers when the output is:
+- a compact status/KPI readout
+- a terminal dashboard
+- a live-updating monitor using `ow.format.viz.live(...)`
+
+Avoid hard-coding ANSI colors. Use `ow.format.term.getCapabilities()` and `ow.format.term.getPalette("auto")` when the output should adapt to non-TTY, 16-color, 256-color or truecolor terminals.
+
+#### 9. `$tb` - Thread Box (Timeout Control)
 
 ```javascript
 // Execute with timeout
@@ -272,7 +304,7 @@ $tb(taskFn)
   .exec();
 ```
 
-#### 9. `templify` - Template Expansion
+#### 10. `templify` - Template Expansion
 
 ```javascript
 // Basic template
