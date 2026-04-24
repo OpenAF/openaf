@@ -1197,7 +1197,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		
 			if (aAnsi.length == 0) return aString
 
-			if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString].join("")
+			if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString, __ansiColorCache["RESET"]].join("")
 		
 			return ansiColor(aAnsi, aString, true, true)
 		}
