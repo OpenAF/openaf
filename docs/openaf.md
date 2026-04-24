@@ -238,6 +238,15 @@ print("Moving average: " + values.movingAverage());
 //   model: "gpt-3.5-turbo",
 //   messages: [ { role: "user", content: "Hello!" } ]
 // })
+//
+// OpenAI-compatible Azure/Foundry endpoints can use ow.ai.gpt:
+// ow.ai.gpt({
+//   type: "openai",
+//   key: "YOUR_AZURE_API_KEY",
+//   url: "https://RESOURCE.openai.azure.com",
+//   mode: "azure-openai-v1",
+//   model: "DEPLOYMENT_NAME"
+// })
 ```
 
 ### ow.net - Network Utilities

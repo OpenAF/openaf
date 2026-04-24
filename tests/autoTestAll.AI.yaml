@@ -80,6 +80,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIGPTPromptArgumentRouting;
 
+   - name: AI::OpenAI transport modes
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAITransportModes;
+
    - name: AI::OpenAI tool recursion without duplication
      from: AI::Init
      to  : oJob Test
@@ -122,6 +127,7 @@ todo:
    - AI::Test C45
    - AI::Test KMeans
    - AI::GPT prompt argument routing
+   - AI::OpenAI transport modes
    - AI::OpenAI tool recursion without duplication
    - AI::OpenAI streaming tool recursion without duplication
    - AI::OpenAI export conversation falls back to tool name

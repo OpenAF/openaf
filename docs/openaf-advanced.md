@@ -404,6 +404,49 @@ var llm = ow.ai.gpt({
 var response = llm.prompt("Explain quantum computing in simple terms");
 log(response);
 
+// Azure OpenAI v1 compatible endpoint
+var azureV1 = ow.ai.gpt({
+  type: "openai",
+  key : "your-azure-api-key",
+  url : "https://RESOURCE.openai.azure.com",
+  mode: "azure-openai-v1",
+  model: "your-deployment-name"
+});
+
+// Azure OpenAI legacy deployment endpoint
+var azureLegacy = ow.ai.gpt({
+  type       : "openai",
+  key        : "your-azure-api-key",
+  url        : "https://RESOURCE.openai.azure.com",
+  mode       : "azure-openai-legacy",
+  deployment : "your-deployment-name",
+  apiVersion : "2024-10-21"
+});
+
+// Azure AI Foundry v1 endpoint
+var foundry = ow.ai.gpt({
+  type       : "openai",
+  key        : "your-foundry-api-key",
+  url        : "https://RESOURCE.services.ai.azure.com",
+  mode       : "foundry",
+  model      : "your-deployment-name"
+});
+
+// Azure AI Foundry dated model inference endpoint
+var foundryPreview = ow.ai.gpt({
+  type       : "openai",
+  key        : "your-foundry-api-key",
+  url        : "https://RESOURCE.services.ai.azure.com/models",
+  mode       : "foundry",
+  apiVersion : "2024-05-01-preview",
+  model      : "your-deployment-name"
+});
+
+// Azure and Foundry modes default to api-key authentication.
+// Standard OpenAI mode defaults to Authorization: Bearer.
+// Use authType only for compatible proxies or custom authentication:
+// authType: "bearer" | "api-key" | "none"
+
 // Conversation
 llm.addSystemPrompt("You are a helpful coding assistant");
 llm.addUserPrompt("How do I sort an array in JavaScript?");

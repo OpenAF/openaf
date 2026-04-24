@@ -398,6 +398,66 @@
         ow.test.assert(rawStreamCalls[0], [ "hello", "gpt-test", 0.4, false, tools, onRawDelta ], "Problem routing GPT rawPromptStream wrapper arguments.");
     };
 
+    exports.testAIOpenAITransportModes = function() {
+        ow.loadAI();
+
+        var openai = new ow.ai.gpt("openai", { key: "test-key", url: "https://api.openai.com" });
+        var openaiTransport = openai.model.__debugTransport("chat/completions", "gpt-test");
+        ow.test.assert(openaiTransport.url, "https://api.openai.com/v1/chat/completions", "Problem building default OpenAI chat URL.");
+        ow.test.assert(isDef(openaiTransport.headers.Authorization), true, "Problem setting default OpenAI bearer authorization.");
+        ow.test.assert(isUnDef(openaiTransport.headers["api-key"]), true, "Problem avoiding api-key on default OpenAI transport.");
+
+        var openaiBaseUrl = new ow.ai.gpt("openai", { key: "test-key", url: "https://api.openai.com/v1" });
+        ow.test.assert(openaiBaseUrl.model.__debugTransport("chat/completions", "gpt-test").url, "https://api.openai.com/v1/chat/completions", "Problem preserving an OpenAI v1 base URL.");
+
+        var azureV1 = new ow.ai.gpt("openai", {
+            key : "test-key",
+            url : "https://example.openai.azure.com",
+            mode: "azure-openai-v1"
+        });
+        var azureV1Transport = azureV1.model.__debugTransport("chat/completions", "deployment-a");
+        ow.test.assert(azureV1Transport.url, "https://example.openai.azure.com/openai/v1/chat/completions", "Problem building Azure OpenAI v1 chat URL.");
+        ow.test.assert("" + azureV1Transport.headers["api-key"], "test-key", "Problem setting Azure OpenAI v1 api-key header.");
+        ow.test.assert(isUnDef(azureV1Transport.headers.Authorization), true, "Problem suppressing Azure OpenAI v1 bearer authorization.");
+
+        var azureV1BaseUrl = new ow.ai.gpt("openai", {
+            key : "test-key",
+            url : "https://example.openai.azure.com/openai/v1",
+            mode: "azure-openai-v1"
+        });
+        ow.test.assert(azureV1BaseUrl.model.__debugTransport("chat/completions", "deployment-a").url, "https://example.openai.azure.com/openai/v1/chat/completions", "Problem preserving an Azure OpenAI v1 base URL.");
+
+        var azureLegacy = new ow.ai.gpt("openai", {
+            key       : "test-key",
+            url       : "https://example.openai.azure.com",
+            mode      : "azure-openai-legacy",
+            deployment: "deployment-a",
+            apiVersion: "2024-10-21"
+        });
+        var azureLegacyTransport = azureLegacy.model.__debugTransport("chat/completions", "ignored");
+        ow.test.assert(azureLegacyTransport.url, "https://example.openai.azure.com/openai/deployments/deployment-a/chat/completions?api-version=2024-10-21", "Problem building Azure OpenAI legacy deployment chat URL.");
+        ow.test.assert("" + azureLegacyTransport.headers["api-key"], "test-key", "Problem setting Azure OpenAI legacy api-key header.");
+
+        var foundryV1 = new ow.ai.gpt("openai", {
+            key       : "test-key",
+            url       : "https://example.services.ai.azure.com",
+            mode      : "foundry"
+        });
+        var foundryV1Transport = foundryV1.model.__debugTransport("chat/completions", "deployment-a");
+        ow.test.assert(foundryV1Transport.url, "https://example.services.ai.azure.com/openai/v1/chat/completions", "Problem building Foundry v1 chat URL.");
+        ow.test.assert("" + foundryV1Transport.headers["api-key"], "test-key", "Problem setting Foundry v1 api-key header.");
+
+        var foundryPreview = new ow.ai.gpt("openai", {
+            key       : "test-key",
+            url       : "https://example.services.ai.azure.com/models",
+            mode      : "foundry",
+            apiVersion: "2024-05-01-preview"
+        });
+        var foundryPreviewTransport = foundryPreview.model.__debugTransport("chat/completions", "deployment-a");
+        ow.test.assert(foundryPreviewTransport.url, "https://example.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview", "Problem building Foundry model inference preview chat URL.");
+        ow.test.assert("" + foundryPreviewTransport.headers["api-key"], "test-key", "Problem setting Foundry preview api-key header.");
+    };
+
     exports.testAIOpenAIToolRecursionNoDuplication = function() {
         ow.loadAI();
 
