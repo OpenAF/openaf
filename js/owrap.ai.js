@@ -230,6 +230,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (stop || dataLines.length === 0) return
                     var payload = dataLines.join("\n")
                     dataLines = []
+                    var parsedPayload = jsonParse(payload, __, __, true)
+                    if (isMap(parsedPayload) && isDef(parsedPayload.error)) errorObj = parsedPayload
                     if (aOnPayload(payload) === true) stop = true
                 }
                 if (isMap(aStream)) {
