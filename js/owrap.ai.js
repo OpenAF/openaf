@@ -459,9 +459,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         body.response_format = { type: "json_object" }
                     }
                     body = merge(body, aOptions.params)
+                    // Preserve any tools already set via aOptions.params (e.g. built-in tools like web_search_preview)
+                    var _paramTools = isArray(body.tools) ? body.tools : []
                     // Only include tools if there are any configured
                     if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools
+                        var _funcTools = aTools
                             .map(t => {
                                 if (isString(t)) {
                                     var _tool = _r.tools[t]
@@ -480,9 +482,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 }
                             })
                             .filter(isDef)
+                        body.tools = _paramTools.concat(_funcTools)
                         if (!isArray(body.tools) || body.tools.length == 0) delete body.tools
                     } else {
-                        if (isDef(body.tools)) delete body.tools
+                        if (_paramTools.length > 0) body.tools = _paramTools
+                        else if (isDef(body.tools)) delete body.tools
                     }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var _res = _r._request(_route("chat/completions", aModel), body)
@@ -507,9 +511,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                             if (isDef(tc.message) && isArray(tc.message.tool_calls)) {
                                 tc.message.tool_calls.forEach(tci => {
                                     var _t = _r.tools[tci.function.name]
-                                    var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
-                                    _p.push({ role: "assistant", tool_calls: [ tci ]})
-                                    _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
+                                    if (isDef(_t) && isFunction(_t.fn)) {
+                                        var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
+                                        _p.push({ role: "assistant", tool_calls: [ tci ]})
+                                        _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
+                                    }
                                 })
                             }
                             if (isDef(tc.finish_reason) && tc.finish_reason == "stop") {
@@ -563,8 +569,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                         body.response_format = { type: "json_object" }
                     }
                     body = merge(body, aOptions.params)
+                    // Preserve any tools already set via aOptions.params (e.g. built-in tools like web_search_preview)
+                    var _paramTools = isArray(body.tools) ? body.tools : []
                     if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools
+                        var _funcTools = aTools
                             .map(t => {
                                 if (isString(t)) {
                                     var _tool = _r.tools[t]
@@ -583,9 +591,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 }
                             })
                             .filter(isDef)
+                        body.tools = _paramTools.concat(_funcTools)
                         if (!isArray(body.tools) || body.tools.length == 0) delete body.tools
                     } else {
-                        if (isDef(body.tools)) delete body.tools
+                        if (_paramTools.length > 0) body.tools = _paramTools
+                        else if (isDef(body.tools)) delete body.tools
                     }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
 
