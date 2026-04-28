@@ -8,6 +8,8 @@ OpenWrap.format = function() {
 }
 
 if (typeof __owWithMdCache === "undefined") var __owWithMdCache
+if (typeof __owFormatTermCapabilitiesCache === "undefined") var __owFormatTermCapabilitiesCache
+if (typeof __owFormatLiveSessions === "undefined") var __owFormatLiveSessions = {}
 
 OpenWrap.format.prototype.string = {
 	// from: https://dmitripavlutin.com/what-every-javascript-developer-should-know-about-unicode/
@@ -1025,7 +1027,8 @@ OpenWrap.format.prototype.string = {
 	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator, aSpace, aHead) {
 		if (isUnDef(aIndicator)) aIndicator = ansiColor("BOLD", '━')
 		if (isUnDef(aSpace))     aSpace = ansiColor("FAINT", '─')
-		if (isUnDef(aSize))      aSize = (__conStatus ? __con.getTerminal().getWidth() : 5); else aSize = (aSize < 0 && __conStatus ? __con.getTerminal().getWidth() + aSize : aSize )
+		var __caps = isDef(ow) && isDef(ow.format) && isDef(ow.format.term) ? ow.format.term.getCapabilities() : __
+		if (isUnDef(aSize))      aSize = (isDef(__caps) ? __caps.width : (__conStatus ? __con.getTerminal().getWidth() : 5)); else aSize = (aSize < 0 ? (isDef(__caps) ? __caps.width + aSize : (__conStatus ? __con.getTerminal().getWidth() + aSize : aSize)) : aSize )
 		if (isUnDef(aMax))       aMax = aOrigPos
 		if (isUnDef(aMin))       aMin = 0
 	
@@ -1209,78 +1212,107 @@ OpenWrap.format.prototype.string = {
 	/**
 	 * <odoc>
 	 * <key>ow.format.string.grid(aMatrix, aX, aY, aBgPattern, shouldReturn) : String</key>
-	 * Will generate a aX per aY grid to be displayed with aBgPattern (defaults to " "). Each grid cell with use the contents on aMatrix
-	 * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in cell spacing, a type (either map, table, chart, area, bar, func or string) 
-	 * and a title. If shouldReturn = true it will just return the string content instead of trying to print it.\
-	 * Extra options per type:\
+	 * Renders a live terminal grid composed of cells defined by aMatrix (an array of rows, each row an array of cell maps).
+	 * aX sets the height per row in lines (defaults to terminal height / number of rows), aY sets the total width in characters
+	 * (defaults to terminal width). aBgPattern is the background fill character (defaults to " "). If shouldReturn = true the
+	 * result is returned as a string instead of printed with cursor-up (for live-update loops).\
 	 * \
-	 *  chart: the 'obj' check printChart format string\
-	 *  bar  : the 'obj' check printBar format stirng; 'max'; 'min'; 'indicator'; 'space'\
+	 * Each cell is a map with the following fields:\
 	 * \
+	 *   obj    : the data to render (type-dependent, see below)\
+	 *   type   : rendering type — map, tree, table, chart, area, bar, func, sparkline, histogram, heatmap, bullet, scatter, boxplot, timeline, statusMatrix, progress, md or text (default: tree for maps/arrays, text otherwise)\
+	 *   title  : optional column heading rendered as "> title ────" above the cell content\
+	 *   xspan  : number of columns this cell spans horizontally (default: 1)\
+	 *   yspan  : number of rows this cell spans vertically (default: 1)\
+	 * \
+	 * Per-type 'obj' format and extra options:\
+	 * \
+	 *   text/md    : obj is a string; md renders markdown\
+	 *   map        : obj is a map rendered with printMap\
+	 *   tree/table : obj is a map or array rendered with ow.format\
+	 *   chart/area : obj is a printChart format string\
+	 *   bar        : obj is a printBars format string (e.g. "int 42:red:label"); delegates to printBars and supports max, min, indicator, space\
+	 *   func       : obj is a JS function body string receiving mx (height) and my (width), must return a string\
+	 *   sparkline  : obj is a number array or multi-series array (see ow.format.printSparkline)\
+	 *   histogram  : obj is a number array (see ow.format.printHistogram)\
+	 *   heatmap    : obj is a number matrix or { values, xLabels, yLabels } (see ow.format.printHeatmap)\
+	 *   bullet     : obj is a map or array of maps with { value, target, min, max, ranges, label }; supports target, ranges, label, unit, showValue and valueFormat in options (see ow.format.printBullet)\
+	 *   scatter    : obj is an array of [x,y] or { x, y, symbol, color } points (see ow.format.printScatter)\
+	 *   boxplot    : obj is a number array or array of { values, label } series (see ow.format.printBoxplot)\
+	 *   timeline   : obj is an array of { label, start, end, color, status } events (see ow.format.printTimeline)\
+	 *   statusMatrix : obj is a matrix or { values, xLabels, yLabels } of status values (see ow.format.printStatusMatrix)\
+	 *   progress   : obj is a number or { value, max, min } map\
+	 * \
+	 * Each cell delegates rendering to ow.format.printDashboard.\
 	 * </odoc>
 	 */
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
 		plugin("Console")
 		var _con_ = new Console()
 		_$(aElems, "aElems").isArray().$_()
+		var _caps = isDef(ow) && isDef(ow.format) && isDef(ow.format.term) ? ow.format.term.getCapabilities() : __
 
-		aY = Number(_$(aY, "width").isNumber().default(_con_.getConsoleReader().getTerminal().getWidth()))
-		aX = Number(_$(aX, "height").isNumber().default(Math.round(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)))
-	
+		aY = Number(_$(aY, "width").isNumber().default(isDef(_caps) ? _caps.width : _con_.getConsoleReader().getTerminal().getWidth()))
+		aX = Number(_$(aX, "height").isNumber().default(Math.round((isDef(_caps) ? _caps.height : _con_.getConsoleReader().getTerminal().getHeight()) / aElems.length - 1)))
+
+		var cellToWidget = function(col) {
+			if (isUnDef(col) || isNull(col)) return { type: "text", data: "" }
+			if (!isMap(col)) col = { obj: col }
+			var type = col.type
+			if (isUnDef(type)) {
+				type = (isMap(col.obj) || isArray(col.obj)) ? "tree" : "text"
+			} else if (type === "human") {
+				type = "text"
+			}
+			var _opts = _$(col.options).isMap().default({})
+			if (isDef(col.max)) _opts.max = col.max
+			if (isDef(col.min)) _opts.min = col.min
+			if (isDef(col.indicator)) _opts.indicator = col.indicator
+			if (isDef(col.space)) _opts.space = col.space
+			if (isDef(col.target)) _opts.target = col.target
+			if (isDef(col.ranges)) _opts.ranges = col.ranges
+			if (isDef(col.xLabels)) _opts.xLabels = col.xLabels
+			if (isDef(col.yLabels)) _opts.yLabels = col.yLabels
+			if (isDef(col.legend)) _opts.legend = col.legend
+			if (isDef(col.xLabel)) _opts.xLabel = col.xLabel
+			if (isDef(col.yLabel)) _opts.yLabel = col.yLabel
+			if (isDef(col.from)) _opts.from = col.from
+			if (isDef(col.to)) _opts.to = col.to
+			if (isDef(col.labels)) _opts.labels = col.labels
+			return {
+				type   : type,
+				data   : col.obj,
+				title  : col.title,
+				span   : _$(col.xspan).isNumber().default(1),
+				options: _opts
+			}
+		}
+
 		var elems = [], l = 0, ignore = []
-		aElems.forEach(line => {
+		aElems.forEach(function(line) {
 			var c = 0, totalC = 0
-			var eline = line.map(col => (isDef(col) && isDef(col.xspan)) ? col.xspan : 1).reduce((aC,cR) => aC+cR)
+			var eline = line.map(function(col) { return (isDef(col) && isDef(col.xspan)) ? col.xspan : 1 }).reduce(function(aC, cR) { return aC + cR })
 
-			line.forEach((col, icol) => {
+			line.forEach(function(col, icol) {
 				if (isDef(col) && ignore.indexOf("Y:" + c + "X:" + l) < 0) {
-					if (isUnDef(col) || isNull(col)) col = ""
+					if (isUnDef(col) || isNull(col)) col = { obj: "" }
 					if (!isMap(col)) col = { obj: col }
-	
-					if (isUnDef(col.type)) {
-						if (isMap(col.obj) || isArray(col.obj)) 
-							col.type = "tree"
-						else
-							col.type = "human"
-					}
 
 					var xspan = _$(col.xspan, "xspan").isNumber().default(1)
 					var yspan = _$(col.yspan, "yspan").isNumber().default(1)
 					if (xspan > 1) for(var ii = 0; ii < xspan; ii++) { ignore.push("Y:" + (c+ii+1) + "X:" + l) }
 					if (yspan > 1) for(var ii = l + (aX + 1); ii < l + ((aX + 1) * yspan); ii += aX + 1) { ignore.push("Y:" + c + "X:" + ii) }
-					//var p = "", cs = Math.round((aY / eline) * xspan)
-					var p = "", cs0 = Math.round(aY / eline); cs = cs0 * xspan
+
+					var cs0 = Math.round(aY / eline), cs = cs0 * xspan
 					totalC += cs
-					if (line.length -1 == icol) cs += (aY > (totalC-1) ? aY - (totalC-1) : 0)
+					if (line.length - 1 == icol) cs += (aY > (totalC - 1) ? aY - (totalC - 1) : 0)
 
-					switch(col.type) {
-					case "map"  : p = printMap(col.obj, cs-1, "utf", true); break
-					case "tree" : p = printTreeOrS(col.obj, cs-1); break
-					case "table": p = printTable(col.obj, cs-1, __, true, "utf"); break
-					case "chart": p = printChart(col.obj, cs-1, (aX * yspan)-1); break
-					case "area" : p = ow.format.string.chart(col.title, col.obj, cs-1, (aX * yspan)-1); break
-					case "bar"  : p = printBars(col.obj, cs-1, col.max, col.min, col.indicator ? col.indicator : "━", col.space ? col.space : " "); break
-					case "md"   : p = ow.format.string.wordWrap(ow.format.withMD(col.obj), cs-1,ansiColor("RESET","\n")); break
-					case "text" : p = ow.format.string.wordWrap(String(col.obj), cs-1,ansiColor("RESET","\n")); break
-					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)); break
-					default: p = String(col.obj)
-					}
-	
-					p = p.split(/\r?\n/).map(r => r.substring(0, cs-1 + (r.length - ansiLength(r)) ))
-
-					if (isString(col.title)) {
-						p.unshift( ansiColor("RESET,BOLD", "> " + col.title + " " + repeat(cs - 4 - ansiLength(col.title), "─")) )
-					}
-					
-					var pp = p, po = []
-					if (pp.length > (aX * yspan)) {
-						for(var ii = 0; ii <= (aX * yspan); ii++) {
-							po.push(pp[ii])
-						}
-						po = po.join("\n")
-					} else {
-						po = p.join("\n")
-					}
+					var po = ow.format.printDashboard([[cellToWidget(col)]], {
+						width  : cs - 1,
+						height : aX * yspan,
+						border : false,
+						palette: "auto"
+					})
 
 					elems.push({ x: l, y: cs0 * c, t: po })
 				}
@@ -1289,7 +1321,7 @@ OpenWrap.format.prototype.string = {
 
 			l += aX
 		})
-	
+
 		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn)
 	},
 	/**
@@ -1533,6 +1565,1189 @@ OpenWrap.format.prototype.syms = function() {
  * </odoc>
  */
 OpenWrap.format.prototype.bool = (aValue, isLight, anExtra) => ow.format.string.bool(aValue, isLight, anExtra)
+
+/**
+ * <odoc>
+ * <key>ow.format.term.getCapabilities(aOptions) : Map</key>
+ * Returns a map with terminal capabilities, including width/height, tty/ansi availability and color depth.
+ * Results are cached unless aOptions.refresh = true.
+ * </odoc>
+ */
+OpenWrap.format.prototype.term = {
+	getCapabilities: function(aOptions) {
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		if (isDef(__owFormatTermCapabilitiesCache) && aOptions.refresh !== true) return clone(__owFormatTermCapabilitiesCache)
+
+		//var env = java.lang.System.getenv()
+		var _n = v => {
+			try {
+				return Number(v)
+			} catch(e) {
+				return __
+			}
+		}
+
+		var _termW = _n(getEnv("COLUMNS")), _termH = _n(getEnv("LINES"))
+		var _isTTY = (java.lang.System.console() != null)
+		var _ansi = false
+		var _unicode = true
+		var _term = String(getEnv("TERM") || "")
+		var _colorDepth = 0
+
+		try {
+			__conStatus || __initializeCon()
+			if (isDef(__con) && isDef(__con.getTerminal())) {
+				_termW = Number(__con.getTerminal().getWidth())
+				_termH = Number(__con.getTerminal().getHeight())
+			}
+		} catch(e) {}
+
+		try {
+			if (isUnDef(__conAnsi)) __initializeCon()
+			_ansi = __conAnsi && _isTTY
+		} catch(e) {
+			_ansi = _isTTY
+		}
+
+		var _lang = String(getEnv("LANG") || "")
+		if (_lang.toUpperCase().indexOf("ASCII") >= 0) _unicode = false
+
+		if (isDef(getEnv("NO_COLOR"))) {
+			_colorDepth = 0
+		} else if (String(getEnv("COLORTERM") || "").match(/24bit|truecolor/i)) {
+			_colorDepth = 16777216
+		} else if (_term.match(/256color/i)) {
+			_colorDepth = 256
+		} else if (_ansi) {
+			_colorDepth = 16
+		}
+
+		__owFormatTermCapabilitiesCache = {
+			isTTY: _isTTY,
+			ansi: _ansi,
+			width: _$(aOptions.width).isNumber().default(_termW > 0 ? _termW : 80),
+			height: _$(aOptions.height).isNumber().default(_termH > 0 ? _termH : 24),
+			colorDepth: _colorDepth,
+			colorMode: (_colorDepth >= 16777216 ? "truecolor" : (_colorDepth >= 256 ? "256" : (_colorDepth >= 16 ? "16" : "none"))),
+			unicode: _unicode,
+			term: _term,
+			timestamp: nowUTC()
+		}
+
+		return clone(__owFormatTermCapabilitiesCache)
+	},
+	getPalette: function(mode, overrides) {
+		mode = _$(mode, "mode").isString().default("auto")
+		overrides = _$(overrides, "overrides").isMap().default({})
+		var caps = this.getCapabilities()
+		if (mode == "auto") mode = caps.colorMode
+
+		var palettes = {
+			none: {
+				title: "",
+				accent: "",
+				positive: "",
+				warning: "",
+				negative: "",
+				muted: "",
+				gridLine: ""
+			},
+			"16": {
+				title: "BOLD",
+				accent: "CYAN",
+				positive: "GREEN",
+				warning: "YELLOW",
+				negative: "RED",
+				muted: "FAINT",
+				gridLine: "FAINT,WHITE"
+			},
+			"256": {
+				title: "BOLD",
+				accent: "FG(39)",
+				positive: "FG(76)",
+				warning: "FG(214)",
+				negative: "FG(196)",
+				muted: "FG(244)",
+				gridLine: "FG(240)"
+			},
+			truecolor: {
+				title: "BOLD",
+				accent: "RGB(80,180,255)",
+				positive: "RGB(80,220,120)",
+				warning: "RGB(255,200,90)",
+				negative: "RGB(255,110,110)",
+				muted: "RGB(160,160,170)",
+				gridLine: "RGB(120,120,130)"
+			}
+		}
+
+		var base = clone(_$(palettes[mode], "palette").isMap().default(palettes.none))
+		return merge(base, overrides)
+	}
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.viz.diffFrames(aPreviousFrame, aNextFrame, aOptions) : Map</key>
+ * Produces a terminal patch for replacing aPreviousFrame with aNextFrame and returns metadata for changed lines.
+ * </odoc>
+ */
+OpenWrap.format.prototype.viz = {
+	diffFrames: function(aPreviousFrame, aNextFrame, aOptions) {
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		var _prev = String(_$(aPreviousFrame).default("")).split(/\r?\n/)
+		var _next = String(_$(aNextFrame).default("")).split(/\r?\n/)
+		if (_prev.length == 1 && _prev[0] == "") _prev = []
+		if (_next.length == 1 && _next[0] == "") _next = []
+
+		var _max = Math.max(_prev.length, _next.length)
+		var changed = 0
+		var patch = ""
+		var clearLine = _$(aOptions.clearLine).isBoolean().default(true) ? "\033[2K" : ""
+
+		if (_prev.length > 1) patch += ow.format.string.ansiMoveUp(_prev.length - 1)
+		patch += "\r"
+
+		for(var i = 0; i < _max; i++) {
+			var _p = _$( _prev[i] ).default("")
+			var _n = _$( _next[i] ).default("")
+			if (_p != _n) changed++
+
+			patch += clearLine + _n
+			if (i < _max - 1) patch += "\n"
+		}
+
+		return {
+			patch: patch,
+			changedLines: changed,
+			lines: _next.length,
+			isFullRewrite: true
+		}
+	},
+	watchResize: function(aCallback, aOptions) {
+		_$(aCallback, "aCallback").isFunction().$_()
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		var interval = _$(aOptions.interval).isNumber().default(250)
+		var _last = ow.format.term.getCapabilities({ refresh: true })
+		var _active = true
+		var _timer = new java.util.Timer(true)
+
+		var _task = new JavaAdapter(java.util.TimerTask, {
+			run: function() {
+				if (!_active) return
+				var _now = ow.format.term.getCapabilities({ refresh: true })
+				if (_now.width != _last.width || _now.height != _last.height) {
+					var _prev = _last
+					_last = _now
+					aCallback(_now, _prev)
+				}
+			}
+		})
+		_timer.scheduleAtFixedRate(_task, interval, interval)
+
+		return {
+			stop: function() {
+				_active = false
+				try { _timer.cancel() } catch(e) {}
+			}
+		}
+	},
+	live: function(aRendererFn, aOptions) {
+		_$(aRendererFn, "aRendererFn").isFunction().$_()
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+
+		var id = "live-" + nowNano()
+		var fps = _$(aOptions.fps).isNumber().default(8)
+		var interval = Math.max(25, Math.round(1000 / (fps <= 0 ? 1 : fps)))
+		var useDiff = _$(aOptions.diff).isBoolean().default(true)
+		var autoStart = _$(aOptions.autoStart).isBoolean().default(true)
+		var _frame = 0, _active = false, _rendering = false
+		var _prev = ""
+		var _stats = { dropped: 0, rendered: 0, errors: 0, avgRenderMs: 0 }
+		var _timer = new java.util.Timer(true), _watch = __
+
+		var _renderOnce = force => {
+			if (!_active && !force) return
+			if (_rendering) { _stats.dropped++; return }
+			_rendering = true
+			var _t = now()
+			try {
+				var _caps = ow.format.term.getCapabilities({ refresh: true })
+				var out = aRendererFn({
+					id: id,
+					frame: _frame,
+					size: { width: _caps.width, height: _caps.height },
+					capabilities: _caps,
+					prevFrame: _prev
+				})
+				out = String(_$(out).default(""))
+				if (useDiff) {
+					var _d = ow.format.viz.diffFrames(_prev, out)
+					if (_d.patch.length > 0) printnl(_d.patch)
+				} else {
+					if (_prev.length > 0) printnl(ow.format.string.ansiMoveUp(_prev.split(/\r?\n/).length - 1) + "\r")
+					printnl(out)
+				}
+				_prev = out
+				_frame++
+				_stats.rendered++
+			} catch(e) {
+				_stats.errors++
+				if (isFunction(aOptions.onError)) aOptions.onError(e)
+			} finally {
+				var _took = now() - _t
+				_stats.avgRenderMs = ((_stats.avgRenderMs * Math.max(_stats.rendered - 1, 0)) + _took) / Math.max(_stats.rendered, 1)
+				_rendering = false
+			}
+		}
+
+		var _start = () => {
+			if (_active) return
+			_active = true
+			__owFormatLiveSessions[id] = true
+			var _task = new JavaAdapter(java.util.TimerTask, { run: () => _renderOnce(false) })
+			_timer.scheduleAtFixedRate(_task, 0, interval)
+			if (_$(aOptions.watchResize).isBoolean().default(true)) {
+				_watch = ow.format.viz.watchResize(() => _renderOnce(false), { interval: Math.max(100, Math.round(interval / 2)) })
+			}
+		}
+
+		var _stop = () => {
+			_active = false
+			delete __owFormatLiveSessions[id]
+			try { _timer.cancel() } catch(e) {}
+			if (isDef(_watch) && isFunction(_watch.stop)) _watch.stop()
+			if (isFunction(aOptions.onStop)) aOptions.onStop({ id: id, stats: clone(_stats), frames: _frame })
+		}
+
+		var _ctrl = {
+			id: id,
+			start: _start,
+			stop: _stop,
+			update: () => _renderOnce(true),
+			stats: () => merge(clone(_stats), { active: _active, frame: _frame, interval: interval })
+		}
+
+		if (autoStart) _start()
+		return _ctrl
+	},
+	benchmarkRender: function(aRendererFn, aOptions) {
+		_$(aRendererFn, "aRendererFn").isFunction().$_()
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		var iterations = _$(aOptions.iterations).isNumber().default(50)
+		var times = []
+		for(var i = 0; i < iterations; i++) {
+			var _t = now()
+			aRendererFn(i)
+			times.push(now() - _t)
+		}
+		times.sort((a, b) => a - b)
+		return {
+			iterations: iterations,
+			minMs: times[0],
+			maxMs: times[times.length - 1],
+			p50Ms: times[Math.floor(times.length * 0.50)],
+			p95Ms: times[Math.floor(times.length * 0.95)],
+			avgMs: times.reduce((a, b) => a + b, 0) / times.length
+		}
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.format.viz.createCanvas(aOptions) : Map</key>
+	 * Creates a 2D character canvas with aOptions.width and aOptions.height (both default to terminal size).
+	 * Returns a map with: width, height, write(row, col, str, style) and render() → String.
+	 * </odoc>
+	 */
+	createCanvas: function(aOptions) {
+		aOptions = _$(aOptions, "aOptions").isMap().default({})
+		var _caps = ow.format.term.getCapabilities()
+		var w = _$(aOptions.width).isNumber().default(_caps.width)
+		var h = _$(aOptions.height).isNumber().default(_caps.height)
+		var _buf = []
+		for (var _ci = 0; _ci < h; _ci++) {
+			var _row = []
+			for (var _cj = 0; _cj < w; _cj++) _row.push(" ")
+			_buf.push(_row)
+		}
+		return {
+			width: w, height: h,
+			write: function(row, col, str, style) {
+				if (row < 0 || row >= h || col < 0) return
+				var lines = String(_$(str).default("")).replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "").split(/\r?\n/)
+				lines.forEach(function(line, li) {
+					if (row + li >= h) return
+					line.substring(0, Math.min(line.length, w - col)).split("").forEach(function(ch, ci) {
+						if (col + ci < w) _buf[row + li][col + ci] = (isDef(style) && style !== "") ? ansiColor(style, ch) : ch
+					})
+				})
+			},
+			render: function() {
+				return _buf.map(function(row) { return row.join("") }).join("\n")
+			}
+		}
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.format.viz.layout</key>
+	 * Layout helpers: split(total, specs) splits a total dimension into sizes (numbers = fixed, "50%" = percentage,
+	 * anything else = auto remainder). padLines(str, width, height, fillChar) pads/trims str to a fixed box.
+	 * </odoc>
+	 */
+	layout: {
+		split: function(total, specs) {
+			specs = _$(specs).isArray().default([])
+			if (specs.length == 0) return []
+			var _fixed = 0, _pct = 0, _auto = 0
+			specs.forEach(function(s) {
+				if (isNumber(s)) _fixed += s
+				else if (isString(s) && s.endsWith("%")) _pct += Number(s.slice(0, -1)) / 100
+				else _auto++
+			})
+			var _avail = Math.max(0, total - _fixed - Math.floor(total * _pct))
+			var _aSize = _auto > 0 ? Math.floor(_avail / _auto) : 0
+			return specs.map(function(s) {
+				if (isNumber(s)) return s
+				if (isString(s) && s.endsWith("%")) return Math.floor(total * Number(s.slice(0, -1)) / 100)
+				return _aSize
+			})
+		},
+		padLines: function(str, width, height, fillChar) {
+			fillChar = _$(fillChar).isString().default(" ")
+			var lines = String(_$(str).default("")).split(/\r?\n/)
+			lines = lines.map(function(l) {
+				var vl = ansiLength(l)
+				if (vl > width) return l.substring(0, width + (l.length - vl))
+				return l + repeat(width - vl, fillChar)
+			})
+			while (lines.length < height) lines.push(repeat(width, fillChar))
+			return lines.slice(0, height).join("\n")
+		}
+	}
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printSparkline(series, aOptions) : String</key>
+ * Returns a compact sparkline string for the provided numeric series or array of named series ({data, name, color}).
+ * aOptions: width (default terminal width), label, showMinMax (default false), color, palette.
+ * Degrades to ASCII characters when unicode is not available.
+ * </odoc>
+ */
+OpenWrap.format.prototype.printSparkline = function(series, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	var _caps  = ow.format.term.getCapabilities()
+	var _pal   = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var BLOCKS = _caps.unicode ? ["▁","▂","▃","▄","▅","▆","▇","█"] : ["_",".","-","~","=","#","#","█"]
+	var MAX_B  = BLOCKS.length - 1
+
+	var data
+	if (isArray(series) && series.length > 0 && isMap(series[0]) && isDef(series[0].data)) {
+		data = series
+	} else {
+		data = [{ data: _$(series).isArray().default([]), color: _$(aOptions.color).isString().default(_pal.accent) }]
+	}
+
+	var width      = _$(aOptions.width).isNumber().default(_caps.width)
+	var label      = _$(aOptions.label).isString().default("")
+	var showMinMax = _$(aOptions.showMinMax).isBoolean().default(false)
+
+	return data.map(function(s) {
+		var vals = _$(s.data).isArray().default([])
+		if (vals.length == 0) return (label ? label + " " : "") + "(empty)"
+
+		if (vals.length > width) {
+			var ratio = vals.length / width, sampled = []
+			for (var _si = 0; _si < width; _si++) sampled.push(vals[Math.min(vals.length - 1, Math.floor(_si * ratio))])
+			vals = sampled
+		}
+
+		var minV = Math.min.apply(null, vals), maxV = Math.max.apply(null, vals)
+		var range = maxV - minV || 1
+		var line = vals.map(function(v) { return BLOCKS[Math.min(MAX_B, Math.max(0, Math.round(((v - minV) / range) * MAX_B)))] }).join("")
+		var color = _$(s.color).isString().default(_pal.accent)
+		if (_caps.colorMode !== "none" && color && color !== "") line = ansiColor(color, line)
+
+		if (showMinMax) {
+			var _mute = (_pal.muted && _pal.muted !== "" && _caps.colorMode !== "none") ? (x => ansiColor(_pal.muted, x)) : (x => x)
+			line += _mute(" min:" + String(minV) + " max:" + String(maxV))
+		}
+		return (label ? label + " " : "") + line + (isDef(s.name) ? " " + s.name : "")
+	}).join("\n")
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printHistogram(values, aOptions) : String</key>
+ * Returns a terminal histogram string for the numeric values array. Bucket count is auto-selected via Sturges' formula
+ * unless aOptions.buckets is set. aOptions: width, height, vertical (default false = horizontal bars), color,
+ * labels (default true), showCount (default true), palette.
+ * </odoc>
+ */
+OpenWrap.format.prototype.printHistogram = function(values, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	values   = _$(values).isArray().default([]).filter(function(v) { return isNumber(v) && isFinite(v) })
+
+	var _caps      = ow.format.term.getCapabilities()
+	var _pal       = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var width      = _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80))
+	var height     = _$(aOptions.height).isNumber().default(10)
+	var vertical   = _$(aOptions.vertical).isBoolean().default(false)
+	var showLabels = _$(aOptions.labels).isBoolean().default(true)
+	var showCounts = _$(aOptions.showCount).isBoolean().default(true)
+	var color      = _$(aOptions.color).isString().default(_pal.accent)
+
+	if (values.length == 0) return "(empty)"
+
+	var minV     = Math.min.apply(null, values)
+	var maxV     = Math.max.apply(null, values)
+	var nbuckets = _$(aOptions.buckets).isNumber().default(0)
+	if (nbuckets <= 0) nbuckets = Math.min(20, Math.max(2, Math.ceil(Math.log(values.length) / Math.LN2 + 1)))
+
+	var bucketSize = (maxV - minV) / nbuckets || 1
+	var counts = []
+	for (var _hi = 0; _hi < nbuckets; _hi++) counts.push(0)
+	values.forEach(function(v) { counts[Math.min(nbuckets - 1, Math.max(0, Math.floor((v - minV) / bucketSize)))]++ })
+	var maxCount = Math.max.apply(null, counts)
+
+	var _col  = (_caps.colorMode !== "none" && color && color !== "") ? (s => ansiColor(color, s)) : (s => s)
+	var _mute = (_caps.colorMode !== "none" && _pal.muted && _pal.muted !== "") ? (s => ansiColor(_pal.muted, s)) : (s => s)
+
+	if (!vertical) {
+		var labelW = showLabels ? 10 : 0
+		var countW = showCounts ? 6 : 0
+		var barW   = Math.max(4, width - labelW - countW - 2)
+		return counts.map(function(c, i) {
+			var filled = maxCount > 0 ? Math.round((c / maxCount) * barW) : 0
+			var bar    = _col(repeat(filled, "█")) + repeat(barW - filled, " ")
+			var lbl    = showLabels ? ow.format.string.leftPad(String(Math.round((minV + i * bucketSize) * 10) / 10), labelW - 1, " ") + " " : ""
+			var cnt    = showCounts ? " " + _mute(ow.format.string.leftPad(String(c), countW - 1, " ")) : ""
+			return lbl + "|" + bar + cnt
+		}).join("\n")
+	} else {
+		var barH  = Math.max(2, height - 2)
+		var barW2 = Math.max(1, Math.min(6, Math.floor((width - 1) / nbuckets) - 1))
+		var lines = []
+		for (var _row = barH; _row >= 1; _row--) {
+			var line = ""
+			counts.forEach(function(c) {
+				var fill = maxCount > 0 ? Math.floor((c / maxCount) * barH) : 0
+				line += (_row <= fill ? _col(repeat(barW2, "█")) : repeat(barW2, " ")) + " "
+			})
+			lines.push(line)
+		}
+		lines.push(_mute(repeat(nbuckets * (barW2 + 1), "─")))
+		return lines.join("\n")
+	}
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printHeatmap(values, aOptions) : String</key>
+ * Returns a compact terminal heatmap for a numeric matrix or a map containing { values, xLabels, yLabels }.
+ * aOptions: width, height, min, max, xLabels, yLabels, legend (default false), palette.
+ * </odoc>
+ */
+OpenWrap.format.prototype.printHeatmap = function(values, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+
+	var matrix  = values
+	var xLabels = _$(aOptions.xLabels).isArray().default([])
+	var yLabels = _$(aOptions.yLabels).isArray().default([])
+	if (isMap(values) && isArray(values.values)) {
+		matrix  = values.values
+		xLabels = xLabels.length > 0 ? xLabels : _$(values.xLabels).isArray().default([])
+		yLabels = yLabels.length > 0 ? yLabels : _$(values.yLabels).isArray().default([])
+	}
+
+	matrix = _$(matrix).isArray().default([]).map(function(row) {
+		return _$(row).isArray().default([]).map(function(v) {
+			return (isNumber(v) && isFinite(v)) ? Number(v) : __
+		})
+	}).filter(function(row) { return row.length > 0 })
+
+	if (matrix.length == 0) return "(empty)"
+
+	var _caps   = ow.format.term.getCapabilities()
+	var _pal    = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var width   = Math.max(4, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
+	var height  = Math.max(2, _$(aOptions.height).isNumber().default(Math.min(_caps.height, matrix.length + 2)))
+	var legend  = _$(aOptions.legend).isBoolean().default(false)
+	var xFooter = xLabels.length > 0
+	var shades  = _caps.unicode ? [" ", "░", "▒", "▓", "█"] : [" ", ".", ":", "=", "#"]
+	var colors  = [_pal.muted, _pal.accent, _pal.warning, _pal.positive]
+	var rowsH   = Math.max(1, height - (legend ? 1 : 0) - (xFooter ? 1 : 0))
+	var yLabelW = Math.min(12, Math.max(0, yLabels.reduce(function(m, l) { return Math.max(m, ansiLength(String(l))) }, 0)))
+	var plotW   = Math.max(1, width - (yLabelW > 0 ? yLabelW + 1 : 0))
+	var rowStep = Math.max(1, Math.ceil(matrix.length / rowsH))
+
+	var _scaleMatrix = []
+	for (var r = 0; r < matrix.length; r += rowStep) _scaleMatrix.push(matrix.slice(r, Math.min(matrix.length, r + rowStep)))
+	if (_scaleMatrix.length > rowsH) _scaleMatrix = _scaleMatrix.slice(0, rowsH)
+
+	var sourceCols = matrix.reduce(function(m, row) { return Math.max(m, row.length) }, 0)
+	var colStep = Math.max(1, Math.ceil(sourceCols / plotW))
+	var scaled = _scaleMatrix.map(function(group) {
+		var line = []
+		for (var c = 0; c < sourceCols; c += colStep) {
+			var vals = []
+			group.forEach(function(row) {
+				for (var cc = c; cc < Math.min(sourceCols, c + colStep); cc++) {
+					if (isNumber(row[cc]) && isFinite(row[cc])) vals.push(Number(row[cc]))
+				}
+			})
+			line.push(vals.length > 0 ? ($from(vals).sum() / vals.length) : __)
+		}
+		return line.slice(0, plotW)
+	})
+
+	var flat = []
+	scaled.forEach(function(row) {
+		row.forEach(function(v) {
+			if (isNumber(v) && isFinite(v)) flat.push(v)
+		})
+	})
+	if (flat.length == 0) return "(empty)"
+
+	var minV = _$(aOptions.min).isNumber().default(Math.min.apply(null, flat))
+	var maxV = _$(aOptions.max).isNumber().default(Math.max.apply(null, flat))
+	var range = maxV - minV || 1
+	var _color = (_caps.colorMode !== "none") ? function(ci, txt) {
+		var cc = _$(colors[Math.min(colors.length - 1, Math.max(0, ci))]).isString().default("")
+		return cc !== "" ? ansiColor(cc, txt) : txt
+	} : function(ci, txt) { return txt }
+
+	var out = scaled.map(function(row, ridx) {
+		var label = ""
+		if (yLabelW > 0) {
+			var srcRow = Math.min(matrix.length - 1, ridx * rowStep)
+			label = String(_$(yLabels[srcRow]).default(""))
+			if (ansiLength(label) > yLabelW) label = label.substring(0, yLabelW)
+			label = label + repeat(Math.max(0, yLabelW - ansiLength(label)), " ") + " "
+		}
+		var cells = row.map(function(v) {
+			if (!isNumber(v) || !isFinite(v)) return " "
+			var ratio = Math.max(0, Math.min(1, (v - minV) / range))
+			var level = Math.min(shades.length - 1, Math.round(ratio * (shades.length - 1)))
+			var colorIdx = Math.max(0, level - 1)
+			return _color(colorIdx, shades[level])
+		}).join("")
+		return label + cells
+	})
+
+	if (legend) {
+		var lWidth = Math.max(8, Math.min(plotW, 24))
+		var ramp = []
+		for (var i = 0; i < lWidth; i++) {
+			var lr = (lWidth <= 1 ? 0 : i / (lWidth - 1))
+			var lv = Math.min(shades.length - 1, Math.round(lr * (shades.length - 1)))
+			ramp.push(_color(Math.max(0, lv - 1), shades[lv]))
+		}
+		var minS = String(Math.round(minV * 100) / 100)
+		var maxS = String(Math.round(maxV * 100) / 100)
+		var legendLine = minS + " " + ramp.join("") + " " + maxS
+		if (ansiLength(legendLine) > width) legendLine = legendLine.substring(0, width + (legendLine.length - ansiLength(legendLine)))
+		out.push(legendLine)
+	}
+
+	if (xFooter) {
+		var leftX  = String(_$(xLabels[0]).default(""))
+		var rightX = String(_$(xLabels[Math.max(0, xLabels.length - 1)]).default(""))
+		if (ansiLength(leftX) > Math.floor(plotW / 2)) leftX = leftX.substring(0, Math.floor(plotW / 2))
+		if (ansiLength(rightX) > Math.floor(plotW / 2)) rightX = rightX.substring(0, Math.floor(plotW / 2))
+		var xLine = leftX + repeat(Math.max(0, plotW - ansiLength(leftX) - ansiLength(rightX)), " ") + rightX
+		out.push((yLabelW > 0 ? repeat(yLabelW, " ") + " " : "") + xLine)
+	}
+
+	return out.join("\n")
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printBullet(values, aOptions) : String</key>
+ * Returns one or more bullet graphs from a map or array of maps with { value, target, min, max, ranges, label }.
+ * aOptions: width, palette, min, max, target, ranges, label, unit, showValue (default true),
+ * valueFormat ("raw", "si" or "bytes"; default "raw").
+ * </odoc>
+ */
+OpenWrap.format.prototype.printBullet = function(values, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+
+	var items = isArray(values) ? values : [ isMap(values) ? values : { value: values } ]
+	items = items.map(function(item) {
+		return isMap(item) ? item : { value: item }
+	})
+	if (items.length == 0) return "(empty)"
+
+	var _caps     = ow.format.term.getCapabilities()
+	var _pal      = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var width     = Math.max(8, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
+	var showValue = _$(aOptions.showValue).isBoolean().default(true)
+	var valueFormat = _$(aOptions.valueFormat).isString().default("raw").toLowerCase()
+	var valueC    = _$(aOptions.color).isString().default(_pal.accent)
+	var targetC   = _$(aOptions.targetColor).isString().default(_pal.warning || _pal.negative)
+	var mutedC    = _$(aOptions.rangeColor).isString().default(_pal.muted)
+	var goodC     = _$(aOptions.goodColor).isString().default(_pal.positive)
+	var _paint    = (_caps.colorMode !== "none") ? function(c, txt) { return (isString(c) && c !== "") ? ansiColor(c, txt) : txt } : function(c, txt) { return txt }
+	var _formatValue = function(aValue, aUnit) {
+		var _value = Number(_$(aValue).default(0))
+		var _unit = String(_$(aUnit).default(""))
+		switch(valueFormat) {
+		case "si":
+			return String(ow.format.toAbbreviation(_value)) + _unit
+		case "bytes":
+			return String(ow.format.toBytesAbbreviation(_value)) + _unit
+		default:
+			return String(_value) + _unit
+		}
+	}
+
+	var labelW = Math.min(18, items.reduce(function(m, item) {
+		return Math.max(m, ansiLength(String(_$(item.label).default(_$(aOptions.label).default("")))))
+	}, 0))
+	var valueW = showValue ? items.reduce(function(m, item) {
+		var unit = String(_$(item.unit).default(_$(aOptions.unit).default("")))
+		return Math.max(m, ansiLength(_formatValue(_$(item.value).default(0), unit)))
+	}, 0) + 1 : 0
+	var barW = Math.max(4, width - (labelW > 0 ? labelW + 1 : 0) - valueW)
+	var rangeChars = _caps.unicode ? ["░", "▒", "▓"] : [".", "-", "="]
+
+	return items.map(function(item) {
+		var minV    = _$(item.min).isNumber().default(_$(aOptions.min).isNumber().default(0))
+		var maxV    = _$(item.max).isNumber().default(_$(aOptions.max).isNumber().default(Math.max(100, Number(_$(item.value).default(0)))))
+		var value   = Number(_$(item.value).default(0))
+		var target  = _$(item.target).isNumber().default(_$(aOptions.target).isNumber().default(__))
+		var ranges  = _$(item.ranges).isArray().default(_$(aOptions.ranges).isArray().default([])).map(Number).filter(function(v) { return isFinite(v) }).sort(function(a, b) { return a - b })
+		var label   = String(_$(item.label).default(_$(aOptions.label).default("")))
+		var unit    = String(_$(item.unit).default(_$(aOptions.unit).default("")))
+		var span    = (maxV - minV) || 1
+		var chars   = []
+
+		for (var i = 0; i < barW; i++) {
+			var pos = minV + ((i + 1) / barW) * span
+			var seg = 0
+			while (seg < ranges.length && pos > ranges[seg]) seg++
+			chars.push(_paint(mutedC, rangeChars[Math.min(rangeChars.length - 1, seg)]))
+		}
+
+		var fill = Math.max(0, Math.min(barW, Math.round(((Math.max(minV, Math.min(maxV, value)) - minV) / span) * barW)))
+		var fillColor = (ranges.length > 0 && value >= ranges[ranges.length - 1]) ? goodC : valueC
+		for (var f = 0; f < fill; f++) chars[f] = _paint(fillColor, _caps.unicode ? "█" : "#")
+
+		if (isDef(target)) {
+			var tp = Math.max(0, Math.min(barW - 1, Math.round(((Math.max(minV, Math.min(maxV, target)) - minV) / span) * (barW - 1))))
+			chars[tp] = _paint(targetC, "|")
+		}
+
+		var line = chars.join("")
+		if (labelW > 0) {
+			if (ansiLength(label) > labelW) label = label.substring(0, labelW)
+			line = label + repeat(Math.max(0, labelW - ansiLength(label)), " ") + " " + line
+		}
+		if (showValue) {
+			var vtxt = _formatValue(value, unit)
+			line += " " + repeat(Math.max(0, valueW - 1 - ansiLength(vtxt)), " ") + vtxt
+		}
+		return line
+	}).join("\n")
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printScatter(points, aOptions) : String</key>
+ * Returns a compact terminal scatter plot from an array of [x,y] pairs or { x, y, symbol, color } points.
+ * aOptions: width, height, xMin, xMax, yMin, yMax, xLabel, yLabel, palette.
+ * </odoc>
+ */
+OpenWrap.format.prototype.printScatter = function(points, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	points = _$(points).isArray().default([]).map(function(p) {
+		if (isArray(p) && p.length >= 2) return { x: Number(p[0]), y: Number(p[1]) }
+		if (isMap(p)) return { x: Number(p.x), y: Number(p.y), symbol: p.symbol, color: p.color }
+		return __
+	}).filter(function(p) { return isMap(p) && isFinite(p.x) && isFinite(p.y) })
+	if (points.length == 0) return "(empty)"
+
+	var _caps  = ow.format.term.getCapabilities()
+	var _pal   = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var width  = Math.max(6, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
+	var height = Math.max(4, _$(aOptions.height).isNumber().default(10))
+	var xLabel = String(_$(aOptions.xLabel).default(""))
+	var yLabel = String(_$(aOptions.yLabel).default(""))
+	var plotH  = Math.max(2, height - (xLabel !== "" ? 1 : 0))
+	var plotW  = Math.max(2, width - 2)
+	var xMin   = _$(aOptions.xMin).isNumber().default(points.reduce(function(m, p) { return Math.min(m, p.x) }, points[0].x))
+	var xMax   = _$(aOptions.xMax).isNumber().default(points.reduce(function(m, p) { return Math.max(m, p.x) }, points[0].x))
+	var yMin   = _$(aOptions.yMin).isNumber().default(points.reduce(function(m, p) { return Math.min(m, p.y) }, points[0].y))
+	var yMax   = _$(aOptions.yMax).isNumber().default(points.reduce(function(m, p) { return Math.max(m, p.y) }, points[0].y))
+	var xSpan  = (xMax - xMin) || 1
+	var ySpan  = (yMax - yMin) || 1
+	var rows   = []
+	var _paint = (_caps.colorMode !== "none") ? function(c, txt) { return (isString(c) && c !== "") ? ansiColor(c, txt) : txt } : function(c, txt) { return txt }
+
+	for (var ry = 0; ry < plotH; ry++) {
+		var chars = []
+		for (var rx = 0; rx < plotW; rx++) chars.push(" ")
+		rows.push(chars)
+	}
+
+	var axisX = (yMin <= 0 && yMax >= 0) ? Math.max(0, Math.min(plotH - 1, Math.round((1 - ((0 - yMin) / ySpan)) * (plotH - 1)))) : __
+	var axisY = (xMin <= 0 && xMax >= 0) ? Math.max(0, Math.min(plotW - 1, Math.round(((0 - xMin) / xSpan) * (plotW - 1)))) : __
+	if (isDef(axisX)) for (var ax = 0; ax < plotW; ax++) rows[axisX][ax] = "·"
+	if (isDef(axisY)) for (var ay = 0; ay < plotH; ay++) rows[ay][axisY] = "·"
+	if (isDef(axisX) && isDef(axisY)) rows[axisX][axisY] = "+"
+
+	points.forEach(function(p) {
+		var px = Math.max(0, Math.min(plotW - 1, Math.round(((p.x - xMin) / xSpan) * (plotW - 1))))
+		var py = Math.max(0, Math.min(plotH - 1, Math.round((1 - ((p.y - yMin) / ySpan)) * (plotH - 1))))
+		rows[py][px] = _paint(_$(p.color).isString().default(_pal.accent), String(_$(p.symbol).isString().default(_caps.unicode ? "●" : "o")).charAt(0))
+	})
+
+	var out = rows.map(function(r, i) {
+		var prefix = (i == 0 ? String(Math.round(yMax * 100) / 100) : (i == plotH - 1 ? String(Math.round(yMin * 100) / 100) : ""))
+		prefix = prefix.substring(0, 1) + " "
+		return prefix + r.join("")
+	})
+	if (xLabel !== "") {
+		var left = String(Math.round(xMin * 100) / 100)
+		var right = String(Math.round(xMax * 100) / 100)
+		var footer = left + repeat(Math.max(0, plotW - ansiLength(left) - ansiLength(right)), " ") + right
+		if (xLabel.length < plotW) {
+			var xi = Math.max(0, Math.floor((plotW - xLabel.length) / 2))
+			footer = footer.substring(0, xi) + xLabel + footer.substring(Math.min(footer.length, xi + xLabel.length))
+		}
+		out.push("  " + footer.substring(0, plotW))
+	} else if (yLabel !== "") {
+		out[0] = yLabel.substring(0, 1) + out[0].substring(1)
+	}
+	return out.join("\n")
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printBoxplot(values, aOptions) : String</key>
+ * Returns one or more compact terminal boxplots from a number array or an array of { values, label } series.
+ * aOptions: width, min, max, showOutliers (default true), palette.
+ * </odoc>
+ */
+OpenWrap.format.prototype.printBoxplot = function(values, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+
+	var series
+	if (isArray(values) && values.length > 0 && isMap(values[0]) && isArray(values[0].values)) {
+		series = values
+	} else {
+		series = [{ label: String(_$(aOptions.label).default("")), values: _$(values).isArray().default([]) }]
+	}
+
+	series = series.map(function(s) {
+		return {
+			label : String(_$(s.label).default("")),
+			values: _$(s.values).isArray().default([]).map(Number).filter(function(v) { return isFinite(v) }).sort(function(a, b) { return a - b })
+		}
+	}).filter(function(s) { return s.values.length > 0 })
+	if (series.length == 0) return "(empty)"
+
+	var _caps        = ow.format.term.getCapabilities()
+	var _pal         = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var width        = Math.max(12, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
+	var showOutliers = _$(aOptions.showOutliers).isBoolean().default(true)
+	var labelW       = Math.min(14, series.reduce(function(m, s) { return Math.max(m, ansiLength(s.label)) }, 0))
+	var plotW        = Math.max(8, width - (labelW > 0 ? labelW + 1 : 0))
+	var allVals      = []
+	series.forEach(function(s) { allVals = allVals.concat(s.values) })
+	var minV         = _$(aOptions.min).isNumber().default(Math.min.apply(null, allVals))
+	var maxV         = _$(aOptions.max).isNumber().default(Math.max.apply(null, allVals))
+	var span         = (maxV - minV) || 1
+	var _paint       = (_caps.colorMode !== "none") ? function(c, txt) { return (isString(c) && c !== "") ? ansiColor(c, txt) : txt } : function(c, txt) { return txt }
+	var q = function(ar, p) {
+		if (ar.length == 1) return ar[0]
+		var idx = (ar.length - 1) * p
+		var lo = Math.floor(idx), hi = Math.ceil(idx)
+		if (lo == hi) return ar[lo]
+		return ar[lo] + (ar[hi] - ar[lo]) * (idx - lo)
+	}
+	var pos = function(v) { return Math.max(0, Math.min(plotW - 1, Math.round(((v - minV) / span) * (plotW - 1)))) }
+
+	return series.map(function(s) {
+		var vals = s.values
+		var q1 = q(vals, 0.25), med = q(vals, 0.5), q3 = q(vals, 0.75)
+		var iqr = q3 - q1
+		var lowFence = q1 - 1.5 * iqr, highFence = q3 + 1.5 * iqr
+		var inliers = vals.filter(function(v) { return v >= lowFence && v <= highFence })
+		var low = inliers.length > 0 ? inliers[0] : vals[0]
+		var high = inliers.length > 0 ? inliers[inliers.length - 1] : vals[vals.length - 1]
+		var chars = []
+		for (var i = 0; i < plotW; i++) chars.push(" ")
+		for (var i1 = pos(low); i1 <= pos(high); i1++) chars[i1] = "─"
+		for (var i2 = pos(q1); i2 <= pos(q3); i2++) chars[i2] = _paint(_pal.accent, _caps.unicode ? "█" : "=")
+		chars[pos(low)] = "├"
+		chars[pos(high)] = "┤"
+		chars[pos(med)] = _paint(_pal.warning, "│")
+		if (showOutliers) {
+			vals.filter(function(v) { return v < lowFence || v > highFence }).forEach(function(v) {
+				chars[pos(v)] = _paint(_pal.negative, _caps.unicode ? "•" : "o")
+			})
+		}
+		var line = chars.join("")
+		if (labelW > 0) {
+			var lbl = s.label.substring(0, labelW)
+			line = lbl + repeat(Math.max(0, labelW - ansiLength(lbl)), " ") + " " + line
+		}
+		return line
+	}).join("\n")
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printTimeline(events, aOptions) : String</key>
+ * Returns a compact terminal timeline from an array of { label, start, end, color, status } events.
+ * aOptions: width, from, to, palette, labels (default true).
+ * </odoc>
+ */
+OpenWrap.format.prototype.printTimeline = function(events, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	var _toTS = function(v) {
+		if (isDate(v)) return v.getTime()
+		if (isNumber(v)) return Number(v)
+		if (isString(v)) return new Date(v).getTime()
+		return __
+	}
+	events = _$(events).isArray().default([]).map(function(e) {
+		if (!isMap(e)) return __
+		var s = e.start, t = e.end
+		var sv = _toTS(s)
+		var tv = _toTS(t)
+		if (!isFinite(sv)) return __
+		if (!isFinite(tv)) tv = sv
+		return { label: String(_$(e.label).default("")), start: sv, end: tv, color: e.color, status: e.status }
+	}).filter(isMap)
+	if (events.length == 0) return "(empty)"
+
+	var _caps      = ow.format.term.getCapabilities()
+	var _pal       = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var width      = Math.max(10, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
+	var withLabels = _$(aOptions.labels).isBoolean().default(true)
+	var labelW     = withLabels ? Math.min(16, events.reduce(function(m, e) { return Math.max(m, ansiLength(e.label)) }, 0)) : 0
+	var plotW      = Math.max(6, width - (labelW > 0 ? labelW + 1 : 0))
+	var fromV      = isFinite(_toTS(aOptions.from)) ? _toTS(aOptions.from) : events.reduce(function(m, e) { return Math.min(m, e.start) }, events[0].start)
+	var toV        = isFinite(_toTS(aOptions.to)) ? _toTS(aOptions.to) : events.reduce(function(m, e) { return Math.max(m, e.end) }, events[0].end)
+	var span       = (toV - fromV) || 1
+	var _colorFn   = function(e) {
+		if (isString(e.color) && e.color !== "") return e.color
+		switch(String(_$(e.status).default("")).toLowerCase()) {
+		case "ok":
+		case "up":
+		case "success": return _pal.positive
+		case "warn":
+		case "warning": return _pal.warning
+		case "down":
+		case "error":
+		case "fail": return _pal.negative
+		default: return _pal.accent
+		}
+	}
+	var _paint = (_caps.colorMode !== "none") ? function(c, txt) { return (isString(c) && c !== "") ? ansiColor(c, txt) : txt } : function(c, txt) { return txt }
+	var _fmt = function(ts) {
+		var d = new Date(ts)
+		return d.toISOString().replace("T", " ").substring(0, 16)
+	}
+
+	var out = events.map(function(e) {
+		var chars = []
+		for (var i = 0; i < plotW; i++) chars.push(_paint(_pal.muted, "·"))
+		var startP = Math.max(0, Math.min(plotW - 1, Math.round(((e.start - fromV) / span) * (plotW - 1))))
+		var endP   = Math.max(startP, Math.min(plotW - 1, Math.round(((e.end - fromV) / span) * (plotW - 1))))
+		for (var j = startP; j <= endP; j++) chars[j] = _paint(_colorFn(e), _caps.unicode ? "█" : "=")
+		if (startP == endP) chars[startP] = _paint(_colorFn(e), _caps.unicode ? "◆" : "*")
+		var line = chars.join("")
+		if (labelW > 0) {
+			var lbl = e.label.substring(0, labelW)
+			line = lbl + repeat(Math.max(0, labelW - ansiLength(lbl)), " ") + " " + line
+		}
+		return line
+	})
+	out.push((labelW > 0 ? repeat(labelW, " ") + " " : "") + _fmt(fromV) + repeat(Math.max(0, plotW - ansiLength(_fmt(fromV)) - ansiLength(_fmt(toV))), " ") + _fmt(toV))
+	return out.join("\n")
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printStatusMatrix(values, aOptions) : String</key>
+ * Returns a compact status matrix from a matrix or { values, xLabels, yLabels } of statuses.
+ * aOptions: width, height, xLabels, yLabels, symbols, palette.
+ * </odoc>
+ */
+OpenWrap.format.prototype.printStatusMatrix = function(values, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+
+	var matrix  = values
+	var xLabels = _$(aOptions.xLabels).isArray().default([])
+	var yLabels = _$(aOptions.yLabels).isArray().default([])
+	if (isMap(values) && isArray(values.values)) {
+		matrix  = values.values
+		xLabels = xLabels.length > 0 ? xLabels : _$(values.xLabels).isArray().default([])
+		yLabels = yLabels.length > 0 ? yLabels : _$(values.yLabels).isArray().default([])
+	}
+	matrix = _$(matrix).isArray().default([]).map(function(r) { return _$(r).isArray().default([]) }).filter(function(r) { return r.length > 0 })
+	if (matrix.length == 0) return "(empty)"
+
+	var _caps   = ow.format.term.getCapabilities()
+	var _pal    = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var width   = Math.max(4, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
+	var height  = Math.max(2, _$(aOptions.height).isNumber().default(Math.min(_caps.height, matrix.length + 1)))
+	var yLabelW = Math.min(12, Math.max(0, yLabels.reduce(function(m, l) { return Math.max(m, ansiLength(String(l))) }, 0)))
+	var plotW   = Math.max(1, width - (yLabelW > 0 ? yLabelW + 1 : 0))
+	var rowsH   = Math.max(1, height - (xLabels.length > 0 ? 1 : 0))
+	var rowStep = Math.max(1, Math.ceil(matrix.length / rowsH))
+	var sourceCols = matrix.reduce(function(m, row) { return Math.max(m, row.length) }, 0)
+	var colStep = Math.max(1, Math.ceil(sourceCols / plotW))
+	var symbols = merge({
+		ok: _caps.unicode ? "●" : "O",
+		up: _caps.unicode ? "●" : "O",
+		success: _caps.unicode ? "●" : "O",
+		warn: _caps.unicode ? "▲" : "!",
+		warning: _caps.unicode ? "▲" : "!",
+		error: _caps.unicode ? "■" : "X",
+		fail: _caps.unicode ? "■" : "X",
+		down: _caps.unicode ? "■" : "X",
+		unknown: _caps.unicode ? "·" : "?",
+		default: _caps.unicode ? "·" : "."
+	}, _$(aOptions.symbols).isMap().default({}))
+	var _statusColor = function(v) {
+		switch(String(_$(v).default("")).toLowerCase()) {
+		case "ok":
+		case "up":
+		case "success": return _pal.positive
+		case "warn":
+		case "warning": return _pal.warning
+		case "error":
+		case "fail":
+		case "down": return _pal.negative
+		default: return _pal.muted
+		}
+	}
+	var _statusSymbol = function(v) {
+		var k = String(_$(v).default("default")).toLowerCase()
+		return String(_$(symbols[k]).default(_$(symbols.default).default("."))).charAt(0)
+	}
+	var _paint = (_caps.colorMode !== "none") ? function(c, txt) { return (isString(c) && c !== "") ? ansiColor(c, txt) : txt } : function(c, txt) { return txt }
+
+	var out = []
+	for (var r = 0; r < matrix.length; r += rowStep) {
+		var rowGroup = matrix.slice(r, Math.min(matrix.length, r + rowStep))
+		var line = []
+		for (var c = 0; c < sourceCols; c += colStep) {
+			var found = "unknown"
+			var sev = { down: 3, fail: 3, error: 3, warn: 2, warning: 2, ok: 1, up: 1, success: 1, unknown: 0 }
+			rowGroup.forEach(function(rr) {
+				for (var cc = c; cc < Math.min(sourceCols, c + colStep); cc++) {
+					var cur = String(_$(rr[cc]).default("unknown")).toLowerCase()
+					if (_$(sev[cur]).default(0) >= _$(sev[found]).default(0)) found = cur
+				}
+			})
+			line.push(_paint(_statusColor(found), _statusSymbol(found)))
+		}
+		var prefix = ""
+		if (yLabelW > 0) {
+			var lbl = String(_$(yLabels[r]).default("")).substring(0, yLabelW)
+			prefix = lbl + repeat(Math.max(0, yLabelW - ansiLength(lbl)), " ") + " "
+		}
+		out.push(prefix + line.slice(0, plotW).join(""))
+	}
+	if (xLabels.length > 0) {
+		var leftX = String(_$(xLabels[0]).default(""))
+		var rightX = String(_$(xLabels[Math.max(0, xLabels.length - 1)]).default(""))
+		out.push((yLabelW > 0 ? repeat(yLabelW, " ") + " " : "") + leftX + repeat(Math.max(0, plotW - ansiLength(leftX) - ansiLength(rightX)), " ") + rightX)
+	}
+	return out.join("\n")
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.printDashboard(widgets, aOptions) : String</key>
+ * Returns a multi-widget dashboard string. widgets is an array (or 2D array for explicit grid rows) of widget maps
+ * with fields: type, data, title, span (proportional column width, default 1), options. Supported types: table, tree,
+ * chart, sparkline, histogram, heatmap, bullet, scatter, boxplot, timeline, statusMatrix, progress, text, md, map, area, bar, func.\
+ * \
+ * Per-widget notes:\
+ * \
+ *   chart      : data is a printChart format string\
+ *   area       : data is consumed by ow.format.string.chart\
+ *   bar        : data is a printBars format string; options can include max, min, indicator, space\
+ *   bullet     : data is consumed by ow.format.printBullet; options can include min, max, target, ranges, label, unit, showValue, valueFormat\
+ *   sparkline  : data is consumed by ow.format.printSparkline\
+ *   histogram  : data is consumed by ow.format.printHistogram\
+ *   heatmap    : data is consumed by ow.format.printHeatmap\
+ *   scatter    : data is consumed by ow.format.printScatter\
+ *   boxplot    : data is consumed by ow.format.printBoxplot\
+ *   timeline   : data is consumed by ow.format.printTimeline\
+ *   statusMatrix : data is consumed by ow.format.printStatusMatrix\
+ * \
+ * aOptions: width, height, columns (auto if 0), border (default true), borderColor, borderStyle, palette.
+ * </odoc>
+ */
+OpenWrap.format.prototype.printDashboard = function(widgets, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	widgets  = _$(widgets).isArray().default([])
+
+	var _caps   = ow.format.term.getCapabilities()
+	var _pal    = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var totalW  = _$(aOptions.width).isNumber().default(_caps.width)
+	var totalH  = _$(aOptions.height).isNumber().default(Math.max(6, _caps.height - 2))
+	var border  = _$(aOptions.border).isBoolean().default(true)
+	var borderC = _$(aOptions.borderColor).isString().default(_pal.gridLine)
+	var palette = _$(aOptions.palette).isString().default("auto")
+	var bc      = (borderC && borderC !== "" && _caps.colorMode !== "none") ? (s => ansiColor(borderC, s)) : (s => s)
+
+	var rows
+	if (widgets.length > 0 && isArray(widgets[0])) {
+		rows = widgets
+	} else {
+		var _ncols = _$(aOptions.columns).isNumber().default(Math.min(widgets.length || 1, Math.max(1, Math.ceil(Math.sqrt(widgets.length)))))
+		rows = []
+		for (var _di = 0; _di < widgets.length; _di += _ncols) rows.push(widgets.slice(_di, _di + _ncols))
+	}
+
+	var rowH = Math.floor(totalH / (rows.length || 1))
+
+	// Determine border style based on capabilities
+	var borderStyle = "simple"
+	if (aOptions.borderStyle) {
+		borderStyle = _$(aOptions.borderStyle).isString().default("rect")
+	} else if (!_caps.unicode) {
+		borderStyle = "simple"
+	}
+
+	var getBorderChars = function(style) {
+		switch (style) {
+		case "round":
+			return { topLeft: "╭", topRight: "╮", bottomLeft: "╰", bottomRight: "╯", horizontal: "─", vertical: "│" }
+		case "rect":
+			return { topLeft: "┌", topRight: "┐", bottomLeft: "└", bottomRight: "┘", horizontal: "─", vertical: "│" }
+		default: // simple
+			return { topLeft: ">", topRight: " ", bottomLeft: " ", bottomRight: " ", horizontal: "─", vertical: " " }
+		}
+	}
+
+	var bchars = getBorderChars(borderStyle)
+
+	return rows.map(function(row, ri) {
+		if (!isArray(row)) row = [row]
+		var nCols   = row.length
+		var spans   = row.map(function(w) { return (isMap(w) && w.span) ? w.span : 1 })
+		var totSpan = spans.reduce(function(s, x) { return s + x }, 0)
+		var unitW   = Math.floor(totalW / totSpan)
+		var widths  = spans.map(function(s, ci) {
+			var usedW = spans.slice(0, ci).reduce(function(a, x) { return a + unitW * x }, 0)
+			return (ci === nCols - 1) ? totalW - usedW : unitW * s
+		})
+
+		var rendered = row.map(function(widget, ci) {
+			if (!isMap(widget)) widget = { type: "text", data: String(widget) }
+			var wW       = widths[ci]
+			var wH       = (ri === rows.length - 1) ? totalH - rowH * (rows.length - 1) : rowH
+			var hasTitle = !border && isString(widget.title) && widget.title !== ""
+			var iW       = border ? Math.max(1, wW - 2) : wW
+			var iH       = border ? Math.max(1, wH - 2) : (hasTitle ? Math.max(1, wH - 1) : wH)
+
+			var content = ""
+			try {
+				var wOpts = merge({ width: iW, height: iH, palette: palette }, _$(widget.options).isMap().default({}))
+				switch (widget.type) {
+				case "table":
+					content = printTable(_$(widget.data).isArray().default([]), iW, __, true, "utf")
+					break
+				case "tree":
+					content = printTreeOrS(widget.data, iW)
+					break
+				case "chart":
+					content = printChart(String(_$(widget.data).default("")), iW, iH - 1)
+					break
+				case "sparkline":
+					content = ow.format.printSparkline(widget.data, wOpts)
+					break
+				case "histogram":
+					content = ow.format.printHistogram(_$(widget.data).isArray().default([]), wOpts)
+					break
+				case "heatmap":
+					content = ow.format.printHeatmap(widget.data, wOpts)
+					break
+				case "bullet":
+					content = ow.format.printBullet(widget.data, wOpts)
+					break
+				case "scatter":
+					content = ow.format.printScatter(widget.data, wOpts)
+					break
+				case "boxplot":
+					content = ow.format.printBoxplot(widget.data, wOpts)
+					break
+				case "timeline":
+					content = ow.format.printTimeline(widget.data, wOpts)
+					break
+				case "statusMatrix":
+					content = ow.format.printStatusMatrix(widget.data, wOpts)
+					break
+				case "progress": {
+					var _p = isMap(widget.data) ? widget.data : { value: widget.data, max: 100, min: 0 }
+					content = ow.format.string.progress(_$(_p.value).default(0), _$(_p.max).default(100), _$(_p.min).default(0), Math.max(1, iW - 14), "█", "░", "▌")
+					break
+				}
+				case "md":
+					content = ow.format.string.wordWrap(ow.format.withMD(String(_$(widget.data).default(""))), iW, ansiColor("RESET", "\n"))
+					break
+				case "map":
+					content = printMap(widget.data, iW, "utf", true)
+					break
+				case "area":
+					content = ow.format.string.chart(_$(widget.title).isString().default(""), widget.data, iW, iH)
+					break
+				case "bar": {
+					var _bOpts = merge({ max: __, min: __, indicator: "━", space: " " }, wOpts)
+					content = printBars(widget.data, iW, _bOpts.max, _bOpts.min, _bOpts.indicator, _bOpts.space)
+					break
+				}
+				case "func":
+					content = String(newFn("mx", "my", String(_$(widget.data).default("")))(iH, iW))
+					break
+				default:
+					content = ow.format.string.wordWrap(String(_$(widget.data).default("")), iW, "\n")
+				}
+			} catch(e) {
+				content = (_caps.colorMode !== "none" && _pal.negative && _pal.negative !== "") ? ansiColor(_pal.negative, "Err: " + String(e.message || e)) : "Err: " + String(e.message || e)
+			}
+
+			var lines = String(_$(content).default("")).split(/\r?\n/)
+			lines = lines.map(function(l) {
+				var vl = ansiLength(l)
+				if (vl > iW) return l.substring(0, iW + (l.length - vl))
+				return l + repeat(iW - vl, " ")
+			})
+			while (lines.length < iH) lines.push(repeat(iW, " "))
+			lines = lines.slice(0, iH)
+
+			if (border) {
+				var title = _$(widget.title).isString().default("")
+				var tl    = title.length
+				var dashCount = Math.max(0, iW - 1 - tl)
+
+				var top = tl > 0 ? bc(bchars.topLeft + (borderStyle != "simple" ? bchars.horizontal : " ")) + (borderStyle != "simple" ? " " : "") + ansiColor("BOLD", title.substring(0, iW - 2)) + " " + bc(repeat(Math.max(0, dashCount - 2), bchars.horizontal) + bchars.topRight)
+									: bc(bchars.topLeft + repeat(iW, bchars.horizontal) + bchars.topRight)
+				var bot = bc(bchars.bottomLeft + repeat(iW, bchars.horizontal) + bchars.bottomRight)
+				lines = lines.map(function(l) { return bc(bchars.vertical) + l + bc(bchars.vertical) })
+				lines.unshift(top)
+				if (borderStyle != "simple") lines.push(bot)
+			} else if (hasTitle) {
+				var _ht = widget.title.substring(0, iW - 3)
+				lines.unshift(ansiColor("RESET,BOLD", "> " + _ht + " " + repeat(Math.max(0, iW - 3 - ansiLength(_ht)), "─")))
+			}
+			return lines
+		})
+
+		var maxL = rendered.reduce(function(m, c) { return Math.max(m, c.length) }, 0)
+		rendered.forEach(function(c, ci) { while (c.length < maxL) c.push(repeat(widths[ci], " ")) })
+		return rendered[0].map(function(_, li) { return rendered.map(function(c) { return c[li] || "" }).join("") }).join("\n")
+	}).join("\n")
+}
 
 /**
  * <odoc>
@@ -3648,16 +4863,21 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
 
 /**
  * <odoc>
- * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
- * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
- * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
+ * <key>ow.format.withMD(aString, defaultAnsi, aLineWidth, aBgColor) : String</key>
+ * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back
+ * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi), provide aLineWidth
+ * to override the detected console width when line width is needed, and provide aBgColor (an ansiColor color name, e.g. "BG_BLUE")
+ * to maintain a background color throughout the output and pass it to sub-functions where applicable.
  * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets, numbered lines, links and blocks.
  * </odoc>
  */
-OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
+OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aBgColor) {
     aString = String(aString)
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("")
-	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "")
+	aLineWidth = _$(aLineWidth, "aLineWidth").isNumber().default(__)
+	aBgColor = _$(aBgColor, "aBgColor").isString().default("")
+	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "") + (aBgColor.length > 0 ? ansiColor(aBgColor, "") : "")
+	var _withColor = (base, bg) => (bg && bg.length > 0) ? (base && base.length > 0 ? base + "," + bg : bg) : base
 
 	// Theme set
 	if (!isDef(__colorFormat.__withMdDefaults) || !__colorFormat.__withMdDefaults) {
@@ -3734,6 +4954,14 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
 	if (cblocks != null) 
 		cblocks.forEach((b, i) => {
+			var bIdx = res.indexOf(b)
+			if (bIdx > 0) {
+				var lineStart = res.lastIndexOf("\n", bIdx - 1) + 1
+				var leadingWS = res.slice(lineStart, bIdx).match(/^[ \t]+/) ? res.slice(lineStart, bIdx).match(/^[ \t]+/)[0] : ""
+				if (leadingWS.length > 0 && lineStart + leadingWS.length === bIdx) {
+					res = res.slice(0, lineStart) + res.slice(lineStart + leadingWS.length)
+				}
+			}
 			res = res.replace(b, "```$$" + i + "```")
 		})
 
@@ -3771,13 +4999,16 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	res = res.replace(/^####+ (.+)/mg, ansiColor(__colorFormat.md.heads.h4, "$1") + da)
 	
 	__conStatus || __initializeCon()
-	var _aSize
+	var _aSize = aLineWidth
 
-	if (isDef(__con)) {
-		_aSize = __con.getTerminal().getWidth()
-	} else {
-		_aSize = 80
+	if (isUnDef(_aSize)) {
+		if (isDef(__con)) {
+			_aSize = __con.getTerminal().getWidth()
+		} else {
+			_aSize = 80
+		}
 	}
+	_aSize = Math.max(1, Number(_aSize))
 	var _tWidth = _aSize
 	var _linkRep = ansiColor(__colorFormat.md.link.text, "$1") + " " + ansiColor(__colorFormat.md.link.url, "($2)")
 	var _sideLineThemes = ow.format.withSideLineThemes()
@@ -3817,7 +5048,8 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 
 		// side line render
 		if (/^(\> .+)$/.test(l)) {
-			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, __colorFormat.md.note.line, __colorFormat.md.note.text, _noteTheme)))
+			var note = l.match(/^\> (.+)$/)
+			return ow.format.withSideLine(note[1], _aSize, __colorFormat.md.note.line, _withColor(__colorFormat.md.note.text, aBgColor), _noteTheme)
 		}
 
 		// if not a code block or a table then it should be paragraph
@@ -3832,7 +5064,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
-			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), __, __colorFormat.md.codeBlock.line, __colorFormat.md.codeBlock.text, _sideLineThemes[__colorFormat.md.codeBlock.theme]))
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), _aSize, __colorFormat.md.codeBlock.line, _withColor(__colorFormat.md.codeBlock.text, aBgColor), _sideLineThemes[__colorFormat.md.codeBlock.theme]))
 		})
 	}
 
@@ -4090,7 +5322,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	aSize = _$(aSize, "aSize").isNumber().default(__);
 	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
 
-	var res = ansiColor("RESET", "\r");
+	var res = ansiColor("RESET", "");
  
 	if (isUnDef(aSize)) {
 		__conStatus || __initializeCon(); 
@@ -4111,14 +5343,15 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 		res += ansiColor(ansiLine, aTheme.ltop);
 		if (isDef(aTheme.rtop)) {
 			var sp = (isDef(aTheme.tmiddle) ? aTheme.tmiddle : " ");
-			if (isString(aExtra.header) && aExtra.header.length < (aSize - 4)) {
+			var _headerWidth = isString(aExtra.header) ? ansiLength(aExtra.header) : __
+			if (isString(aExtra.header) && _headerWidth < (aSize - 4)) {
 				if (aExtra.headerAlign == "right") {
-					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.header), sp))
+					res += ansiColor(ansiLine, repeat(aSize - 4 - _headerWidth, sp))
 					res += aExtra.header
 					res += ansiColor(ansiLine, repeat(2, sp))
 				}
 				if (aExtra.headerAlign == "center") {
-					var _l = aSize - 4 - ansiLength(aExtra.header)
+					var _l = aSize - 4 - _headerWidth
 					res += ansiColor(ansiLine, repeat(Math.floor(_l / 2) +1, sp))
 					res += aExtra.header
 					res += ansiColor(ansiLine, repeat(Math.round(_l / 2) +1, sp))
@@ -4126,7 +5359,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 				if (isUnDef(aExtra.headerAlign) || aExtra.headerAlign == "left") {
 					res += ansiColor(ansiLine, repeat(2, sp))
 					res += aExtra.header
-					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.header), sp))
+					res += ansiColor(ansiLine, repeat(aSize - 4 - _headerWidth, sp))
 				}
 			} else {
 				res += ansiColor(ansiLine, repeat(aSize - 2, sp));
@@ -4142,10 +5375,11 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 			if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", "")
 			res += (isDef(ansiText) ? ansiColor(ansiText, " " + l) : " " + l);
 			if (isDef(aTheme.rmiddle)) {
-				var _spl = aSize - ansiLength(l) - 3
+				var _lineWidth = visibleLength(ow.format.string._stripAnsi(l))
+				var _spl = aSize - _lineWidth - 3
 				if (_spl < 0) _spl = 0
-				var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(_spl, ' ')) : repeat(_spl, ' '));
-				res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
+				var sp = repeat(_spl, ' ')
+				res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp)
 				res += ansiColor("RESET", "") + ansiColor(ansiLine, aTheme.rmiddle);
 			}
 			if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
@@ -4158,14 +5392,15 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
                 res += ansiColor(ansiLine, aTheme.lbottom);
 		if (isDef(aTheme.rbottom)) {
 			var sp = (isDef(aTheme.bmiddle) ? aTheme.bmiddle : " ");
-			if (isString(aExtra.footer) && aExtra.footer.length < (aSize - 4)) {
+			var _footerWidth = isString(aExtra.footer) ? ansiLength(aExtra.footer) : __
+			if (isString(aExtra.footer) && _footerWidth < (aSize - 4)) {
 				if (aExtra.footerAlign == "right") {
-					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.footer), sp))
+					res += ansiColor(ansiLine, repeat(aSize - 4 - _footerWidth, sp))
 					res += aExtra.footer
 					res += ansiColor(ansiLine, repeat(2, sp))
 				}
 				if (aExtra.footerAlign == "center") {
-					var _l = aSize - 4 - ansiLength(aExtra.footer)
+					var _l = aSize - 4 - _footerWidth
 					res += ansiColor(ansiLine, repeat(Math.floor(_l / 2) +1, sp))
 					res += aExtra.footer
 					res += ansiColor(ansiLine, repeat(Math.round(_l / 2) +1, sp))
@@ -4173,7 +5408,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 				if (isUnDef(aExtra.footerAlign) || aExtra.footerAlign == "left") {
 					res += ansiColor(ansiLine, repeat(2, sp))
 					res += aExtra.footer
-					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.footer), sp))
+					res += ansiColor(ansiLine, repeat(aSize - 4 - _footerWidth, sp))
 				}
 			} else {
 				res += ansiColor(ansiLine, repeat(aSize - 2, sp))

@@ -279,7 +279,56 @@ jobs:
     }
 ```
 
-## 16. AI and Machine Learning Integration
+## 16. Terminal Visualization Patterns
+
+Since the March 2026 docs refresh, `ow.format` gained a terminal visualization layer that is useful for CLIs, live status pages and compact operational output.
+
+### Capability-aware rendering
+
+```javascript
+ow.loadFormat();
+
+var caps = ow.format.term.getCapabilities();
+var pal  = ow.format.term.getPalette("auto");
+
+log("TTY=" + caps.isTTY + ", color=" + caps.colorMode + ", unicode=" + caps.unicode);
+```
+
+Renderers automatically degrade for non-TTY, low-color and non-Unicode environments, so prefer the semantic palette instead of hard-coded ANSI sequences.
+
+### Dashboard composition
+
+```javascript
+print(ow.format.printDashboard([
+  [
+    { type: "bullet", title: "Storage", data: { value: 72, max: 100, target: 80 } },
+    { type: "timeline", title: "Pipeline", data: [
+      { label: "build", start: Date.now() - 120000, end: Date.now() - 60000, status: "ok" },
+      { label: "test",  start: Date.now() - 60000, end: Date.now(),          status: "warn" }
+    ] }
+  ],
+  [
+    { type: "statusMatrix", title: "Fleet", data: { values: [["ok", "ok"], ["warn", "down"]], xLabels: ["a", "b"], yLabels: ["api", "db"] } }
+  ]
+], { width: 90, border: true }));
+```
+
+Use `printDashboard(...)` for explicit layouts and `ow.format.string.grid(...)` when you want a grid of cells that can mix classic renderers (`map`, `tree`, `table`, `chart`) with newer terminal widgets (`sparkline`, `histogram`, `heatmap`, `bullet`, `scatter`, `boxplot`, `timeline`, `statusMatrix`, `progress`, `md`, `text`).
+
+### Live loops
+
+```javascript
+var live = ow.format.viz.live(function(ctx) {
+  return ow.format.printDashboard([
+    { type: "sparkline", title: "load", data: [ctx.frame % 7, 3, 5, 2, 6] },
+    { type: "text", title: "size", data: stringify(ctx.size) }
+  ], { width: ctx.size.width, height: 8 });
+}, { fps: 5, diff: true });
+```
+
+The controller returned by `viz.live(...)` exposes `start()`, `stop()`, `update()` and `stats()`. Combine it with `viz.watchResize(...)` or the context `size` argument to keep output responsive.
+
+## 17. AI and Machine Learning Integration
 
 OpenAF provides comprehensive AI capabilities through `ow.ai` for both traditional ML and modern LLM integration.
 
@@ -354,6 +403,49 @@ var llm = ow.ai.gpt({
 // Simple prompt
 var response = llm.prompt("Explain quantum computing in simple terms");
 log(response);
+
+// Azure OpenAI v1 compatible endpoint
+var azureV1 = ow.ai.gpt({
+  type: "openai",
+  key : "your-azure-api-key",
+  url : "https://RESOURCE.openai.azure.com",
+  mode: "azure-openai-v1",
+  model: "your-deployment-name"
+});
+
+// Azure OpenAI legacy deployment endpoint
+var azureLegacy = ow.ai.gpt({
+  type       : "openai",
+  key        : "your-azure-api-key",
+  url        : "https://RESOURCE.openai.azure.com",
+  mode       : "azure-openai-legacy",
+  deployment : "your-deployment-name",
+  apiVersion : "2024-10-21"
+});
+
+// Azure AI Foundry v1 endpoint
+var foundry = ow.ai.gpt({
+  type       : "openai",
+  key        : "your-foundry-api-key",
+  url        : "https://RESOURCE.services.ai.azure.com",
+  mode       : "foundry",
+  model      : "your-deployment-name"
+});
+
+// Azure AI Foundry dated model inference endpoint
+var foundryPreview = ow.ai.gpt({
+  type       : "openai",
+  key        : "your-foundry-api-key",
+  url        : "https://RESOURCE.services.ai.azure.com/models",
+  mode       : "foundry",
+  apiVersion : "2024-05-01-preview",
+  model      : "your-deployment-name"
+});
+
+// Azure and Foundry modes default to api-key authentication.
+// Standard OpenAI mode defaults to Authorization: Bearer.
+// Use authType only for compatible proxies or custom authentication:
+// authType: "bearer" | "api-key" | "none"
 
 // Conversation
 llm.addSystemPrompt("You are a helpful coding assistant");
@@ -513,10 +605,10 @@ function robustLLMCall(prompt, maxRetries = 3) {
 }
 ```
 
-## 17. Safe Dynamic Includes
+## 18. Safe Dynamic Includes
 Combine integrity hashes + authorized domains + change auditing flags. For local development disable with environment variable toggles but keep production strict.
 
-## 18. HTTP Path Prefix Support (ow.server.httpd)
+## 19. HTTP Path Prefix Support (ow.server.httpd)
 
 OpenAF's embedded HTTP server supports serving all resources and routes under a configurable path prefix. This is useful when deploying behind a reverse proxy that forwards requests under a subpath (e.g. `/app`).
 
@@ -573,7 +665,7 @@ ow.server.httpd.route(httpd, ow.server.httpd.mapWithExistingFn(httpd, {
 
 All built-in GUI pages and static-file handlers automatically respect the configured prefix.
 
-## 19. MCP Client ($mcp)
+## 20. MCP Client ($mcp)
 
 `$mcp(aOptions)` creates a Model Context Protocol (MCP) client for communicating with LLM tool servers.
 
