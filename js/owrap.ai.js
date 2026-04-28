@@ -1964,7 +1964,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var _tr = _t.fn(_args)
                                 // Ensure tool response is a string
                                 _p.push({ role: "assistant", tool_calls: [ tc ] })
-                                _p.push({ role: "tool", tool_name: tc.function.name, content: isString(_tr) ? _tr : stringify(_tr, __, "") })
+                                _p.push({ role: "tool", tool_call_id: tc.id, tool_name: tc.function.name, content: isString(_tr) ? _tr : stringify(_tr, __, "") })
                             }
                         })
                         // Also ensure all pushed messages have string content
