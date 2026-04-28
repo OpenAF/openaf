@@ -1838,6 +1838,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 _conv.push({
                                     role: "tool",
                                     content: isString(tr.result) ? tr.result : stringify(tr.result || "", __, ""),
+                                    tool_call_id: tr.id || ("tc_" + idx + "_" + ti),
                                     tool_name: tr.name || ""
                                 })
                             })
