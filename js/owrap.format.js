@@ -2730,7 +2730,7 @@ OpenWrap.format.prototype.printDashboard = function(widgets, aOptions) {
 				var tl    = title.length
 				var dashCount = Math.max(0, iW - 1 - tl)
 
-				var top = tl > 0 ? bc(bchars.topLeft + (borderStyle != "simple" ? bchars.horizontal : " ")) + (borderStyle != "simple" ? " " : "") + ansiColor("BOLD", title.substring(0, iW - 2)) + " " + bc(repeat(dashCount-2, bchars.horizontal) + bchars.topRight)
+				var top = tl > 0 ? bc(bchars.topLeft + (borderStyle != "simple" ? bchars.horizontal : " ")) + (borderStyle != "simple" ? " " : "") + ansiColor("BOLD", title.substring(0, iW - 2)) + " " + bc(repeat(Math.max(0, dashCount - 2), bchars.horizontal) + bchars.topRight)
 									: bc(bchars.topLeft + repeat(iW, bchars.horizontal) + bchars.topRight)
 				var bot = bc(bchars.bottomLeft + repeat(iW, bchars.horizontal) + bchars.bottomRight)
 				lines = lines.map(function(l) { return bc(bchars.vertical) + l + bc(bchars.vertical) })
