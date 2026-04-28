@@ -2484,8 +2484,10 @@ function genpack(args) {
 	}
 	for(let i in args) {
     	if (args[i] == "--exclude") {
-			log("Excluding '" + args[Number(i) + 1] + "'...");
-			excludeList.push(args[Number(i) + 1]);
+			String(args[Number(i) + 1]).split(",").forEach(e => {
+				log("Excluding '" + e + "'...");
+				excludeList.push(e);
+			});
 		}
     }
 	var packageNew = {};
