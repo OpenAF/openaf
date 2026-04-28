@@ -5564,9 +5564,9 @@ const $path = function(aObj, aPath, customFunctions) {
 				}
 
 				if (isArray(_r)) {
-				  return _r.map(r => r.value || r)
+				  return _r.map(r => isDef(r.value) ? r.value : r)
 				} else {
-				  return _r || value
+				  return isDef(_r) ? _r : value
 				}
 			},
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.number ] }, { types: [ jmespath.types.any ] } ]
