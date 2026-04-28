@@ -2,9 +2,9 @@
 .tabs .indicator { background-color: #ff9800 }
 </style>
 <script>
-	$(document).ready(function() {
-		$('.collapsible').collapsible();
-		$('.tabs').tabs();
+	document.addEventListener('DOMContentLoaded', function() {
+		M.Collapsible.init(document.querySelectorAll('.collapsible'), { accordion: true });
+		M.Tabs.init(document.querySelectorAll('.tabs'));
 	});
 </script>
 <div class="row">
@@ -16,7 +16,7 @@
 	</div>
 	<br>
 	<div id="installed" class="col s12">
-		<ul class="collapsible popout" data-collapsible="accordion">
+		<ul class="collapsible popout">
 		{{#each installed}}
 			<li>
 			  <div class="collapsible-header grey-text text-darken-1"><i class="material-icons">cloud_done</i>{{Name}}</div>
@@ -33,8 +33,8 @@
 		{{/each}}
 		</ul>
 	</div>
-	<div id="repository">
-		<ul class="collapsible popout" data-collapsible="accordion">
+	<div id="repository" class="col s12">
+		<ul class="collapsible popout">
 		{{#each all}}
 			<li>
 			  {{#if Local}}
