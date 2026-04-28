@@ -1154,7 +1154,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 	// Prepare aux functions
 	var _clr = __, _ac = __, _al = __
 	if (!_aOptions.noansi) {
-		_dt = aO => {
+		let _dt = aO => {
 			if (null == aO) return "null"
 			try {
 				if ("function" === typeof aO.getClass && "[object JavaObject]" === Object.prototype.toString.call(aO)) return "java"
@@ -1197,7 +1197,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		
 			if (aAnsi.length == 0) return aString
 
-			if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString].join("")
+			if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString, __ansiColorCache["RESET"]].join("")
 		
 			return ansiColor(aAnsi, aString, true, true)
 		}
@@ -1207,7 +1207,6 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		var _acCFstring = _ac(__colorFormat.string, "").replace("\u001b[m", "")
 		var _acCFboolean = _ac(__colorFormat.boolean, "").replace("\u001b[m", "")
 		var _acCFdate = _ac(__colorFormat.date, "").replace("\u001b[m", "")
-		var _acCFstring  = _ac(__colorFormat.string, "").replace("\u001b[m", "")
 		_al  = m => (__flags.VISIBLELENGTH ? visibleLength(m) : m.replace(/\033\[[0-9;]*m/g, "").length)
 	} else {
 		_clr = s => s
@@ -1323,7 +1322,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			let repeatResult = _ac("", ("undefined" !== typeof vsize ? " ".repeat(vsize - lv+1) : " "))
 
 			let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
-			let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
+			let reset = __ansiColorCache["RESET"]
 			let suffix
 
 			if ("undefined" !== typeof aM[k] && aM[k] != null && ("[object Object]" == Object.prototype.toString.call(aM[k]) || Array.isArray(aM[k]))) {
@@ -1335,7 +1334,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			//} catch(e) {
 			//	printErr(e)
 			//}
-		})
+		}, __, isSub)
 		//out = _out.getKeys().sort((a, b) => a - b).map(k => _out.get(k))
 		//_out.clear()
 		//_out = __
@@ -1694,16 +1693,40 @@ const __ansiColorPrep = function(aAnsi) {
 	var jansi = JavaImporter(Packages.org.fusesource.jansi)
 	var aString = "RRR"
 
+	// Extract color patterns first to handle commas inside parentheses
+	var colorPatterns = []
+	var tempStr = aAnsi.replace(/(BG_RGB|FG_RGB|RGB|BG|FG)\([^)]*\)/gi, function(match) {
+		colorPatterns.push(match)
+		return "___COLOR_" + (colorPatterns.length - 1) + "___"
+	})
+
 	var nAnsi = []
-	aAnsi.split(",").forEach(r => {
-		if (r.startsWith("BG(")) {
-			var bg = r.match(/BG\((\d+)\)/)
+	tempStr.split(",").forEach(r => {
+		var _r = r.trim().toUpperCase()
+		
+		// Restore color patterns from placeholders
+		_r = _r.replace(/___COLOR_(\d+)___/g, function(match, index) {
+			return colorPatterns[parseInt(index)]
+		})
+
+		var _rLower = _r.toLowerCase()
+		if (_rLower.startsWith("bg_rgb(")) {
+			var bgRgb = _rLower.match(/bg_rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+			if (!isNull(bgRgb)) aString = "\033[48;2;" + bgRgb[1] + ";" + bgRgb[2] + ";" + bgRgb[3] + "m" + aString
+		} else if (_rLower.startsWith("fg_rgb(")) {
+			var fgRgb = _rLower.match(/fg_rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+			if (!isNull(fgRgb)) aString = "\033[38;2;" + fgRgb[1] + ";" + fgRgb[2] + ";" + fgRgb[3] + "m" + aString
+		} else if (_rLower.startsWith("rgb(")) {
+			var rgb = _rLower.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+			if (!isNull(rgb)) aString = "\033[38;2;" + rgb[1] + ";" + rgb[2] + ";" + rgb[3] + "m" + aString
+		} else if (_rLower.startsWith("bg(")) {
+			var bg = _rLower.match(/bg\((\d+)\)/)
 			if (!isNull(bg)) aString = "\033[48;5;" + bg[1] + "m" + aString
-		} else if (r.startsWith("FG(")) {
-			var fg = r.match(/FG\((\d+)\)/)
+		} else if (_rLower.startsWith("fg(")) {
+			var fg = _rLower.match(/fg\((\d+)\)/)
 			if (!isNull(fg)) aString = "\033[38;5;" + fg[1] + "m" + aString
 		} else {
-			nAnsi.push(r)
+			nAnsi.push(_r)
 		}
 	})
 
@@ -4896,7 +4919,7 @@ var $from = function(a) {
  * semver(version, operation, argument)\
  * progress(value, max, min, size, indicator, space),\
  * to_csv(array, options), from_csv(str, options)\
- * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
+ * ch(name, op, arg1, arg2), chq(name, op, max, value), path(obj, jmespath), opath(jmespath)\
  * to_ms(date), timeagoAbbr(x)\
  * env(str), envs(regex)\
  * oafp(json/slon), oafpd(obj, json/slon)\
@@ -5511,6 +5534,42 @@ const $path = function(aObj, aPath, customFunctions) {
 				return ar2
 			},
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
+		},
+		chq: {
+			_func: ar => {
+				ow.loadCh()
+
+				var chName = ar[0], op = ar[1], max = Number(af.fromJSSLON(ar[2])), value = af.fromJSSLON(ar[3])
+				if ($ch().list().indexOf(chName) < 0) $ch(chName).create()
+
+				var _r 
+				switch(op) {
+				case "push":
+				case "add":
+					$ch(chName).push({
+						__pathq: nowNano(),
+						__pathqu: genUUID()
+					}, value)
+
+					while (isNumber(max) && max >= 0 && $ch(chName).size() > max) {
+						$ch(chName).shift()
+					}
+					_r= $ch(chName).getAll()
+					break
+				case "pop"  : _r = $ch(chName).pop(); break
+				case "shift": _r = $ch(chName).shift(); break
+				case "size" : _r = $ch(chName).size(); break
+				case "get"  :
+				case "all"  : _r = $ch(chName).getAll(); break
+				}
+
+				if (isArray(_r)) {
+				  return _r.map(r => isDef(r.value) ? r.value : r)
+				} else {
+				  return isDef(_r) ? _r : value
+				}
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.number ] }, { types: [ jmespath.types.any ] } ]
 		}
 	}, customFunctions)
 	customFunctions = merge({
@@ -9403,7 +9462,7 @@ const $mcp = function(aOptions) {
 			}
 			return _walk(meta)
 		}
-		var _applyTemplateToDescriptions = meta => _applyTemplate(meta, false)
+		var _applyTemplateToMeta = meta => _applyTemplate(meta, true)
 		var _prefixToolName = n => (aOptions.options.toolPrefix.length > 0 ? aOptions.options.toolPrefix + n : n)
 		var _resolveToolName = n => {
 			if (aOptions.options.toolPrefix.length > 0 && isString(n) && n.startsWith(aOptions.options.toolPrefix)) {
@@ -9412,7 +9471,7 @@ const $mcp = function(aOptions) {
 			return n
 		}
 		var _toToolMeta = k => {
-			var _meta = isDef(fnsMeta[k]) ? _applyTemplateToDescriptions(clone(fnsMeta[k])) : {
+			var _meta = isDef(fnsMeta[k]) ? _applyTemplateToMeta(clone(fnsMeta[k])) : {
 				name: k,
 				description: k,
 				inputSchema: {}

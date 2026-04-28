@@ -17,6 +17,73 @@ The GPT types system provides a consistent API across different LLM providers th
 | ollama    | ✔    | ✔       | ✔     | ✔          | ✖         |
 | anthropic | ✔    | ✔       | ✖     | ✔          | ✖         |
 
+### OpenAI-Compatible Transport Modes
+
+The `openai` provider can target OpenAI, Azure OpenAI, and Azure AI Foundry model inference endpoints through `aOptions.mode`.
+
+| Mode | Auth Default | Chat URL Shape |
+|------|--------------|----------------|
+| `openai` | `Authorization: Bearer <key>` | `{url}/{apiVersion}/chat/completions` |
+| `azure-openai-v1` | `api-key: <key>` | `{url}/openai/{apiVersion}/chat/completions` |
+| `azure-openai-legacy` | `api-key: <key>` | `{url}/openai/deployments/{deployment}/chat/completions?api-version={apiVersion}` |
+| `foundry` with `apiVersion: "v1"` | `api-key: <key>` | `{url}/openai/v1/chat/completions` |
+| `foundry` with a dated `apiVersion` | `api-key: <key>` | `{url}/chat/completions?api-version={apiVersion}` when `url` ends with `/models`; otherwise `{url}/models/chat/completions?api-version={apiVersion}` |
+
+Aliases are also accepted: `azure-v1`, `azure-legacy`, and `azure-foundry`.
+
+Common options:
+
+- `url`: Base service URL. OpenAI examples commonly use `https://api.openai.com` or `https://api.openai.com/v1`.
+- `apiVersion`: Defaults to `v1`. Azure legacy mode emits this as the `api-version` query parameter. Foundry mode uses `/openai/v1` when `apiVersion` is `v1`; dated versions are emitted as the `api-version` query parameter on the `/models` route.
+- `deployment`: Azure OpenAI legacy deployment name. If omitted, the selected `model` is used.
+- `authType`: Overrides generated auth header style. Supported values are `bearer`, `api-key`, and `none`.
+- `headers`: Extra headers. Values here override generated headers with the same names.
+
+Examples:
+
+```javascript
+// OpenAI
+var openai = new ow.ai.gpt("openai", {
+  key  : "sk-...",
+  url  : "https://api.openai.com/v1",
+  model: "gpt-4o-mini"
+});
+
+// Azure OpenAI v1 compatible endpoint
+var azureV1 = new ow.ai.gpt("openai", {
+  key  : "your-azure-api-key",
+  url  : "https://RESOURCE.openai.azure.com",
+  mode : "azure-openai-v1",
+  model: "your-deployment-name"
+});
+
+// Azure OpenAI legacy deployment endpoint
+var azureLegacy = new ow.ai.gpt("openai", {
+  key       : "your-azure-api-key",
+  url       : "https://RESOURCE.openai.azure.com",
+  mode      : "azure-openai-legacy",
+  deployment: "your-deployment-name",
+  apiVersion: "2024-10-21"
+});
+
+// Azure AI Foundry v1 endpoint
+var foundry = new ow.ai.gpt("openai", {
+  key       : "your-foundry-api-key",
+  url       : "https://RESOURCE.services.ai.azure.com",
+  mode      : "foundry",
+  model     : "your-deployment-name"
+});
+
+// Azure AI Foundry dated model inference endpoint
+var foundryPreview = new ow.ai.gpt("openai", {
+  key       : "your-foundry-api-key",
+  url       : "https://RESOURCE.services.ai.azure.com/models",
+  mode      : "foundry",
+  apiVersion: "2024-05-01-preview",
+  model     : "your-deployment-name"
+});
+```
+
 ## Architecture
 
 Each GPT type implementation follows this structure:
@@ -127,6 +194,8 @@ create: (aOptions) => {
     aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
     aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.provider.com")
     aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
+    aOptions.mode = _$(aOptions.mode, "aOptions.mode").isString().default("openai")
+    aOptions.authType = _$(aOptions.authType, "aOptions.authType").isString().default("bearer")
     // Provider-specific options...
 }
 ```
@@ -180,12 +249,19 @@ Handle tool execution in `rawPrompt`:
 
 ### 4. Authentication Patterns
 
-#### API Key in Header (OpenAI, Anthropic)
+#### Bearer/API-Key Headers (OpenAI-Compatible, Anthropic)
 ```javascript
-requestHeaders: merge(aOptions.headers, { 
+// Bearer token style
+requestHeaders: merge({
     Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key),
     Accept: "*/*"
-})
+}, aOptions.headers)
+
+// Azure OpenAI and Azure AI Foundry API-key style
+requestHeaders: merge({
+    "api-key": Packages.openaf.AFCmdBase.afc.dIP(_key),
+    Accept: "*/*"
+}, aOptions.headers)
 ```
 
 #### API Key in URL Parameter (Gemini)

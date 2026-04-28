@@ -145,6 +145,20 @@
         ow.test.assert($path({}, "div(`6`, `3`)"), 2, "Problem with $path div")
         ow.test.assert($path({}, "mod(`6`, `3`)"), 0, "Problem with $path mod")
         ow.test.assert($path({}, "range(`2`)"), [ 1, 2 ], "Problem with $path range")
+
+        var chqName = "__test_path_chq"
+        if ($ch().list().indexOf(chqName) >= 0) $ch(chqName).destroy()
+
+        ow.test.assert($path({ v: 1 }, "chq('__test_path_chq', 'push', `2`, @)"), [{ v: 1 }], "Problem with $path chq first push")
+        ow.test.assert($path({ v: 2 }, "chq('__test_path_chq', 'push', `2`, @)"), [{ v: 1 }, { v: 2 }], "Problem with $path chq second push")
+        ow.test.assert($path({ v: 3 }, "chq('__test_path_chq', 'push', `2`, @)"), [{ v: 2 }, { v: 3 }], "Problem with $path chq max trimming")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'size', `2`, @)"), 2, "Problem with $path chq size")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'get', `2`, @)"), [{ v: 2 }, { v: 3 }], "Problem with $path chq get")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'shift', `2`, @)"), { v: 2 }, "Problem with $path chq shift")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'pop', `2`, @)"), { v: 3 }, "Problem with $path chq pop")
+        ow.test.assert($path({}, "chq('__test_path_chq', 'size', `2`, @)"), 0, "Problem with $path chq final size")
+
+        $ch(chqName).destroy()
     }
 
     exports.testGetSet = function() {
@@ -453,37 +467,47 @@
 
     exports.testAwait = function() {
         sync(() => {
-            var state = 0, err1, err2, ini = now()
-            var p1 = $doV(() => {
-                $await("testF").wait(30000)
-                ow.test.assert(state, 1, "Problem with await (1)")
-                //sleep(150, true);
-                $await("test1").notify()
-                $await("testF2").wait(30000)
-                ow.test.assert(state, 2, "Problem with await (2)")
-            }).catch(e => {
-                err1 = e;
-            })
-            
-            while(p1 == 0 && !p1.executing && now() - ini < 60000) sleep(50, true)
-    
-            var p2 = $doV(() => {
-                state = 1
-                $await("testF").notify()
-                $await("test1").wait(5000)
-                state = 2
-                $await("testF2").notify()
-            }).catch(e => {
-                err2 = e;
-            });
-    
-    
-            $doWait($doAll([p1, p2]));
-            if (isDef(err1)) throw err1;
-            if (isDef(err2)) throw err2;
+            var state = 0, err1, err2
+            var testId = "__testAwait_" + nowNano() + "_" + Math.floor(Math.random() * 1000000)
+            var gate1 = testId + "_gate1"
+            var gate2 = testId + "_gate2"
+            var ack   = testId + "_ack"
+            var ready = $atomic(0)
 
-            $await("testF").destroy()
-            $await("testF2").destroy()
+            try {
+                var p1 = $doV(() => {
+                    ready.set(1)
+                    $await(gate1).wait(30000)
+                    ow.test.assert(state, 1, "Problem with await (1)")
+                    $await(ack).notify()
+                    $await(gate2).wait(30000)
+                    ow.test.assert(state, 2, "Problem with await (2)")
+                }).catch(e => {
+                    err1 = e;
+                })
+
+                var ini = now()
+                while(ready.get() != 1 && now() - ini < 60000) sleep(50, true)
+                ow.test.assert(ready.get(), 1, "Problem preparing await synchronization test.")
+
+                var p2 = $doV(() => {
+                    state = 1
+                    $await(gate1).notify()
+                    $await(ack).wait(30000)
+                    state = 2
+                    $await(gate2).notify()
+                }).catch(e => {
+                    err2 = e;
+                });
+
+                $doWait($doAll([p1, p2]));
+                if (isDef(err1)) throw err1;
+                if (isDef(err2)) throw err2;
+            } finally {
+                $await(gate1).destroy()
+                $await(gate2).destroy()
+                $await(ack).destroy()
+            }
         })
     };
 

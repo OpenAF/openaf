@@ -233,4 +233,63 @@
             }
         });
     };
+
+    exports.testOJobTplDescRendersAllToolMetadataStrings = function() {
+        var tf = "ojob_mcp_tpldesc_" + genUUID() + ".yaml";
+
+        io.writeFileYAML(tf, {
+            jobs: [{
+                name: "Ping",
+                exec: "return { content: [{ type: 'text', text: 'pong' }], isError: false };"
+            }],
+            todo: [{
+                fnsMeta: {
+                    ping: {
+                        name: "ping",
+                        description: "Ping {{label}}",
+                        annotations: {
+                            title: "{{label}} Ping"
+                        },
+                        inputSchema: {
+                            type: "object",
+                            properties: {
+                                value: {
+                                    type: "string",
+                                    description: "Value for {{label}}"
+                                }
+                            }
+                        }
+                    }
+                },
+                "fns ": {
+                    ping: "Ping"
+                }
+            }]
+        });
+
+        var client = $mcp({
+            type: "ojob",
+            options: {
+                job: tf,
+                tplDesc: true,
+                args: {
+                    label: "Team wiki"
+                }
+            }
+        });
+
+        try {
+            client.initialize();
+            var tools = client.listTools();
+            var ping = $from(tools.tools).equals("name", "ping").at(0);
+
+            ow.test.assert(isDef(ping), true, "oJob MCP should expose the templated test tool.");
+            ow.test.assert(ping.description, "Ping Team wiki", "tplDesc should render tool descriptions.");
+            ow.test.assert(ping.annotations.title, "Team wiki Ping", "tplDesc should render non-description metadata strings.");
+            ow.test.assert(ping.inputSchema.properties.value.description, "Value for Team wiki", "tplDesc should render nested metadata strings.");
+        } finally {
+            client.destroy();
+            io.rm(tf);
+        }
+    };
 })();
