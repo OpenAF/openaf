@@ -104,6 +104,11 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.noSystem = _$(aOptions.noSystem, "aOptions.noSystem").isBoolean().default(true)
             aOptions.noResponseFormat = _$(aOptions.noResponseFormat, "aOptions.noResponseFormat").isBoolean().default(false)
             aOptions.apiVersion = _$(aOptions.apiVersion, "aOptions.apiVersion").isString().default("v1")
+            aOptions.mode = _$(aOptions.mode, "aOptions.mode").isString().default("openai")
+            aOptions.mode = aOptions.mode.toLowerCase()
+            aOptions.deployment = _$(aOptions.deployment, "aOptions.deployment").isString().default("")
+            aOptions.authType = _$(aOptions.authType, "aOptions.authType").isString().default([ "azure-openai-v1", "azure-v1", "azure-openai-legacy", "azure-legacy", "foundry", "azure-foundry" ].indexOf(aOptions.mode) >= 0 ? "api-key" : "bearer")
+            aOptions.authType = aOptions.authType.toLowerCase()
 
             var _key = aOptions.key
             var _timeout = aOptions.timeout
@@ -113,6 +118,77 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _lastStats = __
             var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
+            var _joinURL = (aBase, aPath) => {
+                if (aPath.match(/^https?:\/\//)) return aPath
+                return aBase + (aBase.endsWith("/") ? "" : "/") + (aPath.startsWith("/") ? aPath.substring(1) : aPath)
+            }
+            var _appendQuery = (aPath, aParams) => {
+                var _qs = Object.keys(aParams || {})
+                    .filter(k => isDef(aParams[k]) && ("" + aParams[k]).length > 0)
+                    .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(aParams[k]))
+                if (_qs.length == 0) return aPath
+                return aPath + (aPath.indexOf("?") >= 0 ? "&" : "?") + _qs.join("&")
+            }
+            var _versionedPath = aPath => {
+                return (aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + aPath
+            }
+            var _openAIPath = aPath => {
+                var _url = aOptions.url.replace(/\/+$/, "")
+                if (aOptions.apiVersion.length > 0 && _url.match(new RegExp("/" + aOptions.apiVersion + "$"))) return aPath
+                return _versionedPath(aPath)
+            }
+            var _azureV1Path = aPath => {
+                var _url = aOptions.url.replace(/\/+$/, "")
+                if (_url.match(/\/openai\/v1$/)) return aPath
+                if (_url.match(/\/openai$/)) return _versionedPath(aPath)
+                return "openai/" + _versionedPath(aPath)
+            }
+            var _foundryPath = aPath => {
+                var _url = aOptions.url.replace(/\/+$/, "")
+                if (aOptions.apiVersion == "v1") {
+                    if (_url.match(/\/openai\/v1$/)) return aPath
+                    if (_url.match(/\/openai$/)) return _versionedPath(aPath)
+                    return "openai/" + _versionedPath(aPath)
+                }
+                if (_url.match(/\/models$/)) return _appendQuery(aPath, { "api-version": aOptions.apiVersion })
+                return _appendQuery("models/" + aPath, { "api-version": aOptions.apiVersion })
+            }
+            var _deploymentName = aFallback => {
+                if (isString(aOptions.deployment) && aOptions.deployment.length > 0) return aOptions.deployment
+                return aFallback
+            }
+            var _route = (aEndpoint, aDeploymentFallback) => {
+                switch(aOptions.mode) {
+                case "azure-openai-v1":
+                case "azure-v1":
+                    return _azureV1Path(aEndpoint)
+                case "azure-openai-legacy":
+                case "azure-legacy":
+                    var _dep = encodeURIComponent(_deploymentName(aDeploymentFallback || _model))
+                    return _appendQuery("openai/deployments/" + _dep + "/" + aEndpoint, { "api-version": aOptions.apiVersion })
+                case "foundry":
+                case "azure-foundry":
+                    return _foundryPath(aEndpoint)
+                default:
+                    return _openAIPath(aEndpoint)
+                }
+            }
+            var _headers = aAccept => {
+                var _h = { Accept: aAccept }
+                switch(aOptions.authType) {
+                case "api-key":
+                    _h["api-key"] = Packages.openaf.AFCmdBase.afc.dIP(_key)
+                    break
+                case "none":
+                    break
+                case "bearer":
+                default:
+                    _h.Authorization = "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key)
+                    break
+                }
+                return merge(_h, aOptions.headers)
+            }
+            var _buildURL = aURI => _joinURL(aOptions.url, aURI)
             var _captureStats = (aResponse, aRequestBody) => {
                 if (!isMap(aResponse)) {
                     _lastStats = __
@@ -154,6 +230,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (stop || dataLines.length === 0) return
                     var payload = dataLines.join("\n")
                     dataLines = []
+                    var parsedPayload = jsonParse(payload, __, __, true)
+                    if (isMap(parsedPayload) && isDef(parsedPayload.error)) errorObj = parsedPayload
                     if (aOnPayload(payload) === true) stop = true
                 }
                 if (isMap(aStream)) {
@@ -228,7 +306,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                         if (isDef(matchTc)) { name = matchTc.name; break }
                                     }
                                 }
-                                toolResults.push({ id: tr.tool_call_id || "", name: name, result: tr.content })
+                                toolResults.push({ id: tr.tool_call_id || "", name: tr.tool_name || name, result: tr.content })
                                 i++
                             }
                             _result.push({ role: "user", content: null, toolResults: toolResults })
@@ -381,9 +459,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         body.response_format = { type: "json_object" }
                     }
                     body = merge(body, aOptions.params)
+                    // Preserve any tools already set via aOptions.params (e.g. built-in tools like web_search_preview)
+                    var _paramTools = isArray(body.tools) ? body.tools : []
                     // Only include tools if there are any configured
                     if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools
+                        var _funcTools = aTools
                             .map(t => {
                                 if (isString(t)) {
                                     var _tool = _r.tools[t]
@@ -402,12 +482,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 }
                             })
                             .filter(isDef)
+                        body.tools = _paramTools.concat(_funcTools)
                         if (!isArray(body.tools) || body.tools.length == 0) delete body.tools
                     } else {
-                        if (isDef(body.tools)) delete body.tools
+                        if (_paramTools.length > 0) body.tools = _paramTools
+                        else if (isDef(body.tools)) delete body.tools
                     }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
-                    var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
+                    var _res = _r._request(_route("chat/completions", aModel), body)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
                     // If OpenAI rejects a provided json_schema for missing properties, retry with json_object
                     if (isMap(_res) && isMap(_res.error)) {
@@ -419,7 +501,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (_isSchema && _missingProps && (!isArray(body.tools) || body.tools.length === 0)) {
                             var _retryBody = clone(body)
                             _retryBody.response_format = { type: "json_object" }
-                            _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", _retryBody)
+                            _res = _r._request(_route("chat/completions", aModel), _retryBody)
                         }
                     }
                     if (isDef(_res) && isArray(_res.choices)) {
@@ -429,9 +511,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                             if (isDef(tc.message) && isArray(tc.message.tool_calls)) {
                                 tc.message.tool_calls.forEach(tci => {
                                     var _t = _r.tools[tci.function.name]
-                                    var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
-                                    _p.push({ role: "assistant", tool_calls: [ tci ]})
-                                    _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
+                                    if (isDef(_t) && isFunction(_t.fn)) {
+                                        var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
+                                        _p.push({ role: "assistant", tool_calls: [ tci ]})
+                                        _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
+                                    }
                                 })
                             }
                             if (isDef(tc.finish_reason) && tc.finish_reason == "stop") {
@@ -485,8 +569,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                         body.response_format = { type: "json_object" }
                     }
                     body = merge(body, aOptions.params)
+                    // Preserve any tools already set via aOptions.params (e.g. built-in tools like web_search_preview)
+                    var _paramTools = isArray(body.tools) ? body.tools : []
                     if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools
+                        var _funcTools = aTools
                             .map(t => {
                                 if (isString(t)) {
                                     var _tool = _r.tools[t]
@@ -505,9 +591,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 }
                             })
                             .filter(isDef)
+                        body.tools = _paramTools.concat(_funcTools)
                         if (!isArray(body.tools) || body.tools.length == 0) delete body.tools
                     } else {
-                        if (isDef(body.tools)) delete body.tools
+                        if (_paramTools.length > 0) body.tools = _paramTools
+                        else if (isDef(body.tools)) delete body.tools
                     }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
 
@@ -516,7 +604,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var toolCallsMap = {}
                     var lastResponse = __
                     var finishReason = __
-                    var _stream = _r._requestStream((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
+                    var _stream = _r._requestStream(_route("chat/completions", aModel), body)
                     var streamError = _readSseStream(_stream, payload => {
                         if (payload === "[DONE]") return true
                         var data = jsonParse(payload, __, __, true)
@@ -613,7 +701,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     msgs = aPrompt.map(c => isMap(c) ? c.content : c )
                  
                     _r.conversation = aPrompt
-                    return _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "images/generations", merge({
+                    return _r._request(_route("images/generations", aModel), merge({
                        model: aModel,
                        prompt: msgs.join("\n"),
                        response_format: "b64_json"
@@ -654,7 +742,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getModels: () => {
-                    var res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "models", {}, "GET")
+                    var res = _r._request(_route("models"), {}, "GET")
                     if (isArray(res.data)) {
                         return res.data
                     } else {
@@ -664,7 +752,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 getModelInfo: (aModelId) => {
                     aModelId = _$(aModelId, "aModelId").isString().default(_model)
                     var _modelId = encodeURIComponent(aModelId)
-                    return _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "models/" + _modelId, {}, "GET")
+                    return _r._request(_route("models/" + _modelId), {}, "GET")
                 },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
@@ -681,7 +769,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     body = merge(body, aOptions.params)
                     
-                    var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "embeddings", body)
+                    var _res = _r._request(_route("embeddings", aEmbeddingModel), body)
                     _captureStats(_res, body)
                     return _res
                 },
@@ -694,10 +782,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
-                       requestHeaders: merge(aOptions.headers, { 
-                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key),
-                          Accept       : "*/*"
-                       })
+                       requestHeaders: _headers("*/*")
                     } 
                     _h.close()
                  
@@ -716,8 +801,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
 
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI))
-                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData))
+                    case "GET" : return _fnh($rest(__m).get2Stream(_buildURL(aURI)))
+                    case "POST": return _fnh($rest(__m).post2Stream(_buildURL(aURI), aData))
                     }
                 },
                 _requestStream: (aURI, aData, aVerb) => {
@@ -729,16 +814,21 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
-                       requestHeaders: merge(aOptions.headers, { 
-                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key),
-                          Accept       : "text/event-stream"
-                       })
+                       requestHeaders: _headers("text/event-stream")
                     } 
                     _h.close()
 
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return $rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI)
-                    case "POST": return $rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData)
+                    case "GET" : return $rest(__m).get2Stream(_buildURL(aURI))
+                    case "POST": return $rest(__m).post2Stream(_buildURL(aURI), aData)
+                    }
+                },
+                __debugTransport: (aEndpoint, aDeploymentFallback, aAccept) => {
+                    var _u = _route(aEndpoint, aDeploymentFallback)
+                    return {
+                        uri    : _u,
+                        url    : _buildURL(_u),
+                        headers: _headers(_$(aAccept, "aAccept").isString().default("*/*"))
                     }
                 }
             }
@@ -1705,7 +1795,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                         if (isDef(matchTc)) { name = matchTc.name; break }
                                     }
                                 }
-                                toolResults.push({ id: tr.tool_call_id || "", name: name, result: tr.content })
+                                toolResults.push({ id: tr.tool_call_id || "", name: tr.tool_name || name, result: tr.content })
                                 i++
                             }
                             _result.push({ role: "user", content: null, toolResults: toolResults })
@@ -1748,7 +1838,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 _conv.push({
                                     role: "tool",
                                     content: isString(tr.result) ? tr.result : stringify(tr.result || "", __, ""),
-                                    tool_call_id: tr.id || ("tc_" + idx + "_" + ti)
+                                    tool_call_id: tr.id || ("tc_" + idx + "_" + ti),
+                                    tool_name: tr.name || ""
                                 })
                             })
                         } else {
@@ -1873,7 +1964,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var _tr = _t.fn(_args)
                                 // Ensure tool response is a string
                                 _p.push({ role: "assistant", tool_calls: [ tc ] })
-                                _p.push({ role: "tool", content: isString(_tr) ? _tr : stringify(_tr, __, ""), tool_call_id: tc.id || tc.function.id })
+                                _p.push({ role: "tool", tool_name: tc.function.name, content: isString(_tr) ? _tr : stringify(_tr, __, "") })
                             }
                         })
                         // Also ensure all pushed messages have string content
@@ -1982,7 +2073,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                     if (isUnDef(_args)) _args = {}
                                     var _tr = stringify(_t.fn(_args), __, "")
                                     _p.push({ role: "assistant", content: "", tool_calls: [ tc ] })
-                                    _p.push({ role: "tool", content: _tr, tool_call_id: tc.id || tc.function.id })
+                                    _p.push({ role: "tool", tool_name: tc.function.name, content: _tr })
                                 }
                             }
                         })
@@ -3018,7 +3109,31 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
 /**
  * <odoc>
  * <key>ow.ai.gpt(aType, aOptions) : ow.ai.gpt</key>
- * Creates a GPT AI model of aType (e.g. "openai" or "ollama") with aOptions.\
+ * Creates a GPT AI model of aType (e.g. "openai", "gemini", "ollama" or "anthropic") with aOptions.\
+ * \
+ * Common aOptions properties include:\
+ * - key: provider API key when required.\
+ * - model: default model name or deployment name.\
+ * - url: provider base URL. For OpenAI defaults to "https://api.openai.com".\
+ * - temperature: default model temperature.\
+ * - timeout: request timeout in milliseconds (defaults to 15 minutes).\
+ * - headers: extra request headers. These override generated headers with the same names.\
+ * - params: extra request body parameters merged into prompt, image and embedding calls.\
+ * - noSystem: when true, system messages are converted to developer messages where supported (defaults to true).\
+ * - noResponseFormat: when true, disables OpenAI-compatible JSON response_format injection.\
+ * \
+ * OpenAI-compatible transport options:\
+ * - apiVersion: API version/path segment for OpenAI-compatible routes (defaults to "v1"). In Azure legacy mode this becomes the api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version.\
+ * - mode: transport mode. Supported values are "openai" (default), "azure-openai-v1", "azure-openai-legacy" and "foundry". Aliases: "azure-v1", "azure-legacy" and "azure-foundry".\
+ * - deployment: deployment name for "azure-openai-legacy" mode. If omitted, the selected model name is used.\
+ * - authType: authentication header style. Supported values are "bearer" (OpenAI default), "api-key" (Azure/Foundry default) and "none".\
+ * \
+ * Examples:\
+ * - OpenAI: new ow.ai.gpt("openai", { key: "sk-...", url: "https://api.openai.com/v1", model: "gpt-4o-mini" })\
+ * - Azure OpenAI v1: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-v1", model: "DEPLOYMENT" })\
+ * - Azure OpenAI legacy: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-legacy", deployment: "DEPLOYMENT", apiVersion: "2024-10-21" })\
+ * - Azure AI Foundry v1: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" })\
+ * - Azure AI Foundry dated API: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" })\
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
@@ -3666,7 +3781,7 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
 /**
  * <odoc>
  * <key>$gpt(aModel) : $gpt</key>
- * Creates a GPT AI model of aType (e.g. "openai" or "ollama") with aOptions.\
+ * Creates a GPT AI model from aModel (e.g. type "openai", "gemini", "ollama" or "anthropic").\
  * \
  * aModel can be a map with the following properties:\
  * - type: the type of the model (e.g. "openai", "ollama", "anthropic")\
@@ -3678,6 +3793,19 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * - instructions: a string or an array of strings with the instructions for the model (e.g. "json", "boolean", "sql", "js", "path")\
  * - headers: a map with the headers to use in the requests (e.g. { "Content-Type": "application/json" })\
  * - params: a map with the parameters to use in the requests (e.g. { "max_tokens": 1000, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 })\
+ * \
+ * For type "openai", options can also include:\
+ * - mode: transport mode ("openai", "azure-openai-v1", "azure-openai-legacy" or "foundry").\
+ * - apiVersion: OpenAI-compatible API version path segment, or Azure legacy api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version. Defaults to "v1".\
+ * - deployment: Azure OpenAI legacy deployment name; defaults to model when omitted.\
+ * - authType: generated authentication header style ("bearer", "api-key" or "none"). Defaults to "bearer" for OpenAI mode and "api-key" for Azure/Foundry modes.\
+ * \
+ * OpenAI-compatible examples:\
+ * - { type: "openai", key: "sk-...", url: "https://api.openai.com/v1", model: "gpt-4o-mini" }\
+ * - { type: "openai", key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-v1", model: "DEPLOYMENT" }\
+ * - { type: "openai", key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-legacy", deployment: "DEPLOYMENT", apiVersion: "2024-10-21" }\
+ * - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" }\
+ * - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" }\
  * \
  * If aModel is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
  * \
