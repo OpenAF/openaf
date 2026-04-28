@@ -1280,11 +1280,12 @@ OpenWrap.ch.prototype.__types = {
 	/**
 	 * <odoc>
 	 * <key>ow.ch.types.file</key>
-	 * This OpenAF implementation implements a simple channel on a single JSON or YAML file. The creation options are:\
+	 * This OpenAF implementation implements a simple channel on a single JSON, YAML or TOON file. The creation options are:\
 	 * \
 	 *    - file      (String)  The filepath to the JSON or YAML file to use (if multifile is false)\
-	 *    - path      (String)  The path to use to store JSON or YAML objects to use (if multifile is true)\
+	 *    - path      (String)  The path to use to store JSON, YAML or TOON objects to use (if multifile is true)\
 	 *    - yaml      (Boolean) Use YAML instead of JSON (defaults to false)\
+	 *    - toon      (Boolean) Use TOON instead of JSON (defaults to false)\
 	 *    - compact   (Boolean) If JSON and compact = true the JSON format will be compacted (defaults to false or shouldCompress option)\
 	 *    - multifile (Boolean) If true instead of keeping values in one file it will be kept in multiple files (*)\
 	 *    - multipart (Boolean) If YAML and multipart = true the YAML file will be multipart\
@@ -1304,6 +1305,7 @@ OpenWrap.ch.prototype.__types = {
 		__channels: {},
 		__l: (m) => (isString(m.lock) ? $flock(m.lock).lock() : __),
 		__ul: (m) => (isString(m.lock) ? $flock(m.lock).unlock() : __),
+		__fext: (m) => (m.yaml ? ".yaml" : (m.toon ? ".toon" : ".json")),
 		__r: (m) => {
 			var r = {};
 			if (!io.fileExists(m.file)) {
@@ -1336,6 +1338,26 @@ OpenWrap.ch.prototype.__types = {
 				} else {
 					r = io.readFileYAML(m.file)
 				}
+			} else if (m.toon) {
+				if (m.gzip) {
+					try {
+						var is = io.readFileGzipStream(m.file)
+						r = af.fromTOON(af.fromInputStream2String(is))
+						is.close()
+					} catch(e) {
+						if (String(e).indexOf("java.io.EOFException") < 0) throw e	
+					}
+				} else if (m.lz4) {
+					try {
+						var is = io.readFileLZ4Stream(m.file)
+						r = af.fromTOON(af.fromInputStream2String(is))
+						is.close()
+					} catch(e) {
+						if (String(e).indexOf("java.io.EOFException") < 0) throw e	
+					}
+				} else {
+					r = af.fromTOON(io.readFileString(m.file))
+				}
 			} else {
 				if (m.gzip) {
 					try {
@@ -1365,7 +1387,7 @@ OpenWrap.ch.prototype.__types = {
 			var r = {};
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 
-			if (!io.fileExists(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))) {
+			if (!io.fileExists(m.path + "/" + _id + this.__fext(m) + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))) {
 				return __
 			} else {
 				if (m.yaml) {
@@ -1379,6 +1401,18 @@ OpenWrap.ch.prototype.__types = {
 						is.close()
 					} else {
 						r = io.readFileYAML(m.path + "/" + _id + ".yaml")
+					}
+				} else if (m.toon) {
+					if (m.gzip) {
+						var is = io.readFileGzipStream(m.path + "/" + _id + ".toon.gz")
+						r = af.fromTOON(af.fromInputStream2String(is))
+						is.close()
+					} else if (m.lz4) {
+						var is = io.readFileLZ4Stream(m.path + "/" + _id + ".toon.lz4")
+						r = af.fromTOON(af.fromInputStream2String(is))
+						is.close()
+					} else {
+						r = af.fromTOON(io.readFileString(m.path + "/" + _id + ".toon"))
 					}
 				} else {
 					if (m.gzip) {
@@ -1415,6 +1449,18 @@ OpenWrap.ch.prototype.__types = {
 				} else {
 					io.writeFileYAML(m.file, (m.multipart && isDef(m.key) ? $m4a(o, m.key) : o), m.multipart)
 				}
+			} else if (m.toon) {
+				if (m.gzip) {
+					var os = io.writeFileGzipStream(m.file)
+					ioStreamWrite(os, af.toTOON(o))
+					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.file)
+					ioStreamWriteBytes(os, af.fromString2Bytes(af.toTOON(o)))
+					os.close()
+				} else {
+					io.writeFileString(m.file, af.toTOON(o))
+				}
 			} else {
 				if (m.gzip) {
 					var os = io.writeFileGzipStream(m.file)
@@ -1445,6 +1491,18 @@ OpenWrap.ch.prototype.__types = {
 				} else {
 					io.writeFileYAML(m.path + "/" + _id + ".yaml", v, m.multipart)
 				}
+			} else if (m.toon) {
+				if (m.gzip) {
+					var os = io.writeFileGzipStream(m.path + "/" + _id + ".toon.gz")
+					ioStreamWrite(os, af.toTOON(v))
+					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.path + "/" + _id + ".toon.lz4")
+					ioStreamWriteBytes(os, af.toTOON(v))
+					os.close()
+				} else {
+					io.writeFileString(m.path + "/" + _id + ".toon", af.toTOON(v))
+				}
 			} else {
 				if (m.gzip) {
 					var os = io.writeFileGzipStream(m.path + "/" + _id + ".json.gz")
@@ -1464,7 +1522,7 @@ OpenWrap.ch.prototype.__types = {
 		__df: (m, k) => {
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 			try {
-				io.rm(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))
+				io.rm(m.path + "/" + _id + this.__fext(m) + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))
 			} catch(e) {
 				logErr("Error removing file: " + e)
 				throw e
@@ -1478,6 +1536,7 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].file      = _$(options.file, "options.file").isString().default(__)
 			this.__channels[aName].path      = _$(options.path, "options.path").isString().default(__)
 			this.__channels[aName].yaml      = _$(options.yaml, "options.yaml").isBoolean().default(false);
+			this.__channels[aName].toon      = _$(options.toon, "options.toon").isBoolean().default(false);
 			this.__channels[aName].multifile = _$(options.multifile, "options.multifile").isBoolean().default(false)
 			this.__channels[aName].multipart = _$(options.multipart, "options.multipart").isBoolean().default(false);
 			this.__channels[aName].multipath = _$(options.multipath, "options.multipath").isBoolean().default(false);
@@ -1489,12 +1548,13 @@ OpenWrap.ch.prototype.__types = {
 
 			if (this.__channels[aName].lz4) this.__channels[aName].gzip = false
 			if (this.__channels[aName].gzip) this.__channels[aName].lz4 = false
+			if (this.__channels[aName].toon) this.__channels[aName].yaml = false
 
 			if (this.__channels[aName].multifile) {
-				this.__channels[aName].file = this.__channels[aName].path + "/index" + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : (this.__channels[aName].lz4 ? ".lz4" : ""))
+				this.__channels[aName].file = this.__channels[aName].path + "/index" + this.__fext(this.__channels[aName]) + (this.__channels[aName].gzip ? ".gz" : (this.__channels[aName].lz4 ? ".lz4" : ""))
 			} else {
 				if (isUnDef(this.__channels[aName].file) || this.__channels[aName].file === "") {
-					this.__channels[aName].file = (isDef(this.__channels[aName].path) ? this.__channels[aName].path : ".") + "/data-" + aName + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : (this.__channels[aName].lz4 ? ".lz4" : ""))
+					this.__channels[aName].file = (isDef(this.__channels[aName].path) ? this.__channels[aName].path : ".") + "/data-" + aName + this.__fext(this.__channels[aName]) + (this.__channels[aName].gzip ? ".gz" : (this.__channels[aName].lz4 ? ".lz4" : ""))
 				}
 			}
 
