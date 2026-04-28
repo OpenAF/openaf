@@ -54,11 +54,15 @@ var verbs = {
 	},
 	"pack": {
 		"help"        : "Generates a opack file from a packaging directory",
-		"optionshelp" : ""
+		"optionshelp" : [ "Regenerates the package metadata before creating the opack file.",
+		                  "'--exclude a,b': Exclude top-level files or directories named a or b while generating the file list.",
+		                  "'--includeSCM' : Include source control directories such as .git and .svn.",
+		                  "If you previously ran genpack with --exclude, provide the same --exclude options to pack." ]
 	},
 	"genpack": {
 		"help"        : "Generates a package.json for packaging.",
-		"optionshelp" : ""
+		"optionshelp" : [ "'--exclude a,b': Exclude top-level files or directories named a or b while generating the file list.",
+		                  "'--includeSCM' : Include source control directories such as .git and .svn." ]
 	},
 	"add2db": {
 		"help"        : "Add an already installed package to the local OpenPack database",
