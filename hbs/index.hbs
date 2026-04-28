@@ -10,11 +10,11 @@
   <!--link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/-->
 </head>
 <body>
-  <nav class="grey lighten-5" role="navigation">
+  <nav class="navbar grey lighten-5" role="navigation">
     <div class="nav-wrapper container">
       <a id="logo-container" href="{{logo.link}}" class="brand-logo orange-text thin">{{logo.text}}</a>
-      <a href="#" data-target="mobile" class="sidenav-trigger button-collapse orange-text thin"><i class="material-icons">menu</i></a>
-      <ul id="nav-mobile" class="right hide-on-med-and-down side-nav waves-effect waves-light thin">
+      <a href="#" data-target="mobile" class="sidenav-trigger orange-text thin"><i class="material-icons">menu</i></a>
+      <ul id="nav-mobile" class="right hide-on-med-and-down waves-effect waves-light thin">
         {{#each navbar}}
         <li><a href="{{link}}" class="orange-text">{{text}}</a></li>
         {{/each}}
@@ -51,8 +51,8 @@
   </footer>
 
   <script>
-    $( document ).ready(function(){
-       $(".sidenav").sidenav();
+    document.addEventListener('DOMContentLoaded', function() {
+       M.Sidenav.init(document.querySelectorAll('.sidenav'));
     });
     window.onbeforeunload = function(event) {
        $.ajax({ async: false, type: 'GET', url: '{{uriPrefix}}/exec/quit', success: function(d) {}});
