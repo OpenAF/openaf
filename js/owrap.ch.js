@@ -1456,7 +1456,7 @@ OpenWrap.ch.prototype.__types = {
 					os.close()
 				} else if (m.lz4) {
 					var os = io.writeFileLZ4Stream(m.file)
-					ioStreamWriteBytes(os, af.toTOON(o))
+					ioStreamWriteBytes(os, af.fromString2Bytes(af.toTOON(o)))
 					os.close()
 				} else {
 					io.writeFileString(m.file, af.toTOON(o))
