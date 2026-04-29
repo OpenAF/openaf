@@ -86,8 +86,242 @@
         }
     };
 
+    exports.testWithMDWrapOverride = function() {
+        var _oldCon = __con;
+        var _oldConStatus = __conStatus;
+
+        __con = {
+            getTerminal: () => ({
+                getWidth: () => 20
+            })
+        };
+        __conStatus = true;
+
+        try {
+            var rendered = ow.format.withMD("alpha 😀 **beta** 😀 gamma", __, 10);
+            var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+
+            ow.test.assert(plain, "alpha 😀\nbeta 😀\ngamma", "Problem with markdown paragraph wrap override.");
+            rendered.split("\n").forEach(line => {
+                ow.test.assert(visibleLength(line) <= 10, true, "Problem with markdown paragraph wrapped line width override.");
+            });
+        } finally {
+            __con = _oldCon;
+            __conStatus = _oldConStatus;
+        }
+    };
+
+    exports.testWithMDWrapOverrideWithBgColor = function() {
+        var _oldCon = __con;
+        var _oldConStatus = __conStatus;
+
+        __con = {
+            getTerminal: () => ({
+                getWidth: () => 20
+            })
+        };
+        __conStatus = true;
+
+        try {
+            var rendered = ow.format.withMD("alpha 😀 **beta** 😀 gamma", "RESET", 10, "BG_BLUE");
+            var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+
+            ow.test.assert(plain, "alpha 😀\nbeta 😀\ngamma", "Problem with markdown paragraph wrap override with background color.");
+            rendered.split("\n").forEach(line => {
+                ow.test.assert(visibleLength(line) <= 10, true, "Problem with markdown paragraph wrapped line width override with background color.");
+            });
+        } finally {
+            __con = _oldCon;
+            __conStatus = _oldConStatus;
+        }
+    };
+
+    exports.testWithMDBlockquoteSingleSideLine = function() {
+        var rendered = ow.format.withMD("> some comment", __, 20);
+        var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = plain.split("\n");
+
+        ow.test.assert(lines.length, 1, "Problem with markdown blockquote rendering lines.");
+        ow.test.assert(lines[0], "│ some comment", "Problem with markdown blockquote rendering a single side line.");
+    };
+
+    exports.testWithSideLineUnicodeHeaderFooter = function() {
+        var rendered = ow.format.withSideLine("x", 8, __, __, ow.format.withSideLineThemes().closedRect, {
+            header: "🇵🇹",
+            headerAlign: "left",
+            footer: "🇵🇹",
+            footerAlign: "left"
+        });
+        var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = plain.split("\n");
+
+        ow.test.assert(lines[0], "┌──🇵🇹──┐", "Problem with withSideLine unicode header width.");
+        ow.test.assert(lines[1], "│ x    │", "Problem with withSideLine unicode body width.");
+        ow.test.assert(lines[2], "└──🇵🇹──┘", "Problem with withSideLine unicode footer width.");
+        lines.forEach(line => {
+            ow.test.assert(visibleLength(line), 8, "Problem with withSideLine unicode visible width.");
+        });
+    };
+
     exports.testPad = function() {
         ow.test.assert(ow.format.string.leftPad(".", 2, "-") + ow.format.string.rightPad(".", 2, "-"), "-..-", "Problem with left and right padding.");        
+    };
+
+    exports.testTermCapabilities = function() {
+        var caps = ow.format.term.getCapabilities({ refresh: true });
+        ow.test.assert(isMap(caps), true, "Problem with terminal capabilities map.");
+        ow.test.assert(isNumber(caps.width), true, "Problem with terminal capabilities width.");
+        ow.test.assert(isNumber(caps.height), true, "Problem with terminal capabilities height.");
+        ow.test.assert(isString(caps.colorMode), true, "Problem with terminal capabilities color mode.");
+
+        var palette = ow.format.term.getPalette("16", { accent: "MAGENTA" });
+        ow.test.assert(palette.accent, "MAGENTA", "Problem with palette override.");
+        ow.test.assert(isDef(palette.positive), true, "Problem with palette base values.");
+    };
+
+    exports.testVizDiffFrames = function() {
+        var diff = ow.format.viz.diffFrames("A\nB", "A\nC");
+        ow.test.assert(isMap(diff), true, "Problem with diffFrames return map.");
+        ow.test.assert(diff.changedLines, 1, "Problem with changed lines detection.");
+        ow.test.assert(diff.lines, 2, "Problem with output lines count.");
+        ow.test.assert(isString(diff.patch), true, "Problem with output patch generation.");
+    };
+
+    exports.testVizBenchmarkRender = function() {
+        var res = ow.format.viz.benchmarkRender(i => repeat(5, String(i)), { iterations: 5 });
+        ow.test.assert(res.iterations, 5, "Problem with benchmark iterations.");
+        ow.test.assert(isNumber(res.avgMs), true, "Problem with benchmark avgMs.");
+        ow.test.assert(res.maxMs >= res.minMs, true, "Problem with benchmark max/min.");
+    };
+
+    exports.testVizCreateCanvas = function() {
+        var canvas = ow.format.viz.createCanvas({ width: 10, height: 3 });
+        ow.test.assert(canvas.width, 10, "Problem with canvas width.");
+        ow.test.assert(canvas.height, 3, "Problem with canvas height.");
+        canvas.write(0, 0, "Hi");
+        var rendered = canvas.render();
+        ow.test.assert(rendered.split("\n").length, 3, "Problem with canvas render line count.");
+        ow.test.assert(rendered.split("\n")[0].indexOf("Hi") >= 0, true, "Problem with canvas write content.");
+    };
+
+    exports.testVizLayout = function() {
+        var widths = ow.format.viz.layout.split(100, [20, "50%", "auto"]);
+        ow.test.assert(widths[0], 20, "Problem with layout fixed split.");
+        ow.test.assert(widths[1], 50, "Problem with layout percentage split.");
+        ow.test.assert(widths[2], 30, "Problem with layout auto split.");
+
+        var padded = ow.format.viz.layout.padLines("abc\ndef", 5, 3);
+        var lines = padded.split("\n");
+        ow.test.assert(lines.length, 3, "Problem with padLines height.");
+        ow.test.assert(lines[0].length, 5, "Problem with padLines width.");
+    };
+
+    exports.testPrintSparkline = function() {
+        var spark = ow.format.printSparkline([1, 5, 3, 8, 2, 9, 4], { palette: "none" });
+        ow.test.assert(isString(spark), true, "Problem with printSparkline returning string.");
+        var plain = spark.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        ow.test.assert(plain.length, 7, "Problem with printSparkline character count.");
+
+        var multi = ow.format.printSparkline([{ data: [1,2,3], name: "a" }, { data: [3,2,1], name: "b" }], { palette: "none" });
+        ow.test.assert(multi.split("\n").length, 2, "Problem with multi-series sparkline line count.");
+
+        var empty = ow.format.printSparkline([], { palette: "none" });
+        ow.test.assert(empty.indexOf("empty") >= 0, true, "Problem with empty sparkline fallback.");
+    };
+
+    exports.testPrintHistogram = function() {
+        var vals = [1, 2, 2, 3, 3, 3, 4, 4, 5];
+        var hist = ow.format.printHistogram(vals, { buckets: 3, width: 40, palette: "none" });
+        ow.test.assert(isString(hist), true, "Problem with printHistogram returning string.");
+        ow.test.assert(hist.split("\n").length, 3, "Problem with printHistogram bucket line count.");
+
+        var histV = ow.format.printHistogram(vals, { buckets: 3, vertical: true, width: 20, height: 6, palette: "none" });
+        ow.test.assert(isString(histV), true, "Problem with printHistogram vertical mode.");
+        ow.test.assert(histV.split("\n").length, 5, "Problem with printHistogram vertical line count.");
+
+        var empty = ow.format.printHistogram([], { palette: "none" });
+        ow.test.assert(empty.indexOf("empty") >= 0, true, "Problem with empty histogram fallback.");
+    };
+
+    exports.testPrintBulletValueFormats = function() {
+        var raw = ow.format.printBullet({ value: 1536, label: "raw" }, { width: 30, palette: "none" });
+        ow.test.assert(raw.indexOf("1536") >= 0, true, "Problem with printBullet raw values.");
+
+        var si = ow.format.printBullet({ value: 1536, label: "si" }, { width: 30, palette: "none", valueFormat: "si" });
+        ow.test.assert(si.indexOf("1.54k") >= 0, true, "Problem with printBullet SI abbreviated values.");
+
+        var bytes = ow.format.printBullet({ value: 1536, label: "bytes" }, { width: 30, palette: "none", valueFormat: "bytes" });
+        ow.test.assert(bytes.indexOf("1.5 KB") >= 0, true, "Problem with printBullet byte abbreviated values.");
+    };
+
+    exports.testPrintDashboard = function() {
+        var dash = ow.format.printDashboard([
+            { type: "text", data: "Hello", title: "A" },
+            { type: "text", data: "World", title: "B" }
+        ], { width: 40, height: 8, palette: "none" });
+        ow.test.assert(isString(dash), true, "Problem with printDashboard returning string.");
+        var plain = dash.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        ow.test.assert(plain.length > 0, true, "Problem with printDashboard non-empty output.");
+        ow.test.assert(plain.split("\n")[0].length, 40, "Problem with printDashboard total width.");
+
+        var dash2 = ow.format.printDashboard([
+            [{ type: "text", data: "Left" }, { type: "text", data: "Right" }],
+            [{ type: "text", data: "Bottom", options: {} }]
+        ], { width: 40, height: 10, palette: "none" });
+        ow.test.assert(isString(dash2), true, "Problem with 2D grid dashboard.");
+
+        // span support
+        var dashSpan = ow.format.printDashboard([
+            [{ type: "text", data: "Wide", span: 2 }, { type: "text", data: "Narrow" }]
+        ], { width: 60, height: 6, palette: "none" });
+        ow.test.assert(isString(dashSpan), true, "Problem with printDashboard span.");
+
+        // new types: map, bar, func
+        var dashMap = ow.format.printDashboard([{ type: "map", data: { a: 1, b: 2 } }], { width: 40, height: 6, palette: "none" });
+        ow.test.assert(isString(dashMap), true, "Problem with printDashboard map type.");
+        var dashBar = ow.format.printDashboard([{ type: "bar", data: "int 5" }], { width: 40, height: 6, palette: "none" });
+        ow.test.assert(isString(dashBar), true, "Problem with printDashboard bar type.");
+        var dashFunc = ow.format.printDashboard([{ type: "func", data: "return repeat(mx, '-')" }], { width: 40, height: 6, palette: "none" });
+        ow.test.assert(isString(dashFunc), true, "Problem with printDashboard func type.");
+    };
+
+    exports.testGrid = function() {
+        // basic 2-column grid
+        var g = ow.format.string.grid([
+            [{ obj: "Left", type: "text" }, { obj: "Right", type: "text" }]
+        ], 5, 40, " ", true);
+        ow.test.assert(isString(g), true, "Problem with grid returning string.");
+        ow.test.assert(g.length > 0, true, "Problem with grid non-empty output.");
+
+        // new types via printDashboard: sparkline
+        var gSpark = ow.format.string.grid([
+            [{ obj: [1, 2, 3, 4, 5], type: "sparkline" }]
+        ], 4, 40, " ", true);
+        ow.test.assert(isString(gSpark), true, "Problem with grid sparkline type.");
+
+        // new types via printDashboard: histogram
+        var gHist = ow.format.string.grid([
+            [{ obj: [1, 2, 3, 4, 5, 6, 7, 8], type: "histogram" }]
+        ], 6, 40, " ", true);
+        ow.test.assert(isString(gHist), true, "Problem with grid histogram type.");
+
+        // new types via printDashboard: progress
+        var gProg = ow.format.string.grid([
+            [{ obj: { value: 50, max: 100, min: 0 }, type: "progress" }]
+        ], 4, 40, " ", true);
+        ow.test.assert(isString(gProg), true, "Problem with grid progress type.");
+
+        // xspan
+        var gSpan = ow.format.string.grid([
+            [{ obj: "Full width", type: "text", xspan: 2 }, { obj: "Half", type: "text" }]
+        ], 5, 60, " ", true);
+        ow.test.assert(isString(gSpan), true, "Problem with grid xspan.");
+
+        // title
+        var gTitle = ow.format.string.grid([
+            [{ obj: "Content", type: "text", title: "MyTitle" }]
+        ], 5, 40, " ", true);
+        ow.test.assert(gTitle.indexOf("MyTitle") >= 0, true, "Problem with grid title rendering.");
     };
 
     exports.testDateDiff = function() {
