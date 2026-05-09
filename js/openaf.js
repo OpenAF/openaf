@@ -15951,7 +15951,7 @@ if (isDef(__flags.NET_IGNORE_SSL_DOMAINS)) {
   var _a = __flags.NET_IGNORE_SSL_DOMAINS
   if (isArray(_a)) {
     ow.loadJava().setIgnoreSSLDomains(_a)
-    printErr("WARNING: SSL domains to ignore for network connections: " + af.toSLON(_a))
+    printErr("WARNING: TLS/SSL certificate validation is disabled for network connections matching these domains: " + af.toSLON(_a))
   }
 }
 
