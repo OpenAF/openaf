@@ -212,6 +212,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OAF_CLOSED                 : false,
 	OAF_PRECOMPILE_LEVEL       : 2,
 	OAF_ERRSTACK               : true,   // If true $err will print the stack trace
+	NET_IGNORE_SSL_DOMAINS     : __,
 	TEMPLATE_SET               : true,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
@@ -15945,6 +15946,14 @@ var __pm = __pmIn;
 __pmOut = __pm;
 
 __flags = merge(__flags, getEnvsDef("OAF_FLAGS", __, __, true))
+
+if (isDef(__flags.NET_IGNORE_SSL_DOMAINS)) {
+  var _a = __flags.NET_IGNORE_SSL_DOMAINS
+  if (isArray(_a)) {
+    ow.loadJava().setIgnoreSSLDomains(_a)
+    printErr("WARNING: SSL domains to ignore for network connections: " + af.toSLON(_a))
+  }
+}
 
 // -------------------------------------
 // Profile support (must be always last)
