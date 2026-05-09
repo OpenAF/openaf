@@ -387,5 +387,10 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
         <artifactId>ojdbc17</artifactId>
         <version>23.26.1.0.0</version>
     </dependency>
+      <dependency>
+        <groupId>com.sun.mail</groupId>
+        <artifactId>jakarta.mail</artifactId>
+        <version>1.6.8</version>
+    </dependency>
   </dependencies>
 </project>
