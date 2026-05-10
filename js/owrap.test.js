@@ -9,20 +9,86 @@ OpenWrap.test = function() {
 	return ow.test
 }
 
+/**
+ * <odoc>
+ * <key>ow.test.getCountTest() : Number</key>
+ * Returns the current count of tests executed.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getCountTest = function() { return this.__countTest.get() }
+/**
+ * <odoc>
+ * <key>ow.test.getCountPass() : Number</key>
+ * Returns the current count of tests that passed.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getCountPass = function() { return this.__countPass.get() }
+/**
+ * <odoc>
+ * <key>ow.test.getCountFail() : Number</key>
+ * Returns the current count of tests that failed.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getCountFail = function() { return this.__countFail.get() }
+/**
+ * <odoc>
+ * <key>ow.test.getCountAssert() : Number</key>
+ * Returns the current count of assertions executed.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getCountAssert = function() { return this.__countAssert.get() }
+/**
+ * <odoc>
+ * <key>ow.test.getProfileHits(aProfileKey) : Number</key>
+ * Returns the number of times the timer for aProfileKey was stopped (completed executions).
+ * </odoc>
+ */
 OpenWrap.test.prototype.getProfileHits = function(aProfileKey) { return this.__profile[aProfileKey].hits.get() }
+/**
+ * <odoc>
+ * <key>ow.test.getProfileAvg(aProfileKey) : Number</key>
+ * Returns the average elapsed time in ms across all recorded executions for aProfileKey.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getProfileAvg  = function(aProfileKey) { return this.__profile[aProfileKey].sum.get() / this.__profile[aProfileKey].hits.get() }
+/**
+ * <odoc>
+ * <key>ow.test.getProfileLast(aProfileKey) : Number</key>
+ * Returns the last recorded elapsed time in ms for aProfileKey.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getProfileLast = function(aProfileKey) { return this.__profile[aProfileKey].last.get() }
+/**
+ * <odoc>
+ * <key>ow.test.getProfileMax(aProfileKey) : Number</key>
+ * Returns the maximum recorded elapsed time in ms for aProfileKey.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getProfileMax  = (aProfileKey) => { return this.__profile[aProfileKey].max }
+/**
+ * <odoc>
+ * <key>ow.test.getProfileMin(aProfileKey) : Number</key>
+ * Returns the minimum recorded elapsed time in ms for aProfileKey.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getProfileMin  = (aProfileKey) => { return this.__profile[aProfileKey].min }
+/**
+ * <odoc>
+ * <key>ow.test.profileReset(aProfileKey)</key>
+ * Resets the profile counters (hits, sum, last and start) for aProfileKey.
+ * </odoc>
+ */
 OpenWrap.test.prototype.profileReset   = function(aProfileKey) { this.__profile[aProfileKey] = {
 		hits: $atomic(), sum: $atomic(), last: $atomic(), start: $atomic()
 }}
-OpenWrap.test.prototype.getProfile = function() { 
-	var _r = {} 
+/**
+ * <odoc>
+ * <key>ow.test.getProfile() : Map</key>
+ * Returns a map of all profile keys with their current hits, sum, last, start, max and min elapsed time values.
+ * </odoc>
+ */
+OpenWrap.test.prototype.getProfile = function() {
+	var _r = {}
 	var parent = this.__profile
 	Object.keys(parent).forEach(k => {
 		_r[k] = {}
@@ -35,8 +101,26 @@ OpenWrap.test.prototype.getProfile = function() {
 	})
 	return _r
 }
+/**
+ * <odoc>
+ * <key>ow.test.getAllProfileHits() : Map</key>
+ * Returns a map of all profile keys to their respective hit counts.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getAllProfileHits = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileHits(i)}; return r }
+/**
+ * <odoc>
+ * <key>ow.test.getAllProfileAvg() : Map</key>
+ * Returns a map of all profile keys to their respective average elapsed times in ms.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getAllProfileAvg  = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileAvg(i)}; return r }
+/**
+ * <odoc>
+ * <key>ow.test.getAllProfileLast() : Map</key>
+ * Returns a map of all profile keys to their respective last recorded elapsed times in ms.
+ * </odoc>
+ */
 OpenWrap.test.prototype.getAllProfileLast = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileLast(i)}; return r }
 /**
  * <odoc>
@@ -340,6 +424,12 @@ OpenWrap.test.prototype.getExecHistory = function() {
 	})
 }
 
+/**
+ * <odoc>
+ * <key>ow.test.toMarkdown() : String</key>
+ * Returns a markdown-formatted string with a summary and per-test result table for all tests executed.
+ * </odoc>
+ */
 OpenWrap.test.prototype.toMarkdown = function() {
 	var md = "# Test results\n\n"
 
