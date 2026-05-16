@@ -18,6 +18,7 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 
 ## AI & Processing
 - ow-ai-gpttypes.md – AI / LLM types (if present)
+- llm-frontend-guide.md – Rules for generating offline-first OpenAF frontends with mapped HTTP libs/endpoints
 
 ## Getting Started Path
 1. Read `openaf.md` (core helpers) & skim `ojob.md` basics.
