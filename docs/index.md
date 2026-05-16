@@ -14,10 +14,13 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 ## Advanced & Deep Dives
 - openaf-advanced.md – Extended ow.* module coverage, patterns
 - ojob-recipes.md – Practical, composable job recipes
-- terminal-256-viz-plan.md – Terminal visualization status, shipped widgets, remaining gaps
+- testing.md – Testing guidelines and practices
 
 ## AI & Processing
 - ow-ai-gpttypes.md – AI / LLM types (if present)
+- llm-guide.md – General LLM integration guide
+- llm-tui-guide.md – Guide for LLM Terminal User Interfaces
+- llm-frontend-guide.md – Rules for generating offline-first OpenAF frontends with mapped HTTP libs/endpoints
 
 ## Getting Started Path
 1. Read `openaf.md` (core helpers) & skim `ojob.md` basics.
