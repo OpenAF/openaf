@@ -20,6 +20,19 @@ OpenWrap.ch.prototype.lock2 = {};
 OpenWrap.ch.prototype.__types = {
 	// Obj BIG channel implementation
 	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.big</key>
+	 * This OpenAF channel implementation stores key/values in a compressed in-memory structure (ow.obj.big) optimized
+	 * for large datasets. It accepts no creation options beyond the inherited shouldCompress parameter.\
+	 * \
+	 * Example:\
+	 * \
+	 *    ow.ch.create("myBig", true, "big");\
+	 * \
+	 * Note: the underlying ow.obj.big storage uses a sorted index so getSortedKeys reflects insertion/modification order.\
+	 * </odoc>
+	 */
 	big: {
 		__channels: {},
 		create : function(aName, shouldCompress) { this.__channels[aName] = ow.loadObj().big.create(shouldCompress); },
@@ -541,6 +554,25 @@ OpenWrap.ch.prototype.__types = {
 	},
 	// Cache implementation
 	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.cache</key>
+	 * This OpenAF channel implementation provides a caching layer around a function or another channel. The creation options are:\
+	 * \
+	 *    - func       (Function) Function called with the key map when a cache miss occurs; its return value is stored and returned.\
+	 *    - ttl        (Number)   Time-to-live in ms before cached entries expire (defaults to 5000ms).\
+	 *    - size       (Number)   Maximum number of entries to keep in cache; -1 means unlimited (defaults to -1).\
+	 *    - method     (String)   Eviction method: "t" (time-based TTL, default) or "p" (count-based, evicts oldest when size is exceeded).\
+	 *    - default    (Object)   Optional default value to store and return on a cache miss if func is not defined.\
+	 *    - useDefault (Boolean)  If true the default value is returned instead of calling func on a miss.\
+	 *    - ch         (String/Channel) Optional backing storage channel (defaults to an auto-created [name]::__cache simple channel).\
+	 * \
+	 * Example:\
+	 * \
+	 *    ow.ch.create("myCache", false, "cache", { func: k => $rest().get("http://api/data/" + k.id), ttl: 60000 });\
+	 * \
+	 * </odoc>
+	 */
 	cache: {
 		__cache: {},
 		__cacheStats: {},
@@ -945,6 +977,19 @@ OpenWrap.ch.prototype.__types = {
 	},	
 	// Dummy implementation
 	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.dummy</key>
+	 * This OpenAF channel implementation is a no-op sink: all write operations (set, setAll, unset, unsetAll) are silently
+	 * discarded, all read operations (get, getAll, getKeys, size, forEach) return empty results. Useful for disabling a
+	 * channel without changing calling code. Accepts no creation options.\
+	 * \
+	 * Example:\
+	 * \
+	 *    ow.ch.create("blackhole", false, "dummy");\
+	 * \
+	 * </odoc>
+	 */
 	dummy: {
 		__channels: {},
 		create       : function(aName, shouldCompress, options) {
@@ -1096,6 +1141,13 @@ OpenWrap.ch.prototype.__types = {
 	},
 	// Simple implementation
 	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.simpleold</key>
+	 * This OpenAF channel implementation is the legacy in-memory key/value store backed by a plain JavaScript object.
+	 * It is kept for backward compatibility; prefer the "simple" type for new channels. Accepts no creation options.\
+	 * </odoc>
+	 */
 	simpleold: {
 		__channels: {},
 		create       : function(aName, shouldCompress, options) {
@@ -1194,7 +1246,21 @@ OpenWrap.ch.prototype.__types = {
 			var id = stringify(sortMapKeys(aK), __, "");
 			delete this.__channels[aName][id];
 		}
-	},	
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.simple</key>
+	 * This OpenAF channel implementation is the default in-memory key/value store (used when no type is specified in ow.ch.create).
+	 * It stores entries in a JavaScript Map keyed by a deterministic JSON serialization of the key map, preserving
+	 * modification-time order for getSortedKeys. Accepts no creation options.\
+	 * \
+	 * Example:\
+	 * \
+	 *    ow.ch.create("myChannel");                    // uses "simple" by default\
+	 *    ow.ch.create("myChannel", false, "simple");   // explicit\
+	 * \
+	 * </odoc>
+	 */
 	simple: {
 		__channels: {},
 		create       : function(aName, shouldCompress, options) {
@@ -1773,6 +1839,29 @@ OpenWrap.ch.prototype.__types = {
 	},	
 	// Remote channel implementation
 	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.remote</key>
+	 * This OpenAF channel implementation connects to a remote channel exposed via ow.ch.server.expose or ow.ch.server.peer. The creation options are:\
+	 * \
+	 *    - url             (String)   The HTTP(S) URL of the remote exposed channel (e.g. http://server:8090/channel).\
+	 *    - login           (String)   Optional username for HTTP basic authentication.\
+	 *    - password        (String)   Optional password for HTTP basic authentication (encrypted or not).\
+	 *    - timeout         (Number)   Optional connection and request timeout in ms.\
+	 *    - default         (Object)   Optional default value to return when the request fails instead of throwing.\
+	 *    - stopWhen        (Function) Optional function that, if it returns true, stops the underlying HTTP request retry.\
+	 *    - throwExceptions (Boolean)  If true (default) exceptions from the remote server will be thrown locally.\
+	 *    - preAction       (Function) Optional function called before every HTTP request (receives the $rest options map).\
+	 * \
+	 * Example:\
+	 * \
+	 *    ow.ch.create("myRemote", false, "remote", { url: "http://server:8090/myChannel" });\
+	 *    $ch("myRemote").set({ id: 1 }, { id: 1, name: "test" });\
+	 * \
+	 * Note: the remote channel relies on ow.ch.server.expose/peer on the server side and uses the OpenAF REST channel\
+	 * protocol over HTTP(S). For two-way synchronization between nodes consider using ow.ch.server.peer instead.\
+	 * </odoc>
+	 */
 	remote: {
 		__channels: {},
 		create       : function(aName, shouldCompress, options) {
@@ -2790,6 +2879,25 @@ OpenWrap.ch.prototype.__types = {
 	},
 	// etcd implementation (etcd v2)
 	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.etcd</key>
+	 * This OpenAF channel implementation connects to an etcd v2 key/value store. The creation options are:\
+	 * \
+	 *    - url             (String)   The HTTP(S) URL of the etcd daemon (e.g. http://etcd-host:2379). Mandatory.\
+	 *    - folder          (String)   Optional key prefix/folder path to scope all channel operations (defaults to root).\
+	 *    - throwExceptions (Boolean)  If true (default) HTTP errors from etcd will be thrown as exceptions.\
+	 *    - default         (Object)   Optional default value to return when a request fails instead of throwing.\
+	 *    - preAction       (Function) Optional function called before every HTTP request (receives the $rest options map).\
+	 * \
+	 * Note: this implementation targets the etcd v2 HTTP API (/v2/keys). For etcd v3 consider an alternative approach.\
+	 * \
+	 * Example:\
+	 * \
+	 *    ow.ch.create("myEtcd", false, "etcd", { url: "http://etcd:2379", folder: "/myapp" });\
+	 * \
+	 * </odoc>
+	 */
 	etcd: {
 		__channels: {},
 		__escape: (s) => {
