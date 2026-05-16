@@ -7,6 +7,15 @@ OpenWrap.oBook = function() {
 };
 
 
+/**
+ * <odoc>
+ * <key>ow.oBook.book(aBook, exitOnEnd)</key>
+ * Creates an interactive tutorial book from aBook, which can be a file path to a markdown file or
+ * a markdown string. The book alternates text sections with fenced ````javascript code blocks that
+ * the user can copy or execute interactively at the OpenAF console. If exitOnEnd is true the process
+ * exits when the last page is acknowledged.
+ * </odoc>
+ */
 OpenWrap.oBook.prototype.book = function(aBook, exitOnEnd) {
     if (isString(aBook) && aBook.indexOf("\n") < 0 && io.fileExists(aBook)) aBook = io.readFileString(aBook)
 
@@ -19,6 +28,14 @@ OpenWrap.oBook.prototype.book = function(aBook, exitOnEnd) {
     if (isString(aBook)) this.parse()
 }
 
+/**
+ * <odoc>
+ * <key>ow.oBook.book.printPart(partId)</key>
+ * Renders the book section at index partId (0-based) including the progress indicator, the markdown
+ * text and any associated code block. When the code is multiline it is printed for copy-paste;
+ * when it is a single line it is written directly into the console input buffer.
+ * </odoc>
+ */
 OpenWrap.oBook.prototype.book.prototype.printPart = function(partId) {
     _$(partId).isNumber().$_()
 
@@ -53,6 +70,13 @@ OpenWrap.oBook.prototype.book.prototype.printPart = function(partId) {
     }
 }
 
+/**
+ * <odoc>
+ * <key>ow.oBook.book.bookEnd()</key>
+ * Prints the oBook end banner and stops the watchLine/watchCommand loop. If exitOnEnd was set to
+ * true at construction time the process exits with code 0.
+ * </odoc>
+ */
 OpenWrap.oBook.prototype.book.prototype.bookEnd = function() {
     watchLine    = ""
     watchCommand = false
@@ -63,12 +87,27 @@ OpenWrap.oBook.prototype.book.prototype.bookEnd = function() {
     if (this.exitOnEnd) exit(0)
 }
 
+/**
+ * <odoc>
+ * <key>ow.oBook.book.bookStart()</key>
+ * Prints the oBook start banner. Called once before the first page is shown.
+ * </odoc>
+ */
 OpenWrap.oBook.prototype.book.prototype.bookStart = function() {
     var thm = ow.format.withSideLineThemes().openBottomCurvedRect
 
     print(ow.format.withSideLine(ow.format.withMD("(📖 obook start)"), __, "YELLOW", __, thm))
 }
 
+/**
+ * <odoc>
+ * <key>ow.oBook.book.interaction()</key>
+ * Handles a single console interaction tick. On the first call the first page is shown. On
+ * subsequent calls it reads a key press: Enter/Space advances, Up/Down navigate, Ctrl+U exits
+ * to the console, 'q' or Escape quits. This method is called repeatedly via the watchLine
+ * mechanism when the book is running inside the OpenAF console.
+ * </odoc>
+ */
 OpenWrap.oBook.prototype.book.prototype.interaction = function() {
     if (this.pos == -1) {
         this.printPart(++this.pos)
@@ -164,6 +203,14 @@ OpenWrap.oBook.prototype.book.prototype.interaction = function() {
     }
 }
 
+/**
+ * <odoc>
+ * <key>ow.oBook.book.parse()</key>
+ * Parses the book string splitting it into alternating text/code sections using ````javascript and
+ * ```````` fenced block markers. Any *requires pkg >= version* directives at the top of the book
+ * are processed via includeOPack(). The resulting structure is stored in this.struct.
+ * </odoc>
+ */
 OpenWrap.oBook.prototype.book.prototype.parse = function() {
     this.struct = []
 
@@ -197,6 +244,15 @@ OpenWrap.oBook.prototype.book.prototype.parse = function() {
     }
 }
 
+/**
+ * <odoc>
+ * <key>obook(aBook, exitOnEnd)</key>
+ * Convenience function to create and start an interactive oBook tutorial in the OpenAF console.
+ * aBook can be a file path to a markdown file or an inline markdown string. If exitOnEnd is true
+ * the process exits when the user reaches the end of the book. Sets up the watchLine/watchCommand
+ * hooks required for console integration.
+ * </odoc>
+ */
 const obook = function(aBook, exitOnEnd) {
     global._obook = new ow.oBook.book(aBook, exitOnEnd)
     watchLine = "_obook.interaction()"
