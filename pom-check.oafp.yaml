@@ -1,0 +1,26 @@
+# Usage: oafp -f pom-check.oafp.yaml
+# Description: Check for updates of dependencies in a pom.xml file
+#
+file: pom.xml
+path: project.dependencies.dependency
+out : json
+pipe:
+  in : json
+  out: ctable
+  sql: | #sql
+    SELECT * ORDER BY update, groupId, artifactId
+  oaf: | #js
+    ow.loadJava()
+    var m = new ow.java.maven()
+    return pForEach(data, d => {
+      try {
+        d.onlineVersion = m.getLatestVersionString(d.groupId + "." + d.artifactId)
+        if (d.version != d.onlineVersion) {
+          d.update = true
+        } else {
+          d.update = false
+        }
+      } catch(e) {
+      }
+      return d
+    })
