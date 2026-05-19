@@ -1,15 +1,15 @@
-# Usage: oafp -f pom-check.oafp.yaml
-# Description: Check for updates of dependencies in a pom.xml file
+# Usage      : oafp -f pom-check.oafp.yaml
+# Description: Check for updates of maven dependencies in pom.xml
 #
 file: pom.xml
 path: project.dependencies.dependency
 out : json
 pipe:
-  in : json
-  out: ctable
-  sql: | #sql
-    SELECT * ORDER BY update, groupId, artifactId
-  oaf: | #js
+  in      : json
+  out     : json
+  sql     : | #sql
+    SELECT * WHERE update = true ORDER BY update, groupId, artifactId
+  oaf     : | #js
     ow.loadJava()
     var m = new ow.java.maven()
     return pForEach(data, d => {
@@ -24,3 +24,5 @@ pipe:
       }
       return d
     })
+  pipe    :
+    out     : ctable
