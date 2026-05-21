@@ -458,6 +458,111 @@
         ow.test.assert("" + foundryPreviewTransport.headers["api-key"], "test-key", "Problem setting Foundry preview api-key header.");
     };
 
+    exports.testAIOpenAIStatsCaptureIncludesCachedAndReasoning = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        g.model._request = function(url, body) {
+            return {
+                model: body.model,
+                choices: [
+                    {
+                        finish_reason: "stop",
+                        message: { content: "ok" }
+                    }
+                ],
+                usage: {
+                    prompt_tokens: 120,
+                    completion_tokens: 30,
+                    total_tokens: 150,
+                    prompt_tokens_details: {
+                        cached_tokens: 90,
+                        audio_tokens: 5
+                    },
+                    completion_tokens_details: {
+                        reasoning_tokens: 11
+                    }
+                }
+            };
+        };
+
+        g.rawPrompt("hello", "gpt-4o", 0.1, false, []);
+        var stats = g.getLastStats();
+        ow.test.assert(stats.tokens.cached, 90, "Problem capturing OpenAI cached prompt tokens.");
+        ow.test.assert(stats.tokens.audio, 5, "Problem capturing OpenAI audio prompt tokens.");
+        ow.test.assert(stats.tokens.reasoning, 11, "Problem capturing OpenAI reasoning completion tokens.");
+    };
+
+    exports.testAIAnthropicPromptCachingHeaders = function() {
+        ow.loadAI();
+
+        var _origRest = $rest;
+        var captured = [];
+        $rest = function(cfg) {
+            captured.push(__cloneForTest(cfg));
+            return {
+                get2Stream: function() { return {}; },
+                post2Stream: function() { return {}; }
+            };
+        };
+
+        try {
+            var gCache = new ow.ai.gpt("anthropic", { key: "test-key", promptCaching: true });
+            gCache.model._request("v1/messages", {});
+            ow.test.assert(captured[0].requestHeaders["anthropic-beta"], "prompt-caching-2024-07-31", "Problem enabling Anthropic prompt caching beta header on request.");
+
+            captured = [];
+            gCache.model._requestStream("v1/messages", {});
+            ow.test.assert(captured[0].requestHeaders["anthropic-beta"], "prompt-caching-2024-07-31", "Problem enabling Anthropic prompt caching beta header on stream request.");
+
+            captured = [];
+            var gNoCache = new ow.ai.gpt("anthropic", { key: "test-key", promptCaching: false });
+            gNoCache.model._request("v1/messages", {});
+            ow.test.assert(isUnDef(captured[0].requestHeaders["anthropic-beta"]), true, "Problem keeping Anthropic prompt caching beta header disabled by default.");
+        } finally {
+            $rest = _origRest;
+        }
+    };
+
+    exports.testAIAnthropicPromptCachingBodyAndStats = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test", promptCaching: true });
+        var requests = [];
+        g.model._request = function(url, body) {
+            requests.push(__cloneForTest(body));
+            return {
+                id: "msg-1",
+                model: "claude-test",
+                type: "message",
+                stop_reason: "end_turn",
+                content: [{ type: "text", text: "ok" }],
+                usage: {
+                    input_tokens: 20,
+                    output_tokens: 10,
+                    cache_creation_input_tokens: 300,
+                    cache_read_input_tokens: 220
+                }
+            };
+        };
+
+        g.addSystemPrompt("You are concise.");
+        g.rawPrompt("Hello world", "claude-test", 0.2, false, []);
+
+        var body = requests[0];
+        ow.test.assert(isArray(body.system), true, "Problem converting Anthropic system prompt into content blocks when prompt caching is enabled.");
+        ow.test.assert(body.system[0].cache_control.type, "ephemeral", "Problem setting Anthropic system prompt cache_control marker.");
+
+        var lastMessage = body.messages[body.messages.length - 1];
+        var lastContentBlock = lastMessage.content[lastMessage.content.length - 1];
+        ow.test.assert(lastMessage.role, "user", "Problem preserving Anthropic last user message role when applying cache_control.");
+        ow.test.assert(lastContentBlock.cache_control.type, "ephemeral", "Problem setting Anthropic cache_control marker on last user message.");
+
+        var stats = g.getLastStats();
+        ow.test.assert(stats.tokens.cacheCreation, 300, "Problem capturing Anthropic cache creation tokens.");
+        ow.test.assert(stats.tokens.cacheRead, 220, "Problem capturing Anthropic cache read tokens.");
+    };
+
     exports.testAIOpenAIToolRecursionNoDuplication = function() {
         ow.loadAI();
 
