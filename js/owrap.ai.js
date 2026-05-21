@@ -2374,10 +2374,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                 return stringify(aResult, __, "")
             }
             var _applyPromptCacheControlToMessages = aMessages => {
-                if (!_promptCaching || !isArray(aMessages) || aMessages.length == 0) return aMessages
+                if (!_promptCaching || !isArray(aMessages) || aMessages.length === 0) return aMessages
                 var _lastUserIdx = -1
                 for (var ii = aMessages.length - 1; ii >= 0; ii--) {
-                    if (isMap(aMessages[ii]) && aMessages[ii].role == "user") {
+                    if (isMap(aMessages[ii]) && aMessages[ii].role === "user") {
                         var _content = aMessages[ii].content
                         if (isString(_content)) {
                             _lastUserIdx = ii
@@ -3636,7 +3636,7 @@ OpenWrap.ai.prototype.gpt.prototype.addUserPrompt = function(aPrompt) {
  * <odoc>
  * <key>ow.ai.gpt.addSystemPrompt(aPrompt) : ow.ai.gpt</key>
  * Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") to the current conversation.
- * For Gemini, large system instructions may be implicitly cached by the provider.
+ * For Gemini, large system instructions may be implicitly cached by the provider. For Anthropic, explicit cache markers are sent when `promptCaching` is enabled.
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.addSystemPrompt = function(aPrompt) {
