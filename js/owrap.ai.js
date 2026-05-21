@@ -2424,6 +2424,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _buildSystemField = (_systemText, _isJsonPrompt) => {
                 var _txt = _systemText
                 if (_isJsonPrompt) {
+                    // Keep compatibility with the existing Anthropic JSON steering instruction.
                     _txt = (isString(_txt) && _txt.length > 0 ? _txt + "\n\n" : "") + "output json"
                 }
                 if (!(isString(_txt) && _txt.length > 0)) return __
