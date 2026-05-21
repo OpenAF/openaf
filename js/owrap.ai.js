@@ -2384,13 +2384,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                             break
                         }
                         if (isMap(_content)) {
-                            if (!isString(_content.type) || _content.type != "tool_result") {
+                            if (isUnDef(_content.type) || _content.type !== "tool_result") {
                                 _lastUserIdx = ii
                                 break
                             }
                         }
                         if (isArray(_content)) {
-                            var _hasCacheableBlock = _content.some(b => isMap(b) && (!isString(b.type) || b.type != "tool_result"))
+                            var _hasCacheableBlock = _content.some(b => isMap(b) && (isUnDef(b.type) || b.type !== "tool_result"))
                             if (_hasCacheableBlock) {
                                 _lastUserIdx = ii
                                 break
@@ -2408,7 +2408,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 } else if (isArray(_msg.content)) {
                     var _lastBlockIdx = -1
                     for (var jj = _msg.content.length - 1; jj >= 0; jj--) {
-                        if (isMap(_msg.content[jj]) && (!isString(_msg.content[jj].type) || _msg.content[jj].type != "tool_result")) {
+                        if (isMap(_msg.content[jj]) && (isUnDef(_msg.content[jj].type) || _msg.content[jj].type !== "tool_result")) {
                             _lastBlockIdx = jj
                             break
                         }
