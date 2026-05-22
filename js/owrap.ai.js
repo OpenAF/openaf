@@ -3636,7 +3636,7 @@ OpenWrap.ai.prototype.gpt.prototype.addUserPrompt = function(aPrompt) {
 /**
  * <odoc>
  * <key>ow.ai.gpt.addSystemPrompt(aPrompt) : ow.ai.gpt</key>
- * Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") to the current conversation.
+ * Adds aPrompt (a string or an array of strings) as a system prompt to the current conversation.
  * For Gemini, large system instructions may be implicitly cached by the provider. For Anthropic, explicit cache markers are sent when `promptCaching` is enabled.
  * </odoc>
  */
