@@ -85,21 +85,6 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIOpenAITransportModes;
 
-   - name: AI::OpenAI stats capture includes cached and reasoning
-     from: AI::Init
-     to  : oJob Test
-     exec: args.func = args.tests.testAIOpenAIStatsCaptureIncludesCachedAndReasoning;
-
-   - name: AI::Anthropic prompt caching headers
-     from: AI::Init
-     to  : oJob Test
-     exec: args.func = args.tests.testAIAnthropicPromptCachingHeaders;
-
-   - name: AI::Anthropic prompt caching body and stats
-     from: AI::Init
-     to  : oJob Test
-     exec: args.func = args.tests.testAIAnthropicPromptCachingBodyAndStats;
-
    - name: AI::OpenAI tool recursion without duplication
      from: AI::Init
      to  : oJob Test
@@ -143,9 +128,6 @@ todo:
    - AI::Test KMeans
    - AI::GPT prompt argument routing
    - AI::OpenAI transport modes
-   - AI::OpenAI stats capture includes cached and reasoning
-   - AI::Anthropic prompt caching headers
-   - AI::Anthropic prompt caching body and stats
    - AI::OpenAI tool recursion without duplication
    - AI::OpenAI streaming tool recursion without duplication
    - AI::OpenAI export conversation falls back to tool name

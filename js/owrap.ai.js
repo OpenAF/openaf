@@ -207,13 +207,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(aResponse.usage.prompt_tokens)) tokens.prompt = aResponse.usage.prompt_tokens
                     if (isDef(aResponse.usage.completion_tokens)) tokens.completion = aResponse.usage.completion_tokens
                     if (isDef(aResponse.usage.total_tokens)) tokens.total = aResponse.usage.total_tokens
-                    if (isMap(aResponse.usage.prompt_tokens_details)) {
-                        if (isDef(aResponse.usage.prompt_tokens_details.cached_tokens)) tokens.cached = aResponse.usage.prompt_tokens_details.cached_tokens
-                        if (isDef(aResponse.usage.prompt_tokens_details.audio_tokens)) tokens.audio = aResponse.usage.prompt_tokens_details.audio_tokens
-                    }
-                    if (isMap(aResponse.usage.completion_tokens_details)) {
-                        if (isDef(aResponse.usage.completion_tokens_details.reasoning_tokens)) tokens.reasoning = aResponse.usage.completion_tokens_details.reasoning_tokens
-                    }
                     if (Object.keys(tokens).length > 0) stats.tokens = tokens
                     stats.usage = aResponse.usage
                 }
@@ -2265,7 +2258,6 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.anthropic.com/")
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
-            aOptions.promptCaching = _$(aOptions.promptCaching, "aOptions.promptCaching").isBoolean().default(false)
             // If noSystem=true it will not output the system messages
             aOptions.noSystem = _$(aOptions.noSystem, "aOptions.noSystem").isBoolean().default(true)
 
@@ -2274,7 +2266,6 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _model = aOptions.model
             var _temperature = aOptions.temperature
             var _noSystem = aOptions.noSystem
-            var _promptCaching = aOptions.promptCaching
             var _lastStats = __
             var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
@@ -2297,8 +2288,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(aResponse.usage.input_tokens)) tokens.prompt = aResponse.usage.input_tokens
                     if (isDef(aResponse.usage.output_tokens)) tokens.completion = aResponse.usage.output_tokens
                     if (isDef(aResponse.usage.total_tokens)) tokens.total = aResponse.usage.total_tokens
-                    if (isDef(aResponse.usage.cache_creation_input_tokens)) tokens.cacheCreation = aResponse.usage.cache_creation_input_tokens
-                    if (isDef(aResponse.usage.cache_read_input_tokens)) tokens.cacheRead = aResponse.usage.cache_read_input_tokens
                     if (Object.keys(tokens).length > 0) stats.tokens = tokens
                     stats.usage = aResponse.usage
                 }
@@ -2372,66 +2361,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                 if (isArray(aResult) || isMap(aResult)) return stringify(aResult, __, "")
                 if (isUnDef(aResult) || aResult === null) return ""
                 return stringify(aResult, __, "")
-            }
-            var _applyPromptCacheControlToMessages = aMessages => {
-                if (!_promptCaching || !isArray(aMessages) || aMessages.length === 0) return aMessages
-                var _lastUserIdx = -1
-                for (var ii = aMessages.length - 1; ii >= 0; ii--) {
-                    if (isMap(aMessages[ii]) && aMessages[ii].role === "user") {
-                        var _content = aMessages[ii].content
-                        if (isString(_content)) {
-                            _lastUserIdx = ii
-                            break
-                        }
-                        if (isMap(_content)) {
-                            if (isUnDef(_content.type) || _content.type !== "tool_result") {
-                                _lastUserIdx = ii
-                                break
-                            }
-                        }
-                        if (isArray(_content)) {
-                            var _hasCacheableBlock = _content.some(b => isMap(b) && (isUnDef(b.type) || b.type !== "tool_result"))
-                            if (_hasCacheableBlock) {
-                                _lastUserIdx = ii
-                                break
-                            }
-                        }
-                    }
-                }
-                if (_lastUserIdx < 0) return aMessages
-
-                var _msg = aMessages[_lastUserIdx]
-                if (isString(_msg.content)) {
-                    _msg.content = [{ type: "text", text: _msg.content, cache_control: { type: "ephemeral" } }]
-                } else if (isMap(_msg.content)) {
-                    _msg.content = [ merge(_msg.content, { cache_control: { type: "ephemeral" } }) ]
-                } else if (isArray(_msg.content)) {
-                    var _lastBlockIdx = -1
-                    for (var jj = _msg.content.length - 1; jj >= 0; jj--) {
-                        if (isMap(_msg.content[jj]) && (isUnDef(_msg.content[jj].type) || _msg.content[jj].type !== "tool_result")) {
-                            _lastBlockIdx = jj
-                            break
-                        }
-                    }
-                    if (_lastBlockIdx >= 0) {
-                        _msg.content[_lastBlockIdx] = merge(_msg.content[_lastBlockIdx], { cache_control: { type: "ephemeral" } })
-                    } else {
-                        _msg.content.push({ type: "text", text: "", cache_control: { type: "ephemeral" } })
-                    }
-                }
-                return aMessages
-            }
-            var _buildSystemField = (_systemText, _isJsonPrompt) => {
-                var _txt = _systemText
-                if (_isJsonPrompt) {
-                    // Keep compatibility with the existing Anthropic JSON steering instruction.
-                    _txt = (isString(_txt) && _txt.length > 0 ? _txt + "\n\n" : "") + "output json"
-                }
-                if (!(isString(_txt) && _txt.length > 0)) return __
-                if (_promptCaching) {
-                    return [{ type: "text", text: _txt, cache_control: { type: "ephemeral" } }]
-                }
-                return _txt
             }
 
             var _r = {
@@ -2603,8 +2532,6 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     var systemMsgs = msgs.filter(m => m.role == "system");
                     var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice());
-                    if (_promptCaching) bodyMessages = clone(bodyMessages)
-                    bodyMessages = _applyPromptCacheControlToMessages(bodyMessages)
 
                     _r.conversation = msgs;
 
@@ -2632,9 +2559,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                             })
                             .filter(s => isString(s) && s.length > 0)
                             .join("\n")
-                        body.system = _buildSystemField(_systemText, aJsonFlag)
-                    } else if (aJsonFlag) {
-                        body.system = _buildSystemField("", true)
+                        if (_systemText.length > 0) body.system = _systemText
+                    }
+                    if (aJsonFlag) {
+                        body.system = (isString(body.system) && body.system.length > 0 ? body.system + "\n\n" : "") + "output json"
                     }
 
                     body = merge(body, aOptions.params)
@@ -2753,8 +2681,6 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     var systemMsgs = msgs.filter(m => m.role == "system");
                     var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice());
-                    if (_promptCaching) bodyMessages = clone(bodyMessages)
-                    bodyMessages = _applyPromptCacheControlToMessages(bodyMessages)
 
                     _r.conversation = msgs;
 
@@ -2781,9 +2707,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                             })
                             .filter(s => isString(s) && s.length > 0)
                             .join("\n")
-                        body.system = _buildSystemField(_systemText, aJsonFlag)
-                    } else if (aJsonFlag) {
-                        body.system = _buildSystemField("", true)
+                        if (_systemText.length > 0) body.system = _systemText
+                    }
+                    if (aJsonFlag) {
+                        body.system = (isString(body.system) && body.system.length > 0 ? body.system + "\n\n" : "") + "output json"
                     }
 
                     body = merge(body, aOptions.params)
@@ -2998,16 +2925,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aVerb = _$(aVerb, "aVerb").isString().default("POST")
                  
                     var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
-                    var _reqHeaders = merge(aOptions.headers, { 
-                       "x-api-key"        : Packages.openaf.AFCmdBase.afc.dIP(_key),
-                       "anthropic-version": "2023-06-01",
-                       Accept             : "*/*"
-                    })
-                    if (_promptCaching) _reqHeaders["anthropic-beta"] = "prompt-caching-2024-07-31"
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
-                       requestHeaders: _reqHeaders
+                       requestHeaders: merge(aOptions.headers, { 
+                          "x-api-key"        : Packages.openaf.AFCmdBase.afc.dIP(_key),
+                          "anthropic-version": "2023-06-01",
+                          Accept             : "*/*"
+                       })
                     } 
                     _h.close()
                  
@@ -3036,16 +2961,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aVerb = _$(aVerb, "aVerb").isString().default("POST")
                  
                     var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
-                    var _reqHeaders = merge(aOptions.headers, { 
-                       "x-api-key"        : Packages.openaf.AFCmdBase.afc.dIP(_key),
-                       "anthropic-version": "2023-06-01",
-                       Accept             : "text/event-stream"
-                    })
-                    if (_promptCaching) _reqHeaders["anthropic-beta"] = "prompt-caching-2024-07-31"
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
-                       requestHeaders: _reqHeaders
+                       requestHeaders: merge(aOptions.headers, { 
+                          "x-api-key"        : Packages.openaf.AFCmdBase.afc.dIP(_key),
+                          "anthropic-version": "2023-06-01",
+                          Accept             : "text/event-stream"
+                       })
                     } 
                     _h.close()
 
@@ -3198,7 +3121,6 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
  * - params: extra request body parameters merged into prompt, image and embedding calls.\
  * - noSystem: when true, system messages are converted to developer messages where supported (defaults to true).\
  * - noResponseFormat: when true, disables OpenAI-compatible JSON response_format injection.\
- * - promptCaching: when true enables Anthropic prompt caching headers and cache_control markers (defaults to false).\
  * \
  * OpenAI-compatible transport options:\
  * - apiVersion: API version/path segment for OpenAI-compatible routes (defaults to "v1"). In Azure legacy mode this becomes the api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version.\
@@ -3212,8 +3134,6 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
  * - Azure OpenAI legacy: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-legacy", deployment: "DEPLOYMENT", apiVersion: "2024-10-21" })\
  * - Azure AI Foundry v1: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" })\
  * - Azure AI Foundry dated API: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" })\
- * \
- * Usage stats note: `getLastStats()` now includes OpenAI cached prompt tokens (`tokens.cached`) when reported by compatible models.\
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
@@ -3309,8 +3229,7 @@ OpenWrap.ai.prototype.gpt.prototype.getEmbeddings = function(aInput, aDimensions
 /**
  * <odoc>
  * <key>ow.ai.gpt.getLastStats() : Map</key>
- * Returns the latest usage statistics reported by the underlying GPT model for the most recent prompt request
- * (including provider-specific fields such as OpenAI cached prompt tokens and Anthropic cache read/creation tokens when available).
+ * Returns the latest usage statistics reported by the underlying GPT model for the most recent prompt request.
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.getLastStats = function() {
@@ -3636,8 +3555,7 @@ OpenWrap.ai.prototype.gpt.prototype.addUserPrompt = function(aPrompt) {
 /**
  * <odoc>
  * <key>ow.ai.gpt.addSystemPrompt(aPrompt) : ow.ai.gpt</key>
- * Adds aPrompt (a string or an array of strings) as a system prompt to the current conversation.
- * For Gemini, large system instructions may be implicitly cached by the provider. For Anthropic, explicit cache markers are sent when `promptCaching` is enabled.
+ * Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") to the current conversation.
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.addSystemPrompt = function(aPrompt) {
@@ -3875,7 +3793,6 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * - instructions: a string or an array of strings with the instructions for the model (e.g. "json", "boolean", "sql", "js", "path")\
  * - headers: a map with the headers to use in the requests (e.g. { "Content-Type": "application/json" })\
  * - params: a map with the parameters to use in the requests (e.g. { "max_tokens": 1000, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 })\
- * - promptCaching: when true enables Anthropic prompt caching headers and cache_control markers (defaults to false)\
  * \
  * For type "openai", options can also include:\
  * - mode: transport mode ("openai", "azure-openai-v1", "azure-openai-legacy" or "foundry").\
@@ -3893,7 +3810,7 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * If aModel is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
  * \
  * The returned object also exposes helper methods to inspect vendor usage information: `getLastStats`/`lastStats` (map with the latest statistics), `promptWithStats`,
- * `promptJSONWithStats` and `rawPromptWithStats` (returning `{ response, stats }`). OpenAI compatible models can expose cached prompt tokens via `stats.tokens.cached`.
+ * `promptJSONWithStats` and `rawPromptWithStats` (returning `{ response, stats }`).
  * </odoc>
  */
 global.$gpt = function(aModel) {
