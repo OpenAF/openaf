@@ -4940,15 +4940,14 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 		__owWithMdCache = _withMdPatterns
 	}
 
-	// pre process code blocks
-
-	// remove html
-	// TODO: .replace(/<\/?(code|pre>)[^>]*>/g, "```"). ?
-	if (__flags.WITHMD.htmlFilter) 
-		res = res.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script\s*>/gi, "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ")
-
-	//  single line
-	res = res.replace(/```+(.+?)```+/mg, ansiColor(__colorFormat.md.codeBlock.text, " $1 "))
+	// pre process code blocks before html filtering, so literal XML/HTML samples
+	// inside fenced code blocks are not stripped as markup.
+	var inlineCodeBlocks = []
+	res = res.replace(/```+(.+?)```+/mg, (m, code) => {
+		var idx = inlineCodeBlocks.length
+		inlineCodeBlocks.push(ansiColor(__colorFormat.md.codeBlock.text, " " + code + " "))
+		return "```INLINE$" + idx + "```"
+	})
 
 	//  multi line
 	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
@@ -4964,6 +4963,11 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 			}
 			res = res.replace(b, "```$$" + i + "```")
 		})
+
+	// remove html outside fenced code blocks
+	// TODO: .replace(/<\/?(code|pre>)[^>]*>/g, "```"). ?
+	if (__flags.WITHMD.htmlFilter) 
+		res = res.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script\s*>/gi, "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ")
 
 	var _repBoldItalic = _withMdPatterns.repBoldItalic + da
 	var _repBold       = _withMdPatterns.repBold + da
@@ -5065,6 +5069,11 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
 			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), _aSize, __colorFormat.md.codeBlock.line, _withColor(__colorFormat.md.codeBlock.text, aBgColor), _sideLineThemes[__colorFormat.md.codeBlock.theme]))
+		})
+	}
+	if (inlineCodeBlocks.length > 0) {
+		inlineCodeBlocks.forEach((b, i) => {
+			res = res.replace("```INLINE$" + i + "```", b)
 		})
 	}
 
