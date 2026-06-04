@@ -33,7 +33,7 @@ F__cred=1
 if [ $# -gt 0 ]; then
   FFOUND=0
   for arg in "$@"; do
-    if [ "$arg" = "${!#}" ]; then FFOUND=1; break; fi
+    if [ "$arg" = "" ]; then FFOUND=1; break; fi
     # info single option
     if [ "$arg" = "info" ]; then FFOUND=1; F_info=0; fi
     # search single option

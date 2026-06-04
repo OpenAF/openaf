@@ -209,6 +209,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_CHECK_JOB_REMOVAL     : false,
 	OJOB_CHECK_JOB_CHANGES     : false,
 	OJOB_ARGS_FROM_ENVS        : false,
+	OPACK_REMOTE_DB_CACHE_TTL  : 60000,
 	OAF_CLOSED                 : false,
 	OAF_PRECOMPILE_LEVEL       : 2,
 	OAF_ERRSTACK               : true,   // If true $err will print the stack trace
@@ -3313,49 +3314,59 @@ const addOPackRemoteDB = function(aURL) {
  * <odoc>
  * <key>getOPackRemoteDB() : Array</key>
  * Returns an Array of maps. Each map element is an opack package description registered in the OpenAF central repository.
+ * Results are cached using $cache for __flags.OPACK_REMOTE_DB_CACHE_TTL milliseconds (default: 60000).
  * </odoc>
  */
 const getOPackRemoteDB = function() {
-	var packages = {};
+	var __opacksEnv = getEnv("OAF_OPACKS");
+	var _cache = $cache("__openaf_getOPackRemoteDB")
+	.fn((k) => {
+		var packages = {};
+		var _sources = clone(k.sources);
+		var _zip;
 
-	plugin("ZIP")
-	var zip
+		plugin("ZIP");
 
-	// Check for OAF_OPACKS environment variable
-	// If it exists, add the remote opack repositories
-	if (isString(getEnv("OAF_OPACKS"))) {
-		getEnv("OAF_OPACKS").split(",").forEach(url => addOPackRemoteDB(url) )
-	}
-	for(var i in __opackCentral) {
-		if (!noHomeComms && __opackCentral[i].toLowerCase().startsWith("http")) {
-			try {
-				var _stream = $rest({ connectionTimeout: 1500 }).get2Stream(__opackCentral[i])
-				//http = new HTTP(, "GET", "", {}, true, 1500);
-				//zip = new ZIP(http.responseBytes());
-				zip = new ZIP(af.fromInputStream2Bytes(_stream))
-				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON))))
-			} catch(e) {
-				// Continue to next
-			} finally {
-				if (isDef(zip)) zip.close()
-			}
-		} else if (io.fileExists(__opackCentral[i]) && io.fileInfo(__opackCentral[i]).isDirectory) {
-			if (io.fileExists(__opackCentral[i] + "/" + PACKAGESJSON_CENTRALDB)) {
+		for(var i in _sources) {
+			if (!k.noHomeComms && _sources[i].toLowerCase().startsWith("http")) {
 				try {
-					zip = new ZIP(io.readFileBytes(__opackCentral[i] + "/" + PACKAGESJSON_CENTRALDB))
-					packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON))))
+					var _stream = $rest({ connectionTimeout: 1500 }).get2Stream(_sources[i]);
+					_zip = new ZIP(af.fromInputStream2Bytes(_stream));
+					packages = merge(packages, af.fromJson(af.fromBytes2String(_zip.getFile(OPACKCENTRALJSON))));
+				} catch(e) {
+					// Continue to next
 				} finally {
-					if (isDef(zip)) zip.close()
+					if (isDef(_zip)) _zip.close();
+				}
+			} else if (io.fileExists(_sources[i]) && io.fileInfo(_sources[i]).isDirectory) {
+				if (io.fileExists(_sources[i] + "/" + PACKAGESJSON_CENTRALDB)) {
+					try {
+						_zip = new ZIP(io.readFileBytes(_sources[i] + "/" + PACKAGESJSON_CENTRALDB));
+						packages = merge(packages, af.fromJson(af.fromBytes2String(_zip.getFile(OPACKCENTRALJSON))));
+					} finally {
+						if (isDef(_zip)) _zip.close();
+					}
 				}
 			}
 		}
-	}
-	
-	//if (isUnDef(http)) return packages;
 
-	//packages = af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON)));
-	//if (!isUnDef(zip)) zip.close();
-	return packages;
+		return packages;
+	})
+	.ttl(_$(__flags.OPACK_REMOTE_DB_CACHE_TTL, "__flags.OPACK_REMOTE_DB_CACHE_TTL").isNumber().default(60000))
+	.create();
+
+	var _sources = clone(__opackCentral);
+
+	// Check for OAF_OPACKS environment variable
+	// If it exists, add the remote opack repositories
+	if (isString(__opacksEnv)) {
+		_sources = _sources.concat(__opacksEnv.split(","));
+	}
+
+	return _cache.get({
+		noHomeComms: noHomeComms,
+		sources: _sources.sort()
+	});
 }
  
 /**
