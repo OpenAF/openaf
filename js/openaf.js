@@ -4788,6 +4788,31 @@ const __visibleLengthIsEmojiModifier = cp => (
 	cp == 0x20E3
 )
 const __visibleLengthIsRegionalIndicator = cp => cp >= 0x1F1E6 && cp <= 0x1F1FF
+const __visibleLengthIsEmojiWide = cp => (
+	cp == 0x231A || cp == 0x231B ||
+	(cp >= 0x23E9 && cp <= 0x23EC) ||
+	cp == 0x23F0 || cp == 0x23F3 ||
+	(cp >= 0x25FD && cp <= 0x25FE) ||
+	(cp >= 0x2614 && cp <= 0x2615) ||
+	(cp >= 0x2648 && cp <= 0x2653) ||
+	cp == 0x267F || cp == 0x2693 || cp == 0x26A1 ||
+	(cp >= 0x26AA && cp <= 0x26AB) ||
+	(cp >= 0x26BD && cp <= 0x26BE) ||
+	(cp >= 0x26C4 && cp <= 0x26C5) ||
+	cp == 0x26CE || cp == 0x26D4 || cp == 0x26EA ||
+	(cp >= 0x26F2 && cp <= 0x26F3) ||
+	cp == 0x26F5 || cp == 0x26FA || cp == 0x26FD ||
+	cp == 0x2705 ||
+	(cp >= 0x270A && cp <= 0x270B) ||
+	cp == 0x2728 || cp == 0x274C || cp == 0x274E ||
+	(cp >= 0x2753 && cp <= 0x2755) ||
+	cp == 0x2757 ||
+	(cp >= 0x2795 && cp <= 0x2797) ||
+	cp == 0x27B0 || cp == 0x27BF ||
+	(cp >= 0x2B1B && cp <= 0x2B1C) ||
+	cp == 0x2B50 || cp == 0x2B55 ||
+	cp == 0x1F004 || cp == 0x1F0CF
+)
 const __visibleLengthIsWide = cp => (
 	cp >= 0x1100 && (
 		cp <= 0x115F ||
@@ -4805,7 +4830,7 @@ const __visibleLengthIsWide = cp => (
 )
 const __visibleLengthCodePointWidth = cp => {
 	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || cp == 0x200D) return 0
-	return __visibleLengthIsWide(cp) ? 2 : 1
+	return (__visibleLengthIsWide(cp) || __visibleLengthIsEmojiWide(cp)) ? 2 : 1
 }
 const visibleLength = str => {
 	str = String(str).replace(__visibleLengthAnsiRE, "")

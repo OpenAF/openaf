@@ -61,6 +61,21 @@
         ow.test.assert(ow.format.string.wordWrap("alpha 😀 beta 😀 gamma", 10), "alpha 😀\nbeta 😀\ngamma", "Problem with word wrap and emoji width.");
     };
 
+    exports.testVisibleLengthEmojiPresentation = function() {
+        ow.test.assert(visibleLength("⚽"), 2, "Problem with emoji-presentation symbol visible width.");
+    };
+
+    exports.testPrintTableEmojiAlignment = function() {
+        var rendered = printTable([
+            { "A": "⚽ abcdef", "B": "1" },
+            { "A": "123456789", "B": "2" }
+        ], __, false, false, "utf").replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = rendered.split("\n");
+
+        ow.test.assert(lines[2], "⚽ abcdef│1", "Problem with printTable emoji alignment.");
+        ow.test.assert(lines[3], "123456789│2", "Problem with printTable reference alignment.");
+    };
+
     exports.testWithMDWrap = function() {
         var _oldCon = __con;
         var _oldConStatus = __conStatus;
