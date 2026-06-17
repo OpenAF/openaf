@@ -61,6 +61,30 @@
         ow.test.assert(ow.format.string.wordWrap("alpha 😀 beta 😀 gamma", 10), "alpha 😀\nbeta 😀\ngamma", "Problem with word wrap and emoji width.");
     };
 
+    exports.testVisibleLengthUnicode = function() {
+        var subdivisionFlag = String.fromCodePoint(0x1F3F4, 0xE0067, 0xE0062, 0xE0065, 0xE006E, 0xE0067, 0xE007F);
+        var cases = [
+            ["abc", 3],
+            ["e\u0301", 1],
+            ["中", 2],
+            ["😀", 2],
+            ["👍🏽", 2],
+            ["👨‍👩‍👧‍👦", 2],
+            ["🏳️‍🌈", 2],
+            ["🇵🇹", 2],
+            ["1️⃣", 2],
+            [subdivisionFlag, 2]
+        ];
+
+        cases.forEach(function(entry) {
+            ow.test.assert(visibleLength(entry[0]), entry[1], "Problem with visibleLength unicode width for '" + entry[0] + "'.");
+            ow.test.assert(af.visibleLength(entry[0]), entry[1], "Problem with af.visibleLength unicode width for '" + entry[0] + "'.");
+        });
+
+        ow.test.assert(visibleLength(ansiColor("RED", "👨‍👩‍👧‍👦")), 2, "Problem with visibleLength ANSI unicode width.");
+        ow.test.assert(af.visibleLength(ansiColor("RED", "👨‍👩‍👧‍👦")), 2, "Problem with af.visibleLength ANSI unicode width.");
+    };
+
     exports.testWithMDWrap = function() {
         var _oldCon = __con;
         var _oldConStatus = __conStatus;
@@ -160,6 +184,24 @@
         ow.test.assert(lines[2], "└──🇵🇹──┘", "Problem with withSideLine unicode footer width.");
         lines.forEach(line => {
             ow.test.assert(visibleLength(line), 8, "Problem with withSideLine unicode visible width.");
+        });
+    };
+
+    exports.testWithSideLineEmojiHeaderFooter = function() {
+        var rendered = ow.format.withSideLine("x", 8, __, __, ow.format.withSideLineThemes().closedRect, {
+            header: "👨‍👩‍👧‍👦",
+            headerAlign: "left",
+            footer: "🏳️‍🌈",
+            footerAlign: "left"
+        });
+        var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = plain.split("\n");
+
+        ow.test.assert(lines[0], "┌──👨‍👩‍👧‍👦──┐", "Problem with withSideLine emoji header width.");
+        ow.test.assert(lines[1], "│ x    │", "Problem with withSideLine emoji body width.");
+        ow.test.assert(lines[2], "└──🏳️‍🌈──┘", "Problem with withSideLine emoji footer width.");
+        lines.forEach(line => {
+            ow.test.assert(visibleLength(line), 8, "Problem with withSideLine emoji visible width.");
         });
     };
 

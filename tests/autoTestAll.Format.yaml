@@ -70,6 +70,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testWordWrap; 
 
+   - name: Format::Visible length unicode
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVisibleLengthUnicode;
+
    - name: Format::Markdown wrap
      from: Format::Init
      to  : oJob Test
@@ -83,6 +90,13 @@ jobs:
      deps:
        - Format::Load Format
      exec: args.func = args.tests.testPad;
+
+   - name: Format::Side line emoji header footer
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithSideLineEmojiHeaderFooter;
 
    - name: Format::Terminal capabilities
      from: Format::Init

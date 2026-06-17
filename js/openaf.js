@@ -4782,12 +4782,22 @@ const __visibleLengthIsCombining = cp => (
 	(cp >= 0x20D0 && cp <= 0x20FF) ||
 	(cp >= 0xFE20 && cp <= 0xFE2F)
 )
-const __visibleLengthIsEmojiModifier = cp => (
-	(cp >= 0x1F3FB && cp <= 0x1F3FF) ||
-	cp == 0xFE0E || cp == 0xFE0F ||
-	cp == 0x20E3
+const __visibleLengthIsEmojiModifier = cp => cp >= 0x1F3FB && cp <= 0x1F3FF
+const __visibleLengthIsVariationSelector = cp => (
+	(cp >= 0xFE00 && cp <= 0xFE0F) ||
+	(cp >= 0xE0100 && cp <= 0xE01EF)
 )
+const __visibleLengthIsKeycapMark = cp => cp == 0x20E3
+const __visibleLengthIsTag = cp => cp >= 0xE0020 && cp <= 0xE007F
 const __visibleLengthIsRegionalIndicator = cp => cp >= 0x1F1E6 && cp <= 0x1F1FF
+const __visibleLengthIsEmojiLike = cp => (
+	(cp >= 0x231A && cp <= 0x231B) ||
+	(cp >= 0x23E9 && cp <= 0x23EC) ||
+	cp == 0x23F0 || cp == 0x23F3 ||
+	(cp >= 0x25FD && cp <= 0x25FE) ||
+	(cp >= 0x2600 && cp <= 0x27BF) ||
+	(cp >= 0x1F000 && cp <= 0x1FAFF)
+)
 const __visibleLengthIsWide = cp => (
 	cp >= 0x1100 && (
 		cp <= 0x115F ||
@@ -4804,7 +4814,7 @@ const __visibleLengthIsWide = cp => (
 	)
 )
 const __visibleLengthCodePointWidth = cp => {
-	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || cp == 0x200D) return 0
+	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || __visibleLengthIsVariationSelector(cp) || __visibleLengthIsKeycapMark(cp) || __visibleLengthIsTag(cp) || cp == 0x200D) return 0
 	return __visibleLengthIsWide(cp) ? 2 : 1
 }
 const visibleLength = str => {
@@ -4825,13 +4835,31 @@ const visibleLength = str => {
 		}
 
 		var width = __visibleLengthCodePointWidth(cp)
+		var emojiCluster = __visibleLengthIsEmojiLike(cp) || width == 2
+		var emojiPresentation = false
 		var joinedEmoji = false
 		var keycapEmoji = false
+		var taggedEmoji = false
 
 		while(i < str.length) {
 			var nextCp = str.codePointAt(i)
+			if (__visibleLengthIsKeycapMark(nextCp)) {
+				keycapEmoji = true
+				i += nextCp > 0xFFFF ? 2 : 1
+				continue
+			}
 			if (__visibleLengthIsCombining(nextCp) || __visibleLengthIsEmojiModifier(nextCp)) {
-				if (nextCp == 0x20E3) keycapEmoji = true
+				emojiCluster = emojiCluster || __visibleLengthIsEmojiLike(nextCp)
+				i += nextCp > 0xFFFF ? 2 : 1
+				continue
+			}
+			if (__visibleLengthIsVariationSelector(nextCp)) {
+				if (nextCp == 0xFE0F) emojiPresentation = true
+				i += nextCp > 0xFFFF ? 2 : 1
+				continue
+			}
+			if (__visibleLengthIsTag(nextCp)) {
+				taggedEmoji = true
 				i += nextCp > 0xFFFF ? 2 : 1
 				continue
 			}
@@ -4841,6 +4869,7 @@ const visibleLength = str => {
 				if (i < str.length) {
 					var zwjCp = str.codePointAt(i)
 					if (isDef(zwjCp)) {
+						emojiCluster = emojiCluster || __visibleLengthIsEmojiLike(zwjCp) || __visibleLengthIsWide(zwjCp)
 						width = Math.max(width, __visibleLengthCodePointWidth(zwjCp))
 						i += zwjCp > 0xFFFF ? 2 : 1
 						continue
@@ -4850,7 +4879,7 @@ const visibleLength = str => {
 			break
 		}
 
-		if (joinedEmoji || keycapEmoji) width = Math.max(width, 2)
+		if ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji) width = Math.max(width, 2)
 		l += width
 	}
 	return l
