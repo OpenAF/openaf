@@ -65,6 +65,11 @@
         ow.test.assert(visibleLength("⚽"), 2, "Problem with emoji-presentation symbol visible width.");
     };
 
+    exports.testVisibleLengthSubdivisionFlag = function() {
+        var england = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+        ow.test.assert(visibleLength(england), 2, "Problem with subdivision flag visible width.");
+    };
+
     exports.testPrintTableEmojiAlignment = function() {
         var rendered = printTable([
             { "A": "⚽ abcdef", "B": "1" },
@@ -74,6 +79,18 @@
 
         ow.test.assert(lines[2], "⚽ abcdef│1", "Problem with printTable emoji alignment.");
         ow.test.assert(lines[3], "123456789│2", "Problem with printTable reference alignment.");
+    };
+
+    exports.testPrintTableSubdivisionFlagAlignment = function() {
+        var england = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+        var rendered = printTable([
+            { "Team": england + " England", "Pts": "1827.05", "Change": "🟢 +1.08" },
+            { "Team": "🇵🇹 Portugal", "Pts": "1766.18", "Change": "🟢 +2.34" }
+        ], __, false, false, "utf").replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = rendered.split("\n");
+
+        ow.test.assert(lines[2], england + " England│1827.05│🟢 +1.08", "Problem with printTable subdivision flag alignment.");
+        ow.test.assert(lines[3], "🇵🇹 Portugal│1766.18│🟢 +2.34", "Problem with printTable reference alignment for subdivision flags.");
     };
 
     exports.testWithMDWrap = function() {
