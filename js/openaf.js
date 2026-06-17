@@ -1028,9 +1028,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 					output.push((useAnsi ? [ _colorMap.title, "...", "\u001b[m" ].join("") : "...")); outOfWidth = true
 				} else {
 					var ansiLengthCol = visibleLength(col);
-					var _ps = ' '.repeat(Math.floor((maxsize[col] - ansiLengthCol)/2))
-					var _pe = ' '.repeat(Math.round((maxsize[col] - ansiLengthCol) / 2))
-					output.push(useAnsi ? [ _colorMap.title, _ps, col, _pe, "\u001b[m" ].join("") : _ps + col + _pe)
+					var _pe = ' '.repeat(maxsize[col] - ansiLengthCol)
+					output.push(useAnsi ? [ _colorMap.title, col, _pe, "\u001b[m" ].join("") : col + _pe)
 					if (colNum < colsLengthMinusOne) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 				}
 				colNum++

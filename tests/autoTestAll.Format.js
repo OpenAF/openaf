@@ -93,6 +93,18 @@
         ow.test.assert(lines[3], "🇵🇹 Portugal│1766.18│🟢 +2.34", "Problem with printTable reference alignment for subdivision flags.");
     };
 
+    exports.testPrintTableHeaderLeftAlignment = function() {
+        var rendered = printTable([
+            { "Region": "Americas", "Flag": "🇺🇸", "Country/Entity": "United States" },
+            { "Region": "Asia", "Flag": "🇯🇵", "Country/Entity": "Japan" }
+        ], __, false, false, "utf").replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = rendered.split("\n");
+
+        ow.test.assert(lines[0], "Region  │Flag│Country/Entity", "Problem with printTable header alignment.");
+        ow.test.assert(lines[1], "────────┼────┼──────────────", "Problem with printTable separator alignment.");
+        ow.test.assert(lines[2], "Americas│🇺🇸  │United States ", "Problem with printTable row alignment.");
+    };
+
     exports.testWithMDWrap = function() {
         var _oldCon = __con;
         var _oldConStatus = __conStatus;
