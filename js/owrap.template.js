@@ -807,6 +807,22 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
 OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark, aURIPrefix) {
 	extraDownOptions = _$(extraDownOptions).isMap().default(__flags.MD_SHOWDOWN_OPTIONS)
 	aURIPrefix = ow.loadServer().httpd.getHTMLPrefix(aURIPrefix)
+	var _withPrefix = aURI => {
+		if (!isString(aURI)) return aURI
+		if (aURI.match(/^[a-z]+:\/\//i) || aURI.startsWith("//")) return aURI
+		if (aURIPrefix == "" || !aURI.startsWith("/")) return aURI
+		if (aURI == aURIPrefix || aURI.startsWith(aURIPrefix + "/")) return aURI
+		return aURIPrefix + aURI
+	}
+	var _normalizeExtra = aExtra => {
+		if (!isString(aExtra)) return aExtra
+		return String(aExtra)
+			.replace(/\b(src|href)=(["'])(\/[^"']*)\2/g, (m, attr, quote, uri) => attr + "=" + quote + _withPrefix(uri) + quote)
+			.replace(/url\((["']?)(\/[^)"']*)\1\)/g, (m, quote, uri) => "url(" + quote + _withPrefix(uri) + quote + ")")
+	}
+	var _registerMDAsset = (aURI, aPath) => {
+		if (isString(aURI) && isString(aPath) && io.fileExists(aPath)) ow.template.__srcPath[aURI] = aPath
+	}
 
 	removeMaxWidth = _$(removeMaxWidth, "removeMaxWidth").isBoolean().default(__flags.MD_NOMAXWIDTH)
 	var mdString = aMarkdownString
@@ -861,6 +877,22 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			if (isDef(getOPackPath("KaTeX")) && 
 			    io.fileExists(getOPackPath("KaTeX")+"/katex.js")) loadLib("katex.js")
 			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
+		}
+
+		if (isDef(getOPackPath("KaTeX"))) {
+			var _katexPath = getOPackPath("KaTeX")
+			_registerMDAsset("/js/katex.min.js", _katexPath + "/lib/katex.min.js")
+			_registerMDAsset("/js/auto-render.min.js", _katexPath + "/lib/auto-render.min.js")
+			_registerMDAsset("/js/showdown-katex.min.js", _katexPath + "/lib/showdown-katex.min.js")
+			_registerMDAsset("/css/katex.min.css", _katexPath + "/lib/katex.min.css")
+
+			var _katexFontsPath = _katexPath + "/lib/fonts"
+			if (io.fileExists(_katexFontsPath)) {
+				io.listFiles(_katexFontsPath).files.forEach(f => {
+					_registerMDAsset("/fonts/" + f.filename, f.canonicalPath)
+					_registerMDAsset("/css/fonts/" + f.filename, f.canonicalPath)
+				})
+			}
 		}
 
 		var _extras = [], _posextras = []
@@ -1129,6 +1161,9 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 		ow.template.__mdHTMLPosExtras.forEach(r => {
 			if (mdString.indexOf(r.t) >= 0) _posextras.push(r.e)
 		})
+
+		_extras = _extras.map(_normalizeExtra)
+		_posextras = _posextras.map(_normalizeExtra)
 
 		var html = converter.makeHtml(mdString).replace("<html>", "<html><meta charset=\"utf-8\">")
 		if (__flags.MD_RENDER_SVG && svgBlocks.length > 0) {
@@ -1668,6 +1703,40 @@ OpenWrap.template.prototype.html = {
 				} 
 			}
 		};
+		var resolveRelativeURL = (aBaseURL, aRelativeURL) => {
+			if (!isString(aRelativeURL)) return aRelativeURL
+			if (aRelativeURL.match(/^[a-z]+:\/\//i) || aRelativeURL.startsWith("//") || aRelativeURL.startsWith("data:") || aRelativeURL.startsWith("blob:") || aRelativeURL.startsWith("#")) return aRelativeURL
+			if (aRelativeURL.startsWith("/")) return aRelativeURL
+
+			aBaseURL = String(aBaseURL).replace(/[?#].*$/, "")
+			var baseParts = aBaseURL.split("/")
+			if (baseParts.length > 0) baseParts.pop()
+
+			aRelativeURL.split("/").forEach(part => {
+				if (part == "" || part == ".") return
+				if (part == "..") {
+					if (baseParts.length > 1 || (baseParts.length == 1 && baseParts[0] != "")) baseParts.pop()
+				} else {
+					baseParts.push(part)
+				}
+			})
+
+			var out = baseParts.join("/")
+			if (aBaseURL.startsWith("/") && !out.startsWith("/")) out = "/" + out
+			return out
+		}
+		var inlineCSSURLs = (aCSS, aBaseURL) => {
+			if (!isString(aCSS)) return aCSS
+			return aCSS.replace(/url\((["']?)([^)"']+)\1\)/g, (m, quote, aURL) => {
+				if (!isString(aURL) || aURL == "" || aURL.startsWith("data:") || aURL.startsWith("blob:") || aURL.startsWith("#")) return m
+
+				var resolvedURL = resolveRelativeURL(aBaseURL, aURL)
+				var inlinedURL = testURL(resolvedURL, false)
+				if (!isString(inlinedURL) || inlinedURL == resolvedURL) return m
+
+				return "url(" + quote + inlinedURL + quote + ")"
+			})
+		}
 
 		// src=
 		var srcs_replaces = [];
@@ -1682,7 +1751,8 @@ OpenWrap.template.prototype.html = {
 		srcs = anOriginalHTML.match(/<link rel=\"stylesheet\" href=\".+?\">/g);
 		srcs_replaces = [];
 		for(var ii in srcs) {
-			srcs_replaces[srcs[ii]] = testURL(srcs[ii].match(/<link rel=\"stylesheet\" href=\"(.+?)\">/)[1], true);
+			var href = srcs[ii].match(/<link rel=\"stylesheet\" href=\"(.+?)\">/)[1]
+			srcs_replaces[srcs[ii]] = inlineCSSURLs(testURL(href, true), href);
 		}
 		for(var ii in srcs_replaces) {
 			anOriginalHTML = anOriginalHTML.replace(ii, "<style>" + srcs_replaces[ii] + "</style>");
