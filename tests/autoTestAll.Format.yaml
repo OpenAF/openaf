@@ -70,10 +70,43 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testWordWrap; 
 
-   - name: Format::Markdown wrap
+<<<<<<< HEAD
+   - name: Format::Visible length unicode
+=======
+   - name: Format::PrintTable emoji alignment
+>>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
      from: Format::Init
      to  : oJob Test
      deps:
+       - Format::Load Format
+<<<<<<< HEAD
+     exec: args.func = args.tests.testVisibleLengthUnicode;
+=======
+     exec: args.func = args.tests.testPrintTableEmojiAlignment;
+
+   - name: Format::PrintTable subdivision flag alignment
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTableSubdivisionFlagAlignment;
+
+   - name: Format::PrintTable header alignment
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTableHeaderLeftAlignment;
+>>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
+
+   - name: Format::Markdown wrap
+     from: Format::Init
+     to  : oJob Test
+<<<<<<< HEAD
+     deps:
+=======
+     deps:
+>>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
        - Format::Load Format
      exec: args.func = args.tests.testWithMDWrap;
 
@@ -83,6 +116,13 @@ jobs:
      deps:
        - Format::Load Format
      exec: args.func = args.tests.testPad;
+
+   - name: Format::Side line emoji header footer
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithSideLineEmojiHeaderFooter;
 
    - name: Format::Terminal capabilities
      from: Format::Init
@@ -252,6 +292,9 @@ todo:
    - Format::LDAP date to/from
    - Format::Escape strings
    - Format::Word wrap
+   - Format::PrintTable emoji alignment
+   - Format::PrintTable subdivision flag alignment
+   - Format::PrintTable header alignment
    - Format::Markdown wrap
    - Format::String pad
    - Format::Terminal capabilities

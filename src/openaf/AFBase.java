@@ -31,6 +31,7 @@ import java.util.Scanner;
 import java.util.zip.ZipFile;
 import java.util.Iterator;
 import java.util.HashMap;
+import java.util.regex.Pattern;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -87,6 +88,7 @@ import java.lang.String;
  * 
  */
 public class AFBase extends ScriptableObject {
+	private static final Pattern VISIBLE_LENGTH_ANSI_RE = Pattern.compile("\u001B(?:\\[[0-9;?]*[ -/]*[@-~]|\\][^\\u0007\\u001B]*(?:\\u0007|\\u001B\\\\))");
 
 	/**
 	 * 
@@ -1505,14 +1507,150 @@ public class AFBase extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>af.visibleLength(aString) : int</key>
-	 * Given aString will try to remove ansi characters and just count code point (e.g. removing combined
-	 * characters like emojis).
+	 * Given aString returns its visible terminal width in columns, removing ANSI sequences and collapsing
+	 * combined characters and emoji grapheme sequences.
 	 * </odoc>
 	 */
 	@JSFunction
 	public static int visibleLength(String s) {
-		s = s.replaceAll("\\033\\[[0-9;]*m", "");
-		return s.codePointCount(0, s.length());
+		if (s == null) return 0;
+
+		s = VISIBLE_LENGTH_ANSI_RE.matcher(s).replaceAll("");
+		int length = 0;
+
+		for (int i = 0; i < s.length();) {
+			int cp = s.codePointAt(i);
+			i += Character.charCount(cp);
+
+			if (visibleLengthIsControl(cp)) continue;
+
+			if (visibleLengthIsRegionalIndicator(cp)) {
+				if (i < s.length()) {
+					int nextRegional = s.codePointAt(i);
+					if (visibleLengthIsRegionalIndicator(nextRegional)) i += Character.charCount(nextRegional);
+				}
+				length += 2;
+				continue;
+			}
+
+			int width = visibleLengthCodePointWidth(cp);
+			boolean emojiCluster = visibleLengthIsEmojiLike(cp) || width == 2;
+			boolean emojiPresentation = false;
+			boolean joinedEmoji = false;
+			boolean keycapEmoji = false;
+			boolean taggedEmoji = false;
+
+			while (i < s.length()) {
+				int nextCp = s.codePointAt(i);
+
+				if (visibleLengthIsKeycapMark(nextCp)) {
+					keycapEmoji = true;
+					i += Character.charCount(nextCp);
+					continue;
+				}
+				if (visibleLengthIsCombining(nextCp) || visibleLengthIsEmojiModifier(nextCp)) {
+					emojiCluster = emojiCluster || visibleLengthIsEmojiLike(nextCp);
+					i += Character.charCount(nextCp);
+					continue;
+				}
+				if (visibleLengthIsVariationSelector(nextCp)) {
+					if (nextCp == 0xFE0F) emojiPresentation = true;
+					i += Character.charCount(nextCp);
+					continue;
+				}
+				if (visibleLengthIsTag(nextCp)) {
+					taggedEmoji = true;
+					i += Character.charCount(nextCp);
+					continue;
+				}
+				if (nextCp == 0x200D) {
+					joinedEmoji = true;
+					i += Character.charCount(nextCp);
+					if (i < s.length()) {
+						int zwjCp = s.codePointAt(i);
+						emojiCluster = emojiCluster || visibleLengthIsEmojiLike(zwjCp) || visibleLengthIsWide(zwjCp);
+						width = Math.max(width, visibleLengthCodePointWidth(zwjCp));
+						i += Character.charCount(zwjCp);
+						continue;
+					}
+				}
+				break;
+			}
+
+			if ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji) width = Math.max(width, 2);
+			length += width;
+		}
+
+		return length;
+	}
+
+	private static boolean visibleLengthIsControl(int cp) {
+		return (cp >= 0 && cp <= 0x1F) || (cp >= 0x7F && cp <= 0x9F);
+	}
+
+	private static boolean visibleLengthIsCombining(int cp) {
+		int type = Character.getType(cp);
+		return type == Character.NON_SPACING_MARK
+			|| type == Character.COMBINING_SPACING_MARK
+			|| type == Character.ENCLOSING_MARK;
+	}
+
+	private static boolean visibleLengthIsEmojiModifier(int cp) {
+		return cp >= 0x1F3FB && cp <= 0x1F3FF;
+	}
+
+	private static boolean visibleLengthIsVariationSelector(int cp) {
+		return (cp >= 0xFE00 && cp <= 0xFE0F) || (cp >= 0xE0100 && cp <= 0xE01EF);
+	}
+
+	private static boolean visibleLengthIsKeycapMark(int cp) {
+		return cp == 0x20E3;
+	}
+
+	private static boolean visibleLengthIsTag(int cp) {
+		return cp >= 0xE0020 && cp <= 0xE007F;
+	}
+
+	private static boolean visibleLengthIsRegionalIndicator(int cp) {
+		return cp >= 0x1F1E6 && cp <= 0x1F1FF;
+	}
+
+	private static boolean visibleLengthIsEmojiLike(int cp) {
+		return (cp >= 0x231A && cp <= 0x231B)
+			|| (cp >= 0x23E9 && cp <= 0x23EC)
+			|| cp == 0x23F0
+			|| cp == 0x23F3
+			|| (cp >= 0x25FD && cp <= 0x25FE)
+			|| (cp >= 0x2600 && cp <= 0x27BF)
+			|| (cp >= 0x1F000 && cp <= 0x1FAFF);
+	}
+
+	private static boolean visibleLengthIsWide(int cp) {
+		return cp >= 0x1100 && (
+			cp <= 0x115F
+			|| cp == 0x2329 || cp == 0x232A
+			|| (cp >= 0x2E80 && cp <= 0xA4CF && cp != 0x303F)
+			|| (cp >= 0xAC00 && cp <= 0xD7A3)
+			|| (cp >= 0xF900 && cp <= 0xFAFF)
+			|| (cp >= 0xFE10 && cp <= 0xFE19)
+			|| (cp >= 0xFE30 && cp <= 0xFE6F)
+			|| (cp >= 0xFF00 && cp <= 0xFF60)
+			|| (cp >= 0xFFE0 && cp <= 0xFFE6)
+			|| (cp >= 0x1F300 && cp <= 0x1FAFF)
+			|| (cp >= 0x20000 && cp <= 0x3FFFD)
+		);
+	}
+
+	private static int visibleLengthCodePointWidth(int cp) {
+		if (visibleLengthIsControl(cp)
+			|| visibleLengthIsCombining(cp)
+			|| visibleLengthIsEmojiModifier(cp)
+			|| visibleLengthIsVariationSelector(cp)
+			|| visibleLengthIsKeycapMark(cp)
+			|| visibleLengthIsTag(cp)
+			|| cp == 0x200D) return 0;
+
+		return visibleLengthIsWide(cp) ? 2 : 1;
 	}
 
 	/**
