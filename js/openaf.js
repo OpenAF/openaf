@@ -5254,10 +5254,6 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => af.fromTOML(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
-		trim: {
-			_func: ar => ar[0].trim(),
-			_signature: [ { types: [ jmespath.types.string ] } ]
-		},
 		nvl: {
 			_func: ar => (isNull(ar[0]) || isUnDef(ar[0]) ? ar[1] : ar[0]),
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
