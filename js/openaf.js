@@ -4782,7 +4782,6 @@ const __visibleLengthIsCombining = cp => (
 	(cp >= 0x20D0 && cp <= 0x20FF) ||
 	(cp >= 0xFE20 && cp <= 0xFE2F)
 )
-<<<<<<< HEAD
 const __visibleLengthIsEmojiModifier = cp => cp >= 0x1F3FB && cp <= 0x1F3FF
 const __visibleLengthIsVariationSelector = cp => (
 	(cp >= 0xFE00 && cp <= 0xFE0F) ||
@@ -4799,12 +4798,6 @@ const __visibleLengthIsEmojiLike = cp => (
 	(cp >= 0x2600 && cp <= 0x27BF) ||
 	(cp >= 0x1F000 && cp <= 0x1FAFF)
 )
-=======
-const __visibleLengthIsEmojiModifier = cp => __visibleLengthChar.isEmojiModifier(cp)
-const __visibleLengthIsEmojiComponent = cp => __visibleLengthChar.isEmojiComponent(cp) || cp == 0xFE0E || cp == 0xFE0F
-const __visibleLengthIsRegionalIndicator = cp => cp >= 0x1F1E6 && cp <= 0x1F1FF
-const __visibleLengthIsEmojiBase = cp => __visibleLengthChar.isEmojiPresentation(cp) || __visibleLengthChar.isExtendedPictographic(cp)
->>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
 const __visibleLengthIsWide = cp => (
 	cp >= 0x1100 && (
 		cp <= 0x115F ||
@@ -4821,13 +4814,8 @@ const __visibleLengthIsWide = cp => (
 	)
 )
 const __visibleLengthCodePointWidth = cp => {
-<<<<<<< HEAD
 	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || __visibleLengthIsVariationSelector(cp) || __visibleLengthIsKeycapMark(cp) || __visibleLengthIsTag(cp) || cp == 0x200D) return 0
 	return __visibleLengthIsWide(cp) ? 2 : 1
-=======
-	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || __visibleLengthIsEmojiComponent(cp) || cp == 0x200D) return 0
-	return (__visibleLengthIsWide(cp) || __visibleLengthIsEmojiBase(cp)) ? 2 : 1
->>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
 }
 const visibleLength = str => {
 	str = String(str).replace(__visibleLengthAnsiRE, "")
@@ -4847,9 +4835,9 @@ const visibleLength = str => {
 		}
 
 		var width = __visibleLengthCodePointWidth(cp)
-<<<<<<< HEAD
 		var emojiCluster = __visibleLengthIsEmojiLike(cp) || width == 2
 		var emojiPresentation = false
+		var textPresentation = false
 		var joinedEmoji = false
 		var keycapEmoji = false
 		var taggedEmoji = false
@@ -4865,27 +4853,15 @@ const visibleLength = str => {
 				emojiCluster = emojiCluster || __visibleLengthIsEmojiLike(nextCp)
 				i += nextCp > 0xFFFF ? 2 : 1
 				continue
-			}
-			if (__visibleLengthIsVariationSelector(nextCp)) {
-				if (nextCp == 0xFE0F) emojiPresentation = true
-				i += nextCp > 0xFFFF ? 2 : 1
-				continue
-			}
+				}
+				if (__visibleLengthIsVariationSelector(nextCp)) {
+					if (nextCp == 0xFE0F) emojiPresentation = true
+					if (nextCp == 0xFE0E) textPresentation = true
+					i += nextCp > 0xFFFF ? 2 : 1
+					continue
+				}
 			if (__visibleLengthIsTag(nextCp)) {
 				taggedEmoji = true
-=======
-		var emojiCluster = __visibleLengthIsEmojiBase(cp)
-		var joinedEmoji = false
-		var keycapEmoji = false
-		var textPresentation = false
-
-		while(i < str.length) {
-			var nextCp = str.codePointAt(i)
-			if (__visibleLengthIsCombining(nextCp) || __visibleLengthIsEmojiModifier(nextCp) || __visibleLengthIsEmojiComponent(nextCp)) {
-				if (nextCp == 0x20E3) keycapEmoji = true
-				if (nextCp == 0xFE0E) textPresentation = true
-				if (nextCp == 0xFE0F || nextCp == 0x20E3 || __visibleLengthChar.isEmojiComponent(nextCp)) emojiCluster = true
->>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
 				i += nextCp > 0xFFFF ? 2 : 1
 				continue
 			}
@@ -4897,7 +4873,6 @@ const visibleLength = str => {
 					if (isDef(zwjCp)) {
 						emojiCluster = emojiCluster || __visibleLengthIsEmojiLike(zwjCp) || __visibleLengthIsWide(zwjCp)
 						width = Math.max(width, __visibleLengthCodePointWidth(zwjCp))
-						emojiCluster = emojiCluster || __visibleLengthIsEmojiBase(zwjCp)
 						i += zwjCp > 0xFFFF ? 2 : 1
 						continue
 					}
@@ -4906,11 +4881,7 @@ const visibleLength = str => {
 			break
 		}
 
-<<<<<<< HEAD
-		if ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji) width = Math.max(width, 2)
-=======
-		if (!textPresentation && (emojiCluster || joinedEmoji || keycapEmoji)) width = Math.max(width, 2)
->>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
+		if (!textPresentation && ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2)
 		l += width
 	}
 	return l

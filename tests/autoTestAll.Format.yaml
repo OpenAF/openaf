@@ -70,18 +70,32 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testWordWrap; 
 
-<<<<<<< HEAD
-   - name: Format::Visible length unicode
-=======
-   - name: Format::PrintTable emoji alignment
->>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
+   - name: Format::Visible length emoji presentation
      from: Format::Init
      to  : oJob Test
      deps:
        - Format::Load Format
-<<<<<<< HEAD
+     exec: args.func = args.tests.testVisibleLengthEmojiPresentation;
+
+   - name: Format::Visible length subdivision flag
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVisibleLengthSubdivisionFlag;
+
+   - name: Format::Visible length unicode
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
      exec: args.func = args.tests.testVisibleLengthUnicode;
-=======
+
+   - name: Format::PrintTable emoji alignment
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
      exec: args.func = args.tests.testPrintTableEmojiAlignment;
 
    - name: Format::PrintTable subdivision flag alignment
@@ -97,16 +111,11 @@ jobs:
      deps:
        - Format::Load Format
      exec: args.func = args.tests.testPrintTableHeaderLeftAlignment;
->>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
 
    - name: Format::Markdown wrap
      from: Format::Init
      to  : oJob Test
-<<<<<<< HEAD
      deps:
-=======
-     deps:
->>>>>>> 3eb60dd2ec496843d2c61e30660b89e784930044
        - Format::Load Format
      exec: args.func = args.tests.testWithMDWrap;
 

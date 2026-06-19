@@ -1536,6 +1536,7 @@ public class AFBase extends ScriptableObject {
 			int width = visibleLengthCodePointWidth(cp);
 			boolean emojiCluster = visibleLengthIsEmojiLike(cp) || width == 2;
 			boolean emojiPresentation = false;
+			boolean textPresentation = false;
 			boolean joinedEmoji = false;
 			boolean keycapEmoji = false;
 			boolean taggedEmoji = false;
@@ -1555,6 +1556,7 @@ public class AFBase extends ScriptableObject {
 				}
 				if (visibleLengthIsVariationSelector(nextCp)) {
 					if (nextCp == 0xFE0F) emojiPresentation = true;
+					if (nextCp == 0xFE0E) textPresentation = true;
 					i += Character.charCount(nextCp);
 					continue;
 				}
@@ -1577,7 +1579,7 @@ public class AFBase extends ScriptableObject {
 				break;
 			}
 
-			if ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji) width = Math.max(width, 2);
+			if (!textPresentation && ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2);
 			length += width;
 		}
 
@@ -1589,6 +1591,7 @@ public class AFBase extends ScriptableObject {
 	}
 
 	private static boolean visibleLengthIsCombining(int cp) {
+		if (visibleLengthIsVariationSelector(cp)) return false;
 		int type = Character.getType(cp);
 		return type == Character.NON_SPACING_MARK
 			|| type == Character.COMBINING_SPACING_MARK
