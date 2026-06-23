@@ -19,6 +19,7 @@
 
     exports.testMD2HTMLWithPrefix = function() {
         var md = "# test 1"
+        var extraTag = '<link rel="stylesheet" href="/css/katex.min.css"><script src="/js/katex.min.js"></script>'
 
         ow.loadTemplate()
 
@@ -29,6 +30,36 @@
         out = ow.template.html.parseMapInHTML({ a: 1 }, __, "/myprefix")
         ow.test.assert(out.indexOf('src="/myprefix/js/openafsigil.js"') >= 0, true, "Problem with ow.template.html.parseMapInHTML prefix support")
         ow.test.assert(out.indexOf('href="/myprefix/css/nJSMap.css"') >= 0, true, "Problem with ow.template.html.parseMapInHTML stylesheet prefix support")
+
+        ow.template.__mdHTMLTExtras.push({ t: "OAFTESTKATEX", e: extraTag })
+        out = ow.template.parseMD2HTML("OAFTESTKATEX", true, __, __, __, "/myprefix")
+        ow.test.assert(out.indexOf('src="/myprefix/js/katex.min.js"') >= 0, true, "Problem with ow.template.parseMD2HTML extra script prefix support")
+        ow.test.assert(out.indexOf('href="/myprefix/css/katex.min.css"') >= 0, true, "Problem with ow.template.parseMD2HTML extra stylesheet prefix support")
+        ow.template.__mdHTMLTExtras = $from(ow.template.__mdHTMLTExtras).notEquals("t", "OAFTESTKATEX").select()
+
+        var tmpBase = io.createTempFile("oaf_template_", "")
+        io.rm(tmpBase)
+        io.mkdir(tmpBase)
+        io.mkdir(tmpBase + "/fonts")
+
+        var cssFile = tmpBase + "/katex.min.css"
+        var jsFile = tmpBase + "/katex.min.js"
+        var fontFile = tmpBase + "/fonts/test.woff2"
+
+        io.writeFileString(cssFile, '@font-face{src:url(fonts/test.woff2)} body{font-family:test;}')
+        io.writeFileString(jsFile, 'console.log("katex");')
+        io.writeFileString(fontFile, 'font-data')
+
+        ow.template.__srcPath["/css/katex.min.css"] = cssFile
+        ow.template.__srcPath["/js/katex.min.js"] = jsFile
+        ow.template.__srcPath["/css/fonts/test.woff2"] = fontFile
+        ow.template.__srcPath["/fonts/test.woff2"] = fontFile
+
+        out = ow.template.html.genStaticVersion('<html><head><link rel="stylesheet" href="/css/katex.min.css"></head><body><script src="/js/katex.min.js"></script></body></html>')
+        ow.test.assert(out.indexOf('/js/katex.min.js') < 0, true, "Problem with ow.template.html.genStaticVersion script inlining")
+        ow.test.assert(out.indexOf('/css/katex.min.css') < 0, true, "Problem with ow.template.html.genStaticVersion stylesheet inlining")
+        ow.test.assert(out.indexOf('url(fonts/') < 0, true, "Problem with ow.template.html.genStaticVersion stylesheet relative asset inlining")
+        ow.test.assert(out.indexOf('data:font/') >= 0 || out.indexOf('data:application/font-') >= 0 || out.indexOf('data:application/octet-stream') >= 0, true, "Problem with ow.template.html.genStaticVersion font data URL inlining")
     };
 
     exports.testSimpleTemplate = function() {

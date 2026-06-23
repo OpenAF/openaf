@@ -1028,9 +1028,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 					output.push((useAnsi ? [ _colorMap.title, "...", "\u001b[m" ].join("") : "...")); outOfWidth = true
 				} else {
 					var ansiLengthCol = visibleLength(col);
-					var _ps = ' '.repeat(Math.floor((maxsize[col] - ansiLengthCol)/2))
-					var _pe = ' '.repeat(Math.round((maxsize[col] - ansiLengthCol) / 2))
-					output.push(useAnsi ? [ _colorMap.title, _ps, col, _pe, "\u001b[m" ].join("") : _ps + col + _pe)
+					var _pe = ' '.repeat(maxsize[col] - ansiLengthCol)
+					output.push(useAnsi ? [ _colorMap.title, col, _pe, "\u001b[m" ].join("") : col + _pe)
 					if (colNum < colsLengthMinusOne) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 				}
 				colNum++
@@ -4771,6 +4770,7 @@ const inherit = function(Child, Parent) {
 const __visibleLength = "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"
 var __visibleLength2
 const __visibleLengthAnsiRE = /\033(?:\[[0-9;?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\))/g
+const __visibleLengthChar = java.lang.Character
 const __visibleLengthIsControl = cp => (
 	(cp >= 0 && cp <= 0x1F) ||
 	(cp >= 0x7F && cp <= 0x9F)
@@ -4782,12 +4782,22 @@ const __visibleLengthIsCombining = cp => (
 	(cp >= 0x20D0 && cp <= 0x20FF) ||
 	(cp >= 0xFE20 && cp <= 0xFE2F)
 )
-const __visibleLengthIsEmojiModifier = cp => (
-	(cp >= 0x1F3FB && cp <= 0x1F3FF) ||
-	cp == 0xFE0E || cp == 0xFE0F ||
-	cp == 0x20E3
+const __visibleLengthIsEmojiModifier = cp => cp >= 0x1F3FB && cp <= 0x1F3FF
+const __visibleLengthIsVariationSelector = cp => (
+	(cp >= 0xFE00 && cp <= 0xFE0F) ||
+	(cp >= 0xE0100 && cp <= 0xE01EF)
 )
+const __visibleLengthIsKeycapMark = cp => cp == 0x20E3
+const __visibleLengthIsTag = cp => cp >= 0xE0020 && cp <= 0xE007F
 const __visibleLengthIsRegionalIndicator = cp => cp >= 0x1F1E6 && cp <= 0x1F1FF
+const __visibleLengthIsEmojiLike = cp => (
+	(cp >= 0x231A && cp <= 0x231B) ||
+	(cp >= 0x23E9 && cp <= 0x23EC) ||
+	cp == 0x23F0 || cp == 0x23F3 ||
+	(cp >= 0x25FD && cp <= 0x25FE) ||
+	(cp >= 0x2600 && cp <= 0x27BF) ||
+	(cp >= 0x1F000 && cp <= 0x1FAFF)
+)
 const __visibleLengthIsWide = cp => (
 	cp >= 0x1100 && (
 		cp <= 0x115F ||
@@ -4804,7 +4814,7 @@ const __visibleLengthIsWide = cp => (
 	)
 )
 const __visibleLengthCodePointWidth = cp => {
-	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || cp == 0x200D) return 0
+	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || __visibleLengthIsVariationSelector(cp) || __visibleLengthIsKeycapMark(cp) || __visibleLengthIsTag(cp) || cp == 0x200D) return 0
 	return __visibleLengthIsWide(cp) ? 2 : 1
 }
 const visibleLength = str => {
@@ -4825,13 +4835,33 @@ const visibleLength = str => {
 		}
 
 		var width = __visibleLengthCodePointWidth(cp)
+		var emojiCluster = __visibleLengthIsEmojiLike(cp) || width == 2
+		var emojiPresentation = false
+		var textPresentation = false
 		var joinedEmoji = false
 		var keycapEmoji = false
+		var taggedEmoji = false
 
 		while(i < str.length) {
 			var nextCp = str.codePointAt(i)
+			if (__visibleLengthIsKeycapMark(nextCp)) {
+				keycapEmoji = true
+				i += nextCp > 0xFFFF ? 2 : 1
+				continue
+			}
 			if (__visibleLengthIsCombining(nextCp) || __visibleLengthIsEmojiModifier(nextCp)) {
-				if (nextCp == 0x20E3) keycapEmoji = true
+				emojiCluster = emojiCluster || __visibleLengthIsEmojiLike(nextCp)
+				i += nextCp > 0xFFFF ? 2 : 1
+				continue
+				}
+				if (__visibleLengthIsVariationSelector(nextCp)) {
+					if (nextCp == 0xFE0F) emojiPresentation = true
+					if (nextCp == 0xFE0E) textPresentation = true
+					i += nextCp > 0xFFFF ? 2 : 1
+					continue
+				}
+			if (__visibleLengthIsTag(nextCp)) {
+				taggedEmoji = true
 				i += nextCp > 0xFFFF ? 2 : 1
 				continue
 			}
@@ -4841,6 +4871,7 @@ const visibleLength = str => {
 				if (i < str.length) {
 					var zwjCp = str.codePointAt(i)
 					if (isDef(zwjCp)) {
+						emojiCluster = emojiCluster || __visibleLengthIsEmojiLike(zwjCp) || __visibleLengthIsWide(zwjCp)
 						width = Math.max(width, __visibleLengthCodePointWidth(zwjCp))
 						i += zwjCp > 0xFFFF ? 2 : 1
 						continue
@@ -4850,7 +4881,7 @@ const visibleLength = str => {
 			break
 		}
 
-		if (joinedEmoji || keycapEmoji) width = Math.max(width, 2)
+		if (!textPresentation && ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2)
 		l += width
 	}
 	return l
@@ -5252,10 +5283,6 @@ const $path = function(aObj, aPath, customFunctions) {
 		},
 		from_toml: {
 			_func: ar => af.fromTOML(ar[0]),
-			_signature: [ { types: [ jmespath.types.string ] } ]
-		},
-		trim: {
-			_func: ar => ar[0].trim(),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
 		nvl: {

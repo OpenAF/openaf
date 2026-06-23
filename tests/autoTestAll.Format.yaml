@@ -70,6 +70,48 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testWordWrap; 
 
+   - name: Format::Visible length emoji presentation
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVisibleLengthEmojiPresentation;
+
+   - name: Format::Visible length subdivision flag
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVisibleLengthSubdivisionFlag;
+
+   - name: Format::Visible length unicode
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVisibleLengthUnicode;
+
+   - name: Format::PrintTable emoji alignment
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTableEmojiAlignment;
+
+   - name: Format::PrintTable subdivision flag alignment
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTableSubdivisionFlagAlignment;
+
+   - name: Format::PrintTable header alignment
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTableHeaderLeftAlignment;
+
    - name: Format::Markdown wrap
      from: Format::Init
      to  : oJob Test
@@ -83,6 +125,13 @@ jobs:
      deps:
        - Format::Load Format
      exec: args.func = args.tests.testPad;
+
+   - name: Format::Side line emoji header footer
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithSideLineEmojiHeaderFooter;
 
    - name: Format::Terminal capabilities
      from: Format::Init
@@ -252,6 +301,9 @@ todo:
    - Format::LDAP date to/from
    - Format::Escape strings
    - Format::Word wrap
+   - Format::PrintTable emoji alignment
+   - Format::PrintTable subdivision flag alignment
+   - Format::PrintTable header alignment
    - Format::Markdown wrap
    - Format::String pad
    - Format::Terminal capabilities

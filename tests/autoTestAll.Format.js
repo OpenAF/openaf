@@ -61,6 +61,83 @@
         ow.test.assert(ow.format.string.wordWrap("alpha 😀 beta 😀 gamma", 10), "alpha 😀\nbeta 😀\ngamma", "Problem with word wrap and emoji width.");
     };
 
+    exports.testVisibleLengthUnicode = function() {
+        var subdivisionFlag = String.fromCodePoint(0x1F3F4, 0xE0067, 0xE0062, 0xE0065, 0xE006E, 0xE0067, 0xE007F);
+        var cases = [
+            ["abc", 3],
+            ["e\u0301", 1],
+            ["中", 2],
+            ["😀", 2],
+            ["👍🏽", 2],
+            ["👨‍👩‍👧‍👦", 2],
+            ["🏳️‍🌈", 2],
+            ["🇵🇹", 2],
+            ["1️⃣", 2],
+            [subdivisionFlag, 2]
+        ];
+
+        cases.forEach(function(entry) {
+            ow.test.assert(visibleLength(entry[0]), entry[1], "Problem with visibleLength unicode width for '" + entry[0] + "'.");
+            ow.test.assert(af.visibleLength(entry[0]), entry[1], "Problem with af.visibleLength unicode width for '" + entry[0] + "'.");
+        });
+
+        ow.test.assert(visibleLength(ansiColor("RED", "👨‍👩‍👧‍👦")), 2, "Problem with visibleLength ANSI unicode width.");
+        ow.test.assert(af.visibleLength(ansiColor("RED", "👨‍👩‍👧‍👦")), 2, "Problem with af.visibleLength ANSI unicode width.");
+    };
+
+    exports.testVisibleLengthEmojiPresentation = function() {
+        ow.test.assert(visibleLength("⚽"), 1, "Problem with bare emoji-presentation symbol visible width.");
+        ow.test.assert(af.visibleLength("⚽"), 1, "Problem with af.visibleLength bare emoji-presentation symbol visible width.");
+        ow.test.assert(visibleLength("⚽️"), 2, "Problem with explicit emoji-presentation symbol visible width.");
+        ow.test.assert(af.visibleLength("⚽️"), 2, "Problem with af.visibleLength explicit emoji-presentation symbol visible width.");
+        ow.test.assert(visibleLength("⚽︎"), 1, "Problem with text-presentation symbol visible width.");
+        ow.test.assert(af.visibleLength("⚽︎"), 1, "Problem with af.visibleLength text-presentation symbol visible width.");
+    };
+
+    exports.testVisibleLengthSubdivisionFlag = function() {
+        var england = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+        ow.test.assert(visibleLength(england), 2, "Problem with subdivision flag visible width.");
+        ow.test.assert(af.visibleLength(england), 2, "Problem with af.visibleLength subdivision flag visible width.");
+    };
+
+    exports.testPrintTableEmojiAlignment = function() {
+        var rendered = printTable([
+            { "A": "⚽ abcdef", "B": "1" },
+            { "A": "123456789", "B": "2" }
+        ], __, false, false, "utf").replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = rendered.split("\n");
+
+        ow.test.assert(
+            visibleLength(lines[2].split("│")[0]),
+            visibleLength(lines[3].split("│")[0]),
+            "Problem with printTable emoji alignment."
+        );
+    };
+
+    exports.testPrintTableSubdivisionFlagAlignment = function() {
+        var england = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+        var rendered = printTable([
+            { "Team": england + " England", "Pts": "1827.05", "Change": "🟢 +1.08" },
+            { "Team": "🇵🇹 Portugal", "Pts": "1766.18", "Change": "🟢 +2.34" }
+        ], __, false, false, "utf").replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = rendered.split("\n");
+
+        ow.test.assert(lines[2].indexOf("│"), lines[3].indexOf("│"), "Problem with printTable subdivision flag alignment.");
+        ow.test.assert(lines[2].lastIndexOf("│"), lines[3].lastIndexOf("│"), "Problem with printTable reference alignment for subdivision flags.");
+    };
+
+    exports.testPrintTableHeaderLeftAlignment = function() {
+        var rendered = printTable([
+            { "Region": "Americas", "Flag": "🇺🇸", "Country/Entity": "United States" },
+            { "Region": "Asia", "Flag": "🇯🇵", "Country/Entity": "Japan" }
+        ], __, false, false, "utf").replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = rendered.split("\n");
+
+        ow.test.assert(lines[0].indexOf("│"), lines[2].indexOf("│"), "Problem with printTable header first separator alignment.");
+        ow.test.assert(lines[0].lastIndexOf("│"), lines[2].lastIndexOf("│"), "Problem with printTable header second separator alignment.");
+        ow.test.assert(lines[1].indexOf("┼"), lines[2].indexOf("│"), "Problem with printTable separator alignment.");
+    };
+
     exports.testWithMDWrap = function() {
         var _oldCon = __con;
         var _oldConStatus = __conStatus;
@@ -160,6 +237,24 @@
         ow.test.assert(lines[2], "└──🇵🇹──┘", "Problem with withSideLine unicode footer width.");
         lines.forEach(line => {
             ow.test.assert(visibleLength(line), 8, "Problem with withSideLine unicode visible width.");
+        });
+    };
+
+    exports.testWithSideLineEmojiHeaderFooter = function() {
+        var rendered = ow.format.withSideLine("x", 8, __, __, ow.format.withSideLineThemes().closedRect, {
+            header: "👨‍👩‍👧‍👦",
+            headerAlign: "left",
+            footer: "🏳️‍🌈",
+            footerAlign: "left"
+        });
+        var plain = rendered.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var lines = plain.split("\n");
+
+        ow.test.assert(lines[0], "┌──👨‍👩‍👧‍👦──┐", "Problem with withSideLine emoji header width.");
+        ow.test.assert(lines[1], "│ x    │", "Problem with withSideLine emoji body width.");
+        ow.test.assert(lines[2], "└──🏳️‍🌈──┘", "Problem with withSideLine emoji footer width.");
+        lines.forEach(line => {
+            ow.test.assert(visibleLength(line), 8, "Problem with withSideLine emoji visible width.");
         });
     };
 
