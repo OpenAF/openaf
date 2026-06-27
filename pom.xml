@@ -290,7 +290,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna-platform</artifactId>
-      <version>5.18.1</version>
+      <version>5.19.0</version>
     </dependency>
     <dependency>
       <groupId>net.java.dev.jna</groupId>
@@ -355,7 +355,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>dnsjava</groupId>
       <artifactId>dnsjava</artifactId>
-      <version>3.6.4</version>
+      <version>3.6.5</version>
     </dependency>   
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -365,7 +365,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-nop</artifactId>
-      <version>2.0.17</version>
+      <version>2.0.18</version>
     </dependency>
     <dependency>
       <groupId>com.github.mwiede</groupId>

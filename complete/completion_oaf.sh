@@ -24,7 +24,7 @@ F__helpscript=1
 if [ $# -gt 0 ]; then
   FFOUND=0
   for arg in "$@"; do
-    if [ "$arg" = "${!#}" ]; then FFOUND=1; break; fi
+    if [ "$arg" = "" ]; then FFOUND=1; break; fi
     # -e single option
     if [ "$arg" = "-e" ]; then FFOUND=1; F__e=0; fi
     # -c single option
