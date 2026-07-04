@@ -125,6 +125,31 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIOllamaStreamingWarmsModelOnFreshConversation;
 
+   - name: AI::OpenAI rawResponse method
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIRawResponse;
+
+   - name: AI::OpenAI jsonSchemaPrompt
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPrompt;
+
+   - name: AI::OpenAI jsonSchemaPromptWithStats
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptWithStats;
+
+   - name: AI::OpenAI jsonSchemaPrompt schema defaults
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptSchemaDefault;
+
+   - name: AI::OpenAI jsonSchemaPrompt unsupported provider
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptUnsupportedProvider;
+
 todo:
    # ow.ai tests
    # -----------
@@ -151,3 +176,8 @@ todo:
    - AI::OpenAI export conversation falls back to tool name
    - AI::Ollama streaming tool execution and ids
    - AI::Ollama streaming warmup on fresh conversation
+   - AI::OpenAI rawResponse method
+   - AI::OpenAI jsonSchemaPrompt
+   - AI::OpenAI jsonSchemaPromptWithStats
+   - AI::OpenAI jsonSchemaPrompt schema defaults
+   - AI::OpenAI jsonSchemaPrompt unsupported provider

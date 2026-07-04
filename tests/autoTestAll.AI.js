@@ -815,4 +815,150 @@
         ow.test.assert(deltas, [ "part-1", "part-2" ], "Problem preserving Ollama streaming deltas after warmup.");
         ow.test.assert(res.content, "part-1part-2", "Problem aggregating Ollama streaming content after warmup.");
     };
+
+    exports.testAIOpenAIRawResponse = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var requests = [];
+        var schema = {
+            name: "PersonInfo",
+            description: "Extract person details",
+            schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" },
+                    age: { type: "number" }
+                },
+                required: ["name", "age"],
+                additionalProperties: false
+            },
+            strict: true
+        };
+
+        g.model._request = function(url, body) {
+            requests.push({ url: url, body: __cloneForTest(body) });
+            return {
+                model: "gpt-4o",
+                choices: [
+                    {
+                        finish_reason: "stop",
+                        message: { role: "assistant", content: '{"name":"Alice","age":30}' }
+                    }
+                ],
+                usage: { prompt_tokens: 20, completion_tokens: 10, total_tokens: 30 }
+            };
+        };
+
+        var rawRes = g.model.rawResponse("Extract: Alice, 30", "gpt-4o", 0.5, false, [], schema);
+        ow.test.assert(requests.length, 1, "Problem: rawResponse should make exactly one request.");
+        ow.test.assert(requests[0].url.indexOf("chat/completions") >= 0, true, "Problem: rawResponse should use chat/completions endpoint.");
+        ow.test.assert(requests[0].body.response_format.type, "json_schema", "Problem: rawResponse should set response_format.type to json_schema.");
+        ow.test.assert(requests[0].body.response_format.json_schema.name, "PersonInfo", "Problem: rawResponse should pass schema name.");
+        ow.test.assert(requests[0].body.response_format.json_schema.strict, true, "Problem: rawResponse should pass strict flag.");
+        ow.test.assert(isArray(rawRes.choices) && rawRes.choices.length > 0, true, "Problem: rawResponse should return choices array.");
+    };
+
+    exports.testAIOpenAIJsonSchemaPrompt = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var schema = {
+            name: "PersonInfo",
+            description: "Extract person details",
+            schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" },
+                    age: { type: "number" }
+                },
+                required: ["name", "age"],
+                additionalProperties: false
+            },
+            strict: true
+        };
+
+        g.model._request = function(url, body) {
+            return {
+                model: "gpt-4o",
+                choices: [
+                    {
+                        finish_reason: "stop",
+                        message: { role: "assistant", content: '{"name":"Alice","age":30}' }
+                    }
+                ],
+                usage: { prompt_tokens: 20, completion_tokens: 10, total_tokens: 30 }
+            };
+        };
+
+        var result = g.jsonSchemaPrompt("Extract: Alice, 30", schema, "gpt-4o", 0.5);
+        ow.test.assert(isMap(result), true, "Problem: jsonSchemaPrompt should return a parsed map.");
+        ow.test.assert(result.name, "Alice", "Problem: jsonSchemaPrompt should parse name from JSON.");
+        ow.test.assert(result.age, 30, "Problem: jsonSchemaPrompt should parse age from JSON.");
+    };
+
+    exports.testAIOpenAIJsonSchemaPromptWithStats = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var schema = {
+            name: "PersonInfo",
+            schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"], additionalProperties: false },
+            strict: true
+        };
+
+        g.model._request = function(url, body) {
+            return {
+                model: "gpt-4o",
+                choices: [
+                    {
+                        finish_reason: "stop",
+                        message: { role: "assistant", content: '{"name":"Bob"}' }
+                    }
+                ],
+                usage: { prompt_tokens: 15, completion_tokens: 8, total_tokens: 23 }
+            };
+        };
+
+        var result = g.jsonSchemaPromptWithStats("Get name: Bob", schema);
+        ow.test.assert(isMap(result), true, "Problem: jsonSchemaPromptWithStats should return a map.");
+        ow.test.assert(isDef(result.response), true, "Problem: jsonSchemaPromptWithStats should have response field.");
+        ow.test.assert(isDef(result.stats), true, "Problem: jsonSchemaPromptWithStats should have stats field.");
+        ow.test.assert(result.response.name, "Bob", "Problem: jsonSchemaPromptWithStats response should contain parsed name.");
+        ow.test.assert(result.stats.tokens.total, 23, "Problem: jsonSchemaPromptWithStats stats should contain token usage.");
+    };
+
+    exports.testAIOpenAIJsonSchemaPromptSchemaDefault = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var requests = [];
+
+        g.model._request = function(url, body) {
+            requests.push(__cloneForTest(body));
+            return {
+                model: "gpt-4o",
+                choices: [ { finish_reason: "stop", message: { role: "assistant", content: '{"val":1}' } } ],
+                usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
+            };
+        };
+
+        // Schema without description or strict – should use defaults
+        g.model.rawResponse("test", "gpt-4o", 0.5, false, [], { name: "MySchema", schema: { type: "object", additionalProperties: false } });
+        ow.test.assert(requests[0].response_format.json_schema.description, "API Response", "Problem: rawResponse should default description to 'API Response'.");
+        ow.test.assert(requests[0].response_format.json_schema.strict, true, "Problem: rawResponse should default strict to true.");
+    };
+
+    exports.testAIOpenAIJsonSchemaPromptUnsupportedProvider = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("gemini", { key: "test-key" });
+        var threw = false;
+        try {
+            g.jsonSchemaPrompt("test", { name: "T", schema: {} });
+        } catch(e) {
+            threw = true;
+        }
+        ow.test.assert(threw, true, "Problem: jsonSchemaPrompt should throw for providers that don't support rawResponse.");
+    };
 })();

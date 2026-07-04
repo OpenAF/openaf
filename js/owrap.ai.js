@@ -698,6 +698,51 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isMap(res) && isDef(res.error)) return res
                     return res.content
                 },
+                rawResponse: (aPrompt, aModel, aTemperature, aJsonSchemaFlag, aTools, aResponseSchema) => {
+                    aPrompt           = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature      = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel            = _$(aModel, "aModel").isString().default(_model)
+                    aJsonSchemaFlag   = _$(aJsonSchemaFlag, "aJsonSchemaFlag").isBoolean().default(false)
+                    if (isUnDef(aTools)) {
+                        aTools = Object.keys(_r.tools)
+                    } else if (isMap(aTools)) {
+                        aTools = Object.keys(aTools)
+                    }
+                    aTools = _$(aTools, "aTools").isArray().default([])
+
+                    _resetStats()
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.filter(c => isDef(c)).map(c => isMap(c) ? c : { role: "user", content: c })
+
+                    _r.conversation = msgs
+                    if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
+                    var body = {
+                        model: aModel,
+                        temperature: aTemperature,
+                        messages: msgs
+                    }
+
+                    if (isDef(aResponseSchema) && isMap(aResponseSchema)) {
+                        body.response_format = {
+                            type: "json_schema",
+                            json_schema: {
+                                name: aResponseSchema.name || "Response",
+                                description: aResponseSchema.description || "API Response",
+                                schema: aResponseSchema.schema || {},
+                                strict: aResponseSchema.strict !== false
+                            }
+                        }
+                    }
+
+                    body = merge(body, aOptions.params)
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
+                    var _res = _r._request(_route("chat/completions", aModel), body)
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
+                    _captureStats(_res, body)
+                    return _res
+                },
                 rawImgGen: (aPrompt, aModel) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
@@ -3575,6 +3620,39 @@ OpenWrap.ai.prototype.gpt.prototype.rawPromptWithStats = function(aPrompt, aRole
 
 /**
  * <odoc>
+ * <key>ow.ai.gpt.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Object</key>
+ * Executes a prompt using OpenAI's JSON Schema response format, enforcing structured output validated against aResponseSchema.\
+ * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).\
+ * Returns the parsed JSON response matching the provided schema.\
+ * Only supported by the "openai" provider; throws if the underlying provider does not implement rawResponse.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.jsonSchemaPrompt = function(aPrompt, aResponseSchema, aModel, aTemperature, tools) {
+    if (!isFunction(this.model.rawResponse)) throw "JSON Schema responses not supported by this provider"
+    var response = this.model.rawResponse(aPrompt, aModel, aTemperature, false, tools, aResponseSchema)
+    if (isArray(response.choices) && response.choices.length > 0) {
+        if (response.choices[0].finish_reason == "stop") {
+            var content = response.choices[0].message.content
+            return isString(content) ? jsonParse(content, __, __, true) : content
+        }
+    }
+    return response
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.jsonSchemaPromptWithStats(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Map</key>
+ * Executes jsonSchemaPrompt and returns the parsed response together with any reported statistics ({ response, stats }).\
+ * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.jsonSchemaPromptWithStats = function(aPrompt, aResponseSchema, aModel, aTemperature, tools) {
+    var response = this.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools)
+    return { response: response, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
  * <key>ow.ai.gpt.promptImgGen(aPrompt, aModel, anOutputPathPrefix) : Array</key>
  * Tries to prompt aPrompt (a string or an array of strings), aModel (defaults to the one provided on the constructor)
  * to generate one or more images and anOutputPathPrefix to which the number of the image and ".png" will be appended.
@@ -4380,6 +4458,28 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         importConversation: (aExport) => { _g.importConversation(aExport); return _r },
+        /**
+         * <odoc>
+         * <key>$gpt.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Object</key>
+         * Executes a prompt using OpenAI's JSON Schema response format, enforcing structured output validated against aResponseSchema.\
+         * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).\
+         * Returns the parsed JSON response matching the provided schema.\
+         * Only supported by the "openai" provider.
+         * </odoc>
+         */
+        jsonSchemaPrompt: (aPrompt, aResponseSchema, aModel, aTemperature, tools) => {
+            return _g.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.jsonSchemaPromptWithStats(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Map</key>
+         * Executes jsonSchemaPrompt and returns the parsed response together with any reported statistics ({ response, stats }).\
+         * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).
+         * </odoc>
+         */
+        jsonSchemaPromptWithStats: (aPrompt, aResponseSchema, aModel, aTemperature, tools) => {
+            return _g.jsonSchemaPromptWithStats(aPrompt, aResponseSchema, aModel, aTemperature, tools)
+        },
         /**
          * <odoc>
          * <key>$gpt.close()</key>
