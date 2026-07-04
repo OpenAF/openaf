@@ -903,7 +903,14 @@
         var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
         var schema = {
             name: "PersonInfo",
-            schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"], additionalProperties: false },
+            schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" }
+                },
+                required: ["name"],
+                additionalProperties: false
+            },
             strict: true
         };
 
@@ -938,13 +945,21 @@
             requests.push(__cloneForTest(body));
             return {
                 model: "gpt-4o",
-                choices: [ { finish_reason: "stop", message: { role: "assistant", content: '{"val":1}' } } ],
+                choices: [
+                    {
+                        finish_reason: "stop",
+                        message: { role: "assistant", content: '{"val":1}' }
+                    }
+                ],
                 usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 }
             };
         };
 
         // Schema without description or strict – should use defaults
-        g.model.rawResponse("test", "gpt-4o", 0.5, false, [], { name: "MySchema", schema: { type: "object", additionalProperties: false } });
+        g.model.rawResponse("test", "gpt-4o", 0.5, false, [], {
+            name: "MySchema",
+            schema: { type: "object", additionalProperties: false }
+        });
         ow.test.assert(requests[0].response_format.json_schema.description, "API Response", "Problem: rawResponse should default description to 'API Response'.");
         ow.test.assert(requests[0].response_format.json_schema.strict, true, "Problem: rawResponse should default strict to true.");
     };
