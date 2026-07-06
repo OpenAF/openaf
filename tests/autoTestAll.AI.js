@@ -404,11 +404,13 @@
         var openai = new ow.ai.gpt("openai", { key: "test-key", url: "https://api.openai.com" });
         var openaiTransport = openai.model.__debugTransport("chat/completions", "gpt-test");
         ow.test.assert(openaiTransport.url, "https://api.openai.com/v1/chat/completions", "Problem building default OpenAI chat URL.");
+        ow.test.assert(openai.model.__debugTransport("responses", "gpt-test").url, "https://api.openai.com/v1/responses", "Problem building default OpenAI responses URL.");
         ow.test.assert(isDef(openaiTransport.headers.Authorization), true, "Problem setting default OpenAI bearer authorization.");
         ow.test.assert(isUnDef(openaiTransport.headers["api-key"]), true, "Problem avoiding api-key on default OpenAI transport.");
 
         var openaiBaseUrl = new ow.ai.gpt("openai", { key: "test-key", url: "https://api.openai.com/v1" });
         ow.test.assert(openaiBaseUrl.model.__debugTransport("chat/completions", "gpt-test").url, "https://api.openai.com/v1/chat/completions", "Problem preserving an OpenAI v1 base URL.");
+        ow.test.assert(openaiBaseUrl.model.__debugTransport("responses", "gpt-test").url, "https://api.openai.com/v1/responses", "Problem preserving an OpenAI v1 responses URL.");
 
         var azureV1 = new ow.ai.gpt("openai", {
             key : "test-key",
@@ -417,6 +419,7 @@
         });
         var azureV1Transport = azureV1.model.__debugTransport("chat/completions", "deployment-a");
         ow.test.assert(azureV1Transport.url, "https://example.openai.azure.com/openai/v1/chat/completions", "Problem building Azure OpenAI v1 chat URL.");
+        ow.test.assert(azureV1.model.__debugTransport("responses", "deployment-a").url, "https://example.openai.azure.com/openai/v1/responses", "Problem building Azure OpenAI v1 responses URL.");
         ow.test.assert("" + azureV1Transport.headers["api-key"], "test-key", "Problem setting Azure OpenAI v1 api-key header.");
         ow.test.assert(isUnDef(azureV1Transport.headers.Authorization), true, "Problem suppressing Azure OpenAI v1 bearer authorization.");
 
@@ -426,6 +429,7 @@
             mode: "azure-openai-v1"
         });
         ow.test.assert(azureV1BaseUrl.model.__debugTransport("chat/completions", "deployment-a").url, "https://example.openai.azure.com/openai/v1/chat/completions", "Problem preserving an Azure OpenAI v1 base URL.");
+        ow.test.assert(azureV1BaseUrl.model.__debugTransport("responses", "deployment-a").url, "https://example.openai.azure.com/openai/v1/responses", "Problem preserving an Azure OpenAI v1 responses URL.");
 
         var azureLegacy = new ow.ai.gpt("openai", {
             key       : "test-key",
@@ -436,6 +440,7 @@
         });
         var azureLegacyTransport = azureLegacy.model.__debugTransport("chat/completions", "ignored");
         ow.test.assert(azureLegacyTransport.url, "https://example.openai.azure.com/openai/deployments/deployment-a/chat/completions?api-version=2024-10-21", "Problem building Azure OpenAI legacy deployment chat URL.");
+        ow.test.assert(azureLegacy.model.__debugTransport("responses", "ignored").url, "https://example.openai.azure.com/openai/deployments/deployment-a/responses?api-version=2024-10-21", "Problem building Azure OpenAI legacy deployment responses URL.");
         ow.test.assert("" + azureLegacyTransport.headers["api-key"], "test-key", "Problem setting Azure OpenAI legacy api-key header.");
 
         var foundryV1 = new ow.ai.gpt("openai", {
@@ -445,6 +450,7 @@
         });
         var foundryV1Transport = foundryV1.model.__debugTransport("chat/completions", "deployment-a");
         ow.test.assert(foundryV1Transport.url, "https://example.services.ai.azure.com/openai/v1/chat/completions", "Problem building Foundry v1 chat URL.");
+        ow.test.assert(foundryV1.model.__debugTransport("responses", "deployment-a").url, "https://example.services.ai.azure.com/openai/v1/responses", "Problem building Foundry v1 responses URL.");
         ow.test.assert("" + foundryV1Transport.headers["api-key"], "test-key", "Problem setting Foundry v1 api-key header.");
 
         var foundryPreview = new ow.ai.gpt("openai", {
@@ -455,6 +461,7 @@
         });
         var foundryPreviewTransport = foundryPreview.model.__debugTransport("chat/completions", "deployment-a");
         ow.test.assert(foundryPreviewTransport.url, "https://example.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview", "Problem building Foundry model inference preview chat URL.");
+        ow.test.assert(foundryPreview.model.__debugTransport("responses", "deployment-a").url, "https://example.services.ai.azure.com/models/responses?api-version=2024-05-01-preview", "Problem building Foundry model inference preview responses URL.");
         ow.test.assert("" + foundryPreviewTransport.headers["api-key"], "test-key", "Problem setting Foundry preview api-key header.");
     };
 
@@ -814,5 +821,297 @@
         ow.test.assert(streamRequests[0].body.messages, [ { role: "user", content: "stream me" } ], "Problem preserving the first streamed Ollama prompt after warmup.");
         ow.test.assert(deltas, [ "part-1", "part-2" ], "Problem preserving Ollama streaming deltas after warmup.");
         ow.test.assert(res.content, "part-1part-2", "Problem aggregating Ollama streaming content after warmup.");
+    };
+
+    exports.testAIOpenAIRawResponse = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var requests = [];
+        var schema = {
+            name: "PersonInfo",
+            description: "Extract person details",
+            schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" },
+                    age: { type: "number" }
+                },
+                required: ["name", "age"],
+                additionalProperties: false
+            },
+            strict: true
+        };
+
+        g.model._request = function(url, body) {
+            requests.push({ url: url, body: __cloneForTest(body) });
+            return {
+                model: "gpt-4o",
+                output_text: '{"name":"Alice","age":30}',
+                output: [
+                    {
+                        content: [
+                            { type: "output_text", text: '{"name":"Alice","age":30}' }
+                        ]
+                    }
+                ],
+                usage: { input_tokens: 20, output_tokens: 10, total_tokens: 30 }
+            };
+        };
+
+        var rawRes = g.model.rawResponse("Extract: Alice, 30", "gpt-4o", 0.5, false, [], schema);
+        ow.test.assert(requests.length, 1, "Problem: rawResponse should make exactly one request.");
+        ow.test.assert(requests[0].url.indexOf("responses") >= 0, true, "Problem: rawResponse should prefer the responses endpoint.");
+        ow.test.assert(requests[0].body.text.format.type, "json_schema", "Problem: rawResponse should set text.format.type to json_schema.");
+        ow.test.assert(requests[0].body.text.format.name, "PersonInfo", "Problem: rawResponse should pass schema name.");
+        ow.test.assert(requests[0].body.text.format.strict, true, "Problem: rawResponse should pass strict flag.");
+        ow.test.assert(requests[0].body.input[0].content[0].text, "Extract: Alice, 30", "Problem: rawResponse should convert prompt messages to responses input.");
+        ow.test.assert(rawRes.output_text, '{"name":"Alice","age":30}', "Problem: rawResponse should return the responses payload.");
+    };
+
+    exports.testAIOpenAIJsonSchemaPrompt = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var schema = {
+            name: "PersonInfo",
+            description: "Extract person details",
+            schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" },
+                    age: { type: "number" }
+                },
+                required: ["name", "age"],
+                additionalProperties: false
+            },
+            strict: true
+        };
+
+        g.model._request = function(url, body) {
+            return {
+                model: "gpt-4o",
+                output: [
+                    {
+                        content: [
+                            { type: "output_text", text: '{"name":"Alice","age":30}' }
+                        ]
+                    }
+                ],
+                usage: { input_tokens: 20, output_tokens: 10, total_tokens: 30 }
+            };
+        };
+
+        var result = g.jsonSchemaPrompt("Extract: Alice, 30", schema, "gpt-4o", 0.5);
+        ow.test.assert(isMap(result), true, "Problem: jsonSchemaPrompt should return a parsed map.");
+        ow.test.assert(result.name, "Alice", "Problem: jsonSchemaPrompt should parse name from JSON.");
+        ow.test.assert(result.age, 30, "Problem: jsonSchemaPrompt should parse age from JSON.");
+    };
+
+    exports.testAIOpenAIJsonSchemaPromptWithStats = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var schema = {
+            name: "PersonInfo",
+            schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" }
+                },
+                required: ["name"],
+                additionalProperties: false
+            },
+            strict: true
+        };
+
+        g.model._request = function(url, body) {
+            return {
+                model: "gpt-4o",
+                output_text: '{"name":"Bob"}',
+                output: [
+                    {
+                        content: [
+                            { type: "output_text", text: '{"name":"Bob"}' }
+                        ]
+                    }
+                ],
+                usage: { input_tokens: 15, output_tokens: 8, total_tokens: 23 }
+            };
+        };
+
+        var result = g.jsonSchemaPromptWithStats("Get name: Bob", schema);
+        ow.test.assert(isMap(result), true, "Problem: jsonSchemaPromptWithStats should return a map.");
+        ow.test.assert(isDef(result.response), true, "Problem: jsonSchemaPromptWithStats should have response field.");
+        ow.test.assert(isDef(result.stats), true, "Problem: jsonSchemaPromptWithStats should have stats field.");
+        ow.test.assert(result.response.name, "Bob", "Problem: jsonSchemaPromptWithStats response should contain parsed name.");
+        ow.test.assert(result.stats.tokens.total, 23, "Problem: jsonSchemaPromptWithStats stats should contain token usage.");
+    };
+
+    exports.testAIOpenAIJsonSchemaPromptSchemaDefault = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var requests = [];
+
+        g.model._request = function(url, body) {
+            requests.push(__cloneForTest(body));
+            return {
+                model: "gpt-4o",
+                output_text: '{"val":1}',
+                output: [
+                    {
+                        content: [
+                            { type: "output_text", text: '{"val":1}' }
+                        ]
+                    }
+                ],
+                usage: { input_tokens: 5, output_tokens: 5, total_tokens: 10 }
+            };
+        };
+
+        // Schema without description or strict – should use defaults
+        g.model.rawResponse("test", "gpt-4o", 0.5, false, [], {
+            name: "MySchema",
+            schema: { type: "object", additionalProperties: false }
+        });
+        ow.test.assert(requests[0].text.format.description, "API Response", "Problem: rawResponse should default description to 'API Response'.");
+        ow.test.assert(requests[0].text.format.strict, true, "Problem: rawResponse should default strict to true.");
+    };
+
+    exports.testAIOpenAIRawResponseFallsBackToChatCompletions = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var requests = [];
+        var schema = {
+            name: "PersonInfo",
+            schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" }
+                },
+                required: ["name"],
+                additionalProperties: false
+            }
+        };
+
+        g.model._request = function(url, body) {
+            requests.push({ url: url, body: __cloneForTest(body) });
+            if (url.indexOf("responses") >= 0) {
+                return {
+                    error: {
+                        message: "The /responses endpoint is not available for this deployment.",
+                        code: "not_found"
+                    },
+                    status: 404
+                };
+            }
+            return {
+                model: "gpt-4o",
+                choices: [
+                    {
+                        finish_reason: "stop",
+                        message: { role: "assistant", content: '{"name":"Alice"}' }
+                    }
+                ],
+                usage: { prompt_tokens: 8, completion_tokens: 4, total_tokens: 12 }
+            };
+        };
+
+        var rawRes = g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], schema);
+        ow.test.assert(requests.length, 2, "Problem: rawResponse should retry with chat/completions when responses is unavailable.");
+        ow.test.assert(requests[0].url.indexOf("responses") >= 0, true, "Problem: rawResponse should try responses first.");
+        ow.test.assert(requests[1].url.indexOf("chat/completions") >= 0, true, "Problem: rawResponse should fall back to chat/completions.");
+        ow.test.assert(requests[1].body.response_format.type, "json_schema", "Problem: chat fallback should keep json_schema response_format.");
+        ow.test.assert(isArray(rawRes.choices) && rawRes.choices.length > 0, true, "Problem: chat fallback should return the chat response payload.");
+    };
+
+    exports.testAIOpenAIRawResponseCachesChatFallback = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var requests = [];
+        var schema = {
+            name: "PersonInfo",
+            schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" }
+                },
+                required: ["name"],
+                additionalProperties: false
+            }
+        };
+
+        g.model._request = function(url, body) {
+            requests.push(url);
+            if (url.indexOf("responses") >= 0) {
+                return {
+                    error: {
+                        message: "The /responses endpoint is not available for this deployment.",
+                        code: "not_found"
+                    },
+                    status: 404
+                };
+            }
+            return {
+                model: "gpt-4o",
+                choices: [
+                    {
+                        finish_reason: "stop",
+                        message: { role: "assistant", content: '{"name":"Alice"}' }
+                    }
+                ],
+                usage: { prompt_tokens: 8, completion_tokens: 4, total_tokens: 12 }
+            };
+        };
+
+        g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], schema);
+        g.model.rawResponse("Extract: Alice again", "gpt-4o", 0.5, false, [], schema);
+        ow.test.assert(requests.filter(r => r.indexOf("responses") >= 0).length, 1, "Problem: rawResponse should stop retrying responses after endpoint unavailability.");
+        ow.test.assert(requests.filter(r => r.indexOf("chat/completions") >= 0).length, 2, "Problem: rawResponse should reuse chat/completions fallback after responses becomes unavailable.");
+    };
+
+    exports.testAIOpenAIRawResponseDoesNotFallbackOnOtherErrors = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var requests = [];
+
+        g.model._request = function(url, body) {
+            requests.push(url);
+            return {
+                error: {
+                    message: "Invalid schema for text.format",
+                    code: "invalid_request_error"
+                },
+                status: 400
+            };
+        };
+
+        var res = g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], {
+            name: "PersonInfo",
+            schema: { type: "object" }
+        });
+        ow.test.assert(requests.length, 1, "Problem: rawResponse should not fall back for non-availability errors.");
+        ow.test.assert(requests[0].indexOf("responses") >= 0, true, "Problem: rawResponse should return the original responses error.");
+        ow.test.assert(isMap(res.error), true, "Problem: rawResponse should return the original error response.");
+    };
+
+    exports.testAIOpenAIJsonSchemaPromptUnsupportedProvider = function() {
+        ow.loadAI();
+
+        [ "gemini", "ollama", "anthropic" ].forEach(provider => {
+            var g = provider == "ollama" ? new ow.ai.gpt(provider, { url: "http://127.0.0.1:11434", model: "llama-test" }) : new ow.ai.gpt(provider, { key: "test-key" });
+            var threw = false;
+            try {
+                g.jsonSchemaPrompt("test", { name: "T", schema: {} });
+            } catch(e) {
+                threw = true;
+                ow.test.assert(String(e), "JSON Schema responses not supported by this provider", "Problem: unsupported providers should throw a consistent error.");
+            }
+            ow.test.assert(threw, true, "Problem: jsonSchemaPrompt should throw for providers that don't support rawResponse.");
+        });
     };
 })();
