@@ -189,6 +189,74 @@ OpenWrap.ai.prototype.__gpttypes = {
                 return merge(_h, aOptions.headers)
             }
             var _buildURL = aURI => _joinURL(aOptions.url, aURI)
+            var _responsesAvailable = __
+            var _normalizeResponseSchema = aResponseSchema => {
+                if (!isMap(aResponseSchema)) return __
+                return {
+                    name       : aResponseSchema.name || "Response",
+                    description: aResponseSchema.description || "API Response",
+                    schema     : aResponseSchema.schema || {},
+                    strict     : aResponseSchema.strict !== false
+                }
+            }
+            var _toResponseInputText = aContent => {
+                if (isMap(aContent) || isArray(aContent)) return stringify(aContent, __, "")
+                return isDef(aContent) ? String(aContent) : ""
+            }
+            var _toResponsesInput = aMsgs => {
+                return _$(aMsgs, "aMsgs").isArray().default([]).map(m => {
+                    if (!isMap(m)) return { role: "user", content: [ { type: "input_text", text: _toResponseInputText(m) } ] }
+                    if (isArray(m.content)) {
+                        return {
+                            role   : isString(m.role) ? m.role : "user",
+                            content: clone(m.content)
+                        }
+                    }
+                    return {
+                        role   : isString(m.role) ? m.role : "user",
+                        content: [ { type: "input_text", text: _toResponseInputText(m.content) } ]
+                    }
+                })
+            }
+            var _extractResponseErrorMessage = aResponse => {
+                if (!isMap(aResponse)) return ""
+                if (isMap(aResponse.error)) {
+                    if (isString(aResponse.error.message)) return aResponse.error.message
+                    if (isString(aResponse.error.error)) return aResponse.error.error
+                    return stringify(aResponse.error, __, "")
+                }
+                if (isString(aResponse.message)) return aResponse.message
+                return stringify(aResponse, __, "")
+            }
+            var _isResponsesUnavailable = aResponse => {
+                if (!isMap(aResponse)) return false
+                var _status = isDef(aResponse.status) ? Number(aResponse.status) : (isMap(aResponse.error) && isDef(aResponse.error.status) ? Number(aResponse.error.status) : __)
+                if ([ 404, 405, 410, 501 ].indexOf(_status) >= 0) return true
+
+                var _code = (isMap(aResponse.error) && isDef(aResponse.error.code) ? aResponse.error.code : aResponse.code)
+                if (isDef(_code)) {
+                    _code = String(_code).toLowerCase()
+                    if (_code.indexOf("not_found") >= 0 || _code.indexOf("unsupported") >= 0 || _code.indexOf("unknown_url") >= 0 || _code.indexOf("unknown_endpoint") >= 0) return true
+                }
+
+                var _type = (isMap(aResponse.error) && isDef(aResponse.error.type) ? aResponse.error.type : aResponse.type)
+                if (isDef(_type)) {
+                    _type = String(_type).toLowerCase()
+                    if (_type.indexOf("not_found") >= 0 || _type.indexOf("unsupported") >= 0) return true
+                }
+
+                var _msg = _extractResponseErrorMessage(aResponse).toLowerCase()
+                return (
+                    _msg.indexOf("/responses") >= 0 && (
+                        _msg.indexOf("not found") >= 0 ||
+                        _msg.indexOf("unsupported") >= 0 ||
+                        _msg.indexOf("unknown") >= 0 ||
+                        _msg.indexOf("not available") >= 0 ||
+                        _msg.indexOf("unavailable") >= 0 ||
+                        _msg.indexOf("does not exist") >= 0
+                    )
+                ) || _msg.indexOf("unknown endpoint") >= 0 || _msg.indexOf("unknown url") >= 0
+            }
             var _captureStats = (aResponse, aRequestBody) => {
                 if (!isMap(aResponse)) {
                     _lastStats = __
@@ -207,12 +275,22 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(aResponse.usage.prompt_tokens)) tokens.prompt = aResponse.usage.prompt_tokens
                     if (isDef(aResponse.usage.completion_tokens)) tokens.completion = aResponse.usage.completion_tokens
                     if (isDef(aResponse.usage.total_tokens)) tokens.total = aResponse.usage.total_tokens
+                    if (isDef(aResponse.usage.input_tokens)) tokens.prompt = aResponse.usage.input_tokens
+                    if (isDef(aResponse.usage.output_tokens)) tokens.completion = aResponse.usage.output_tokens
+                    if (isDef(aResponse.usage.total_tokens)) tokens.total = aResponse.usage.total_tokens
                     if (isMap(aResponse.usage.prompt_tokens_details)) {
                         if (isDef(aResponse.usage.prompt_tokens_details.cached_tokens)) tokens.cached = aResponse.usage.prompt_tokens_details.cached_tokens
                         if (isDef(aResponse.usage.prompt_tokens_details.audio_tokens)) tokens.audio = aResponse.usage.prompt_tokens_details.audio_tokens
                     }
+                    if (isMap(aResponse.usage.input_tokens_details)) {
+                        if (isDef(aResponse.usage.input_tokens_details.cached_tokens)) tokens.cached = aResponse.usage.input_tokens_details.cached_tokens
+                        if (isDef(aResponse.usage.input_tokens_details.audio_tokens)) tokens.audio = aResponse.usage.input_tokens_details.audio_tokens
+                    }
                     if (isMap(aResponse.usage.completion_tokens_details)) {
                         if (isDef(aResponse.usage.completion_tokens_details.reasoning_tokens)) tokens.reasoning = aResponse.usage.completion_tokens_details.reasoning_tokens
+                    }
+                    if (isMap(aResponse.usage.output_tokens_details)) {
+                        if (isDef(aResponse.usage.output_tokens_details.reasoning_tokens)) tokens.reasoning = aResponse.usage.output_tokens_details.reasoning_tokens
                     }
                     if (Object.keys(tokens).length > 0) stats.tokens = tokens
                     stats.usage = aResponse.usage
@@ -697,6 +775,79 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
                     if (isMap(res) && isDef(res.error)) return res
                     return res.content
+                },
+                rawResponse: (aPrompt, aModel, aTemperature, aJsonSchemaFlag, aTools, aResponseSchema) => {
+                    aPrompt           = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature      = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel            = _$(aModel, "aModel").isString().default(_model)
+                    aJsonSchemaFlag   = _$(aJsonSchemaFlag, "aJsonSchemaFlag").isBoolean().default(false)
+                    if (isUnDef(aTools)) {
+                        aTools = Object.keys(_r.tools)
+                    } else if (isMap(aTools)) {
+                        aTools = Object.keys(aTools)
+                    }
+                    aTools = _$(aTools, "aTools").isArray().default([])
+
+                    _resetStats()
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.filter(c => isDef(c)).map(c => isMap(c) ? c : { role: "user", content: c })
+
+                    _r.conversation = msgs
+                    if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
+                    var _schema = _normalizeResponseSchema(aResponseSchema)
+                    var _responsesBody = {
+                        model      : aModel,
+                        temperature: aTemperature,
+                        input      : _toResponsesInput(msgs)
+                    }
+                    if (isDef(_schema)) {
+                        _responsesBody.text = {
+                            format: merge({ type: "json_schema" }, _schema)
+                        }
+                    }
+
+                    var _chatBody = {
+                        model      : aModel,
+                        temperature: aTemperature,
+                        messages   : msgs
+                    }
+                    if (isDef(_schema)) {
+                        _chatBody.response_format = {
+                            type       : "json_schema",
+                            json_schema: _schema
+                        }
+                    }
+
+                    _responsesBody = merge(_responsesBody, aOptions.params)
+                    _chatBody = merge(_chatBody, aOptions.params)
+
+                    var _res = __
+                    var _requestBody = __
+                    if (_responsesAvailable !== false) {
+                        _requestBody = _responsesBody
+                        if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, _requestBody))
+                        _res = _r._request(_route("responses", aModel), _requestBody)
+                        if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
+                        if (isMap(_res) && isMap(_res.error) && _isResponsesUnavailable(_res)) {
+                            _responsesAvailable = false
+                            _requestBody = _chatBody
+                            if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, _requestBody))
+                            _res = _r._request(_route("chat/completions", aModel), _requestBody)
+                            if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
+                        } else if (!isMap(_res) || isUnDef(_res.error)) {
+                            _responsesAvailable = true
+                        }
+                    } else {
+                        _requestBody = _chatBody
+                        if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, _requestBody))
+                        _res = _r._request(_route("chat/completions", aModel), _requestBody)
+                        if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
+                    }
+
+                    _captureStats(_res, _requestBody)
+                    return _res
                 },
                 rawImgGen: (aPrompt, aModel) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
@@ -3575,6 +3726,58 @@ OpenWrap.ai.prototype.gpt.prototype.rawPromptWithStats = function(aPrompt, aRole
 
 /**
  * <odoc>
+ * <key>ow.ai.gpt.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Object</key>
+ * Executes a prompt using OpenAI's JSON Schema response format, enforcing structured output validated against aResponseSchema.\
+ * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).\
+ * Returns the parsed JSON response matching the provided schema.\
+ * Only supported by the "openai" provider; throws if the underlying provider does not implement rawResponse.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.jsonSchemaPrompt = function(aPrompt, aResponseSchema, aModel, aTemperature, tools) {
+    if (!isFunction(this.model.rawResponse)) throw "JSON Schema responses not supported by this provider"
+    var response = this.model.rawResponse(aPrompt, aModel, aTemperature, false, tools, aResponseSchema)
+    if (isString(response.output_text) && response.output_text.length > 0) {
+        return jsonParse(response.output_text, __, __, true)
+    }
+    if (isArray(response.output)) {
+        var _parts = []
+        response.output.forEach(o => {
+            if (isArray(o.content)) {
+                o.content.forEach(c => {
+                    if (isString(c.text)) _parts.push(c.text)
+                    else if (isDef(c.json)) _parts.push(c.json)
+                })
+            }
+        })
+        if (_parts.length > 0) {
+            var _out = _parts[0]
+            if (_parts.length > 1 && _parts.every(isString)) _out = _parts.join("")
+            return isString(_out) ? jsonParse(_out, __, __, true) : _out
+        }
+    }
+    if (isArray(response.choices) && response.choices.length > 0) {
+        if (response.choices[0].finish_reason == "stop") {
+            var content = response.choices[0].message.content
+            return isString(content) ? jsonParse(content, __, __, true) : content
+        }
+    }
+    return response
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.jsonSchemaPromptWithStats(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Map</key>
+ * Executes jsonSchemaPrompt and returns the parsed response together with any reported statistics ({ response, stats }).\
+ * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.jsonSchemaPromptWithStats = function(aPrompt, aResponseSchema, aModel, aTemperature, tools) {
+    var response = this.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools)
+    return { response: response, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
  * <key>ow.ai.gpt.promptImgGen(aPrompt, aModel, anOutputPathPrefix) : Array</key>
  * Tries to prompt aPrompt (a string or an array of strings), aModel (defaults to the one provided on the constructor)
  * to generate one or more images and anOutputPathPrefix to which the number of the image and ".png" will be appended.
@@ -4380,6 +4583,28 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         importConversation: (aExport) => { _g.importConversation(aExport); return _r },
+        /**
+         * <odoc>
+         * <key>$gpt.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Object</key>
+         * Executes a prompt using OpenAI's JSON Schema response format, enforcing structured output validated against aResponseSchema.\
+         * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).\
+         * Returns the parsed JSON response matching the provided schema.\
+         * Only supported by the "openai" provider.
+         * </odoc>
+         */
+        jsonSchemaPrompt: (aPrompt, aResponseSchema, aModel, aTemperature, tools) => {
+            return _g.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.jsonSchemaPromptWithStats(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Map</key>
+         * Executes jsonSchemaPrompt and returns the parsed response together with any reported statistics ({ response, stats }).\
+         * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).
+         * </odoc>
+         */
+        jsonSchemaPromptWithStats: (aPrompt, aResponseSchema, aModel, aTemperature, tools) => {
+            return _g.jsonSchemaPromptWithStats(aPrompt, aResponseSchema, aModel, aTemperature, tools)
+        },
         /**
          * <odoc>
          * <key>$gpt.close()</key>
