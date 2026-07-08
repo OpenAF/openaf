@@ -17,6 +17,18 @@
         ow.test.assert(out.match(/highlight\.js/).length, 1, "Problem with ow.template.parseMD2HTML full html");
     };
 
+    exports.testMD2HTMLDisplayMathKeepsLineBreaks = function() {
+        var md = "Before\n\n$$\na \\\\\nb\n$$\n\nAfter";
+
+        ow.loadTemplate();
+        var out = ow.template.parseMD2HTML(md);
+        var math = out.match(/\$\$[\s\S]*?\$\$/);
+
+        ow.test.assert(isDef(math), true, "Problem with ow.template.parseMD2HTML display math block.");
+        ow.test.assert(/<br\s*\/?>/i.test(math[0]), false, "Problem with ow.template.parseMD2HTML inserted line break inside display math.");
+        ow.test.assert(math[0].indexOf("a \\\\\nb") >= 0, true, "Problem with ow.template.parseMD2HTML preserving display math newlines.");
+    };
+
     exports.testMD2HTMLWithPrefix = function() {
         var md = "# test 1"
         var extraTag = '<link rel="stylesheet" href="/css/katex.min.css"><script src="/js/katex.min.js"></script>'

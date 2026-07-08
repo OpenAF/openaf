@@ -827,6 +827,16 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 	removeMaxWidth = _$(removeMaxWidth, "removeMaxWidth").isBoolean().default(__flags.MD_NOMAXWIDTH)
 	var mdString = aMarkdownString
 	var svgBlocks = []
+	var mathBlocks = []
+	var _escapeHTMLText = aText => String(aText)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+	mdString = String(mdString).replace(/(^|\n)([ \t]*)\$\$([\s\S]*?)\$\$(?=\s*(?:\n|$))/g, (m, prefix, indent, math) => {
+		var token = "OAFMDMATHBLOCK" + mathBlocks.length + "PLACEHOLDER"
+		mathBlocks.push("$$" + math + "$$")
+		return prefix + indent + token
+	})
 	if (__flags.MD_RENDER_SVG) {
 		mdString = String(mdString).replace(/(^|\n)```svg[ \t]*\r?\n([\s\S]*?)\r?\n```(?=\n|$)/g, (m, prefix, svg) => {
 			var token = "OAFMDSVGBLOCK" + svgBlocks.length + "PLACEHOLDER"
@@ -1166,6 +1176,13 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 		_posextras = _posextras.map(_normalizeExtra)
 
 		var html = converter.makeHtml(mdString).replace("<html>", "<html><meta charset=\"utf-8\">")
+		if (mathBlocks.length > 0) {
+			mathBlocks.forEach((math, idx) => {
+				var mathHTML = _escapeHTMLText(math)
+				html = html.replace("<p>OAFMDMATHBLOCK" + idx + "PLACEHOLDER</p>", () => "<p>" + mathHTML + "</p>")
+				html = html.replace("OAFMDMATHBLOCK" + idx + "PLACEHOLDER", () => mathHTML)
+			})
+		}
 		if (__flags.MD_RENDER_SVG && svgBlocks.length > 0) {
 			svgBlocks.forEach((svg, idx) => {
 				html = html.replace("<p>OAFMDSVGBLOCK" + idx + "PLACEHOLDER</p>", svg)
@@ -1185,6 +1202,13 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 		})
 	} else {
 		var html = converter.makeHtml(mdString).replace("<html>", "<html><meta charset=\"utf-8\">")
+		if (mathBlocks.length > 0) {
+			mathBlocks.forEach((math, idx) => {
+				var mathHTML = _escapeHTMLText(math)
+				html = html.replace("<p>OAFMDMATHBLOCK" + idx + "PLACEHOLDER</p>", () => "<p>" + mathHTML + "</p>")
+				html = html.replace("OAFMDMATHBLOCK" + idx + "PLACEHOLDER", () => mathHTML)
+			})
+		}
 		if (__flags.MD_RENDER_SVG && svgBlocks.length > 0) {
 			svgBlocks.forEach((svg, idx) => {
 				html = html.replace("<p>OAFMDSVGBLOCK" + idx + "PLACEHOLDER</p>", svg)
