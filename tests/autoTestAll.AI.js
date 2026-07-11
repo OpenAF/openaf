@@ -502,32 +502,34 @@
 
     exports.testAIAnthropicPromptCachingHeaders = function() {
         ow.loadAI();
+        ow.loadServer();
 
-        var _origRest = $rest;
+        var port = findRandomOpenPort();
         var captured = [];
-        $rest = function(cfg) {
-            captured.push(__cloneForTest(cfg));
-            return {
-                get2Stream: function() { return {}; },
-                post2Stream: function() { return {}; }
-            };
-        };
+        var hs = ow.server.httpd.start(port, "127.0.0.1");
+        ow.server.httpd.route(hs, {
+            "/v1/messages": function(req) {
+                captured.push(req.header);
+                return ow.server.httpd.reply({}, 200, "application/json", {});
+            }
+        });
 
         try {
-            var gCache = new ow.ai.gpt("anthropic", { key: "test-key", promptCaching: true });
+            var url = "http://127.0.0.1:" + port;
+            var gCache = new ow.ai.gpt("anthropic", { key: "test-key", url: url, promptCaching: true });
             gCache.model._request("v1/messages", {});
-            ow.test.assert(captured[0].requestHeaders["anthropic-beta"], "prompt-caching-2024-07-31", "Problem enabling Anthropic prompt caching beta header on request.");
+            ow.test.assert(captured[0]["anthropic-beta"], "prompt-caching-2024-07-31", "Problem enabling Anthropic prompt caching beta header on request.");
 
             captured = [];
             gCache.model._requestStream("v1/messages", {});
-            ow.test.assert(captured[0].requestHeaders["anthropic-beta"], "prompt-caching-2024-07-31", "Problem enabling Anthropic prompt caching beta header on stream request.");
+            ow.test.assert(captured[0]["anthropic-beta"], "prompt-caching-2024-07-31", "Problem enabling Anthropic prompt caching beta header on stream request.");
 
             captured = [];
-            var gNoCache = new ow.ai.gpt("anthropic", { key: "test-key", promptCaching: false });
+            var gNoCache = new ow.ai.gpt("anthropic", { key: "test-key", url: url, promptCaching: false });
             gNoCache.model._request("v1/messages", {});
-            ow.test.assert(isUnDef(captured[0].requestHeaders["anthropic-beta"]), true, "Problem keeping Anthropic prompt caching beta header disabled by default.");
+            ow.test.assert(isUnDef(captured[0]["anthropic-beta"]), true, "Problem keeping Anthropic prompt caching beta header disabled by default.");
         } finally {
-            $rest = _origRest;
+            ow.server.httpd.stop(hs);
         }
     };
 

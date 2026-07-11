@@ -122,8 +122,8 @@
         ], __, false, false, "utf").replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
         var lines = rendered.split("\n");
 
-        ow.test.assert(lines[2].indexOf("│"), lines[3].indexOf("│"), "Problem with printTable subdivision flag alignment.");
-        ow.test.assert(lines[2].lastIndexOf("│"), lines[3].lastIndexOf("│"), "Problem with printTable reference alignment for subdivision flags.");
+        ow.test.assert(visibleLength(lines[2].split("│")[0]), visibleLength(lines[3].split("│")[0]), "Problem with printTable subdivision flag alignment.");
+        ow.test.assert(visibleLength(lines[2].substring(0, lines[2].lastIndexOf("│"))), visibleLength(lines[3].substring(0, lines[3].lastIndexOf("│"))), "Problem with printTable reference alignment for subdivision flags.");
     };
 
     exports.testPrintTableHeaderLeftAlignment = function() {
@@ -133,9 +133,9 @@
         ], __, false, false, "utf").replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
         var lines = rendered.split("\n");
 
-        ow.test.assert(lines[0].indexOf("│"), lines[2].indexOf("│"), "Problem with printTable header first separator alignment.");
-        ow.test.assert(lines[0].lastIndexOf("│"), lines[2].lastIndexOf("│"), "Problem with printTable header second separator alignment.");
-        ow.test.assert(lines[1].indexOf("┼"), lines[2].indexOf("│"), "Problem with printTable separator alignment.");
+        ow.test.assert(visibleLength(lines[0].split("│")[0]), visibleLength(lines[2].split("│")[0]), "Problem with printTable header first separator alignment.");
+        ow.test.assert(visibleLength(lines[0].substring(0, lines[0].lastIndexOf("│"))), visibleLength(lines[2].substring(0, lines[2].lastIndexOf("│"))), "Problem with printTable header second separator alignment.");
+        ow.test.assert(visibleLength(lines[1].split("┼")[0]), visibleLength(lines[2].split("│")[0]), "Problem with printTable separator alignment.");
     };
 
     exports.testWithMDWrap = function() {

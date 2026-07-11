@@ -2231,7 +2231,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                     if (isUnDef(_args)) _args = {}
                                     var _tr = stringify(_t.fn(_args), __, "")
                                     _p.push({ role: "assistant", content: "", tool_calls: [ tc ] })
-                                    _p.push({ role: "tool", tool_name: tc.function.name, content: _tr })
+                                    _p.push({ role: "tool", tool_call_id: tc.id, tool_name: tc.function.name, content: _tr })
                                 }
                             }
                         })
@@ -3543,6 +3543,12 @@ OpenWrap.ai.prototype.gpt.prototype.promptStream = function(aPrompt, aRole, aMod
 OpenWrap.ai.prototype.gpt.prototype.rawPromptStream = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
     if (!isFunction(this.model.rawPromptStream)) throw "Streaming not supported by this provider"
     var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    // Keep the original six-argument form working: without aRole, the
+    // callback occupies the sixth argument rather than the seventh.
+    if (isUnDef(aOnDelta) && isUnDef(_args.role)) {
+        if (isFunction(tools)) aOnDelta = tools
+        else if (isFunction(aJsonFlag)) aOnDelta = aJsonFlag
+    }
     return this.model.rawPromptStream(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools, aOnDelta)
 }
 

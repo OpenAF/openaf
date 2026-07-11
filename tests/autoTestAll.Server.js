@@ -336,7 +336,7 @@
             )
 
             ow.test.assert(
-                (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/normal"),
+                (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/normal").response,
                 "/normal",
                 `(${aImpl}) Problem stripping HTTPD prefix before route handlers.`
             )
@@ -351,12 +351,12 @@
             ow.test.assert(failed, true, `(${aImpl}) Unexpected unprefixed access when HTTPD prefix is configured.`)
 
             ow.test.assert(
-                (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/go"),
+                (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/go").response,
                 "redirect target",
                 `(${aImpl}) Problem rewriting redirects with HTTPD prefix.`
             )
 
-            var css = (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/css/materialize-icon.css")
+            var css = (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/css/materialize-icon.css").response
             ow.test.assert(css.indexOf(prefix + "/fonts/material-design-icons/Material-Design-Icons.woff2") >= 0, true, `(${aImpl}) Problem rewriting CSS font URLs with HTTPD prefix.`)
 
             var fontRes = (new ow.obj.http()).getBytes("http://127.0.0.1:" + port + prefix + "/fonts/openaf_small.png")

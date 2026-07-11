@@ -5912,7 +5912,8 @@ const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 	var results = [];
 	for(var i = 0; i < numThreads; i++) {
 		var uuid = __threads.addThread(function(uuid) {
-			results.push(aFunction(uuid, __threads));
+			var result = aFunction(uuid, __threads);
+			__threads.sync(function() { results.push(result); });
 			if (balance) __balance();
 		});
 		if (isDef(threads)) {
