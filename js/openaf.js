@@ -261,8 +261,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		listFilesRecursive: true,
 		colorify : true,
 		restart  : true,
-		toTOON   : false,
-		fromTOON : false
+		toTOON   : true,
+		fromTOON : true 
 	},
 	WITHMD: {
 		htmlFilter: true
