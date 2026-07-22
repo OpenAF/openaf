@@ -71,6 +71,7 @@ import java.util.zip.ZipEntry;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.cedarsoftware.io.JsonIo;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -276,6 +277,73 @@ public class AFBase extends ScriptableObject {
 		} catch (Exception e) {
 		}
 		return res;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.toTOONJava(aObj) : String</key>
+	 * Tries to convert aObj into a TOON string using the native Java TOON engine (json-io) instead
+	 * of the bundled Javascript one. See __flags.ALTERNATIVES.toTOON.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static String toTOONJava(Object obj) {
+		Context cx = (Context) AFCmdBase.jse.enterContext();
+		try {
+			String json = (String) NativeJSON.stringify(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), obj, null, "");
+			Object value = JsonIo.toObjects(json, null, Object.class);
+			return JsonIo.toToon(value);
+		} finally {
+			AFCmdBase.jse.exitContext();
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.fromTOONJava(aTOONStr) : Object</key>
+	 * Tries to parse aTOONStr into a javascript object using the native Java TOON engine (json-io)
+	 * instead of the bundled Javascript one. See __flags.ALTERNATIVES.fromTOON.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static Object fromTOONJava(String toon) {
+		Object decoded = JsonIo.fromToon(toon).asClass(Object.class);
+		Context cx = (Context) AFCmdBase.jse.enterContext();
+		try {
+			return javaTreeToNativeJS(decoded, cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
+		} finally {
+			AFCmdBase.jse.exitContext();
+		}
+	}
+
+	/**
+	 * Recursively converts a plain Java value tree (as produced by JsonIo.fromToon(...).asClass(Object.class):
+	 * Map, List, String, Number, Boolean or null -- no other types) into genuine Rhino native JS values,
+	 * bypassing the JSON-string + NativeJSON.parse round trip used by fromJavaMap for arbitrary Java
+	 * objects. Safe here specifically because the input type surface is fully controlled by json-io's
+	 * own TOON decoder.
+	 */
+	private static Object javaTreeToNativeJS(Object value, Context cx, Scriptable scope) {
+		if (value == null) return null;
+
+		if (value instanceof Map) {
+			Scriptable obj = cx.newObject(scope);
+			for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+				obj.put(String.valueOf(entry.getKey()), obj, javaTreeToNativeJS(entry.getValue(), cx, scope));
+			}
+			return obj;
+		}
+
+		if (value instanceof List) {
+			List<?> list = (List<?>) value;
+			Object[] converted = new Object[list.size()];
+			for (int i = 0; i < converted.length; i++) converted[i] = javaTreeToNativeJS(list.get(i), cx, scope);
+			return cx.newArray(scope, converted);
+		}
+
+		if (value instanceof Number) return ((Number) value).doubleValue();
+
+		return value;
 	}
 
 	/**
