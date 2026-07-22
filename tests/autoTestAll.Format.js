@@ -5,6 +5,34 @@
         ow.loadFormat();
     };
 
+    exports.testCompareVersion = function() {
+        ow.test.assert(ow.format.compareVersion("20260101", "20251104"), 1, "Problem comparing date versions");
+        ow.test.assert(ow.format.compareVersion("20251104", "20260101"), -1, "Problem comparing lower date versions");
+        ow.test.assert(ow.format.compareVersion("20260101", "20260101"), 0, "Problem comparing equal date versions");
+        ow.test.assert(ow.format.compareVersion("10", "9"), 1, "Problem comparing numeric versions");
+        ow.test.assert(ow.format.compareVersion("2", "10"), -1, "Problem comparing lower numeric versions");
+        ow.test.assert(ow.format.compareVersion("1.2.10", "1.2.9"), 1, "Problem comparing semver patch versions");
+        ow.test.assert(ow.format.compareVersion("1.10.0", "1.9.9"), 1, "Problem comparing semver minor versions");
+        ow.test.assert(ow.format.compareVersion("1.2.3", "1.2.3"), 0, "Problem comparing equal semver versions");
+        ow.test.assert(ow.format.compareVersion("1.2", "1.1.9"), 1, "Problem comparing short semver versions");
+        ow.test.assert(ow.format.compareVersion("20260101", "1.2.3"), 1, "Problem comparing mixed date and semver versions");
+        ow.test.assert(ow.format.compareVersion("1", "1.2.3"), -1, "Problem comparing mixed numeric and semver versions");
+        ow.test.assert(ow.format.compareVersion("1", "1.0.0"), 0, "Problem comparing equivalent mixed versions");
+        ow.test.assert(ow.format.compareVersion("2", "1.9.9"), 1, "Problem comparing greater mixed versions");
+        ow.test.assert(ow.format.compareVersion("abc", "abd"), -1, "Problem comparing fallback versions");
+    };
+
+    exports.testCheckVersionSpec = function() {
+        ow.test.assert(ow.format.checkVersionSpec("20211229", ">=20211229"), true, "Problem checking date version spec");
+        ow.test.assert(ow.format.checkVersionSpec("20211228", ">=20211229"), false, "Problem checking failed date version spec");
+        ow.test.assert(ow.format.checkVersionSpec("10", ">9"), true, "Problem checking numeric version spec");
+        ow.test.assert(ow.format.checkVersionSpec("1.2.3", "1.2.3"), true, "Problem checking bare version spec");
+        ow.test.assert(ow.format.checkVersionSpec("1.5.0", ">=1.2.3,<2.0.0"), true, "Problem checking semver range spec");
+        ow.test.assert(ow.format.checkVersionSpec("2.1.0", ">=1.2.3,<2.0.0"), false, "Problem checking failed semver range spec");
+        ow.test.assert(ow.format.checkVersionSpec("1.2.3", "<=1.2.3"), true, "Problem checking lower-or-equal version spec");
+        ow.test.assert(ow.format.checkVersionSpec("2", ">=1.9.9"), true, "Problem checking mixed version spec");
+    };
+
     exports.testAddNumberSeparator = function() {
         ow.test.assert(ow.format.addNumberSeparator("1234567890"), "1,234,567,890", "Problem with add number separator");
         ow.test.assert(ow.format.addNumberSeparator("1234567890", "."), "1.234.567.890", "Problem with add number separator with '.'");            
