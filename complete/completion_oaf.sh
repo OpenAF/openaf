@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Flags
+_G_EXACT_CHOSEN=0
 F__e=1
 F__c=1
 F__p=1
@@ -21,10 +22,13 @@ F__v=1
 F__helpscript=1
 
 # Iterate over the arguments
+FFOUND=0
 if [ $# -gt 0 ]; then
-  FFOUND=0
+  _n=$#
+  _i=0
   for arg in "$@"; do
-    if [ "$arg" = "" ]; then FFOUND=1; break; fi
+    _i=$((_i+1))
+    if [ $_i -eq $_n ]; then FFOUND=1; break; fi
     # -e single option
     if [ "$arg" = "-e" ]; then FFOUND=1; F__e=0; fi
     # -c single option
@@ -65,94 +69,76 @@ if [ $# -gt 0 ]; then
 fi
 
 # Print completion for -e
-if [ $F__e -eq 1 ]; then
-  echo "-e	provide input directly instead of using stdin"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__e -eq 1 ]; then
+  printf '%s\t%s\n' '-e' 'provide input directly instead of using stdin'
 fi
 # Print completion for -c
-if [ $F__c -eq 1 ]; then
-  echo "-c	provide javascript code directly"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__c -eq 1 ]; then
+  printf '%s\t%s\n' '-c' 'provide javascript code directly'
 fi
 # Print completion for -p
-if [ $F__p -eq 1 ]; then
-  echo "-p	received streaming input -OS pipe-"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__p -eq 1 ]; then
+  printf '%s\t%s\n' '-p' 'received streaming input -OS pipe-'
 fi
 # Print completion for -o
-if [ $F__o -eq 1 ]; then
-  echo "-o	output mode -__pmOut displayed-"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__o -eq 1 ]; then
+  printf '%s\t%s\n' '-o' 'output mode -__pmOut displayed-'
 fi
 # Print completion for -f
-if [ $F__f -eq 1 ]; then
-  echo "-f	provide a script file directly"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__f -eq 1 ]; then
+  printf '%s\t%s\n' '-f' 'provide a script file directly'
 fi
 # Print completion for --install
-if [ $F___install -eq 1 ]; then
-  echo "--install	generates scripts to use openaf on the current directory"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___install -eq 1 ]; then
+  printf '%s\t%s\n' '--install' 'generates scripts to use openaf on the current directory'
 fi
 # Print completion for --check
-if [ $F___check -eq 1 ]; then
-  echo "--check	checks if this is the current version"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___check -eq 1 ]; then
+  printf '%s\t%s\n' '--check' 'checks if this is the current version'
 fi
 # Print completion for --update
-if [ $F___update -eq 1 ]; then
-  echo "--update	updates to the most current version"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___update -eq 1 ]; then
+  printf '%s\t%s\n' '--update' 'updates to the most current version'
 fi
 # Print completion for --console
-if [ $F___console -eq 1 ]; then
-  echo "--console	interactive OpenAF console"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___console -eq 1 ]; then
+  printf '%s\t%s\n' '--console' 'interactive OpenAF console'
 fi
 # Print completion for --repack
-if [ $F___repack -eq 1 ]; then
-  echo "--repack	repack OpenAF.jar for faster startup times"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___repack -eq 1 ]; then
+  printf '%s\t%s\n' '--repack' 'repack OpenAF.jar for faster startup times'
 fi
 # Print completion for --daemon
-if [ $F___daemon -eq 1 ]; then
-  echo "--daemon	executes a script/opack as a daemon"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___daemon -eq 1 ]; then
+  printf '%s\t%s\n' '--daemon' 'executes a script/opack as a daemon'
 fi
 # Print completion for --script
-if [ $F___script -eq 1 ]; then
-  echo "--script	executes a script/opack"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___script -eq 1 ]; then
+  printf '%s\t%s\n' '--script' 'executes a script/opack'
 fi
 # Print completion for --force
-if [ $F___force -eq 1 ]; then
-  echo "--force	forces an update"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___force -eq 1 ]; then
+  printf '%s\t%s\n' '--force' 'forces an update'
 fi
 # Print completion for --sb
-if [ $F___sb -eq 1 ]; then
-  echo "--sb	generates or pre-appends openaf/ojob shebang to a js script or ojob yaml/json"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___sb -eq 1 ]; then
+  printf '%s\t%s\n' '--sb' 'generates or pre-appends openaf/ojob shebang to a js script or ojob yaml/json'
 fi
 # Print completion for --py
-if [ $F___py -eq 1 ]; then
-  echo "--py	runs a python script with openaf extensions"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F___py -eq 1 ]; then
+  printf '%s\t%s\n' '--py' 'runs a python script with openaf extensions'
 fi
 # Print completion for -h
-if [ $F__h -eq 1 ]; then
-  echo "-h	show this help information"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__h -eq 1 ]; then
+  printf '%s\t%s\n' '-h' 'show this help information'
 fi
 # Print completion for -v
-if [ $F__v -eq 1 ]; then
-  echo "-v	show the version"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__v -eq 1 ]; then
+  printf '%s\t%s\n' '-v' 'show the version'
 fi
 # Print completion for -helpscript
-if [ $F__helpscript -eq 1 ]; then
-  echo "-helpscript	show help on a search term on scripting"
-  
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__helpscript -eq 1 ]; then
+  printf '%s\t%s\n' '-helpscript' 'show help on a search term on scripting'
 fi
 
 # end

@@ -5,6 +5,7 @@ complete:
   desc: Searches for a keyword on the repository.
 - name: install
   desc: Install a package
+  exact: true
   opts:
   - name: -d
     desc: Installation directory for package.
@@ -22,6 +23,7 @@ complete:
     desc: Pass an argument to the pre/post install scripts
 - name: erase
   desc: Deletes a package on the path specified -only files declared on the package.json will be deleted-
+  exact: true
   opts:
   - name: -force
     desc: Force operation even with package dependencies
@@ -29,6 +31,7 @@ complete:
     desc: Pass an argument to the pre/post erase scripts
 - name: update
   desc: Updates a package
+  exact: true
   opts:
   - name: -all
     desc: Tries to update all packages locally installed
