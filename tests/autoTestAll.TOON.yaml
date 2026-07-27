@@ -1,0 +1,60 @@
+# Copyright 2023 Nuno Aguiar
+
+include:
+   - oJobTest.yaml
+
+jobs:
+   # TOON tests
+   # --------------
+   - name: TOON::Init
+     exec: args.tests = require("autoTestAll.TOON.js");
+
+   - name: TOON::Default engine round-trip
+     from: TOON::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testToTOONDefaultEngine;
+
+   - name: TOON::Java engine round-trip
+     from: TOON::Init
+     to  : oJob Test
+     deps:
+       - TOON::Default engine round-trip
+     exec: args.func = args.tests.testToTOONJavaEngine;
+
+   - name: TOON::Engines agree on tabular data
+     from: TOON::Init
+     to  : oJob Test
+     deps:
+       - TOON::Java engine round-trip
+     exec: args.func = args.tests.testTOONEnginesAgreeOnTabularData;
+
+   - name: TOON::Flag defaults
+     from: TOON::Init
+     to  : oJob Test
+     deps:
+       - TOON::Java engine round-trip
+     exec: args.func = args.tests.testTOONFlagDefaults;
+
+   - name: TOON::Known empty array cross-engine limitation
+     from: TOON::Init
+     to  : oJob Test
+     deps:
+       - TOON::Java engine round-trip
+     exec: args.func = args.tests.testTOONKnownEmptyArrayCrossEngineLimitation;
+
+   - name: TOON::Large payload
+     from: TOON::Init
+     to  : oJob Test
+     deps:
+       - TOON::Java engine round-trip
+     exec: args.func = args.tests.testTOONLargePayload;
+
+todo:
+   # TOON tests
+   # ------------
+   - TOON::Default engine round-trip
+   - TOON::Java engine round-trip
+   - TOON::Engines agree on tabular data
+   - TOON::Flag defaults
+   - TOON::Known empty array cross-engine limitation
+   - TOON::Large payload

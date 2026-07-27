@@ -260,7 +260,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		jsonParse: true,
 		listFilesRecursive: true,
 		colorify : true,
-		restart  : true
+		restart  : true,
+		toTOON   : true,
+		fromTOON : true 
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -5912,7 +5914,8 @@ const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 	var results = [];
 	for(var i = 0; i < numThreads; i++) {
 		var uuid = __threads.addThread(function(uuid) {
-			results.push(aFunction(uuid, __threads));
+			var result = aFunction(uuid, __threads);
+			__threads.sync(function() { results.push(result); });
 			if (balance) __balance();
 		});
 		if (isDef(threads)) {
@@ -11246,24 +11249,36 @@ AF.prototype.toKYAML = function(aJson, multiDoc, sanitize, shouldColor, perEntry
 
 /**
  * <odoc>
- * <key>AF.toTOON(aObj) : String</key>
- * Tries to convert aObj into a TOON string.
+ * <key>AF.toTOON(aObj, alternative) : String</key>
+ * Tries to convert aObj into a TOON string. If alternative = true (or, if unset, defaults to
+ * __flags.ALTERNATIVES.toTOON) a native Java TOON engine will be used instead of the bundled
+ * Javascript one (faster and lower memory footprint on bigger payloads).
  * </odoc>
  */
-AF.prototype.toTOON = function(aObj) {
-	loadTOON()
-	return toon.encode(aObj)
+AF.prototype.toTOON = function(aObj, alternative) {
+	if (_$(alternative).default(__flags.ALTERNATIVES.toTOON)) {
+		return af.toTOONJava(aObj)
+	} else {
+		loadTOON()
+		return toon.encode(aObj)
+	}
 }
 
 /**
  * <odoc>
- * <key>AF.fromTOON(aTOONStr) : Object</key>
- * Tries to parse aTOONStr into a javascript object.
+ * <key>AF.fromTOON(aTOONStr, alternative) : Object</key>
+ * Tries to parse aTOONStr into a javascript object. If alternative = true (or, if unset, defaults
+ * to __flags.ALTERNATIVES.fromTOON) a native Java TOON engine will be used instead of the bundled
+ * Javascript one (faster and lower memory footprint on bigger payloads).
  * </odoc>
  */
-AF.prototype.fromTOON = function(aTOONStr) {
-	loadTOON()
-	return toon.decode(aTOONStr)
+AF.prototype.fromTOON = function(aTOONStr, alternative) {
+	if (_$(alternative).default(__flags.ALTERNATIVES.fromTOON)) {
+		return af.fromTOONJava(aTOONStr)
+	} else {
+		loadTOON()
+		return toon.decode(aTOONStr)
+	}
 }
 
 /**
@@ -13973,7 +13988,7 @@ const includeOPack = function(aOPackName, aMinVersion) {
 
 	if (aOPackName.toLowerCase() == "openaf") {
 		if (isDef(aMinVersion)) {
-			if (getVersion() < aMinVersion) throw("The OpenAF version is " + getVersion() + ". It needs to be updated to " + aMinVersion);
+			if (ow.loadFormat().compareVersion(getVersion(), aMinVersion) < 0) throw("The OpenAF version is " + getVersion() + ". It needs to be updated to " + aMinVersion);
 		}
 		return true;
 	}
@@ -13982,8 +13997,8 @@ const includeOPack = function(aOPackName, aMinVersion) {
 		if (isDef(getOPackPath(aOPackName))) {
 			var version = $from(getOPackLocalDB()).equals("name", aOPackName).at(0).version
 			// Check version
-			if (version < aMinVersion) {
-				oPack("add2db " + oPackName)
+			if (isDef(aMinVersion) && ow.loadFormat().compareVersion(version, aMinVersion) < 0) {
+				oPack("add2db " + aOPackName)
 			}
 		} else {
 			// add it if it's on the same directory
@@ -13996,10 +14011,10 @@ const includeOPack = function(aOPackName, aMinVersion) {
 	}
 	if (isDef(aMinVersion)) {
 		var version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
-		if (version < aMinVersion) {
+		if (ow.loadFormat().compareVersion(version, aMinVersion) < 0) {
 			oPack("update " + aOPackName);
 			version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
-			if (version < aMinVersion) throw "Couldn't update opack " + aOPackName + " from version " + version + " to >=" + aMinVersion;
+			if (ow.loadFormat().compareVersion(version, aMinVersion) < 0) throw "Couldn't update opack " + aOPackName + " from version " + version + " to >=" + aMinVersion;
 		}
 	}    
 	return true;

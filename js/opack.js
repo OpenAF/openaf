@@ -403,29 +403,7 @@ function verifyDeps(packag) {
 			ldep = dep.toLowerCase()
 			results[ldep] = false
 			if (!isUnDef(compareTo)) {
-				var _vs = version.split(",")
-				
-				var isValid = []
-				for(var j in _vs) {
-					var _version = String(_vs[j]).trim()
-					compareTo.version = String(compareTo.version).trim()
-					if (compareTo.version.indexOf(".") > 0 && _version.indexOf(".") > 0) {  
-						try {                                           
-							if (_version.match(/^\>\=/) && ow.format.semVer(compareTo.version).greaterEquals(_version.replace(/^\>\=/, ""))) { isValid.push(true); continue }
-							if (_version.match(/^\<\=/) && ow.format.semVer(compareTo.version).lowerEquals(_version.replace(/\<\=/, "")))    { isValid.push(true); continue }
-							if (_version.match(/^\<(?=[^=])/) && ow.format.semVer(compareTo.version).lower(_version.replace(/^\</, "")))     { isValid.push(true); continue }
-							if (_version.match(/^\>(?=[^=])/) && ow.format.semVer(compareTo.version).greater(_version.replace(/^\>/, "")))   { isValid.push(true); continue }
-							if (ow.format.semVer(compareTo.version).equals(_version))                                                        { isValid.push(true); continue }
-						} catch(ee) { /* nothing */ }
-					}
-					if (compareTo.version == _version)                          						  { isValid.push(true); continue }
-					if (_version.match(/^\>\=/) && compareTo.version >= _version.replace(/^\>\=/, ""))    { isValid.push(true); continue }
-					if (_version.match(/^\<\=/) && compareTo.version <= _version.replace(/^\<\=/, ""))    { isValid.push(true); continue }
-					if (_version.match(/^\<(?=[^=])/) && compareTo.version < _version.replace(/^\</, "")) { isValid.push(true); continue }
-					if (_version.match(/^\>(?=[^=])/) && compareTo.version > _version.replace(/^\>/, "")) { isValid.push(true); continue }
-					isValid.push(false)
-				}
-				if (isValid.indexOf(false) < 0) results[ldep] = true
+				results[ldep] = ow.format.checkVersionSpec(compareTo.version, version)
 			}
 		}
 	}
@@ -1297,31 +1275,20 @@ function __opack_list(args) {
 // Check version given package and force parameters
 function checkVersion(packag, force) {
 	if (isUnDef(packag)) return -1
-	var installedVersion = getPackVersion(packag.name);
+	var installedVersion = getPackVersion(packag.name)
 
-	if (!force && isDef(installedVersion) &&
-		 ( (installedVersion.indexOf(".") > 0 && packag.version.indexOf(".") && ow.format.semver(installedVersion).greater(packag.version)) ||
-		   (installedVersion > packag.version) ) ) {
+	if (isUnDef(installedVersion)) return -1
+	if (force) return 1
+	var _c = ow.format.compareVersion(installedVersion, packag.version)
+	if (_c > 0) {
 		log("Installed version is newer " + installedVersion);
-		// Installed and newer
 		return 0
-	} else {
-		if (!force && isDef(installedVersion) &&
-			((installedVersion.indexOf(".") > 0 && packag.version.indexOf(".") && ow.format.semver(installedVersion).equals(packag.version)) ||
-			 (installedVersion == packag.version ) )) {
-			log(packag.name + ", version " + installedVersion + ", already installed in '" + findLocalDBTargetByName(packag.name) + "'.");
-			// Already installed
-			return 0
-		} else {
-			if (isUnDef(installedVersion)) {
-				// Not installed
-				return -1
-			} else {
-				// Installed and older
-				return 1
-			}
-		}
 	}
+	if (_c == 0) {
+		log(packag.name + ", version " + installedVersion + ", already installed in '" + findLocalDBTargetByName(packag.name) + "'.");
+		return 0
+	}
+	return 1
 }
 
 // INSTALL
