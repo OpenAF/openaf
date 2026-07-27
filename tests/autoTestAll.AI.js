@@ -475,7 +475,7 @@
                 choices: [
                     {
                         finish_reason: "stop",
-                        message: { role: "assistant", content: "ok" }
+                        message: { content: "ok" }
                     }
                 ],
                 usage: {

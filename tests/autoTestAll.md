@@ -161,7 +161,7 @@
 |OpenAF | Cache | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 329 ms | n/a |
 |OpenAF | Crypt | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 19 ms | n/a |
 |OpenAF | DescType | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 2 ms | n/a |
-|OpenAF | Encrypt/Decrypt | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
+|OpenAF | Encrypt/Decrypt | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
 |OpenAF | Get Path | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
 |OpenAF | Get version | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 2 ms | n/a |
 |OpenAF | IsFunctions | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
