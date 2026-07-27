@@ -195,12 +195,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>com.cedarsoftware</groupId>
       <artifactId>json-io</artifactId>
-      <version>4.108.0</version>
+      <version>4.109.0</version>
     </dependency>
     <dependency>
       <groupId>com.cedarsoftware</groupId>
       <artifactId>java-util</artifactId>
-      <version>4.108.0</version>
+      <version>4.109.0</version>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
