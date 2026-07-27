@@ -8,6 +8,24 @@
 			"license": "https://github.com/toon-format/toon/blob/main/LICENSE",
 			"deps": []
 		},{
+			"description": "json-io (native Java TOON/JSON engine, see __flags.ALTERNATIVES.toTOON/fromTOON)",
+			"path": ["lib/json-io-4.108.0.jar"],
+			"version": "4.108.0",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/jdereg/json-io/master/LICENSE",
+			"deps": [
+				"lib/java-util-4.108.0.jar"
+			]
+		},{
+			"description": "java-util",
+			"path": ["lib/java-util-4.108.0.jar"],
+			"version": "4.108.0",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/jdereg/java-util/master/LICENSE",
+			"deps": []
+		},{
 			"description": "Showdown",
 			"path": ["js/showdown.js"],
 			"version": "2.0.0",

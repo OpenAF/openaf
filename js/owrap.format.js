@@ -1491,6 +1491,68 @@ OpenWrap.format.prototype.semver = function(aVer) {
 	}
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.compareVersion(aVersionA, aVersionB) : Number</key>
+ * Compares two versions returning 1 when aVersionA is greater, 0 when they are equal and -1 when aVersionA is lower. Supports date, numeric and semantic versions. (available after ow.loadFormat())
+ * </odoc>
+ */
+OpenWrap.format.prototype.compareVersion = function(aVersionA, aVersionB) {
+	var _n = v => {
+		v = String(v).trim()
+		if (/^[vV]\d/.test(v)) v = v.substring(1)
+		return v
+	}
+	var a = _n(aVersionA), b = _n(aVersionB)
+	if (a == b) return 0
+
+	var _isNum = v => /^\d+$/.test(v)
+	if (_isNum(a) && _isNum(b)) return Number(a) > Number(b) ? 1 : (Number(a) < Number(b) ? -1 : 0)
+
+	// pad pure numbers (mixed scheme) and short numeric dotted versions to semver X.Y.Z
+	var _pad = v => {
+		if (_isNum(v)) return v + ".0.0"
+		if (/^\d+\.\d+$/.test(v)) return v + ".0"
+		return v
+	}
+	try {
+		var sa = this.semver(_pad(a)), pb = _pad(b)
+		if (sa.equals(pb)) return 0
+		return sa.greater(pb) ? 1 : -1
+	} catch(e) {
+		// fallback: numeric compare of leading dotted segments, then plain string compare
+		var va = a.split("."), vb = b.split(".")
+		for(var i = 0; i < Math.max(va.length, vb.length); i++) {
+			var na = Number(va[i]), nb = Number(vb[i])
+			if (isNaN(na) || isNaN(nb)) break
+			if (na != nb) return na > nb ? 1 : -1
+		}
+		return a > b ? 1 : (a < b ? -1 : 0)
+	}
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.checkVersionSpec(aVersion, aSpec) : Boolean</key>
+ * Checks whether aVersion satisfies a comma-separated version specification using &gt;=, &lt;=, &gt;, &lt;, = or bare equality. (available after ow.loadFormat())
+ * </odoc>
+ */
+OpenWrap.format.prototype.checkVersionSpec = function(aVersion, aSpec) {
+	var _v = String(aVersion).trim()
+	return String(aSpec).split(",").every(_s => {
+		_s = _s.trim()
+		var m = _s.match(/^(>=|<=|>|<|=)?\s*(.+)$/)
+		var c = this.compareVersion(_v, m[2])
+		switch(m[1]) {
+		case ">=": return c >= 0
+		case "<=": return c <= 0
+		case ">" : return c > 0
+		case "<" : return c < 0
+		default  : return c == 0
+		}
+	})
+}
+
 OpenWrap.format.prototype.syms = function() {
 	return {
 		check_mark      : "\u2714",
@@ -2730,7 +2792,7 @@ OpenWrap.format.prototype.printDashboard = function(widgets, aOptions) {
 				var tl    = title.length
 				var dashCount = Math.max(0, iW - 1 - tl)
 
-				var top = tl > 0 ? bc(bchars.topLeft + (borderStyle != "simple" ? bchars.horizontal : " ")) + (borderStyle != "simple" ? " " : "") + ansiColor("BOLD", title.substring(0, iW - 2)) + " " + bc(repeat(Math.max(0, dashCount - 2), bchars.horizontal) + bchars.topRight)
+				var top = tl > 0 ? bc(bchars.topLeft + (borderStyle != "simple" ? bchars.horizontal : " ")) + (borderStyle != "simple" ? " " : "") + ansiColor("BOLD", title.substring(0, iW - 2)) + " " + bc(repeat(Math.max(0, dashCount - (borderStyle != "simple" ? 2 : 1)), bchars.horizontal) + bchars.topRight)
 									: bc(bchars.topLeft + repeat(iW, bchars.horizontal) + bchars.topRight)
 				var bot = bc(bchars.bottomLeft + repeat(iW, bchars.horizontal) + bchars.bottomRight)
 				lines = lines.map(function(l) { return bc(bchars.vertical) + l + bc(bchars.vertical) })

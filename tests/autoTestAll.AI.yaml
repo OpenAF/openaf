@@ -125,6 +125,46 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIOllamaStreamingWarmsModelOnFreshConversation;
 
+   - name: AI::OpenAI rawResponse prefers responses
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIRawResponse;
+
+   - name: AI::OpenAI jsonSchemaPrompt
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPrompt;
+
+   - name: AI::OpenAI jsonSchemaPromptWithStats
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptWithStats;
+
+   - name: AI::OpenAI jsonSchemaPrompt schema defaults
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptSchemaDefault;
+
+   - name: AI::OpenAI rawResponse fallback to chat completions
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIRawResponseFallsBackToChatCompletions;
+
+   - name: AI::OpenAI rawResponse caches chat fallback
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIRawResponseCachesChatFallback;
+
+   - name: AI::OpenAI rawResponse keeps non availability errors
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIRawResponseDoesNotFallbackOnOtherErrors;
+
+   - name: AI::OpenAI jsonSchemaPrompt unsupported provider
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptUnsupportedProvider;
+
 todo:
    # ow.ai tests
    # -----------
@@ -151,3 +191,11 @@ todo:
    - AI::OpenAI export conversation falls back to tool name
    - AI::Ollama streaming tool execution and ids
    - AI::Ollama streaming warmup on fresh conversation
+   - AI::OpenAI rawResponse prefers responses
+   - AI::OpenAI jsonSchemaPrompt
+   - AI::OpenAI jsonSchemaPromptWithStats
+   - AI::OpenAI jsonSchemaPrompt schema defaults
+   - AI::OpenAI rawResponse fallback to chat completions
+   - AI::OpenAI rawResponse caches chat fallback
+   - AI::OpenAI rawResponse keeps non availability errors
+   - AI::OpenAI jsonSchemaPrompt unsupported provider

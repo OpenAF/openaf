@@ -287,6 +287,20 @@ jobs:
      - Format::Load Format
      exec: args.func = args.tests.testGrid
 
+   - name: Format::Compare version
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testCompareVersion
+
+   - name: Format::Check version spec
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testCheckVersionSpec
+
 todo:
    # Format tests
    # ------------
@@ -316,6 +330,8 @@ todo:
    - Format::Print bullet value formats
    - Format::Print dashboard
    - Format::Grid
+   - Format::Compare version
+   - Format::Check version spec
    - Format::Date diff
    - Format::Cron
    - Format::Conversions
