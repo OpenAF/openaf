@@ -220,7 +220,7 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
 		var valid = false;
 
 		if (OJOB_INTEGRITY[aFileOrPath].indexOf("-") >= 0) {
-			[alg, h] = OJOB_INTEGRITY[aFileOrPath].split("-");
+			var _p = OJOB_INTEGRITY[aFileOrPath].split("-"), alg = _p[0], h = _p[1];
 			switch (alg) {
 			case "sha256":
 				valid = (sha256(stream) == h);
@@ -300,11 +300,11 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 			var depsScore2 = (vvv) => { 
 				if (isString(vvv)) {
 					if (vvv === v.name) logWarn("Suspicious recursive relation in job " + v.name);
-					mdeps[vvv] += mdeps[s];
+					mdeps[vvv] = (isDef(mdeps[vvv]) ? mdeps[vvv] : 0) + mdeps[s];
 					depsScore(vvv);
 				} else {
 					if (vvv.name === v.name) logWarn("Suspicious recursive relation in job " + v.name);
-					mdeps[vvv.name] += mdeps[s];
+					mdeps[vvv.name] = (isDef(mdeps[vvv.name]) ? mdeps[vvv.name] : 0) + mdeps[s];
 					depsScore(vvv.name);
 				}
 			};
@@ -645,7 +645,12 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos, dontLoadJobs) 
 		//res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
 		if (res.ojob.includeOJob) {
 			try {
-				$ch("oJob::jobs").setAll(["name"], io.readFileJSON(getOpenAFJar() + "::ojob.saved.json"))
+				if (__flags.OJOB_INCLUDE_CACHE) {
+					if (isUnDef(this.__ojobSaved)) this.__ojobSaved = io.readFileJSON(getOpenAFJar() + "::ojob.saved.json")
+					$ch("oJob::jobs").setAll(["name"], clone(this.__ojobSaved))
+				} else {
+					$ch("oJob::jobs").setAll(["name"], io.readFileJSON(getOpenAFJar() + "::ojob.saved.json"))
+				}
 			} catch(ee) {
 				/*try {
 					if (isUnDef(res.jobsInclude)) res.jobsInclude = []
@@ -851,6 +856,24 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 
 	return res;
 };
+
+OpenWrap.oJob.prototype.__readCachedFile = function(aPath, aReadFn) {
+	if (!__flags.OJOB_INCLUDE_CACHE || !io.fileExists(aPath)) return aReadFn(aPath, true)
+
+	if (isUnDef(this.__fileCache)) this.__fileCache = new java.util.concurrent.ConcurrentHashMap()
+
+	var cp = String(new java.io.File(aPath).getCanonicalPath())
+	var fi = io.fileInfo(aPath)
+	var entry = this.__fileCache.get(cp)
+	if (entry != null && entry.mtime == fi.lastModified && entry.size == fi.size) {
+		return clone(entry.parsed)
+	}
+
+	var parsed = aReadFn(aPath, true)
+	if (this.__fileCache.size() >= 64) this.__fileCache.clear()
+	this.__fileCache.put(cp, { mtime: fi.lastModified, size: fi.size, parsed: clone(parsed) })
+	return clone(parsed)
+}
 
 OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 	var res = {}, parent = this, validation = false, aOrigFile = aFile;
@@ -1064,13 +1087,13 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
 			} else {
-				res = this.__merge(_load(io.readFileYAML), res);
+				res = this.__merge(_load(f => parent.__readCachedFile(f, io.readFileYAML)), res);
 			}
 		} else if (aFile.match(/\.js(on)?$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDown), res);
 			} else {
-				res = this.__merge(_load(io.readFileJSON), res);
+				res = this.__merge(_load(f => parent.__readCachedFile(f, io.readFileJSON)), res);
 			}
 		} else if (aFile.match(/^https?:\/\//)) {
 			res = this.__merge(_load(fnDown), res);
@@ -1102,7 +1125,6 @@ OpenWrap.oJob.prototype.__resolveOPackFile = function(aFile) {
 
 	includeOPack(m[1])
 	var opath = getOPackPath(m[1])
-	print("opath = " + opath)
 	if (isUnDef(opath)) throw "Couldn't find opack '" + m[1] + "'."
 	return (opath + "/" + m[2]).replace(/\\+/g, "/").replace(/\/+/g, "/")
 };
@@ -1787,6 +1809,18 @@ OpenWrap.oJob.prototype.stop = function() {
 	}
 };
 
+OpenWrap.oJob.prototype.__getCachedFn = function(aSource) {
+	if (!__flags.OJOB_FNCACHE || isDef(global.__debugLoadPreParser)) return newFn(aSource)
+	if (isUnDef(this.__fnCache)) this.__fnCache = new java.util.concurrent.ConcurrentHashMap()
+	var f = this.__fnCache.get(aSource)
+	if (f == null) {
+		if (this.__fnCache.size() >= __flags.OJOB_FNCACHE_SIZE) this.__fnCache.clear()
+		f = newFn(aSource)
+		this.__fnCache.put(aSource, f)
+	}
+	return f
+}
+
 OpenWrap.oJob.prototype.__defaultArgs = function(aArgs) {
 	function _isEscaped(aStr, aPos) {
 		var c = 0
@@ -2204,7 +2238,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		if (isString(this.__ojob.daemonFunc)) {
 			var parent = this;
 			this.periodicFuncs.push(() => {
-				var res = (newFn(parent.__ojob.daemonFunc))();
+				var res = (parent.__getCachedFn(parent.__ojob.daemonFunc))();
 				if (isDef(res) && res == true) {
 					parent.oJobShouldStop = true;
 				}
@@ -2289,7 +2323,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		this.__mtStart = now();
 		this.mt.addScheduleThreadAtFixedRate(function() {
 			if (isDef(parent.__ojob.checkStall.checkFunc)) {
-				var res = (newFn(parent.__ojob.checkStall.checkFunc))(parent.__mtStart);
+				var res = (parent.__getCachedFn(parent.__ojob.checkStall.checkFunc))(parent.__mtStart);
 				if (res) exit(-1);
 			}
 			if ((now() - parent.__mtStart) > (parent.__ojob.checkStall.killAfterSeconds * 1000)) {
@@ -2337,7 +2371,10 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			if (isDef(todo.args)) argss = this.__processArgs(argss, todo.args, aId);
 			if (isDef(job)) {
 				if (isUnDef(job.typeArgs)) job.typeArgs = {};
-				if (isDef(todo.typeArgs))  job.typeArgs = merge(job.typeArgs, todo.typeArgs);
+				if (isDef(todo.typeArgs)) {
+					job = clone(job)
+					job.typeArgs = merge(job.typeArgs, todo.typeArgs)
+				}
 
 				var res = this.runJob(job, argss, aId, true, true, listTodos);
 				if (res != false) {
@@ -2372,6 +2409,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		//t.addThread(function() {
 			// Check all jobs in the todo queue
 			var job = __
+			var _pollDelay = 50
 			while(!(parent.oJobShouldStop && localStop)) {
 				try {
 					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
@@ -2384,7 +2422,10 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 						if (isDef(todo.args)) argss = parent.__processArgs(args, todo.args, aId);
 						if (isDef(job)) {
 							if (isUnDef(job.typeArgs)) job.typeArgs = {};
-							if (isDef(todo.typeArgs))  job.typeArgs = merge(job.typeArgs, todo.typeArgs);
+							if (isDef(todo.typeArgs)) {
+								job = clone(job)
+								job.typeArgs = merge(job.typeArgs, todo.typeArgs)
+							}
 
 							var res = parent.runJob(job, argss, aId, !(parent.__ojob.async));
 							if (res != false) {
@@ -2422,7 +2463,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 					sleep((isDef(parent.__ojob.timeInterval) ? parent.__ojob.timeInterval : 50), true);
 					parent.__periodicFunc();
 				} else {
-					sleep(50, true);
+					if (__flags.OJOB_ADAPTIVE_POLL) {
+						_pollDelay = (isDef(parentOJob) && parentOJob.length <= 0) ? Math.min(_pollDelay * 2, 250) : 50
+						sleep(_pollDelay, true);
+					} else {
+						sleep(50, true);
+					}
 				}
 			}
 		});
@@ -2557,7 +2603,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					if (isDef(depInf) && depInf.success) {
 						canContinue = true;
 						if (isDef(aJob.deps[j].onSuccess)) {
-							var res = (newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onSuccess))(provideArgs, aJob, aId);
+							var res = (parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onSuccess))(provideArgs, aJob, aId);
 							canContinue = res;
 						}
 						depInfo[dep].result = true;
@@ -2572,11 +2618,11 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 							if (isDef(depInf) && depInf.error) {
 								var res
 								if (isDef(aJob.deps[j].onFail)) {
-									res = (newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onFail))(provideArgs, aJob, aId)
+									res = (parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onFail))(provideArgs, aJob, aId)
 									canContinue = res
 								} else {
 									if (isDef(parent.__ojob.depsOnFail)) {
-										res = (newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2];" + parent.__ojob.depsOnFail))(provideArgs, aJob, aId)
+										res = (parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2];" + parent.__ojob.depsOnFail))(provideArgs, aJob, aId)
 										canContinue = res
 									}
 								}
@@ -2633,14 +2679,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			})
 		}
 
-		var f = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
+		var f = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
 		var fe, fint;
-		if (isDef(parent.__ojob.catch)) fe = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + parent.__ojob.catch + "})(); return { args: args, res: _res };");
-		if (isDef(aJob.catch)) fint = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + aJob.catch + "})(); return { args: args, res: _res };");
+		if (isDef(parent.__ojob.catch)) fe = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + parent.__ojob.catch + "})(); return { args: args, res: _res };");
+		if (isDef(aJob.catch)) fint = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + aJob.catch + "})(); return { args: args, res: _res };");
 		
 		var stopWhen, timeout, tb = false, tbres;
 		if (isDef(aJob.typeArgs.timeout))  { tb = true; timeout = aJob.typeArgs.timeout; }
-		if (isDef(aJob.typeArgs.stopWhen)) { tb = true; stopWhen = newFn(aJob.typeArgs.stopWhen); }
+		if (isDef(aJob.typeArgs.stopWhen)) { tb = true; stopWhen = parent.__getCachedFn(aJob.typeArgs.stopWhen); }
 
 		if (isDef(args.__oJobRepeat)) { 
 			var errors = [];
@@ -2796,8 +2842,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					_run(aJob.exec, args, aJob, aId);
 					this.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 				} else {
+					parent.__promises = parent.__promises.filter(p => !(p.executors.isEmpty() && !p.executing.get() && (p.state.get() == p.states.FULFILLED || p.state.get() == p.states.FAILED)))
 					parent.__promises.push($do(() => {
-						_run(aJob.exec, args, aJob, aId); 
+						_run(aJob.exec, args, aJob, aId);
 					}).then(() => {
 						parent.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 					}).catch((e) => {
@@ -2846,7 +2893,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					args = parent.__mergeArgs(args, aJob.args);
 
 					_run(aJob.exec, args, aJob, aId);
-					parent.__addLog("success", aJob.name, uuid, undefined, aId, aJob.typeArgs)
+					parent.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 				} catch(e) {
 					parent.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
 				}
@@ -3338,7 +3385,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			fnDef.push("var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ")
 			fnDef.push("$doA2B(each => { " + res + " }, (_r, _n) => { _oj.forEach(_aJob => { ")
 			fnDef.push("  var _canDo = true; if(isDef(_n) && _n != _aJob.name) _canDo = false;")
-			fnDef.push("  try { if (isDef(_aJob) && _canDo) { var fn = newFn(\"var args = ow.oJob.__defaultArgs(arguments[0]); var job = {name:'" + _aName + "'}; \" + _aJob.exec); ")
+			fnDef.push("  try { if (isDef(_aJob) && _canDo) { var fn = ow.oJob.__getCachedFn(\"var args = ow.oJob.__defaultArgs(arguments[0]); var job = {name:'" + _aName + "'}; \" + _aJob.exec); ")
 			fnDef.push("  return fn( merge(_r, { init: args.init }) ); } else { return __; }")
 			fnDef.push("} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (newFn(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, __, \"\") + \"); \" + _aJob.catch))(ea2b); }")
 			fnDef.push("}); }, " + _eachThreads + ", __, " + (isUnDef(_jobCatch) ? "__" : "newFn(\"var args = ow.oJob.__defaultArgs(arguments[1]), job = {name:'" + _aName + "'}, exception = arguments[0]; " + _jobCatch.replace(/\n/g, "\\\n").replace(/"/g, "\\\"") + "\")" ) + "); ")
@@ -3442,7 +3489,6 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					//j.lang = f.lang;
 					if (isMap(f.args) && Object.keys(f.args).length > 0) j.exec += "\nargs = ow.oJob.__defaultArgs(ow.oJob.__processArgs(args, " + stringify(f.args,__,"") + "))\n"
 					j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
-					j.each = j.each + "\n" + (isDef(f.each) ? f.each : "");
 					j.each = (isDef(f.each) && j.each != null ? j.each.concat(f.each) : j.each);
 					j.exec = j.exec + "\n" + (isDef(f.exec) ? procLock(procLang(f.exec, f.typeArgs, f.each, f.lang, f.file, f.name, f.check), jobTypeArgs) : "");
 					//j.help = j.help + "\n" + (isDef(f.help) ? f.help : "");

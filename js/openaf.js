@@ -201,6 +201,11 @@ var OAF_VALIDATION_STRICT = getEnvsDef("OAF_VALIDATION_STRICT", OAF_VALIDATION_S
 
 var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.prototype.toString.call(__flags) ? __flags : {
 	OJOB_SEQUENTIAL            : true,
+	OJOB_FNCACHE               : true,   // If true, oJob caches compiled exec/dep/each functions instead of recompiling per run
+	OJOB_FNCACHE_SIZE          : 512,    // Max entries in the oJob compiled-function cache before it's cleared
+	OJOB_INCLUDE_CACHE         : true,   // If true, oJob include files and ojob.saved.json are parsed/read once and cached
+	OPACK_LOCALDB_CACHE        : true,   // If true, getOPackLocalDB results are cached and validated by DB file mtime+size
+	OJOB_ADAPTIVE_POLL         : false,  // If true, the oJob scan loop backs off its poll interval on idle cycles
 	OJOB_SHAREARGS             : true,
 	OJOB_HELPSIMPLEUI          : false,
 	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
@@ -3377,6 +3382,7 @@ const getOPackRemoteDB = function() {
  * locally, and per user, installed opack packages.
  * </odoc>
  */
+var __opackLocalDBCache;
 const getOPackLocalDB = function() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 	var homeDB = __gHDir() + "/" + PACKAGESJSON_USERDB;
@@ -3386,6 +3392,17 @@ const getOPackLocalDB = function() {
 	if (isUnDef(__opackOpenAF)) {
 		__opackOpenAF = io.readFileJSON(getOpenAFJar() + "::.package.json")
 		__opackOpenAF.version = getVersion()
+	}
+
+	var statKey;
+	if (__flags.OPACK_LOCALDB_CACHE) {
+		try {
+			var fiFile = io.fileExists(fileDB) ? io.fileInfo(fileDB) : __
+			var fiHome = io.fileExists(homeDB) ? io.fileInfo(homeDB) : __
+			statKey = (isDef(fiFile) ? fiFile.lastModified + ":" + fiFile.size : "-") + "|" +
+			          (isDef(fiHome) ? fiHome.lastModified + ":" + fiHome.size : "-")
+			if (isDef(__opackLocalDBCache) && __opackLocalDBCache.key == statKey) return clone(__opackLocalDBCache.packages)
+		} catch(e) {}
 	}
 
 	// Verify fileDB and homeDB
@@ -3433,6 +3450,10 @@ const getOPackLocalDB = function() {
 	// No OpenAF on packages loaded
 	for(var pi in packages) { if (packages[pi].name == "OpenAF") delete packages[pi] }
 	packages["OpenAF"] = __opackOpenAF
+
+	if (__flags.OPACK_LOCALDB_CACHE && isUnDef(exc) && isDef(statKey)) {
+		__opackLocalDBCache = { key: statKey, packages: clone(packages) }
+	}
 
 	return packages;
 }
