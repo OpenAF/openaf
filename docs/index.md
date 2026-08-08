@@ -6,6 +6,7 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - ojob.md – Main oJob YAML reference (structure, jobs, built-ins)
 - ojob-all.yaml – Exhaustive annotated YAML template
 - openaf.md – Core OpenAF runtime helpers & APIs
+- opacks.md – oPacks: manifest format, versioning, the `opack` CLI, scripting integration, building & hosting opack repositories
 
 ## Security & Configuration
 - ojob-security.md – Integrity, auditing, unique execution, channel exposure
