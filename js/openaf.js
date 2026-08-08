@@ -8533,6 +8533,8 @@ const $rest = function(ops) {
  * - url (string): Required for remote servers - the endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string|map|array): Required for stdio type - the command to execute or the map/array accepted by $sh\
+ * - pwd (string): For stdio type - the working directory to use when executing cmd (default: the JSONRPC.cmd.defaultDir flag, if set)\
+ * - envs (map): For stdio type - a map of environment variables to use when executing cmd. Note: this replaces the child process' environment entirely (same semantics as $sh.envs/sh()), it does not merge with the current environment\
  * - options (map): Additional options passed to $rest for remote connections\
  * - sse (boolean): When true, remote/http requests expect Server-Sent Events responses with JSON-RPC payloads in `data:` events\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
@@ -8543,6 +8545,8 @@ const $rest = function(ops) {
  * - type(aType): Set the connection type\
  * - url(aURL): Set the URL and switch to remote type\
  * - sh(aCommand): Set the command and switch to stdio type\
+ * - pwd(aPath): Set the working directory to use for stdio execution\
+ * - envs(aMap): Set the environment variables map to use for stdio execution (replaces the child process' environment)\
  * - exec(aMethod, aParams, aNotification): Execute a JSON-RPC method\
  * - destroy(): Stop the client and cleanup resources\
  * \
@@ -8700,7 +8704,8 @@ const $jsonrpc = function (aOptions) {
 		_q: {},
 		_r: {},
 		_info: __,
-		_pwd: _defaultCmdDir,
+		_pwd: _$(aOptions.pwd, "aOptions.pwd").isString().default(_defaultCmdDir),
+		_envs: _$(aOptions.envs, "aOptions.envs").isMap().default(__),
 		_copies: $atomic(0, "long"),
 		type: type => {
 			aOptions.type = type
@@ -8713,6 +8718,10 @@ const $jsonrpc = function (aOptions) {
 		},
 		pwd: aPath => {
 			_r._pwd = aPath
+			return _r
+		},
+		envs: aMap => {
+			_r._envs = aMap
 			return _r
 		},
 		sh: cmd => {
@@ -8736,6 +8745,7 @@ const $jsonrpc = function (aOptions) {
 					_debug("jsonrpc threadbox started " + nowNano())
 					var _cmdRunner = $sh(cmd)
 					if (isDef(_r._pwd)) _cmdRunner.pwd(_r._pwd)
+					if (isDef(_r._envs)) _cmdRunner.envs(_r._envs)
 					var _resh = _cmdRunner
 						.exitcb(function (p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { sleep(250, true); return "" } })
 						.cb((o, e, i) => {
@@ -9034,7 +9044,9 @@ const $jsonrpc = function (aOptions) {
  * - type (string): Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
  * - url (string): Required for remote servers - the MCP server endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
- * - cmd (string): Required for stdio type - the command to launch the MCP server\
+ * - cmd (string|array): Required for stdio type - the command to launch the MCP server (an array is executed directly, without going through a shell)\
+ * - pwd (string): For stdio type - the working directory to use when launching the MCP server\
+ * - envs (map): For stdio type - a map of environment variables to use when launching the MCP server. Note: this replaces the child process' environment entirely, it does not merge with the current environment\
  * - options (map): Additional options:\
  *   - For remote/stdio: passed to underlying JSON-RPC client\
  *   - For dummy: { fns: map of function implementations, fnsMeta: map of function metadata }\
