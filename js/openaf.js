@@ -1,7 +1,7 @@
 // OPENAF common functions
 // Copyright 2023 Nuno Aguiar
 
-af.eval("const self = this; const global = self; const __ = void 0; const __oafInit = Number(java.lang.System.currentTimeMillis());");
+af.eval("const self = this; const __ = void 0; const __oafInit = Number(java.lang.System.currentTimeMillis());");
 
 /**
  * <odoc>
@@ -6457,6 +6457,11 @@ const loadLib = function(aLib, forceReload, aFunction) {
 	return false;
 }
 
+const isCoreCompiledLib = function(aClass) {
+	var _lc = String(aClass).toLowerCase();
+	return (_lc === "openaf_js" || _lc === "openafsigil_js");
+}
+
 /**
  * <odoc>
  * <key>loadCompiledLib(aLibClass, forceReload, aFunction, withSync) : boolean</key>
@@ -6467,41 +6472,86 @@ const loadLib = function(aLib, forceReload, aFunction) {
  */
 const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 	if (forceReload ||
-		isUnDef(__loadedLibs[aClass.toLowerCase()]) || 
+		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
-		if (withSync) {
-			sync(() => {
-				af.runFromClass(af.getClass(aClass).newInstance())
-				__loadedLibs[aClass.toLowerCase()] = true
+	var _libPath = getOpenAFJar() + "::js/" + aClass.replace(/_js$/, ".js");
+	var _loadCompiled = () => {
+		try {
+			af.runFromClass(af.newScriptInstance(aClass));
+		} catch(e) {
+			if (isCoreCompiledLib(aClass)) throw e;
+			if (String(e).match(/ClassNotFoundException|Missing compiled companion class/)) {
+				try {
+					if (loadCompiled(_libPath)) {
+						af.runFromClass(af.newScriptInstance(aClass));
+					} else {
+						loadLib(_libPath, true);
+					}
+				} catch(_e) {
+					loadLib(_libPath, true);
+				}
+			} else {
+				loadLib(_libPath, true);
+			}
+		}
+		__loadedLibs[aClass.toLowerCase()] = true;
+	};
+	if (withSync) {
+		sync(() => {
+				_loadCompiled();
 			}, __loadedLibs)
 		} else {
-			af.runFromClass(af.getClass(aClass).newInstance())
-			__loadedLibs[aClass.toLowerCase()] = true
+			_loadCompiled();
 		}
 		if (isDef(aFunction)) aFunction()
 		return true
 	}
-	
+
 	return false;
 }
 
 const loadCompiledRequire = function(aClass, forceReload, aFunction) {
+	var _libPath = getOpenAFJar() + "::js/" + aClass.replace(/_js$/, ".js");
 	if (forceReload ||
-		isUnDef(__loadedLibs[aClass.toLowerCase()]) || 
-		__loadedLibs[aClass.toLowerCase()] == false) {		
-		af.runFromClass(af.getClass(aClass).newInstance());
-		var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-		global["__" + aClass](loadCompiledRequire, exp, mod);
-		//exp = mod.exports || exp;
-		__loadedLibs[aClass.toLowerCase()] = true;
-		if (isDef(aFunction)) aFunction(mod.exports);
-		return mod.exports;
+		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
+		__loadedLibs[aClass.toLowerCase()] == false) {
+		try {
+			af.runFromClass(af.newScriptInstance(aClass));
+			var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+			global["__" + aClass](loadCompiledRequire, exp, mod);
+			__loadedLibs[aClass.toLowerCase()] = true;
+			if (isDef(aFunction)) aFunction(mod.exports);
+			return mod.exports;
+		} catch(e) {
+			if (isCoreCompiledLib(aClass)) throw e;
+			if (String(e).match(/ClassNotFoundException|Missing compiled companion class/)) {
+				try {
+					if (loadCompiled(_libPath)) {
+						af.runFromClass(af.newScriptInstance(aClass));
+						var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+						global["__" + aClass](loadCompiledRequire, exp, mod);
+						__loadedLibs[aClass.toLowerCase()] = true;
+						if (isDef(aFunction)) aFunction(mod.exports);
+						return mod.exports;
+					}
+				} catch(_e) {
+					// Fall back to source load below.
+				}
+			}
+			var mod = require(_libPath);
+			__loadedLibs[aClass.toLowerCase()] = true;
+			if (isDef(aFunction)) aFunction(mod);
+			return mod;
+		}
 	} else {
-		var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-		global["__" + aClass](loadCompiledRequire, exp, mod);
-		//exp = mod.exports || exp;
-	
-		return mod.exports;
+		if (isDef(global["__" + aClass])) {
+			var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+			global["__" + aClass](loadCompiledRequire, exp, mod);
+			return mod.exports;
+		} else {
+			if (isCoreCompiledLib(aClass)) throw new Error("Compiled core library not loaded: " + aClass);
+			return require(_libPath);
+		}
 	}
 }
 
@@ -10985,11 +11035,24 @@ const newFn = function() {
  */
 AF.prototype.runFromExternalClass = function(aClass, aPath) {
 	try {
-		af.runFromClass(af.getClass(aClass).newInstance());
+		var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
+		af.runFromClass(af.newScriptInstance(cl));
+		return;
+	} catch(e) {
+		if (String(e).match(/ClassNotFoundException/)) {
+			// Fall through to the default loader below.
+		} else {
+			throw e;
+		}
+	}
+	try {
+		af.runFromClass(af.newScriptInstance(aClass));
 	} catch(e) {
 		if (String(e).match(/ClassNotFoundException/)) {
 			var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
-			af.runFromClass(cl.newInstance());
+			af.runFromClass(af.newScriptInstance(cl));
+		} else {
+			throw e;
 		}
 	}
 };

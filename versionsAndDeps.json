@@ -200,9 +200,11 @@
         {
             "description": "Rhino",
             "path": [
-                "lib/js.jar"
+                "lib/js.jar",
+                "lib/rhino-xml-1.9.1.jar",
+                "lib/rhino-engine-1.9.1.jar"
             ],
-            "version": "1.8.0",
+            "version": "1.9.1",
             "changes": false,
             "type": [
                 "java"
