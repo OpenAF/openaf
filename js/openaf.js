@@ -8653,6 +8653,13 @@ const $jsonrpc = function (aOptions) {
 	// debug = true will print JSON requests and responses using print()
 	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
 	aOptions.shared = _$(aOptions.shared, "aOptions.shared").isBoolean().default(false)
+	// envsOnly = true will use aOptions.envs as-is instead of merging with the parent process environment
+	aOptions.envsOnly = _$(aOptions.envsOnly, "aOptions.envsOnly").isBoolean().default(false)
+	// stdio+url makes no sense (stdio needs cmd); a url with no cmd always means a remote
+	// (Streamable HTTP) connection, whether "stdio" got there as an explicit value or as the default
+	if (aOptions.type == "stdio" && isUnDef(aOptions.cmd) && isDef(aOptions.url)) {
+		aOptions.type = aOptions.sse ? "sse" : "remote"
+	}
 	var _main_id = genUUID()
 
 	/*const _createSharedWrapper = (entry, key) => {
@@ -8754,7 +8761,9 @@ const $jsonrpc = function (aOptions) {
 		session: _session,
 		lastRequest: __,
 		lastResponse: __,
-		lastResponseHeaders: __
+		lastResponseHeaders: __,
+		lastResponseCode: __,
+		protocolVersion: __
 	}
 
 	const _captureSessionFromHeaders = headers => {
@@ -8816,7 +8825,11 @@ const $jsonrpc = function (aOptions) {
 					_debug("jsonrpc threadbox started " + nowNano())
 					var _cmdRunner = $sh(cmd)
 					if (isDef(_r._pwd)) _cmdRunner.pwd(_r._pwd)
-					if (isDef(_r._envs)) _cmdRunner.envs(_r._envs)
+					if (!aOptions.envsOnly && isDef(_r._envs)) {
+						_cmdRunner.envs(merge(getEnvs(), _r._envs))
+					} else if (isDef(_r._envs)) {
+						_cmdRunner.envs(_r._envs)
+					}
 					var _resh = _cmdRunner
 						.exitcb(function (p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { sleep(250, true); return "" } })
 						.cb((o, e, i) => {
@@ -8858,13 +8871,40 @@ const $jsonrpc = function (aOptions) {
 											ioStreamReadLines(o, line => {
 												_debug("jsonrpc <- " + line)
 												var _l = jsonParse(line)
-												_r._r[_l.id] = _l
-												$await("__jsonrpc_a-" + _l.id + "-" + _main_id).notify()
+												if (isMap(_l) && isDef(_l.jsonrpc)) {
+													if (isDef(_l.id)) {
+														_r._r[_l.id] = _l
+														$await("__jsonrpc_a-" + _l.id + "-" + _main_id).notify()
+													} else {
+														_r._notifications = _r._notifications || []
+														_r._notifications.push(_l)
+														if (_r._notifications.length > 50) _r._notifications.shift()
+														if (isFunction(aOptions.onNotification)) {
+															try { aOptions.onNotification(_l) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
+														}
+													}
+												} else {
+													_debug("jsonrpc <- (ignored non-JSON-RPC line) " + line)
+												}
 												$await("__jsonrpc_r-" + _id + "-" + _main_id).destroy()
 												return false
-											}, __, false)
+											}, __, true, "UTF-8")
 											o.flush()
 										} while (!_r._s)
+									}),
+									// err stream (drain stderr to avoid deadlocking the child on a full pipe buffer)
+									$doV(() => {
+										try {
+											ioStreamReadLines(e, line => {
+												_debug("jsonrpc stderr: " + line)
+												_r._stderr = _r._stderr || []
+												_r._stderr.push(String(line))
+												if (_r._stderr.length > 200) _r._stderr.shift()
+												return !!_r._s
+											}, __, true, "UTF-8")
+										} catch(ex) {
+											_debug("jsonrpc stderr read error: " + ex)
+										}
 									})
 								]
 							))
@@ -8882,11 +8922,27 @@ const $jsonrpc = function (aOptions) {
 			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
-		_readSSE: aStream => {
+		// Reads aStream to EOF as UTF-8 text and closes it. Used for plain (non-SSE) HTTP bodies.
+		_drainStream: aStream => {
+			var _buf = ""
+			try {
+				ioStreamRead(aStream, chunk => { _buf += chunk; return false }, __, true, "UTF-8")
+			} finally {
+				try { aStream.close() } catch(e) {}
+			}
+			return _buf
+		},
+		// anExpectedId (optional): once a map event carrying this id (or an "error") is seen, stop
+		// reading the stream instead of draining it to EOF - a Streamable HTTP server is allowed to
+		// hold the response stream open (e.g. to interleave notifications), so without this a call
+		// against such a server would block until aOptions.timeout. Id-less events (progress/message
+		// notifications) are collected into _mcpInfo.lastNotifications and handed to
+		// aOptions.onNotification when provided, without stopping the read.
+		_readSSE: (aStream, anExpectedId) => {
 			if (isMap(aStream)) {
-				if (isDef(aStream.stream)) return _r._readSSE(aStream.stream)
-				if (isDef(aStream.inputStream)) return _r._readSSE(aStream.inputStream)
-				if (isString(aStream.response)) return _r._readSSE(af.fromString2InputStream(aStream.response))
+				if (isDef(aStream.stream)) return _r._readSSE(aStream.stream, anExpectedId)
+				if (isDef(aStream.inputStream)) return _r._readSSE(aStream.inputStream, anExpectedId)
+				if (isString(aStream.response)) return _r._readSSE(af.fromString2InputStream(aStream.response), anExpectedId)
 				if (isString(aStream.error)) {
 					var _parsedError = jsonParse(aStream.error, __, __, true)
 					return [ isDef(_parsedError) ? _parsedError : aStream ]
@@ -8894,25 +8950,40 @@ const $jsonrpc = function (aOptions) {
 				return [ aStream ]
 			}
 			if (isDef(aStream) && "function" === typeof aStream.readAllBytes && "function" !== typeof aStream.read) {
-				return _r._readSSE(af.fromBytes2InputStream(aStream.readAllBytes()))
+				return _r._readSSE(af.fromBytes2InputStream(aStream.readAllBytes()), anExpectedId)
 			}
 			var _events = []
 			var _dataLines = []
 			var _nonSseLines = []
+			var _stopped = false
 			var _flush = () => {
 				if (_dataLines.length == 0) return
 				var _payload = _dataLines.join("\n").trim()
 				_dataLines = []
 				if (_payload.length == 0 || _payload == "[DONE]") return
 				var _obj = jsonParse(_payload, __, __, true)
-				_events.push(isDef(_obj) ? _obj : _payload)
+				var _evt = isDef(_obj) ? _obj : _payload
+
+				if (isDef(anExpectedId) && isMap(_evt) && isUnDef(_evt.id) && isUnDef(_evt.error)) {
+					_mcpInfo.lastNotifications = _mcpInfo.lastNotifications || []
+					_mcpInfo.lastNotifications.push(_evt)
+					if (isFunction(aOptions.onNotification)) {
+						try { aOptions.onNotification(_evt) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
+					}
+					return
+				}
+
+				_events.push(_evt)
+				if (isDef(anExpectedId) && isMap(_evt) && (_evt.id == anExpectedId || isDef(_evt.error))) {
+					_stopped = true
+				}
 			}
 			try {
 				ioStreamReadLines(aStream, line => {
 					var _line = String(line)
 					if (_line.length == 0) {
 						_flush()
-						return false
+						return _stopped
 					}
 					if (_line.indexOf(":") == 0) return false
 					if (_line.indexOf("data:") == 0) {
@@ -8924,7 +8995,7 @@ const $jsonrpc = function (aOptions) {
 					}
 					return false
 				}, "\n", false)
-				_flush()
+				if (!_stopped) _flush()
 			} finally {
 				try { aStream.close() } catch(e) {}
 			}
@@ -8975,17 +9046,22 @@ const $jsonrpc = function (aOptions) {
 						}
 						_r.sh(aOptions.cmd)
 					}
-					var _id = _r._ids.get()
-					_r._q[_id] = {
-						method: _$(aMethod, "aMethod").isString().$_(),
-						params: _$(aParams, "aParams").isMap().default({}),
-						__notify: !!aNotification
-					}
+					var _id
+					// atomically allocate the next id and queue the request so concurrent exec() calls
+					// (e.g. with shared:true) never claim the same slot
+					_r._sy.run(() => {
+						_id = _r._ids.get()
+						_r._q[_id] = {
+							method: _$(aMethod, "aMethod").isString().$_(),
+							params: _$(aParams, "aParams").isMap().default({}),
+							__notify: !!aNotification
+						}
+					})
 
 					var _res
 					// for stdio concorrency is not supported by nature so we use locks and awaits to
 					// serialize requests and responses
-					$lock("__jsonrpc_q-" + _id + "-" + _main_id).tryLock(() => {
+					var _locked = $lock("__jsonrpc_q-" + _id + "-" + _main_id).tryLock(() => {
 						$await("__jsonrpc_q-" + _id + "-" + _main_id).notifyAll()
 						// If this is a notification (no reply expected) skip waiting for a response
 						if (!!aNotification) {
@@ -8994,7 +9070,11 @@ const $jsonrpc = function (aOptions) {
 							return
 						}
 						$await("__jsonrpc_a-" + _id + "-" + _main_id).wait(aOptions.timeout)
-					})
+					}, aOptions.timeout)
+					if (!_locked) {
+						delete _r._q[_id]
+						throw new Error("MCP/JSON-RPC stdio request " + _id + " could not acquire the request lock within " + aOptions.timeout + "ms")
+					}
 					if (isMap(_r._r[_id])) {
 						_res = _r._r[_id]
 						delete _r._r[_id]
@@ -9003,9 +9083,14 @@ const $jsonrpc = function (aOptions) {
 					_mcpInfo.lastResponseHeaders = __
 					if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
 					return isDef(_res) && isDef(_res.result) ? _res.result : _res
+				// Unified Streamable HTTP path (2025-06-18). type:"remote"/"http" and type:"sse"/sse:true
+				// are accepted aliases with identical behaviour: the spec requires the client to accept
+				// both application/json and text/event-stream on every POST, and the server is free to
+				// answer with either regardless of what was configured - so the response is what decides
+				// how it's read, not aOptions.type.
 				case "sse":
-					aOptions.sse = true
 				case "remote":
+				case "http":
 				default:
 					_$(aOptions.url, "aOptions.url").isString().$_()
 					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
@@ -9017,9 +9102,22 @@ const $jsonrpc = function (aOptions) {
 						_restOptions.requestHeaders,
 						"requestHeaders"
 					).isMap().default({})
+					// MUST include both content types on every POST (Streamable HTTP transport spec);
+					// caller-supplied Accept (if any) wins
+					_restOptions.requestHeaders = merge(
+						{ Accept: "application/json, text/event-stream" },
+						_restOptions.requestHeaders
+					)
 					if (isDef(_session.mcpSessionId) && isUnDef(_pickHeaderCaseInsensitive(_restOptions.requestHeaders, "mcp-session-id"))) {
 						_restOptions.requestHeaders["mcp-session-id"] = _session.mcpSessionId
 					}
+					if (isDef(_mcpInfo.protocolVersion) && isUnDef(_pickHeaderCaseInsensitive(_restOptions.requestHeaders, "mcp-protocol-version"))) {
+						_restOptions.requestHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
+					}
+					// route around the writeTimeout/readTimeout mixup in ow.obj.http.exec by setting all three explicitly
+					_restOptions.readTimeout  = _$(_restOptions.readTimeout, "readTimeout").isNumber().default(aOptions.timeout)
+					_restOptions.writeTimeout = _$(_restOptions.writeTimeout, "writeTimeout").isNumber().default(aOptions.timeout)
+					_restOptions.callTimeout  = _$(_restOptions.callTimeout, "callTimeout").isNumber().default(aOptions.timeout)
 
 					var _req = {
 						jsonrpc: "2.0",
@@ -9033,37 +9131,44 @@ const $jsonrpc = function (aOptions) {
 						delete _req.id
 					}
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
-						var _useSSE = (aOptions.type == "sse" || aOptions.sse)
-						var res
-						if (_useSSE) {
-							var _http = ow.loadObj().rest.connectionFactory()
-							_restOptions.httpClient = _http
-							_restOptions.requestHeaders = merge(
-								{ Accept: "application/json, text/event-stream" },
-								_$(_restOptions.requestHeaders, "requestHeaders").isMap().default({})
-							)
-						if (!!aNotification) {
-							var _notificationRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
-							_captureSessionFromHeaders(_http.responseHeaders())
-							_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
-							_mcpInfo.lastResponse = __
-							if (isDef(_notificationRes) && "function" === typeof _notificationRes.close) {
-								try { _notificationRes.close() } catch(e) {}
-							}
-							return
-						}
-						var _streamRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
-						_captureSessionFromHeaders(_http.responseHeaders())
-						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
-						var _events = _r._readSSE(_streamRes)
-						res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isUnDef(r.id)).shift()
-						if (isUnDef(res) && _events.length > 0) res = _events[0]
+
+					var _http = ow.loadObj().rest.connectionFactory()
+					_restOptions.httpClient = _http
+					var _raw = $rest(_restOptions).post2Stream(aOptions.url, _req)
+					_captureSessionFromHeaders(_http.responseHeaders())
+					_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
+					_mcpInfo.lastResponseCode = _http.responseCode()
+
+					var res
+					// (0) shape first: with throwExceptions:false a failed call returns {error:...}
+					// instead of a stream (ow.obj.rest.exceptionParse) - never sniff content-type on that
+					if (isMap(_raw)) {
+						var _errBody = isDef(_raw.error) ? _raw.error : _raw
+						var _parsedErr = isString(_errBody) ? jsonParse(_errBody, __, __, true) : _errBody
+						res = (isMap(_parsedErr) && isDef(_parsedErr.error)) ? _parsedErr
+							: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + stringify(_errBody, __, "") } }
+					} else if (!!aNotification) {
+						try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
+						_mcpInfo.lastResponse = __
+						return
+					} else if (_mcpInfo.lastResponseCode == 202 || _mcpInfo.lastResponseCode == 204) {
+						// server accepted but has nothing to say for a request expecting a reply
+						try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
+						res = __
+					} else if (_mcpInfo.lastResponseCode >= 400) {
+						var _errText = _r._drainStream(_raw)
+						var _parsedErr2 = jsonParse(_errText, __, __, true)
+						res = (isMap(_parsedErr2) && isDef(_parsedErr2.error)) ? _parsedErr2
+							: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + _errText } }
 					} else {
-						var _http = ow.loadObj().rest.connectionFactory()
-						_restOptions.httpClient = _http
-						res = $rest(_restOptions).post(aOptions.url, _req)
-						_captureSessionFromHeaders(_http.responseHeaders())
-						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
+						var _ct = _http.responseType()
+						if (isString(_ct) && _ct.toLowerCase().indexOf("text/event-stream") >= 0) {
+							var _events = _r._readSSE(_raw, _req.id)
+							res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isDef(r.error)).shift()
+							if (isUnDef(res) && _events.length > 0) res = _events[0]
+						} else {
+							res = jsonParse(_r._drainStream(_raw), __, __, true)
+						}
 					}
 					_mcpInfo.lastResponse = res
 					// Notifications do not expect a reply
@@ -9073,16 +9178,41 @@ const $jsonrpc = function (aOptions) {
 						if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
 						if (aMethod == "initialize" && !aNotification) _r._info = res.result
 						if (isDef(res.result)) return res.result
+						if (isDef(res.error)) return res
 					}
 					return __
 			}
 		},
 		getInfo: () => _r._info,
-		getClientInfo: () => merge({}, _mcpInfo),
+		getClientInfo: () => merge({ lastStderr: _r._stderr || [], lastNotifications: _r._notifications || [] }, _mcpInfo),
+		// records the protocol version negotiated during initialize() so it can be echoed back
+		// via the MCP-Protocol-Version header on every subsequent HTTP request
+		setProtocolVersion: v => {
+			if (isString(v) && v.length > 0) _mcpInfo.protocolVersion = v
+			return _r
+		},
+		// clears a captured Mcp-Session-Id, e.g. after the server reports it expired (HTTP 404)
+		clearSession: () => {
+			_session.mcpSessionId = __
+			return _r
+		},
 		destroy: () => {
 			if (_r._copies.get() > 0) {
 				_r._copies.dec()
 				return
+			}
+			if ((aOptions.type == "remote" || aOptions.type == "http" || aOptions.type == "sse") &&
+				isDef(aOptions.url) && isDef(_session.mcpSessionId)) {
+				// clients that no longer need a session SHOULD explicitly terminate it; tolerate
+				// servers that don't support DELETE (405) or have already expired the session (404)
+				try {
+					var _delHttp = ow.loadObj().rest.connectionFactory()
+					var _delHeaders = { "mcp-session-id": _session.mcpSessionId }
+					if (isDef(_mcpInfo.protocolVersion)) _delHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
+					$rest({ httpClient: _delHttp, requestHeaders: _delHeaders, timeout: aOptions.timeout }).delete(aOptions.url)
+				} catch(e) {
+					_debug("jsonrpc session DELETE error: " + e)
+				}
 			}
 			_r._s = true
 			if (isDef(_r._p)) {
@@ -9276,7 +9406,10 @@ const $mcp = function(aOptions) {
 	aOptions.auth = _$(aOptions.auth, "aOptions.auth").isMap().default({})
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
-	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2024-11-05")
+	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2025-06-18")
+	// capabilities we actually implement handlers for; nothing is advertised by default since this
+	// client has no inbound dispatcher (a server issuing e.g. sampling/createMessage would just hang)
+	aOptions.capabilities = _$(aOptions.capabilities, "aOptions.capabilities").isMap().default({})
 
 	const _toolBlacklist = {}
 	aOptions.blacklist.forEach(toolName => {
@@ -9544,7 +9677,8 @@ const $mcp = function(aOptions) {
 
 	const _execWithAuth = (method, params, notification, execOptions) => {
 		execOptions = _$(execOptions, "execOptions").isMap().default({})
-		if (aOptions.type == "remote" || aOptions.type == "http" || aOptions.type == "sse") {
+		var _isHttp = (aOptions.type == "remote" || aOptions.type == "http" || aOptions.type == "sse")
+		if (_isHttp) {
 			var _authHeaders = _getAuthHeaders()
 			if (isMap(_authHeaders)) {
 				var _restOptions = _$(execOptions.restOptions, "execOptions.restOptions").isMap().default({})
@@ -9552,7 +9686,27 @@ const $mcp = function(aOptions) {
 				execOptions.restOptions = _restOptions
 			}
 		}
-		return _jsonrpc.exec(method, params, notification, execOptions)
+		var _result = _jsonrpc.exec(method, params, notification, execOptions)
+
+		// HTTP 404 with a Mcp-Session-Id set means the session expired (per the Streamable HTTP
+		// transport spec): clear it, re-initialize and retry once. Guard against servers that
+		// (non-compliantly) answer an unknown method with a plain 404 - that's a JSON-RPC -32601
+		// error, not a session issue, and must not trigger a re-initialize loop.
+		if (_isHttp && !notification && method != "initialize") {
+			var _clientInfo = _jsonrpc.getClientInfo()
+			var _isMethodNotFound = isMap(_result) && isMap(_result.error) && _result.error.code == -32601
+			if (_clientInfo.lastResponseCode == 404 && isDef(_clientInfo.session) && isDef(_clientInfo.session.mcpSessionId) && !_isMethodNotFound) {
+				_jsonrpc.clearSession()
+				try {
+					_r.initialize()
+					_result = _jsonrpc.exec(method, params, notification, execOptions)
+				} catch(e) {
+					if (aOptions.debug) printErr(ansiColor("yellow", "MCP re-initialize after session expiry failed: " + e))
+				}
+			}
+		}
+
+		return _result
 	}
 
 	if (aOptions.type == "ojob") {
@@ -9802,9 +9956,7 @@ const $mcp = function(aOptions) {
 
 			var initResult = _execWithAuth("initialize", {
 				protocolVersion: aOptions.protocolVersion,
-				capabilities: {
-					sampling: {}
-				},
+				capabilities: aOptions.capabilities,
 				clientInfo: clientInfo
 			})
 
@@ -9812,6 +9964,9 @@ const $mcp = function(aOptions) {
                 _r._initialized = true
                 _r._capabilities = initResult.capabilities || {}
                 _r._initResult = initResult
+                // Negotiated version: use whatever the server returned (even if unrecognised) for
+                // the MCP-Protocol-Version header on every request from here on
+                _jsonrpc.setProtocolVersion(isString(initResult.protocolVersion) ? initResult.protocolVersion : aOptions.protocolVersion)
 
                 // Send initialized notification
                 if (aOptions.strict) {
@@ -9846,7 +10001,16 @@ const $mcp = function(aOptions) {
             if (!_r._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
             }
-			return _filterToolsList(_execWithAuth("tools/list", {}))
+			var _all = { tools: [] }
+			var _cursor, _pages = 0
+			do {
+				var _page = _execWithAuth("tools/list", isDef(_cursor) ? { cursor: _cursor } : {})
+				if (!isMap(_page)) break
+				if (isArray(_page.tools)) _all.tools = _all.tools.concat(_page.tools)
+				_cursor = _page.nextCursor
+				_pages++
+			} while (isDef(_cursor) && _pages < 1000)
+			return _filterToolsList(_all)
 		},
 		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
@@ -9878,7 +10042,16 @@ const $mcp = function(aOptions) {
 			if (!_r._initialized) {
 				throw new Error("MCP client not initialized. Call initialize() first.")
 			}
-			return _execWithAuth("prompts/list", {})
+			var _all = { prompts: [] }
+			var _cursor, _pages = 0
+			do {
+				var _page = _execWithAuth("prompts/list", isDef(_cursor) ? { cursor: _cursor } : {})
+				if (!isMap(_page)) break
+				if (isArray(_page.prompts)) _all.prompts = _all.prompts.concat(_page.prompts)
+				_cursor = _page.nextCursor
+				_pages++
+			} while (isDef(_cursor) && _pages < 1000)
+			return _all
 		},
 		getPrompt: (promptName, promptArguments) => {
 			if (!_r._initialized) {

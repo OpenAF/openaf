@@ -1820,7 +1820,7 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 
 	if (isDef(options.callTimeout)) clt = clt.callTimeout(options.callTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 	if (isDef(options.readTimeout)) clt = clt.readTimeout(options.readTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
-	if (isDef(options.writeTimeout)) clt = clt.readTimeout(options.writeTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isDef(options.writeTimeout)) clt = clt.writeTimeout(options.writeTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 
 	if (isDef(options.followRedirects))    clt = clt.followRedirects(options.followRedirects)
 	if (isDef(options.followSslRedirects)) clt = clt.followSslRedirects(options.followSslRedirects)

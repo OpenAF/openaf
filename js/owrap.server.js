@@ -1774,7 +1774,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
     _$(fnsMeta, "fnsMeta").isArray().$_()
     _$(fns, "fns").isMap().$_()
     initData = merge({
-        protocolVersion: "2024-11-05",
+        protocolVersion: "2025-06-18",
         serverInfo: {
             name: "OpenAF",
             title: "OpenAF Server",
@@ -1800,7 +1800,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
         }
         lgF("rcv", _pline)
         var _res = ow.server.jsonRPC(_pline, {
-            initialize                 : () => initData,
+            initialize                 : params => (isMap(params) && isString(params.protocolVersion)) ? merge(initData, { protocolVersion: params.protocolVersion }) : initData,
             "prompts/list"             : () => ({ prompts: [] }),
             "notifications/initialized": () => ({}),
             ping                       : () => ({}),
@@ -3702,14 +3702,26 @@ OpenWrap.server.prototype.httpd = {
                     id: reqObj && reqObj.id !== undefined ? reqObj.id : null
                 }, 400, "application/json", {})
             }
+            // JSON-RPC notification (no id): the Streamable HTTP transport requires a bare
+            // 202 Accepted with no body - HTTP 404 is reserved for an expired session
+            if (isUnDef(reqObj.id) || isNull(reqObj.id)) {
+                var nfn = mapOfFunctions[reqObj.method]
+                if (isFunction(nfn)) {
+                    try { nfn(reqObj.params) } catch(e) { logFn("Error handling notification " + reqObj.method + ": " + String(e)) }
+                }
+                return ow.server.httpd.reply("", 202, "text/plain", {})
+            }
             var fn = mapOfFunctions[reqObj.method]
             if (!isFunction(fn)) {
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Method not found: " + reqObj.method)
+                // Note: HTTP 404 is reserved by the Streamable HTTP transport to mean "session
+                // expired" (see $mcp's re-initialize recovery); an unknown method is a 200 with a
+                // JSON-RPC-level error instead, so the two are never confused by the client
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32601, message: "Method not found" },
                     id: reqObj.id
-                }, 404, "application/json", {})
+                }, 200, "application/json", {})
             }
             try {
                 var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params)
