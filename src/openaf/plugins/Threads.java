@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.lang.String;
 
 import org.mozilla.javascript.Context;
@@ -37,6 +38,11 @@ public class Threads extends ScriptableObject {
 	protected ExecutorService executor;
 	protected List<ScriptFunction> threads;
 	protected HashMap<String, Object> sessions = new HashMap<String, Object>();
+	private static final AtomicLong shutdownHookSequence = new AtomicLong();
+
+	private static boolean isShutdownHookDebugEnabled() {
+		return Boolean.parseBoolean(System.getProperty("openaf.shutdownhook.debug", "false"));
+	}
 	
 	/**
 	 * Callback support
@@ -127,18 +133,27 @@ public class Threads extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addOpenAFShutdownHook(final Function aFunction) {
+		final long hookId = shutdownHookSequence.incrementAndGet();
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			public void run() {
+				final boolean debug = isShutdownHookDebugEnabled();
+				final long startedAt = System.nanoTime();
+				if (debug) System.err.println("[openaf shutdown hook " + hookId + "] start class=" + aFunction.getClass().getName());
 				try {
 					Context cx = (Context) AFCmdBase.jse.enterContext();
 					aFunction.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[]{ });
 				} catch (Exception e) {
+					if (debug) System.err.println("[openaf shutdown hook " + hookId + "] failed after " + ((System.nanoTime() - startedAt) / 1_000_000) + "ms: " + e);
 					throw e;
 				} finally {
-					AFCmdBase.jse.exitContext();
+					try {
+						AFCmdBase.jse.exitContext();
+					} finally {
+						if (debug) System.err.println("[openaf shutdown hook " + hookId + "] end after " + ((System.nanoTime() - startedAt) / 1_000_000) + "ms");
+					}
 				}
 			}
-		}));
+		}, "OpenAF-shutdown-hook-" + hookId));
 	}
 	
 	/**
