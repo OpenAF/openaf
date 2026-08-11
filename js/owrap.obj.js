@@ -2223,13 +2223,16 @@ OpenWrap.obj.prototype.http.prototype.responseType = function() {
 /**
  * <odoc>
  * <key>ow.obj.http.close()</key>
- * Closes the current http connection.
+ * Closes the current http connection response (if any) and releases any pooled connections
+ * kept open by this http client (useful when a single http object is reused, e.g. through
+ * options.httpClient, to ensure idle keep-alive connections aren't left open).
  * </odoc>
  */
 OpenWrap.obj.prototype.http.prototype.close = function() {
-	if (isUnDef(this._response)) return __
-
-	this._response.body().close()
+	if (isDef(this._response)) this._response.body().close()
+	// with options.delayBuild the client can still be an unbuilt OkHttpClient.Builder;
+	// only a built OkHttpClient exposes a usable connectionPool() to evict
+	if (isDef(this.client) && this.client instanceof Packages.okhttp3.OkHttpClient) this.client.connectionPool().evictAll()
 }
 
 
@@ -2535,6 +2538,22 @@ OpenWrap.obj.prototype.http0.prototype.responseType = function() {
 		return String(this.__r.getEntity().getContentType().getValue());
 	} catch(e) {
 		return "";
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.http0.close()</key>
+ * Closes the current http connection response (if any) and shuts down the underlying Apache
+ * HTTP client, releasing any pooled connections it may be keeping open. The object remains
+ * usable afterwards: the next exec() call will transparently build a new underlying client.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.http0.prototype.close = function() {
+	if (isDef(this.__r)) this.__r.close();
+	if (isDef(this.__h)) {
+		this.__h.close();
+		this.__h = __;
 	}
 };
 
