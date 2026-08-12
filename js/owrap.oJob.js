@@ -210,14 +210,16 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
     }
 
 	if (isDef(OJOB_INTEGRITY[aFileOrPath])) {
-		var stream;
+		var stream, http;
 		if (isUrl) {
-			stream = $rest().get2Stream(aFileOrPath);
+			http = ow.loadObj().rest.connectionFactory();
+			stream = $rest({ httpClient: http }).get2Stream(aFileOrPath);
 		} else {
 			stream = io.readFileStream(aFileOrPath);
 		}
 
 		var valid = false;
+		try {
 
 		if (OJOB_INTEGRITY[aFileOrPath].indexOf("-") >= 0) {
 			var _p = OJOB_INTEGRITY[aFileOrPath].split("-"), alg = _p[0], h = _p[1];
@@ -249,8 +251,11 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
                         valid = ow.java.checkDigest(OJOB_INTEGRITY[aFileOrPath], stream)
                 }
 
-		stream.close();
-		return valid;
+			return valid;
+		} finally {
+			try { stream.close(); } catch(e) {}
+			try { if (isDef(http)) http.close(); } catch(e) {}
+		}
 	} else {
 		return __;
 	}

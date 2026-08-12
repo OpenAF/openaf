@@ -9562,14 +9562,18 @@ const $mcp = function(aOptions) {
 	}
 	const _fetchJSON = aURL => {
 		var _http = ow.loadObj().rest.connectionFactory()
-		var _res = $rest({
-			httpClient: _http,
-			requestHeaders: { Accept: "application/json" }
-		}).get(aURL)
-		return {
-			body: _res,
-			headers: _http.responseHeaders(),
-			status: _http.responseCode()
+		try {
+			var _res = $rest({
+				httpClient: _http,
+				requestHeaders: { Accept: "application/json" }
+			}).get(aURL)
+			return {
+				body: _res,
+				headers: _http.responseHeaders(),
+				status: _http.responseCode()
+			}
+		} finally {
+			try { _http.close() } catch(e) {}
 		}
 	}
 	const _getOAuthResource = () => {
@@ -10336,13 +10340,18 @@ const $fetch = function(aURL, aOptions) {
 		var _rr = $rest(aOptions)[_m + "2Stream"](aURL, aOptions.body)
 		var _fn = isS => {
 			var ostream = af.newOutputStream()
-			ioStreamCopy(ostream, _rr)
-			bodyUsed = true
-			if (isS) {
-				return ostream.toString()
-			} else {
-				return ostream.toByteArray()
-			}	
+			try {
+				ioStreamCopy(ostream, _rr)
+				bodyUsed = true
+				if (isS) {
+					return ostream.toString()
+				} else {
+					return ostream.toByteArray()
+				}
+			} finally {
+				try { if (isDef(_rr) && "function" === typeof _rr.close) _rr.close() } catch(e) {}
+				try { _h.close() } catch(e) {}
+			}
 		}
 		return {
 			body: () => _fn(true),
@@ -10353,7 +10362,11 @@ const $fetch = function(aURL, aOptions) {
 			json: () => jsonParse(_fn(true)),
 			bytes: () => _fn(false),
 			blob: () => _fn(false),
-			text: () => _fn(true)
+			text: () => _fn(true),
+			close: () => {
+				try { if (isDef(_rr) && "function" === typeof _rr.close) _rr.close() } catch(e) {}
+				try { _h.close() } catch(e) {}
+			}
 		}
 	}
 
