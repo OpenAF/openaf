@@ -306,7 +306,15 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		threads_thrs       : 2,
 		waitms             : 50,
 		forceSeq           : false,
-		seq_ratio          : 1
+		seq_ratio          : 1,
+		// Overall deadline, in ms, for a pForEach call to wait for its parallel partitions to complete
+		// before timing out, cancelling whatever is still pending and returning partial results.
+		wait_timeout_ms    : 60000,
+		// Minimum array-size-per-core multiplier below which pForEach always goes sequential, regardless
+		// of the adaptive timing heuristic (which only has data after the first partition completes).
+		// Defaults to 0 (disabled, arS < _nc * 0 is never true) so existing sequential/parallel switching
+		// behavior is unchanged unless a caller opts in.
+		min_par_size       : 0
 	},
 	MCPSERVER                   : {
 		answerInTOON       : false
@@ -6084,11 +6092,15 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 
 /**
  * <odoc>
- * <key>pForEach(anArray, aFn, aErrFn, aUseSeq) : Array</key>
+ * <key>pForEach(anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) : Array</key>
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
  * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
  * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true the
- * sequential execution will be forced.\
+ * sequential execution will be forced. aTimeoutMs, if provided, overrides __flags.PFOREACH.wait_timeout_ms as the overall
+ * deadline, in milliseconds, to wait for the parallel partitions to complete. On timeout the still-pending partitions
+ * (and their pool worker threads) are cancelled, aErrFn is called with a "pForEach: N of M partitions timed out"
+ * diagnostic and whatever results were collected so far are returned (missing entries come back as arrays of __, so the
+ * returned array keeps the same length and order as anArray).\
  * \
  * Example:\
  * \
@@ -6102,7 +6114,7 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
  * )\
  * </odoc>
  */
-const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
+const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	_$(anArray, "anArray").isArray().$_()
 	_$(aFn, "aFn").isFunction().$_()
 	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(printErr)
@@ -6128,7 +6140,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 		const partitions = []
 		const chunkSize = Math.floor(arraySize / numThreads)
 		const remainder = arraySize % numThreads
-		
+
 		var start = 0
 		for (var i = 0; i < numThreads; i++) {
 			var end = start + chunkSize + (i < remainder ? 1 : 0)
@@ -6141,15 +6153,28 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	var pres = calculatePartitions(arS, _nc)
 	var _ts = [], parts = $atomic(0, "long")
 
-	// If not enough cores or if too many threads in the pool then go sequential
+	// If not enough cores, too many threads already in the pool, or too few items per core to be worth the
+	// pool overhead, go sequential
 	var _tpstats = __getThreadPools()
 	//lprint(_tpstats)
-	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq || _tpstats.active / _nc > __flags.PFOREACH.seq_ratio
+	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq ||
+	            _tpstats.active / _nc > __flags.PFOREACH.seq_ratio ||
+	            arS < _nc * __flags.PFOREACH.min_par_size
 
 	const waitMs = __flags.PFOREACH.waitms
 	const seqThresholdMs = __flags.PFOREACH.seq_thrs_ms
 	const threads_thrs = __flags.PFOREACH.threads_thrs
 	const seq_ratio = __flags.PFOREACH.seq_ratio
+	const timeoutMs = isDef(aTimeoutMs) ? aTimeoutMs : __flags.PFOREACH.wait_timeout_ms
+
+	// Interrupting a stuck partition on timeout only reclaims its pool slot if the partition's own loop stops
+	// instead of moving on to the next item and blocking again on it.
+	const __isInterruptEx = e => {
+		try {
+			var je = (isDef(e) && isDef(e.javaException)) ? e.javaException : e
+			return isJavaObject(je) && (je instanceof java.lang.InterruptedException)
+		} catch(ee) { return false }
+	}
 
 	const fnPar = function(ipart, part) {
 		return () => {
@@ -6165,10 +6190,14 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 					} catch (ee) {
 						aErrFn(ee)
 						_ar.push(__)
+						if (__isInterruptEx(ee)) {
+							while (_ar.length < (part.end - part.start)) _ar.push(__)
+							break
+						}
 					}
 				}
 				fRes.add( { i: ipart, r: _ar } )
-			} catch(e) { 
+			} catch(e) {
 				aErrFn(e)
 			}
 		}
@@ -6195,7 +6224,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 				parts.inc()
 			} else {
 				_ts.push( $do( fnPar(_i_, pres[_i_]) ).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
-				
+
 				// Cool down and go sequential if too many threads
 				_tpstats = __getThreadPools()
 				if (_tpstats.queued > _tpstats.poolSize / threads_thrs) {
@@ -6203,7 +6232,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 				}
 			}
 		} catch(eee) {
-			aErrFn(eee) 
+			aErrFn(eee)
 		} finally {
 			// If execution time per call is too low, go sequential
 			if ( typeof aUseSeq === "undefined" && pres.length > 1 && _nc >= 3 ) {
@@ -6216,24 +6245,56 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 		}
 	}
 
-	var tries = 0
-	do {
-		$doWait($doAll(_ts))
-		if (parts.get() < pres.length) sleep(__getThreadPools().queued * waitMs, true)
-		tries++
-	} while(parts.get() < pres.length && tries < 100)
+	if (_ts.length > 0) {
+		var _all = $doAll(_ts)
+		var _init = now()
+		var tries = 0
+		do {
+			$doWait(_all, Math.max(1, timeoutMs - (now() - _init)))
+			// Only sleep if there's still budget left: on the last iteration $doWait can return right at
+			// timeoutMs, and this sleep must not push the overall wait past the documented deadline.
+			if (parts.get() < pres.length && (now() - _init) < timeoutMs) sleep(__getThreadPools().queued * waitMs, true)
+			tries++
+		} while(parts.get() < pres.length && tries < 100 && (now() - _init) < timeoutMs)
 
-	var res = []
-	fRes.toArray().sort((a, b) => a.i - b.i).forEach(rs => {
-		res = res.concat(rs.r)
-	})
+		if (parts.get() < pres.length) {
+			// Bounded timeout hit: cancel the aggregator and whatever partitions are still pending so their
+			// pool slots get reclaimed instead of staying poisoned for unrelated future callers.
+			try { _all.cancel("pForEach: wait timed out") } catch(e) {}
+			var _pending = pres.length - parts.get()
+			_ts.forEach(t => {
+				try {
+					var st = t.state.get()
+					if (st != t.states.FULFILLED && st != t.states.FAILED) {
+						var _stuckPool = t.__pool
+						t.cancel("pForEach: partition wait timed out")
+						__degradeThreadPool(_stuckPool)
+					}
+				} catch(e) {}
+			})
+			aErrFn("pForEach: " + _pending + " of " + pres.length + " partitions timed out")
+		}
+	}
+
+	// Build the result from a single snapshot of fRes, keyed by partition index (first entry wins on a
+	// duplicate key). A cancelled-but-still-finishing worker can add its own entry concurrently with this
+	// read, so this must not add anything back to fRes itself: any partition missing from the snapshot
+	// (cancelled/never started) is filled with a placeholder here, keeping the returned array the same
+	// length and order as anArray without risking duplicate contributions for the same partition.
+	var _byIdx = {}
+	fRes.toArray().forEach(rs => { if (isUnDef(_byIdx[rs.i])) _byIdx[rs.i] = rs.r })
 	fRes.clear()
 	fRes = __
+
+	var res = []
+	for (var _i2 = 0; _i2 < pres.length; _i2++) {
+		res = res.concat(isDef(_byIdx[_i2]) ? _byIdx[_i2] : new Array(pres[_i2].end - pres[_i2].start).fill(__))
+	}
 
 	return res
 }
 
-/** 
+/**
  * <odoc>
  * <key>compress(anObject) : ArrayOfBytes</key>
  * Compresses a JSON object into an array of bytes suitable to be uncompressed using the uncompress function.
@@ -13734,6 +13795,11 @@ const $ch = $channels;
 var __threadPools
 var __threadPoolFactor = 2
 var __virtualExecutor
+// Parallel array to __threadPools: true at index i means a task submitted to __threadPools[i] was cancelled
+// after running past its caller's timeout, so the pool may have a permanently stuck worker holding a slot.
+// Once degraded a pool is excluded from reuse (a fresh one is created instead) so it doesn't keep starving
+// unrelated future callers, which is what happened in the original mini-a incident.
+var __threadPoolsDegraded = []
 
 const __resetThreadPool = function(poolFactor) {
 	__threadPoolFactor = poolFactor
@@ -13741,6 +13807,7 @@ const __resetThreadPool = function(poolFactor) {
    // Shutdown virtual thread executor if present
    if (isDef(__virtualExecutor)) { __virtualExecutor.shutdown(); __virtualExecutor = undefined; }
 	__threadPools = __
+	__threadPoolsDegraded = []
 	__getThreadPool()
 }
 
@@ -13756,13 +13823,25 @@ const __getThreadPool = function(wantVirt) {
    if (isUnDef(__threadPools)) {
 	   if (isUnDef(__cpucores)) __cpucores = getNumberOfCores()
 	   __threadPools = [ new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) ]
+	   __threadPoolsDegraded = [ false ]
    }
 
 	for(let i = 0; i < __threadPools.length; i++) {
-		if (__threadPools[i].getActiveThreadCount() < __threadPools[i].getParallelism()) return __threadPools[i]
+		if (!__threadPoolsDegraded[i] && __threadPools[i].getActiveThreadCount() < __threadPools[i].getParallelism()) return __threadPools[i]
 	}
 	__threadPools.push( new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) )
+	__threadPoolsDegraded.push(false)
 	return __threadPools[__threadPools.length - 1]
+}
+
+// Marks aPool (a pool previously returned by __getThreadPool()) as degraded so it stops being handed out to
+// future callers. Called when a caller (e.g. pForEach) had to cancel a task on it after it ran past its
+// configured deadline, since the underlying worker may still be stuck occupying a slot.
+const __degradeThreadPool = function(aPool) {
+	if (isUnDef(__threadPools) || isUnDef(aPool)) return
+	for (let i = 0; i < __threadPools.length; i++) {
+		if (__threadPools[i] === aPool) { __threadPoolsDegraded[i] = true; return }
+	}
 }
 
 const __getThreadPools = function() {
@@ -13774,11 +13853,12 @@ const __getThreadPools = function() {
 		steals: 0,
 		tasks: 0,
 		parallelism: 0,
-		poolSize: 0
+		poolSize: 0,
+		degraded: 0
 	}
 
 	if (isDef(__threadPools)) {
-		__threadPools.forEach(r => {
+		__threadPools.forEach((r, i) => {
 			_r.pools += 1
 			_r.active += r.getActiveThreadCount()
 			_r.running += r.getRunningThreadCount()
@@ -13787,6 +13867,7 @@ const __getThreadPools = function() {
 			_r.tasks += r.getQueuedTaskCount()
 			_r.parallelism += r.getParallelism()
 			_r.poolSize += Number(r.getPoolSize())
+			if (__threadPoolsDegraded[i]) _r.degraded += 1
 		})
 	}
 
@@ -14013,7 +14094,9 @@ oPromise.prototype.__exec = function() {
 
         do {
                 try {
-                        this.__f = __getThreadPool(this.vThreads).submit(new java.lang.Runnable({
+                        var __pl = __getThreadPool(this.vThreads);
+                        thisOP.__pool = __pl;
+                        this.__f = __pl.submit(new java.lang.Runnable({
                                 run: () => {
                                         //var ignore = false;
                                         //syncFn(() => { if (thisOP.executing.get()) ignore = true; else thisOP.executing.set(true); }, thisOP.executing.get());
@@ -14805,7 +14888,10 @@ const $doFirst = function(anArray) {
 /**
  * <odoc>
  * <key>$doWait(aPromise, aWaitTimeout) : oPromise</key>
- * Blocks until aPromise is fullfilled or rejected. Optionally you can specify aWaitTimeout between checks.
+ * Blocks until aPromise is fullfilled or rejected. Optionally you can specify aWaitTimeout, in milliseconds, as an
+ * overall deadline for the wait: once it elapses $doWait returns even if aPromise hasn't settled yet (the caller
+ * is then responsible for checking aPromise's state and, if still pending, cancelling it to reclaim the thread
+ * pool slot).
  * Returns aPromise.
  * </odoc>
  */
@@ -14815,17 +14901,25 @@ const $doWait = function(aPromise, aWaitTimeout) {
 	var __sfn = aP => { try { return aP.state.get() } catch(e) { sleep(25); return __ } }
 	var __efn = aP => { try { return aP.executing.get() } catch(e) { sleep(25); return __ } }
 	var __ffn = aP => { try { return aP.__f.get() } catch(e) { sleep(25); return __ } }
+	// Bounded variant: a plain aP.__f.get() blocks indefinitely if the underlying task never completes,
+	// which would make aWaitTimeout a no-op. get(timeout, unit) lets the caller's elapsed-time check re-run.
+	var __ffnT = (aP, aMs) => {
+		try {
+			if (isUnDef(aP.__f)) { sleep(25); return __ }
+			return aP.__f.get(Math.max(1, aMs), java.util.concurrent.TimeUnit.MILLISECONDS)
+		} catch(e) { return __ }
+	}
 
 	if (isDef(aWaitTimeout)) {
 		var init = now();
-		while(__sfn(aPromise) != aPromise.states.FULFILLED && 
+		while(__sfn(aPromise) != aPromise.states.FULFILLED &&
 				__sfn(aPromise) != aPromise.states.FAILED &&
 				(__efn(aPromise) || !aPromise.executors.isEmpty()) &&
 				((now() - init) < aWaitTimeout)) {
-			__ffn(aPromise)
+			__ffnT(aPromise, aWaitTimeout - (now() - init))
 		}
 		while(((now() - init) < aWaitTimeout) && (__efn(aPromise) || !aPromise.executors.isEmpty())) {
-			__ffn(aPromise)
+			__ffnT(aPromise, aWaitTimeout - (now() - init))
 		}
 	} else {
 		while(__sfn(aPromise) != aPromise.states.FULFILLED && 
