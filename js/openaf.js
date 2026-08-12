@@ -9194,54 +9194,58 @@ const $jsonrpc = function (aOptions) {
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
 
 					var _http = ow.loadObj().rest.connectionFactory()
-					_restOptions.httpClient = _http
-					var _raw = $rest(_restOptions).post2Stream(aOptions.url, _req)
-					_captureSessionFromHeaders(_http.responseHeaders())
-					_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
-					_mcpInfo.lastResponseCode = _http.responseCode()
+					try {
+						_restOptions.httpClient = _http
+						var _raw = $rest(_restOptions).post2Stream(aOptions.url, _req)
+						_captureSessionFromHeaders(_http.responseHeaders())
+						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
+						_mcpInfo.lastResponseCode = _http.responseCode()
 
-					var res
-					// (0) shape first: with throwExceptions:false a failed call returns {error:...}
-					// instead of a stream (ow.obj.rest.exceptionParse) - never sniff content-type on that
-					if (isMap(_raw)) {
-						var _errBody = isDef(_raw.error) ? _raw.error : _raw
-						var _parsedErr = isString(_errBody) ? jsonParse(_errBody, __, __, true) : _errBody
-						res = (isMap(_parsedErr) && isDef(_parsedErr.error)) ? _parsedErr
-							: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + stringify(_errBody, __, "") } }
-					} else if (!!aNotification) {
-						try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
-						_mcpInfo.lastResponse = __
-						return
-					} else if (_mcpInfo.lastResponseCode == 202 || _mcpInfo.lastResponseCode == 204) {
-						// server accepted but has nothing to say for a request expecting a reply
-						try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
-						res = __
-					} else if (_mcpInfo.lastResponseCode >= 400) {
-						var _errText = _r._drainStream(_raw)
-						var _parsedErr2 = jsonParse(_errText, __, __, true)
-						res = (isMap(_parsedErr2) && isDef(_parsedErr2.error)) ? _parsedErr2
-							: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + _errText } }
-					} else {
-						var _ct = _http.responseType()
-						if (isString(_ct) && _ct.toLowerCase().indexOf("text/event-stream") >= 0) {
-							var _events = _r._readSSE(_raw, _req.id)
-							res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isDef(r.error)).shift()
-							if (isUnDef(res) && _events.length > 0) res = _events[0]
+						var res
+						// (0) shape first: with throwExceptions:false a failed call returns {error:...}
+						// instead of a stream (ow.obj.rest.exceptionParse) - never sniff content-type on that
+						if (isMap(_raw)) {
+							var _errBody = isDef(_raw.error) ? _raw.error : _raw
+							var _parsedErr = isString(_errBody) ? jsonParse(_errBody, __, __, true) : _errBody
+							res = (isMap(_parsedErr) && isDef(_parsedErr.error)) ? _parsedErr
+								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + stringify(_errBody, __, "") } }
+						} else if (!!aNotification) {
+							try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
+							_mcpInfo.lastResponse = __
+							return
+						} else if (_mcpInfo.lastResponseCode == 202 || _mcpInfo.lastResponseCode == 204) {
+							// server accepted but has nothing to say for a request expecting a reply
+							try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
+							res = __
+						} else if (_mcpInfo.lastResponseCode >= 400) {
+							var _errText = _r._drainStream(_raw)
+							var _parsedErr2 = jsonParse(_errText, __, __, true)
+							res = (isMap(_parsedErr2) && isDef(_parsedErr2.error)) ? _parsedErr2
+								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + _errText } }
 						} else {
-							res = jsonParse(_r._drainStream(_raw), __, __, true)
+							var _ct = _http.responseType()
+							if (isString(_ct) && _ct.toLowerCase().indexOf("text/event-stream") >= 0) {
+								var _events = _r._readSSE(_raw, _req.id)
+								res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isDef(r.error)).shift()
+								if (isUnDef(res) && _events.length > 0) res = _events[0]
+							} else {
+								res = jsonParse(_r._drainStream(_raw), __, __, true)
+							}
 						}
+						_mcpInfo.lastResponse = res
+						// Notifications do not expect a reply
+						if (!!aNotification) return
+						_debug("jsonrpc <- " + stringify(res, __, ""))
+						if (isDef(res)) {
+							if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
+							if (aMethod == "initialize" && !aNotification) _r._info = res.result
+							if (isDef(res.result)) return res.result
+							if (isDef(res.error)) return res
+						}
+						return __
+					} finally {
+						try { _http.close() } catch(e) {}
 					}
-					_mcpInfo.lastResponse = res
-					// Notifications do not expect a reply
-					if (!!aNotification) return
-					_debug("jsonrpc <- " + stringify(res, __, ""))
-					if (isDef(res)) {
-						if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
-						if (aMethod == "initialize" && !aNotification) _r._info = res.result
-						if (isDef(res.result)) return res.result
-						if (isDef(res.error)) return res
-					}
-					return __
 			}
 		},
 		getInfo: () => _r._info,
@@ -9266,13 +9270,16 @@ const $jsonrpc = function (aOptions) {
 				isDef(aOptions.url) && isDef(_session.mcpSessionId)) {
 				// clients that no longer need a session SHOULD explicitly terminate it; tolerate
 				// servers that don't support DELETE (405) or have already expired the session (404)
+				var _delHttp
 				try {
-					var _delHttp = ow.loadObj().rest.connectionFactory()
+					_delHttp = ow.loadObj().rest.connectionFactory()
 					var _delHeaders = { "mcp-session-id": _session.mcpSessionId }
 					if (isDef(_mcpInfo.protocolVersion)) _delHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
 					$rest({ httpClient: _delHttp, requestHeaders: _delHeaders, timeout: aOptions.timeout }).delete(aOptions.url)
 				} catch(e) {
 					_debug("jsonrpc session DELETE error: " + e)
+				} finally {
+					try { if (isDef(_delHttp)) _delHttp.close() } catch(e) {}
 				}
 			}
 			_r._s = true
