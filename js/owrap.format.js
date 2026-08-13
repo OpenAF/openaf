@@ -2411,7 +2411,7 @@ function __printTimeHeatmap(values, aOptions) {
  * GitHub-style contribution calendar - or xAxis:"hour",yAxis:"none" for time-only keys; pass e.g.
  * xAxis:"hour",yAxis:"weekday" on date-time keys for a punch-card view), weekStart (0=Sunday, default),
  * from/to (bound the visible range), aggregate ("sum" default, "avg", "max" or "count", for multiple values
- * landing in the same bucket), legend (default false, renders "Less <shades> More"), empty (glyph for
+ * landing in the same bucket), legend (default false, renders "Less (shades) More"), empty (glyph for
  * buckets with no data, default "·"), dayLabels (which weekday rows/columns get a text label, default
  * ["Mon","Wed","Fri"]), width, height, palette.
  * </odoc>
