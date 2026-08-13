@@ -977,6 +977,8 @@ var palette = ow.format.term.getPalette("auto");
 
 ```javascript
 print(ow.format.printHeatmap([[1, 2, 3], [3, 2, 1]], { width: 20, legend: true }));
+// or a GitHub-style contribution calendar from a map keyed by date/time/date-time:
+print(ow.format.printHeatmap({ "2026-01-15": 3, "2026-01-16": 0, "2026-01-17": 7 }, { legend: true }));
 print(ow.format.printScatter([[0, 0], [1, 2], [2, 1]], { width: 24, height: 8, xLabel: "x" }));
 print(ow.format.printTimeline([
   { label: "build", start: "2026-04-23T10:00:00Z", end: "2026-04-23T10:02:00Z", status: "ok" },
@@ -988,7 +990,7 @@ Available renderers:
 
 - `printSparkline(series, options)` for inline trends
 - `printHistogram(values, options)` for distributions
-- `printHeatmap(values, options)` for matrix intensity views
+- `printHeatmap(values, options)` for matrix intensity views, or (given a date/time/date-time keyed map) a time-bucketed view such as a contribution calendar or hour×weekday punch-card, via `xAxis`/`yAxis` (`year`, `month`, `week`, `weekday`, `day`, `hour`)
 - `printBullet(values, options)` for KPI/goal tracking, including `valueFormat: "raw" | "si" | "bytes"`
 - `printScatter(points, options)` for XY points
 - `printBoxplot(values, options)` for spread and outliers

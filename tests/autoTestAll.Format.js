@@ -366,6 +366,54 @@
         ow.test.assert(empty.indexOf("empty") >= 0, true, "Problem with empty histogram fallback.");
     };
 
+    exports.testPrintHeatmap = function() {
+        // matrix mode (pre-existing behavior)
+        var matrix = ow.format.printHeatmap([[1, 2, 3], [4, 5, 6], [7, 8, 9]], { width: 20, height: 4, palette: "none" });
+        ow.test.assert(isString(matrix), true, "Problem with printHeatmap matrix mode returning string.");
+
+        var emptyMatrix = ow.format.printHeatmap([], { palette: "none" });
+        ow.test.assert(emptyMatrix.indexOf("empty") >= 0, true, "Problem with empty matrix heatmap fallback.");
+
+        // time-bucketed mode: date keys, default axes (week x weekday calendar); spans several months so
+        // month-boundary columns have room to be labeled without colliding
+        var dateData = {};
+        var dayZero = Date.UTC(2025, 10, 1) / 86400000; // 2025-11-01
+        for (var d = 0; d < 120; d++) {
+            var dt = new Date((dayZero + d) * 86400000);
+            var key = dt.getUTCFullYear() + "-" + String(dt.getUTCMonth() + 1).padStart(2, "0") + "-" + String(dt.getUTCDate()).padStart(2, "0");
+            dateData[key] = d % 5;
+        }
+        var cal = ow.format.printHeatmap(dateData, { legend: true, palette: "none" });
+        ow.test.assert(isString(cal), true, "Problem with printHeatmap calendar mode returning string.");
+        ow.test.assert(cal.indexOf("Mon") >= 0, true, "Problem with printHeatmap calendar weekday label.");
+        ow.test.assert(cal.indexOf("Dec") >= 0, true, "Problem with printHeatmap calendar month label.");
+        ow.test.assert(cal.indexOf("Less") >= 0 && cal.indexOf("More") >= 0, true, "Problem with printHeatmap calendar legend.");
+
+        // time-bucketed mode: date-time keys, explicit punch-card axes (hour x weekday)
+        var dtData = { "2026-01-05T09:00": 3, "2026-01-05T09:30": 2, "2026-01-06T18:00": 5 };
+        var punch = ow.format.printHeatmap(dtData, { xAxis: "hour", yAxis: "weekday", palette: "none" });
+        ow.test.assert(isString(punch), true, "Problem with printHeatmap punch-card mode returning string.");
+        ow.test.assert(punch.indexOf("00") >= 0 && punch.indexOf("23") >= 0, true, "Problem with printHeatmap punch-card hour header.");
+
+        // aggregation: two entries in the same day/hour bucket should sum by default
+        var aggLine = punch.split("\n")[1];
+        ow.test.assert(isString(aggLine), true, "Problem with printHeatmap punch-card aggregation row.");
+
+        // time-bucketed mode: time-only keys, single hour row (hour header row + one data row)
+        var timeData = { "08:00": 1, "09:00": 4, "10:00": 8 };
+        var single = ow.format.printHeatmap(timeData, { palette: "none" });
+        ow.test.assert(single.split("\n").length, 2, "Problem with printHeatmap time-only single row line count.");
+        ow.test.assert(single.indexOf("00") >= 0 && single.indexOf("23") >= 0, true, "Problem with printHeatmap time-only hour header.");
+
+        // error path: axis not derivable from the detected key type
+        var err = ow.format.printHeatmap(timeData, { xAxis: "week" });
+        ow.test.assert(err.indexOf("Err:") >= 0, true, "Problem with printHeatmap axis validation error.");
+
+        // exposed through printDashboard's heatmap widget
+        var dash = ow.format.printDashboard([{ type: "heatmap", data: dateData, title: "Activity" }], { width: 40, height: 8, palette: "none" });
+        ow.test.assert(isString(dash), true, "Problem with printDashboard heatmap widget (time-bucketed data).");
+    };
+
     exports.testPrintBulletValueFormats = function() {
         var raw = ow.format.printBullet({ value: 1536, label: "raw" }, { width: 30, palette: "none" });
         ow.test.assert(raw.indexOf("1536") >= 0, true, "Problem with printBullet raw values.");

@@ -2102,15 +2102,326 @@ OpenWrap.format.prototype.printHistogram = function(values, aOptions) {
 	}
 }
 
+var __timeHeatmapMonthAbbr = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+var __timeHeatmapDayAbbr   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+
+// Parses a date ("YYYY-MM-DD"), time ("HH:mm[:ss]") or date-time ("YYYY-MM-DD[T ]HH:mm[:ss]") key into
+// integer parts. All date math is done on UTC epoch-day integers (dayNum/dow) to avoid local-timezone/DST
+// drift from mixing a UTC-parsed Date with local getters.
+function __timeHeatmapParseKey(aKey) {
+	var k = String(aKey), m
+	if ((m = k.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(:\d{2})?$/))) {
+		var y = Number(m[1]), mo = Number(m[2]) - 1, d = Number(m[3])
+		var dn = Math.floor(Date.UTC(y, mo, d) / 86400000)
+		return { type: "datetime", year: y, month: mo, day: d, hour: Number(m[4]), minute: Number(m[5]), dayNum: dn, dow: ((dn % 7) + 11) % 7 }
+	}
+	if ((m = k.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+		var y = Number(m[1]), mo = Number(m[2]) - 1, d = Number(m[3])
+		var dn = Math.floor(Date.UTC(y, mo, d) / 86400000)
+		return { type: "date", year: y, month: mo, day: d, dayNum: dn, dow: ((dn % 7) + 11) % 7 }
+	}
+	if ((m = k.match(/^(\d{2}):(\d{2})(:\d{2})?$/))) {
+		return { type: "time", hour: Number(m[1]), minute: Number(m[2]) }
+	}
+	return __
+}
+
+// Epoch-day integer -> { year, month } using UTC getters only (no local-timezone dependence).
+function __timeHeatmapMonthOfDay(aDayNum) {
+	var d = new Date(aDayNum * 86400000)
+	return { year: d.getUTCFullYear(), month: d.getUTCMonth() }
+}
+
+// Which parsed-key field a given axis granularity token needs, used both to resolve a bucket and to
+// validate upfront that the chosen axis is actually derivable from the detected key type.
+function __timeHeatmapFieldFor(aToken) {
+	return { year: "year", month: "month", week: "dayNum", weekday: "dow", day: "day", hour: "hour" }[aToken]
+}
+
+// Resolves one axis granularity token into a bucket index for a parsed key. "week" is relative to
+// aCtx.gridStart; all other tokens are absolute (or, for "month", year-qualified so multi-year data sorts
+// correctly).
+function __timeHeatmapBucket(aToken, aParts, aCtx) {
+	switch (aToken) {
+	case "year":
+		if (isUnDef(aParts.year)) return __
+		return { idx: aParts.year }
+	case "month":
+		if (isUnDef(aParts.month)) return __
+		return { idx: aParts.year * 12 + aParts.month }
+	case "week":
+		if (isUnDef(aParts.dayNum)) return __
+		return { idx: Math.floor((aParts.dayNum - aCtx.gridStart) / 7) }
+	case "weekday":
+		if (isUnDef(aParts.dow)) return __
+		return { idx: (aParts.dow - aCtx.weekStart + 7) % 7 }
+	case "day":
+		if (isUnDef(aParts.day)) return __
+		return { idx: aParts.day }
+	case "hour":
+		if (isUnDef(aParts.hour)) return __
+		return { idx: aParts.hour }
+	default:
+		return __
+	}
+}
+
+// Index -> display label for a bucket, computed from the index alone (not from any single data point) so
+// every bucket in the visible range - including ones with no data - gets a correct label (e.g. every hour
+// column "00".."23", not just the hours that happen to have values).
+function __timeHeatmapLabelFor(aToken, anIdx, aCtx) {
+	switch (aToken) {
+	case "year"   : return String(anIdx)
+	case "month"  : return __timeHeatmapMonthAbbr[((anIdx % 12) + 12) % 12]
+	case "weekday": return __timeHeatmapDayAbbr[(anIdx + aCtx.weekStart) % 7]
+	case "day"    : return String(anIdx)
+	case "hour"   : return (anIdx < 10 ? "0" : "") + anIdx
+	}
+	return ""
+}
+
+// Full [min,max] bucket-index range for an axis token, independent of which buckets actually have data
+// (so the grid renders as a continuous calendar/clock, not just the cells with values).
+function __timeHeatmapRange(aToken, aParsed, aCtx) {
+	var vals
+	switch (aToken) {
+	case "hour"   : return [0, 23]
+	case "weekday": return [0, 6]
+	case "day"    : return [1, 31]
+	case "week":
+		vals = aParsed.map(function(e) { return e.parts.dayNum }).filter(isDef)
+		if (vals.length == 0) return [0, 0]
+		return [0, Math.floor((Math.max.apply(null, vals) - aCtx.gridStart) / 7)]
+	case "month":
+		vals = aParsed.map(function(e) { return isDef(e.parts.year) ? e.parts.year * 12 + e.parts.month : __ }).filter(isDef)
+		if (vals.length == 0) return [0, 0]
+		return [Math.min.apply(null, vals), Math.max.apply(null, vals)]
+	case "year":
+		vals = aParsed.map(function(e) { return e.parts.year }).filter(isDef)
+		if (vals.length == 0) return [0, 0]
+		return [Math.min.apply(null, vals), Math.max.apply(null, vals)]
+	}
+	return [0, 0]
+}
+
+function __timeHeatmapAgg(anArr, aMode) {
+	if (isUnDef(anArr) || anArr.length == 0) return __
+	switch (aMode) {
+	case "avg"  : return anArr.reduce(function(a, b) { return a + b }, 0) / anArr.length
+	case "max"  : return Math.max.apply(null, anArr)
+	case "count": return anArr.length
+	default     : return anArr.reduce(function(a, b) { return a + b }, 0)
+	}
+}
+
+function __printTimeHeatmap(values, aOptions) {
+	var entries = Object.keys(values).filter(function(k) { return isNumber(values[k]) && isFinite(values[k]) })
+	if (entries.length == 0) return "(empty)"
+
+	var parsed = entries.map(function(k) { return { value: Number(values[k]), parts: __timeHeatmapParseKey(k) } })
+		.filter(function(e) { return isDef(e.parts) })
+	if (parsed.length == 0) return "(empty)"
+
+	var keyType = parsed[0].parts.type
+
+	var _caps  = ow.format.term.getCapabilities()
+	var _pal   = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var width  = Math.max(4, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
+	var height = Math.max(1, _$(aOptions.height).isNumber().default(Math.min(_caps.height, 10)))
+	var legend = _$(aOptions.legend).isBoolean().default(false)
+	var weekStart = _$(aOptions.weekStart).isNumber().default(0)
+	var aggregate = _$(aOptions.aggregate).isString().default("sum")
+	var dayLabels = _$(aOptions.dayLabels).isArray().default(["Mon","Wed","Fri"])
+	var emptyCh = _$(aOptions.empty).isString().default(_caps.unicode ? "·" : ".")
+	var shades  = _caps.unicode ? ["░","▒","▓","█"] : [".",":","=","#"]
+	var shadeChars = [emptyCh].concat(shades)
+	var colors  = [_pal.muted, _pal.accent, _pal.warning, _pal.positive]
+
+	var defaultAxes = (keyType == "time") ? { x: "hour", y: "none" } : { x: "week", y: "weekday" }
+	var xAxis = _$(aOptions.xAxis).isString().default(defaultAxes.x)
+	var yAxisOpt = _$(aOptions.yAxis).isString().default(defaultAxes.y)
+	var yAxis = (yAxisOpt == "none") ? __ : yAxisOpt
+
+	var xField = __timeHeatmapFieldFor(xAxis)
+	if (isUnDef(xField)) return "Err: unknown xAxis '" + xAxis + "'"
+	if (isUnDef(parsed[0].parts[xField])) return "Err: xAxis '" + xAxis + "' is not available for " + keyType + " keys"
+	if (isDef(yAxis)) {
+		var yField = __timeHeatmapFieldFor(yAxis)
+		if (isUnDef(yField)) return "Err: unknown yAxis '" + yAxis + "'"
+		if (isUnDef(parsed[0].parts[yField])) return "Err: yAxis '" + yAxis + "' is not available for " + keyType + " keys"
+	}
+
+	// gridStart only matters for the "week" token, computed on/before the earliest visible date
+	var dayNums = parsed.map(function(e) { return e.parts.dayNum }).filter(isDef)
+	var minDay = dayNums.length > 0 ? Math.min.apply(null, dayNums) : __
+	var fromP = isDef(aOptions.from) ? __timeHeatmapParseKey(String(aOptions.from)) : __
+	if (isDef(fromP) && isDef(fromP.dayNum)) minDay = fromP.dayNum
+	var toP = isDef(aOptions.to) ? __timeHeatmapParseKey(String(aOptions.to)) : __
+	var gridStart = __
+	if (isDef(minDay)) {
+		var minDow = ((minDay % 7) + 11) % 7
+		gridStart = minDay - ((minDow - weekStart + 7) % 7)
+	}
+	var ctx = { weekStart: weekStart, gridStart: gridStart }
+
+	if (isDef(toP) && isDef(toP.dayNum)) parsed = parsed.filter(function(e) { return isUnDef(e.parts.dayNum) || e.parts.dayNum <= toP.dayNum })
+	if (isDef(fromP) && isDef(fromP.dayNum)) parsed = parsed.filter(function(e) { return isUnDef(e.parts.dayNum) || e.parts.dayNum >= fromP.dayNum })
+
+	var xRange = __timeHeatmapRange(xAxis, parsed, ctx)
+	var yRange = isDef(yAxis) ? __timeHeatmapRange(yAxis, parsed, ctx) : [0, 0]
+
+	var cellMap = {}
+	parsed.forEach(function(e) {
+		var xb = __timeHeatmapBucket(xAxis, e.parts, ctx)
+		if (isUnDef(xb)) return
+		var yb = isDef(yAxis) ? __timeHeatmapBucket(yAxis, e.parts, ctx) : { idx: 0 }
+		if (isUnDef(yb)) return
+		var key = xb.idx + "," + yb.idx
+		if (isUnDef(cellMap[key])) cellMap[key] = []
+		cellMap[key].push(e.value)
+	})
+
+	var xIdxs = []
+	for (var xi = xRange[0]; xi <= xRange[1]; xi++) xIdxs.push(xi)
+	var yIdxs = []
+	for (var yi = yRange[0]; yi <= yRange[1]; yi++) yIdxs.push(yi)
+	if (xIdxs.length == 0) xIdxs = [0]
+	if (yIdxs.length == 0) yIdxs = [0]
+
+	var shouldLabelY = function(anIdx) {
+		if (yAxis !== "weekday") return true
+		return dayLabels.indexOf(__timeHeatmapLabelFor("weekday", anIdx, ctx)) >= 0
+	}
+
+	var leftW = 0
+	if (isDef(yAxis)) {
+		yIdxs.forEach(function(idx) {
+			var lbl = shouldLabelY(idx) ? __timeHeatmapLabelFor(yAxis, idx, ctx) : ""
+			leftW = Math.max(leftW, lbl.length)
+		})
+		if (leftW > 0) leftW += 1
+	}
+
+	var colW = 1
+	if (xAxis !== "week") {
+		var maxLbl = 0
+		xIdxs.forEach(function(idx) { maxLbl = Math.max(maxLbl, __timeHeatmapLabelFor(xAxis, idx, ctx).length) })
+		colW = Math.max(1, maxLbl + 1)
+	}
+
+	var availCols = Math.max(1, Math.floor((width - leftW) / colW))
+	if (xIdxs.length > availCols) xIdxs = xIdxs.slice(xIdxs.length - availCols)
+
+	// header row: "week" gets a sparse month-boundary header, every other x token gets a direct label per column
+	var headerLine = __
+	if (xAxis === "week") {
+		var monthParts = xIdxs.map(function(idx) { return __timeHeatmapMonthOfDay(gridStart + idx * 7) })
+		var headerChars = repeat(leftW + xIdxs.length, " ").split("")
+		var lastEnd = -100
+		monthParts.forEach(function(mp, ci) {
+			var changed = (ci === 0) || ((mp.year * 12 + mp.month) !== (monthParts[ci - 1].year * 12 + monthParts[ci - 1].month))
+			if (changed && (ci - lastEnd) >= 1) {
+				var abbr = __timeHeatmapMonthAbbr[mp.month]
+				var pos = leftW + ci
+				if (pos + abbr.length <= headerChars.length) {
+					for (var ai = 0; ai < abbr.length; ai++) headerChars[pos + ai] = abbr[ai]
+					lastEnd = ci + abbr.length
+				}
+			}
+		})
+		headerLine = headerChars.join("")
+	} else {
+		var hdrParts = xIdxs.map(function(idx) {
+			var l = __timeHeatmapLabelFor(xAxis, idx, ctx)
+			return l + repeat(Math.max(0, colW - l.length), " ")
+		})
+		headerLine = repeat(leftW, " ") + hdrParts.join("")
+	}
+
+	// quantile thresholds from aggregated bucket values > 0
+	var aggValues = []
+	xIdxs.forEach(function(xidx) {
+		yIdxs.forEach(function(yidx) {
+			var v = __timeHeatmapAgg(cellMap[xidx + "," + yidx], aggregate)
+			if (isDef(v) && v > 0) aggValues.push(v)
+		})
+	})
+	aggValues.sort(function(a, b) { return a - b })
+	var _pct = function(p) {
+		if (aggValues.length == 0) return 0
+		var pos = p * (aggValues.length - 1), lo = Math.floor(pos), hi = Math.ceil(pos)
+		return aggValues[lo] + (aggValues[hi] - aggValues[lo]) * (pos - lo)
+	}
+	var q1 = _pct(0.25), q2 = _pct(0.5), q3 = _pct(0.75)
+	var levelOf = function(v) {
+		if (isUnDef(v) || v <= 0) return 0
+		if (v <= q1) return 1
+		if (v <= q2) return 2
+		if (v <= q3) return 3
+		return 4
+	}
+	var _color = (_caps.colorMode !== "none") ? function(lvl, txt) {
+		var cc = _$(colors[Math.min(colors.length - 1, lvl - 1)]).isString().default("")
+		return cc !== "" ? ansiColor(cc, txt) : txt
+	} : function(lvl, txt) { return txt }
+
+	var dataLines = yIdxs.map(function(yidx) {
+		var lbl = ""
+		if (leftW > 0) {
+			var raw = shouldLabelY(yidx) ? __timeHeatmapLabelFor(yAxis, yidx, ctx) : ""
+			lbl = raw + repeat(Math.max(0, leftW - raw.length), " ")
+		}
+		var cells = xIdxs.map(function(xidx) {
+			var v = __timeHeatmapAgg(cellMap[xidx + "," + yidx], aggregate)
+			var lvl = levelOf(v)
+			var ch = lvl > 0 ? _color(lvl, shadeChars[lvl]) : shadeChars[0]
+			return colW > 1 ? ch + repeat(colW - 1, " ") : ch
+		})
+		return lbl + cells.join("")
+	})
+
+	var legendLine = __
+	if (legend) {
+		legendLine = "Less " + shades.map(function(s, i) { return _color(i + 1, s) }).join("") + " More"
+	}
+
+	// graceful height degradation: drop the header row first, then the legend, never a data row
+	var out = []
+	var budget = dataLines.length + (isDef(headerLine) ? 1 : 0) + (isDef(legendLine) ? 1 : 0)
+	var showHeader = isDef(headerLine), showLegend = isDef(legendLine)
+	if (budget > height && showHeader) { showHeader = false; budget-- }
+	if (budget > height && showLegend) { showLegend = false; budget-- }
+
+	if (showHeader) out.push(headerLine)
+	out = out.concat(dataLines)
+	if (showLegend) out.push(legendLine)
+
+	return out.join("\n")
+}
+
 /**
  * <odoc>
  * <key>ow.format.printHeatmap(values, aOptions) : String</key>
- * Returns a compact terminal heatmap for a numeric matrix or a map containing { values, xLabels, yLabels }.
- * aOptions: width, height, min, max, xLabels, yLabels, legend (default false), palette.
+ * Returns a compact terminal heatmap for a numeric matrix, a map containing { values, xLabels, yLabels }, or
+ * (for a time-bucketed view) a plain map keyed by date ("YYYY-MM-DD"), time ("HH:mm") or date-time
+ * ("YYYY-MM-DDTHH:mm") strings mapping to numeric values, e.g. { "2026-01-15": 3, "2026-01-16": 0 }.
+ * \
+ * Time-bucketed aOptions: xAxis/yAxis (one of "year", "month", "week", "weekday", "day", "hour"; yAxis may
+ * be "none" to force a single row; defaults to xAxis:"week",yAxis:"weekday" for date/date-time keys - a
+ * GitHub-style contribution calendar - or xAxis:"hour",yAxis:"none" for time-only keys; pass e.g.
+ * xAxis:"hour",yAxis:"weekday" on date-time keys for a punch-card view), weekStart (0=Sunday, default),
+ * from/to (bound the visible range), aggregate ("sum" default, "avg", "max" or "count", for multiple values
+ * landing in the same bucket), legend (default false, renders "Less <shades> More"), empty (glyph for
+ * buckets with no data, default "·"), dayLabels (which weekday rows/columns get a text label, default
+ * ["Mon","Wed","Fri"]), width, height, palette.
  * </odoc>
  */
 OpenWrap.format.prototype.printHeatmap = function(values, aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
+
+	if (isMap(values) && !isArray(values) && !isDef(values.values)) {
+		return __printTimeHeatmap(values, aOptions)
+	}
 
 	var matrix  = values
 	var xLabels = _$(aOptions.xLabels).isArray().default([])
@@ -2639,7 +2950,7 @@ OpenWrap.format.prototype.printStatusMatrix = function(values, aOptions) {
  *   bullet     : data is consumed by ow.format.printBullet; options can include min, max, target, ranges, label, unit, showValue, valueFormat\
  *   sparkline  : data is consumed by ow.format.printSparkline\
  *   histogram  : data is consumed by ow.format.printHistogram\
- *   heatmap    : data is consumed by ow.format.printHeatmap\
+ *   heatmap    : data is consumed by ow.format.printHeatmap (numeric matrix, or a date/time/date-time keyed map for a time-bucketed view)\
  *   scatter    : data is consumed by ow.format.printScatter\
  *   boxplot    : data is consumed by ow.format.printBoxplot\
  *   timeline   : data is consumed by ow.format.printTimeline\
