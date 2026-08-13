@@ -39,9 +39,36 @@ public class Threads extends ScriptableObject {
 	protected List<ScriptFunction> threads;
 	protected HashMap<String, Object> sessions = new HashMap<String, Object>();
 	private static final AtomicLong shutdownHookSequence = new AtomicLong();
+	// Registry of guarded shutdown actions, most-recently-added first, so they can be run synchronously
+	// (e.g. by nativeExit) instead of only via the JVM's own (slow, sometimes ~10s-delayed) shutdown sequence.
+	private static final java.util.concurrent.CopyOnWriteArrayList<Runnable> shutdownActions = new java.util.concurrent.CopyOnWriteArrayList<Runnable>();
 
 	private static boolean isShutdownHookDebugEnabled() {
 		return Boolean.parseBoolean(System.getProperty("openaf.shutdownhook.debug", "false"));
+	}
+
+	/**
+	 * Registers aAction both as a normal JVM shutdown hook and in the internal registry consulted by
+	 * runOpenAFShutdownHooksNow/nativeExit. A guard ensures aAction runs at most once even if both
+	 * paths end up trying to run it.
+	 */
+	private static void registerGuardedShutdownAction(final Runnable aAction, final String aThreadName) {
+		final java.util.concurrent.atomic.AtomicBoolean ran = new java.util.concurrent.atomic.AtomicBoolean(false);
+		Runnable guarded = new Runnable() {
+			public void run() {
+				if (ran.compareAndSet(false, true)) aAction.run();
+			}
+		};
+		shutdownActions.add(0, guarded);
+		Runtime.getRuntime().addShutdownHook(new Thread(guarded, aThreadName));
+	}
+
+	/**
+	 * Java-side entry point (used e.g. by IO.createTempDir) to register cleanup that should also run
+	 * as part of runOpenAFShutdownHooksNow/nativeExit, not just as a raw JVM shutdown hook.
+	 */
+	public static void registerShutdownAction(Runnable aAction) {
+		registerGuardedShutdownAction(aAction, "OpenAF-shutdown-action-" + shutdownHookSequence.incrementAndGet());
 	}
 	
 	/**
@@ -134,7 +161,7 @@ public class Threads extends ScriptableObject {
 	@JSFunction
 	public void addOpenAFShutdownHook(final Function aFunction) {
 		final long hookId = shutdownHookSequence.incrementAndGet();
-		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+		Runnable action = new Runnable() {
 			public void run() {
 				final boolean debug = isShutdownHookDebugEnabled();
 				final long startedAt = System.nanoTime();
@@ -153,9 +180,61 @@ public class Threads extends ScriptableObject {
 					}
 				}
 			}
-		}, "OpenAF-shutdown-hook-" + hookId));
+		};
+		registerGuardedShutdownAction(action, "OpenAF-shutdown-hook-" + hookId);
 	}
-	
+
+	/**
+	 * <odoc>
+	 * <key>Threads.runOpenAFShutdownHooksNow()</key>
+	 * Synchronously runs, in the current thread, every shutdown hook/action registered so far via
+	 * addOpenAFShutdownHook (and Java-side registrations such as io.createTempDir's cleanup) - in the
+	 * reverse order they were added. Each one is guarded to run at most once, so it is safe to call this
+	 * and still let the normal JVM shutdown sequence run afterwards (e.g. via System.exit): already-run
+	 * hooks will be skipped there. Intended to be used right before Threads.nativeExit.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static void runOpenAFShutdownHooksNow() {
+		for (Runnable action : shutdownActions) {
+			try {
+				action.run();
+			} catch (Throwable t) {
+				// best-effort: one failing hook shouldn't block the others or the exit that follows
+			}
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.nativeExit(anExitCode)</key>
+	 * Terminates the current process immediately at the operating system level (the C library's
+	 * _exit), bypassing the JVM's own shutdown sequence entirely - including JVM-registered shutdown
+	 * hook threads and the safepoint HotSpot uses to wait for JIT compiler threads, which can otherwise
+	 * delay process exit by several seconds (observed up to ~10s) when a compilation is still in
+	 * flight. Because JVM-level cleanup is skipped, call Threads.runOpenAFShutdownHooksNow() first for
+	 * any cleanup that must still happen (this is what exit(code, true) does). Falls back to
+	 * Runtime.halt (not guaranteed to avoid the delay this method exists to avoid) if the native call
+	 * is unavailable on this platform.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static void nativeExit(int anExitCode) {
+		try {
+			System.out.flush();
+			System.err.flush();
+		} catch (Throwable t) {
+			// ignore: proceed to exit regardless
+		}
+		try {
+			boolean windows = System.getProperty("os.name", "").toLowerCase().contains("win");
+			com.sun.jna.Function exitFn = com.sun.jna.Function.getFunction(windows ? "msvcrt" : "c", "_exit");
+			exitFn.invokeVoid(new Object[] { Integer.valueOf(anExitCode) });
+		} catch (Throwable t) {
+			Runtime.getRuntime().halt(anExitCode);
+		}
+	}
+
 	/**
 	 * <odoc>
 	 * <key>Threads.addThread(aFunction) : String</key>

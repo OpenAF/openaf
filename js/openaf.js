@@ -4418,17 +4418,26 @@ const extend = function() {
 /**
  * <odoc>
  * <key>exit(anExitCode, force)</key>
- * Immediately exits execution with the provided exit code. 
- * Optionally force=true can be provided but no shutdown triggers will be executed (use only as a last option)
+ * Immediately exits execution with the provided exit code.
+ * Optionally force=true can be provided to run any registered OpenAF shutdown hooks
+ * (see addOnOpenAFShutdown/Threads.addOpenAFShutdownHook) synchronously and then terminate the
+ * process at the operating system level, bypassing the JVM's own shutdown sequence. Regular JVM
+ * shutdown hooks not registered through OpenAF, and File.deleteOnExit() entries, will NOT run in
+ * this case. Use this when a still-running JIT compilation would otherwise stall a plain exit()
+ * for several seconds waiting for the JVM's safepoint teardown to complete.
  * </odoc>
  */
 const exit = function(exitCode, force) {
 	if(isUnDef(exitCode)) exitCode = 0
 
-	if (force)
-		java.lang.Runtime.getRuntime().halt(exitCode)
-	else
+	if (force) {
+		plugin("Threads");
+		var t = new Threads();
+		t.runOpenAFShutdownHooksNow();
+		t.nativeExit(exitCode);
+	} else {
 		java.lang.System.exit(exitCode)
+	}
 }
 
 /**

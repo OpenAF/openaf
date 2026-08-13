@@ -33,6 +33,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import openaf.SimpleLog.logtype;
+import openaf.plugins.Threads;
 
 import java.lang.String;
 
@@ -42,6 +43,17 @@ import java.lang.String;
  * 
  */
 public class AFCmdOS extends AFCmdBase {
+
+	/**
+	 * Runs any registered OpenAF shutdown hooks synchronously and then terminates the process at the
+	 * operating system level (bypassing the JVM's own shutdown sequence, which can otherwise stall for
+	 * several seconds behind a still-running JIT compilation). Used for this class's own internal,
+	 * short-lived bootstrap commands (install/check/update/example help).
+	 */
+	private static void fastExit(int anExitCode) {
+		Threads.runOpenAFShutdownHooksNow();
+		Threads.nativeExit(anExitCode);
+	}
 
 	final public static String argHelp = "Usage: openaf [options]\n\n"
 			+ "Options:\n" 
@@ -206,7 +218,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 		}
 		
-		System.exit(0);
+		fastExit(0);
 	}
 	
 	/**
@@ -230,7 +242,7 @@ public class AFCmdOS extends AFCmdBase {
 				} catch(Exception e) { }
 			}
 		}
-		System.exit(0);
+		fastExit(0);
 	}
 	
 	/**
@@ -255,7 +267,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 		}
 		
-		System.exit(0);
+		fastExit(0);
 	}
 	
 	/**
@@ -277,7 +289,7 @@ public class AFCmdOS extends AFCmdBase {
 			if (is != null) is.close();
 		}
 		
-		System.exit(0);		
+		fastExit(0);		
 	}
 	
 	/**
