@@ -42,6 +42,11 @@ public class Threads extends ScriptableObject {
 	// Registry of guarded shutdown actions, most-recently-added first, so they can be run synchronously
 	// (e.g. by nativeExit) instead of only via the JVM's own (slow, sometimes ~10s-delayed) shutdown sequence.
 	private static final java.util.concurrent.CopyOnWriteArrayList<Runnable> shutdownActions = new java.util.concurrent.CopyOnWriteArrayList<Runnable>();
+	// Count of guarded actions registered but not yet finished running, consulted by the hook armed by
+	// armFastExitOnShutdown so it can tell when it is the last one left.
+	private static final java.util.concurrent.atomic.AtomicInteger pendingShutdownActions = new java.util.concurrent.atomic.AtomicInteger(0);
+	private static volatile int autoFastExitCode = 0;
+	private static final java.util.concurrent.atomic.AtomicBoolean autoFastExitHookRegistered = new java.util.concurrent.atomic.AtomicBoolean(false);
 
 	private static boolean isShutdownHookDebugEnabled() {
 		return Boolean.parseBoolean(System.getProperty("openaf.shutdownhook.debug", "false"));
@@ -50,13 +55,21 @@ public class Threads extends ScriptableObject {
 	/**
 	 * Registers aAction both as a normal JVM shutdown hook and in the internal registry consulted by
 	 * runOpenAFShutdownHooksNow/nativeExit. A guard ensures aAction runs at most once even if both
-	 * paths end up trying to run it.
+	 * paths end up trying to run it, and pendingShutdownActions reflects only actions that haven't run yet
+	 * regardless of which path ran them.
 	 */
 	private static void registerGuardedShutdownAction(final Runnable aAction, final String aThreadName) {
 		final java.util.concurrent.atomic.AtomicBoolean ran = new java.util.concurrent.atomic.AtomicBoolean(false);
+		pendingShutdownActions.incrementAndGet();
 		Runnable guarded = new Runnable() {
 			public void run() {
-				if (ran.compareAndSet(false, true)) aAction.run();
+				if (ran.compareAndSet(false, true)) {
+					try {
+						aAction.run();
+					} finally {
+						pendingShutdownActions.decrementAndGet();
+					}
+				}
 			}
 		};
 		shutdownActions.add(0, guarded);
@@ -232,6 +245,45 @@ public class Threads extends ScriptableObject {
 			exitFn.invokeVoid(new Object[] { Integer.valueOf(anExitCode) });
 		} catch (Throwable t) {
 			Runtime.getRuntime().halt(anExitCode);
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.armFastExitOnShutdown(anExitCode)</key>
+	 * Arms an extra JVM shutdown hook that waits for every other OpenAF-registered shutdown hook/action
+	 * (see addOpenAFShutdownHook and the Java-side registerShutdownAction) to finish, then calls
+	 * Threads.nativeExit(anExitCode) itself - the same fast-exit trick exit(code, true) uses, but
+	 * triggered automatically once JVM shutdown actually begins rather than requiring an explicit
+	 * exit(code, true) call. This covers cases like a script simply finishing, Ctrl-C or SIGTERM, where
+	 * the JVM's own trailing teardown (including the safepoint wait for JIT compiler threads that can
+	 * delay exit by several seconds) would otherwise still run after the hooks are done.
+	 * Calling this does nothing on its own: it only takes effect once real JVM shutdown starts, so normal
+	 * execution and daemon/server processes that intentionally stay alive (non-daemon threads still
+	 * running) are unaffected. As with exit(code, true), once armed, any shutdown hook or
+	 * File.deleteOnExit() entry not registered through OpenAF will NOT run once shutdown starts.
+	 * Idempotent: calling it again just updates the exit code that will be used.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static void armFastExitOnShutdown(int anExitCode) {
+		autoFastExitCode = anExitCode;
+		if (autoFastExitHookRegistered.compareAndSet(false, true)) {
+			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+				public void run() {
+					// Safety cap in case some non-OpenAF shutdown hook hangs: don't wait forever.
+					int waitedMs = 0;
+					while (pendingShutdownActions.get() > 0 && waitedMs < 30000) {
+						try {
+							Thread.sleep(5);
+						} catch (InterruptedException ie) {
+							break;
+						}
+						waitedMs += 5;
+					}
+					nativeExit(autoFastExitCode);
+				}
+			}, "OpenAF-auto-fast-exit"));
 		}
 	}
 

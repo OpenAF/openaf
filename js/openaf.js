@@ -4424,7 +4424,9 @@ const extend = function() {
  * process at the operating system level, bypassing the JVM's own shutdown sequence. Regular JVM
  * shutdown hooks not registered through OpenAF, and File.deleteOnExit() entries, will NOT run in
  * this case. Use this when a still-running JIT compilation would otherwise stall a plain exit()
- * for several seconds waiting for the JVM's safepoint teardown to complete.
+ * for several seconds waiting for the JVM's safepoint teardown to complete. To get the same behavior
+ * on shutdown paths that don't call exit() explicitly (a script simply finishing, Ctrl-C, SIGTERM),
+ * see armFastExitOnShutdown.
  * </odoc>
  */
 const exit = function(exitCode, force) {
@@ -5746,6 +5748,30 @@ const addOnOpenAFShutdown = function(aFunction) {
 				aFunction();
 			} catch(e) {}
 		});
+		return true;
+	} catch(e) {
+		return false;
+	}
+}
+
+/**
+ * <odoc>
+ * <key>armFastExitOnShutdown(anExitCode)</key>
+ * Arms the same fast-exit trick exit(anExitCode, true) uses (see exit) so it also happens
+ * automatically once the JVM actually starts shutting down (a script simply finishing, Ctrl-C,
+ * SIGTERM, etc.), not just when exit(code, true) is called explicitly. Once every OpenAF-registered
+ * shutdown hook has run, the process terminates immediately with anExitCode - skipping the JVM's own
+ * trailing teardown that can otherwise delay exit by several seconds when a JIT compilation is still
+ * in flight. Only takes effect once shutdown actually begins, so it doesn't affect normal execution
+ * or daemon/server processes that intentionally stay alive. Shortcut for
+ * Threads.armFastExitOnShutdown.
+ * </odoc>
+ */
+const armFastExitOnShutdown = function(anExitCode) {
+	if (isUnDef(anExitCode)) anExitCode = 0
+	plugin("Threads");
+	try {
+		(new Threads()).armFastExitOnShutdown(anExitCode);
 		return true;
 	} catch(e) {
 		return false;
