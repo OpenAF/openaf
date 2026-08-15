@@ -150,7 +150,7 @@ F_out__out_dsv_dsvuseslon_=1
 F_out__out_dsv_dsvheader_=1
 F_out__out_ctable=0
 F_out__out_ctree=0
-F_out__out_ctreet=0
+F_out__out_ttree=0
 F_out__out_mtree=0
 F_out__out_btree=0
 F_out__out_cyaml=0
@@ -506,7 +506,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#dsvheader=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvheader_=0; fi
     if [ "$arg" = "out=ctable" ]; then FFOUND=1; F_out__out_ctable=1; F_out_=0; fi
     if [ "$arg" = "out=ctree" ]; then FFOUND=1; F_out__out_ctree=1; F_out_=0; fi
-    if [ "$arg" = "out=ctreet" ]; then FFOUND=1; F_out__out_ctreet=1; F_out_=0; fi
+    if [ "$arg" = "out=ttree" ]; then FFOUND=1; F_out__out_ttree=1; F_out_=0; fi
     if [ "$arg" = "out=mtree" ]; then FFOUND=1; F_out__out_mtree=1; F_out_=0; fi
     if [ "$arg" = "out=btree" ]; then FFOUND=1; F_out__out_btree=1; F_out_=0; fi
     if [ "$arg" = "out=cyaml" ]; then FFOUND=1; F_out__out_cyaml=1; F_out_=0; fi
@@ -1111,7 +1111,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_out_ -eq 1 ]; then
   printf '%s\t%s\n' 'out=dsv' 'A DSV -Delimiter Separated Values- format -only for list outputs-'
   printf '%s\t%s\n' 'out=ctable' 'A table-like forcely colored format -only for list outputs-'
   printf '%s\t%s\n' 'out=ctree' 'A tree-like forcely colored format'
-  printf '%s\t%s\n' 'out=ctreet' 'A tree-like forcely colored format with flat arrays shown as tables'
+  printf '%s\t%s\n' 'out=ttree' 'A tree-like forcely colored format with flat arrays shown as tables'
   printf '%s\t%s\n' 'out=mtree' 'A tree-like forcely monochrome format'
   printf '%s\t%s\n' 'out=btree' 'A tree-like forcely with non-ansi characters format'
   printf '%s\t%s\n' 'out=cyaml' 'An YAML colored format'

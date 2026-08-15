@@ -16105,7 +16105,7 @@ const $unset = function(aK) {
  * <ojob>
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ctreet", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ttree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * If shouldReturn = true the string output will be returned
  * </ojob>
@@ -16219,7 +16219,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true }))
-		case "ctreet":
+		case "ttree":
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true, tableArrays: true }))
