@@ -156,6 +156,34 @@ function generateWinJobBat() {
   return s;
 }
 
+function generateWinPyBat() {
+  var s;
+
+  s = "@echo off\n\n";
+  s = s + "setlocal EnableExtensions\n"
+  s = s + "set thispath=%~dp0\n"
+  s = s + "set DIR=%thispath:~0,-1%\n"
+  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
+  s = s + "\n";
+  s = s + "chcp 65001 > NUL\n";
+  s = s + "set OAF_PY_SCRIPT=%~1\n";
+  s = s + "if not \"%~1\"==\"\" shift\n";
+  s = s + "set /a OAF_PY_ARGC=0\n";
+  s = s + ":oaf_py_argloop\n";
+  s = s + "if \"%~1\"==\"\" goto oaf_py_argsdone\n";
+  s = s + "set \"OAF_PY_ARG_%OAF_PY_ARGC%=%~1\"\n";
+  s = s + "set /a OAF_PY_ARGC+=1\n";
+  s = s + "shift\n";
+  s = s + "goto oaf_py_argloop\n";
+  s = s + ":oaf_py_argsdone\n";
+  s = s + "\n";
+  //s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --py -e \"%OAF_PY_SCRIPT%\"";
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --py -e \"%OAF_PY_SCRIPT%\"\n";
+  return s;
+}
+
 function generateWinUpdateBat() {
   var s;
   s = "@echo off\n\n";
@@ -190,6 +218,33 @@ function generateWinConsoleBat() {
   s = s + "chcp 65001 > NUL\n";
   //s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --console %*";
   s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --console %*";
+  return s;
+}
+
+function generateUnixPyScript() {
+  var s;
+
+  s = "#!" + shLocation + "\n";
+  s += "CDIR=`pwd`\n"
+  s += "cd `dirname $0`\n"
+  s += "DIR=`pwd`\n"
+  s += "cd \"$CDIR\"\n"
+  s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
+  s += "OAF_DIR=\"" + classPath + "\"\n";
+  if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
+  s += "SCRIPT=$1\n";
+  s += "if [ $# -gt 0 ]; then\n"
+  s += "  shift\n"
+  s += "fi\n";
+  s += "\n";
+  s += "i=0\n";
+  s += "for a in \"$@\"; do\n";
+  s += "  export OAF_PY_ARG_$i=\"$a\"\n";
+  s += "  i=$((i+1))\n";
+  s += "done\n";
+  s += "export OAF_PY_ARGC=$i\n";
+  s += "\n";
+  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR --py -e \"$SCRIPT\"\n";
   return s;
 }
 
@@ -360,6 +415,7 @@ var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
 var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
+var winPyBat = generateWinPyBat();
 //var winConsolePSBat = generateWinConsolePSBat();
 
 var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript, unixOAFPScript
@@ -370,7 +426,7 @@ var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, u
   unixSBoJob = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixPackScript = generateUnixScript("--opack -e \"$SCRIPT $ARGS\"", true)
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
-  unixPyScript = generateUnixScript("--py -e \"$SCRIPT $ARGS\"", true)
+  unixPyScript = generateUnixPyScript()
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
   unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"")
   unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"")
@@ -382,6 +438,7 @@ try {
   if (windows == 1) io.writeFileString(curDir + "\\oaf.bat", winBat);
   if (windows == 1) io.writeFileString(curDir + "\\opack.bat", winPackBat);
   if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
+  if (windows == 1) io.writeFileString(curDir + "\\pyoaf.bat", winPyBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\oafc.bat", winConsoleBat);
   if (windows == 1 && isUnDef(getOPackPath("oafproc")) ) io.writeFileString(curDir + "\\oafp.bat", generateWinOAFPBat())

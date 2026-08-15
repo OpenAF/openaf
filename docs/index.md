@@ -7,6 +7,7 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - ojob-all.yaml – Exhaustive annotated YAML template
 - openaf.md – Core OpenAF runtime helpers & APIs
 - opacks.md – oPacks: manifest format, versioning, the `opack` CLI, scripting integration, building & hosting opack repositories
+- python.md – Using Python from OpenAF (ow.python, $py/$pyExec, `--py`/`pyoaf` CLI with argv support, `--oafpy`, oJob `lang: python`)
 
 ## Security & Configuration
 - ojob-security.md – Integrity, auditing, unique execution, channel exposure

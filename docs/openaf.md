@@ -620,6 +620,10 @@ print("Tests failed: " + ow.test.getCountFail());
 
 ## Python Integration
 
+> For the full picture - `execStandalone`, the `--py`/`pyoaf` CLI launchers with real `sys.argv`
+> support, `--oafpy` for calling back into OpenAF from independent Python code, and `lang: python`
+> in oJob - see `python.md`.
+
 ### ow.python - Python Interoperability
 
 ```javascript
