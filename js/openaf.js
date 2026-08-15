@@ -1098,7 +1098,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
  * <key>printTree(aObj, aWidth, aOptions) : String</key>
  * Given aObj(ect) will return a tree with the object elements. Optionaly you can specificy aWidth and/or aOptions:
  * noansi (boolean) no ansi character sequences, curved (boolean) for UTF curved characters, wordWrap (boolean) to wrap long string values, compact (boolean) to compact tree lines, fullKeySize (boolean) to
- * pad the each entry key, fullValSize (boolean) to pad the entire key and value and withValues (boolean) to include or not each key values
+ * pad the each entry key, fullValSize (boolean) to pad the entire key and value and withValues (boolean) to include or not each key values, tableArrays (boolean) to render arrays composed only of
+ * non-map/array values (or maps whose fields are all non-map/array values) as a printTable instead of nested tree branches
  * </odoc>
  */
 const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
@@ -1113,6 +1114,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		fullValSize: false,
 		withValues: true,
 		wordWrap: true,
+		tableArrays: false,
 		compact: true,
 		minSize: 5
 	}, __flags.TREE), __colorFormat.tree), _aOptions)
@@ -1255,6 +1257,18 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		return Array.from(ar)
 	}
 
+	var _isFlatArray = ar => ar.length > 0 && ar.every(el => {
+		if (el === null || "undefined" === typeof el) return true
+		if (Array.isArray(el)) return false
+		if ("[object Object]" == Object.prototype.toString.call(el)) {
+			return Object.keys(el).every(kk => {
+				var vv = el[kk]
+				return !(vv !== null && ("[object Object]" == Object.prototype.toString.call(vv) || Array.isArray(vv)))
+			})
+		}
+		return true
+	})
+
 	let _pt = (aM, aWidth, aOptions, aPrefix, isSub) => {
 		//isSub = _$(isSub, "isSub").isBoolean().default(false)
 		var isAr = Array.isArray(aM)
@@ -1342,7 +1356,15 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			let suffix
 
 			if ("undefined" !== typeof aM[k] && aM[k] != null && ("[object Object]" == Object.prototype.toString.call(aM[k]) || Array.isArray(aM[k]))) {
-				suffix = _pt(aM[k], aWidth, aOptions, [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join(""), true)
+				let contPrefix = [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join("")
+				if (aOptions.tableArrays && Array.isArray(aM[k]) && _isFlatArray(aM[k])) {
+					let tblWidth = isNumber(aWidth) ? (aWidth - _al(contPrefix)) : __
+					let tLines = printTable(aM[k], tblWidth, __, !aOptions.noansi, (aOptions.noansi ? __ : "utf")).split("\n")
+					if (tLines.length > 0 && tLines[tLines.length - 1] == "") tLines.pop()
+					suffix = tLines.map((l, ii) => ii == 0 ? l : contPrefix + l).join("\n")
+				} else {
+					suffix = _pt(aM[k], aWidth, aOptions, contPrefix, true)
+				}
 			}
 
 			//_out.put(i, [prefix, wfResult, repeatResult, suffix, reset].join(""))
@@ -16083,7 +16105,7 @@ const $unset = function(aK) {
  * <ojob>
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ctreet", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * If shouldReturn = true the string output will be returned
  * </ojob>
@@ -16197,6 +16219,10 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true }))
+		case "ctreet":
+			__ansiColorFlag = true
+			__conConsole = true
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true, tableArrays: true }))
 		case "mtree":
 			//__ansiColorFlag = true
 			//__conConsole = true

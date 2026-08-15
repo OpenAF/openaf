@@ -330,6 +330,8 @@ complete:
     desc: A table-like forcely colored format -only for list outputs-
   - name: out=ctree
     desc: A tree-like forcely colored format
+  - name: out=ctreet
+    desc: A tree-like forcely colored format with flat arrays shown as tables
   - name: out=mtree
     desc: A tree-like forcely monochrome format
   - name: out=btree
