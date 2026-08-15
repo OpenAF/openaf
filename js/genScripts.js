@@ -428,8 +428,8 @@ var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, u
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixPyScript = generateUnixPyScript()
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
-  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"")
-  unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"")
+  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"", __, __, true)
+  unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"", __, __, true)
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 //}
 

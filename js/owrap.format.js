@@ -1454,7 +1454,12 @@ OpenWrap.format.prototype.string = {
 		
 		var pres = 0
 		var lines = aString.split("\n")
+		// Get current terminal settings
+		var current = _c.getConsoleReader().getTerminal().settings.get("icanon echo")
+		_c.getConsoleReader().getTerminal().settings.set("-icanon min 1 -echo")
 		while(pres >= 0) pres = __pauseArray(lines, pres)
+		// Restore terminal settings
+		_c.getConsoleReader().getTerminal().settings.set(current)
 	}
 };
 
