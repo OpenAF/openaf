@@ -5324,12 +5324,14 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	res = res.replace(/```+(.+?)```+/mg, (m, code) => {
 		var idx = inlineCodeBlocks.length
 		inlineCodeBlocks.push(ansiColor(__colorFormat.md.codeBlock.text, " " + code + " "))
-		return "```INLINE$" + idx + "```"
+		// Use a backtick-free placeholder so it can't be mistaken for (or mis-paired with)
+		// a real fenced code block delimiter by the multi-line code block detection below.
+		return " INLINE$" + idx + " "
 	})
 
 	//  multi line
 	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
-	if (cblocks != null) 
+	if (cblocks != null)
 		cblocks.forEach((b, i) => {
 			var bIdx = res.indexOf(b)
 			if (bIdx > 0) {
@@ -5379,7 +5381,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	res = res.replace(/^## (.+)/mg, ansiColor(__colorFormat.md.heads.h2, "$1") + da)
 	res = res.replace(/^### (.+)/mg, ansiColor(__colorFormat.md.heads.h3, "$1") + da)
 	res = res.replace(/^####+ (.+)/mg, ansiColor(__colorFormat.md.heads.h4, "$1") + da)
-	
+
 	__conStatus || __initializeCon()
 	var _aSize = aLineWidth
 
@@ -5446,12 +5448,16 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
-			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), _aSize, __colorFormat.md.codeBlock.line, _withColor(__colorFormat.md.codeBlock.text, aBgColor), _sideLineThemes[__colorFormat.md.codeBlock.theme]))
+			var __repl = ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), _aSize, __colorFormat.md.codeBlock.line, _withColor(__colorFormat.md.codeBlock.text, aBgColor), _sideLineThemes[__colorFormat.md.codeBlock.theme])
+			// Use a function replacer: a string replacer would special-case "$&", "$`", "$'" and "$$"
+			// sequences that can legitimately appear inside rendered code (e.g. a regex ending in "$'"),
+			// causing chunks of the surrounding document to be duplicated into the output.
+			res = res.replace("```$" + i + "```", () => __repl)
 		})
 	}
 	if (inlineCodeBlocks.length > 0) {
 		inlineCodeBlocks.forEach((b, i) => {
-			res = res.replace("```INLINE$" + i + "```", b)
+			res = res.replace(" INLINE$" + i + " ", () => b)
 		})
 	}
 
