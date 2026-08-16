@@ -1115,7 +1115,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		fullValSize: false,
 		withValues: true,
 		wordWrap: true,
-		tableArrays: false,
+		tableArrays: true,
 		compact: true,
 		minSize: 5
 	}, __flags.TREE), __colorFormat.tree), _aOptions)
