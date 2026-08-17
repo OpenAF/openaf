@@ -16223,7 +16223,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "ntree":
 			__ansiColorFlag = true
 			__conConsole = true
-			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true, tableArrays: true }))
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true, tableArrays: false }))
 		case "mtree":
 			//__ansiColorFlag = true
 			//__conConsole = true
