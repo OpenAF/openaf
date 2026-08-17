@@ -6,8 +6,15 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - ojob.md – Main oJob YAML reference (structure, jobs, built-ins)
 - ojob-all.yaml – Exhaustive annotated YAML template
 - openaf.md – Core OpenAF runtime helpers & APIs
+- oafp.md – OpenAF Processor (oafp): universal data transformation, SQL/JMESPath queries & formatting
+- odoc.md – ODoc engine, docstrings (`<odoc>`), offline help databases (`.odoc.db`), and `odocweb` server
 - opacks.md – oPacks: manifest format, versioning, the `opack` CLI, scripting integration, building & hosting opack repositories
 - python.md – Using Python from OpenAF (ow.python, $py/$pyExec, `--py`/`pyoaf` CLI with argv support, `--oafpy`, oJob `lang: python`)
+
+## Tools & Engines
+- obook.md – Interactive Notebooks (`ow.oBook`) and CLI step-by-step tutorials
+- sigil.md – Sigil macro engine (`<sigil:...>`), environment variable, secret, and template interpolation
+- plugins.md – Core Java Plugins reference (`plugin("...")`) covering HTTP, HTTPServer, SSH, FTP, Email, JMX, SNMP, BSDiff, Threads, XML, ZIP, etc.
 
 ## Security & Configuration
 - ojob-security.md – Integrity, auditing, unique execution, channel exposure
