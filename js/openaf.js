@@ -238,7 +238,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		withValues : true,
 		wordWrap   : true,
 		compact    : true,
-		tableArrays: false,
+		tableArrays: true,
 		mono       : false,
 		color      : true
 	},
