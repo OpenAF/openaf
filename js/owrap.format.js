@@ -8,6 +8,7 @@ OpenWrap.format = function() {
 }
 
 if (typeof __owWithMdCache === "undefined") var __owWithMdCache
+if (typeof __owWithMdLatexSymsCache === "undefined") var __owWithMdLatexSymsCache
 if (typeof __owFormatTermCapabilitiesCache === "undefined") var __owFormatTermCapabilitiesCache
 if (typeof __owFormatLiveSessions === "undefined") var __owFormatLiveSessions = {}
 
@@ -5246,7 +5247,8 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi), provide aLineWidth
  * to override the detected console width when line width is needed, and provide aBgColor (an ansiColor color name, e.g. "BG_BLUE")
  * to maintain a background color throughout the output and pass it to sub-functions where applicable.
- * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets, numbered lines, links and blocks.
+ * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets, numbered lines, links, blocks and
+ * simple LaTeX-like math symbols (e.g. "$\rightarrow$", "$\alpha$", "$\leq$") which are converted to their unicode equivalent.
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aBgColor) {
@@ -5346,8 +5348,34 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 
 	// remove html outside fenced code blocks
 	// TODO: .replace(/<\/?(code|pre>)[^>]*>/g, "```"). ?
-	if (__flags.WITHMD.htmlFilter) 
+	if (__flags.WITHMD.htmlFilter)
 		res = res.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script\s*>/gi, "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ")
+
+	// simple LaTeX-like math symbols, e.g. "$\rightarrow$", "$\alpha$", "$\leq$"
+	var _withMdLatexSyms = __owWithMdLatexSymsCache
+	if (!isDef(_withMdLatexSyms)) {
+		_withMdLatexSyms = {
+			rightarrow: "→", leftarrow: "←", Rightarrow: "⇒", Leftarrow: "⇐",
+			leftrightarrow: "↔", Leftrightarrow: "⇔", uparrow: "↑", downarrow: "↓",
+			updownarrow: "↕", to: "→", gets: "←",
+			times: "×", div: "÷", pm: "±", mp: "∓", cdot: "·", bullet: "•",
+			leq: "≤", geq: "≥", neq: "≠", approx: "≈", equiv: "≡", sim: "∼",
+			propto: "∝", infty: "∞", sum: "∑", prod: "∏", sqrt: "√",
+			forall: "∀", exists: "∃", nexists: "∄", in: "∈", notin: "∉", ni: "∋",
+			subset: "⊂", supset: "⊃", subseteq: "⊆", supseteq: "⊇", cup: "∪", cap: "∩",
+			emptyset: "∅", partial: "∂", nabla: "∇", int: "∫", oint: "∮",
+			therefore: "∴", because: "∵", degree: "°", angle: "∠", perp: "⊥", parallel: "∥",
+			wedge: "∧", vee: "∨", neg: "¬", oplus: "⊕", otimes: "⊗", star: "☆",
+			alpha: "α", beta: "β", gamma: "γ", Gamma: "Γ", delta: "δ", Delta: "Δ",
+			epsilon: "ε", varepsilon: "ε", zeta: "ζ", eta: "η", theta: "θ", Theta: "Θ",
+			iota: "ι", kappa: "κ", lambda: "λ", Lambda: "Λ", mu: "μ", nu: "ν",
+			xi: "ξ", Xi: "Ξ", pi: "π", Pi: "Π", rho: "ρ", sigma: "σ", Sigma: "Σ",
+			tau: "τ", upsilon: "υ", phi: "φ", varphi: "φ", Phi: "Φ", chi: "χ",
+			psi: "ψ", Psi: "Ψ", omega: "ω", Omega: "Ω"
+		}
+		__owWithMdLatexSymsCache = _withMdLatexSyms
+	}
+	res = res.replace(/\$\\([A-Za-z]+)\$/g, (m, cmd) => isDef(_withMdLatexSyms[cmd]) ? _withMdLatexSyms[cmd] : m)
 
 	var _repBoldItalic = _withMdPatterns.repBoldItalic + da
 	var _repBold       = _withMdPatterns.repBold + da
