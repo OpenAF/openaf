@@ -1642,11 +1642,11 @@ OpenWrap.template.prototype.html = {
 		try {
 			var u = new java.net.URL(aURL);
 			var b = h.get(aURL, __, __, true);
+			try { h.close(); } catch(e2) {}
 			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes)) + aSuffix;
 			} catch(e1) {
-				return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
-			} finally {
 				try { h.close(); } catch(e2) {}
+				return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
 			}
 	},
 	/**
@@ -1706,11 +1706,13 @@ OpenWrap.template.prototype.html = {
 			try {
 				var u = new java.net.URL(aURL);
 				var b = h.get(aURL, __, __, true);
+				try { h.close(); } catch(e4) {}
 				if (withContents)
 					return af.fromBytes2String(b.responseBytes);
 				else
 					return "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes));
 				} catch(e1) {
+				try { h.close(); } catch(e4) {}
 				try {
 					if (withContents)
 						return io.readFileString(aURL);
@@ -1727,8 +1729,6 @@ OpenWrap.template.prototype.html = {
 						return aURL;
 					}
 					}
-				} finally {
-					try { h.close(); } catch(e4) {}
 				}
 			};
 		var resolveRelativeURL = (aBaseURL, aRelativeURL) => {
