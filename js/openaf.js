@@ -3759,6 +3759,39 @@ const loadPy = function(aPyScript, aInput, aOutputArray, dontStop) {
 }
 
 /**
+ * Shared by requireCompiled/loadCompiled: computes the .openaf_precompiled/<cl>.jar artifact path
+ * for aScript, recompiling into it when missing/stale (unless dontCompile), and returns that path.
+ * aWrapCode, when given, transforms the verified/pre-parsed source before compiling (used by
+ * requireCompiled to wrap it as a CommonJS module factory) - both callers now go through the same
+ * __codeVerify/__loadPreParser step, fixing a prior divergence where requireCompiled computed that
+ * processed code and then compiled the raw source instead.
+ * The marker file is tagged with a layout version ("-j2", one jar instead of N+2 loose .class files)
+ * on top of distribution+version, so any pre-existing directory - including a loose-layout one shipped
+ * inside an .opack for a different OpenAF version - is purged exactly once on upgrade.
+ */
+const __precompiledArtifact = function(aScript, info, path, cl, aWrapCode, dontCompile) {
+	var artifact = path + cl + ".jar";
+	var marker = path + "." + getDistribution() + "-" + getVersion() + "-j2";
+	if (!io.fileExists(marker)) {
+		io.rm(path)
+	}
+	if (!(io.fileExists(path) && io.fileExists(artifact)) ||
+		info.lastModified > io.fileInfo(artifact).lastModified) {
+		if (!dontCompile) {
+			io.mkdir(path);
+			io.writeFileString(marker, "")
+			io.rm(artifact);
+			var code = io.readFileString(info.canonicalPath)
+			__codeVerify(code, aScript)
+			if (!__flags.OAF_CLOSED) code = __loadPreParser(code)
+			if (isDef(aWrapCode)) code = aWrapCode(code);
+			af.compileToJar(cl, code, artifact);
+		}
+	}
+	return artifact;
+}
+
+/**
  * <odoc>
  * <key>requireCompiled(aScript, dontCompile, dontLoad) : Object</key>
  * Loads aScript, through require, previously compile or it will be compiled if (dontCompile is not true).
@@ -3766,44 +3799,28 @@ const loadPy = function(aPyScript, aInput, aOutputArray, dontStop) {
  * </odoc>
  */
 const requireCompiled = function(aScript, dontCompile, dontLoad) {
-	var res = false, cl, clFile, clFilepath;
+	var res = false, cl, artifact;
 	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
 		if (info.isFile) {
 			var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename)) + ".openaf_precompiled/";
 			if (info.filename.endsWith(".js")) {
 				cl = info.filename.replace(/\./g, "_");
-				clFile = cl + ".class";
-				clFilepath = path + clFile;
-				// Check version and recompile if needed
-				if (!io.fileExists(path + "." + getDistribution() + "-" + getVersion())) {
-					io.rm(path)
-				}
-				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
-					info.lastModified > io.fileInfo(clFilepath).lastModified) {
-					if (!dontCompile) {
-						io.mkdir(path);
-						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
-						io.rm(clFilepath);
-						var code = io.readFileString(info.canonicalPath)
-						__codeVerify(code, aScript)
-						if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
-						af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + io.readFileString(info.canonicalPath) + "}", path);
-					}
-				}
-				aScript = clFilepath;
+				artifact = __precompiledArtifact(aScript, info, path, cl, code =>
+					"var __" + cl + " = function(require, exports, module) {" + code + "}", dontCompile);
+				aScript = artifact;
 			}
-			if (!dontLoad && aScript.endsWith(".class")) {
+			if (!dontLoad && aScript.endsWith(".jar")) {
 				try {
 					af.getClass(cl);
 				} catch(e) {
 					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
-						af.runFromExternalClass(cl, path);
+						af.runFromExternalClass(cl, artifact);
 						var exp = {}, mod = { id: cl, uri: cl, exports: exp };
 
 						global["__" + cl].call({}, requireCompiled, exp, mod);
 						//exp = mod.exports || exp;
-					
+
 						return mod.exports;
 					} else {
 						throw e;
@@ -3817,47 +3834,30 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 /**
  * <odoc>
  * <key>loadCompiled(aScript, dontCompile, dontLoad) : boolean</key>
- * Tries to load an OpenAF script as a compiled class. If a compiled class file doesn't exist in the same path 
+ * Tries to load an OpenAF script as a compiled class. If a compiled class file doesn't exist in the same path
  * it will try to compile and load from the compiled code. If a compiled class file exists in the same path it
- * will recompile it if the modified date of the original aScript is newer than the class. 
+ * will recompile it if the modified date of the original aScript is newer than the class.
  * If the class was already loaded or can't be loaded it will return false. Returns true otherwise.
  * Optionally you can force to not compile dontCompile=true or just to compile with dontLoad=true
  * </odoc>
  */
 const loadCompiled = function(aScript, dontCompile, dontLoad) {
-	var res = false, cl, clFile, clFilepath;
+	var res = false, cl, artifact;
 	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
 		if (info.isFile) {
 			var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename)) + ".openaf_precompiled/";
 			if (info.filename.endsWith(".js") || info.filename.endsWith("_profile")) {
 				cl = info.filename.replace(/\./g, "_");
-				clFile = cl + ".class";
-				clFilepath = path + clFile;
-				// Check version and recompile if needed
-				if (!io.fileExists(path + "." + getDistribution() + "-" + getVersion())) {
-					io.rm(path)
-				}
-				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
-					info.lastModified > io.fileInfo(clFilepath).lastModified) {
-					if (!dontCompile) {
-						io.mkdir(path);
-						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
-						io.rm(clFilepath);
-						var code = io.readFileString(info.canonicalPath)
-						__codeVerify(code, aScript)
-						if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
-						af.compileToClasses(cl, code, path);
-					}
-				}
-				aScript = clFilepath;
+				artifact = __precompiledArtifact(aScript, info, path, cl, __, dontCompile);
+				aScript = artifact;
 			}
-			if (!dontLoad && aScript.endsWith(".class")) {
+			if (!dontLoad && aScript.endsWith(".jar")) {
 				try {
 					af.getClass(cl);
 				} catch(e) {
 					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
-						af.runFromExternalClass(cl, path);
+						af.runFromExternalClass(cl, artifact);
 						res = true;
 					} else {
 						throw e;

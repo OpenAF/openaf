@@ -21,6 +21,7 @@ import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
@@ -70,6 +71,7 @@ import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.ast.AstRoot;
 
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -1356,31 +1358,67 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public void compileToClasses(String classfile, String script, String path) throws IOException {
-		ClassCompiler cc = new ClassCompiler(new CompilerEnvirons());
-		Object compiled[] = cc.compileToClassFiles(script, classfile, 1, classfile);
+		// Delegates to CompileJS2Java so the runtime path gets the same hardening as the build-time
+		// path (source-size splitting, no embedded debug info/raw source, and the Main-only max_locals
+		// fix) instead of calling ClassCompiler directly. Without it, compiling almost any script here
+		// threw "VerifyError: Local variable table overflow" at load time (Rhino 1.9.1 under-reports
+		// max_locals in the generated "<X>Main" descriptor builder).
+		Object compiled[] = CompileJS2Java.compileToBytes(classfile, script, CompileJS2Java.CompilationMethod.RHINO_LEGACY, false);
 		if (path == null || path.equals("undefined"))
 			path = "";
 		else
 			path = path + "/";
-		
+
 		for (int j = 0; j != compiled.length; j += 2) {
 			String className = (String)compiled[j];
 			byte[] bytes = (byte[])(byte[])compiled[(j + 1)];
 			File outfile = new File(path + className + ".class");
-			try {
-				FileOutputStream os = new FileOutputStream(outfile);
-				try {
-					os.write(bytes);
-				} finally {
-					os.close();
-				}
-			} catch (IOException ioe) {
-				throw ioe;
-				//SimpleLog.log(logtype.ERROR, ioe.getMessage(), ioe);
+			try (FileOutputStream os = new FileOutputStream(outfile)) {
+				os.write(bytes);
 			}
-		} 
+		}
 	}
-	
+
+	/**
+	 * <odoc>
+	 * <key>af.compileToJar(aClassfile, aScriptString, aJarFile)</key>
+	 * Given aClassfile name and aScriptString it will generate Java bytecode as a result of compiling
+	 * aScriptString, writing every generated class as a single entry into aJarFile instead of one loose
+	 * .class file per class (see af.compileToClasses). aJarFile is written to a temporary file next to
+	 * it and then moved into place, so a failed compile never leaves a partial/corrupt jar behind; the
+	 * class can then be loaded with af.externalClass/af.runFromExternalClass pointed at aJarFile
+	 * directly (a URLClassLoader treats a jar file URL the same as a directory URL). Example:\
+	 * \
+	 * af.compileToJar("SomeClass", "print('hello world!');", "/some/path/SomeClass.jar")\
+	 * \
+	 * </odoc>
+	 */
+	@JSFunction
+	public void compileToJar(String classfile, String script, String jarFile) throws IOException {
+		Object compiled[] = CompileJS2Java.compileToBytes(classfile, script, CompileJS2Java.CompilationMethod.RHINO_LEGACY, false);
+
+		Path target = Paths.get(jarFile);
+		Path tmp = Paths.get(jarFile + ".tmp." + System.nanoTime());
+		try {
+			try (FileOutputStream fos = new FileOutputStream(tmp.toFile());
+			     ZipOutputStream zos = new ZipOutputStream(fos)) {
+				zos.setMethod(ZipOutputStream.DEFLATED);
+				zos.setLevel(9);
+				for (int j = 0; j != compiled.length; j += 2) {
+					String className = (String) compiled[j];
+					byte[] bytes = (byte[]) compiled[(j + 1)];
+					zos.putNextEntry(new ZipEntry(className + ".class"));
+					zos.write(bytes);
+					zos.closeEntry();
+				}
+			}
+			Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException ioe) {
+			Files.deleteIfExists(tmp);
+			throw ioe;
+		}
+	}
+
 	/**
 	 * <odoc>
 	 * <key>af.runFromClass(aCompiledJavascriptClass) : Object</key>

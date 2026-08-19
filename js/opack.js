@@ -2447,11 +2447,14 @@ function pack(args) {
 // GENPACK
 function genpack(args) {
 	var packag = {};
-	var excludeList = [ ".svn", ".git" ];
+	// .openaf_precompiled holds classes compiled for one specific OpenAF distribution+version
+	// (see js/openaf.js's __precompiledArtifact); shipping it inside an .opack would let a different
+	// version silently load/purge someone else's precompiled cache instead of just recompiling.
+	var excludeList = [ ".svn", ".git", ".openaf_precompiled" ];
 	try { packag = getPackage(args[0]) } catch(e) {};
 
 	for(let i in args) {
-    	if (args[i] == "--includeSCM") excludeList = [];
+    	if (args[i] == "--includeSCM") excludeList = [ ".openaf_precompiled" ];
 	}
 	for(let i in args) {
     	if (args[i] == "--exclude") {

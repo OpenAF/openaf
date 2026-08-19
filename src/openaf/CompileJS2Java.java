@@ -103,21 +103,21 @@ public class CompileJS2Java {
      * @deprecated Use {@link #compileToClasses(String, String, String, CompilationMethod)} instead
      */
     @Deprecated
-    public static void compileToClasses(String classfile, String script, String path) {
+    public static void compileToClasses(String classfile, String script, String path) throws IOException {
         compileToClasses(classfile, script, path, CompilationMethod.RHINO_LEGACY);
     }
 
     /**
-     * Compile JavaScript to Java classes using the specified compilation method
-     * @param classfile The name of the class file to generate
-     * @param script The JavaScript source code
-     * @param path The output path for the class files
-     * @param method The compilation method to use
+     * Compiles aScript to in-memory class bytes: (className, bytes) pairs, same layout as
+     * ClassCompiler.compileToClassFiles. Shared by the loose-file writer below and by any jar-writing
+     * caller, so every consumer gets the same fixes applied exactly once.
+     * @param verbose whether to print the "Adjusted script size" notice to stdout (build-time only;
+     *        runtime callers must pass false so script stdout isn't polluted).
      */
-    public static void compileToClasses(String classfile, String script, String path, CompilationMethod method) {
+    public static Object[] compileToBytes(String classfile, String script, CompilationMethod method, boolean verbose) {
 		long origSize = script.length();
 		script = splitLongStrings(script);
-		if (script.length() != origSize) {
+		if (verbose && script.length() != origSize) {
 			System.out.println("Adjusted script size from " + origSize + " to " + script.length());
 		}
 
@@ -136,6 +136,34 @@ public class CompileJS2Java {
 
 		ClassCompiler cc = new ClassCompiler(ce);
 		Object compiled[] = compileToClassFilesWithMethod(cc, script, classfile, 1, classfile, method);
+
+		for (int j = 0; j != compiled.length; j += 2) {
+			String className = (String)compiled[j];
+			byte[] bytes = (byte[])(byte[])compiled[(j + 1)];
+			bytes = sanitizeMethodNames(bytes);
+			// Rhino 1.9.1's ClassCompiler under-reports max_locals only in the "<X>Main" descriptor
+			// builder (its initN() methods), causing a VerifyError ("Local variable table overflow")
+			// on load. Scope the floor to that class only: applying it to every class (as before)
+			// forces every compiled function body to reserve 1024 local-variable slots regardless of
+			// its real need, which inflates every JVM stack frame and cuts recursion depth by ~15-20x
+			// compared to interpreted code (measured: ~200 vs ~3000+ frames before StackOverflowError).
+			if (className.equals(classfile + "Main")) bytes = patchMaxLocals(bytes);
+			compiled[j + 1] = bytes;
+		}
+
+		return compiled;
+	}
+
+    /**
+     * Compile JavaScript to Java classes using the specified compilation method, writing one loose
+     * .class file per generated class into aPath.
+     * @param classfile The name of the class file to generate
+     * @param script The JavaScript source code
+     * @param path The output path for the class files
+     * @param method The compilation method to use
+     */
+    public static void compileToClasses(String classfile, String script, String path, CompilationMethod method) throws IOException {
+		Object compiled[] = compileToBytes(classfile, script, method, true);
 		if (path == null || path.equals("undefined"))
 			path = "";
 		else
@@ -144,19 +172,9 @@ public class CompileJS2Java {
 		for (int j = 0; j != compiled.length; j += 2) {
 			String className = (String)compiled[j];
 			byte[] bytes = (byte[])(byte[])compiled[(j + 1)];
-			bytes = sanitizeMethodNames(bytes);
-			bytes = patchMaxLocals(bytes);
 			File outfile = new File(path + className + ".class");
-			try {
-				FileOutputStream os = new FileOutputStream(outfile);
-				try {
-					os.write(bytes);
-				} finally {
-					os.close();
-				}
-			} catch (IOException ioe) {
-				System.err.println(ioe.getMessage());
-                ioe.printStackTrace();
+			try (FileOutputStream os = new FileOutputStream(outfile)) {
+				os.write(bytes);
 			}
 		}
 	}
