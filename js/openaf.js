@@ -1796,10 +1796,15 @@ const __ansiColorPrep = function(aAnsi) {
  */
 const ansiColor = function(aAnsi, aString, force, noCache, noReset) {
 	if (!force && !__ansiColorFlag) return aString
-	aAnsi = _$(aAnsi, "aAnsi").isString().default("");
-	aString = _$(aString, "aString").isString().default("");
-	force = _$(force, "force").isBoolean().default(false);
-	noCache = _$(noCache, "noCache").isBoolean().default(!__flags.ANSICOLOR_CACHE)
+
+	if (isUnDef(aAnsi)) aAnsi = ""
+	else if (!isString(aAnsi)) throw "aAnsi is not a string"
+	if (isUnDef(aString)) aString = ""
+	else if (!isString(aString)) throw "aString is not a string"
+	if (isUnDef(force)) force = false
+	else if (!isBoolean(force)) throw "force is not boolean"
+	if (isUnDef(noCache)) noCache = !__flags.ANSICOLOR_CACHE
+	else if (!isBoolean(noCache)) throw "noCache is not boolean"
 
 	var ansis = force || __conConsole
 	
@@ -2057,7 +2062,8 @@ var __colorFormat = {
 	}
 };
 const colorify = function(json, aOptions, spacing) {
-	aOptions = _$(aOptions, "options").isMap().default({})
+	if (isUnDef(aOptions)) aOptions = {}
+	else if (!isMap(aOptions)) throw "options is not a map"
 	var _ac = c => c + (isDef(aOptions.bgcolor) ? (c.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")
 
 	if (typeof json == 'string' || null == json) {
@@ -2065,55 +2071,76 @@ const colorify = function(json, aOptions, spacing) {
 	}
 
 	if (__flags.ALTERNATIVES.colorify) {
-		aOptions.spacing = _$(aOptions.spacing, "options.spacing").isNumber().default(2)
-		spacing = _$(spacing, "spacing").isNumber().default(aOptions.spacing)
-		var _sl = _$(aOptions.simple, "options simple").isBoolean().default(false)
-	
+		if (isUnDef(aOptions.spacing)) aOptions.spacing = 2
+		else if (!isNumber(aOptions.spacing)) throw "options.spacing is not a number"
+		if (isUnDef(spacing)) spacing = aOptions.spacing
+		else if (!isNumber(spacing)) throw "spacing is not a number"
+		var _sl
+		if (isUnDef(aOptions.simple)) _sl = false
+		else if (!isBoolean(aOptions.simple)) throw "options simple is not boolean"
+		else _sl = aOptions.simple
+
+		// Per-frame invariants (don't depend on the key/value being processed)
+		var _acEmpty = _ac("")
+		var _acKey = _ac(__colorFormat.key)
+		var _acNumber = _ac(__colorFormat.number)
+		var _acBoolean = _ac(__colorFormat.boolean)
+		var _acString = _ac(__colorFormat.string)
+		var _acDate = _ac(__colorFormat.date)
+		var _acDefault = _ac(__colorFormat.default)
+
 		var _cl = (value, _t) => {
-			var _v 
 			switch(_t) {
-			case "number"   : _v = ansiColor(_ac(__colorFormat.number), String(value)); break
-			case "boolean"  : _v = ansiColor(_ac(__colorFormat.boolean), String(value)); break
-			case "string"   : _v = ansiColor(_ac(__colorFormat.string), '"' + value + '"'); break
-			case "date"     : _v = ansiColor(_ac(__colorFormat.date), value.toISOString()); break
-			case "undefined": _v = ansiColor(_ac(__colorFormat.default), "undefined"); break
-			case "null"     : _v = ansiColor(_ac(__colorFormat.default), "null"); break
-			default         : _v = ansiColor(_ac(__colorFormat.default), String(value)); break
+			case "number"   : return ansiColor(_acNumber, String(value))
+			case "boolean"  : return ansiColor(_acBoolean, String(value))
+			case "string"   : return ansiColor(_acString, '"' + value + '"')
+			case "date"     : return ansiColor(_acDate, value.toISOString())
+			case "undefined": return ansiColor(_acDefault, "undefined")
+			case "null"     : return ansiColor(_acDefault, "null")
+			default         : return ansiColor(_acDefault, String(value))
 			}
-			return _v
 		}
 
 		var ks = Object.keys(json)
 		var ksl = ks.length
 		var pdt = descType(json)
-		var psp = ansiColor(_ac(""),repeat(spacing - aOptions.spacing, " "))
-		var sp = ansiColor(_ac(""),repeat(spacing, " "))
+		var psp = ansiColor(_acEmpty, repeat(spacing - aOptions.spacing, " "))
+		var sp = ansiColor(_acEmpty, repeat(spacing, " "))
 
 		if (ksl == 0) {
-			if (pdt == "array") return ansiColor(_ac(""), "[]")
-			if (pdt == "object" || pdt == "map") return ansiColor(_ac(""), "{}")
+			if (pdt == "array") return ansiColor(_acEmpty, "[]")
+			if (pdt == "object" || pdt == "map") return ansiColor(_acEmpty, "{}")
 		}
 		if (pdt != "object" && pdt != "map" && pdt != "array") return _cl(json, pdt)
 
-		var out = new Set()
-		out.add(ansiColor(_ac(""), pdt == "map" ? "{\n" : "[\n"))
-		out.add(pForEach(ks, (key, i) => {
-			var _pout = new Set()
-			var value = json[key]
-			var _t = descType(value)
-			var _keyp = [sp, (pdt == "map" ? [ansiColor(_ac(""),(_sl ? '' : '"')), ansiColor(_ac(__colorFormat.key), key), (_sl ? '' : ansiColor(_ac(""),'"')), ansiColor(_ac(""),': ')].join("") : "")].join("")
-			var _keys = ((i+1) < ksl ? ansiColor(_ac(""), ",\n") : "\n")
-			if (_t != "object" && _t != "map" && _t != "array") {
-				_pout.add([_keyp, _cl(value, _t), _keys].join(""))
-			} else {
-				if (Object.keys(value).length == 0) _pout.add([_keyp, ansiColor(_ac(""), (pdt == "array" ? "[]" : "{}")), _keys].join(""))
-				else _pout.add(_keyp + colorify(value, aOptions, spacing + aOptions.spacing) + _keys)
+		// More per-frame invariants for the key wrapper/separators (pdt/_sl fixed for this frame)
+		var _quoteOpenTok = ansiColor(_acEmpty, (_sl ? '' : '"'))
+		var _quoteCloseTok = _sl ? '' : ansiColor(_acEmpty, '"')
+		var _colonTok = ansiColor(_acEmpty, ': ')
+		var _commaNLTok = ansiColor(_acEmpty, ",\n")
+		var _emptyTok = ansiColor(_acEmpty, (pdt == "array" ? "[]" : "{}"))
+
+		var parts = new Array(ksl)
+		for (var i = 0; i < ksl; i++) {
+			var key = ks[i]
+			try {
+				var value = json[key]
+				var _t = descType(value)
+				var _keyp = sp + (pdt == "map" ? (_quoteOpenTok + ansiColor(_acKey, key) + _quoteCloseTok + _colonTok) : "")
+				var _keys = ((i+1) < ksl ? _commaNLTok : "\n")
+				if (_t != "object" && _t != "map" && _t != "array") {
+					parts[i] = _keyp + _cl(value, _t) + _keys
+				} else {
+					if (Object.keys(value).length == 0) parts[i] = _keyp + _emptyTok + _keys
+					else parts[i] = _keyp + colorify(value, aOptions, spacing + aOptions.spacing) + _keys
+				}
+			} catch (e) {
+				printErr(e)
+				parts[i] = ""
 			}
-			return Array.from(_pout).join("")
-		}).join(""))
-		out.add([psp, ansiColor(_ac(""), (pdt == "map" ? "}" : "]"))].join(""))
-	
-		return Array.from(out).join("")
+		}
+
+		return ansiColor(_acEmpty, pdt == "map" ? "{\n" : "[\n") + parts.join("") + psp + ansiColor(_acEmpty, (pdt == "map" ? "}" : "]"))
 	} else {
 		if (typeof json != 'string') {
 			json = stringify(json, __, 2)
@@ -6506,6 +6533,12 @@ const isUUID = function(obj) {
  * </odoc>
  */
 const descType = function(aObj) {
+	var __dt_t = typeof aObj
+	if (__dt_t === 'boolean') return "boolean"
+	if (__dt_t === 'string') return isNumber(aObj) ? "number" : "string"
+	if (__dt_t === 'number' && !isNaN(aObj) && isFinite(aObj)) return "number"
+	if (Array.isArray(aObj)) return "array"
+
 	if (isUnDef(aObj)) return "undefined"
 	if (isNull(aObj)) return "null"
 	if (isByteArray(aObj)) return "bytearray"
