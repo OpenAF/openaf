@@ -927,7 +927,7 @@ function __edit(aInitialCommand) {
 	}
 }
 
-function __addEditHistory(aCommand) {
+function __addJLineHistory(aCommand) {
 	if (!isString(aCommand) || aCommand.trim().length == 0 || isUnDef(jLineFileHistory)) return;
 	try {
 		jLineFileHistory.add(aCommand.replace(/\r\n|\r|\n/g, "^J"));
@@ -1055,7 +1055,7 @@ function __processCmdLine(aCommand, returnOnly) {
 					var editedCommand = isDef(initialCommand) ? __edit(initialCommand) : __;
 					if (isDef(editedCommand) && editedCommand.trim().length > 0) {
 						lastCommand = editedCommand;
-						__addEditHistory(editedCommand);
+						__addJLineHistory(editedCommand);
 						__outputConsole(ansiColor("FAINT,ITALIC", editedCommand));
 						if (!editedCommand.match(/\r?\n$/)) __outputConsole("\n");
 						__outputConsole(ansiColor("FG(240)", repeat(con.getConsoleReader().getTerminal().getWidth(), "╌") + "\n"));
@@ -1595,6 +1595,7 @@ while(cmd != "exit") {
 				}
 			}
 		}, con).trim();
+		__addJLineHistory(cmd);
 	}
 	
 	if (cmd == "") {
