@@ -15,7 +15,14 @@ var HELPSEPARATOR_ANSI = "─";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|tree|view|sql|esql|dsql|pin|multi|diff|reset";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|tree|view|sql|esql|dsql|pin|multi|diff|reset|edit";
+var CONSOLECOMMANDS = RESERVEDWORDS.split("|");
+// Extensions can register command descriptions here. They are rendered in the
+// standard help panel, immediately before the generic script-command entry.
+global.CONSOLEHELP = {};
+var CONSOLESUBCOMMANDS = {
+	"edit": [ "last", "history" ]
+};
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "print(\"Encrypted text: \" + askEncrypt(\"Enter text: \"));",
@@ -599,9 +606,13 @@ function __help(aTerm) {
 		__o("__table__    Tries to show the command result array as an ascii table.");
 		__o("__view__     Tries to show the command result object as an ascii table.");
 		__o("__multi__    Turns on or off the entry of multiline expressions (default on)");
+		__o("__edit__     Compose a command in $EDITOR (or vi); use 'edit last' or 'edit history' to revise a previous command.");
 		__o("__clear__    Tries to clear the screen.");
 		__o("__reset__    Resets the terminal in unix based consoles.")
 		__o("__purge__    Purge all the command history");
+		Object.keys(global.CONSOLEHELP).forEach(function(command) {
+			__o("__" + command + "__" + repeat(Math.max(1, 10 - command.length), " ") + global.CONSOLEHELP[command]);
+		});
 		__o("__[others]__ Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
 	} else {
 		var h;
@@ -851,6 +862,113 @@ function __multi(aCmd) {
 	}
 }
 
+function __parseEditorCommand(aCommand) {
+	if (!isString(aCommand) || aCommand.trim().length == 0) return [];
+	var parts = [], current = "", quote = "", escaped = false;
+	for (var i = 0; i < aCommand.length; i++) {
+		var ch = aCommand.charAt(i);
+		if (escaped) {
+			current += ch;
+			escaped = false;
+		} else if (ch == "\\") {
+			escaped = true;
+		} else if (quote.length > 0) {
+			if (ch == quote) quote = "";
+			else current += ch;
+		} else if (ch == "'" || ch == '"') {
+			quote = ch;
+		} else if (/\s/.test(ch)) {
+			if (current.length > 0) {
+				parts.push(current);
+				current = "";
+			}
+		} else {
+			current += ch;
+		}
+	}
+	if (escaped) current += "\\";
+	if (quote.length > 0) return [];
+	if (current.length > 0) parts.push(current);
+	return parts;
+}
+
+function __edit(aInitialCommand) {
+	var editorCommand = isString(getEnv("EDITOR")) && getEnv("EDITOR").trim().length > 0 ? getEnv("EDITOR").trim() : "vi";
+	var editorArgs = __parseEditorCommand(editorCommand);
+	if (editorArgs.length == 0) {
+		__outputConsoleError("Invalid EDITOR command. Set EDITOR to a command with balanced quotes.");
+		return __;
+	}
+
+	var editorFile = __;
+	try {
+		var originalCommand = isString(aInitialCommand) ? aInitialCommand : "";
+		editorFile = io.createTempFile("openaf-console-", ".js");
+		io.writeFileString(editorFile, originalCommand);
+		var command = new java.util.ArrayList();
+		editorArgs.forEach(function(arg) { command.add(arg); });
+		command.add(editorFile);
+		var exitCode = new java.lang.ProcessBuilder(command).inheritIO().start().waitFor();
+		if (exitCode != 0) {
+			__outputConsoleError("Editor exited with status " + exitCode + ". Command cancelled.");
+			return __;
+		}
+		var editedCommand = io.readFileString(editorFile);
+		// Vim's :q! exits successfully, but leaves the temporary file unchanged.
+		if (isString(editedCommand) && editedCommand == originalCommand) return __;
+		return isString(editedCommand) ? editedCommand : "";
+	} catch(e) {
+		__outputConsoleError("Unable to open editor '" + editorCommand + "': " + e);
+		return __;
+	} finally {
+		if (isDef(editorFile)) {
+			try { io.rm(editorFile); } catch(ignoreEditorCleanup) {}
+		}
+	}
+}
+
+function __addEditHistory(aCommand) {
+	if (!isString(aCommand) || aCommand.trim().length == 0 || isUnDef(jLineFileHistory)) return;
+	try {
+		jLineFileHistory.add(aCommand.replace(/\r\n|\r|\n/g, "^J"));
+		jLineFileHistory.flush();
+	} catch(e) {
+		// The command remains executable even if its optional history entry cannot be saved.
+	}
+}
+
+function __chooseEditHistory() {
+	if (isUnDef(jLineFileHistory)) {
+		__outputConsoleError("Command history is not available yet.");
+		return __;
+	}
+
+	var commands = [];
+	try {
+		var entries = jLineFileHistory.iterator();
+		while (entries.hasNext()) {
+			var command = String(entries.next().value());
+			if (command.trim().length > 0 && !command.match(/^edit(?: +|$)/)) commands.push(command);
+		}
+	} catch(e) {
+		__outputConsoleError("Unable to read command history: " + e);
+		return __;
+	}
+
+	commands.reverse();
+	if (commands.length == 0) {
+		__outputConsoleError("No previous command to edit.");
+		return __;
+	}
+
+	var choices = commands.map(function(command) {
+		return command.replace(/\r\n|\r|\n|\^J/g, ansiColor("FG(240)", " ↵ "));
+	}).concat(["🔙 Cancel"]);
+	var selected = askChoose("Choose a command to edit: ", choices, Math.min(choices.length, 10));
+	if (!isNumber(selected) || selected < 0 || selected >= commands.length) return __;
+	return commands[selected].replace(/\^J/g, "\n");
+}
+
 function __view(aCmd, fromCommand, shouldClear) {
 	if (aCmd.match(/^off$|^0$/i) && fromCommand) { viewCommand = false; return; }
 	if (aCmd.match(/^on$|^1$/i) && fromCommand) { viewCommand = true; return; }
@@ -924,6 +1042,26 @@ function __processCmdLine(aCommand, returnOnly) {
 			if (aCommand.match(/^help(?: +|$)/)) {
 				internalCommand = true;
 				__help(aCommand.replace(/^help */, ""), false);
+			}
+			if (aCommand.match(/^edit(?: +|$)/)) {
+				internalCommand = true;
+				var editArg = aCommand.replace(/^edit */, "").trim();
+				if (editArg != "" && editArg != "last" && editArg != "history") {
+					__outputConsoleError("Usage: edit [last|history]");
+				} else if (editArg == "last" && (!isString(lastCommand) || lastCommand.trim().length == 0)) {
+					__outputConsoleError("No previous command to edit.");
+				} else {
+					var initialCommand = editArg == "last" ? lastCommand : (editArg == "history" ? __chooseEditHistory() : "");
+					var editedCommand = isDef(initialCommand) ? __edit(initialCommand) : __;
+					if (isDef(editedCommand) && editedCommand.trim().length > 0) {
+						lastCommand = editedCommand;
+						__addEditHistory(editedCommand);
+						__outputConsole(ansiColor("FAINT,ITALIC", editedCommand));
+						if (!editedCommand.match(/\r?\n$/)) __outputConsole("\n");
+						__outputConsole(ansiColor("FG(240)", repeat(con.getConsoleReader().getTerminal().getWidth(), "╌") + "\n"));
+						return __processCmdLine(editedCommand, returnOnly);
+					}
+				}
 			}
 			if (aCommand.match(/^sql(?: +|$)/)) {
 				internalCommand = true;
@@ -1267,6 +1405,7 @@ var pauseCommand = true;
 var watchCommand = false;
 var viewCommand = __ansiflag;
 var multiCommand = true;
+var lastCommand = __;
 var watchLine = "";
 var __previousAnsiFlag = __ansiflag;
 
@@ -1330,9 +1469,16 @@ initThread.addThread(function(uuid) {
 		new Packages.openaf.jline.OpenAFConsoleCompleter(function(buf, cursor, candidates) {
 			if (buf == null) return null;
 			var ret = -1;
+			var commandBuffer = buf.substr(0, cursor);
+			var commandMatch = commandBuffer.match(/^\s*([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]*)$/);
 
-			if (buf.substr(0, cursor).match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/)) {
-				var tmpbuf = buf.substr(0, cursor).match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/);
+			if (commandMatch != null && isDef(CONSOLESUBCOMMANDS[commandMatch[1]])) {
+				ret = cursor - commandMatch[2].length;
+				CONSOLESUBCOMMANDS[commandMatch[1]].forEach(function(subcommand) {
+					if (subcommand.indexOf(commandMatch[2]) == 0) candidates.add(subcommand);
+				});
+			} else if (commandBuffer.match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/)) {
+				var tmpbuf = commandBuffer.match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/);
 				ret = cursor - tmpbuf[3].length;
 				tmpbuf[1] = tmpbuf[1].replace(/\.$/, "");
 				tmpbuf[3] = tmpbuf[3].replace(/\.$/, "");
@@ -1348,11 +1494,11 @@ initThread.addThread(function(uuid) {
                 }
 
 			} else {
-				if(buf.substr(0, cursor).match(/[^a-zA-Z0-9_\[\]\(\)\"\']*[a-zA-Z0-9_\[\]\(\)\"\']+$/)) {
-					var tmpbuf = buf.substr(0, cursor).match(/[^a-zA-Z0-9_\[\]\(\)\"\']*([a-zA-Z0-9_\[\]\(\)\"\']+)$/);
+				if(commandBuffer.match(/[^a-zA-Z0-9_\[\]\(\)\"\']*[a-zA-Z0-9_\[\]\(\)\"\']+$/)) {
+					var tmpbuf = commandBuffer.match(/[^a-zA-Z0-9_\[\]\(\)\"\']*([a-zA-Z0-9_\[\]\(\)\"\']+)$/);
 					ret = cursor - tmpbuf[1].length;
 					try {
-						var tmpList = __scope(tmpbuf[1], true).concat(Object.keys(__alias));
+						var tmpList = __scope(tmpbuf[1], true).concat(CONSOLECOMMANDS, Object.keys(__alias));
 						for(let elem in tmpList) {
 							if(tmpList[elem].indexOf(tmpbuf[1]) == 0) {							
 								candidates.add(tmpList[elem]);
@@ -1403,6 +1549,7 @@ if (__expr.length > 0) cmd = __expr;
 cmd = cmd.trim();
 
 while(cmd != "exit") {
+	if (cmd.length > 0 && !cmd.match(/^edit(?: +|$)/)) lastCommand = cmd;
 	if (viewCommand) {
 		__view(cmd, false);
 	} else {
