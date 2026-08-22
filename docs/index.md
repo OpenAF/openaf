@@ -2,10 +2,14 @@
 
 Core references and extended guides to build and operate oJobs and OpenAF solutions.
 
+## Getting Started
+- getting-started.md – Install, hello world, first oJob, and where to go next
+- cli.md – `openaf`/`oaf` command-line flags and generated wrapper scripts (`ojob`, `opack`, `oafp`, `pyoaf`, …)
+
 ## Core
-- ojob.md – Main oJob YAML reference (structure, jobs, built-ins)
+- openaf.md – Core OpenAF runtime helpers & APIs (`$$`, `_$`, `$from`, `$path`, channels, etc.)
+- ojob.md – Main oJob YAML reference (structure, jobs, built-ins, shortcuts, argument tables)
 - ojob-all.yaml – Exhaustive annotated YAML template
-- openaf.md – Core OpenAF runtime helpers & APIs
 - oafp.md – OpenAF Processor (oafp): universal data transformation, SQL/JMESPath queries & formatting
 - odoc.md – ODoc engine, docstrings (`<odoc>`), offline help databases (`.odoc.db`), and `odocweb` server
 - opacks.md – oPacks: manifest format, versioning, the `opack` CLI, scripting integration, building & hosting opack repositories
@@ -26,17 +30,22 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - testing.md – Testing guidelines and practices
 
 ## AI & Processing
-- ow-ai-gpttypes.md – AI / LLM types (if present)
+- ow-ai-gpttypes.md – AI / LLM provider wrappers, standardized interfaces and implementation notes
 - llm-guide.md – General LLM integration guide
 - llm-tui-guide.md – Guide for LLM Terminal User Interfaces
 - llm-frontend-guide.md – Rules for generating offline-first OpenAF frontends with mapped HTTP libs/endpoints
 
+## Developer Notes
+- dev/ – Internal docs (Python OAF server protocol, updating bundled libs)
+- testing.md – How to add and run tests
+
 ## Getting Started Path
-1. Read `openaf.md` (core helpers) & skim `ojob.md` basics.
-2. Copy `ojob-all.yaml` as a scaffold.
-3. Pick patterns from `ojob-recipes.md`.
-4. Harden with `ojob-security.md` & tune via `openaf-flags.md`.
-5. Explore advanced modules in `openaf-advanced.md`.
+1. Read `getting-started.md` (install + first steps).
+2. Read `openaf.md` (core helpers) & skim `ojob.md` basics.
+3. Copy `ojob-all.yaml` as a scaffold.
+4. Pick patterns from `ojob-recipes.md`.
+5. Harden with `ojob-security.md` & tune via `openaf-flags.md`.
+6. Explore advanced modules in `openaf-advanced.md`.
 
 ## Search Tips
 Use `$path` expressions in templates for dynamic data extraction, and leverage built-in jobs `(if)`, `(parallel)`, `(repeat)` for control flow without writing raw JavaScript where possible.

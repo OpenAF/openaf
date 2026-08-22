@@ -98,6 +98,8 @@ Just delete the original empty folder where you executed the install command.
 ### Repository documentation
 
 * [Documentation index](docs/index.md)
+* [Getting started](docs/getting-started.md)
+* [CLI reference](docs/cli.md)
 * [OpenAF overview](docs/openaf.md)
 * [Advanced OpenAF features](docs/openaf-advanced.md)
 * [Command-line flags](docs/openaf-flags.md)
@@ -107,6 +109,7 @@ Just delete the original empty folder where you executed the install command.
 * [oJob recipes](docs/ojob-recipes.md)
 * [LLM integration guide](docs/llm-guide.md)
 * [OpenAF AI GPT types](docs/ow-ai-gpttypes.md)
+* [Changelog](CHANGELOG.md)
 * Additional developer notes in [docs/dev/](docs/dev/)
 
 ## Building

@@ -299,4 +299,4 @@ re-detect the interpreter and version at runtime instead of using the environmen
 | Write an oJob step in Python | `lang: python` (or `typeArgs.execPy`) |
 
 For the raw wire protocol used between the Python bridge process and OpenAF (if you're implementing
-a custom client), see `dev/Python-OAF-server.md`.
+a custom client), see `dev/python-oaf-server.md`.

@@ -65,3 +65,29 @@ hs.setDefault("/api/greet");
 print("Server listening on port: " + hs.getPort());
 // To stop: hs.stop();
 ```
+
+---
+
+## WebSockets
+
+WebSocket support is backed by the `HTTPws` plugin (`src/openaf/plugins/HTTPws/WebSockets.java`) and is enabled by passing `webSockets: true` to the `HTTPd` constructor (or calling `addWS(uri)`).
+
+```javascript
+plugin("HTTPServer");
+
+var hs = new HTTPd(8080, undefined, undefined, undefined, undefined, true);
+
+hs.addWS("/ws/chat");
+hs.subscribe("/ws/chat", function(op, msg, session) {
+  // op: "open" | "message" | "close"
+  // msg: received text/binary payload
+  // session: WebSocket session handle
+  if (op === "message") {
+    hs.broadcast("/ws/chat", "echo: " + msg);
+  }
+});
+
+print("WebSocket endpoint ready at ws://localhost:8080/ws/chat");
+```
+
+The underlying `WebSockets` class implements the NanoHTTPD WebSocket protocol with text and binary frame support, ping/pong keepalive, and per-session lifecycle callbacks.

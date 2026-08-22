@@ -860,7 +860,7 @@ Integrates with periodic jobs (`typeArgs.timeout`) internally.
 
 ### $do / $doV – Asynchronous oPromise Helpers
 
-Use `$do(fn, onReject?)` to execute work asynchronously on OpenAF's managed thread pool while receiving an `oPromise` back immediately. Inside `fn` you may either return a value or call the provided `resolve` / `reject` callbacks; chaining works with `.then` and `.catch` just like standard Promises.【F:js/openaf.js†L13130-L13157】【F:js/openaf.js†L12208-L12251】
+Use `$do(fn, onReject?)` to execute work asynchronously on OpenAF's managed thread pool while receiving an `oPromise` back immediately. Inside `fn` you may either return a value or call the provided `resolve` / `reject` callbacks; chaining works with `.then` and `.catch` just like standard Promises.
 
 ```javascript
 $do((resolve, reject) => {
@@ -871,9 +871,9 @@ $do((resolve, reject) => {
 .catch(err => logErr(err));
 ```
 
-When you need lightweight concurrency on JVMs with virtual-thread support, prefer `$doV`. It behaves like `$do` but schedules the executor on a virtual-thread-per-task pool so the initiating platform thread is never blocked, letting you fire large numbers of concurrent jobs without exhausting native threads.【F:js/openaf.js†L12145-L12163】【F:js/openaf.js†L13148-L13157】
+When you need lightweight concurrency on JVMs with virtual-thread support, prefer `$doV`. It behaves like `$do` but schedules the executor on a virtual-thread-per-task pool so the initiating platform thread is never blocked, letting you fire large numbers of concurrent jobs without exhausting native threads.
 
-Both helpers build on `oPromise`, so the same instance also exposes `.all()` / `$doAll` and `.race()` / `$doFirst` helpers for coordinating multiple asynchronous operations.【F:js/openaf.js†L13159-L13179】【F:js/openaf.js†L12253-L12348】
+Both helpers build on `oPromise`, so the same instance also exposes `.all()` / `$doAll` and `.race()` / `$doFirst` helpers for coordinating multiple asynchronous operations.
 
 ### $ch Shortcut
 
@@ -961,7 +961,7 @@ Use `chq(...)` when an expression needs a lightweight rolling buffer or event qu
 
 ## Terminal Visualization & Live Dashboards
 
-The April 2026 formatting work added a terminal-focused visualization layer on top of `ow.format`. It is intended for CLI dashboards, status views, quick exploratory output and streaming monitors.
+The formatting work on `ow.format` added a terminal-focused visualization layer intended for CLI dashboards, status views, quick exploratory output and streaming monitors.
 
 ### Terminal capability and palette helpers
 
