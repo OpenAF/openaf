@@ -20,6 +20,11 @@
                 //return httpd.replyStream(af.fromString2OutputStream("ALLOK"), "text/plain", 200);
                 return httpd.replyOKJSON("ALLOK");
             });
+            httpd.add("/no-query", function(aReq) {
+                if (isDef(aReq.params["NanoHttpd.QUERY_STRING"])) throw "Unexpected null query-string parameter on a request without a query string!";
+
+                return httpd.replyOKJSON("ALLOK");
+            });
         
             plugin("HTTP");
             log("Accessing HTTP server with HTTP client");
@@ -32,6 +37,11 @@
             if (http.getResponse().responseCode != 200 ||
                 http.getResponse().response != "ALLOK")
                     throw "Failed to receive response from the server correctly (for /stream)";
+
+            http = new HTTP("http://127.0.0.1:" + port + "/no-query");
+            if (http.getResponse().responseCode != 200 ||
+                http.getResponse().response != "ALLOK")
+                    throw "Failed to receive response from the server correctly (without a query string)";
         } catch(e) {
             throw e;
         } finally {

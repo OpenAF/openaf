@@ -221,6 +221,23 @@ function generateWinConsoleBat() {
   return s;
 }
 
+// Returns a sh snippet that keeps a copy of the current terminal settings and
+// restores them whenever the script exits (normally or interrupted). jline uses
+// /dev/tty (and not stdin) so the same device is used here.
+function genUnixSttyRestore() {
+  var s;
+
+  s  = "__oaf_stty=`stty -g 2>/dev/null </dev/tty`\n";
+  s += "__oaf_stty_restore() {\n";
+  s += "  if [ -n \"$__oaf_stty\" ]; then stty \"$__oaf_stty\" 2>/dev/null </dev/tty; fi\n";
+  s += "}\n";
+  s += "trap '__oaf_stty_restore' EXIT\n";
+  s += "trap '__oaf_stty_restore; exit 130' INT\n";
+  s += "trap '__oaf_stty_restore; exit 143' TERM\n";
+  s += "trap '__oaf_stty_restore; exit 129' HUP\n";
+  return s;
+}
+
 function generateUnixPyScript() {
   var s;
 
@@ -229,6 +246,7 @@ function generateUnixPyScript() {
   s += "cd `dirname $0`\n"
   s += "DIR=`pwd`\n"
   s += "cd \"$CDIR\"\n"
+  s += genUnixSttyRestore()
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
@@ -288,6 +306,7 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "cd `dirname $0`\n"
   s += "DIR=`pwd`\n"
   s += "cd \"$CDIR\"\n"
+  s += genUnixSttyRestore()
   if (isCon) s += "stty -icanon min 1 -echo 2>/dev/null\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
@@ -325,8 +344,6 @@ fi
     });
   }
   s += "EXITCODE=$?\n";
-  //if (isCon) s += "stty icanon echo 2>/dev/null\n";
-  s += "stty icanon echo 2>/dev/null\n";
   s += "exit $EXITCODE\n";
   return s;
 }
