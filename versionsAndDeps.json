@@ -1,543 +1,719 @@
 {
-	"external": [{
-			"description": "Toon",
-			"path": ["js/toon.js"],
-			"version": "2.1.0",
-			"changes": true,
-			"type": ["js"],
-			"license": "https://github.com/toon-format/toon/blob/main/LICENSE",
-			"deps": []
-		},{
-			"description": "json-io (native Java TOON/JSON engine, see __flags.ALTERNATIVES.toTOON/fromTOON)",
-			"path": ["lib/json-io-4.108.0.jar"],
-			"version": "4.108.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/jdereg/json-io/master/LICENSE",
-			"deps": [
-				"lib/java-util-4.108.0.jar"
-			]
-		},{
-			"description": "java-util",
-			"path": ["lib/java-util-4.108.0.jar"],
-			"version": "4.108.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/jdereg/java-util/master/LICENSE",
-			"deps": []
-		},{
-			"description": "Showdown",
-			"path": ["js/showdown.js"],
-			"version": "2.0.0",
-			"changes": true,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/showdownjs/showdown/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "Later",
-			"path": ["js/later.js"],
-			"version": "1.2.0",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/bunkat/later/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "Materializecss",
-			"path": ["js/materialize.js"],
-			"version": "1.1.0",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/Dogfalo/materialize/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "FuseJS",
-			"path": ["js/fusejs.js"],
-			"version": "6.6.2",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/krisk/Fuse/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "Handlebars",
-			"path": ["js/handlebars.js"],
-			"version": "4.7.8",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/wycats/handlebars.js/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "ajv",
-			"path": ["js/ajv.js"],
-			"version": "6.12.4",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/ajv-validator/ajv/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "JMESPath",
-			"path": ["js/jmespath.js"],
-			"version": "0.16.0",
-			"changes": true,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/jmespath/jmespath.js/master/LICENSE",
-			"deps": []
-		},		
-		{
-			"description": "js-yaml",
-			"path": ["js/js-yaml.js"],
-			"version": "4.1.0",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/nodeca/js-yaml/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "jQuery minified",
-			"path": ["js/jquery.js"],
-			"version": "3.7.1",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/jquery/jquery/master/LICENSE.txt",
-			"deps": []
-		},
-		{
-			"description": "Lodash",
-			"path": ["js/lodash.js"],
-			"version": "4.17.21",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/lodash/lodash/master/LICENSE",
-			"deps": []
-		},
-				{
-			"description": "Regression",
-			"path": ["js/regression.js"],
-			"version": "2.0.1",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/Tom-Alexander/regression-js/master/LICENSE",
-			"deps": []
-			},
-		{
-			"description": "JsDiff",
-			"path": [ "js/diff.js" ],
-			"version": "4.0.1",
-			"changes": false,
-			"type": [ "js" ],
-			"license": "https://raw.githubusercontent.com/kpdecker/jsdiff/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "Rhino",
-			"path": ["lib/js.jar"],
-			"version": "1.8.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/mozilla/rhino/master/LICENSE.txt",
-			"deps": []
-		},
-		{
-			"description": "StreamJS",
-			"path": ["js/stream.js"],
-			"version": "1.6.4",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/winterbe/streamjs/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "TLSH",
-			"path": ["js/tlsh.js"],
-			"version": "3.4.5",
-			"changes": false,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/trendmicro/tlsh/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "H2",
-			"path": ["lib/h2-2.4.240.jar"],
-			"version": "2.4.240",
-			"changes": false,
-			"type": ["java"],
-			"license": "This software contains unmodified binary redistributions for H2 database engine (http://www.h2database.com/), which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License). An original copy of the license agreement can be found at: http://www.h2database.com/html/license.html",
-			"deps": [
-				"lib/slf4j-api-2.0.17.jar"
-			]
-		},
-		{
-			"description": "Eclipse Jar-In-Jar",
-			"path": ["jar-in-jar-loader.jar"],
-			"version": "",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/epl.txt",
-			"deps": []
-		},
-		{
-			"description": "jjwt",
-			"path": ["lib/jjwt-api-0.13.0.jar", "lib/jjwt-gson-0.13.0.jar", "lib/jjwt-impl-0.13.0.jar"],
-			"version": "0.13.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",
-			"deps": []
-		},
-	   {
-		   "description": "JLine",
-		   "path": ["lib/jline-2.14.6.jar"],
-		   "version": "2.14.6",
-			"changes": true,
-			"comment": "updated to jline 2.14.6",
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/jline/jline2/master/LICENSE.txt",
-			"deps": []
-		},
-	   {
-		   "description": "JNA",
-		   "path": ["lib/jna-5.18.1.jar"],
-		   "version": "5.18.1",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://github.com/java-native-access/jna/blob/master/LICENSE",
-			"deps": []
-		},
-	   {
-		   "description": "JNA Platform",
-		   "path": ["lib/jna-platform-5.18.1.jar"],
-		   "version": "5.18.1",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://github.com/java-native-access/jna/blob/master/LICENSE",
-			"deps": [
-				"lib/jna-5.18.1.jar"
-			]
-		},
-	   {
-		   "description": "JAnsi",
-		   "path": ["lib/jansi-1.18.jar"],
-		   "version": "1.18",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/fusesource/jansi/master/license.txt",
-			"deps": [],
-			"maven": {
-				"id"  : "org.fusesource.jansi.jansi",
-				"file": "jansi-{{version}}.jar"
-			}
-		},
-		{
-			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.20.0.jar"],
-			"version": "2.20.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
-			"deps": []
-		},
-	   {
-		   "description": "Apache Commons CSV",
-		   "path": ["lib/commons-csv-1.14.1.jar"],
-		   "version": "1.14.1",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
-			"deps": []
-		},
-		{
-			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.19.0.jar"],
-			"version": "3.19.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
-			"deps": []
-		},		
-		{
-			"description": "Apache Commons Email",
-			"path": ["lib/commons-email-1.6.0.jar"],
-			"version": "1.6.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
-			"deps": []
-		},
-		{
-			"description": "Apache Commons Compress",
-			"path": ["lib/commons-compress-1.28.0.jar"],
-			"version": "1.28.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
-			"deps": []
-		},
-		{
-			"description": "OkHTTP Client",
-			"path": ["okhttp-5.3.0.jar", "okhttp-jvm-5.3.0.jar", "okio-3.16.2.jar", "okio-jvm-3.16.2.jar", "kotlin-stdlib-2.2.21.jar"],
-			"version": "5.3.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",
-			"deps": []
-		},
-	   {
-		   "description": "Oracle JDBC 23",
-		   "path": ["lib/ojdbc17-23.26.0.0.0.jar"],
-		   "version": "23.26.0.0.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "Check https://www.oracle.com/webapps/maven/register/license.html",
-			"deps": []
-		},
-	   {
-		   "description": "PostgreSQL JDBC",
-		   "path": ["lib/postgresql-42.7.8.jar"],
-		   "version": "42.7.8",
-			"changes": false,
-			"type": ["java"],
-			"license": "Check https://www.postgresql.org/about/licence/",
-			"deps": []
-		},
-	   {
-		   "description": "DNS Java",
-		   "path": ["lib/dnsjava-3.6.3.jar"],
-		   "version": "3.6.3",
-			"changes": false,
-			"type": ["java"],
-			"license": "Check https://github.com/dnsjava/dnsjava/blob/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "JavaMail API",
-			"path": ["lib/javax.mail.jar"],
-			"version": "1.6.2",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/cddl.txt",
-			"deps": [
-				"lib/jakarta.activation.jar",
-				"lib/javax.activation-1.2.0.jar"
-			]
-		},
-		{
-			"description": "JBSDiff",
-			"path": ["lib/jbsdiff-1.0.jar"],
-			"version": "1.0",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/malensek/jbsdiff/master/LICENSE.txt",
-			"deps": [
-				"lib/commons-compress-1.28.0.jar"
-			]
-		},
-		{
-			"description": "GoogleAuthenticator",
-			"path": ["lib/googleauth-1.5.0.jar"],
-			"version": "1.5",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/wstrange/GoogleAuth/master/LICENSE",
-			"deps": []
-		},
-	   {
-		   "description": "GSON",
-		   "path": ["lib/gson-2.13.2.jar"],
-		   "version": "2.13.2",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/google/gson/master/LICENSE",
-			"deps": [],
-			"maven": {
-				"id"  : "com.google.code.gson.gson",
-				"file": "gson-{{version}}.jar"
-			}
-		},
-	   {
-		   "description": "Jackson Core",
-		   "path": ["lib/jackson-core-2.20.1.jar"],
-		   "version": "2.20.1",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
-			"deps": [],
-			"maven": {
-				"id"  : "com.fasterxml.jackson.core.jackson-core",
-				"file": "jackson-core-{{version}}.jar"
-			}
-		},
-		{
-			"description": "Synaptics",
-			"path": ["js/synaptic.js"],
-			"version": "1.1.4",
-			"changes": false,
-			"type": ["javascript"],
-			"license": "https://raw.githubusercontent.com/cazala/synaptic/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "Highlight",
-			"path": ["js/highlight.js"],
-			"version": "11.4.0",
-			"changes": false,
-			"type": ["javascript"],
-			"license": "https://raw.githubusercontent.com/isagalaev/highlight.js/master/LICENSE",
-			"deps": []
-		},
-		{
-			"description": "ASCIITable",
-			"path": [
-				"lib/asciitable-j7-1.0.1.jar",
-				"lib/asciilist-j7-1.0.0.jar"
-			],
-			"version": "1.0.1",
-			"changes": false,
-			"type": [ "java" ],
-			"license": "https://raw.githubusercontent.com/vdmeer/asciitable/master/LICENSE",
-			"deps": []
-		}
-	],
-	"plugins": [{
-			"name": "Beautifiers",
-			"removable": false,
-			"deps": [
-				"js/vkbeautify.js"
-			]
-		},
-		{
-			"name": "Console",
-			"removable": false,
-			"deps": [
-				"lib/jline-2.14.6.jar"
-			]
-		},
-		{
-			"name": "Email",
-			"removable": true,
-			"deps": [
-				"lib/javax.mail.jar",
-				"lib/commons-email-1.6.0.jar"
-			],
-			"hardDeps": [
-				"lib/commons-net-3.11.1.jar"
-			]
-		},
-		{
-			"name": "HTTP",
-			"removable": false,
-			"hardDeps": [
-				"lib/commons-io-2.20.0.jar",
-				"lib/jetty-io-12.1.3.jar",
-				"lib/jetty-util-12.1.3.jar",
-				"lib/jetty-client-12.1.3.jar",
-				"lib/jetty-http-12.1.3.jar"
-			],
-			"deps": [
-				"lib/jetty-websocket-jetty-api-12.1.3.jar",
-				"lib/jetty-websocket-jetty-client-12.1.3.jar",
-				"lib/jetty-websocket-jetty-common-12.1.3.jar",
-				"lib/jetty-websocket-core-client-12.1.3.jar",
-				"lib/jetty-websocket-core-common-12.1.3.jar"
-			]
-		},
-		{
-			"name": "JMX",
-			"removable": true,
-			"deps": [
-				"lib/jodd-3.6.6.jar",
-				"lib/tools-attach.jar"
-			]
-		},
-		{
-			"name": "JMXServer",
-			"removable": true,
-			"deps": []
-		},
-		{
-			"name": "SNMP",
-			"removable": true,
-			"deps": [
-				"lib/snmp4j-3.9.6.jar",
-				"lib/snmp4j-agent-3.8.2.jar"
-			]
-		},
-		{
-			"name": "SNMPServer",
-			"removable": true,
-			"deps": [
-				"lib/snmp4j-3.9.6.jar",
-				"lib/snmp4j-agent-3.8.2.jar"
-			]
-		},
-		{
-			"name": "SSH",
-			"removable": true,
-			"hardDeps": [
-				"lib/commons-io-2.20.0.jar"
-			],
-			"deps": [
-				"lib/jsch-2.27.5.jar",
-				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
-				"lib/jsch.agentproxy.core-0.0.9.jar",
-				"lib/jsch.agentproxy.jsch-0.0.9.jar",
-				"lib/jsch.agentproxy.pageant-0.0.9.jar",
-				"lib/jsch.agentproxy.sshagent-0.0.9.jar",
-				"lib/jsch.agentproxy.svnkit-trilead-ssh2-0.0.9.jar",
-				"lib/jsch.agentproxy.usocket-jna-0.0.9.jar",
-				"lib/jsch.agentproxy.usocket-nc-0.0.9.jar"
-			]
-		},
-		{
-			"name": "Threads",
-			"removable": false,
-			"hardDeps": [],
-			"deps": []
-		},
-		{
-			"name": "XML",
-			"removable": true,
-			"hardDeps": [],
-			"deps": [
-				"lib/xml-apis.jar"
-			]
-		},
-		{
-			"name": "ZIP",
-			"removable": false,
-			"hardDeps": [
-				"lib/commons-io-2.20.0.jar",
-				"lib/commons-compress-1.28.0.jar"
-			],
-			"deps": []
-		},
-		{
-			"name": "BSDiff",
-			"removable": true,
-			"hardDeps": [
-				"lib/commons-compress-1.28.0.jar"
-			],
-			"deps": [
-				"lib/jbsdiff-1.0.jar"
-			]
-		},
-		{
-			"name": "Oracle",
-			"removable": true,
-			"deps": [
-				"lib/ojdbc17-23.26.0.0.0.jar"
-			]
-		},
-		{
-			"name": "PostgreSQL",
-			"removable": true,
-			"deps": [
-				"lib/postgresql-42.7.8.jar"
-			]
-		}
-	]
+    "external": [
+        {
+            "description": "Toon",
+            "path": [
+                "js/toon.js"
+            ],
+            "version": "2.1.0",
+            "changes": true,
+            "type": [
+                "js"
+            ],
+            "license": "https://github.com/toon-format/toon/blob/main/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "json-io (native Java TOON/JSON engine, see __flags.ALTERNATIVES.toTOON/fromTOON)",
+            "path": [
+                "lib/json-io-4.110.0.jar"
+            ],
+            "version": "4.110.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/jdereg/json-io/master/LICENSE",
+            "deps": [
+                "lib/java-util-4.108.0.jar"
+            ]
+        },
+        {
+            "description": "java-util",
+            "path": [
+                "lib/java-util-4.110.0.jar"
+            ],
+            "version": "4.110.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/jdereg/java-util/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "Showdown",
+            "path": [
+                "js/showdown.js"
+            ],
+            "version": "2.0.0",
+            "changes": true,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/showdownjs/showdown/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "Later",
+            "path": [
+                "js/later.js"
+            ],
+            "version": "1.2.0",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/bunkat/later/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "Materializecss",
+            "path": [
+                "js/materialize.js"
+            ],
+            "version": "1.1.0",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/Dogfalo/materialize/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "FuseJS",
+            "path": [
+                "js/fusejs.js"
+            ],
+            "version": "6.6.2",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/krisk/Fuse/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "Handlebars",
+            "path": [
+                "js/handlebars.js"
+            ],
+            "version": "4.7.8",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/wycats/handlebars.js/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "ajv",
+            "path": [
+                "js/ajv.js"
+            ],
+            "version": "6.12.4",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/ajv-validator/ajv/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "JMESPath",
+            "path": [
+                "js/jmespath.js"
+            ],
+            "version": "0.16.0",
+            "changes": true,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/jmespath/jmespath.js/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "js-yaml",
+            "path": [
+                "js/js-yaml.js"
+            ],
+            "version": "4.1.0",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/nodeca/js-yaml/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "jQuery minified",
+            "path": [
+                "js/jquery.js"
+            ],
+            "version": "3.7.1",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/jquery/jquery/master/LICENSE.txt",
+            "deps": []
+        },
+        {
+            "description": "Lodash",
+            "path": [
+                "js/lodash.js"
+            ],
+            "version": "4.17.21",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/lodash/lodash/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "Regression",
+            "path": [
+                "js/regression.js"
+            ],
+            "version": "2.0.1",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/Tom-Alexander/regression-js/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "JsDiff",
+            "path": [
+                "js/diff.js"
+            ],
+            "version": "4.0.1",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/kpdecker/jsdiff/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "Rhino",
+            "path": [
+                "lib/js.jar",
+                "lib/rhino-xml-1.9.1.jar",
+                "lib/rhino-engine-1.9.1.jar"
+            ],
+            "version": "1.9.1",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/mozilla/rhino/master/LICENSE.txt",
+            "deps": []
+        },
+        {
+            "description": "StreamJS",
+            "path": [
+                "js/stream.js"
+            ],
+            "version": "1.6.4",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/winterbe/streamjs/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "TLSH",
+            "path": [
+                "js/tlsh.js"
+            ],
+            "version": "3.4.5",
+            "changes": false,
+            "type": [
+                "js"
+            ],
+            "license": "https://raw.githubusercontent.com/trendmicro/tlsh/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "H2",
+            "path": [
+                "lib/h2-2.4.240.jar"
+            ],
+            "version": "2.4.240",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "This software contains unmodified binary redistributions for H2 database engine (http://www.h2database.com/), which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License). An original copy of the license agreement can be found at: http://www.h2database.com/html/license.html",
+            "deps": [
+                "lib/slf4j-api-2.0.17.jar"
+            ]
+        },
+        {
+            "description": "Eclipse Jar-In-Jar",
+            "path": [
+                "jar-in-jar-loader.jar"
+            ],
+            "version": "",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/epl.txt",
+            "deps": []
+        },
+        {
+            "description": "jjwt",
+            "path": [
+                "lib/jjwt-api-0.13.0.jar"
+            ],
+            "version": "0.13.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "JLine",
+            "path": [
+                "lib/jline-2.14.6.jar"
+            ],
+            "version": "2.14.6",
+            "changes": true,
+            "comment": "updated to jline 2.14.6",
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/jline/jline2/master/LICENSE.txt",
+            "deps": []
+        },
+        {
+            "description": "JNA",
+            "path": [
+                "lib/jna-platform-5.19.1.jar"
+            ],
+            "version": "5.19.1",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://github.com/java-native-access/jna/blob/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "JNA Platform",
+            "path": [
+                "lib/jna-platform-5.19.1.jar"
+            ],
+            "version": "5.19.1",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://github.com/java-native-access/jna/blob/master/LICENSE",
+            "deps": [
+                "lib/jna-5.18.1.jar"
+            ]
+        },
+        {
+            "description": "JAnsi",
+            "path": [
+                "lib/jansi-1.18.jar"
+            ],
+            "version": "1.18",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/fusesource/jansi/master/license.txt",
+            "deps": [],
+            "maven": {
+                "id": "org.fusesource.jansi.jansi",
+                "file": "jansi-{{version}}.jar"
+            }
+        },
+        {
+            "description": "Apache Commons IO",
+            "path": [
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "version": "1.6.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+            "deps": []
+        },
+        {
+            "description": "Apache Commons CSV",
+            "path": [
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "version": "1.6.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+            "deps": []
+        },
+        {
+            "description": "Apache Commons Lang",
+            "path": [
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "version": "1.6.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+            "deps": []
+        },
+        {
+            "description": "Apache Commons Email",
+            "path": [
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "version": "1.6.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+            "deps": []
+        },
+        {
+            "description": "Apache Commons Compress",
+            "path": [
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "version": "1.6.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+            "deps": []
+        },
+        {
+            "description": "OkHTTP Client",
+            "path": [
+                "okhttp-5.3.0.jar",
+                "okhttp-jvm-5.3.0.jar",
+                "okio-3.16.2.jar",
+                "okio-jvm-3.16.2.jar",
+                "kotlin-stdlib-2.2.21.jar"
+            ],
+            "version": "5.3.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",
+            "deps": []
+        },
+        {
+            "description": "Oracle JDBC 23",
+            "path": [
+                "lib/ojdbc17-23.26.2.0.0.jar"
+            ],
+            "version": "23.26.2.0.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "Check https://www.oracle.com/webapps/maven/register/license.html",
+            "deps": []
+        },
+        {
+            "description": "PostgreSQL JDBC",
+            "path": [
+                "lib/postgresql-42.7.13.jar"
+            ],
+            "version": "42.7.13",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "Check https://www.postgresql.org/about/licence/",
+            "deps": []
+        },
+        {
+            "description": "DNS Java",
+            "path": [
+                "lib/dnsjava-3.6.5.jar"
+            ],
+            "version": "3.6.5",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "Check https://github.com/dnsjava/dnsjava/blob/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "JavaMail API",
+            "path": [
+                "lib/javax.mail.jar"
+            ],
+            "version": "1.6.2",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/cddl.txt",
+            "deps": [
+                "lib/jakarta.activation.jar",
+                "lib/javax.activation-1.2.0.jar"
+            ]
+        },
+        {
+            "description": "JBSDiff",
+            "path": [
+                "lib/jbsdiff-1.0.jar"
+            ],
+            "version": "1.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/malensek/jbsdiff/master/LICENSE.txt",
+            "deps": [
+                "lib/commons-compress-1.28.0.jar"
+            ]
+        },
+        {
+            "description": "GoogleAuthenticator",
+            "path": [
+                "lib/googleauth-1.5.0.jar"
+            ],
+            "version": "1.5.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/wstrange/GoogleAuth/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "GSON",
+            "path": [
+                "lib/gson-2.14.0.jar"
+            ],
+            "version": "2.14.0",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/google/gson/master/LICENSE",
+            "deps": [],
+            "maven": {
+                "id": "com.google.code.gson.gson",
+                "file": "gson-{{version}}.jar"
+            }
+        },
+        {
+            "description": "Jackson Core",
+            "path": [
+                "lib/jackson-databind-2.22.1.jar"
+            ],
+            "version": "2.22.1",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
+            "deps": [],
+            "maven": {
+                "id": "com.fasterxml.jackson.core.jackson-core",
+                "file": "jackson-core-{{version}}.jar"
+            }
+        },
+        {
+            "description": "Synaptics",
+            "path": [
+                "js/synaptic.js"
+            ],
+            "version": "1.1.4",
+            "changes": false,
+            "type": [
+                "javascript"
+            ],
+            "license": "https://raw.githubusercontent.com/cazala/synaptic/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "Highlight",
+            "path": [
+                "js/highlight.js"
+            ],
+            "version": "11.4.0",
+            "changes": false,
+            "type": [
+                "javascript"
+            ],
+            "license": "https://raw.githubusercontent.com/isagalaev/highlight.js/master/LICENSE",
+            "deps": []
+        },
+        {
+            "description": "ASCIITable",
+            "path": [
+                "lib/asciitable-j7-1.0.1.jar"
+            ],
+            "version": "1.0.1",
+            "changes": false,
+            "type": [
+                "java"
+            ],
+            "license": "https://raw.githubusercontent.com/vdmeer/asciitable/master/LICENSE",
+            "deps": []
+        }
+    ],
+    "plugins": [
+        {
+            "name": "Beautifiers",
+            "removable": false,
+            "deps": [
+                "js/vkbeautify.js"
+            ]
+        },
+        {
+            "name": "Console",
+            "removable": false,
+            "deps": [
+                "lib/jline-2.14.6.jar"
+            ]
+        },
+        {
+            "name": "Email",
+            "removable": true,
+            "deps": [
+                "lib/javax.mail.jar",
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "hardDeps": [
+                "lib/commons-email-1.6.0.jar"
+            ]
+        },
+        {
+            "name": "HTTP",
+            "removable": false,
+            "hardDeps": [
+                "lib/commons-email-1.6.0.jar",
+                "lib/jetty-io-12.1.11.jar",
+                "lib/jetty-io-12.1.11.jar",
+                "lib/jetty-io-12.1.11.jar",
+                "lib/jetty-io-12.1.11.jar"
+            ],
+            "deps": [
+                "lib/jetty-io-12.1.11.jar",
+                "lib/jetty-io-12.1.11.jar",
+                "lib/jetty-io-12.1.11.jar",
+                "lib/jetty-io-12.1.11.jar",
+                "lib/jetty-io-12.1.11.jar"
+            ]
+        },
+        {
+            "name": "JMX",
+            "removable": true,
+            "deps": [
+                "lib/jodd-3.6.6.jar",
+                "lib/tools-attach.jar"
+            ]
+        },
+        {
+            "name": "JMXServer",
+            "removable": true,
+            "deps": []
+        },
+        {
+            "name": "SNMP",
+            "removable": true,
+            "deps": [
+                "lib/snmp4j-agent-3.9.2.jar",
+                "lib/snmp4j-agent-3.9.2.jar"
+            ]
+        },
+        {
+            "name": "SNMPServer",
+            "removable": true,
+            "deps": [
+                "lib/snmp4j-agent-3.9.2.jar",
+                "lib/snmp4j-agent-3.9.2.jar"
+            ]
+        },
+        {
+            "name": "SSH",
+            "removable": true,
+            "hardDeps": [
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "deps": [
+                "lib/jsch.agentproxy.connector-factory-0.0.9.jar",
+                "lib/jsch.agentproxy.connector-factory-0.0.9.jar",
+                "lib/jsch.agentproxy.core-0.0.9.jar",
+                "lib/jsch.agentproxy.jsch-0.0.9.jar",
+                "lib/jsch.agentproxy.pageant-0.0.9.jar",
+                "lib/jsch.agentproxy.sshagent-0.0.9.jar",
+                "lib/jsch.agentproxy.svnkit-trilead-ssh2-0.0.9.jar",
+                "lib/jsch.agentproxy.usocket-jna-0.0.9.jar",
+                "lib/jsch.agentproxy.usocket-jna-0.0.9.jar"
+            ]
+        },
+        {
+            "name": "Threads",
+            "removable": false,
+            "hardDeps": [],
+            "deps": []
+        },
+        {
+            "name": "XML",
+            "removable": true,
+            "hardDeps": [],
+            "deps": [
+                "lib/xml-apis.jar"
+            ]
+        },
+        {
+            "name": "ZIP",
+            "removable": false,
+            "hardDeps": [
+                "lib/commons-email-1.6.0.jar",
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "deps": []
+        },
+        {
+            "name": "BSDiff",
+            "removable": true,
+            "hardDeps": [
+                "lib/commons-email-1.6.0.jar"
+            ],
+            "deps": [
+                "lib/jbsdiff-1.0.jar"
+            ]
+        },
+        {
+            "name": "Oracle",
+            "removable": true,
+            "deps": [
+                "lib/ojdbc17-23.26.2.0.0.jar"
+            ]
+        },
+        {
+            "name": "PostgreSQL",
+            "removable": true,
+            "deps": [
+                "lib/postgresql-42.7.13.jar"
+            ]
+        }
+    ]
 }

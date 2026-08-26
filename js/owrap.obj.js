@@ -1820,7 +1820,7 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 
 	if (isDef(options.callTimeout)) clt = clt.callTimeout(options.callTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 	if (isDef(options.readTimeout)) clt = clt.readTimeout(options.readTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
-	if (isDef(options.writeTimeout)) clt = clt.readTimeout(options.writeTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isDef(options.writeTimeout)) clt = clt.writeTimeout(options.writeTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 
 	if (isDef(options.followRedirects))    clt = clt.followRedirects(options.followRedirects)
 	if (isDef(options.followSslRedirects)) clt = clt.followSslRedirects(options.followSslRedirects)
@@ -2223,13 +2223,16 @@ OpenWrap.obj.prototype.http.prototype.responseType = function() {
 /**
  * <odoc>
  * <key>ow.obj.http.close()</key>
- * Closes the current http connection.
+ * Closes the current http connection response (if any) and releases any pooled connections
+ * kept open by this http client (useful when a single http object is reused, e.g. through
+ * options.httpClient, to ensure idle keep-alive connections aren't left open).
  * </odoc>
  */
 OpenWrap.obj.prototype.http.prototype.close = function() {
-	if (isUnDef(this._response)) return __
-
-	this._response.body().close()
+	if (isDef(this._response)) this._response.body().close()
+	// with options.delayBuild the client can still be an unbuilt OkHttpClient.Builder;
+	// only a built OkHttpClient exposes a usable connectionPool() to evict
+	if (isDef(this.client) && this.client instanceof Packages.okhttp3.OkHttpClient) this.client.connectionPool().evictAll()
 }
 
 
@@ -2538,6 +2541,22 @@ OpenWrap.obj.prototype.http0.prototype.responseType = function() {
 	}
 };
 
+/**
+ * <odoc>
+ * <key>ow.obj.http0.close()</key>
+ * Closes the current http connection response (if any) and shuts down the underlying Apache
+ * HTTP client, releasing any pooled connections it may be keeping open. The object remains
+ * usable afterwards: the next exec() call will transparently build a new underlying client.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.http0.prototype.close = function() {
+	if (isDef(this.__r)) this.__r.close();
+	if (isDef(this.__h)) {
+		this.__h.close();
+		this.__h = __;
+	}
+};
+
 OpenWrap.obj.prototype.rest = {
 
 	connectionFactory: function() {
@@ -2566,6 +2585,7 @@ OpenWrap.obj.prototype.rest = {
 	 */
 	getContentLength: function(aURL, _l, _p, _t, aRequestMap, __h) {
 		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
+		var res;
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2585,12 +2605,13 @@ OpenWrap.obj.prototype.rest = {
 		 
 		try {
 			h.exec(aURL, "HEAD", __, aRequestMap, __, _t)
-			var res = Number(h.responseHeaders()["Content-Length"]) || Number(h.responseHeaders()["content-length"])
-			if (isUnDef(__h)) h.close()
+			res = Number(h.responseHeaders()["Content-Length"]) || Number(h.responseHeaders()["content-length"])
 			return res
 		} catch(e) {
 		   e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 		   throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 	
@@ -2605,7 +2626,7 @@ OpenWrap.obj.prototype.rest = {
 	get: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes, options) { 
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
 		
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2624,13 +2645,14 @@ OpenWrap.obj.prototype.rest = {
  		}
  		
  		try {
- 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", __, aRequestMap, retBytes, _t, retBytes, options)
-			if (isUnDef(__h) && !retBytes) h.close()
+			res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", __, aRequestMap, retBytes, _t, retBytes, options)
 			return res
- 		} catch(e) {
+		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 			throw e;
- 		}
+		} finally {
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
+		}
 	},
 	
 	/**
@@ -2657,7 +2679,7 @@ OpenWrap.obj.prototype.rest = {
 	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2680,12 +2702,13 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
-			if (isUnDef(__h) && !retBytes) h.close()
+			res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
 		}
 	},
 
@@ -2700,7 +2723,7 @@ OpenWrap.obj.prototype.rest = {
 	 */
 	upload: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod, options) {
 		aMethod = _$(aMethod, "aMethod").isString().default("POST");
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2726,12 +2749,13 @@ OpenWrap.obj.prototype.rest = {
 			_$(aDataRow.in, "aDataRow.in").$_();
 
 			h.upload(aDataRow.name, aDataRow.in);
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), aMethod, __, rmap, __, _t, retBytes, options)
-			if (isUnDef(__h) && !retBytes) h.close()
+			res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), aMethod, __, rmap, __, _t, retBytes, options)
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
 		}
 	},
 	
@@ -2773,7 +2797,7 @@ OpenWrap.obj.prototype.rest = {
 	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2796,12 +2820,13 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 		
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
-			if (isUnDef(__h) && !retBytes) h.close()
+			res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
 		}
 	},
 
@@ -2830,7 +2855,7 @@ OpenWrap.obj.prototype.rest = {
 	patch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2853,12 +2878,13 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 		
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
-			if (isUnDef(__h) && !retBytes) h.close()
+			res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
 		}
 	},
 	/**
@@ -2884,7 +2910,7 @@ OpenWrap.obj.prototype.rest = {
 	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes, options) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
 				
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2903,12 +2929,13 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", __, aRequestMap, retBytes, _t, retBytes, options)
-			if (isUnDef(__h) && !retBytes) h.close()
+			res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", __, aRequestMap, retBytes, _t, retBytes, options)
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
 		}
 	},
 	/**
@@ -2953,11 +2980,12 @@ OpenWrap.obj.prototype.rest = {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "HEAD", __, aRequestMap, __, _t, __, options)
 			res.contentType = "application/json; charset=UTF-8"
 			res.response = h.responseHeaders()
-			if (isUnDef(__h)) h.close()
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 	/**

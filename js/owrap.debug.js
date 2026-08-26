@@ -18,7 +18,10 @@ OpenWrap.debug.prototype.register = function() {
     if (isFunction(__loadPreParser) && !__flags.OAF_CLOSED && isUnDef(global.__debugLoadPreParser)) {
         global.__debugLoadPreParser = __loadPreParser.toString()
         __loadPreParser = function(code) {
-          var _fn = eval(global.__debugLoadPreParser)
+          // __loadPreParser.toString() produces an anonymous function expression.
+          // Parenthesize it so eval returns the function rather than treating it as
+          // a declaration and returning undefined.
+          var _fn = eval("(" + global.__debugLoadPreParser + ")")
           return _fn(ow.debug.debug(code, __, true))
         }
         __flags.OAF_PRECOMPILE_LEVEL = 0
@@ -35,7 +38,7 @@ OpenWrap.debug.prototype.register = function() {
  */
 OpenWrap.debug.prototype.unregister = function() {
     if (isDef(global.__debugLoadPreParser)) {
-        __loadPreParser = eval(global.__debugLoadPreParser)
+        __loadPreParser = eval("(" + global.__debugLoadPreParser + ")")
         delete global.__debugLoadPreParser
         __flags.OAF_PRECOMPILE_LEVEL = 2
     }

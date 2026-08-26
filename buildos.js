@@ -231,6 +231,11 @@ try {
 } catch (e) {}
 
 io.mkdir(OPENAF_BUILD_HOME + "/jsmin");
+// jslib/ must start empty: compileJS2Java below always (re)writes classes 0..N-1 for a script's
+// current function count, but addCompiledClasses() zips in every file matching the script's name
+// prefix. If a script's function count ever decreases between builds, higher-numbered classes from
+// the previous build survive as dead weight and get bundled into openaf.jar anyway.
+io.rm(OPENAF_BUILD_HOME + "/jslib");
 io.mkdir(OPENAF_BUILD_HOME + "/jslib");
 
 var zipJSlib = new ZIP();
@@ -256,6 +261,18 @@ var compileJS2Java = (classfile, script, path) => {
 	$sh(cmd)
 	.prefix(classfile)
 	.get(0)
+}
+
+var addCompiledClasses = (baseName) => {
+	var listfiles = io.listFiles(OPENAF_BUILD_HOME + "/jslib");
+	if (isUndefined(listfiles) || isUndefined(listfiles.files)) return;
+	for (var i in listfiles.files) {
+		var f = listfiles.files[i];
+		if (f.isDirectory) continue;
+		if (f.filename.indexOf(baseName) != 0) continue;
+		if (!f.filename.match(/\.class$/)) continue;
+		zipJSlib.putFile(f.filename, io.readFileBytes(f.filepath));
+	}
 }
 
 //for(i in jsList) {
@@ -325,7 +342,7 @@ try {
 			}
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
-				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));
+				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) addCompiledClasses(file.filename.replace(/\./g, "_"));
 			}, tempJar);
 		} else {
 			try {
@@ -341,7 +358,7 @@ try {
 			  }   
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
-				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));				
+				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) addCompiledClasses(file.filename.replace(/\./g, "_"));				
 			}, tempJar);
 		}
 	}

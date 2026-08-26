@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -20,6 +21,7 @@ import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
@@ -49,11 +51,12 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJSON;
 import org.mozilla.javascript.NativeJavaArray;
 import org.mozilla.javascript.NativeJavaObject;
-import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.JSDescriptor;
+import org.mozilla.javascript.JSScript;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
@@ -68,6 +71,7 @@ import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.ast.AstRoot;
 
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -1114,7 +1118,6 @@ public class AFBase extends ScriptableObject {
 	@SuppressWarnings("rawtypes")
 	@JSFunction
 	public Class<?> externalClass(Object locs, String clName) throws Exception {
-		URLClassLoader loader = null;
 		try {
 			ArrayList<URL> aURLs = new ArrayList<URL>();
 			if (!(locs instanceof NativeArray)) return null;
@@ -1125,17 +1128,16 @@ public class AFBase extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+			// Note: the loader is intentionally not closed here - Rhino's descriptor-based
+			// compiled classes (>= 1.9.0) lazily load companion classes (the "Main" class and
+			// per-function "ojsc" classes) from this same loader after this method returns.
+			URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
 			Class<?> cl = Class.forName(clName, true, loader);
-			
+
 			return cl;
 		} catch (ClassNotFoundException | MalformedURLException e) {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "Cannot find class: " + clName + "; " + e.getMessage(), e);
 			throw e;
-		} finally {
-			if (loader != null) {
-				loader.close();
-			}
 		}
 	}
 	
@@ -1208,7 +1210,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void load(String js, NativeFunction callback) throws Exception {
+	public void load(String js, Function callback) throws Exception {
 		String includeScript = null;
 
 		if (js == null) throw new Exception("No filename provided.");
@@ -1356,31 +1358,67 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public void compileToClasses(String classfile, String script, String path) throws IOException {
-		ClassCompiler cc = new ClassCompiler(new CompilerEnvirons());
-		Object compiled[] = cc.compileToClassFiles(script, classfile, 1, classfile);
+		// Delegates to CompileJS2Java so the runtime path gets the same hardening as the build-time
+		// path (source-size splitting, no embedded debug info/raw source, and the Main-only max_locals
+		// fix) instead of calling ClassCompiler directly. Without it, compiling almost any script here
+		// threw "VerifyError: Local variable table overflow" at load time (Rhino 1.9.1 under-reports
+		// max_locals in the generated "<X>Main" descriptor builder).
+		Object compiled[] = CompileJS2Java.compileToBytes(classfile, script, CompileJS2Java.CompilationMethod.RHINO_LEGACY, false);
 		if (path == null || path.equals("undefined"))
 			path = "";
 		else
 			path = path + "/";
-		
+
 		for (int j = 0; j != compiled.length; j += 2) {
 			String className = (String)compiled[j];
 			byte[] bytes = (byte[])(byte[])compiled[(j + 1)];
 			File outfile = new File(path + className + ".class");
-			try {
-				FileOutputStream os = new FileOutputStream(outfile);
-				try {
-					os.write(bytes);
-				} finally {
-					os.close();
-				}
-			} catch (IOException ioe) {
-				throw ioe;
-				//SimpleLog.log(logtype.ERROR, ioe.getMessage(), ioe);
+			try (FileOutputStream os = new FileOutputStream(outfile)) {
+				os.write(bytes);
 			}
-		} 
+		}
 	}
-	
+
+	/**
+	 * <odoc>
+	 * <key>af.compileToJar(aClassfile, aScriptString, aJarFile)</key>
+	 * Given aClassfile name and aScriptString it will generate Java bytecode as a result of compiling
+	 * aScriptString, writing every generated class as a single entry into aJarFile instead of one loose
+	 * .class file per class (see af.compileToClasses). aJarFile is written to a temporary file next to
+	 * it and then moved into place, so a failed compile never leaves a partial/corrupt jar behind; the
+	 * class can then be loaded with af.externalClass/af.runFromExternalClass pointed at aJarFile
+	 * directly (a URLClassLoader treats a jar file URL the same as a directory URL). Example:\
+	 * \
+	 * af.compileToJar("SomeClass", "print('hello world!');", "/some/path/SomeClass.jar")\
+	 * \
+	 * </odoc>
+	 */
+	@JSFunction
+	public void compileToJar(String classfile, String script, String jarFile) throws IOException {
+		Object compiled[] = CompileJS2Java.compileToBytes(classfile, script, CompileJS2Java.CompilationMethod.RHINO_LEGACY, false);
+
+		Path target = Paths.get(jarFile);
+		Path tmp = Paths.get(jarFile + ".tmp." + System.nanoTime());
+		try {
+			try (FileOutputStream fos = new FileOutputStream(tmp.toFile());
+			     ZipOutputStream zos = new ZipOutputStream(fos)) {
+				zos.setMethod(ZipOutputStream.DEFLATED);
+				zos.setLevel(9);
+				for (int j = 0; j != compiled.length; j += 2) {
+					String className = (String) compiled[j];
+					byte[] bytes = (byte[]) compiled[(j + 1)];
+					zos.putNextEntry(new ZipEntry(className + ".class"));
+					zos.write(bytes);
+					zos.closeEntry();
+				}
+			}
+			Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException ioe) {
+			Files.deleteIfExists(tmp);
+			throw ioe;
+		}
+	}
+
 	/**
 	 * <odoc>
 	 * <key>af.runFromClass(aCompiledJavascriptClass) : Object</key>
@@ -1395,13 +1433,130 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	static public Object runFromClass(Object cl) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Object ret = ((Script) cl).exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
-		
-		return ret;
+		try {
+			Script script = coerceToScript(cl);
+			initCompiledClass(script.getClass());
+			return script.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), (Scriptable) AFCmdBase.jse.getGlobalscope());
+		} finally {
+			AFCmdBase.jse.exitContext();
+		}
 		//OptRuntime.main((Script) cl, new String[0]);
 	}
-	
+
+	private static Script coerceToScript(Object candidate) {
+		if (candidate instanceof Script) {
+			return (Script) candidate;
+		}
+
+		if (candidate instanceof NativeJavaObject) {
+			Object unwrapped = ((NativeJavaObject) candidate).unwrap();
+			if (unwrapped instanceof Script) {
+				return (Script) unwrapped;
+			}
+		}
+
+		throw new IllegalArgumentException("Expected Script but got " + (candidate == null ? "null" : candidate.getClass().getName()));
+	}
+
+	static void initCompiledClass(Class<?> cls) {
+		Context cx = (Context) AFCmdBase.jse.enterContext();
+		try {
+			loadCompiledCompanions(cls);
+			try {
+				cls.getMethod("_reInit", Context.class).invoke(null, cx);
+			} catch (NoSuchMethodException e) {
+				// Method not generated when no regex literals exist.
+			}
+			try {
+				cls.getMethod("_qInit").invoke(null);
+			} catch (NoSuchMethodException e) {
+				// Method not generated when no template literals exist.
+			}
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException("Failed to initialize compiled script class " + cls.getName(), e);
+		} finally {
+			AFCmdBase.jse.exitContext();
+		}
+	}
+
+	private static void loadCompiledCompanions(Class<?> cls) throws ReflectiveOperationException {
+		Field field;
+		try {
+			field = cls.getDeclaredField("_descriptors");
+		} catch (NoSuchFieldException e) {
+			return;
+		}
+
+		ClassLoader loader = cls.getClassLoader();
+		String className = cls.getName();
+		try {
+			Class.forName(className + "Main", true, loader);
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("Missing compiled companion class " + className + "Main", e);
+		}
+
+		field.setAccessible(true);
+		JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
+		if (descriptors == null || descriptors.length == 0) {
+			throw new RuntimeException("Missing JS descriptors for " + className);
+		}
+
+		for (int i = 0; i < descriptors.length; i++) {
+			String codeClass = className + "ojsc" + i;
+			try {
+				Class.forName(codeClass, true, loader);
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException("Missing compiled companion class " + codeClass, e);
+			}
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.newScriptInstance(aClassOrName) : Script</key>
+	 * Instantiates a compiled script class, handling Rhino descriptor-based constructors when needed.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Script newScriptInstance(Object aClassOrName) throws Exception {
+		Object target = (aClassOrName instanceof NativeJavaObject)
+			? ((NativeJavaObject) aClassOrName).unwrap()
+			: aClassOrName;
+
+		if (target instanceof Script) {
+			return (Script) target;
+		}
+
+		Class<?> cls;
+		if (target instanceof Class) {
+			cls = (Class<?>) target;
+		} else if (target instanceof String) {
+			cls = Class.forName((String) target);
+		} else {
+			throw new IllegalArgumentException("Unsupported class reference: " + target);
+		}
+
+		try {
+			Script script = (Script) cls.getDeclaredConstructor().newInstance();
+			initCompiledClass(cls);
+			return script;
+		} catch (NoSuchMethodException e) {
+			try {
+				Class.forName(cls.getName() + "Main", true, cls.getClassLoader());
+				Field field = cls.getDeclaredField("_descriptors");
+				field.setAccessible(true);
+				JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
+				if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
+					throw new IllegalStateException("Missing JS descriptors for " + cls.getName());
+				}
+				initCompiledClass(cls);
+				return new JSScript((JSDescriptor) descriptors[0], null);
+			} catch (Throwable t) {
+				throw new RuntimeException("Failed to load compiled script " + cls.getName(), t);
+			}
+		}
+	}
+
 	/**
 	 * <odoc>
 	 * <key>af.fromBase64(aBase) : anArrayOfBytes</key>

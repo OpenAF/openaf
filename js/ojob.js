@@ -66,7 +66,7 @@ if (kparams.indexOf("-json") >= 0 && params["-json"] == "") {
 	ojob_args.__format = "json"
 }
 
-if (kparams.indexOf("-gb64json" >= 0) && params["-gb64json"] == "") {
+if (kparams.indexOf("-gb64json") >= 0 && params["-gb64json"] == "") {
 	delete params["-gb64json"]
 	ojob_args.__format = "gb64json"
 }
@@ -625,12 +625,12 @@ function ojob_completion() {
 			try {
 				var _l = new Set()
 				var _d
-				if (!io.fileExists(__gHDir() + "/.openaf_completion_" + domain + ".json") &&
-					io.fileInfo(__gHDir() + "/.openaf_completion_" + domain + ".json").lastModified < (new Date().getTime() - 86400000)) {
+				var _cf = __gHDir() + "/.openaf_completion_" + domain + ".json"
+				if (!io.fileExists(_cf) || io.fileInfo(_cf).lastModified < (new Date().getTime() - 86400000)) {
 					_d = $rest().get("https://" + domain + "/_integrity.json")
-					io.writeFileJSON(__gHDir() + "/.openaf_completion_" + domain + ".json", _d)
+					io.writeFileJSON(_cf, _d)
 				} else {
-					_d = io.readFileJSON(__gHDir() + "/.openaf_completion_" + domain + ".json")
+					_d = io.readFileJSON(_cf)
 				}
 				
 				if (Object.keys(_d).indexOf(r.replace(domain + "/", "./")) >= 0) {

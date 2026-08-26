@@ -38,6 +38,7 @@ import org.mozilla.universalchardet.UniversalDetector;
 import openaf.AFBase;
 import openaf.AFCmdBase;
 import openaf.JSEngine;
+import openaf.plugins.Threads;
 import openaf.SimpleLog;
 
 import java.lang.String;
@@ -879,7 +880,7 @@ public class IO extends ScriptableObject {
 		}
 		//p.toFile().deleteOnExit();
 		IO I = this;
-		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+		Threads.registerShutdownAction(new Runnable() {
 			public void run() {
 				try {
 					I.rm(p.toFile().getAbsolutePath());
@@ -887,7 +888,7 @@ public class IO extends ScriptableObject {
 					System.err.println(e);
 				}
 			}
-		}));
+		});
 		return p.toFile().getAbsolutePath();
 	}
 }

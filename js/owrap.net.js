@@ -428,6 +428,8 @@ OpenWrap.net.prototype.testURLLatency = function(aURL, aCustomTimeout) {
 		latency = now() - ini;
 	} catch(e) {
 		latency = -1;
+	} finally {
+		try { hc.close(); } catch(e) {}
 	}
 
 	return latency;
@@ -506,7 +508,7 @@ OpenWrap.net.prototype.getDNS = function(aName, aType, aServer, aExtended) {
  * <key>ow.net.doh(aAddr, aType, aProvider, aCache, aCacheTimeout) : String</key>
  * Performs a DNS over HTTPs query with aAddr. Optionally you can provide the aType of record (defaults to 'a') and
  * the DNS over HTTPs aProvider between 'google', 'cloudflare', 'nextdns' and 'local' (that doesn't use DoH but fallbacks to 
- * Java's DNS resolver). Returns the first IP address found. If aCache is provided (optionally with aCacheTimeout in ms) the results
+ * Java's DNS resolver), or a custom DoH endpoint URL. Returns the first IP address found. If aCache is provided (optionally with aCacheTimeout in ms) the results
  * will be cached.
  * </odoc>
  */
@@ -550,11 +552,44 @@ OpenWrap.net.prototype.doh = function(aName, aType, aProvider, aCache, aCacheTim
  * <key>ow.net.getDoH(aAddr, aType, aProvider) : Array</key>
  * Performs a DNS over HTTPs query with aAddr. Optionally you can provide the aType of record (defaults to 'a') and
  * the DNS over HTTPs aProvider between 'google', 'cloudflare', 'nextdns' and 'local' (that doesn't use DoH but fallbacks to 
- * Java's DNS resolver).
+ * Java's DNS resolver). You can also provide aProvider as the URL of a custom DNS over HTTPS endpoint.
  * </odoc>
  */
 OpenWrap.net.prototype.getDoH = function(aName, aType, aProvider) {
-	aProvider = _$(aProvider).default(__flags.DOH_PROVIDER);
+	_$(aName, "aName").isString().$_();
+	aType = _$(aType, "aType").isString().default("a");
+	aProvider = _$(aProvider, "aProvider").isString().default(__flags.DOH_PROVIDER);
+
+	if (isString(aProvider) && aProvider.match(/^https?:\/\//i)) {
+		ow.loadObj();
+		var _name = aName.endsWith(".") ? aName : aName + ".";
+		var _record = Packages.org.xbill.DNS.Record.newRecord(
+			Packages.org.xbill.DNS.Name.fromString(_name),
+			Packages.org.xbill.DNS.Type.value(aType.toUpperCase()),
+			Packages.org.xbill.DNS.DClass.IN
+		);
+		var _query = Packages.org.xbill.DNS.Message.newQuery(_record).toWire();
+		var _dns = af.fromBytes2String(af.toBase64Bytes(_query))
+			.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+		var _url = aProvider + (aProvider.indexOf("?") >= 0 ? "&" : "?") + "dns=" + _dns;
+		var _http = new ow.obj.http();
+		var _res;
+		try {
+			_res = _http.getBytes(_url, __, { accept: "application/dns-message" });
+		} finally {
+			try { _http.close(); } catch(e) {}
+		}
+
+		var _answer = new Packages.org.xbill.DNS.Message(_res.responseBytes)
+			.getSectionArray(Packages.org.xbill.DNS.Section.ANSWER);
+		if (_answer.length > 0) return _answer.map(_r => ({
+			name: String(_r.getName()),
+			type: _r.getType(),
+			TTL : _r.getTTL(),
+			data: String(_r.rdataToString())
+		}));
+		else return __;
+	}
  
 	switch (aProvider) {
        case "local":

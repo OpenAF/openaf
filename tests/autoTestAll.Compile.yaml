@@ -1,0 +1,52 @@
+# Copyright 2023 Nuno Aguiar
+
+include:
+   - oJobTest.yaml
+
+jobs:
+   # Compile tests
+   # --------------
+   - name: Compile::Init
+     exec: |
+       args.tests = require("autoTestAll.Compile.js");
+
+   - name: Compile::loadCompiled round-trip
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLoadCompiledRoundTrip;
+
+   - name: Compile::loadCompiled large script
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLoadCompiledLargeScript;
+
+   - name: Compile::requireCompiled round-trip
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRequireCompiledRoundTrip;
+
+   - name: Compile::loadCompiled stale recompile
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLoadCompiledStaleRecompile;
+
+   - name: Compile::loadCompiled purges stale layout
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLoadCompiledPurgesStaleLayout;
+
+   - name: Compile::loadCompiled recursion depth
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLoadCompiledRecursionDepth;
+
+todo:
+   # Compile tests
+   # ------------
+   - Compile::Init
+   - Compile::loadCompiled round-trip
+   - Compile::loadCompiled large script
+   - Compile::requireCompiled round-trip
+   - Compile::loadCompiled stale recompile
+   - Compile::loadCompiled purges stale layout
+   - Compile::loadCompiled recursion depth

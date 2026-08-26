@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -73,6 +73,7 @@ public class HTTP extends ScriptableObject {
 		public String contentType;
 		public Map<String, List<String>> responseHeaders;
 		public InputStream responseStream;
+		private HttpURLConnection connection;
 		
 		public HTTPResponse(String response, int responseCode, Map<String, List<String>> map, String contentType) {
 			this.response = response;
@@ -93,6 +94,11 @@ public class HTTP extends ScriptableObject {
 			this.responseCode = responseCode;
 			this.responseHeaders = map;
 			this.contentType = contentType;
+		}
+
+		public void close() throws IOException {
+			if (responseStream != null) responseStream.close();
+			if (connection != null) connection.disconnect();
 		}
 
 	}
@@ -389,7 +395,7 @@ public class HTTP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+	public Object wsConnect(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 		return WebSockets.wsConnect(authenticator, l, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
 
@@ -422,7 +428,7 @@ public class HTTP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsClient(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+	public Object wsClient(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 		return WebSockets.wsClient(authenticator, l, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
 
@@ -495,6 +501,7 @@ public class HTTP extends ScriptableObject {
 		}
 		
 		//con.connect(); 
+		boolean returningStream = false;
 		try {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; cookiesize = " + ckman.getCookieStore().getCookies().size(),  null);
 			//SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; responsecode = " + con.getResponseCode() + "; cookiesize = " + ckman.getCookieStore().getCookies().size(), null);
@@ -507,16 +514,19 @@ public class HTTP extends ScriptableObject {
 			String contentType = con.getContentType();
 			
 			if (bytes) {
-				if (stream)
+				if (stream) {
 					r = new HTTPResponse(is, responseCode, headerFields, contentType);
-				else
+					returningStream = true;
+				} else
 					r = new HTTPResponse(IOUtils.toByteArray(is), responseCode, headerFields, contentType);
 			} else {
-				if (stream)
+				if (stream) {
 					r = new HTTPResponse(is, responseCode, headerFields, contentType);
-				else
+					returningStream = true;
+				} else
 					r = new HTTPResponse(IOUtils.toString(is, Charset.defaultCharset()), responseCode, headerFields, contentType);
 			}
+			r.connection = con;
 			
 			//if (this.authenticator != null) 
 			//	Authenticator.setDefault(null);
@@ -531,6 +541,11 @@ public class HTTP extends ScriptableObject {
 				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream(), Charset.defaultCharset()), e);
 			}
 			throw e;
+		} finally {
+			if (!returningStream) {
+				IOUtils.closeQuietly(is);
+				con.disconnect();
+			}
 		}
 	}
 }

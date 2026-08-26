@@ -50,7 +50,7 @@ var extraArgsForJava11 = " --illegal-access=permit "
 var extraArgsForJava12 = extraArgsForJava11 + " ";
 //var extraArgsForJava17 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
 //var extraArgsForJava17 = " -Xshare:off "
-var extraArgsForJava17 = " -XX:SharedArchiveFile=" + (ow.format.isWindows() ? "%DIR%" : "$DIR") + "/.shared.oaf "
+var extraArgsForJava17 = " -Djline.shutdownhook=false -XX:SharedArchiveFile=" + (ow.format.isWindows() ? "%DIR%" : "$DIR") + "/.shared.oaf "
 var extraArgsForJava24 = " --enable-native-access=ALL-UNNAMED "
 var extraArgsForJava25 = " -XX:+UseCompactObjectHeaders "
 var DEFAULT_SH = "/bin/sh";
@@ -156,6 +156,34 @@ function generateWinJobBat() {
   return s;
 }
 
+function generateWinPyBat() {
+  var s;
+
+  s = "@echo off\n\n";
+  s = s + "setlocal EnableExtensions\n"
+  s = s + "set thispath=%~dp0\n"
+  s = s + "set DIR=%thispath:~0,-1%\n"
+  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
+  s = s + "\n";
+  s = s + "chcp 65001 > NUL\n";
+  s = s + "set OAF_PY_SCRIPT=%~1\n";
+  s = s + "if not \"%~1\"==\"\" shift\n";
+  s = s + "set /a OAF_PY_ARGC=0\n";
+  s = s + ":oaf_py_argloop\n";
+  s = s + "if \"%~1\"==\"\" goto oaf_py_argsdone\n";
+  s = s + "set \"OAF_PY_ARG_%OAF_PY_ARGC%=%~1\"\n";
+  s = s + "set /a OAF_PY_ARGC+=1\n";
+  s = s + "shift\n";
+  s = s + "goto oaf_py_argloop\n";
+  s = s + ":oaf_py_argsdone\n";
+  s = s + "\n";
+  //s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --py -e \"%OAF_PY_SCRIPT%\"";
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --py -e \"%OAF_PY_SCRIPT%\"\n";
+  return s;
+}
+
 function generateWinUpdateBat() {
   var s;
   s = "@echo off\n\n";
@@ -190,6 +218,51 @@ function generateWinConsoleBat() {
   s = s + "chcp 65001 > NUL\n";
   //s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --console %*";
   s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --console %*";
+  return s;
+}
+
+// Returns a sh snippet that keeps a copy of the current terminal settings and
+// restores them whenever the script exits (normally or interrupted). jline uses
+// /dev/tty (and not stdin) so the same device is used here.
+function genUnixSttyRestore() {
+  var s;
+
+  s  = "__oaf_stty=`stty -g 2>/dev/null </dev/tty`\n";
+  s += "__oaf_stty_restore() {\n";
+  s += "  if [ -n \"$__oaf_stty\" ]; then stty \"$__oaf_stty\" 2>/dev/null </dev/tty; fi\n";
+  s += "}\n";
+  s += "trap '__oaf_stty_restore' EXIT\n";
+  s += "trap '__oaf_stty_restore; exit 130' INT\n";
+  s += "trap '__oaf_stty_restore; exit 143' TERM\n";
+  s += "trap '__oaf_stty_restore; exit 129' HUP\n";
+  return s;
+}
+
+function generateUnixPyScript() {
+  var s;
+
+  s = "#!" + shLocation + "\n";
+  s += "CDIR=`pwd`\n"
+  s += "cd `dirname $0`\n"
+  s += "DIR=`pwd`\n"
+  s += "cd \"$CDIR\"\n"
+  s += genUnixSttyRestore()
+  s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
+  s += "OAF_DIR=\"" + classPath + "\"\n";
+  if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
+  s += "SCRIPT=$1\n";
+  s += "if [ $# -gt 0 ]; then\n"
+  s += "  shift\n"
+  s += "fi\n";
+  s += "\n";
+  s += "i=0\n";
+  s += "for a in \"$@\"; do\n";
+  s += "  export OAF_PY_ARG_$i=\"$a\"\n";
+  s += "  i=$((i+1))\n";
+  s += "done\n";
+  s += "export OAF_PY_ARGC=$i\n";
+  s += "\n";
+  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR --py -e \"$SCRIPT\"\n";
   return s;
 }
 
@@ -233,6 +306,7 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "cd `dirname $0`\n"
   s += "DIR=`pwd`\n"
   s += "cd \"$CDIR\"\n"
+  s += genUnixSttyRestore()
   if (isCon) s += "stty -icanon min 1 -echo 2>/dev/null\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
@@ -270,8 +344,6 @@ fi
     });
   }
   s += "EXITCODE=$?\n";
-  //if (isCon) s += "stty icanon echo 2>/dev/null\n";
-  s += "stty icanon echo 2>/dev/null\n";
   s += "exit $EXITCODE\n";
   return s;
 }
@@ -360,6 +432,7 @@ var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
 var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
+var winPyBat = generateWinPyBat();
 //var winConsolePSBat = generateWinConsolePSBat();
 
 var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript, unixOAFPScript
@@ -370,10 +443,10 @@ var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, u
   unixSBoJob = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixPackScript = generateUnixScript("--opack -e \"$SCRIPT $ARGS\"", true)
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
-  unixPyScript = generateUnixScript("--py -e \"$SCRIPT $ARGS\"", true)
+  unixPyScript = generateUnixPyScript()
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
-  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"")
-  unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"")
+  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"", __, __, true)
+  unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"", __, __, true)
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 //}
 
@@ -382,6 +455,7 @@ try {
   if (windows == 1) io.writeFileString(curDir + "\\oaf.bat", winBat);
   if (windows == 1) io.writeFileString(curDir + "\\opack.bat", winPackBat);
   if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
+  if (windows == 1) io.writeFileString(curDir + "\\pyoaf.bat", winPyBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\oafc.bat", winConsoleBat);
   if (windows == 1 && isUnDef(getOPackPath("oafproc")) ) io.writeFileString(curDir + "\\oafp.bat", generateWinOAFPBat())

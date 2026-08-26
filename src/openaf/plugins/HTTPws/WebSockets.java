@@ -1,6 +1,6 @@
 package openaf.plugins.HTTPws;
 
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Context;
 
@@ -44,14 +44,14 @@ public class WebSockets {
         public Future<Session> fut;
     }
 
-    static public Object wsConnect(Authenticator authenticator, String u, String p, String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
-            NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+    static public Object wsConnect(Authenticator authenticator, String u, String p, String anURL, Function onConnect, Function onMsg, Function onError,
+            Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
         Object res = wsClient(authenticator, u, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
         return ((WebSocketsReply) res).fut;
     }
 
-    static public Object wsClient(Authenticator authenticator, String u, String p, String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
-            NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+    static public Object wsClient(Authenticator authenticator, String u, String p, String anURL, Function onConnect, Function onMsg, Function onError,
+            Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 
         URI uri = URI.create(anURL);
         WebSocketClient client;
@@ -128,9 +128,9 @@ public class WebSockets {
 
     @WebSocket
     public static class EventSocket {
-        NativeFunction onConnect, onMsg, onError, onClose;
+        Function onConnect, onMsg, onError, onClose;
 
-        public EventSocket(NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose) {
+        public EventSocket(Function onConnect, Function onMsg, Function onError, Function onClose) {
             this.onConnect = onConnect;
             this.onMsg = onMsg;
             this.onError = onError;

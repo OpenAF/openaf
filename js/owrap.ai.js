@@ -2412,7 +2412,12 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(15 * 60000)
-            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("claude-3-5-sonnet-20241022")
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("claude-sonnet-4-6")
+            // Track whether the caller explicitly configured a temperature: newer models
+            // (Opus 4.7+, Claude Opus 5, Claude Sonnet 5, Claude Fable 5) reject the
+            // parameter entirely (or reject any non-default value), so it must only be
+            // sent when the caller actually asked for it -- never injected as a silent default.
+            var _temperatureProvided = isDef(aOptions.temperature)
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.anthropic.com/")
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
@@ -2526,49 +2531,26 @@ OpenWrap.ai.prototype.__gpttypes = {
             }
             var _applyPromptCacheControlToMessages = aMessages => {
                 if (!_promptCaching || !isArray(aMessages) || aMessages.length === 0) return aMessages
-                var _lastUserIdx = -1
-                for (var ii = aMessages.length - 1; ii >= 0; ii--) {
-                    if (isMap(aMessages[ii]) && aMessages[ii].role === "user") {
-                        var _content = aMessages[ii].content
-                        if (isString(_content)) {
-                            _lastUserIdx = ii
-                            break
-                        }
-                        if (isMap(_content)) {
-                            if (isUnDef(_content.type) || _content.type !== "tool_result") {
-                                _lastUserIdx = ii
-                                break
-                            }
-                        }
-                        if (isArray(_content)) {
-                            var _hasCacheableBlock = _content.some(b => isMap(b) && (isUnDef(b.type) || b.type !== "tool_result"))
-                            if (_hasCacheableBlock) {
-                                _lastUserIdx = ii
-                                break
-                            }
-                        }
-                    }
-                }
-                if (_lastUserIdx < 0) return aMessages
 
-                var _msg = aMessages[_lastUserIdx]
+                // Anthropic's documented multi-turn pattern: mark the last content block of the
+                // most-recently-appended message, regardless of role or block type. This must
+                // include tool_result turns -- skipping them pins the breakpoint to the original
+                // question and never advances it during a tool-use loop, so the growing
+                // tool_use/tool_result history gets reprocessed uncached on every round trip.
+                var _msg = aMessages[aMessages.length - 1]
+                if (!isMap(_msg)) return aMessages
+
                 if (isString(_msg.content)) {
                     _msg.content = [{ type: "text", text: _msg.content, cache_control: { type: "ephemeral" } }]
-                } else if (isMap(_msg.content)) {
-                    _msg.content = [ merge(_msg.content, { cache_control: { type: "ephemeral" } }) ]
                 } else if (isArray(_msg.content)) {
-                    var _lastBlockIdx = -1
-                    for (var jj = _msg.content.length - 1; jj >= 0; jj--) {
-                        if (isMap(_msg.content[jj]) && (isUnDef(_msg.content[jj].type) || _msg.content[jj].type !== "tool_result")) {
-                            _lastBlockIdx = jj
-                            break
-                        }
-                    }
-                    if (_lastBlockIdx >= 0) {
+                    if (_msg.content.length > 0) {
+                        var _lastBlockIdx = _msg.content.length - 1
                         _msg.content[_lastBlockIdx] = merge(_msg.content[_lastBlockIdx], { cache_control: { type: "ephemeral" } })
                     } else {
                         _msg.content.push({ type: "text", text: "", cache_control: { type: "ephemeral" } })
                     }
+                } else if (isMap(_msg.content)) {
+                    _msg.content = [ merge(_msg.content, { cache_control: { type: "ephemeral" } }) ]
                 }
                 return aMessages
             }
@@ -2708,6 +2690,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag, aTools) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    var _temperatureExplicit = isDef(aTemperature) || _temperatureProvided
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
@@ -2761,9 +2744,9 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     var body = {
                         model: aModel,
-                        temperature: aTemperature,
                         messages: bodyMessages
                     }
+                    if (_temperatureExplicit) body.temperature = aTemperature
                     // Note: Anthropic does not support response_format like OpenAI.
                     // JSON output is controlled via system prompts and model behavior.
                     
@@ -2862,6 +2845,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    var _temperatureExplicit = isDef(aTemperature) || _temperatureProvided
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
@@ -2911,11 +2895,11 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     var body = {
                         model: aModel,
-                        temperature: aTemperature,
                         messages: bodyMessages,
                         stream: true
                     }
-                    
+                    if (_temperatureExplicit) body.temperature = aTemperature
+
                     if (_noSystem && systemMsgs.length > 0) {
                         var _systemText = systemMsgs
                             .map(m => {
@@ -3154,7 +3138,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                        "anthropic-version": "2023-06-01",
                        Accept             : "*/*"
                     })
-                    if (_promptCaching) _reqHeaders["anthropic-beta"] = "prompt-caching-2024-07-31"
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
@@ -3192,7 +3175,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                        "anthropic-version": "2023-06-01",
                        Accept             : "text/event-stream"
                     })
-                    if (_promptCaching) _reqHeaders["anthropic-beta"] = "prompt-caching-2024-07-31"
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
