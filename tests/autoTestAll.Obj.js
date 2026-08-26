@@ -72,6 +72,27 @@
         ow.test.assert(res500.responseCode, 500, "Problem with obtaining and parsing the HTTP 500 code");
     };
 
+    exports.testRESTClosesOwnedClientAfterFailure = function() {
+        var originalFactory = ow.obj.rest.connectionFactory;
+        var closeCount = 0;
+        ow.obj.rest.connectionFactory = function() {
+            return {
+                exec: function() { throw new Error("request failed"); },
+                getErrorResponse: function() { return {}; },
+                close: function() { closeCount++; }
+            };
+        };
+
+        try {
+            try {
+                ow.obj.rest.get("http://example.com");
+            } catch(e) {}
+            ow.test.assert(closeCount, 1, "REST should close its owned HTTP client after a request failure");
+        } finally {
+            ow.obj.rest.connectionFactory = originalFactory;
+        }
+    };
+
     exports.testGetPath = function() {
         ow.loadObj();
 

@@ -23,6 +23,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testOAuthAuthorizationCodeTokenExchange;
 
+   - name: MCP::Remote clients close request HTTP clients
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRemoteMCPClosesRequestHTTPClients;
+
    - name: MCP::oJob tplDesc renders all tool metadata strings
      from: MCP::Init
      to  : oJob Test
@@ -32,4 +37,5 @@ todo:
    - MCP::OAuth discovery with client credentials
    - MCP::OAuth authorization URL includes resource and PKCE
    - MCP::OAuth authorization code token exchange includes resource and verifier
+   - MCP::Remote clients close request HTTP clients
    - MCP::oJob tplDesc renders all tool metadata strings

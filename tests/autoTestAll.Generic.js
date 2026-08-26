@@ -884,6 +884,48 @@
         ow.test.assert($from(res).sum(), $from(files).equals("isFile", true).count(), "Problem with pForEach (4)")
     }
 
+    exports.testPForEachTimeout = function() {
+        var nc = getNumberOfCores()
+        // pForEach forces sequential execution below 3 cores; there's no wait-timeout to test against then.
+        if (nc < 3) return
+
+        var n = nc * 4
+        var arr = []
+        for (var i = 0; i < n; i++) arr.push(i)
+
+        var sawTimeout = $atomic(false, "boolean")
+        var _sr = __flags.PFOREACH.seq_ratio, _mp = __flags.PFOREACH.min_par_size
+        // Force the parallel path deterministically: an earlier test may have left the shared pool busy
+        // enough to trip the adaptive seq_ratio heuristic, which would otherwise run partition 0 on the
+        // main thread (no timeout there at all) and hang the whole suite instead of just failing this test.
+        __flags.PFOREACH.seq_ratio = 1e6
+        __flags.PFOREACH.min_par_size = 0
+        try {
+            var start = now()
+            var res = pForEach(arr, (v, idx) => {
+                // Item 0's partition never returns on its own (interruptible hang); everything else completes
+                // immediately. This reproduces the mini-a incident: one stuck partition among many fast ones.
+                // Bounded to 20s (well past the 2s timeout below) so a broken cancel/interrupt fails this
+                // test instead of hanging the whole suite.
+                if (idx == 0) sleep(20000)
+                return v * 2
+            }, e => { if (String(e).indexOf("timed out") >= 0) sawTimeout.set(true) }, false, 2000)
+            var elapsed = now() - start
+
+            ow.test.assert(elapsed < 10000, true, "pForEach with a stuck partition took too long to return: " + elapsed + "ms")
+            ow.test.assert(res.length, arr.length, "pForEach with a stuck partition should still return a full-length, order-preserving result")
+            ow.test.assert(sawTimeout.get(), true, "pForEach did not report a timeout diagnostic via aErrFn")
+
+            // The stuck partition's pool slot must be reclaimed: a subsequent, unrelated pForEach call should
+            // still succeed instead of starving on a poisoned pool (the exact failure mode from the mini-a incident).
+            var res2 = pForEach(arr, (v) => v + 1)
+            ow.test.assert(res2.length, arr.length, "Problem with pForEach after a timeout: thread pool slot was not reclaimed")
+        } finally {
+            __flags.PFOREACH.seq_ratio = _sr
+            __flags.PFOREACH.min_par_size = _mp
+        }
+    }
+
     exports.test2FA = function() {
         ow.loadFormat();
 

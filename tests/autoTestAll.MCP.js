@@ -54,7 +54,7 @@
                 switch(rpc.method) {
                 case "initialize":
                     result = {
-                        protocolVersion: "2024-11-05",
+                        protocolVersion: "2025-06-18",
                         capabilities: {},
                         serverInfo: { name: "OAuth MCP", version: "1.0.0" }
                     };
@@ -222,14 +222,44 @@
                 var info = client.getClientInfo();
 
                 ow.test.assert(info.lastRequest.method, "initialize", "getClientInfo should include the last JSON-RPC method.");
-                ow.test.assert(info.lastRequest.params.protocolVersion, "2024-11-05", "getClientInfo should include initialize protocolVersion.");
+                ow.test.assert(info.lastRequest.params.protocolVersion, "2025-06-18", "getClientInfo should include initialize protocolVersion.");
                 ow.test.assert(info.lastRequest.params.clientInfo.name, "TestClient", "getClientInfo should include sent clientInfo.");
                 ow.test.assert(info.lastResponse.jsonrpc, "2.0", "getClientInfo should include raw JSON-RPC response envelope.");
                 ow.test.assert(info.lastResponse.result.serverInfo.name, "OAuth MCP", "getClientInfo should include JSON-RPC result data.");
                 ow.test.assert(info.session.mcpSessionId, "test-session-1", "getClientInfo should include captured MCP session id.");
-                ow.test.assert(info.initialize.protocolVersion, "2024-11-05", "getClientInfo should include initialize result data.");
+                ow.test.assert(info.initialize.protocolVersion, "2025-06-18", "getClientInfo should include initialize result data.");
             } finally {
                 client.destroy();
+            }
+        });
+    };
+
+    exports.testRemoteMCPClosesRequestHTTPClients = function() {
+        withOAuthMCPServer(function(ctx) {
+            var originalFactory = ow.obj.rest.connectionFactory;
+            var clients = [];
+            var client;
+            var destroyed = false;
+
+            ow.obj.rest.connectionFactory = function() {
+                var http = originalFactory();
+                var originalClose = http.close;
+                http.close = function() {
+                    clients.push(http);
+                    return originalClose.apply(http, arguments);
+                };
+                return http;
+            };
+
+            try {
+                client = $mcp({ type: "remote", strict: false, url: ctx.resource });
+                client.initialize({ name: "TestClient", version: "9.9.9" });
+                client.destroy();
+                destroyed = true;
+                ow.test.assert(clients.length, 2, "Remote MCP should close both the request and session DELETE HTTP clients.");
+            } finally {
+                ow.obj.rest.connectionFactory = originalFactory;
+                if (isDef(client) && !destroyed) client.destroy();
             }
         });
     };

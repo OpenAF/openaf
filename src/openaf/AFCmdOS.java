@@ -10,17 +10,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.IdScriptableObject;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.JSDescriptor;
+import org.mozilla.javascript.JSScript;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeJSON;
 import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
@@ -29,6 +33,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import openaf.SimpleLog.logtype;
+import openaf.plugins.Threads;
 
 import java.lang.String;
 
@@ -38,6 +43,17 @@ import java.lang.String;
  * 
  */
 public class AFCmdOS extends AFCmdBase {
+
+	/**
+	 * Runs any registered OpenAF shutdown hooks synchronously and then terminates the process at the
+	 * operating system level (bypassing the JVM's own shutdown sequence, which can otherwise stall for
+	 * several seconds behind a still-running JIT compilation). Used for this class's own internal,
+	 * short-lived bootstrap commands (install/check/update/example help).
+	 */
+	private static void fastExit(int anExitCode) {
+		Threads.runOpenAFShutdownHooksNow();
+		Threads.nativeExit(anExitCode);
+	}
 
 	final public static String argHelp = "Usage: openaf [options]\n\n"
 			+ "Options:\n" 
@@ -134,10 +150,10 @@ public class AFCmdOS extends AFCmdBase {
 				return (String) aPass;
 			}
 		} 
-		if (aPass instanceof NativeFunction) {
+		if (aPass instanceof Function) {
 			try {
 				Context cx = (Context) AFCmdBase.jse.enterContext();
-				return (String) ((NativeFunction) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+				return (String) ((Function) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
                             cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
                             new Object[] { });
 			} catch(Exception e) {
@@ -202,7 +218,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 		}
 		
-		System.exit(0);
+		fastExit(0);
 	}
 	
 	/**
@@ -226,7 +242,7 @@ public class AFCmdOS extends AFCmdBase {
 				} catch(Exception e) { }
 			}
 		}
-		System.exit(0);
+		fastExit(0);
 	}
 	
 	/**
@@ -251,7 +267,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 		}
 		
-		System.exit(0);
+		fastExit(0);
 	}
 	
 	/**
@@ -273,7 +289,7 @@ public class AFCmdOS extends AFCmdBase {
 			if (is != null) is.close();
 		}
 		
-		System.exit(0);		
+		fastExit(0);		
 	}
 	
 	/**
@@ -787,15 +803,15 @@ public class AFCmdOS extends AFCmdBase {
 				afScript = (Scriptable) jse.newObject(gscope, "AF");
 				
 				if (!ScriptableObject.hasProperty(gscope, "af"))
-					((IdScriptableObject) gscope).put("af", gscope, afScript);
-				
+					gscope.put("af", gscope, afScript);
+
 				// Add the IO object
 				if (!ScriptableObject.hasProperty(gscope, "io"))
-					((IdScriptableObject) gscope).put("io", gscope, jse.newObject(gscope, "IO"));
+					gscope.put("io", gscope, jse.newObject(gscope, "IO"));
 				
 			}
 
-			AFBase.runFromClass(Class.forName("openaf_js").getDeclaredConstructor().newInstance());
+			AFBase.runFromClass(newScriptInstance("openaf_js"));
 			//cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
@@ -813,7 +829,7 @@ public class AFCmdOS extends AFCmdBase {
 			} 
 
 			if (injectclass) {
-				res = AFBase.runFromClass(Class.forName(injectclassfile).getDeclaredConstructor().newInstance());
+				res = AFBase.runFromClass(newScriptInstance(injectclassfile));
 			}
 			
 			if (isolatePMs && res != null && !(res instanceof Undefined)) {
@@ -863,12 +879,50 @@ public class AFCmdOS extends AFCmdBase {
 		}*/
 		
 		try {
-			afc.execute(System.in, System.out, "");					
+			afc.execute(System.in, System.out, "");
 		} catch (Exception e1) {
 			SimpleLog.log(SimpleLog.logtype.ERROR, "Error while executing operation: " + e1.getMessage(), null);
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "", e1);
 		}
 	}
 
+	private static Script newScriptInstance(String className) throws Exception {
+		Class<?> cls = Class.forName(className);
+		try {
+			Script script = (Script) cls.getDeclaredConstructor().newInstance();
+			AFBase.initCompiledClass(cls);
+			return script;
+		} catch (NoSuchMethodException e) {
+			try {
+				Class.forName(className + "Main", true, cls.getClassLoader());
+				Field field = cls.getDeclaredField("_descriptors");
+				field.setAccessible(true);
+				JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
+				if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
+					throw new IllegalStateException("Missing JS descriptors for " + className);
+				}
+				AFBase.initCompiledClass(cls);
+				return new JSScript((JSDescriptor) descriptors[0], null);
+			} catch (Throwable initFailure) {
+				return compileScriptFromResource(cls, className);
+			}
+		}
+	}
+
+	private static Script compileScriptFromResource(Class<?> cls, String className) throws Exception {
+		String resourceName = "js/openaf.js";
+		try (InputStream in = cls.getClassLoader().getResourceAsStream(resourceName)) {
+			if (in == null) {
+				throw new IllegalStateException("Unable to load " + resourceName + " for " + className);
+			}
+			Context cx = (Context) AFCmdBase.jse.enterContext();
+			try {
+				InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
+				return cx.compileReader(reader, resourceName, 1, null);
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+	}
 
 }

@@ -13,8 +13,15 @@ oJob is OpenAF's job orchestration framework that allows you to define, schedule
 5. [Todo List](#todo-list)
 6. [Including Other oJobs](#including-other-ojobs)
 7. [Job Definitions](#job-definitions)
+   - [Basic Job Structure](#basic-job-structure)
+   - [Job Types](#job-types) — simple, periodic, shutdown, subscribe, jobs (external)
+   - [Job Dependencies](#job-dependencies)
 8. [Code Separation](#code-separation)
 9. [Built-in Jobs](#built-in-jobs)
+   - [Common Built-in Jobs](#common-built-in-jobs) — categorized catalog
+   - [Built-in Job Shortcuts](#built-in-job-shortcuts) — `(if)`, `(parallel)`, `(each)`, etc.
+   - [Built-in Jobs and Shortcut Correlation](#built-in-jobs-and-shortcut-correlation) — mapping table
+   - [Built-in Job Arguments Reference](#built-in-job-arguments-reference) — per-job argument tables
 10. [Advanced Features](#advanced-features)
 11. [Examples](#examples)
 

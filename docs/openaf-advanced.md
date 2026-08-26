@@ -102,10 +102,10 @@ Favor built-in job shortcuts `(if)`, `(repeat)`, `(each)`, `(parallel)` to minim
 
 ## 14. Asynchronous Execution with oPromise
 
-- **$do** – queue work on the standard ForkJoin-backed pool and receive an `oPromise` for fluent `.then` / `.catch` composition. The resolver passed into your function can resolve with returned values or explicit `resolve()` calls, while thrown errors or `reject()` calls route to the rejection chain.【F:js/openaf.js†L13426-L13455】【F:js/openaf.js†L12472-L12528】
-- **$doV** – same contract as `$do` but targets a virtual-thread-per-task executor so launching many concurrent tasks will not consume native threads when the JVM supports Project Loom virtual threads.【F:js/openaf.js†L13444-L13455】【F:js/openaf.js†L12421-L12438】
-- **Coordination helpers** – mix `$doAll` / `$doFirst` (wrappers over `oPromise.all()` / `.race()`) to wait for all tasks or the first completion, enabling fan-out/fan-in patterns without manual synchronization primitives.【F:js/openaf.js†L13459-L13479】【F:js/openaf.js†L12532-L12589】
-- **Cancellation** – call `.cancel()` on any `$do` / `$doV` promise to interrupt the associated thread (mirroring the Threads plugin) and drive the chain into the rejection path for cleanup.【F:js/openaf.js†L13426-L13455】【F:js/openaf.js†L12664-L12683】
+- **$do** – queue work on the standard ForkJoin-backed pool and receive an `oPromise` for fluent `.then` / `.catch` composition. The resolver passed into your function can resolve with returned values or explicit `resolve()` calls, while thrown errors or `reject()` calls route to the rejection chain.
+- **$doV** – same contract as `$do` but targets a virtual-thread-per-task executor so launching many concurrent tasks will not consume native threads when the JVM supports Project Loom virtual threads.
+- **Coordination helpers** – mix `$doAll` / `$doFirst` (wrappers over `oPromise.all()` / `.race()`) to wait for all tasks or the first completion, enabling fan-out/fan-in patterns without manual synchronization primitives.
+- **Cancellation** – call `.cancel()` on any `$do` / `$doV` promise to interrupt the associated thread (mirroring the Threads plugin) and drive the chain into the rejection path for cleanup.
 
 Example fan-out flow using virtual threads:
 
@@ -281,7 +281,7 @@ jobs:
 
 ## 16. Terminal Visualization Patterns
 
-Since the March 2026 docs refresh, `ow.format` gained a terminal visualization layer that is useful for CLIs, live status pages and compact operational output.
+The `ow.format` terminal visualization layer is useful for CLIs, live status pages and compact operational output.
 
 ### Capability-aware rendering
 

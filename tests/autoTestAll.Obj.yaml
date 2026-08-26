@@ -20,6 +20,11 @@ jobs:
   #    to  : oJob Test
   #    exec: args.func = args.tests.testRESTErrors;
 
+   - name: Obj::REST closes owned client after failure
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRESTClosesOwnedClientAfterFailure;
+
    - name: Obj::Get Path
      from: Obj::Init
      to  : oJob Test

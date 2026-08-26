@@ -162,7 +162,7 @@ Supported `type` values per widget:
 | `bar` | `printBars` format string |
 | `sparkline` | number array or multi-series array |
 | `histogram` | number array |
-| `heatmap` | 2-D number array |
+| `heatmap` | 2-D number array, or a map keyed by `"YYYY-MM-DD"` / `"HH:mm"` / `"YYYY-MM-DDTHH:mm"` for a time-bucketed view (`xAxis`/`yAxis`: `year`\|`month`\|`week`\|`weekday`\|`day`\|`hour`; defaults to a GitHub-style week×weekday calendar for date keys, or a single hour-of-day row for time-only keys) |
 | `bullet` | map or array of maps `{ value, target, min, max, ranges }` |
 | `scatter` | array of `{ x, y }` maps |
 | `boxplot` | number array or array of arrays |

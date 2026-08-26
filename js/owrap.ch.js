@@ -893,9 +893,13 @@ OpenWrap.ch.prototype.__types = {
 						if (isDef(ow.ch.__types.buffer.__s[c])) ow.ch.__types.buffer.__s[c].stop();
 					}
 					for(var c in ow.ch.__types.buffer.__f) {
-						ow.ch.__types.buffer.__f[c](true); 
+						ow.ch.__types.buffer.__f[c](true);
+						// Bound the combined wait to the channel's configured timeout instead of applying it
+						// to each waitForJobs call (which could double the per-channel shutdown delay).
+						var _waitStart = now();
 						$ch(ow.ch.__types.buffer.__bt[c]).waitForJobs(ow.ch.__types.buffer.__t[c]);
-						$ch(ow.ch.__types.buffer.__bc[c]).waitForJobs(ow.ch.__types.buffer.__t[c]);
+						var _waitLeft = ow.ch.__types.buffer.__t[c] - (now() - _waitStart);
+						$ch(ow.ch.__types.buffer.__bc[c]).waitForJobs(_waitLeft > 0 ? _waitLeft : 0);
 					}
 				});
 			}

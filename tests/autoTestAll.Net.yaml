@@ -21,6 +21,13 @@ jobs:
        - Net::Load Net
      exec: args.func = args.tests.testGetActualTimeDefault;
 
+   - name: Net::Get DoH (custom server)
+     from: Net::Init
+     to  : oJob Test
+     deps:
+       - Net::Load Net
+     exec: args.func = args.tests.testGetDoHWithCustomServer;
+
    - name: Net::Get Actual Time (with server)
      from: Net::Init
      to  : oJob Test
@@ -44,6 +51,7 @@ jobs:
 
 todo:
    - Net::Load Net
+   - Net::Get DoH (custom server)
    - Net::Get Actual Time (default)
    - Net::Get Actual Time (with server)
    - Net::Get Actual Time (with timeout)

@@ -4,7 +4,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 
 import java.lang.String;
@@ -21,9 +21,9 @@ public class SimpleLog {
 	public static enum logtype { INFO, ERROR, DEBUG };
 	public static logtype currentLogLevel = logtype.ERROR;
 	protected static boolean ready = false;
-	protected static NativeFunction nFunc = null; 
+	protected static Function nFunc = null; 
 	
-	public static void setNFunc(NativeFunction fn) {
+	public static void setNFunc(Function fn) {
 		nFunc = fn;
 	}
 

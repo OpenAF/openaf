@@ -20,7 +20,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
@@ -161,7 +161,7 @@ public class CSV extends ScriptableObject {
 	}
 
 	@JSFunction
-	public void toStream(Object aStream, NativeFunction func) throws IOException {
+	public void toStream(Object aStream, Function func) throws IOException {
 		if (aStream instanceof OutputStream) {
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter((OutputStream) aStream));
 
@@ -193,7 +193,7 @@ public class CSV extends ScriptableObject {
 	}
 
 	@JSFunction
-	public void fromStream(Object aStream, NativeFunction func) throws IOException {
+	public void fromStream(Object aStream, Function func) throws IOException {
 		if (aStream instanceof InputStream) {
 			boolean hasHeaders = false;
 			String[] headers = null;

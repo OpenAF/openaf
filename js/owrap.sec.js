@@ -94,7 +94,9 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
    }
    aRepo = rep;
 
-   if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret, aFile);
+   const _ensureOpen = () => {
+      if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret, aFile);
+   }
 
    return {
       /**
@@ -105,6 +107,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       list: (aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
 
@@ -117,6 +120,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       get: (aKey, aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -130,6 +134,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       getObj: (aKey, aExtraArgs, aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -143,6 +148,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       getFn: (aKey, aExtraArgs, aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -155,6 +161,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       set: (aKey, aObj, aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -168,6 +175,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       setObj: (aKey, aObj, aArgs, aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -181,6 +189,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       setFn: (aKey, aFn, aArgs, aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -193,6 +202,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       unset: (aKey, aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -205,6 +215,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       unsetBucket: (aBucket) => {
+         _ensureOpen();
          return ow.sec._sb[aRepo].destroyBucket(aBucket);
       },
       /**
@@ -214,6 +225,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       unsetRepo: () => {
+         _ensureOpen();
          return ow.sec.purgeSBuckets(aRepo, aFile);
       },
       /**
@@ -223,6 +235,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       close: () => {
+         _ensureOpen();
          return ow.sec.closeSBuckets(aRepo, aFile);
       },
       /**
@@ -233,6 +246,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       getBucket: (aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].getBucket(aBucket, aLockSecret);
@@ -245,6 +259,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       setBucket: (aBucketString, aBucket, aLockSecret) => {
+         _ensureOpen();
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].setBucket(aBucket, aLockSecret, aBucketString);
@@ -281,27 +296,27 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
 
          var evs = getEnvs()
 
-         _$(aMap.secKey, "secKey").$_()
-         
-         aMap.secRepo     = _$(aMap.secRepo).default(evs.OAF_SEC_REPO)
-         aMap.secBucket   = _$(aMap.secBucket).default(evs.OAF_SEC_BUCKET)
-         aMap.secPass     = _$(aMap.secPass).default(evs.OAF_SEC_BUCKET_PASS)
-         aMap.secMainPass = _$(aMap.secMainPass).default(evs.OAF_SEC_MAIN_PASS)
-         aMap.secFile     = _$(aMap.secFile).default(evs.OAF_SEC_FILE)
-         
-         var s = $sec(aMap.secRepo, aMap.secBucket, aMap.secPass, aMap.secMainPass, aMap.secFile).get(aMap.secKey)
-   
-         delete aMap.secRepo
-         delete aMap.secBucket
-         delete aMap.secPass
-         delete aMap.secMainPass
-         delete aMap.secFile
-         delete aMap.secKey
-   
+         _$(aM.secKey, "secKey").$_()
+
+         aM.secRepo     = _$(aM.secRepo).default(evs.OAF_SEC_REPO)
+         aM.secBucket   = _$(aM.secBucket).default(evs.OAF_SEC_BUCKET)
+         aM.secPass     = _$(aM.secPass).default(evs.OAF_SEC_BUCKET_PASS)
+         aM.secMainPass = _$(aM.secMainPass).default(evs.OAF_SEC_MAIN_PASS)
+         aM.secFile     = _$(aM.secFile).default(evs.OAF_SEC_FILE)
+
+         var s = $sec(aM.secRepo, aM.secBucket, aM.secPass, aM.secMainPass, aM.secFile).get(aM.secKey)
+
+         delete aM.secRepo
+         delete aM.secBucket
+         delete aM.secPass
+         delete aM.secMainPass
+         delete aM.secFile
+         delete aM.secKey
+
          if (isDef(aPath)) {
-            return $$(aMap).set(aPath, merge($$(aMap).get(aPath), s))
+            return $$(aM).set(aPath, merge($$(aM).get(aPath), s))
          } else {
-            return merge(aMap, s)
+            return merge(aM, s)
          }
 
       }

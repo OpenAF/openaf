@@ -1642,10 +1642,12 @@ OpenWrap.template.prototype.html = {
 		try {
 			var u = new java.net.URL(aURL);
 			var b = h.get(aURL, __, __, true);
+			try { h.close(); } catch(e2) {}
 			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes)) + aSuffix;
-		} catch(e1) {
-			return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
-		}
+			} catch(e1) {
+				try { h.close(); } catch(e2) {}
+				return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
+			}
 	},
 	/**
 	 * <odoc>
@@ -1704,11 +1706,13 @@ OpenWrap.template.prototype.html = {
 			try {
 				var u = new java.net.URL(aURL);
 				var b = h.get(aURL, __, __, true);
+				try { h.close(); } catch(e4) {}
 				if (withContents)
 					return af.fromBytes2String(b.responseBytes);
 				else
 					return "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes));
-			} catch(e1) {
+				} catch(e1) {
+				try { h.close(); } catch(e4) {}
 				try {
 					if (withContents)
 						return io.readFileString(aURL);
@@ -1724,9 +1728,9 @@ OpenWrap.template.prototype.html = {
 					} catch(e3) {
 						return aURL;
 					}
-				} 
-			}
-		};
+					}
+				}
+			};
 		var resolveRelativeURL = (aBaseURL, aRelativeURL) => {
 			if (!isString(aRelativeURL)) return aRelativeURL
 			if (aRelativeURL.match(/^[a-z]+:\/\//i) || aRelativeURL.startsWith("//") || aRelativeURL.startsWith("data:") || aRelativeURL.startsWith("blob:") || aRelativeURL.startsWith("#")) return aRelativeURL

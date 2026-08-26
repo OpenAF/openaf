@@ -11,10 +11,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.lang.String;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
@@ -37,13 +38,58 @@ public class Threads extends ScriptableObject {
 	protected ExecutorService executor;
 	protected List<ScriptFunction> threads;
 	protected HashMap<String, Object> sessions = new HashMap<String, Object>();
+	private static final AtomicLong shutdownHookSequence = new AtomicLong();
+	// Registry of guarded shutdown actions, most-recently-added first, so they can be run synchronously
+	// (e.g. by nativeExit) instead of only via the JVM's own (slow, sometimes ~10s-delayed) shutdown sequence.
+	private static final java.util.concurrent.CopyOnWriteArrayList<Runnable> shutdownActions = new java.util.concurrent.CopyOnWriteArrayList<Runnable>();
+	// Count of guarded actions registered but not yet finished running, consulted by the hook armed by
+	// armFastExitOnShutdown so it can tell when it is the last one left.
+	private static final java.util.concurrent.atomic.AtomicInteger pendingShutdownActions = new java.util.concurrent.atomic.AtomicInteger(0);
+	private static volatile int autoFastExitCode = 0;
+	private static final java.util.concurrent.atomic.AtomicBoolean autoFastExitHookRegistered = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+	private static boolean isShutdownHookDebugEnabled() {
+		return Boolean.parseBoolean(System.getProperty("openaf.shutdownhook.debug", "false"));
+	}
+
+	/**
+	 * Registers aAction both as a normal JVM shutdown hook and in the internal registry consulted by
+	 * runOpenAFShutdownHooksNow/nativeExit. A guard ensures aAction runs at most once even if both
+	 * paths end up trying to run it, and pendingShutdownActions reflects only actions that haven't run yet
+	 * regardless of which path ran them.
+	 */
+	private static void registerGuardedShutdownAction(final Runnable aAction, final String aThreadName) {
+		final java.util.concurrent.atomic.AtomicBoolean ran = new java.util.concurrent.atomic.AtomicBoolean(false);
+		pendingShutdownActions.incrementAndGet();
+		Runnable guarded = new Runnable() {
+			public void run() {
+				if (ran.compareAndSet(false, true)) {
+					try {
+						aAction.run();
+					} finally {
+						pendingShutdownActions.decrementAndGet();
+					}
+				}
+			}
+		};
+		shutdownActions.add(0, guarded);
+		Runtime.getRuntime().addShutdownHook(new Thread(guarded, aThreadName));
+	}
+
+	/**
+	 * Java-side entry point (used e.g. by IO.createTempDir) to register cleanup that should also run
+	 * as part of runOpenAFShutdownHooksNow/nativeExit, not just as a raw JVM shutdown hook.
+	 */
+	public static void registerShutdownAction(Runnable aAction) {
+		registerGuardedShutdownAction(aAction, "OpenAF-shutdown-action-" + shutdownHookSequence.incrementAndGet());
+	}
 	
 	/**
 	 * Callback support
 	 *
 	 */
 	public class ScriptFunction implements Callable<Boolean>, Runnable {
-		protected NativeFunction aFunction;
+		protected Function aFunction;
 		//protected Context cx;
 		protected UUID uuid;
 		
@@ -52,7 +98,7 @@ public class Threads extends ScriptableObject {
 		 * 
 		 * @param aFunction
 		 */
-		public ScriptFunction(UUID uuid, NativeFunction aFunction) {
+		public ScriptFunction(UUID uuid, Function aFunction) {
 			this.aFunction = aFunction;
 			this.uuid = uuid;
 		}
@@ -126,21 +172,121 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void addOpenAFShutdownHook(final NativeFunction aFunction) {
-		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+	public void addOpenAFShutdownHook(final Function aFunction) {
+		final long hookId = shutdownHookSequence.incrementAndGet();
+		Runnable action = new Runnable() {
 			public void run() {
+				final boolean debug = isShutdownHookDebugEnabled();
+				final long startedAt = System.nanoTime();
+				if (debug) System.err.println("[openaf shutdown hook " + hookId + "] start class=" + aFunction.getClass().getName());
 				try {
 					Context cx = (Context) AFCmdBase.jse.enterContext();
 					aFunction.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[]{ });
 				} catch (Exception e) {
+					if (debug) System.err.println("[openaf shutdown hook " + hookId + "] failed after " + ((System.nanoTime() - startedAt) / 1_000_000) + "ms: " + e);
 					throw e;
 				} finally {
-					AFCmdBase.jse.exitContext();
+					try {
+						AFCmdBase.jse.exitContext();
+					} finally {
+						if (debug) System.err.println("[openaf shutdown hook " + hookId + "] end after " + ((System.nanoTime() - startedAt) / 1_000_000) + "ms");
+					}
 				}
 			}
-		}));
+		};
+		registerGuardedShutdownAction(action, "OpenAF-shutdown-hook-" + hookId);
 	}
-	
+
+	/**
+	 * <odoc>
+	 * <key>Threads.runOpenAFShutdownHooksNow()</key>
+	 * Synchronously runs, in the current thread, every shutdown hook/action registered so far via
+	 * addOpenAFShutdownHook (and Java-side registrations such as io.createTempDir's cleanup) - in the
+	 * reverse order they were added. Each one is guarded to run at most once, so it is safe to call this
+	 * and still let the normal JVM shutdown sequence run afterwards (e.g. via System.exit): already-run
+	 * hooks will be skipped there. Intended to be used right before Threads.nativeExit.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static void runOpenAFShutdownHooksNow() {
+		for (Runnable action : shutdownActions) {
+			try {
+				action.run();
+			} catch (Throwable t) {
+				// best-effort: one failing hook shouldn't block the others or the exit that follows
+			}
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.nativeExit(anExitCode)</key>
+	 * Terminates the current process immediately at the operating system level (the C library's
+	 * _exit), bypassing the JVM's own shutdown sequence entirely - including JVM-registered shutdown
+	 * hook threads and the safepoint HotSpot uses to wait for JIT compiler threads, which can otherwise
+	 * delay process exit by several seconds (observed up to ~10s) when a compilation is still in
+	 * flight. Because JVM-level cleanup is skipped, call Threads.runOpenAFShutdownHooksNow() first for
+	 * any cleanup that must still happen (this is what exit(code, true) does). Falls back to
+	 * Runtime.halt (not guaranteed to avoid the delay this method exists to avoid) if the native call
+	 * is unavailable on this platform.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static void nativeExit(int anExitCode) {
+		try {
+			System.out.flush();
+			System.err.flush();
+		} catch (Throwable t) {
+			// ignore: proceed to exit regardless
+		}
+		try {
+			boolean windows = System.getProperty("os.name", "").toLowerCase().contains("win");
+			com.sun.jna.Function exitFn = com.sun.jna.Function.getFunction(windows ? "msvcrt" : "c", "_exit");
+			exitFn.invokeVoid(new Object[] { Integer.valueOf(anExitCode) });
+		} catch (Throwable t) {
+			Runtime.getRuntime().halt(anExitCode);
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.armFastExitOnShutdown(anExitCode)</key>
+	 * Arms an extra JVM shutdown hook that waits for every other OpenAF-registered shutdown hook/action
+	 * (see addOpenAFShutdownHook and the Java-side registerShutdownAction) to finish, then calls
+	 * Threads.nativeExit(anExitCode) itself - the same fast-exit trick exit(code, true) uses, but
+	 * triggered automatically once JVM shutdown actually begins rather than requiring an explicit
+	 * exit(code, true) call. This covers cases like a script simply finishing, Ctrl-C or SIGTERM, where
+	 * the JVM's own trailing teardown (including the safepoint wait for JIT compiler threads that can
+	 * delay exit by several seconds) would otherwise still run after the hooks are done.
+	 * Calling this does nothing on its own: it only takes effect once real JVM shutdown starts, so normal
+	 * execution and daemon/server processes that intentionally stay alive (non-daemon threads still
+	 * running) are unaffected. As with exit(code, true), once armed, any shutdown hook or
+	 * File.deleteOnExit() entry not registered through OpenAF will NOT run once shutdown starts.
+	 * Idempotent: calling it again just updates the exit code that will be used.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static void armFastExitOnShutdown(int anExitCode) {
+		autoFastExitCode = anExitCode;
+		if (autoFastExitHookRegistered.compareAndSet(false, true)) {
+			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+				public void run() {
+					// Safety cap in case some non-OpenAF shutdown hook hangs: don't wait forever.
+					int waitedMs = 0;
+					while (pendingShutdownActions.get() > 0 && waitedMs < 30000) {
+						try {
+							Thread.sleep(5);
+						} catch (InterruptedException ie) {
+							break;
+						}
+						waitedMs += 5;
+					}
+					nativeExit(autoFastExitCode);
+				}
+			}, "OpenAF-auto-fast-exit"));
+		}
+	}
+
 	/**
 	 * <odoc>
 	 * <key>Threads.addThread(aFunction) : String</key>
@@ -149,7 +295,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addThread(NativeFunction aFunction) {
+	public String addThread(Function aFunction) {
 		UUID uuid = UUID.randomUUID();
 		threads.add(new ScriptFunction(uuid, aFunction));
 		return uuid.toString();
@@ -309,7 +455,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addVirtualThread(NativeFunction aFunction) {
+	public String addVirtualThread(Function aFunction) {
 		if (executor == null) initVirtualThreadPerTaskExecutor();
 		UUID uuid = UUID.randomUUID();
 		executor.execute((Runnable) new ScriptFunction(uuid, aFunction));
@@ -325,7 +471,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addScheduleThread(NativeFunction aFunction, double delay) {
+	public String addScheduleThread(Function aFunction, double delay) {
 		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
 
 		UUID uuid = UUID.randomUUID();
@@ -342,7 +488,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addCachedThread(NativeFunction aFunction) {
+	public String addCachedThread(Function aFunction) {
 		if (executor == null) initCachedThreadPool();
 
 		UUID uuid = UUID.randomUUID();
@@ -359,7 +505,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addFixedThread(NativeFunction aFunction) throws Exception {
+	public String addFixedThread(Function aFunction) throws Exception {
 		if (executor == null) throw new Exception("Please use initFixedThreadPool first.");
 
 		UUID uuid = UUID.randomUUID();
@@ -376,7 +522,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addSingleThread(NativeFunction aFunction) {
+	public String addSingleThread(Function aFunction) {
 		if (executor == null) initSingleThreadPool();
 
 		UUID uuid = UUID.randomUUID();
@@ -393,7 +539,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addScheduleThreadAtFixedRate(NativeFunction aFunction, double time) {
+	public String addScheduleThreadAtFixedRate(Function aFunction, double time) {
 		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
 
 		UUID uuid = UUID.randomUUID();
@@ -410,7 +556,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addScheduleThreadWithFixedDelay(NativeFunction aFunction, double time) {
+	public String addScheduleThreadWithFixedDelay(Function aFunction, double time) {
 		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
 
 		UUID uuid = UUID.randomUUID();
@@ -458,7 +604,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void sync(NativeFunction aFunction) {
+	public void sync(Function aFunction) {
 	    if (executor == null) return;
 	    
 		synchronized(executor) {
