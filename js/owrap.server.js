@@ -1709,13 +1709,185 @@ OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
     }
 }
 
+//-----------------------------------------------------------------------------------------------------
+// MCP (Model Context Protocol) shared version negotiation
+//-----------------------------------------------------------------------------------------------------
+
 /**
  * <odoc>
- * <key>ow.server.mcpStdio(initData, fnsMeta, fns, lgF)</key>
+ * <key>ow.server.mcp</key>
+ * Shared Model Context Protocol version negotiation helpers used by ow.server.mcpStdio, ow.server.httpd.replyJSONRPC/replyMCP
+ * and OpenAF's oJob-based MCP servers (httpdMCP/stdioMCP shortcuts). Implements the 2026-07-28 "modern" stateless
+ * per-request protocol era alongside the legacy initialize-handshake eras (2024-11-05, 2025-06-18) without changing
+ * any default (legacy) behavior -- modern-era handling is only exercised by call sites that opt into it.
+ * </odoc>
+ */
+OpenWrap.server.prototype.mcp = {
+    versions: {
+        supported      : ["2024-11-05", "2025-06-18", "2026-07-28"],
+        modernThreshold: "2026-07-28"
+    },
+
+    errorCodes: {
+        headerMismatch                 : -32020,
+        missingRequiredClientCapability: -32021,
+        unsupportedProtocolVersion     : -32022,
+        invalidParams                  : -32602
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.isModern(aVersion) : boolean</key>
+     * Returns true if aVersion is a protocol version string on or after the modern (stateless, 2026-07-28+) era.
+     * Protocol version strings are YYYY-MM-DD so lexicographic comparison is a valid chronological ordering.
+     * </odoc>
+     */
+    isModern: function(aVersion) {
+        return isString(aVersion) && aVersion >= this.versions.modernThreshold
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.requestMeta(reqObj) : Map</key>
+     * Returns the request's params._meta map (per the spec, _meta is nested inside params, not a top-level
+     * JSON-RPC envelope field), or __ if not present.
+     * </odoc>
+     */
+    requestMeta: function(reqObj) {
+        if (!isMap(reqObj) || !isMap(reqObj.params) || !isMap(reqObj.params._meta)) return __
+        return reqObj.params._meta
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.metaProtocolVersion(reqObj) : String</key>
+     * Extracts the modern per-request protocol version from a parsed JSON-RPC request's params._meta field
+     * (io.modelcontextprotocol/protocolVersion), or __ if not present.
+     * </odoc>
+     */
+    metaProtocolVersion: function(reqObj) {
+        var _meta = this.requestMeta(reqObj)
+        if (isUnDef(_meta)) return __
+        var v = _meta["io.modelcontextprotocol/protocolVersion"]
+        return isString(v) ? v : __
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.metaClientCapabilities(reqObj) : Map</key>
+     * Extracts the per-request client capabilities from params._meta["io.modelcontextprotocol/clientCapabilities"],
+     * or __ if not present.
+     * </odoc>
+     */
+    metaClientCapabilities: function(reqObj) {
+        var _meta = this.requestMeta(reqObj)
+        if (isUnDef(_meta)) return __
+        var c = _meta["io.modelcontextprotocol/clientCapabilities"]
+        return isMap(c) ? c : __
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.eraOf(reqObj) : String</key>
+     * Classifies a parsed JSON-RPC request as "modern" (carries a modern params._meta protocol version),
+     * "legacy-initialize" (an initialize handshake request) or "legacy-stateless" (any other request, handled
+     * statelessly per today's default behavior).
+     * </odoc>
+     */
+    eraOf: function(reqObj) {
+        if (isDef(this.metaProtocolVersion(reqObj))) return "modern"
+        if (isMap(reqObj) && reqObj.method == "initialize") return "legacy-initialize"
+        return "legacy-stateless"
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.unsupportedVersionError(anId, aRequestedVersion) : Map</key>
+     * Builds a JSON-RPC UnsupportedProtocolVersionError (-32022) response listing the versions this server supports.
+     * </odoc>
+     */
+    unsupportedVersionError: function(anId, aRequestedVersion) {
+        return {
+            jsonrpc: "2.0",
+            id     : isDef(anId) ? anId : null,
+            error  : {
+                code   : this.errorCodes.unsupportedProtocolVersion,
+                message: "Unsupported protocol version",
+                data   : { supported: this.versions.supported, requested: aRequestedVersion }
+            }
+        }
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.invalidParamsError(anId, aMessage, aData) : Map</key>
+     * Builds a JSON-RPC Invalid Params (-32602) error response, used when a modern-era request is missing a
+     * required params._meta field (e.g. io.modelcontextprotocol/clientCapabilities).
+     * </odoc>
+     */
+    invalidParamsError: function(anId, aMessage, aData) {
+        var _err = { code: this.errorCodes.invalidParams, message: _$(aMessage, "aMessage").isString().default("Invalid params") }
+        if (isDef(aData)) _err.data = aData
+        return { jsonrpc: "2.0", id: isDef(anId) ? anId : null, error: _err }
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.wrapResult(aBody, anEra, opts) : Map</key>
+     * Wraps a MCP result body per the negotiated era. Legacy eras ("legacy-initialize"/"legacy-stateless") return
+     * aBody unchanged -- zero behavior change for existing callers. The "modern" era merges in the required
+     * resultType ("complete"), and, when opts.isList is true, CacheableResult fields (ttlMs, cacheScope) with
+     * sensible defaults (opts.ttlMs default 0, opts.cacheScope default "private"). When opts.serverInfo is given,
+     * it is advertised (SHOULD, per spec) as result._meta["io.modelcontextprotocol/serverInfo"].
+     * </odoc>
+     */
+    wrapResult: function(aBody, anEra, opts) {
+        if (anEra != "modern" || !isMap(aBody)) return aBody
+        opts = isMap(opts) ? opts : {}
+        var _res = merge({ resultType: "complete" }, aBody)
+        if (opts.isList === true) {
+            _res = merge({
+                ttlMs     : isNumber(opts.ttlMs) ? opts.ttlMs : 0,
+                cacheScope: isString(opts.cacheScope) ? opts.cacheScope : "private"
+            }, _res)
+        }
+        if (isMap(opts.serverInfo)) {
+            _res._meta = merge({ "io.modelcontextprotocol/serverInfo": opts.serverInfo }, isMap(_res._meta) ? _res._meta : {})
+        }
+        return _res
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.server.mcp.discoverResult(initData) : Map</key>
+     * Builds the mandatory server/discover response (modern era) advertising this server's supported protocol
+     * versions, capabilities and identity.
+     * </odoc>
+     */
+    discoverResult: function(initData) {
+        initData = isMap(initData) ? initData : {}
+        return {
+            resultType      : "complete",
+            protocolVersions: this.versions.supported,
+            capabilities    : initData.capabilities || {},
+            serverInfo      : initData.serverInfo || {}
+        }
+    }
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.mcpStdio(initData, fnsMeta, fns, lgF, opts)</key>
  * Processes a MCP (Model Context Protocol) request using standard input/output. The initData is a map with initial data to be sent to the client, fnsMeta is an array of function metadata and fns is a map of functions to be executed.
  * The lgF is a function that will be used to log messages. If not provided, it will default to a function that writes logs to a file named "log.ndjson".
  * The initData should contain the server information and capabilities. The fnsMeta should contain metadata about the functions available, such as their names and descriptions. The fns should contain the actual functions that can be called by the client.
  * The function will listen for incoming MCP requests on standard input and respond accordingly.\
+ * \
+ * opts is an optional map: { modern: false } (default). When modern is true this also serves the 2026-07-28\
+ * stateless/per-request MCP protocol era (per-request _meta protocol version, server/discover, resultType,\
+ * ttlMs/cacheScope on list results, UnsupportedProtocolVersionError) side-by-side with the legacy\
+ * initialize-handshake era used above, for any request that carries a modern _meta protocol version.\
+ * When modern is false (the default) behavior is 100% unchanged from previous releases.\
  * \
  * Example usage:\
  * \
@@ -1762,7 +1934,7 @@ OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
  *		})
  * </odoc>
  */
-OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
+OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts) {
     var _mcpResultToText = result => (__flags.MCPSERVER && __flags.MCPSERVER.answerInTOON === true) ? af.toTOON(result) : stringify(result)
 
     lgF = _$(lgF, "lgF").isFunction().default((t, m) => {
@@ -1773,6 +1945,10 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
     initData = _$(initData, "initData").isMap().default({})
     _$(fnsMeta, "fnsMeta").isArray().$_()
     _$(fns, "fns").isMap().$_()
+    // opts.modern (default false) opts into the 2026-07-28 stateless/per-request protocol era on top of the
+    // legacy initialize-handshake behavior below, which is left fully unchanged when opts.modern is not set.
+    opts = _$(opts, "opts").isMap().default({})
+    opts.modern = _$(opts.modern, "opts.modern").isBoolean().default(false)
     initData = merge({
         protocolVersion: "2025-06-18",
         serverInfo: {
@@ -1799,43 +1975,72 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
             return
         }
         lgF("rcv", _pline)
-        var _res = ow.server.jsonRPC(_pline, {
+
+        // Era is only ever "modern" when this server opted in; otherwise every request is handled
+        // exactly as before (legacy-stateless), regardless of what shape the request happens to have.
+        var _era = opts.modern ? ow.server.mcp.eraOf(_pline) : "legacy-stateless"
+        if (_era == "modern") {
+            var _reqVersion = ow.server.mcp.metaProtocolVersion(_pline)
+            var _sendErr = _errRes => {
+                if (isDef(_pline.id) && !isNull(_pline.id)) {
+                    lgF("snd", _errRes)
+                    sprint(_errRes, "")
+                }
+            }
+            if (ow.server.mcp.versions.supported.indexOf(_reqVersion) < 0) {
+                _sendErr(ow.server.mcp.unsupportedVersionError(_pline.id, _reqVersion))
+                return
+            }
+            // server/discover is the bootstrap/probe method (per spec, clients call it before they know what to
+            // declare) and is exempt from the clientCapabilities requirement -- a probing client must be able to
+            // get back a DiscoverResult or UnsupportedProtocolVersionError, the only two "recognized modern"
+            // responses it knows to treat as "this is a modern server", not an unrelated -32602.
+            if (_pline.method != "server/discover" && isUnDef(ow.server.mcp.metaClientCapabilities(_pline))) {
+                _sendErr(ow.server.mcp.invalidParamsError(_pline.id, "Missing required params._meta[\"io.modelcontextprotocol/clientCapabilities\"]"))
+                return
+            }
+        }
+        // Wraps a result per the negotiated era (no-op for legacy eras) and, for the modern era, advertises this
+        // server's identity on every result per the spec's per-response protocol fields.
+        var _wrap = (aBody, isList) => ow.server.mcp.wrapResult(aBody, _era, { isList: isList === true, serverInfo: initData.serverInfo })
+
+        var _res = ow.server.jsonRPC(_pline, merge({
             initialize                 : params => (isMap(params) && isString(params.protocolVersion)) ? merge(initData, { protocolVersion: params.protocolVersion }) : initData,
-            "prompts/list"             : () => ({ prompts: [] }),
+            "prompts/list"             : () => _wrap({ prompts: [] }, true),
             "notifications/initialized": () => ({}),
             ping                       : () => ({}),
             "tools/call"               : params => {
                 if (isUnDef(params) || isUnDef(params.name)) {
-                    return { content: [{ type: "text", text: "Missing tool name" }], isError: true }
+                    return _wrap({ content: [{ type: "text", text: "Missing tool name" }], isError: true })
                 }
                 const tool = fns[params.name]
                 if (tool) {
                     try {
                         var result = tool(params.input || params.arguments || {})
-                        return { 
+                        return _wrap({
                             content: [{
                                 type: "text",
                                 text: isString(result) ? result : _mcpResultToText(result)
                             }],
                             isError: false
-                        }
+                        })
                     } catch (e) {
-                        return { 
+                        return _wrap({
                             content: [{
                                 type: "text",
                                 text: "Error executing tool: " + e.message
                             }],
                             isError: true
-                        }
+                        })
                     }
                 } else {
-                    return { content: [{
+                    return _wrap({ content: [{
                         type: "text",
                         text: "Tool not found: " + params.name
-                    }], isError: true }
+                    }], isError: true })
                 }
             },
-            "tools/list": () => ({ tools: fnsMeta })
+            "tools/list": () => _wrap({ tools: fnsMeta }, true)
             /*"agents/list": params => {
                 if (isUnDef(global.__a2a__)) {
                     return { agents: [] }
@@ -1866,7 +2071,9 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
                 }
                 return global.__a2a__.send(params.id, params.message, params.options || {}, params.context || {})
             }*/
-        })
+        }, opts.modern ? {
+            "server/discover": () => ow.server.mcp.discoverResult(initData)
+        } : {}))
 
         // JSON-RPC notifications return null by design; don't emit a stray "null" line on stdio.
         if (isDef(_res) && !isNull(_res)) {
@@ -3649,7 +3856,7 @@ OpenWrap.server.prototype.httpd = {
 
 	/**
      * <odoc>
-     * <key>ow.server.httpd.replyJSONRPC(server, request, mapOfFunctions, logFn, debugFn) : Map</key>
+     * <key>ow.server.httpd.replyJSONRPC(server, request, mapOfFunctions, logFn, debugFn, opts) : Map</key>
      * Implements a JSON-RPC 2.0 endpoint using the provided mapOfFunctions. The request must be a POST with a JSON-RPC body.\
 	 * Optionally you can provide logFn and debugFn functions to log errors and debug information respectively.\
 	 * \
@@ -3657,12 +3864,24 @@ OpenWrap.server.prototype.httpd = {
      *   ow.server.httpd.route(hs, {\
      *     "/rpc": (req) => ow.server.httpd.replyJSONRPC(hs, req, { sum: (a, b) => a + b }, logErr, log) \
      *   })\
-	 * 
+	 * \
+	 * opts is an optional map: { modern: false, listMethods: [...] } (defaults shown). When modern is true,\
+	 * requests carrying a modern (2026-07-28+) per-request _meta protocol version are validated against\
+	 * ow.server.mcp.versions.supported (replying with an UnsupportedProtocolVersionError otherwise), results are\
+	 * wrapped with the required resultType (plus ttlMs/cacheScope for methods listed in opts.listMethods, default\
+	 * ["tools/list","prompts/list","resources/list","resources/templates/list"]), and the negotiated version is\
+	 * echoed back via the MCP-Protocol-Version response header. Legacy requests (the default, and everything when\
+	 * modern is false/omitted) are handled exactly as before -- zero behavior change.\
+	 *
      * </odoc>
      */
-    replyJSONRPC: function(server, request, mapOfFunctions, logFn, debugFn) {
+    replyJSONRPC: function(server, request, mapOfFunctions, logFn, debugFn, opts) {
 		logFn = _$(logFn, "logFn").isFunction().default(log)
 		debugFn = _$(debugFn, "debugFn").isFunction().default(() => {})
+		opts = _$(opts, "opts").isMap().default({})
+		opts.modern = _$(opts.modern, "opts.modern").isBoolean().default(false)
+		opts.listMethods = _$(opts.listMethods, "opts.listMethods").isArray().default(["tools/list", "prompts/list", "resources/list", "resources/templates/list"])
+		opts.serverInfo = _$(opts.serverInfo, "opts.serverInfo").isMap().default(__)
 
         try {
             if (request.method !== "POST") {
@@ -3702,6 +3921,26 @@ OpenWrap.server.prototype.httpd = {
                     id: reqObj && reqObj.id !== undefined ? reqObj.id : null
                 }, 400, "application/json", {})
             }
+            // Era is only ever "modern" when this server opted in; otherwise every request is handled
+            // exactly as before (legacy-stateless), regardless of what shape the request happens to have.
+            var _era = opts.modern ? ow.server.mcp.eraOf(reqObj) : "legacy-stateless"
+            var _respHeaders = {}
+            if (_era == "modern") {
+                var _reqVersion = ow.server.mcp.metaProtocolVersion(reqObj)
+                if (ow.server.mcp.versions.supported.indexOf(_reqVersion) < 0) {
+                    logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Unsupported protocol version: " + _reqVersion)
+                    return ow.server.httpd.reply(ow.server.mcp.unsupportedVersionError(reqObj.id, _reqVersion), 400, "application/json", {})
+                }
+                // server/discover is the bootstrap/probe method (per spec, clients call it before they know what to
+                // declare) and is exempt from the clientCapabilities requirement -- a probing client must be able
+                // to get back a DiscoverResult or UnsupportedProtocolVersionError, the only two "recognized modern"
+                // responses it knows to treat as "this is a modern server", not an unrelated -32602.
+                if (reqObj.method != "server/discover" && isUnDef(ow.server.mcp.metaClientCapabilities(reqObj))) {
+                    logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Missing required client capabilities")
+                    return ow.server.httpd.reply(ow.server.mcp.invalidParamsError(reqObj.id, "Missing required params._meta[\"io.modelcontextprotocol/clientCapabilities\"]"), 400, "application/json", {})
+                }
+                _respHeaders["MCP-Protocol-Version"] = _reqVersion
+            }
             // JSON-RPC notification (no id): the Streamable HTTP transport requires a bare
             // 202 Accepted with no body - HTTP 404 is reserved for an expired session
             if (isUnDef(reqObj.id) || isNull(reqObj.id)) {
@@ -3709,7 +3948,7 @@ OpenWrap.server.prototype.httpd = {
                 if (isFunction(nfn)) {
                     try { nfn(reqObj.params) } catch(e) { logFn("Error handling notification " + reqObj.method + ": " + String(e)) }
                 }
-                return ow.server.httpd.reply("", 202, "text/plain", {})
+                return ow.server.httpd.reply("", 202, "text/plain", _respHeaders)
             }
             var fn = mapOfFunctions[reqObj.method]
             if (!isFunction(fn)) {
@@ -3721,23 +3960,24 @@ OpenWrap.server.prototype.httpd = {
                     jsonrpc: "2.0",
                     error: { code: -32601, message: "Method not found" },
                     id: reqObj.id
-                }, 200, "application/json", {})
+                }, 200, "application/json", _respHeaders)
             }
             try {
                 var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params)
+                result = ow.server.mcp.wrapResult(result, _era, { isList: opts.listMethods.indexOf(reqObj.method) >= 0, serverInfo: opts.serverInfo })
                 debugFn("JSON-RPC request result: " + stringify(result));
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     result: result,
                     id: reqObj.id
-                }, 200, "application/json", {})
+                }, 200, "application/json", _respHeaders)
             } catch(e) {
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32603, message: "Internal error", data: String(e) },
                     id: reqObj.id
-                }, 500, "application/json", {})
+                }, 500, "application/json", _respHeaders)
             }
         } catch(e) {
             logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
@@ -3751,7 +3991,7 @@ OpenWrap.server.prototype.httpd = {
 
 	/**
      * <odoc>
-     * <key>ow.server.httpd.replyMCP(server, request, mapOfFunctions, logFn, debugFn) : Map</key>
+     * <key>ow.server.httpd.replyMCP(server, request, mapOfFunctions, logFn, debugFn, opts) : Map</key>
      * Implements a Model Context Protocol (MCP) endpoint using the provided mapOfFunctions. The request must be a POST with a MCP body.\
 	 * Optionally you can provide logFn and debugFn functions to log errors and debug information respectively.\
      * \ 
@@ -3766,12 +4006,21 @@ OpenWrap.server.prototype.httpd = {
 	 *	  }, logErr, log),\
 	 *	  "/echo": req => ow.server.httpd.reply(stringify(req))\
 	 *  })
+	 * \
+	 * opts is an optional map: { modern: false, listMethods: [...] } -- see ow.server.httpd.replyJSONRPC for the\
+	 * meaning of both; the same opt-in 2026-07-28 modern-era handling (version validation, resultType/ttlMs/\
+	 * cacheScope wrapping, MCP-Protocol-Version response header) applies here, with legacy behavior (default)\
+	 * left fully unchanged.\
      *
      * </odoc>
      */
-    replyMCP: function(server, request, mapOfFunctions, logFn, debugFn) {
+    replyMCP: function(server, request, mapOfFunctions, logFn, debugFn, opts) {
 		logFn = _$(logFn, "logFn").isFunction().default(function() {})
 		debugFn = _$(debugFn, "debugFn").isFunction().default(function() {})
+		opts = _$(opts, "opts").isMap().default({})
+		opts.modern = _$(opts.modern, "opts.modern").isBoolean().default(false)
+		opts.listMethods = _$(opts.listMethods, "opts.listMethods").isArray().default(["tools/list", "prompts/list", "resources/list", "resources/templates/list"])
+		opts.serverInfo = _$(opts.serverInfo, "opts.serverInfo").isMap().default(__)
         try {
 			debugFn("Processing MCP request: " + stringify(request))
             if (request.method !== "POST") {
@@ -3811,34 +4060,55 @@ OpenWrap.server.prototype.httpd = {
                     id: reqObj && reqObj.id !== undefined ? reqObj.id : null
                 }, 200, "application/json", {})
             }
+            // Era is only ever "modern" when this server opted in; otherwise every request is handled
+            // exactly as before (legacy-stateless), regardless of what shape the request happens to have.
+            var _era = opts.modern ? ow.server.mcp.eraOf(reqObj) : "legacy-stateless"
+            var _respHeaders = {}
+            if (_era == "modern") {
+                var _reqVersion = ow.server.mcp.metaProtocolVersion(reqObj)
+                if (ow.server.mcp.versions.supported.indexOf(_reqVersion) < 0) {
+					logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Unsupported protocol version: " + _reqVersion)
+                    return ow.server.httpd.reply(ow.server.mcp.unsupportedVersionError(reqObj.id, _reqVersion), 400, "application/json", {})
+                }
+                // server/discover is the bootstrap/probe method (per spec, clients call it before they know what to
+                // declare) and is exempt from the clientCapabilities requirement -- a probing client must be able
+                // to get back a DiscoverResult or UnsupportedProtocolVersionError, the only two "recognized modern"
+                // responses it knows to treat as "this is a modern server", not an unrelated -32602.
+                if (reqObj.method != "server/discover" && isUnDef(ow.server.mcp.metaClientCapabilities(reqObj))) {
+					logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Missing required client capabilities")
+                    return ow.server.httpd.reply(ow.server.mcp.invalidParamsError(reqObj.id, "Missing required params._meta[\"io.modelcontextprotocol/clientCapabilities\"]"), 400, "application/json", {})
+                }
+                _respHeaders["MCP-Protocol-Version"] = _reqVersion
+            }
             var isNotification = isUnDef(reqObj.id) || isNull(reqObj.id)
             var fn = mapOfFunctions[reqObj.method]
             if (!isFunction(fn)) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Method not found: " + reqObj.method)
-                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {})
+                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", _respHeaders)
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32601, message: "Method not found" },
                     id: reqObj.id
-                }, 200, "application/json", {})
+                }, 200, "application/json", _respHeaders)
             }
             try {
                 var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params)
+                result = ow.server.mcp.wrapResult(result, _era, { isList: opts.listMethods.indexOf(reqObj.method) >= 0, serverInfo: opts.serverInfo })
 				debugFn("MCP request result: " + stringify(result))
-                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {})
+                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", _respHeaders)
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     result: result,
                     id: reqObj.id
-                }, 200, "application/json", {})
+                }, 200, "application/json", _respHeaders)
             } catch(e) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
-                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {})
+                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", _respHeaders)
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32603, message: "Internal error", data: String(e) },
                     id: reqObj.id
-                }, 200, "application/json", {})
+                }, 200, "application/json", _respHeaders)
             }
         } catch(e) {
 			logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
