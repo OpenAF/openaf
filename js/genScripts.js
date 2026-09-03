@@ -223,18 +223,29 @@ function generateWinConsoleBat() {
 
 // Returns a sh snippet that keeps a copy of the current terminal settings and
 // restores them whenever the script exits (normally or interrupted). jline uses
-// /dev/tty (and not stdin) so the same device is used here.
+// /dev/tty (and not stdin) so the same device is used here. If an exact state
+// snapshot is unavailable, a launcher that changed the terminal falls back to
+// `stty sane` so it cannot leave the invoking shell unusable.
 function genUnixSttyRestore() {
   var s;
 
   s  = "__oaf_stty=`stty -g 2>/dev/null </dev/tty`\n";
+  s += "__oaf_stty_changed=0\n";
   s += "__oaf_stty_restore() {\n";
-  s += "  if [ -n \"$__oaf_stty\" ]; then stty \"$__oaf_stty\" 2>/dev/null </dev/tty; fi\n";
+  s += "  if [ -n \"$__oaf_stty\" ]; then\n";
+  s += "    stty \"$__oaf_stty\" 2>/dev/null </dev/tty\n";
+  s += "  elif [ \"$__oaf_stty_changed\" = 1 ]; then\n";
+  s += "    stty sane 2>/dev/null </dev/tty\n";
+  s += "  fi\n";
   s += "}\n";
-  s += "trap '__oaf_stty_restore' EXIT\n";
+  // Signal 0 is the POSIX spelling for the shell-exit trap. Use it instead of
+  // the common-but-non-portable EXIT alias because generated launchers use
+  // /bin/sh.
+  s += "trap '__oaf_stty_restore' 0\n";
   s += "trap '__oaf_stty_restore; exit 130' INT\n";
   s += "trap '__oaf_stty_restore; exit 143' TERM\n";
   s += "trap '__oaf_stty_restore; exit 129' HUP\n";
+  s += "trap '__oaf_stty_restore; exit 131' QUIT\n";
   return s;
 }
 
@@ -307,7 +318,7 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "DIR=`pwd`\n"
   s += "cd \"$CDIR\"\n"
   s += genUnixSttyRestore()
-  if (isCon) s += "stty -icanon min 1 -echo 2>/dev/null\n";
+  if (isCon) s += "if stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";

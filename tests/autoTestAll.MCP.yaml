@@ -33,9 +33,39 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testOJobTplDescRendersAllToolMetadataStrings;
 
+   - name: MCP::auto client negotiates modern era with dual-era server
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPAutoClientNegotiatesModernEraWithDualEraServer;
+
+   - name: MCP::auto client falls back to legacy server
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPAutoClientFallsBackToLegacyServer;
+
+   - name: MCP::legacy client unaffected by dual-era server
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPLegacyClientUnaffectedByDualEraServer;
+
+   - name: MCP::modern server rejects unsupported protocol version
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPModernServerRejectsUnsupportedProtocolVersion;
+
+   - name: MCP::server discover is probeable without client capabilities
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPServerDiscoverIsProbeableWithoutClientCapabilities;
+
 todo:
    - MCP::OAuth discovery with client credentials
    - MCP::OAuth authorization URL includes resource and PKCE
    - MCP::OAuth authorization code token exchange includes resource and verifier
    - MCP::Remote clients close request HTTP clients
    - MCP::oJob tplDesc renders all tool metadata strings
+   - MCP::auto client negotiates modern era with dual-era server
+   - MCP::auto client falls back to legacy server
+   - MCP::legacy client unaffected by dual-era server
+   - MCP::modern server rejects unsupported protocol version
+   - MCP::server discover is probeable without client capabilities
