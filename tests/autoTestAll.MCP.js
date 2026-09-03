@@ -264,6 +264,131 @@
         });
     };
 
+    // Dual-era HTTP MCP server fixture: exercises the real ow.server.httpd.replyJSONRPC(..., {modern:true})
+    // code path added for the 2026-07-28 protocol era, side-by-side with the legacy initialize handshake.
+    var withDualEraMCPServer = function(testFn) {
+        ow.loadServer();
+
+        var port = findRandomOpenPort();
+        var hs = ow.server.httpd.start(port, "127.0.0.1");
+        var description = {
+            serverInfo: { name: "Dual-Era MCP", version: "1.0.0" },
+            capabilities: { tools: { listChanged: false } }
+        };
+        var rpcFns = {
+            initialize: params => merge({ protocolVersion: "2025-06-18" }, description),
+            "notifications/initialized": () => ({}),
+            "tools/list": () => ({ tools: [{ name: "ping", description: "Ping tool", inputSchema: { type: "object", properties: {} } }] }),
+            "tools/call": params => ({ content: [{ type: "text", text: "pong" }], isError: false }),
+            "server/discover": () => ow.server.mcp.discoverResult(description)
+        };
+
+        ow.server.httpd.route(hs, {
+            "/mcp": req => ow.server.httpd.replyJSONRPC(hs, req, rpcFns, function() {}, function() {}, { modern: true, serverInfo: description.serverInfo })
+        });
+
+        try {
+            testFn({ port: port, hs: hs, url: "http://127.0.0.1:" + port + "/mcp" });
+        } finally {
+            ow.server.httpd.stop(hs);
+        }
+    };
+
+    exports.testMCPAutoClientNegotiatesModernEraWithDualEraServer = function() {
+        withDualEraMCPServer(function(ctx) {
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url, protocolVersion: "auto" });
+            try {
+                client.initialize({ name: "TestClient", version: "9.9.9" });
+                ow.test.assert(client.getClientInfo().era, "modern", "protocolVersion:'auto' should negotiate the modern era against a dual-era server.");
+
+                var tools = client.listTools();
+                ow.test.assert(tools.tools[0].name, "ping", "Modern-era client should still list tools normally.");
+                ow.test.assert(tools.resultType, "complete", "Modern-era tools/list result should carry resultType.");
+                ow.test.assert(isNumber(tools.ttlMs), true, "Modern-era tools/list result should carry ttlMs (CacheableResult).");
+                ow.test.assert(isString(tools.cacheScope), true, "Modern-era tools/list result should carry cacheScope (CacheableResult).");
+
+                var res = client.callTool("ping", {});
+                ow.test.assert(res.content[0].text, "pong", "Modern-era callTool should still work.");
+                ow.test.assert(res.resultType, "complete", "Modern-era tools/call result should carry resultType.");
+            } finally {
+                client.destroy();
+            }
+        });
+    };
+
+    exports.testMCPAutoClientFallsBackToLegacyServer = function() {
+        withOAuthMCPServer(function(ctx) {
+            // This fixture server (see withOAuthMCPServer above) has no server/discover method and answers
+            // initialize with a fixed 2025-06-18, i.e. exactly the legacy-only server this task must not regress.
+            var client = $mcp({ type: "remote", strict: false, url: ctx.resource, protocolVersion: "auto" });
+            try {
+                client.initialize({ name: "TestClient", version: "9.9.9" });
+                ow.test.assert(client.getClientInfo().era, "legacy", "protocolVersion:'auto' should fall back to the legacy era against a legacy-only server.");
+
+                var tools = client.listTools();
+                ow.test.assert(tools.tools[0].name, "ping", "Legacy fallback should still list tools normally.");
+                ow.test.assert(isUnDef(tools.resultType), true, "Legacy-era results must stay unwrapped (no resultType) -- zero behavior change.");
+            } finally {
+                client.destroy();
+            }
+        });
+    };
+
+    exports.testMCPLegacyClientUnaffectedByDualEraServer = function() {
+        withDualEraMCPServer(function(ctx) {
+            // A plain (non-"auto") client is the overwhelming majority case today: it must behave identically
+            // whether or not the server it talks to has opted into modern-era support.
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url });
+            try {
+                client.initialize({ name: "TestClient", version: "9.9.9" });
+                ow.test.assert(client.getClientInfo().era, "legacy", "Default client should stay on the legacy era even against a dual-era server.");
+
+                var tools = client.listTools();
+                ow.test.assert(tools.tools[0].name, "ping", "Legacy client should list tools normally against a dual-era server.");
+                ow.test.assert(isUnDef(tools.resultType), true, "Legacy client's result must stay unwrapped against a dual-era server.");
+            } finally {
+                client.destroy();
+            }
+        });
+    };
+
+    exports.testMCPModernServerRejectsUnsupportedProtocolVersion = function() {
+        withDualEraMCPServer(function(ctx) {
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url });
+            try {
+                var res = client.exec("tools/list", {
+                    _meta: {
+                        "io.modelcontextprotocol/protocolVersion": "1900-01-01",
+                        "io.modelcontextprotocol/clientCapabilities": {}
+                    }
+                });
+                ow.test.assert(isMap(res.error), true, "An unsupported modern protocol version should return a JSON-RPC error.");
+                ow.test.assert(res.error.code, -32022, "Unsupported protocol version should use the reserved -32022 error code.");
+                ow.test.assert(res.error.data.requested, "1900-01-01", "UnsupportedProtocolVersionError should echo the requested version.");
+                ow.test.assert(res.error.data.supported.indexOf("2026-07-28") >= 0, true, "UnsupportedProtocolVersionError should list this server's supported versions.");
+            } finally {
+                client.destroy();
+            }
+        });
+    };
+
+    exports.testMCPServerDiscoverIsProbeableWithoutClientCapabilities = function() {
+        withDualEraMCPServer(function(ctx) {
+            // A client probing era support (per spec) may call server/discover before it knows what capabilities
+            // to declare; server/discover must not itself require io.modelcontextprotocol/clientCapabilities.
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url });
+            try {
+                var res = client.exec("server/discover", {
+                    _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" }
+                });
+                ow.test.assert(isDef(res.error), false, "A bare server/discover probe (no clientCapabilities yet) must not be rejected.");
+                ow.test.assert(res.protocolVersions.indexOf("2026-07-28") >= 0, true, "server/discover should advertise the modern protocol version.");
+            } finally {
+                client.destroy();
+            }
+        });
+    };
+
     exports.testOJobTplDescRendersAllToolMetadataStrings = function() {
         var tf = "ojob_mcp_tpldesc_" + genUUID() + ".yaml";
 

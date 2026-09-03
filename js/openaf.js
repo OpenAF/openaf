@@ -9396,8 +9396,13 @@ const $jsonrpc = function (aOptions) {
  * <odoc>
  * <key>$mcp(aOptions) : Map</key>
  * Creates a Model Context Protocol (MCP) client that can communicate with LLM MCP servers
- * using JSON-RPC over stdio, remote connections, dummy mode, or oJob-based servers. This client implements the MCP protocol
- * version 2024-11-05 and provides access to tools, prompts, and other MCP capabilities.
+ * using JSON-RPC over stdio, remote connections, dummy mode, or oJob-based servers. This client speaks the legacy,
+ * initialize-handshake-based MCP protocol eras by default (protocolVersion "2024-11-05" or "2025-06-18", selectable
+ * via aOptions.protocolVersion, default "2025-06-18") and provides access to tools, prompts, and other MCP
+ * capabilities. It can optionally opt into the modern, stateless 2026-07-28+ protocol era by setting
+ * aOptions.protocolVersion to "auto": this probes the server (server/discover on stdio, a modern request inspected
+ * for a recognized error on HTTP) and negotiates the modern era when the server supports it, falling back to the
+ * legacy initialize handshake otherwise -- existing callers that don't set "auto" are completely unaffected.
  * \
  * The aOptions parameter is a map with the following possible keys:\
  * \
@@ -9838,8 +9843,67 @@ const $mcp = function(aOptions) {
 		throw new Error("Unsupported MCP auth.type: " + aOptions.auth.type)
 	}
 
+	// Protocol version eras this client knows how to speak. Legacy (initialize-handshake-based) eras stay the
+	// default for every caller that doesn't opt into aOptions.protocolVersion == "auto"; the modern (stateless,
+	// per-request) era is only ever used after a successful _negotiateModernEra() probe below.
+	const _MCP_KNOWN_VERSIONS = ["2024-11-05", "2025-06-18", "2026-07-28"]
+	const _MCP_MODERN_THRESHOLD = "2026-07-28"
+
+	// Probes the server for the modern (2026-07-28+) stateless protocol era via server/discover, per the spec's
+	// backward-compatibility guidance ("probe with server/discover and fall back on any error that is not a
+	// recognized modern error" on stdio; "attempt a modern request and inspect the response" on HTTP - this
+	// client's transport abstraction already normalizes both into the same result/error shape, so one code path
+	// covers both). Returns true and negotiates _r._era/_r._negotiatedVersion/_r._initResult on success; returns
+	// false (leaving _r untouched) on any response/error that doesn't identify a modern server, so the caller can
+	// fall back to the legacy initialize handshake exactly as it would without "auto".
+	const _negotiateModernEra = clientInfo => {
+		var _probeMeta = {
+			"io.modelcontextprotocol/protocolVersion": _MCP_MODERN_THRESHOLD,
+			"io.modelcontextprotocol/clientCapabilities": aOptions.capabilities,
+			"io.modelcontextprotocol/clientInfo": clientInfo
+		}
+		var _discover
+		try {
+			_discover = _execWithAuth("server/discover", { _meta: _probeMeta }, false, {})
+		} catch (e) {
+			return false
+		}
+		var _versions = __
+		if (isMap(_discover) && isArray(_discover.protocolVersions)) {
+			_versions = _discover.protocolVersions
+		} else if (isMap(_discover) && isMap(_discover.error) && isMap(_discover.error.data) && isArray(_discover.error.data.supported)) {
+			// UnsupportedProtocolVersionError is still a "recognized modern error": the server understood the
+			// request shape, it just doesn't support the version this probe declared.
+			_versions = _discover.error.data.supported
+		}
+		if (isUnDef(_versions)) return false
+		var _mutual = _versions.filter(v => _MCP_KNOWN_VERSIONS.indexOf(v) >= 0).sort()
+		if (_mutual.length == 0) return false
+
+		_r._negotiatedVersion = _mutual[_mutual.length - 1]
+		_r._era = "modern"
+		_jsonrpc.setProtocolVersion(_r._negotiatedVersion)
+		_r._capabilities = (isMap(_discover) && isMap(_discover.capabilities)) ? _discover.capabilities : {}
+		_r._initResult = _buildSyntheticInitializeResult({
+			protocolVersion: _r._negotiatedVersion,
+			serverInfo     : isMap(_discover) ? _discover.serverInfo : __,
+			capabilities   : _r._capabilities
+		})
+		return true
+	}
+
 	const _execWithAuth = (method, params, notification, execOptions) => {
 		execOptions = _$(execOptions, "execOptions").isMap().default({})
+		// Modern era (2026-07-28+): every request stamps its protocol version/capabilities/identity in
+		// params._meta instead of relying on a prior initialize handshake -- there isn't one in this era.
+		if (_r._era == "modern") {
+			params = merge({}, isMap(params) ? params : {})
+			params._meta = merge({
+				"io.modelcontextprotocol/protocolVersion": _r._negotiatedVersion,
+				"io.modelcontextprotocol/clientCapabilities": aOptions.capabilities,
+				"io.modelcontextprotocol/clientInfo": aOptions.clientInfo
+			}, isMap(params._meta) ? params._meta : {})
+		}
 		var _isHttp = (aOptions.type == "remote" || aOptions.type == "http" || aOptions.type == "sse")
 		if (_isHttp) {
 			var _authHeaders = _getAuthHeaders()
@@ -10101,6 +10165,8 @@ const $mcp = function(aOptions) {
                 _initialized: false,
                 _capabilities: {},
                 _initResult: __,
+                _era: __,
+                _negotiatedVersion: __,
                 type: type => {
                         _jsonrpc.type(type)
                         return _r
@@ -10117,6 +10183,20 @@ const $mcp = function(aOptions) {
         	clientInfo = _$(clientInfo, "clientInfo").isMap().default({})
             clientInfo = merge(aOptions.clientInfo, clientInfo)
 
+			// Modern era already negotiated: there's no handshake to repeat in this era.
+			if (_r._era == "modern") return _r
+
+			if (aOptions.protocolVersion == "auto") {
+				if (_negotiateModernEra(clientInfo)) {
+					_r._initialized = true
+					return _r
+				}
+				// Not a modern server (or no usable response): fall back to the legacy initialize
+				// handshake below, using this client's default legacy version, exactly as a caller
+				// that never set "auto" would.
+				aOptions.protocolVersion = "2025-06-18"
+			}
+
 			var initResult = _execWithAuth("initialize", {
 				protocolVersion: aOptions.protocolVersion,
 				capabilities: aOptions.capabilities,
@@ -10125,6 +10205,7 @@ const $mcp = function(aOptions) {
 
 			if (isDef(initResult) && isUnDef(initResult.error)) {
                 _r._initialized = true
+                _r._era = "legacy"
                 _r._capabilities = initResult.capabilities || {}
                 _r._initResult = initResult
                 // Negotiated version: use whatever the server returned (even if unrecognised) for
@@ -10158,8 +10239,16 @@ const $mcp = function(aOptions) {
 			if (isMap(_r._initResult)) {
 				_clientInfo.initialize = clone(_r._initResult)
 			}
+			// era is "legacy" (initialize-handshake, the default) or "modern" (2026-07-28+ stateless,
+			// only ever reached via aOptions.protocolVersion == "auto") once initialize() has run.
+			_clientInfo.era = _r._era
 			return _clientInfo
 		},
+		// True when result carries the modern era's InputRequiredResult shape (resultType "input_required"),
+		// meaning the server needs more information (sampling/elicitation/roots) before it can complete the
+		// request -- see the MRTR pattern. This client has no interactive UI to satisfy such a request; callers
+		// that talk to modern servers using those features should check for this and surface it to the user.
+		isInputRequired: result => isMap(result) && result.resultType == "input_required",
 		listTools: () => {
             if (!_r._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
