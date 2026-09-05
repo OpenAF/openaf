@@ -1729,14 +1729,21 @@ public class AFBase extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>af.visibleLength(aString) : int</key>
+	 * <key>af.visibleLength(aString, aWideEmojiPresentation) : int</key>
 	 * Given aString returns its visible terminal width in columns, removing ANSI sequences and collapsing
-	 * combined characters and emoji grapheme sequences.
+	 * combined characters and emoji grapheme sequences. By default (aWideEmojiPresentation = true) bare
+	 * "Emoji_Presentation=Yes" symbols (e.g. ✅ ⏳ ⚽ without a trailing U+FE0F) count as double-width,
+	 * matching how modern GUI terminals (macOS Terminal, iTerm2, VS Code) render them. Pass false to match
+	 * plain wcwidth-style terminals that only widen those symbols with an explicit U+FE0F.
 	 * </odoc>
 	 */
 	@JSFunction
-	public static int visibleLength(String s) {
+	public static int visibleLength(String s, Object wideEmojiPresentation) {
 		if (s == null) return 0;
+
+		boolean wideEmoji = wideEmojiPresentation == Undefined.instance || wideEmojiPresentation == null
+			? true
+			: Context.toBoolean(wideEmojiPresentation);
 
 		s = VISIBLE_LENGTH_ANSI_RE.matcher(s).replaceAll("");
 		int length = 0;
@@ -1757,6 +1764,7 @@ public class AFBase extends ScriptableObject {
 			}
 
 			int width = visibleLengthCodePointWidth(cp);
+			boolean isDefaultPresentationEmoji = wideEmoji && visibleLengthIsEmojiDefaultPresentation(cp);
 			boolean emojiCluster = visibleLengthIsEmojiLike(cp) || width == 2;
 			boolean emojiPresentation = false;
 			boolean textPresentation = false;
@@ -1802,7 +1810,7 @@ public class AFBase extends ScriptableObject {
 				break;
 			}
 
-			if (!textPresentation && ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2);
+			if (!textPresentation && (isDefaultPresentationEmoji || (emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2);
 			length += width;
 		}
 
@@ -1848,7 +1856,39 @@ public class AFBase extends ScriptableObject {
 			|| cp == 0x23F3
 			|| (cp >= 0x25FD && cp <= 0x25FE)
 			|| (cp >= 0x2600 && cp <= 0x27BF)
+			|| cp == 0x2934 || cp == 0x2935
+			|| (cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55
+			|| cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299
 			|| (cp >= 0x1F000 && cp <= 0x1FAFF);
+	}
+
+	// Unicode Emoji_Presentation=Yes single code points within the visibleLengthIsEmojiLike ranges:
+	// these render double-width in terminals by default, without needing a trailing U+FE0F variation
+	// selector (e.g. ✅ ⏳ ⌚ ⚡). Other code points in visibleLengthIsEmojiLike (e.g. ✈ ✂ ☺) default to
+	// text (narrow) presentation and only become wide when explicitly marked with U+FE0F.
+	private static boolean visibleLengthIsEmojiDefaultPresentation(int cp) {
+		return (cp >= 0x231A && cp <= 0x231B)
+			|| (cp >= 0x23E9 && cp <= 0x23EC)
+			|| cp == 0x23F0 || cp == 0x23F3
+			|| (cp >= 0x25FD && cp <= 0x25FE)
+			|| cp == 0x2614 || cp == 0x2615
+			|| (cp >= 0x2648 && cp <= 0x2653)
+			|| cp == 0x267F || cp == 0x2693 || cp == 0x26A1
+			|| cp == 0x26AA || cp == 0x26AB
+			|| cp == 0x26BD || cp == 0x26BE
+			|| cp == 0x26C4 || cp == 0x26C5
+			|| cp == 0x26CE || cp == 0x26D4 || cp == 0x26EA
+			|| cp == 0x26F2 || cp == 0x26F3 || cp == 0x26F5 || cp == 0x26FA || cp == 0x26FD
+			|| cp == 0x2705
+			|| cp == 0x270A || cp == 0x270B
+			|| cp == 0x2728
+			|| cp == 0x274C || cp == 0x274E
+			|| (cp >= 0x2753 && cp <= 0x2755) || cp == 0x2757
+			|| (cp >= 0x2795 && cp <= 0x2797)
+			|| cp == 0x27B0 || cp == 0x27BF
+			|| cp == 0x2934 || cp == 0x2935
+			|| (cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55
+			|| cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299;
 	}
 
 	private static boolean visibleLengthIsWide(int cp) {

@@ -221,6 +221,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	NET_IGNORE_SSL_DOMAINS     : __,
 	TEMPLATE_SET               : true,
 	VISIBLELENGTH              : true,
+	VISIBLELENGTH_WIDE_EMOJI   : true,   // If true (default), bare "Emoji_Presentation=Yes" symbols (e.g. ✅ ⏳ ⚽ without a trailing U+FE0F) count as double-width, matching how modern GUI terminals (macOS Terminal, iTerm2, VS Code) render them by default. Set to false to match plain wcwidth-style terminals that only widen with an explicit U+FE0F.
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
 	MD_RENDER_SVG              : false,  // If true, ```svg fenced blocks are turned into inline SVG before markdown to HTML conversion
@@ -4888,7 +4889,38 @@ const __visibleLengthIsEmojiLike = cp => (
 	cp == 0x23F0 || cp == 0x23F3 ||
 	(cp >= 0x25FD && cp <= 0x25FE) ||
 	(cp >= 0x2600 && cp <= 0x27BF) ||
+	cp == 0x2934 || cp == 0x2935 ||
+	(cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55 ||
+	cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299 ||
 	(cp >= 0x1F000 && cp <= 0x1FAFF)
+)
+// Unicode Emoji_Presentation=Yes single code points within the ranges above: these render
+// double-width in terminals by default, without needing a trailing U+FE0F variation selector
+// (e.g. ✅ ⏳ ⌚ ⚡). Other code points in __visibleLengthIsEmojiLike (e.g. ✈ ✂ ☺) default to
+// text (narrow) presentation and only become wide when explicitly marked with U+FE0F.
+const __visibleLengthIsEmojiDefaultPresentation = cp => (
+	(cp >= 0x231A && cp <= 0x231B) ||
+	(cp >= 0x23E9 && cp <= 0x23EC) ||
+	cp == 0x23F0 || cp == 0x23F3 ||
+	(cp >= 0x25FD && cp <= 0x25FE) ||
+	cp == 0x2614 || cp == 0x2615 ||
+	(cp >= 0x2648 && cp <= 0x2653) ||
+	cp == 0x267F || cp == 0x2693 || cp == 0x26A1 ||
+	cp == 0x26AA || cp == 0x26AB ||
+	cp == 0x26BD || cp == 0x26BE ||
+	cp == 0x26C4 || cp == 0x26C5 ||
+	cp == 0x26CE || cp == 0x26D4 || cp == 0x26EA ||
+	cp == 0x26F2 || cp == 0x26F3 || cp == 0x26F5 || cp == 0x26FA || cp == 0x26FD ||
+	cp == 0x2705 ||
+	cp == 0x270A || cp == 0x270B ||
+	cp == 0x2728 ||
+	cp == 0x274C || cp == 0x274E ||
+	(cp >= 0x2753 && cp <= 0x2755) || cp == 0x2757 ||
+	(cp >= 0x2795 && cp <= 0x2797) ||
+	cp == 0x27B0 || cp == 0x27BF ||
+	cp == 0x2934 || cp == 0x2935 ||
+	(cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55 ||
+	cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299
 )
 const __visibleLengthIsWide = cp => (
 	cp >= 0x1100 && (
@@ -4909,8 +4941,9 @@ const __visibleLengthCodePointWidth = cp => {
 	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || __visibleLengthIsVariationSelector(cp) || __visibleLengthIsKeycapMark(cp) || __visibleLengthIsTag(cp) || cp == 0x200D) return 0
 	return __visibleLengthIsWide(cp) ? 2 : 1
 }
-const visibleLength = str => {
+const visibleLength = (str, wideEmojiPresentation) => {
 	str = String(str).replace(__visibleLengthAnsiRE, "")
+	wideEmojiPresentation = isDef(wideEmojiPresentation) ? wideEmojiPresentation : __flags.VISIBLELENGTH_WIDE_EMOJI
 	var l = 0
 	for(var i = 0; i < str.length; ) {
 		var cp = str.codePointAt(i)
@@ -4927,6 +4960,7 @@ const visibleLength = str => {
 		}
 
 		var width = __visibleLengthCodePointWidth(cp)
+		var isDefaultPresentationEmoji = wideEmojiPresentation && __visibleLengthIsEmojiDefaultPresentation(cp)
 		var emojiCluster = __visibleLengthIsEmojiLike(cp) || width == 2
 		var emojiPresentation = false
 		var textPresentation = false
@@ -4973,7 +5007,7 @@ const visibleLength = str => {
 			break
 		}
 
-		if (!textPresentation && ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2)
+		if (!textPresentation && (isDefaultPresentationEmoji || (emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2)
 		l += width
 	}
 	return l

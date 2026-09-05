@@ -114,12 +114,39 @@
     };
 
     exports.testVisibleLengthEmojiPresentation = function() {
-        ow.test.assert(visibleLength("⚽"), 1, "Problem with bare emoji-presentation symbol visible width.");
-        ow.test.assert(af.visibleLength("⚽"), 1, "Problem with af.visibleLength bare emoji-presentation symbol visible width.");
+        // Default (VISIBLELENGTH_WIDE_EMOJI = true): bare Emoji_Presentation=Yes symbols count as
+        // double-width, matching modern GUI terminals (macOS Terminal, iTerm2, VS Code).
+        ow.test.assert(visibleLength("⚽"), 2, "Problem with bare emoji-presentation symbol visible width.");
+        ow.test.assert(af.visibleLength("⚽"), 2, "Problem with af.visibleLength bare emoji-presentation symbol visible width.");
         ow.test.assert(visibleLength("⚽️"), 2, "Problem with explicit emoji-presentation symbol visible width.");
         ow.test.assert(af.visibleLength("⚽️"), 2, "Problem with af.visibleLength explicit emoji-presentation symbol visible width.");
         ow.test.assert(visibleLength("⚽︎"), 1, "Problem with text-presentation symbol visible width.");
         ow.test.assert(af.visibleLength("⚽︎"), 1, "Problem with af.visibleLength text-presentation symbol visible width.");
+
+        // Opt-out (per-call param or __flags.VISIBLELENGTH_WIDE_EMOJI = false): matches plain
+        // wcwidth-style terminals that only widen these symbols with an explicit U+FE0F.
+        ow.test.assert(visibleLength("⚽", false), 1, "Problem with bare emoji-presentation symbol visible width (narrow override).");
+        ow.test.assert(af.visibleLength("⚽", false), 1, "Problem with af.visibleLength bare emoji-presentation symbol visible width (narrow override).");
+        ow.test.assert(visibleLength("⚽️", false), 2, "Problem with explicit emoji-presentation symbol visible width (narrow override).");
+
+        var _oldWideEmoji = __flags.VISIBLELENGTH_WIDE_EMOJI;
+        try {
+            __flags.VISIBLELENGTH_WIDE_EMOJI = false;
+            ow.test.assert(visibleLength("⚽"), 1, "Problem with bare emoji-presentation symbol visible width (flag override).");
+        } finally {
+            __flags.VISIBLELENGTH_WIDE_EMOJI = _oldWideEmoji;
+        }
+
+        // Emoji_Presentation=Yes symbols outside the Dingbats/Misc Symbols block (Miscellaneous
+        // Symbols and Arrows: ⭐ ⭕ ⬛ ⬜) should also default to double-width.
+        ow.test.assert(visibleLength("⭐"), 2, "Problem with bare star symbol visible width.");
+        ow.test.assert(af.visibleLength("⭐"), 2, "Problem with af.visibleLength bare star symbol visible width.");
+        ow.test.assert(visibleLength("⭕"), 2, "Problem with bare heavy large circle visible width.");
+        ow.test.assert(af.visibleLength("⭕"), 2, "Problem with af.visibleLength bare heavy large circle visible width.");
+        ow.test.assert(visibleLength("⬛"), 2, "Problem with bare black large square visible width.");
+        ow.test.assert(af.visibleLength("⬛"), 2, "Problem with af.visibleLength bare black large square visible width.");
+        ow.test.assert(visibleLength("⬜"), 2, "Problem with bare white large square visible width.");
+        ow.test.assert(af.visibleLength("⬜"), 2, "Problem with af.visibleLength bare white large square visible width.");
     };
 
     exports.testVisibleLengthSubdivisionFlag = function() {
