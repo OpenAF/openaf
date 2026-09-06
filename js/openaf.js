@@ -16262,7 +16262,7 @@ const $unset = function(aK) {
  * <ojob>
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * If shouldReturn = true the string output will be returned
  * </ojob>
@@ -16408,6 +16408,59 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "text":
 			return fnP(String(res))
 		case "md":
+			var mdcode = v => {
+				var source = String(v).replace(/\r\n/g, "\n")
+				var fence = "```"
+				while (source.indexOf(fence) >= 0) fence += "`"
+				return fence + "\n" + source + (/\n$/.test(source) ? "" : "\n") + fence
+			}
+			if (isMap(res) || isArray(res)) {
+				var mdformat = _$(args.mdformat, "mdformat").isString().default("structured").toLowerCase()
+				if ([ "structured", "json", "yaml" ].indexOf(mdformat) < 0) throw "mdformat must be one of: structured, json, yaml"
+
+				if (mdformat == "json" || mdformat == "yaml") {
+					var mdsource = mdformat == "json" ? stringify(res, __, "  ") : af.toYAML(res)
+					return fnP("```" + mdformat + "\n" + mdsource.replace(/\n$/, "") + "\n```")
+				}
+
+				var mdescape = v => String(v).replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>")
+				var mdvalue = v => isNull(v) ? "null" : isUnDef(v) ? "undefined" : mdescape(v)
+				var mdhasOnlyValues = v => isMap(v) && Object.keys(v).every(k => !isMap(v[k]) && !isArray(v[k]))
+				var mdhasOnlyValuesArray = v => isArray(v) && v.every(i => !isMap(i) && !isArray(i))
+				var mdisTable = v => isArray(v) && v.length > 0 && v.every(mdhasOnlyValues)
+				var mdheading = (level, title) => "#".repeat(level) + " " + String(title).replace(/\r?\n/g, " ")
+				var mdmapTable = v => {
+					var lines = [ "| Field | Value |", "| --- | --- |" ]
+					Object.keys(v).forEach(k => lines.push("| " + mdescape(k) + " | " + mdvalue(v[k]) + " |"))
+					return lines.join("\n")
+				}
+				var mdarrayTable = v => {
+					var fields = []
+					v.forEach(row => Object.keys(row).forEach(k => { if (fields.indexOf(k) < 0) fields.push(k) }))
+					var lines = [ "| " + fields.map(mdescape).join(" | ") + " |", "| " + fields.map(k => "---").join(" | ") + " |" ]
+					v.forEach(row => lines.push("| " + fields.map(k => mdvalue(row[k])).join(" | ") + " |"))
+					return lines.join("\n")
+				}
+				var mdrender = (value, level, title) => {
+					var lines = []
+					if (isDef(title)) lines.push(mdheading(level, title), "")
+
+					if (mdhasOnlyValues(value)) return lines.concat([ mdmapTable(value), "" ])
+					if (mdhasOnlyValuesArray(value)) return lines.concat(value.map(v => "- " + mdvalue(v))).concat([ "" ])
+					if (mdisTable(value)) return lines.concat([ mdarrayTable(value), "" ])
+
+					if (isMap(value)) {
+						Object.keys(value).forEach(k => { lines = lines.concat(mdrender(value[k], level + 1, k)) })
+					} else if (isArray(value)) {
+						value.forEach((v, i) => { lines = lines.concat(mdrender(v, level + 1, "Item " + (i + 1))) })
+					} else {
+						lines.push(isString(value) ? mdcode(value) : mdvalue(value), "")
+					}
+					return lines
+				}
+
+				return fnP(mdrender(res, 0).join("\n").replace(/\n+$/, "") + "\n")
+			}
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(ow.format.withMD(String(res)))

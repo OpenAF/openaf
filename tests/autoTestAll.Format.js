@@ -295,6 +295,26 @@
         });
     };
 
+    exports.testOutputMarkdown = function() {
+        var data = { title: "Example", metadata: { active: true }, entries: [ { name: "first", score: 1 }, { name: "second", score: 2 } ], tags: [ "one", "two" ], details: { text: "first line\nsecond line", nested: { enabled: true } } }
+        var structured = $output(data, { __format: "md" }, __, true)
+        ow.test.assert(structured.indexOf("# title") >= 0, true, "Problem with structured Markdown headings.")
+        ow.test.assert(structured.indexOf("| Field | Value |") >= 0, true, "Problem with structured Markdown map table.")
+        ow.test.assert(structured.indexOf("| name | score |") >= 0, true, "Problem with structured Markdown array table.")
+        ow.test.assert(structured.indexOf("- one") >= 0, true, "Problem with structured Markdown list.")
+        ow.test.assert(structured.indexOf("# text\n\n```\nfirst line\nsecond line\n```") >= 0, true, "Problem with structured Markdown string code block.")
+        ow.test.assert(structured.indexOf("| title | Example |") >= 0 && structured.indexOf("- one") >= 0, true, "Problem with structured Markdown table or list strings.")
+
+        var markdown = $output("# Heading\n\nParagraph", { __format: "md" }, __, true)
+        ow.test.assert(markdown.indexOf("```") < 0, true, "Problem with raw Markdown string rendering.")
+
+        var json = $output(data, { __format: "md", mdformat: "json" }, __, true)
+        ow.test.assert(json.indexOf("```json") >= 0 && json.indexOf('"metadata"') >= 0, true, "Problem with JSON Markdown code block.")
+
+        var yaml = $output(data, { __format: "md", mdformat: "yaml" }, __, true)
+        ow.test.assert(yaml.indexOf("```yaml") >= 0 && yaml.indexOf("metadata:") >= 0, true, "Problem with YAML Markdown code block.")
+    };
+
     exports.testWithSideLineEmojiHeaderFooter = function() {
         var rendered = ow.format.withSideLine("x", 8, __, __, ow.format.withSideLineThemes().closedRect, {
             header: "👨‍👩‍👧‍👦",
