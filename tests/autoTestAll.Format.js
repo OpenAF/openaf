@@ -399,6 +399,16 @@
         ow.test.assert(empty.indexOf("empty") >= 0, true, "Problem with empty sparkline fallback.");
     };
 
+    exports.testPrintChartArray = function() {
+        var single = printChartArray([1, 4, 2, 5, 3], "int", 20, 6, 5, 0, { colors: ["GREEN"] });
+        ow.test.assert(isString(single), true, "Problem with printChartArray returning a string.");
+        ow.test.assert(single.split("\n").length, 6, "Problem with printChartArray height.");
+
+        var multiple = printChartArray([[1, 2, 3], [3, 2, 1]], "dec1", 20, 5);
+        ow.test.assert(isString(multiple), true, "Problem with multi-series printChartArray.");
+        ow.test.assert(multiple.indexOf("3.0") >= 0, true, "Problem with printChartArray decimal formatting.");
+    };
+
     exports.testPrintHistogram = function() {
         var vals = [1, 2, 2, 3, 3, 3, 4, 4, 5];
         var hist = ow.format.printHistogram(vals, { buckets: 3, width: 40, palette: "none" });

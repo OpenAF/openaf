@@ -795,6 +795,56 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 
 /**
  * <odoc>
+ * <key>printChartArray(anArray, aType, hSize, vSize, aMax, aMin, options) : String</key>
+ * Produces a one-shot line chart directly from anArray, without calling functions or keeping a named dataset between calls.
+ * anArray can contain the values for one series or arrays of values for multiple series. aType controls the axis label format
+ * and can be: int, dec1, dec2, dec3, dec4, dec, bytes or si. hSize, vSize, aMax, aMin and options have the same meaning as
+ * in printChart; options are also passed to ow.format.string.lineChart.
+ * </odoc>
+ */
+const printChartArray = function(anArray, aType, hSize, vSize, aMax, aMin, options) {
+	_$(anArray, "anArray").isArray().$_()
+	aType = _$(aType, "aType").oneOf(["int", "dec1", "dec2", "dec3", "dec4", "dec", "bytes", "si"]).$_()
+
+	aMax    = _$(aMax, "aMax").isNumber().default(__)
+	aMin    = _$(aMin, "aMin").isNumber().default(__)
+	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
+	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
+	options = _$(options, "options").isMap().default({})
+	options = merge(options, { width: hSize, height: vSize, max: aMax, min: aMin })
+
+	switch(aType) {
+	case "int":
+		options.format = x => $f("%2.0f", Number(x))
+		break
+	case "dec":
+		options.format = x => String(x)
+		break
+	case "dec1":
+		options.format = x => Number(x).toFixed(1)
+		break
+	case "dec2":
+		options.format = x => Number(x).toFixed(2)
+		break
+	case "dec3":
+		options.format = x => Number(x).toFixed(3)
+		break
+	case "dec4":
+		options.format = x => Number(x).toFixed(4)
+		break
+	case "bytes":
+		options.format = x => ow.format.toBytesAbbreviation(x)
+		break
+	case "si":
+		options.format = x => ow.format.toAbbreviation(x)
+		break
+	}
+
+	return ow.format.string.lineChart(anArray, options)
+}
+
+/**
+ * <odoc>
  * <key>printBars(aFormatString, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) : String</key>
  * Produces horizontal bars given aFormatString, a hSize (horizontal max size), aMax (the axis max value) and aMin 
  * (the axis min value). The aFormatString should be composed of "&lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
