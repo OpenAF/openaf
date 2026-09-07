@@ -796,10 +796,30 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 /**
  * <odoc>
  * <key>printChartArray(anArray, aType, hSize, vSize, aMax, aMin, options) : String</key>
- * Produces a one-shot line chart directly from anArray, without calling functions or keeping a named dataset between calls.
- * anArray can contain the values for one series or arrays of values for multiple series. aType controls the axis label format
- * and can be: int, dec1, dec2, dec3, dec4, dec, bytes or si. hSize, vSize, aMax, aMin and options have the same meaning as
- * in printChart; options are also passed to ow.format.string.lineChart.
+ * Produces and returns a one-shot terminal line chart directly from anArray, without calling functions or keeping a named
+ * dataset between calls. Use an array of numbers for one series or an array of arrays of numbers for multiple series. Series
+ * can have different lengths. aType controls the y-axis label format and can be: int, dec1, dec2, dec3, dec4, dec, bytes or si.
+ * hSize and vSize set the chart width and height; when omitted in a console they default to the terminal width and terminal
+ * height minus 5 respectively. aMax and aMin optionally fix the y-axis bounds; omitted bounds are calculated from the values.\
+ * \
+ * options is passed to ow.format.string.lineChart and can include:\
+ * \
+ *    colors  (array)   ANSI color specification for each series. Colors are assigned by series order and repeat if fewer colors are provided;\
+ *    label   (boolean) Include y-axis labels (default true);\
+ *    dColor  (string)  ANSI color specification for the labels, axes and other default chart elements;\
+ *    offset  (number)  Horizontal offset reserved for the y-axis (default 2);\
+ *    padding (string)  String prepended to each chart line (default "");\
+ *    symbols (array)   Ten characters replacing the default line drawing symbols;\
+ * \
+ * Each color accepts the same values and comma-separated combinations as ansiColor (check 'help ansiColor'), including
+ * named foreground/background colors (for example GREEN, FG_CYAN or BG_BLUE), attributes (for example BOLD,GREEN),
+ * 256-color forms such as FG(208) or BG(236), and true-color forms such as RGB(80,160,255), FG_RGB(80,160,255) or
+ * BG_RGB(20,20,20). ANSI colors are shown when terminal color support is enabled.\
+ * \
+ * Examples:\
+ * \
+ *    print(printChartArray([1, 4, 2, 5, 3], "int", 40, 10, 5, 0, { colors: ["GREEN"] }));\
+ *    print(printChartArray([[1, 2, 3], [3, 2, 1]], "dec1", 40, 10, __, __, { colors: ["BOLD,CYAN", "FG(208)"] }));
  * </odoc>
  */
 const printChartArray = function(anArray, aType, hSize, vSize, aMax, aMin, options) {

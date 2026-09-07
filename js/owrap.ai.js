@@ -2018,7 +2018,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 setTool: (aName, aDesc, aParams, aFn) => {
-                    _r.tools.push({
+                    var newTool = {
                         type: "function",
                         function: {
                             name: aName,
@@ -2026,7 +2026,19 @@ OpenWrap.ai.prototype.__gpttypes = {
                             parameters: aParams
                         },
                         fn: aFn
-                    })
+                    }
+                    var existingIdx = -1
+                    for (var i = 0; i < _r.tools.length; i++) {
+                        if (isMap(_r.tools[i]) && isMap(_r.tools[i].function) && _r.tools[i].function.name === aName) {
+                            existingIdx = i
+                            break
+                        }
+                    }
+                    if (existingIdx >= 0) {
+                        _r.tools[existingIdx] = newTool
+                    } else {
+                        _r.tools.push(newTool)
+                    }
                     return _r
                 },
                 prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
@@ -2093,7 +2105,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
-                            var _t = t.function
+                            var _t = isMap(t.function) ? t.function : t
                             return {
                                 type: "function",
                                 function: {
@@ -2111,20 +2123,39 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var _res = _r._request(uri, body)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
 
-                    if (isDef(_res) && isDef(_res.message) && isArray(_res.message["tool_calls"])) {
+                    if (isDef(_res) && isDef(_res.message) && isArray(_res.message["tool_calls"]) && _res.message["tool_calls"].length > 0) {
                         // call tools
+                        var _toolCalls = _res.message["tool_calls"]
                         var _p = []
-                        _res.message["tool_calls"].forEach(tc => {
-                            if (isDef(tc.function)) {
-                                var _t = aTools.find(tool => tool.function && tool.function.name == tc.function.name)
+                        var _toolResults = []
+
+                        _p.push({
+                            role: "assistant",
+                            content: isString(_res.message.content) ? _res.message.content : "",
+                            tool_calls: _toolCalls
+                        })
+
+                        _toolCalls.forEach(tc => {
+                            if (isMap(tc) && isMap(tc.function)) {
+                                var _t = aTools.find(tool => (tool.function && tool.function.name == tc.function.name) || tool.name == tc.function.name)
+                                if (isUnDef(_t) && isDef(global.$from)) _t = $from(aTools).equals("function.name", tc.function.name).at(0)
                                 if (isUnDef(_t)) throw "Tool '" + tc.function.name + "' not found"
-                                var _args = jsonParse(tc.function.arguments)
-                                var _tr = _t.fn(_args)
-                                // Ensure tool response is a string
-                                _p.push({ role: "assistant", tool_calls: [ tc ] })
-                                _p.push({ role: "tool", tool_call_id: tc.id, tool_name: tc.function.name, content: isString(_tr) ? _tr : stringify(_tr, __, "") })
+                                var _args = tc.function.arguments
+                                if (isString(_args)) {
+                                    try { _args = jsonParse(_args, __, __, true) } catch(e) { _args = {} }
+                                }
+                                if (!isMap(_args)) _args = {}
+                                var _tr = isFunction(_t.fn) ? _t.fn(_args) : ""
+                                var toolMsg = {
+                                    role: "tool",
+                                    content: isString(_tr) ? _tr : stringify(_tr, __, "")
+                                }
+                                if (isDef(tc.id)) toolMsg.tool_call_id = tc.id
+                                if (isDef(tc.function.name)) toolMsg.tool_name = tc.function.name
+                                _toolResults.push(toolMsg)
                             }
                         })
+                        _p = _p.concat(_toolResults)
                         // Also ensure all pushed messages have string content
                         _p = _p.map(m => {
                             if (isMap(m) && isDef(m.content) && !isString(m.content)) m.content = stringify(m.content, __, "")
@@ -2177,7 +2208,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
-                            var _t = t.function
+                            var _t = isMap(t.function) ? t.function : t
                             return {
                                 type: "function",
                                 function: {
@@ -2196,6 +2227,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var events = []
                     var content = ""
                     var lastResponse = __
+                    var streamedToolCalls = []
                     var _stream = _r._requestStream(uri, body)
                     // Check if _stream is an error object
                     if (isMap(_stream) && (isMap(_stream.error) || isDef(_stream.error))) {
@@ -2209,9 +2241,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isDef(data)) {
                             events.push(data)
                             lastResponse = data
-                            if (isMap(data.message) && isString(data.message.content) && data.message.content.length > 0) {
-                                content += data.message.content
-                                if (isFunction(aOnDelta)) aOnDelta(data.message.content, data)
+                            if (isMap(data.message)) {
+                                if (isString(data.message.content) && data.message.content.length > 0) {
+                                    content += data.message.content
+                                    if (isFunction(aOnDelta)) aOnDelta(data.message.content, data)
+                                }
+                                if (isArray(data.message.tool_calls) && data.message.tool_calls.length > 0) {
+                                    streamedToolCalls = streamedToolCalls.concat(data.message.tool_calls)
+                                }
                             }
                             if (data.done === true) return true
                         }
@@ -2219,23 +2256,49 @@ OpenWrap.ai.prototype.__gpttypes = {
                     try { _stream.close() } catch(e) {}
 
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
-                    
-                    // Handle tool calling for Ollama streaming
+
                     if (isMap(lastResponse) && isMap(lastResponse.message) && isArray(lastResponse.message.tool_calls)) {
-                        var _p = []
                         lastResponse.message.tool_calls.forEach(tc => {
-                            if (isMap(tc.function)) {
-                                var _t = $from(aTools).equals("function.name", tc.function.name).at(0)
+                            if (!streamedToolCalls.some(stc => stc === tc || (isMap(stc.function) && isMap(tc.function) && stc.function.name === tc.function.name && stringify(stc.function.arguments) === stringify(tc.function.arguments)))) {
+                                streamedToolCalls.push(tc)
+                            }
+                        })
+                    }
+
+                    // Handle tool calling for Ollama streaming
+                    if (streamedToolCalls.length > 0) {
+                        var _p = []
+                        var _toolResults = []
+
+                        _p.push({
+                            role: "assistant",
+                            content: content || "",
+                            tool_calls: streamedToolCalls
+                        })
+
+                        streamedToolCalls.forEach(tc => {
+                            if (isMap(tc) && isMap(tc.function)) {
+                                var _t = aTools.find(tool => (tool.function && tool.function.name == tc.function.name) || tool.name == tc.function.name)
+                                if (isUnDef(_t) && isDef(global.$from)) _t = $from(aTools).equals("function.name", tc.function.name).at(0)
                                 if (isDef(_t) && isFunction(_t.fn)) {
-                                    var _args = jsonParse(tc.function.arguments, __, __, true)
-                                    if (isUnDef(_args)) _args = {}
-                                    var _tr = stringify(_t.fn(_args), __, "")
-                                    _p.push({ role: "assistant", content: "", tool_calls: [ tc ] })
-                                    _p.push({ role: "tool", tool_call_id: tc.id, tool_name: tc.function.name, content: _tr })
+                                    var _args = tc.function.arguments
+                                    if (isString(_args)) {
+                                        try { _args = jsonParse(_args, __, __, true) } catch(e) { _args = {} }
+                                    }
+                                    if (!isMap(_args)) _args = {}
+                                    var _tr = isFunction(_t.fn) ? _t.fn(_args) : ""
+                                    var toolMsg = {
+                                        role: "tool",
+                                        content: isString(_tr) ? _tr : stringify(_tr, __, "")
+                                    }
+                                    if (isDef(tc.id)) toolMsg.tool_call_id = tc.id
+                                    if (isDef(tc.function.name)) toolMsg.tool_name = tc.function.name
+                                    _toolResults.push(toolMsg)
                                 }
                             }
                         })
-                        if (_p.length > 0) {
+                        if (_toolResults.length > 0) {
+                            _p = _p.concat(_toolResults)
                             _r.conversation = _r.conversation.concat(_p)
                             // Recursively call rawPromptStream to continue streaming with tool results
                             var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
