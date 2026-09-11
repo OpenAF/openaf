@@ -119,6 +119,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testWithMDWrap;
 
+   - name: Format::$output Markdown
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testOutputMarkdown;
+
    - name: Format::String pad
      from: Format::Init
      to  : oJob Test
@@ -174,6 +181,13 @@ jobs:
      deps:
        - Format::Load Format
      exec: args.func = args.tests.testPrintSparkline;
+
+   - name: Format::Print chart array
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintChartArray;
 
    - name: Format::Print histogram
      from: Format::Init
@@ -326,6 +340,7 @@ todo:
    - Format::PrintTable subdivision flag alignment
    - Format::PrintTable header alignment
    - Format::Markdown wrap
+   - Format::$output Markdown
    - Format::String pad
    - Format::Terminal capabilities
    - Format::Viz frame diff
@@ -333,6 +348,7 @@ todo:
    - Format::Viz create canvas
    - Format::Viz layout
    - Format::Print sparkline
+   - Format::Print chart array
    - Format::Print histogram
    - Format::Print heatmap
    - Format::Print bullet value formats

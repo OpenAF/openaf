@@ -114,12 +114,39 @@
     };
 
     exports.testVisibleLengthEmojiPresentation = function() {
-        ow.test.assert(visibleLength("⚽"), 1, "Problem with bare emoji-presentation symbol visible width.");
-        ow.test.assert(af.visibleLength("⚽"), 1, "Problem with af.visibleLength bare emoji-presentation symbol visible width.");
+        // Default (VISIBLELENGTH_WIDE_EMOJI = true): bare Emoji_Presentation=Yes symbols count as
+        // double-width, matching modern GUI terminals (macOS Terminal, iTerm2, VS Code).
+        ow.test.assert(visibleLength("⚽"), 2, "Problem with bare emoji-presentation symbol visible width.");
+        ow.test.assert(af.visibleLength("⚽"), 2, "Problem with af.visibleLength bare emoji-presentation symbol visible width.");
         ow.test.assert(visibleLength("⚽️"), 2, "Problem with explicit emoji-presentation symbol visible width.");
         ow.test.assert(af.visibleLength("⚽️"), 2, "Problem with af.visibleLength explicit emoji-presentation symbol visible width.");
         ow.test.assert(visibleLength("⚽︎"), 1, "Problem with text-presentation symbol visible width.");
         ow.test.assert(af.visibleLength("⚽︎"), 1, "Problem with af.visibleLength text-presentation symbol visible width.");
+
+        // Opt-out (per-call param or __flags.VISIBLELENGTH_WIDE_EMOJI = false): matches plain
+        // wcwidth-style terminals that only widen these symbols with an explicit U+FE0F.
+        ow.test.assert(visibleLength("⚽", false), 1, "Problem with bare emoji-presentation symbol visible width (narrow override).");
+        ow.test.assert(af.visibleLength("⚽", false), 1, "Problem with af.visibleLength bare emoji-presentation symbol visible width (narrow override).");
+        ow.test.assert(visibleLength("⚽️", false), 2, "Problem with explicit emoji-presentation symbol visible width (narrow override).");
+
+        var _oldWideEmoji = __flags.VISIBLELENGTH_WIDE_EMOJI;
+        try {
+            __flags.VISIBLELENGTH_WIDE_EMOJI = false;
+            ow.test.assert(visibleLength("⚽"), 1, "Problem with bare emoji-presentation symbol visible width (flag override).");
+        } finally {
+            __flags.VISIBLELENGTH_WIDE_EMOJI = _oldWideEmoji;
+        }
+
+        // Emoji_Presentation=Yes symbols outside the Dingbats/Misc Symbols block (Miscellaneous
+        // Symbols and Arrows: ⭐ ⭕ ⬛ ⬜) should also default to double-width.
+        ow.test.assert(visibleLength("⭐"), 2, "Problem with bare star symbol visible width.");
+        ow.test.assert(af.visibleLength("⭐"), 2, "Problem with af.visibleLength bare star symbol visible width.");
+        ow.test.assert(visibleLength("⭕"), 2, "Problem with bare heavy large circle visible width.");
+        ow.test.assert(af.visibleLength("⭕"), 2, "Problem with af.visibleLength bare heavy large circle visible width.");
+        ow.test.assert(visibleLength("⬛"), 2, "Problem with bare black large square visible width.");
+        ow.test.assert(af.visibleLength("⬛"), 2, "Problem with af.visibleLength bare black large square visible width.");
+        ow.test.assert(visibleLength("⬜"), 2, "Problem with bare white large square visible width.");
+        ow.test.assert(af.visibleLength("⬜"), 2, "Problem with af.visibleLength bare white large square visible width.");
     };
 
     exports.testVisibleLengthSubdivisionFlag = function() {
@@ -268,6 +295,26 @@
         });
     };
 
+    exports.testOutputMarkdown = function() {
+        var data = { title: "Example", metadata: { active: true }, entries: [ { name: "first", score: 1 }, { name: "second", score: 2 } ], tags: [ "one", "two" ], details: { text: "first line\nsecond line", nested: { enabled: true } } }
+        var structured = $output(data, { __format: "md" }, __, true)
+        ow.test.assert(structured.indexOf("# title") >= 0, true, "Problem with structured Markdown headings.")
+        ow.test.assert(structured.indexOf("| Field | Value |") >= 0, true, "Problem with structured Markdown map table.")
+        ow.test.assert(structured.indexOf("| name | score |") >= 0, true, "Problem with structured Markdown array table.")
+        ow.test.assert(structured.indexOf("- one") >= 0, true, "Problem with structured Markdown list.")
+        ow.test.assert(structured.indexOf("# text\n\n```\nfirst line\nsecond line\n```") >= 0, true, "Problem with structured Markdown string code block.")
+        ow.test.assert(structured.indexOf("| title | Example |") >= 0 && structured.indexOf("- one") >= 0, true, "Problem with structured Markdown table or list strings.")
+
+        var markdown = $output("# Heading\n\nParagraph", { __format: "md" }, __, true)
+        ow.test.assert(markdown.indexOf("```") < 0, true, "Problem with raw Markdown string rendering.")
+
+        var json = $output(data, { __format: "md", mdformat: "json" }, __, true)
+        ow.test.assert(json.indexOf("```json") >= 0 && json.indexOf('"metadata"') >= 0, true, "Problem with JSON Markdown code block.")
+
+        var yaml = $output(data, { __format: "md", mdformat: "yaml" }, __, true)
+        ow.test.assert(yaml.indexOf("```yaml") >= 0 && yaml.indexOf("metadata:") >= 0, true, "Problem with YAML Markdown code block.")
+    };
+
     exports.testWithSideLineEmojiHeaderFooter = function() {
         var rendered = ow.format.withSideLine("x", 8, __, __, ow.format.withSideLineThemes().closedRect, {
             header: "👨‍👩‍👧‍👦",
@@ -350,6 +397,16 @@
 
         var empty = ow.format.printSparkline([], { palette: "none" });
         ow.test.assert(empty.indexOf("empty") >= 0, true, "Problem with empty sparkline fallback.");
+    };
+
+    exports.testPrintChartArray = function() {
+        var single = printChartArray([1, 4, 2, 5, 3], "int", 20, 6, 5, 0, { colors: ["GREEN"] });
+        ow.test.assert(isString(single), true, "Problem with printChartArray returning a string.");
+        ow.test.assert(single.split("\n").length, 6, "Problem with printChartArray height.");
+
+        var multiple = printChartArray([[1, 2, 3], [3, 2, 1]], "dec1", 20, 5);
+        ow.test.assert(isString(multiple), true, "Problem with multi-series printChartArray.");
+        ow.test.assert(multiple.indexOf("3.0") >= 0, true, "Problem with printChartArray decimal formatting.");
     };
 
     exports.testPrintHistogram = function() {

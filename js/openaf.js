@@ -221,6 +221,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	NET_IGNORE_SSL_DOMAINS     : __,
 	TEMPLATE_SET               : true,
 	VISIBLELENGTH              : true,
+	VISIBLELENGTH_WIDE_EMOJI   : true,   // If true (default), bare "Emoji_Presentation=Yes" symbols (e.g. ✅ ⏳ ⚽ without a trailing U+FE0F) count as double-width, matching how modern GUI terminals (macOS Terminal, iTerm2, VS Code) render them by default. Set to false to match plain wcwidth-style terminals that only widen with an explicit U+FE0F.
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
 	MD_RENDER_SVG              : false,  // If true, ```svg fenced blocks are turned into inline SVG before markdown to HTML conversion
@@ -790,6 +791,76 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 	}
 	
 	return _out
+}
+
+/**
+ * <odoc>
+ * <key>printChartArray(anArray, aType, hSize, vSize, aMax, aMin, options) : String</key>
+ * Produces and returns a one-shot terminal line chart directly from anArray, without calling functions or keeping a named
+ * dataset between calls. Use an array of numbers for one series or an array of arrays of numbers for multiple series. Series
+ * can have different lengths. aType controls the y-axis label format and can be: int, dec1, dec2, dec3, dec4, dec, bytes or si.
+ * hSize and vSize set the chart width and height; when omitted in a console they default to the terminal width and terminal
+ * height minus 5 respectively. aMax and aMin optionally fix the y-axis bounds; omitted bounds are calculated from the values.\
+ * \
+ * options is passed to ow.format.string.lineChart and can include:\
+ * \
+ *    colors  (array)   ANSI color specification for each series. Colors are assigned by series order and repeat if fewer colors are provided;\
+ *    label   (boolean) Include y-axis labels (default true);\
+ *    dColor  (string)  ANSI color specification for the labels, axes and other default chart elements;\
+ *    offset  (number)  Horizontal offset reserved for the y-axis (default 2);\
+ *    padding (string)  String prepended to each chart line (default "");\
+ *    symbols (array)   Ten characters replacing the default line drawing symbols;\
+ * \
+ * Each color accepts the same values and comma-separated combinations as ansiColor (check 'help ansiColor'), including
+ * named foreground/background colors (for example GREEN, FG_CYAN or BG_BLUE), attributes (for example BOLD,GREEN),
+ * 256-color forms such as FG(208) or BG(236), and true-color forms such as RGB(80,160,255), FG_RGB(80,160,255) or
+ * BG_RGB(20,20,20). ANSI colors are shown when terminal color support is enabled.\
+ * \
+ * Examples:\
+ * \
+ *    print(printChartArray([1, 4, 2, 5, 3], "int", 40, 10, 5, 0, { colors: ["GREEN"] }));\
+ *    print(printChartArray([[1, 2, 3], [3, 2, 1]], "dec1", 40, 10, __, __, { colors: ["BOLD,CYAN", "FG(208)"] }));
+ * </odoc>
+ */
+const printChartArray = function(anArray, aType, hSize, vSize, aMax, aMin, options) {
+	_$(anArray, "anArray").isArray().$_()
+	aType = _$(aType, "aType").oneOf(["int", "dec1", "dec2", "dec3", "dec4", "dec", "bytes", "si"]).$_()
+
+	aMax    = _$(aMax, "aMax").isNumber().default(__)
+	aMin    = _$(aMin, "aMin").isNumber().default(__)
+	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
+	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
+	options = _$(options, "options").isMap().default({})
+	options = merge(options, { width: hSize, height: vSize, max: aMax, min: aMin })
+
+	switch(aType) {
+	case "int":
+		options.format = x => $f("%2.0f", Number(x))
+		break
+	case "dec":
+		options.format = x => String(x)
+		break
+	case "dec1":
+		options.format = x => Number(x).toFixed(1)
+		break
+	case "dec2":
+		options.format = x => Number(x).toFixed(2)
+		break
+	case "dec3":
+		options.format = x => Number(x).toFixed(3)
+		break
+	case "dec4":
+		options.format = x => Number(x).toFixed(4)
+		break
+	case "bytes":
+		options.format = x => ow.format.toBytesAbbreviation(x)
+		break
+	case "si":
+		options.format = x => ow.format.toAbbreviation(x)
+		break
+	}
+
+	return ow.format.string.lineChart(anArray, options)
 }
 
 /**
@@ -4888,7 +4959,38 @@ const __visibleLengthIsEmojiLike = cp => (
 	cp == 0x23F0 || cp == 0x23F3 ||
 	(cp >= 0x25FD && cp <= 0x25FE) ||
 	(cp >= 0x2600 && cp <= 0x27BF) ||
+	cp == 0x2934 || cp == 0x2935 ||
+	(cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55 ||
+	cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299 ||
 	(cp >= 0x1F000 && cp <= 0x1FAFF)
+)
+// Unicode Emoji_Presentation=Yes single code points within the ranges above: these render
+// double-width in terminals by default, without needing a trailing U+FE0F variation selector
+// (e.g. ✅ ⏳ ⌚ ⚡). Other code points in __visibleLengthIsEmojiLike (e.g. ✈ ✂ ☺) default to
+// text (narrow) presentation and only become wide when explicitly marked with U+FE0F.
+const __visibleLengthIsEmojiDefaultPresentation = cp => (
+	(cp >= 0x231A && cp <= 0x231B) ||
+	(cp >= 0x23E9 && cp <= 0x23EC) ||
+	cp == 0x23F0 || cp == 0x23F3 ||
+	(cp >= 0x25FD && cp <= 0x25FE) ||
+	cp == 0x2614 || cp == 0x2615 ||
+	(cp >= 0x2648 && cp <= 0x2653) ||
+	cp == 0x267F || cp == 0x2693 || cp == 0x26A1 ||
+	cp == 0x26AA || cp == 0x26AB ||
+	cp == 0x26BD || cp == 0x26BE ||
+	cp == 0x26C4 || cp == 0x26C5 ||
+	cp == 0x26CE || cp == 0x26D4 || cp == 0x26EA ||
+	cp == 0x26F2 || cp == 0x26F3 || cp == 0x26F5 || cp == 0x26FA || cp == 0x26FD ||
+	cp == 0x2705 ||
+	cp == 0x270A || cp == 0x270B ||
+	cp == 0x2728 ||
+	cp == 0x274C || cp == 0x274E ||
+	(cp >= 0x2753 && cp <= 0x2755) || cp == 0x2757 ||
+	(cp >= 0x2795 && cp <= 0x2797) ||
+	cp == 0x27B0 || cp == 0x27BF ||
+	cp == 0x2934 || cp == 0x2935 ||
+	(cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55 ||
+	cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299
 )
 const __visibleLengthIsWide = cp => (
 	cp >= 0x1100 && (
@@ -4909,8 +5011,9 @@ const __visibleLengthCodePointWidth = cp => {
 	if (__visibleLengthIsControl(cp) || __visibleLengthIsCombining(cp) || __visibleLengthIsEmojiModifier(cp) || __visibleLengthIsVariationSelector(cp) || __visibleLengthIsKeycapMark(cp) || __visibleLengthIsTag(cp) || cp == 0x200D) return 0
 	return __visibleLengthIsWide(cp) ? 2 : 1
 }
-const visibleLength = str => {
+const visibleLength = (str, wideEmojiPresentation) => {
 	str = String(str).replace(__visibleLengthAnsiRE, "")
+	wideEmojiPresentation = isDef(wideEmojiPresentation) ? wideEmojiPresentation : __flags.VISIBLELENGTH_WIDE_EMOJI
 	var l = 0
 	for(var i = 0; i < str.length; ) {
 		var cp = str.codePointAt(i)
@@ -4927,6 +5030,7 @@ const visibleLength = str => {
 		}
 
 		var width = __visibleLengthCodePointWidth(cp)
+		var isDefaultPresentationEmoji = wideEmojiPresentation && __visibleLengthIsEmojiDefaultPresentation(cp)
 		var emojiCluster = __visibleLengthIsEmojiLike(cp) || width == 2
 		var emojiPresentation = false
 		var textPresentation = false
@@ -4973,7 +5077,7 @@ const visibleLength = str => {
 			break
 		}
 
-		if (!textPresentation && ((emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2)
+		if (!textPresentation && (isDefaultPresentationEmoji || (emojiCluster && (joinedEmoji || emojiPresentation || taggedEmoji)) || keycapEmoji)) width = Math.max(width, 2)
 		l += width
 	}
 	return l
@@ -16228,7 +16332,7 @@ const $unset = function(aK) {
  * <ojob>
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * If shouldReturn = true the string output will be returned
  * </ojob>
@@ -16374,6 +16478,59 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "text":
 			return fnP(String(res))
 		case "md":
+			var mdcode = v => {
+				var source = String(v).replace(/\r\n/g, "\n")
+				var fence = "```"
+				while (source.indexOf(fence) >= 0) fence += "`"
+				return fence + "\n" + source + (/\n$/.test(source) ? "" : "\n") + fence
+			}
+			if (isMap(res) || isArray(res)) {
+				var mdformat = _$(args.mdformat, "mdformat").isString().default("structured").toLowerCase()
+				if ([ "structured", "json", "yaml" ].indexOf(mdformat) < 0) throw "mdformat must be one of: structured, json, yaml"
+
+				if (mdformat == "json" || mdformat == "yaml") {
+					var mdsource = mdformat == "json" ? stringify(res, __, "  ") : af.toYAML(res)
+					return fnP("```" + mdformat + "\n" + mdsource.replace(/\n$/, "") + "\n```")
+				}
+
+				var mdescape = v => String(v).replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>")
+				var mdvalue = v => isNull(v) ? "null" : isUnDef(v) ? "undefined" : mdescape(v)
+				var mdhasOnlyValues = v => isMap(v) && Object.keys(v).every(k => !isMap(v[k]) && !isArray(v[k]))
+				var mdhasOnlyValuesArray = v => isArray(v) && v.every(i => !isMap(i) && !isArray(i))
+				var mdisTable = v => isArray(v) && v.length > 0 && v.every(mdhasOnlyValues)
+				var mdheading = (level, title) => "#".repeat(level) + " " + String(title).replace(/\r?\n/g, " ")
+				var mdmapTable = v => {
+					var lines = [ "| Field | Value |", "| --- | --- |" ]
+					Object.keys(v).forEach(k => lines.push("| " + mdescape(k) + " | " + mdvalue(v[k]) + " |"))
+					return lines.join("\n")
+				}
+				var mdarrayTable = v => {
+					var fields = []
+					v.forEach(row => Object.keys(row).forEach(k => { if (fields.indexOf(k) < 0) fields.push(k) }))
+					var lines = [ "| " + fields.map(mdescape).join(" | ") + " |", "| " + fields.map(k => "---").join(" | ") + " |" ]
+					v.forEach(row => lines.push("| " + fields.map(k => mdvalue(row[k])).join(" | ") + " |"))
+					return lines.join("\n")
+				}
+				var mdrender = (value, level, title) => {
+					var lines = []
+					if (isDef(title)) lines.push(mdheading(level, title), "")
+
+					if (mdhasOnlyValues(value)) return lines.concat([ mdmapTable(value), "" ])
+					if (mdhasOnlyValuesArray(value)) return lines.concat(value.map(v => "- " + mdvalue(v))).concat([ "" ])
+					if (mdisTable(value)) return lines.concat([ mdarrayTable(value), "" ])
+
+					if (isMap(value)) {
+						Object.keys(value).forEach(k => { lines = lines.concat(mdrender(value[k], level + 1, k)) })
+					} else if (isArray(value)) {
+						value.forEach((v, i) => { lines = lines.concat(mdrender(v, level + 1, "Item " + (i + 1))) })
+					} else {
+						lines.push(isString(value) ? mdcode(value) : mdvalue(value), "")
+					}
+					return lines
+				}
+
+				return fnP(mdrender(res, 0).join("\n").replace(/\n+$/, "") + "\n")
+			}
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(ow.format.withMD(String(res)))

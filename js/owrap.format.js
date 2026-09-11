@@ -3693,7 +3693,7 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	   sepArr   : " | ",
 	   endArr   : "]",
 	   strQuote : "'",
-	   specialRE: "[\.\(\,\)\:\\[\\]\|\']"
+	   specialRE: "[\.\(\,\)\:\\[\\]\|\'\\r\\n\\t]"
 	}
   
 	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
@@ -3719,7 +3719,7 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	if (isNumber(aObj)) {
 		return String(aObj)
 	}
-	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
+	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
 	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && aObj.match(new RegExp(dTheme.specialRE))) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
 }
 
@@ -3739,7 +3739,7 @@ OpenWrap.format.prototype.toCSLON = function(aObj, cTheme) {
 	   sepArr  : " | ",
 	   endArr  : "]",
 	   strQuote: "'",
-	   specialRE: "[\(\,\)\:\\[\\]\|\']"
+	   specialRE: "[\(\,\)\:\\[\\]\|\'\\r\\n\\t]"
 	}
   
 	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
@@ -3762,7 +3762,7 @@ OpenWrap.format.prototype.toCSLON = function(aObj, cTheme) {
 	if (isDate(aObj)) {
 		return ansiColor("reset", ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS'))
 	}
-	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
+	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
 	if (!isMap(aObj) && !isArray(aObj)) return ansiColor("reset", (isString(aObj) && aObj.match(new RegExp(dTheme.specialRE))) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj))
 }
 
