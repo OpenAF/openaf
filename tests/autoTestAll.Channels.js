@@ -3,6 +3,59 @@
 (function() {
     this.chType = "big";
 
+    var withFileChannel = function(options, fn) {
+        var path = String(java.nio.file.Files.createTempDirectory("openaf-channel-"));
+        var name = "file-regression-" + genUUID();
+        try {
+            $ch(name).create(false, "file", merge({ path: path, multifile: true }, options));
+            fn($ch(name), path);
+        } finally {
+            $ch(name).destroy();
+            io.rm(path);
+        }
+    };
+
+    exports.testFileMultifileReadDelete = function() {
+        [{}, { yaml: true }, { toon: true }].forEach(function(format) {
+            [{}, { gzip: true }, { lz4: true }].forEach(function(compression) {
+                withFileChannel(merge(format, compression), function(ch, path) {
+                    var first = { id: 1, text: "saved café" };
+                    var second = { id: 2, text: "second" };
+                    ch.set({ id: 1 }, first);
+                    ch.setAll(["id"], [second]);
+                    ow.test.assert(ch.get({ id: 1 }), first, "Multifile get must return stored data");
+                    ow.test.assert(ch.getAll(), [first, second], "Multifile getAll must return stored data");
+                    ch.unset({ id: 1 });
+                    ow.test.assert(ch.get({ id: 1 }), __, "Unset must remove the value file");
+                    ch.unsetAll(["id"], [second]);
+                    ow.test.assert(ch.size(), 0, "UnsetAll must clear the index");
+                    ow.test.assert(io.listFiles(path).files.length, 1, "Only the index should remain after deletion");
+                });
+            });
+        });
+    };
+
+    exports.testFileIterationKeys = function() {
+        [false, true].forEach(function(multifile) {
+            withFileChannel({ multifile: multifile }, function(ch) {
+                var key = { id: 1 }, value = { text: "saved" }, seen = [];
+                ch.set(key, value);
+                ch.forEach(function(k, v) { seen.push({ key: k, value: v }); });
+                ow.test.assert(seen, [{ key: key, value: value }], "File iteration must return original keys and values");
+            });
+        });
+    };
+
+    exports.testFileMultifileConfiguredKey = function() {
+        withFileChannel({ key: "id" }, function(ch) {
+            var value = { id: "record", text: "saved" };
+            ch.set({ id: "record" }, value);
+            ow.test.assert(ch.get({ id: "record" }), value, "Multifile reads must normalize configured keys like writes");
+            ch.unset({ id: "record" });
+            ow.test.assert(ch.get({ id: "record" }), __, "Configured keys must also be deleted");
+        });
+    };
+
     exports.testMVSUtils = function() {
         io.rm("testMVS.db");
 

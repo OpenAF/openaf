@@ -1453,7 +1453,7 @@ OpenWrap.ch.prototype.__types = {
 			if (!isMap(r)) r = {};
 			return r;
 		},
-		__rf: (m, k) => {
+		__rf: function(m, k) {
 			var r = {};
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 
@@ -1589,7 +1589,7 @@ OpenWrap.ch.prototype.__types = {
 
 			return _id
 		},
-		__df: (m, k) => {
+		__df: function(m, k) {
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 			try {
 				io.rm(m.path + "/" + _id + this.__fext(m) + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))
@@ -1653,10 +1653,12 @@ OpenWrap.ch.prototype.__types = {
 				this.__ul(this.__channels[aName]);
 			}
 			Object.keys(m).forEach(k => {
+				var key = jsonParse(k);
+				if (!isMap(key)) key = k;
 				if (this.__channels[aName].multifile) {
-					try { aFunction(k, this.__rf(this.__channels[aName], k)) } catch(e) {}
+					try { aFunction(key, this.__rf(this.__channels[aName], key)) } catch(e) {}
 				} else {
-					try { aFunction(k, m[k]) } catch(e) {}
+					try { aFunction(key, m[k]) } catch(e) {}
 				}
 			});
 		},
@@ -1792,6 +1794,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},		
 		get          : function(aName, aK) {
+			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
 			if (this.__channels[aName].multifile) {
 				return this.__rf(this.__channels[aName], aK)
 			} else {
@@ -1802,7 +1805,6 @@ OpenWrap.ch.prototype.__types = {
 				} finally {
 					this.__ul(this.__channels[aName]);
 				}
-				if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
 				var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
 				if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
 					return ow.obj.getPath(m, id);

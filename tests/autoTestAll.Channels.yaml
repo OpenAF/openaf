@@ -127,7 +127,25 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAll
 
+   - name: Channels::File multifile read and delete
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFileMultifileReadDelete;
+
+   - name: Channels::File iteration keys
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFileIterationKeys;
+
+   - name: Channels::File multifile configured key
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFileMultifileConfiguredKey;
+
 todo:
+   - Channels::File multifile read and delete
+   - Channels::File iteration keys
+   - Channels::File multifile configured key
    # Channels tests
    # --------------
    - Channels::Test Elastic Index
