@@ -34,7 +34,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	big: {
-		__channels: {},
+		__channels: Object.create(null),
 		create : function(aName, shouldCompress) { this.__channels[aName] = ow.loadObj().big.create(shouldCompress); },
 		destroy: function(aName) { delete this.__channels[aName]; },
 		size   : function(aName) { return this.__channels[aName].getSize(); },
@@ -995,7 +995,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	dummy: {
-		__channels: {},
+		__channels: Object.create(null),
 		create       : function(aName, shouldCompress, options) {
 			//ow.loadObj();
 			//this.__channels[aName] = options;
@@ -1060,7 +1060,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	proxy: {
-		__channels: {},
+		__channels: Object.create(null),
 		create       : function(aName, shouldCompress, options) {
 			this.__channels[aName] = options;
 			options.chTarget = _$(options.chTarget).$_("Need to provide a chTarget.");
@@ -1156,7 +1156,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	simpleold: {
-		__channels: {},
+		__channels: Object.create(null),
 		create       : function(aName, shouldCompress, options) {
 			this.__channels[aName] = {};
 		},
@@ -1269,7 +1269,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	simple: {
-		__channels: {},
+		__channels: Object.create(null),
 		create       : function(aName, shouldCompress, options) {
 			this.__channels[aName] = new Map()
 		},
@@ -1375,7 +1375,7 @@ OpenWrap.ch.prototype.__types = {
 	 */
 	//
 	file: {
-		__channels: {},
+		__channels: Object.create(null),
 		__l: (m) => (isString(m.lock) ? $flock(m.lock).lock() : __),
 		__ul: (m) => (isString(m.lock) ? $flock(m.lock).unlock() : __),
 		__fext: (m) => (m.yaml ? ".yaml" : (m.toon ? ".toon" : ".json")),
@@ -1872,7 +1872,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	remote: {
-		__channels: {},
+		__channels: Object.create(null),
 		create       : function(aName, shouldCompress, options) {
 			ow.loadObj();
 			if (isUnDef(options)) options = {};
@@ -2057,7 +2057,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	elasticsearch: {
-		__channels: {},
+		__channels: Object.create(null),
 		create       : function(aName, shouldCompress, options) {
 			ow.loadObj();
 			if (isUnDef(options.index)) throw "Please define an elastic search index to use";
@@ -2437,7 +2437,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	prometheus: {
-		__channels: {},
+		__channels: Object.create(null),
 		create       : function(aName, shouldCompress, options) {
 			ow.loadMetrics();
 			options = _$(options, "options").isMap().default({});
@@ -2781,110 +2781,87 @@ OpenWrap.ch.prototype.__types = {
 	/**
 	 * <odoc>
 	 * <key>ow.ch.types.ignite</key>
-	 * This channel type will use an Ignite Data Grid. The creation options are:\
+	 * This channel type uses plugin-Ignite 3.1 tables with JSON keys and values. The creation options are:\
 	 * \
 	 *    - ignite (Ignite) Use a previously instantiated Ignite plugin (defaults to a new instance).\
-	 *    - gridName (String) Use a specific Ignite grid name.\
+	 *    - gridName (String) Use a specific Ignite node/client name.\
+	 *    - client (Boolean) Connect a thin client instead of starting an embedded node.\
+	 *    - configuration (Map) Ignite.configure options, including addresses or configFile/workDir.\
+	 *    - persist (String) Persistent Ignite 3 work directory (alias for configuration.workDir).\
+	 *    - cacheName (String) Shared backing table name (defaults to the channel name).\
+	 *    - keepOnDestroy (Boolean) Keep the backing table when destroying the channel (default false).\
 	 * \
 	 * </odoc>
 	 */
 	ignite: {
-		create       : function(aName, shouldCompress, options) {
+		__channels: Object.create(null),
+		_key: function(aKey) {
+			return JSON.stringify(aKey, function(key, value) {
+				if (!isMap(value)) return value;
+				var sorted = Object.create(null);
+				Object.keys(value).sort().forEach(function(k) { sorted[k] = value[k]; });
+				return sorted;
+			});
+		},
+		create: function(aName, shouldCompress, options) {
+			options = _$(options).isMap().default({});
 			if (isDef(getOPackPath("plugin-Ignite"))) loadExternalJars(getOPackPath("plugin-Ignite"));
 			plugin("Ignite");
-			if (isUnDef(options) || isUnDef(options.ignite)) this.__ig = new Ignite(); else this.__ig = options.ignite;
-			if (isDef(options) && isDef(options.persist)) {
-				var storageCfg = new Packages.org.apache.ignite.configuration.DataStorageConfiguration();
-				storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-				storageCfg.setStoragePath(options.persist);
-				storageCfg.setWalPath(options.persist);
-				storageCfg.setWalArchivePath(options.persist);
-
-				this.__ig.getConfiguration().setDataStorageConfiguration(storageCfg);
+			var ig = isDef(options.ignite) ? options.ignite : new Ignite();
+			if (!ig.isStarted()) {
+				var config = clone(_$(options.configuration).isMap().default({}));
+				if (isDef(options.persist)) config.workDir = options.persist;
+				ig.configure(config);
+				ig.start(options.gridName, __, options.client === true);
 			}
-			if (isUnDef(options) || isUnDef(options.gridName)) this.__ig.start(); else this.__ig.start(options.gridName, __, options.client);
-			if (isDef(options) && isDef(options.persist)) {
-				this.__ig.getIgnite().active(true);
-			}
-			var ch = this.__ig.getIgnite().getOrCreateCache(aName);
+			this.__channels[aName] = { ignite: ig, cache: ig.getOrCreateCache(_$(options.cacheName).isString().default(aName)), keepOnDestroy: options.keepOnDestroy === true };
 		},
-		destroy      : function(aName) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			ch.destroy();
+		destroy: function(aName) {
+			var state = this.__channels[aName];
+			if (!state.keepOnDestroy) state.cache.destroy();
+			delete this.__channels[aName];
 		},
-		size         : function(aName) { 
-			var ch = this.__ig.getIgnite().getCache(aName);
-			return ch.size([ Packages.org.apache.ignite.cache.CachePeekMode.ALL ]);
+		size: function(aName) { return Number(this.__channels[aName].cache.size()); },
+		forEach: function(aName, aFunction) {
+			var parent = this;
+			this.getKeys(aName).forEach(function(key) { aFunction(key, parent.get(aName, key)); });
 		},
-		forEach      : function(aName, aFunction) {
-			var keys = this.getKeys(aName);
-			for(var o in keys) {
-				aFunction(keys[o], this.get(aName, keys[o]));
-			}
+		getKeys: function(aName, full) {
+			var keys = this.__channels[aName].cache.keys(), result = [];
+			for (var i = 0; i < keys.length; i++) result.push(JSON.parse(String(keys[i])));
+			return result;
 		},
-		getKeys      : function(aName, full) {
-			var ch = this.__ig.getIgnite().cache(aName);
-			var i = ch.iterator();
-			var keys = [];
-			while(i.hasNext()) {
-				keys.push(af.fromJavaMap(i.next().getKey()));
-			}
-			return keys;
-		},
-		getSortedKeys: function(aName, full) {
-			return this.getKeys(aName, full);
-		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
-			var tx = this.__ig.getIgnite().transactions().txStart();
-			try {
-				var ch = this.__ig.getIgnite().getCache(aName);
-				var res = af.fromJavaMap(ch.get(af.toJavaMap(aK)));
-				if ($stream([res]).anyMatch(aMatch)) {
-					ch.put(af.toJavaMap(aK), af.toJavaMap(aV));
-					tx.commit();
-				} else {
-					tx.rollback();
-				}
-				return res;
-			} catch(e) {
-				tx.rollback();
-				throw e;
-			}
-			
-		},
-		set          : function(aName, ak, av, aTimestamp) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			return ch.put(af.toJavaMap(ak), af.toJavaMap(av));
-		},
-		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
-			for(var i in anArrayOfMapData) {
-				this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
+		getSortedKeys: function(aName, full) { return this.getKeys(aName, full); },
+		getSet: function(aName, aMatch, aK, aV, aTimestamp) {
+			var cache = this.__channels[aName].cache, key = this._key(aK), value = JSON.stringify(aV);
+			// Retry against the actual value if a writer wins between the read and CAS.
+			while (true) {
+				var previous = cache.get(key);
+				var current = isNull(previous) ? __ : JSON.parse(String(previous));
+				if (!$stream([current]).anyMatch(aMatch)) return __;
+				if (isNull(previous) ? cache.putIfAbsent(key, value) : cache.replace(key, String(previous), value)) return aV;
 			}
 		},
-		unsetAll     : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
-			for(var i in anArrayOfMapData) {
-				this.unset(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
-			}
-		},		
-		get          : function(aName, aKey) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			return af.fromJavaMap(ch.get(af.toJavaMap(aKey)));
+		set: function(aName, aKey, aValue, aTimestamp) {
+			this.__channels[aName].cache.put(this._key(aKey), JSON.stringify(aValue));
+			return aKey;
 		},
-		pop          : function(aName) {
-			var aKs = this.getSortedKeys(aName);
-			var aK = aKs[aKs.length - 1];
-			var aV = this.get(aName, aK);
-			return aK;				
+		setAll: function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
+			for (var i in anArrayOfMapData) this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
 		},
-		shift        : function(aName) {
-			var aK = this.getSortedKeys(aName)[0];
-			var aV = this.get(aName, aK);
-			return aK;
+		unsetAll: function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
+			for (var i in anArrayOfMapData) this.unset(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]));
 		},
-		unset        : function(aName, aKey) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			ch.remove(af.toJavaMap(aKey));
-		}
+		get: function(aName, aKey) {
+			var value = this.__channels[aName].cache.get(this._key(aKey));
+			return isNull(value) ? __ : JSON.parse(String(value));
+		},
+		pop: function(aName) {
+			var keys = this.getSortedKeys(aName);
+			return keys[keys.length - 1];
+		},
+		shift: function(aName) { return this.getSortedKeys(aName)[0]; },
+		unset: function(aName, aKey) { return this.__channels[aName].cache.remove(this._key(aKey)); }
 	},
 	// etcd implementation (etcd v2)
 	//
@@ -2908,7 +2885,7 @@ OpenWrap.ch.prototype.__types = {
 	 * </odoc>
 	 */
 	etcd: {
-		__channels: {},
+		__channels: Object.create(null),
 		__escape: (s) => {
 			return encodeURIComponent(stringify(sortMapKeys(s), __, "")).replace(/%2F/g, "%25--%3B");
 		},

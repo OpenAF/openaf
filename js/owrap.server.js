@@ -1216,9 +1216,9 @@ OpenWrap.server.prototype.scheduler = function () {
 
 /**
  * <odoc>
- * <key>ow.server.locks(justInternal, aCh)</key>
+ * <key>ow.server.locks(justInternal, aCh, aOptions)</key>
  * Creates a lock managing object instance. You can optional make it internal (using a __openAFLocks::local simple channel) or global
- * using a __openAFLocks:global ignite channel. Optional you can also provide an already created channel aCh.
+ * using a __openAFLocks:global ignite channel. Optional you can also provide an already created channel aCh. aOptions is forwarded to new global Ignite channels.
  * </odoc>
  */
 OpenWrap.server.prototype.locks = function(justInternal, aCh, aOptions) {
@@ -1244,7 +1244,7 @@ OpenWrap.server.prototype.locks = function(justInternal, aCh, aOptions) {
 			if (isString(justInternal) && justInternal == "cluster") {
 				$ch(this.name).create(1, "simple");
 			} else {
-				$ch(this.name).create(1, "ignite");
+				$ch(this.name).create(1, "ignite", aOptions);
 			}
 		}
 	}
@@ -1274,45 +1274,25 @@ OpenWrap.server.prototype.locks.prototype.setRetries = function(aNumber) {
 
 /**
  * <odoc>
- * <key>ow.server.locks.isLocked(aLockName) : boolean</key>
- * Determines if aLockName is locked (true) or not (false).
+ * <key>ow.server.locks.isLocked(aLockName) : Map</key>
+ * Returns the lock record; its value property indicates whether the lock is held. Storage errors propagate to the caller.
  * </odoc>
  */
 OpenWrap.server.prototype.locks.prototype.isLocked = function(aLockName) {
-	var r = false;
-	try {
-		r = $ch(this.name).get({
-			lock: aLockName
-		});
-		if (isUnDef(r)) {
-			$ch(this.name).set({
-				lock: aLockName
-			}, {
-				lock: aLockName,
-				value: false
-			});
-			r = $ch(this.name).get({
-				lock: aLockName
-			});
-		}
-		if (r.value == true && isDef(r.timeout) && !isNull(r.timeout) && (nowUTC() >= r.timeout)) {
-			this.unlock(aLockName);
-			r = $ch(this.name).get({
-				lock: aLockName
-			});
-		}
-	} catch (e) {
-		$ch(this.name).set({
-			lock: aLockName
-		}, {
-			lock: aLockName,
-			value: false
-		});
-		r = $ch(this.name).get({
-			lock: aLockName
-		});
+	var channel = $ch(this.name), key = { lock: aLockName };
+	var r = channel.get(key);
+	if (isUnDef(r)) {
+		// Never overwrite another node's newly acquired lock during initialization.
+		channel.getSet(function(current) { return isUnDef(current); }, key, { lock: aLockName, value: false });
+		r = channel.get(key);
 	}
-
+	if (r.value == true && isDef(r.timeout) && !isNull(r.timeout) && nowUTC() >= r.timeout) {
+		// An extension or a new acquisition must not be released by a stale read.
+		channel.getSet(function(current) {
+			return isDef(current) && current.value === true && current.timeout === r.timeout && nowUTC() >= current.timeout;
+		}, key, { lock: aLockName, value: false });
+		r = channel.get(key);
+	}
 	return r;
 };
 
@@ -1337,7 +1317,7 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
 			lock: aLockName
 		}, {
 			lock: aLockName,
-			timeout: nowUTC() + aTimeout,
+			timeout: isDef(aTimeout) ? nowUTC() + aTimeout : null,
 			value: true,
 			extra: extra
 		});
