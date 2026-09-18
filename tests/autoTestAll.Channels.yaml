@@ -142,7 +142,25 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testFileMultifileConfiguredKey;
 
+   - name: Channels::Proxy bulk delete
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testProxyBulkDelete;
+
+   - name: Channels::Proxy queue
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testProxyQueue;
+
+   - name: Channels::Shift error propagation
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testShiftError;
+
 todo:
+   - Channels::Proxy bulk delete
+   - Channels::Proxy queue
+   - Channels::Shift error propagation
    - Channels::File multifile read and delete
    - Channels::File iteration keys
    - Channels::File multifile configured key

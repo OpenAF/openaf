@@ -1120,7 +1120,7 @@ OpenWrap.ch.prototype.__types = {
 				op: "unsetAll", name: this.__channels[aName].chTarget, k: aKs, v: aVs, timestamp: aTimestamp
 			};
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
-			return $ch(this.__channels[aName].chTarget).unsetAll(m.k, m.timestamp);
+			return $ch(this.__channels[aName].chTarget).unsetAll(m.k, m.v, m.timestamp);
 		},		
 		get          : function(aName, aK) {
 			var m = { op: "get", name: this.__channels[aName].chTarget, k: aK };
@@ -1130,12 +1130,15 @@ OpenWrap.ch.prototype.__types = {
 		pop          : function(aName) {
 			var m = { op: "pop", name: this.__channels[aName].chTarget };
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
-			return $ch(this.__channels[aName].chTarget).pop();
+			// The channel wrapper reads and removes the value using this key.
+			var keys = $ch(this.__channels[aName].chTarget).getSortedKeys();
+			return keys[keys.length - 1];
 		},
 		shift        : function(aName) {
 			var m = { op: "shift", name: this.__channels[aName].chTarget };
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
-			return $ch(this.__channels[aName].chTarget).shift();
+			// The channel wrapper reads and removes the value using this key.
+			return $ch(this.__channels[aName].chTarget).getSortedKeys()[0];
 		},
 		unset        : function(aName, aK, aTimestamp) {
 			var m = { op: "unset", name: this.__channels[aName].chTarget, k: aK, timestamp: aTimestamp };
@@ -3996,7 +3999,7 @@ OpenWrap.ch.prototype.shift = function(aName) {
 		ow.ch.lock2[aName].unlock();
 	}
 
-	if (isDef(error)) throw e;
+	if (isDef(error)) throw error;
 
 	return out;
 };

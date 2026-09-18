@@ -56,6 +56,64 @@
         });
     };
 
+    var withProxyChannel = function(fn) {
+        var target = "proxy-target-" + genUUID();
+        var proxy = "proxy-regression-" + genUUID();
+        try {
+            $ch(target).create(false, "simple");
+            $ch(proxy).create(false, "proxy", { chTarget: target, proxyFunc: function(m) {} });
+            fn($ch(proxy), $ch(target));
+        } finally {
+            $ch(proxy).destroy();
+            $ch(target).destroy();
+        }
+    };
+
+    exports.testProxyBulkDelete = function() {
+        withProxyChannel(function(proxy, target) {
+            var records = [{ id: 1, text: "first" }, { id: 2, text: "second" }, { id: 3, text: "keep" }];
+            proxy.setAll(["id"], records);
+            proxy.unsetAll(["id"], records.slice(0, 2));
+            ow.test.assert(target.getAll(), [records[2]], "Proxy bulk delete must remove only the requested records");
+        });
+    };
+
+    exports.testProxyQueue = function() {
+        ["pop", "shift"].forEach(function(op) {
+            withProxyChannel(function(proxy, target) {
+                // Values deliberately differ from keys to detect double removal or value-as-key lookups.
+                var first = { text: "first" }, last = { text: "last" };
+                target.set({ id: 1 }, first, 1000);
+                target.set({ id: 2 }, last, 2000);
+                ow.test.assert(proxy[op](), op == "pop" ? last : first, "Proxy queue must return the removed value");
+                ow.test.assert(target.getAll(), [op == "pop" ? first : last], "Proxy queue must remove exactly one entry");
+                ow.test.assert(proxy[op](), op == "pop" ? first : last, "Proxy queue must return the remaining value");
+                ow.test.assert(proxy[op](), __, "Empty proxy queue must return undefined");
+                ow.test.assert(target.size(), 0, "Proxy queue must drain the target");
+            });
+        });
+    };
+
+    exports.testShiftError = function() {
+        var name = "shift-error-" + genUUID();
+        var failure = new Error("queue backend failure");
+        try {
+            $ch(name).create(false, "proxy", {
+                chTarget: "unused",
+                proxyFunc: function(m) {
+                    if (m.op == "size") return 1;
+                    if (m.op == "shift") throw failure;
+                }
+            });
+            var caught;
+            try { $ch(name).shift(); } catch (e) { caught = e; }
+            ow.test.assert(caught === failure, true, "Shift must preserve the original backend error");
+            ow.test.assert(ow.ch.lock2[name].isLocked(), false, "Shift must release its lock after failure");
+        } finally {
+            $ch(name).destroy();
+        }
+    };
+
     exports.testMVSUtils = function() {
         io.rm("testMVS.db");
 
