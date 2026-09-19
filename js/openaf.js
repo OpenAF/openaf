@@ -2525,6 +2525,7 @@ const stopLog = function() {
  * </odoc>
  */
 const log = function(msg, formatOptions) {
+	if (ow.instrumentation && ow.instrumentation.isEnabled("logs")) { try { ow.instrumentation.log("INFO", msg); } catch(__telemetryError) {} }
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
 	__clogInfo.inc();
 	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
@@ -2607,6 +2608,7 @@ const tlog = function(msg, someData, formatOptions) {
  * </odoc>
  */
 const lognl = function(msg, formatOptions) {
+	if (ow.instrumentation && ow.instrumentation.isEnabled("logs")) { try { ow.instrumentation.log("INFO", msg); } catch(__telemetryError) {} }
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
 	__clogInfo.inc();
 	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
@@ -2691,6 +2693,7 @@ const tlognl = function(msg, someData, formatOptions) {
  * </odoc>
  */
 const logErr = function(msg, formatOptions) {
+	if (ow.instrumentation && ow.instrumentation.isEnabled("logs")) { try { ow.instrumentation.log("ERROR", msg); } catch(__telemetryError) {} }
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
 	__clogErr.inc();
 	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
@@ -2763,6 +2766,7 @@ const logErr = function(msg, formatOptions) {
  * </odoc>
  */
 const logWarn = function(msg, formatOptions) {
+	if (ow.instrumentation && ow.instrumentation.isEnabled("logs")) { try { ow.instrumentation.log("WARN", msg); } catch(__telemetryError) {} }
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
 	__clogWarn.inc();
 	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
@@ -7181,6 +7185,14 @@ OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js");
  * Loads OpenWrap Metrics functionality. Basically functions to wrap access to server functionality.
  * </odoc>
  */
+/**
+ * <odoc>
+ * <key>ow.loadInstrumentation()</key>
+ * Loads the opt-in generic instrumentation module. Loading does not enable capture.
+ * </odoc>
+ */
+OpenWrap.prototype.loadInstrumentation = function() { loadCompiledLib("owrap_instrumentation_js"); if (isUnDef(ow.instrumentation)) ow.instrumentation = new OpenWrap.instrumentation(); return ow.instrumentation; };
+
 //OpenWrap.prototype.loadMetrics = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
 OpenWrap.prototype.loadMetrics = function() { loadCompiledLib("owrap_metrics_js"); if (isUnDef(ow.metrics)) { ow.metrics = new OpenWrap.metrics(); /*pods.declare("ow.metrics", ow.metrics);*/ }; return ow.metrics; };
 /**
@@ -8183,6 +8195,7 @@ const newJavaArray = function(aJavaClass, aSize) {
  * </odoc>
  */
 const threadBox = function(aFunction, aTimeout, aStopFunction) {
+	if (ow.instrumentation && ow.instrumentation._enabled) { aFunction = ow.instrumentation.bind(aFunction); aStopFunction = ow.instrumentation.bind(aStopFunction); }
 	if (isUnDef(aStopFunction)) aStopFunction = (aR) => { if (!aR) sleep(25); return aR; };
 
 	var done = false;
@@ -14193,6 +14206,7 @@ const __getThreadPools = function() {
  * </odoc>
  */
 const oPromise = function(aFunction, aRejFunction, useVirtualThreads) {
+	if (ow.instrumentation && ow.instrumentation._enabled) { aFunction = ow.instrumentation.bind(aFunction); aRejFunction = ow.instrumentation.bind(aRejFunction); }
         this.states = {
                 NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
         };
@@ -14215,6 +14229,7 @@ const oPromise = function(aFunction, aRejFunction, useVirtualThreads) {
  * </odoc>
  */
 oPromise.prototype.then = function(aResolveFunc, aRejectFunc) {
+	if (ow.instrumentation && ow.instrumentation._enabled) { aResolveFunc = ow.instrumentation.bind(aResolveFunc); aRejectFunc = ow.instrumentation.bind(aRejectFunc); }
 	if (isDef(aRejectFunc) && isFunction(aRejectFunc)) this.executors.add({ type: "reject", func: aRejectFunc });
 	if (isDef(aResolveFunc) && isFunction(aResolveFunc)) {
 		this.executors.add({ type: "exec", func: aResolveFunc});
@@ -14231,6 +14246,7 @@ oPromise.prototype.then = function(aResolveFunc, aRejectFunc) {
  * </odoc>
  */
 oPromise.prototype.catch = function(onReject) {
+	if (ow.instrumentation && ow.instrumentation._enabled) { onReject = ow.instrumentation.bind(onReject); }
 	if (isDef(onReject) && isFunction(onReject)) {
 		this.executors.add({ type: "reject", func: onReject });
 		this.__exec();

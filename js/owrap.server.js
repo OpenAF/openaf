@@ -3401,7 +3401,7 @@ OpenWrap.server.prototype.httpd = {
 			}
 		}
 
-		aHTTPd.add(aPath, function(req) {			
+		var __routeHandler = function(req) {
 			try {
 				if (aHTTPd.getImpl() == "java") cnvt2string(req)
 				var uri = req.uri.replace(new RegExp("^" + parent.escapeRE(aP)), "");
@@ -3438,9 +3438,19 @@ OpenWrap.server.prototype.httpd = {
 						return parent.__defaultRoutes[aPort](req, aHTTPd);
 				}
 			} catch(e) {
+				if (ow.instrumentation && ow.instrumentation.isEnabled("http")) req.__openafInstrumentationError = true;
 				printErr("HTTPd route error: " + af.toSLON(req) + " | " + e)
 			}
-		});
+		};
+        aHTTPd.add(aPath, function(req) {
+          var ins = ow.instrumentation;
+          if (!ins || !ins.isEnabled("http")) return __routeHandler(req);
+          var uri = String(req.uri || "").split("?")[0];
+          var inspection = ins._inspectionPaths || {};
+          if (Object.keys(inspection).some(function(k) { return k === aPort + ":" + uri || (k.indexOf(aPort + ":") === 0 && uri.indexOf(k.substring(String(aPort).length + 1) + "/") === 0); })) return ins.suppress(function() { return __routeHandler(req); });
+          var matched = Object.keys(parent.__routes[aPort] || {}).filter(function(p) { return uri === p || uri.indexOf(p + "/") === 0; }).sort(function(a,b) { return b.length - a.length; })[0] || "default";
+          return ins.httpHandler(__routeHandler, matched)(req);
+        });
 		
 		aHTTPd.setDefault(aPath);
 	},

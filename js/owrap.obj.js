@@ -1928,7 +1928,7 @@ OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) {
  * Returns a map with the response code, the content type and the response.
  * </odoc>
  */
-OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
+OpenWrap.obj.prototype.http.prototype.__exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
 	aURL = _$(aURL, "aURL").isString().$_()
 	aIn  = _$(aIn, "aIn").default(__)
 	aRequestMap = _$(aRequestMap, "aRequestMap").isMap().default({})
@@ -2029,6 +2029,11 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 
 	return this.outputObj
 }
+OpenWrap.obj.prototype.http.prototype.exec = function() {
+  if (ow.instrumentation && ow.instrumentation.isEnabled("http")) return ow.instrumentation.httpClient(this, arguments, this.__exec);
+  return this.__exec.apply(this, arguments);
+};
+
 /**
  * <odoc>
  * <key>ow.obj.http.get(aURL, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) : Object</key>
@@ -2286,7 +2291,7 @@ OpenWrap.obj.prototype.http0.prototype.__handleConfig = function(aH) {
 	return aH;
 };
 
-OpenWrap.obj.prototype.http0.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http0.prototype.__exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	var r, canHaveIn = false;
 
 	if (isUnDef(aRequestType)) aRequestType = "GET";
@@ -2421,7 +2426,12 @@ OpenWrap.obj.prototype.http0.prototype.exec = function(aUrl, aRequestType, aIn, 
 		}
 	}
 	return this.outputObj;
+}
+OpenWrap.obj.prototype.http0.prototype.exec = function() {
+  if (ow.instrumentation && ow.instrumentation.isEnabled("http")) return ow.instrumentation.httpClient(this, arguments, this.__exec);
+  return this.__exec.apply(this, arguments);
 };
+;
 
 OpenWrap.obj.prototype.http0.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream);
