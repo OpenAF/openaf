@@ -251,6 +251,89 @@
         ow.obj.schemaRemove("test");
     };
 
+    exports.testObjPoolCapacity = function() {
+        ow.loadObj();
+        var created = 0, closed = 0;
+        var p = ow.obj.pool.create().setMax(1).setRetry(0);
+        p.setFactory(function() { return { id: ++created }; }, function() { closed++; });
+        try {
+            var obj = p.checkOut();
+            ow.test.assert(obj.id, 1, "A pool with max=1 must allow its first checkout");
+            var full = false;
+            try { p.checkOut(); } catch (e) { full = true; }
+            ow.test.assert(full, true, "A full pool must reject another checkout");
+            p.checkIn(obj);
+            ow.test.assert(p.checkOut() === obj, true, "The last available slot must be reusable");
+            ow.test.assert(created, 1, "Checkout must not exceed maximum capacity");
+        } finally { p.stop(); }
+        ow.test.assert(closed, 1, "Every created resource must be closed");
+    };
+
+    exports.testObjPoolBatchGrowth = function() {
+        ow.loadObj();
+        var created = 0, closed = [];
+        var p = ow.obj.pool.create().setMax(2).setIncrementsOf(5).setRetry(0);
+        p.setFactory(function() { return { id: ++created }; }, function(obj) { closed.push(obj.id); });
+        try {
+            var first = p.checkOut(), second = p.checkOut();
+            ow.test.assert(first.id, 1, "The first factory result must be checked out, not discarded");
+            ow.test.assert(first !== second, true, "Each checkout must own a distinct resource");
+            ow.test.assert(created, 2, "Batch growth must not create resources beyond max");
+        } finally { p.stop(); }
+        ow.test.assert(closed.sort(), [1, 2], "All created batch resources must be closed exactly once");
+
+        created = 0;
+        p = ow.obj.pool.create().setMin(3).setMax(4).setIncrementsOf(2);
+        p.setFactory(function() { return { id: ++created }; });
+        try {
+            p.start();
+            ow.test.assert(created, 4, "Startup must stop growing once the minimum is satisfied");
+            p.start();
+            ow.test.assert(created, 4, "Starting an initialized pool must not create more resources");
+        } finally { p.stop(); }
+    };
+
+    exports.testObjPoolAddedAndFailedBatch = function() {
+        ow.loadObj();
+        var p = ow.obj.pool.create().setMax(1).setRetry(0);
+        var supplied = { id: 1 };
+        try {
+            p.add(supplied);
+            ow.test.assert(p.checkOut() === supplied, true, "Objects added without inUse must be available");
+        } finally { p.stop(); }
+
+        var created = 0, closed = 0;
+        p = ow.obj.pool.create().setMax(3).setIncrementsOf(3).setRetry(0);
+        p.setFactory(function() {
+            if (++created == 2) throw "batch factory failure";
+            return { id: created };
+        }, function() { closed++; });
+        try {
+            var error;
+            try { p.checkOut(); } catch (e) { error = String(e); }
+            ow.test.assert(error, "batch factory failure", "Factory errors must reach the caller");
+            ow.test.assert(p.checkOut().id, 1, "Failed batch growth must not strand the requested resource");
+            ow.test.assert(created, 2, "A surviving resource must be reused without another factory call");
+        } finally { p.stop(); }
+        ow.test.assert(closed, 1, "The surviving resource must be closed exactly once");
+    };
+
+    exports.testObjPoolStopWithoutClose = function() {
+        ow.loadObj();
+        var p = ow.obj.pool.create();
+        p.setFactory(function() { return {}; });
+        var obj = p.checkOut();
+        p.checkIn(obj);
+        p.stop();
+        ow.test.assert(p.__pool.length, 0, "Stop must clear a pool without a close callback");
+        ow.test.assert(p.__currentSize, 0, "Stop must reset the pool size");
+        ow.test.assert(p.__currentFree, 0, "Stop must reset the free count");
+        p.stop();
+        try {
+            ow.test.assert(p.checkOut() !== obj, true, "Restarted pool must create a fresh resource");
+        } finally { p.stop(); }
+    };
+
     exports.testObjPool = function() {
         ow.loadObj();
 

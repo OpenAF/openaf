@@ -100,6 +100,26 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testFlatMap
 
+   - name: Obj::Object pool capacity
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjPoolCapacity;
+
+   - name: Obj::Object pool batch growth
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjPoolBatchGrowth;
+
+   - name: Obj::Object pool stop without close
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjPoolStopWithoutClose;
+
+   - name: Obj::Object pool added and failed batch
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjPoolAddedAndFailedBatch;
+
 todo:
 # Obj tests
 # ------------
@@ -122,3 +142,8 @@ todo:
 - Obj::Flat map
 - Obj::Thread-safe array
 - Obj::Thread-safe map
+
+- Obj::Object pool capacity
+- Obj::Object pool batch growth
+- Obj::Object pool stop without close
+- Obj::Object pool added and failed batch
