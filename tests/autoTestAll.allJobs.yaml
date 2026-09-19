@@ -19,6 +19,7 @@ include:
 - autoTestAll.JMX.yaml
 - autoTestAll.ZIP.yaml
 - autoTestAll.Compile.yaml
+- autoTestAll.Console.yaml
 - autoTestAll.CDS.yaml
 - autoTestAll.Sec.yaml
 - autoTestAll.oJob.yaml

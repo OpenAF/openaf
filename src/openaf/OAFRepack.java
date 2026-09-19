@@ -116,6 +116,10 @@ public class OAFRepack {
             if (zis == null) throw new Exception("Couldn't read zip input file " + aOrigFile);
 
             ArrayList<String> al = new ArrayList<String>();
+            // JLine runtime uses per-provider resources, but retain the complete
+            // SPI descriptor as well when flattening its separate modules.
+            String jlineProviderPath = "META-INF/services/org.jline.terminal.spi.TerminalProvider";
+            StringBuilder jlineProviders = new StringBuilder();
 
             // Count entries
             long zisSize = 0;
@@ -180,6 +184,10 @@ public class OAFRepack {
                                                 ZipEntry sze;
                     
                                                 while ((sze = szis.getNextEntry()) != null) {
+                                                    if (sze.getName().equals(jlineProviderPath)) {
+                                                        jlineProviders.append(toString(szis, "UTF-8")).append("\n");
+                                                        continue;
+                                                    }
                                                     if (!al.contains(sze.getName()) && 
                                                         !sze.getName().endsWith("MANIFEST.MF") && 
                                                         !sze.getName().endsWith("ECLIPSE_.RSA") &&
@@ -243,6 +251,11 @@ public class OAFRepack {
                                     }
                                 }
                             } while (ze != null);
+                            if (jlineProviders.length() > 0 && !al.contains(jlineProviderPath)) {
+                                zos.putNextEntry(new ZipEntry(jlineProviderPath));
+                                write(jlineProviders.toString(), zos, "UTF-8");
+                                zos.closeEntry();
+                            }
                             System.out.println(
                                     "\rRepack progress " + zosSize + "/" + zisSize + " (" + Math.round((zosSize * 100) / zisSize) + "%)");
     

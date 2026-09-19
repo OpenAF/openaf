@@ -282,15 +282,18 @@
         {
             "description": "JLine",
             "path": [
-                "lib/jline-2.14.6.jar"
+                "lib/jline-reader-4.4.3.jar",
+                "lib/jline-terminal-4.4.3.jar",
+                "lib/jline-terminal-jni-4.4.3.jar",
+                "lib/jline-native-4.4.3.jar"
             ],
-            "version": "2.14.6",
+            "version": "4.4.3",
             "changes": true,
-            "comment": "updated to jline 2.14.6",
+            "comment": "JLine 4 backend with OpenAF legacy console adapters",
             "type": [
                 "java"
             ],
-            "license": "https://raw.githubusercontent.com/jline/jline2/master/LICENSE.txt",
+            "license": "https://raw.githubusercontent.com/jline/jline3/4.4.3/LICENSE.txt",
             "deps": []
         },
         {
@@ -589,7 +592,10 @@
             "name": "Console",
             "removable": false,
             "deps": [
-                "lib/jline-2.14.6.jar"
+                "lib/jline-reader-4.4.3.jar",
+                "lib/jline-terminal-4.4.3.jar",
+                "lib/jline-terminal-jni-4.4.3.jar",
+                "lib/jline-native-4.4.3.jar"
             ]
         },
         {

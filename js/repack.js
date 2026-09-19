@@ -236,7 +236,14 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0 || forceRepack) 
 				    !(elTemp.name.match(/ECLIPSE_.RSA$/)) &&
 				    (elTemp.name != "META-INF/services/java.net.spi.InetAddressResolverProvider") &&
 					(elTemp.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor")) {
-					zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));	
+					// JLine modules contribute different providers under one SPI descriptor.
+                    if (elTemp.name == "META-INF/services/org.jline.terminal.spi.TerminalProvider") {
+                        var providers = af.fromBytes2String(zipTemp.getFile(elTemp.name));
+                        if (isDef(zipNew.list()[elTemp.name])) providers = af.fromBytes2String(zipNew.getFile(elTemp.name)) + "\n" + providers;
+                        zipNew.putFile(elTemp.name, af.fromString2Bytes(providers));
+                    } else {
+                        zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));
+                    }
 				}
 			}
 			zipTemp.close();

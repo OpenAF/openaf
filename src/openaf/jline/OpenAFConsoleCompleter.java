@@ -29,16 +29,16 @@ public class OpenAFConsoleCompleter extends ScriptableObject implements Complete
 		int ret = -1;
 		
 		Context cx = (Context) AFCmdBase.jse.enterContext();
-		if (func != null) {
-			Object _obj = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),  new Object[] { buffer, cursor, candidates });
-			if (_obj instanceof Integer) {
-                           ret = (int) _obj;
-                        } else {
-			   ret = (Double.valueOf((double) func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),  new Object[] { buffer, cursor, candidates }))).intValue();
-			}
-		}
-		AFCmdBase.jse.exitContext();
-		
+        try {
+            if (func != null) {
+                Object result = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                    cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                    new Object[] { buffer, cursor, candidates });
+                if (result instanceof Number) ret = ((Number) result).intValue();
+            }
+        } finally {
+            AFCmdBase.jse.exitContext();
+        }
 		return ret;
 	}
 

@@ -1,0 +1,26 @@
+include:
+- oJobTest.yaml
+jobs:
+- name: Console::Init
+  exec: args.tests = require("autoTestAll.Console.js");
+- name: Console::legacy history
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLegacyHistory;
+- name: Console::completion callback
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testCompletionCallback;
+- name: Console::facade
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testConsoleFacade;
+- name: Console::launcher settings
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLauncherSettings;
+todo:
+- Console::legacy history
+- Console::completion callback
+- Console::facade
+- Console::launcher settings
