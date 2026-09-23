@@ -3611,12 +3611,14 @@ Apache License
 
 -----------------------
 Third-party name      : JLine
-Version               : 2.14.6
+Version               : 4.4.3 (legacy data adapters from 2.14.6)
 Changed from original : Yes
-Location in openaf.jar: lib/jline-2.14.6.jar
+Location in openaf.jar: lib/jline-{reader,terminal,terminal-jni,native}-4.4.3.jar
+Legacy compatibility data classes: src/jline (adapted from JLine 2.14.6; BSD license retained)
 License               : 
 
-Copyright (c) 2002-2016, the original author or authors.
+Copyright (c) 2002-2023, the original author or authors.
+Legacy data adapters: Copyright (c) 2002-2016, the original author or authors.
 All rights reserved.
 
 http://www.opensource.org/licenses/bsd-license.php

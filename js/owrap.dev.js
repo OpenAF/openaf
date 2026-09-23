@@ -127,48 +127,45 @@ OpenWrap.dev.prototype.loadPoolDB = function() {
 
 /**
  * <odoc>
- * <key>ow.dev.loadIgnite(aGridName, aIgnite, secretKey, isClient)</key>
+ * <key>ow.dev.loadIgnite(aGridName, aIgnite, secretKey, isClient, aOptions)</key>
  * Initialises an Apache Ignite grid named aGridName and extends oPromise with two extra methods:\
  * \
  *   thenAny(aFunc, aRejFunc, aGridName) - executes aFunc on any single node in the grid\
  *   thenAll(aFunc, aRejFunc, aGridName) - broadcasts aFunc to all nodes in the grid\
  * \
  * Optionally an already-created Ignite instance can be supplied via aIgnite. secretKey and isClient
- * are forwarded to Ignite.start() when creating a new grid instance.
+ * are forwarded to Ignite.start() when creating a new grid instance. Ignite 3 rejects the legacy secretKey;\
+ * use aOptions username/password for authenticated clients. aOptions is passed to Ignite.configure().\
+ * Each compute node must run OpenAF with plugin-Ignite 3.1. Functions cannot capture local variables.\
+ * Results must be JSON-serializable (or undefined). Repeated calls retain previously loaded grids.
  * </odoc>
  */
-OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isClient) {
-	ow.dev.__i = [];
-
-	var initI = () => {
-		plugin("Ignite");
-		var grid = (isUnDef(aGridName)) ? "default" : aGridName;
-		if (isUnDef(aIgnite)) {
-			ow.dev.__i[grid] = new Ignite();
-			ow.dev.__i[grid].start(aGridName, secretKey, isClient);
-		} else {
-			ow.dev.__i[grid] = aIgnite;
-		}
-	};
+OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isClient, aOptions) {
+	if (isUnDef(ow.dev.__i)) ow.dev.__i = Object.create(null);
+	var defaultGrid = isUnDef(aGridName) ? "default" : aGridName;
+	if (isDef(getOPackPath("plugin-Ignite"))) loadExternalJars(getOPackPath("plugin-Ignite"));
+	plugin("Ignite");
+	if (isUnDef(aIgnite) && isUnDef(ow.dev.__i[defaultGrid])) {
+		aIgnite = new Ignite();
+		if (isDef(aOptions)) aIgnite.configure(aOptions);
+		aIgnite.start(aGridName, secretKey, isClient === true);
+	}
+	if (isDef(aIgnite)) ow.dev.__i[defaultGrid] = aIgnite;
 
 	oPromise.prototype.thenAny = function(aFunc, aRejFunc, aGridName) {
-		if (isUnDef(ow.dev.__i)) initI();
-		return this.then(() => {
-			var grid = (isUnDef(aGridName)) ? "default" : aGridName;
-			return ow.dev.__i[grid].call(ow.dev.__i[grid].getIgnite(), aFunc.toSource().replace(/[^{]*{([\s\S]*)}[^}]*/, "$1").replace(/"/mg, "\\\""));
+		return this.then(function() {
+			var grid = isUnDef(aGridName) ? defaultGrid : aGridName;
+			_$(ow.dev.__i[grid], "Ignite grid " + grid).$_();
+			return ow.dev.__i[grid].call(ow.dev.__i[grid].getIgnite(), "return (" + aFunc.toString() + ")();");
 		}, aRejFunc);
 	};
-
-
 	oPromise.prototype.thenAll = function(aFunc, aRejFunc, aGridName) {
-		if (isUnDef(ow.dev.__i)) initI();
-		return this.then(() => {
-			var grid = (isUnDef(aGridName)) ? "default" : aGridName;
-			return ow.dev.__i[grid].broadcast(ow.dev.__i[grid].getIgnite(), aFunc.toSource().replace(/[^{]*{([\s\S]*)}[^}]*/, "$1").replace(/"/mg, "\\\""));
+		return this.then(function() {
+			var grid = isUnDef(aGridName) ? defaultGrid : aGridName;
+			_$(ow.dev.__i[grid], "Ignite grid " + grid).$_();
+			return ow.dev.__i[grid].broadcast(ow.dev.__i[grid].getIgnite(), "return (" + aFunc.toString() + ")();");
 		}, aRejFunc);
 	};
-
-	initI();
 };
 
 /**

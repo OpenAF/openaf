@@ -4,7 +4,8 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 
 ## Getting Started
 - getting-started.md – Install, hello world, first oJob, and where to go next
-- cli.md – `openaf`/`oaf` command-line flags and generated wrapper scripts (`ojob`, `opack`, `oafp`, `pyoaf`, …)
+- cli.md – `openaf`/`oaf` command-line flags and generated wrapper scripts (`ojob`, `opack`, `oafp`, `pyoaf`, …), shebang scripts (`--sb`), and the update process
+- console.md – Interactive console (`oafc`/`openaf-console`): built-in commands, aliases, profile & history files
 
 ## Core
 - openaf.md – Core OpenAF runtime helpers & APIs (`$$`, `_$`, `$from`, `$path`, channels, etc.)

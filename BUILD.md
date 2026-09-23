@@ -32,6 +32,12 @@ This will create two main files:
 * openaf.jar
 * openaf.jar.orig
 
+In an installed OpenAF directory, run `./oaf --repack` after replacing the JAR or
+changing the JDK to refresh the `.shared.oaf` archive used by generated launchers.
+Repacking trains and validates archive coverage while retaining the existing
+class path. See [Shared archive coverage](docs/cds.md) for fallback behavior and
+verification commands.
+
 ### Testing
 
 To test the project, you can use the following command:

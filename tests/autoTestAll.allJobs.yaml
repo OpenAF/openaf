@@ -19,8 +19,12 @@ include:
 - autoTestAll.JMX.yaml
 - autoTestAll.ZIP.yaml
 - autoTestAll.Compile.yaml
+- autoTestAll.Console.yaml
+- autoTestAll.CDS.yaml
 - autoTestAll.Sec.yaml
 - autoTestAll.oJob.yaml
 - autoTestAll.MCP.yaml
 - autoTestAll.TOON.yaml
 # - autoTestAll.SNMP.yaml   // Test servers don't work
+
+- autoTestAll.Instrumentation.yaml

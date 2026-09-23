@@ -404,6 +404,7 @@ try {
 		"ow.oJob": OPENAF_BUILD_HOME + "/js/owrap.oJob.js",
 		"ow.sec": OPENAF_BUILD_HOME + "/js/owrap.sec.js",
 		"ow.metrics": OPENAF_BUILD_HOME + "/js/owrap.metrics.js",
+        "ow.instrumentation": OPENAF_BUILD_HOME + "/js/owrap.instrumentation.js",
 		"ow.python": OPENAF_BUILD_HOME + "/js/owrap.python.js",
 		"ow.debug": OPENAF_BUILD_HOME + "/js/owrap.debug.js",
 		"ow.obook": OPENAF_BUILD_HOME + "/js/owrap.oBook.js",

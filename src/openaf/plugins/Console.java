@@ -8,8 +8,6 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
-import biz.source_code.utils.RawConsoleInput;
-
 /**
  * Core Console plugin
  * OpenAF plugin to provide console features (based on jline)
@@ -121,8 +119,7 @@ public class Console extends ScriptableObject {
 	 */
 	@JSFunction
 	public int readCharNB() throws IOException {
-		RawConsoleInput.resetConsoleMode();
-		return RawConsoleInput.read(false);
+		return cr.readCharacter(false);
 	}
 	
 	/**
@@ -134,8 +131,7 @@ public class Console extends ScriptableObject {
 	 */
 	@JSFunction
 	public int readCharB() throws IOException {
-		RawConsoleInput.resetConsoleMode();
-		return RawConsoleInput.read(true);
+		return cr.readCharacter(true);
 	}
 	/**
 	 * <odoc>

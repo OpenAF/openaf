@@ -1,0 +1,13 @@
+include:
+- oJobTest.yaml
+jobs:
+- name: Instrumentation::Isolated regression
+  to: oJob Test
+  exec: |
+    args.func = function() {
+      var code = 'var tests=require("autoTestAll.Instrumentation.js"),failed=0;Object.keys(tests).forEach(function(k){try{tests[k]();print("PASS "+k);}catch(e){failed++;printErr("FAIL "+k+": "+e);}});exit(failed?1:0);';
+      var result = $sh([String(java.lang.System.getProperty("java.home")) + "/bin/java", "-jar", getOpenAFJar(), "-c", code]).get(0);
+      ow.test.assert(result.exitcode, 0, "Instrumentation subprocess: " + result.stdout + " " + result.stderr);
+    };
+todo:
+- Instrumentation::Isolated regression

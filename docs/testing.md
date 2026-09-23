@@ -217,6 +217,16 @@ cat autoTestAll.results.json
 # {"pass":194,"fail":0,"count":194,"asserts":615}
 ```
 
+### Run focused object-pool tests
+
+For a focused object-pool check against the built JAR, run from the repository root:
+
+```bash
+java -jar openaf.jar -c 'ow.loadTest(); var tests = require("tests/autoTestAll.Obj.js"); Object.keys(tests).filter(function(name) { return name.indexOf("testObjPool") == 0; }).forEach(function(name) { tests[name](); print("PASS " + name); });'
+```
+
+These tests cover resource reuse, maximum capacity, bounded batch growth, factory failures, and stopping pools with or without a close callback. They also run through the main orchestrator.
+
 ### Using oafTest.sh (mirrors CI exactly)
 
 From the repository root:
