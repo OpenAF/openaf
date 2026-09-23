@@ -236,7 +236,14 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0 || forceRepack) 
 				    !(elTemp.name.match(/ECLIPSE_.RSA$/)) &&
 				    (elTemp.name != "META-INF/services/java.net.spi.InetAddressResolverProvider") &&
 					(elTemp.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor")) {
-					zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));	
+					// JLine modules contribute different providers under one SPI descriptor.
+                    if (elTemp.name == "META-INF/services/org.jline.terminal.spi.TerminalProvider") {
+                        var providers = af.fromBytes2String(zipTemp.getFile(elTemp.name));
+                        if (isDef(zipNew.list()[elTemp.name])) providers = af.fromBytes2String(zipNew.getFile(elTemp.name)) + "\n" + providers;
+                        zipNew.putFile(elTemp.name, af.fromString2Bytes(providers));
+                    } else {
+                        zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));
+                    }
 				}
 			}
 			zipTemp.close();
@@ -303,8 +310,7 @@ if (createTmp) {
 				"if errorlevel 1 goto wait",
 				"del %SRC% >nul 2>&1",
 				//"if errorlevel 1 goto wait",
-				"set OAF_JARGS=\"-Xshare:dump -XX:SharedArchiveFile=%DIR%.shared.oaf %OAF_JARGS%\"",
-				"\"%DIR%oaf.bat\" -c \"ow.loadOJob();loadOAFP();loadTOON();loadJSYAML();loadPy();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();__initializeCon();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})\"",
+				"call \"%DIR%oaf.bat\" -c \"require(getOpenAFJar() + '::js/repackCDS.js').create()\"",
 				"del /F /Q \"%~f0\" >nul 2>&1"
 			].join("\r\n")
 			io.writeFileString(_updBat, _bat)
@@ -325,18 +331,10 @@ if (createTmp) {
 
 // Create archived classes (CDS)
 log("(re)Creating OpenAF shared archive...");
-//var _res = $sh([ow.format.getJavaHome() + "/bin/java", "-XX:ArchiveClassesAtExit=" + getOpenAFPath() + ".shared.oaf", "-jar", getOpenAFJar(), "-c", "ow.loadOJob();loadOAFP();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();__initializeCon();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})"])
-//           .get(0)
-var _jaorig = getEnv("OAF_JARGS")
-if (isUnDef(_jaorig)) _jaorig = ""
-var os = String(java.lang.System.getProperty("os.name"))
-var isWindows = os.toLowerCase().indexOf("windows") >= 0
-
-var _res = $sh([getOpenAFPath() + "oaf" + (isWindows ? ".bat" : ""), "-c", "ow.loadOJob();loadOAFP();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();__initializeCon();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})"])
-           .envs({ OAF_JARGS: "-Xshare:dump -XX:SharedArchiveFile=" + getOpenAFPath() + ".shared.oaf " + _jaorig }, true)
-		   .get(0)
-if (_res.exitcode != 0) {
-	logErr("Error creating OpenAF shared archive: " + _res.stderr);
+try {
+	require(getOpenAFJar() + "::js/repackCDS.js").create();
+} catch(e) {
+	logErr("Error creating OpenAF shared archive: " + e);
 }
 
 log("Done repacking OpenAF.jar");

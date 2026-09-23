@@ -762,7 +762,7 @@ OpenWrap.obj.prototype.pool = {
 				var isThereRoom = false;
 
 				syncFn(function() {
-					if ((parent.__max > 0 && parent.__max <= (parent.__currentSize + 1)) && parent.__currentFree < 1) {
+					if ((parent.__max > 0 && parent.__max <= parent.__currentSize) && parent.__currentFree < 1) {
 						isThereRoom = false;
 					} else {
 						isThereRoom = true;
@@ -818,7 +818,7 @@ OpenWrap.obj.prototype.pool = {
 						if (parent.__max < 1 || parent.__currentSize <= parent.__max) {
 							parent.__currentSize++;
 							parent.__pool.push({
-								"inUse": inUse,
+								"inUse": isDef(inUse) ? inUse : false,
 								"obj": aObject
 							});
 							if (!inUse) parent.__currentFree++;
@@ -907,17 +907,26 @@ OpenWrap.obj.prototype.pool = {
 
 				inUse = (isUnDef(inUse)) ? false : inUse;
 
-				if (isDef(parent.__factory)) {
+				if (isDef(parent.__factory) && parent.__checkLimits()) {
 					obj = parent.__factory();
-					if (parent.__inc > 1) {
-						for(var i = 0; i < parent.__inc - 1; i++) {
-							parent.add(parent.__factory());
+					if (!parent.add(obj, inUse)) {
+						try { if (isDef(parent.__close)) parent.__close(obj); } catch(e) {}
+						return undefined;
+					}
+					for(var i = 1; i < parent.__inc && parent.__checkLimits(); i++) {
+						var extra;
+						try {
+							extra = parent.__factory();
+						} catch(e) {
+							// Keep the requested object tracked and available if batch growth fails.
+							if (inUse) parent.checkIn(obj);
+							throw e;
+						}
+						if (!parent.add(extra, false)) {
+							try { if (isDef(parent.__close)) parent.__close(extra); } catch(e) {}
+							break;
 						}
 					}
-					if (parent.add(obj, inUse))
-						return obj;
-					else
-						return undefined;
 				}
 
 				return obj;
@@ -977,7 +986,7 @@ OpenWrap.obj.prototype.pool = {
 			 * </odoc>
 			 */
 			start: function() {
-				for(var i = 0; i < this.__min; i++) {
+				while(this.__currentSize < this.__min && this.__checkLimits() && isDef(this.__factory)) {
 					this.__createObj();
 				}
 				
@@ -999,10 +1008,10 @@ OpenWrap.obj.prototype.pool = {
 						delete this.__pool[i];
 						this.__currentSize--;
 					}
-					this.__currentFree = 0;
-					this.__currentSize = 0;
-					this.__pool = [];
 				}
+				this.__currentFree = 0;
+				this.__currentSize = 0;
+				this.__pool = [];
 			},
 			
 			/**
@@ -1928,7 +1937,7 @@ OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) {
  * Returns a map with the response code, the content type and the response.
  * </odoc>
  */
-OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
+OpenWrap.obj.prototype.http.prototype.__exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
 	aURL = _$(aURL, "aURL").isString().$_()
 	aIn  = _$(aIn, "aIn").default(__)
 	aRequestMap = _$(aRequestMap, "aRequestMap").isMap().default({})
@@ -2029,6 +2038,11 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 
 	return this.outputObj
 }
+OpenWrap.obj.prototype.http.prototype.exec = function() {
+  if (ow.instrumentation && ow.instrumentation.isEnabled("http")) return ow.instrumentation.httpClient(this, arguments, this.__exec);
+  return this.__exec.apply(this, arguments);
+};
+
 /**
  * <odoc>
  * <key>ow.obj.http.get(aURL, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) : Object</key>
@@ -2286,7 +2300,7 @@ OpenWrap.obj.prototype.http0.prototype.__handleConfig = function(aH) {
 	return aH;
 };
 
-OpenWrap.obj.prototype.http0.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http0.prototype.__exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	var r, canHaveIn = false;
 
 	if (isUnDef(aRequestType)) aRequestType = "GET";
@@ -2421,7 +2435,12 @@ OpenWrap.obj.prototype.http0.prototype.exec = function(aUrl, aRequestType, aIn, 
 		}
 	}
 	return this.outputObj;
+}
+OpenWrap.obj.prototype.http0.prototype.exec = function() {
+  if (ow.instrumentation && ow.instrumentation.isEnabled("http")) return ow.instrumentation.httpClient(this, arguments, this.__exec);
+  return this.__exec.apply(this, arguments);
 };
+;
 
 OpenWrap.obj.prototype.http0.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream);

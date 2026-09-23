@@ -1798,7 +1798,7 @@ function __opack_script(args, isDaemon, isJob) {
 		s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
 		s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
 		s = s + "\n";
-		s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
+		s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -jar $OPENAF_DIR " + options + "\n";
 		s = s + "EXITCODE=$?\n";
 		s = s + "stty icanon echo 2>/dev/null\n";
 		s = s + "exit $EXITCODE\n";

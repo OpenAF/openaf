@@ -50,7 +50,7 @@ var extraArgsForJava11 = " --illegal-access=permit "
 var extraArgsForJava12 = extraArgsForJava11 + " ";
 //var extraArgsForJava17 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
 //var extraArgsForJava17 = " -Xshare:off "
-var extraArgsForJava17 = " -Djline.shutdownhook=false -XX:SharedArchiveFile=" + (ow.format.isWindows() ? "%DIR%" : "$DIR") + "/.shared.oaf "
+var extraArgsForJava17 = " -XX:SharedArchiveFile=" + (ow.format.isWindows() ? "%DIR%" : "$DIR") + "/.shared.oaf "
 var extraArgsForJava24 = " --enable-native-access=ALL-UNNAMED "
 var extraArgsForJava25 = " -XX:+UseCompactObjectHeaders "
 var DEFAULT_SH = "/bin/sh";
@@ -216,8 +216,8 @@ function generateWinConsoleBat() {
   s = s + "set OAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
   s = s + "chcp 65001 > NUL\n";
-  //s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --console %*";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --console %*";
+  //s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --console %*";
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --console %*";
   return s;
 }
 
@@ -273,7 +273,7 @@ function generateUnixPyScript() {
   s += "done\n";
   s += "export OAF_PY_ARGC=$i\n";
   s += "\n";
-  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR --py -e \"$SCRIPT\"\n";
+  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar $OAF_DIR --py -e \"$SCRIPT\"\n";
   return s;
 }
 
@@ -346,12 +346,12 @@ fi
 `
   }
   s += "\n";
-  //s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + options + "\n";
-  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + options + "\n";
+  //s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -jar $OAF_DIR " + options + "\n";
+  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar $OAF_DIR " + options + "\n";
   if (isDef(extraOptions) && isArray(extraOptions)) {
     extraOptions.forEach(r => {
-      //s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + r + "\n";
-      s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + r + "\n";
+      //s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -jar $OAF_DIR " + r + "\n";
+      s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar $OAF_DIR " + r + "\n";
     });
   }
   s += "EXITCODE=$?\n";

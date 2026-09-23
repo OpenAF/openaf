@@ -550,6 +550,17 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		}
 	}
 
+	if (isDef(ojob.instrumentation)) {
+    var __ins = ow.loadInstrumentation();
+    if (ojob.instrumentation === true) __ins.enable();
+    else if (ojob.instrumentation === false) __ins.disable();
+    else {
+      __ins.configure(ojob.instrumentation);
+      if (ojob.instrumentation.enabled === true) __ins.enable();
+      else if (ojob.instrumentation.enabled === false) __ins.disable();
+    }
+  }
+
 	if (isDef(this.__ojob.metrics)) {
 		ow.loadMetrics();
 		
@@ -2319,6 +2330,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 	var t = new Threads();
 	this.mt = new Threads();
+	var __instrumentationContext = ow.instrumentation && ow.instrumentation.isEnabled("jobs") ? ow.instrumentation.captureContext() : __;
 
 	//var parent = this;
 	var altId = (isDef(aId) ? aId : "");
@@ -2432,7 +2444,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 								job.typeArgs = merge(job.typeArgs, todo.typeArgs)
 							}
 
-							var res = parent.runJob(job, argss, aId, !(parent.__ojob.async));
+							var res = ow.instrumentation && ow.instrumentation.isEnabled("jobs") ? ow.instrumentation.withContext(__instrumentationContext, function() { return parent.runJob(job, argss, aId, !(parent.__ojob.async)); }) : parent.runJob(job, argss, aId, !(parent.__ojob.async));
 							if (res != false) {
 								parent.getTodoCh().unset({ 
 									"ojobId": todo.ojobId,
@@ -2667,7 +2679,13 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 		}
 	}
 
-	function _run(aExec, args, job, id) {
+  function _run(aExec, args, job, id) {
+    var ins = ow.instrumentation;
+    if (!ins || !ins.isEnabled("jobs")) return _runBody(aExec, args, job, id);
+    var execute = function() { return ins.withSpan("ojob " + job.name, { attributes: { "ojob.name": job.name, "ojob.type": job.type || "simple" } }, function() { return _runBody(aExec, args, job, id); }); };
+    return ["periodic", "subscribe", "shutdown"].indexOf(job.type) >= 0 ? ins.withContext(undefined, execute) : execute();
+  }
+	function _runBody(aExec, args, job, id) {
 		if (isDef(aJob.typeArgs.noTemplateArgs)) noTemplateArgs = aJob.typeArgs.noTemplateArgs; else noTemplateArgs = !parent.__ojob.templateArgs
 		
 		// Find templates on args	
@@ -2685,6 +2703,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 		}
 
 		var f = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
+    if (ow.instrumentation && ow.instrumentation.isEnabled("jobs") && isDef(args.__oJobRepeat)) {
+      var __repeatFn = f;
+      f = function() { var __args = arguments; return ow.instrumentation.withSpan("ojob " + job.name + " repeat", function() { return __repeatFn.apply(null, __args); }); };
+    }
 		var fe, fint;
 		if (isDef(parent.__ojob.catch)) fe = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + parent.__ojob.catch + "})(); return { args: args, res: _res };");
 		if (isDef(aJob.catch)) fint = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + aJob.catch + "})(); return { args: args, res: _res };");
@@ -2876,7 +2898,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					if (isUnDef(args.__oJobRepeat)) args = this.__mergeArgs(args, aJob.args);
 
 					var f = isDef(aJob.typeArgs.file) ? aJob.typeArgs.file : aJob.typeArgs.url;
-					parent.runFile(f, args, f, true);
+					if (ow.instrumentation && ow.instrumentation.isEnabled("jobs")) ow.instrumentation.withSpan("ojob " + aJob.name, function() { return parent.runFile(f, args, f, true); }); else parent.runFile(f, args, f, true);
 					this.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 
 					//return true;

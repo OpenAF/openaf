@@ -1,0 +1,32 @@
+include:
+  - oJobTest.yaml
+
+jobs:
+  - name: CDS::Init
+    exec: args.tests = require("autoTestAll.CDS.js");
+
+  - name: CDS::Preserve launcher arguments
+    from: CDS::Init
+    to: oJob Test
+    exec: args.func = args.tests.testVMArguments;
+
+  - name: CDS::Platform coverage fallback
+    from: CDS::Init
+    to: oJob Test
+    exec: args.func = args.tests.testPlatformClassList;
+
+  - name: CDS::Training profile isolation
+    from: CDS::Init
+    to: oJob Test
+    exec: args.func = args.tests.testTrainingProfiles;
+
+  - name: CDS::Failed probe preserves archive
+    from: CDS::Init
+    to: oJob Test
+    exec: args.func = args.tests.testFailedProbePreservesArchive;
+
+todo:
+  - CDS::Preserve launcher arguments
+  - CDS::Platform coverage fallback
+  - CDS::Training profile isolation
+  - CDS::Failed probe preserves archive
