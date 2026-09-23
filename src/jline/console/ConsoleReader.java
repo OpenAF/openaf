@@ -23,6 +23,7 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Reference;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Attributes;
+import org.jline.utils.AttributedString;
 
 /** Compatibility surface for OpenAF scripts previously using JLine 2. */
 public class ConsoleReader implements Closeable {
@@ -95,7 +96,29 @@ public class ConsoleReader implements Closeable {
     }
     public boolean atEnd() { return lineReader().getBuffer().cursor() == lineReader().getBuffer().length(); }
     public void printColumns(Collection<? extends CharSequence> values) {
-        lineReader().printAbove(String.join("    ", values));
+        if (values == null || values.isEmpty()) return;
+        int columnWidth = 0;
+        for (CharSequence value : values) {
+            columnWidth = Math.max(columnWidth,
+                AttributedString.fromAnsi(value.toString(), terminal.unwrap()).columnLength(terminal.unwrap()));
+        }
+        columnWidth += 3;
+
+        int terminalWidth = terminal.getWidth();
+        int lineWidth = 0;
+        StringBuilder output = new StringBuilder();
+        for (CharSequence value : values) {
+            if (lineWidth > 0 && lineWidth + columnWidth > terminalWidth) {
+                output.append('\n');
+                lineWidth = 0;
+            }
+            String text = value.toString();
+            output.append(text);
+            int displayWidth = AttributedString.fromAnsi(text, terminal.unwrap()).columnLength(terminal.unwrap());
+            output.append(" ".repeat(Math.max(0, columnWidth - displayWidth)));
+            lineWidth += columnWidth;
+        }
+        lineReader().printAbove(output.toString());
     }
     public String readLine() throws IOException { return readLine("", null); }
     public String readLine(String prompt) throws IOException { return readLine(prompt, null); }

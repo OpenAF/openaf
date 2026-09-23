@@ -16,6 +16,22 @@ public class ConsoleCompatibilityTest {
             "test", "xterm", new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)),
             new ByteArrayOutputStream(), StandardCharsets.UTF_8)));
     }
+    private static void completionColumns() throws Exception {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        org.jline.terminal.impl.DumbTerminal terminal = new org.jline.terminal.impl.DumbTerminal(
+            "test", "xterm", new ByteArrayInputStream("h\t\n".getBytes(StandardCharsets.UTF_8)),
+            output, StandardCharsets.UTF_8);
+        terminal.setSize(new org.jline.terminal.Size(32, 10));
+        try (ConsoleReader c = new ConsoleReader(new jline.Terminal(terminal))) {
+            ((CandidateListCompletionHandler)c.getCompletionHandler()).setPrintSpaceAfterFullCompletion(false);
+            c.addCompleter(new StringsCompleter("h", "historylong", "help", "hi"));
+            String line = c.readLine("> ");
+            check("h".equals(line), "Multiple-candidate completion changed the input to " + line);
+        }
+        String actual = output.toString(StandardCharsets.UTF_8).replace("\r\n", "\n");
+        check(actual.contains("h             help          \nhi            historylong   "),
+            "Completion candidates must use aligned, terminal-width-aware columns; got " + actual.replace("\n", "\\n"));
+    }
     private static void completion(String initial, String keys, String expected, Completer completer) throws Exception {
         try (ConsoleReader c = console(keys + "\n")) {
             c.setExpandEvents(false);
@@ -38,6 +54,7 @@ public class ConsoleCompatibilityTest {
         completion("obj.naTAIL", "\033[D\033[D\033[D\033[D\t", "obj.nameTAIL", (b,p,out) -> { out.add("name"); return 4; });
         completion("😀.na", "\t", "😀.name", (b,p,out) -> { check(p == 5, "UTF-16 callback cursor"); out.add("name"); return 3; });
         completion("he", "\t", "hel", new StringsCompleter("help", "hello"));
+        completionColumns();
         try (ConsoleReader c = console("hel\t\n")) {
             c.addCompleter(new StringsCompleter("help"));
             check("help ".equals(c.readLine()), "Default completion adds a space");
