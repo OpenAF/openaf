@@ -295,22 +295,22 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>org.jline</groupId>
       <artifactId>jline-reader</artifactId>
-      <version>4.4.5</version>
+      <version>4.4.6</version>
     </dependency>
     <dependency>
       <groupId>org.jline</groupId>
       <artifactId>jline-terminal</artifactId>
-      <version>4.4.5</version>
+      <version>4.4.6</version>
     </dependency>
     <dependency>
       <groupId>org.jline</groupId>
       <artifactId>jline-terminal-jni</artifactId>
-      <version>4.4.5</version>
+      <version>4.4.6</version>
     </dependency>
     <dependency>
       <groupId>org.jline</groupId>
       <artifactId>jline-native</artifactId>
-      <version>4.4.5</version>
+      <version>4.4.6</version>
     </dependency>
     <dependency>
       <groupId>net.java.dev.jna</groupId>
@@ -385,7 +385,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.19</version>
+      <version>2.0.20</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
