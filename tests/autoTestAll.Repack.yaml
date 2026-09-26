@@ -1,0 +1,20 @@
+include:
+  - oJobTest.yaml
+
+jobs:
+  - name: Repack::Init
+    exec: args.tests = require("autoTestAll.Repack.js");
+
+  - name: Repack::Open JAR survives replacement
+    from: Repack::Init
+    to: oJob Test
+    exec: args.func = args.tests.testOpenJar;
+
+  - name: Repack::Failed replacement preserves JAR
+    from: Repack::Init
+    to: oJob Test
+    exec: args.func = args.tests.testFailedReplacement;
+
+todo:
+  - Repack::Open JAR survives replacement
+  - Repack::Failed replacement preserves JAR

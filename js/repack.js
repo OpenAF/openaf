@@ -95,15 +95,10 @@ if (irj && isUnDef(getEnv("__OAF_MAINCLASS"))) {
 	if (str.match(/Main-Class: openaf.Launcher/)) {
 		var _newClass = (isDef(mainClass)) ? mainClass : "openaf.AFCmdOS"
 		log("Replacing main class with " + _newClass + "...")
-		str = str.replace(/Main-Class: openaf.Launcher/g, "Main-Class: " + _newClass)
-		// On Windows the JVM holds the JAR open, so defer to repack + swap
-		if (os.toLowerCase().indexOf("windows") >= 0) {
-			mainClass = _newClass
-			forceRepack = true
-			log("Will update MANIFEST during repack (Windows lock).")
-		} else {
-			_zip.streamPutFile(classPath, "META-INF/MANIFEST.MF", af.fromString2Bytes(str))
-		}
+		// Stage manifest changes too: never rewrite the running JVM's JAR.
+		mainClass = _newClass
+		forceRepack = true
+		log("Will update MANIFEST during repack.")
 	}
 }
 
@@ -324,8 +319,7 @@ if (createTmp) {
 			$err(e)
 		}
 	} else {
-		io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(_tmpPath))
-		io.rm(_tmpPath)
+		require(getOpenAFJar() + "::js/repackFile.js").replace(_tmpPath, classPath)
 	}
 }
 

@@ -38,6 +38,12 @@ Repacking trains and validates archive coverage while retaining the existing
 class path. See [Shared archive coverage](docs/cds.md) for fallback behavior and
 verification commands.
 
+On Linux and macOS, repacking publishes the completed JAR with an atomic rename
+so the running JVM can continue loading classes from its original open file.
+The temporary JAR and destination must be on the same filesystem; an unsupported
+atomic move fails without overwriting the running JAR. Installation symlinks and
+JAR permissions are preserved. Windows uses its detached updater after JVM exit.
+
 ### Testing
 
 To test the project, you can use the following command:
