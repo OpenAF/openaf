@@ -1,0 +1,20 @@
+help:
+  text: Print a greeting using a validated argument.
+  expects:
+  - name: name
+    desc: Name to greet; defaults to OpenAF.
+
+ojob:
+  sequential: true
+  logToConsole: false
+
+jobs:
+- name: Greet
+  check:
+    in:
+      name: isString.default("OpenAF")
+  exec: |
+    print("Hello, " + args.name + "!");
+
+todo:
+- Greet

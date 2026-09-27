@@ -1,0 +1,13 @@
+ojob:
+  sequential: true
+  logToConsole: false
+
+todo:
+- name: ojob set
+  args:
+    __key: skill.greeting
+    __path: greetingData
+    greetingData:
+      name: OpenAF
+- (print): "Hello {{name}}"
+  ((key)): skill.greeting
