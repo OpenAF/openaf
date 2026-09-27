@@ -1863,6 +1863,7 @@ OpenWrap.server.prototype.mcp = {
  * The initData should contain the server information and capabilities. The fnsMeta should contain metadata about the functions available, such as their names and descriptions. The fns should contain the actual functions that can be called by the client.
  * The function will listen for incoming MCP requests on standard input and respond accordingly.\
  * \
+ * opts.rawToolResults (default false) preserves MCP content/structuredContent/isError envelopes returned by tools.\
  * opts is an optional map: { modern: false } (default). When modern is true this also serves the 2026-07-28\
  * stateless/per-request MCP protocol era (per-request _meta protocol version, server/discover, resultType,\
  * ttlMs/cacheScope on list results, UnsupportedProtocolVersionError) side-by-side with the legacy\
@@ -1997,6 +1998,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
                 if (tool) {
                     try {
                         var result = tool(params.input || params.arguments || {})
+                        if (opts.rawToolResults === true && isMap(result) && isArray(result.content)) return _wrap(result)
                         return _wrap({
                             content: [{
                                 type: "text",

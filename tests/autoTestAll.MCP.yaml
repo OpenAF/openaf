@@ -1,6 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
+   - autoTestAll.MCPOAuth.yaml
    - oJobTest.yaml
 
 jobs:

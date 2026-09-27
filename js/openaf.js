@@ -9547,7 +9547,12 @@ const $jsonrpc = function (aOptions) {
  *   - tokenType (string): Authorization scheme prefix (default: "Bearer")\
  *   - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow\
  *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata\
+ *   - interactive (boolean): false prohibits browser login and code prompts; omitted preserves existing behavior\
+ *   - callback (boolean): opt-in loopback listener at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000\
+ *   - tokenStore (map): opt-in {type: "sec", profile: "default"}; optional repo (default mcp-oauth2), bucket, key, file, lockSecret, mainSecret, lockTimeoutMs (60000). Or a synchronous custom load/save/clear/withLock store.\
+ *   - sendResource (boolean): false omits the OAuth resource parameter; default true\
  *   - disableOpenBrowser (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)\
+ * - authenticate() / getAuthStatus() / clearAuth(): authenticate, inspect non-secret status, or clear local tokens\
  * \
  * Type-specific details:\
  * \
@@ -9790,6 +9795,7 @@ const $mcp = function(aOptions) {
 		}
 	}
 	const _getOAuthResource = () => {
+		if (aOptions.auth.sendResource === false) return __
 		if (isDef(_auth.resource)) return _auth.resource
 		_auth.resource = _$(aOptions.auth.resource, "aOptions.auth.resource").isString().default(_canonicalizeResourceURI(aOptions.url))
 		return _auth.resource
@@ -9862,103 +9868,362 @@ const $mcp = function(aOptions) {
 		}
 	}
 
-	const _getAuthorizationCode = (_clientId, _scope, _audience, _resource) => {
-		if (isDef(_auth.authorizationCode)) return _auth.authorizationCode
-		var _authURL = _getResolvedAuthURL()
-		_$( _authURL, "authorization_endpoint").isString().$_()
-		var _redirectURI = _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_()
-		var _state = _$(aOptions.auth.state, "aOptions.auth.state").isString().default(genUUID())
-		var _authParams = {
-			response_type: "code",
-			client_id: _clientId,
-			redirect_uri: _redirectURI,
-			state: _state
-		}
-		if (isDef(_scope)) _authParams.scope = _scope
-		if (isDef(_audience)) _authParams.audience = _audience
-		if (isDef(_resource)) _authParams.resource = _resource
-		_authParams.code_challenge = _getPKCEChallenge()
-		_authParams.code_challenge_method = "S256"
-		if (isMap(aOptions.auth.extraAuthParams)) _authParams = merge(_authParams, aOptions.auth.extraAuthParams)
-		var _query = Object.keys(_authParams).map(k => _urlEnc(k) + "=" + _urlEnc(_authParams[k])).join("&")
-		var _authFullURL = _authURL + (_authURL.indexOf("?") >= 0 ? "&" : "?") + _query
-		_openAuthBrowser(_authFullURL)
-		if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL)
-		if (_$(aOptions.auth.promptForCode, "aOptions.auth.promptForCode").isBoolean().default(true)) {
-			_auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "))
-		} else {
-			throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.")
-		}
-		return _auth.authorizationCode
-	}
+    var _oauthPending, _authStore, _authStoreKey, _authStoreHasRecord, _authStoreFailed = false;
+    const _authLockName = "mcp-oauth-" + genUUID();
+    const _authFingerprint = () => {
+        // Resolve both endpoints before selecting the entry: login must not change its identity.
+        _getResolvedTokenURL();
+        if (String(aOptions.auth.grantType || "client_credentials").toLowerCase() == "authorization_code") _getResolvedAuthURL();
+        var scope = String(aOptions.auth.scope || "").split(/\s+/).filter(v => v.length > 0).sort();
+        return sha256(stringify(sortMapKeys({
+            version: 1, url: aOptions.url, clientId: aOptions.auth.clientId,
+            tokenURL: _getResolvedTokenURL(), authURL: aOptions.auth.authURL || _auth.discoveredAuthURL,
+            issuer: _auth.authorizationServerIssuer || aOptions.auth.authorizationServer || aOptions.auth.authorizationServerIssuer,
+            scope: scope.filter((v, i) => i == 0 || v != scope[i - 1]),
+            resource: _getOAuthResource(), audience: aOptions.auth.audience, tokenType: aOptions.auth.tokenType,
+            redirectURI: aOptions.auth.redirectURI,
+            grantType: String(aOptions.auth.grantType || "client_credentials").toLowerCase(),
+            profile: aOptions.auth.tokenStore.profile || aOptions.auth.tokenStore.key || "default",
+            extraParams: sha256(stringify(sortMapKeys(aOptions.auth.extraParams || {}, true), __, "")),
+            extraAuthParams: sha256(stringify(sortMapKeys(aOptions.auth.extraAuthParams || {}, true), __, ""))
+        }, true), __, ""));
+    };
+    const _resetAuth = () => {
+        _auth.token = __; _auth.refreshToken = __; _auth.expiresAt = 0;
+        _auth.tokenType = "Bearer"; _auth.authorizationCode = __; _auth.pkceVerifier = __;
+    };
+    const _authStatus = () => ({
+        authenticated: isString(_auth.token) && _auth.expiresAt > now() && !_authStoreFailed,
+        expiresAt: _auth.expiresAt, refreshable: isString(_auth.refreshToken),
+        persistent: isMap(aOptions.auth.tokenStore)
+    });
+    const _deleteAuth = () => {
+        if (isDef(_authStore) && _authStoreHasRecord) {
+            try { _authStore.clear(_authStoreKey); _authStoreHasRecord = false; }
+            catch(e) { _authStoreFailed = true; throw new Error("OAuth credential storage delete failed"); }
+        }
+    };
+    const _saveAuth = () => {
+        if (isDef(_authStore)) {
+            try {
+                _authStore.save(_authStoreKey, {
+                    version: 1, fingerprint: _authFingerprint(), token: _auth.token,
+                    tokenType: _auth.tokenType,
+                    expiresAt: _auth.expiresAt == Number.MAX_SAFE_INTEGER ? null : _auth.expiresAt,
+                    refreshToken: _auth.refreshToken
+                });
+                _authStoreHasRecord = true;
+            } catch(e) {
+                _authStoreFailed = true;
+                throw new Error("OAuth credential storage write failed; clearAuth or recreate the client before retrying");
+            }
+        }
+    };
+    // NIO locks are process-wide; pair them with a JVM-local mutex and bound both waits.
+    // Do not use $flock.tryLock: it can swallow exceptions thrown by its callback.
+    const _withOAuthFileLock = (file, timeout, fn) => {
+        var result, deadline = now() + timeout;
+        var acquired = $lock("mcp-oauth-file-" + file).tryLock(() => {
+            var handle, lock;
+            try {
+                try { handle = new java.io.RandomAccessFile(file, "rw"); }
+                catch(e) { throw new Error("OAuth credential storage lock failed"); }
+                while (isUnDef(lock) || isNull(lock)) {
+                    try { lock = handle.getChannel().tryLock(); }
+                    catch(e) {
+                        if (!(e.javaException instanceof java.nio.channels.OverlappingFileLockException)) {
+                            throw new Error("OAuth credential storage lock failed");
+                        }
+                    }
+                    if (isDef(lock) && !isNull(lock)) break;
+                    if (now() >= deadline) throw new Error("OAuth credential storage lock timed out");
+                    sleep(Math.min(50, Math.max(1, deadline - now())), true);
+                }
+                result = fn();
+            } finally {
+                try { if (isDef(lock) && !isNull(lock)) lock.release(); }
+                finally { if (isDef(handle)) handle.close(); }
+            }
+        }, timeout);
+        if (!acquired) throw new Error("OAuth credential storage lock timed out");
+        return result;
+    };
+    const _createOAuthSecretFile = (file, content) => {
+        var path = new java.io.File(file).toPath();
+        var attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 0);
+        var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix");
+        if (posix) {
+            attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 1);
+            attrs[0] = java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+        }
+        if (!io.fileExists(file)) {
+            java.nio.file.Files.createFile(path, attrs);
+            io.writeFileString(file, content);
+        } else if (posix) {
+            java.nio.file.Files.setPosixFilePermissions(path,
+                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+        }
+    };
+    const _secTokenStore = cfg => {
+        var repo = _$(cfg.repo, "auth.tokenStore.repo").isString().default("mcp-oauth2");
+        if (!/^[a-zA-Z0-9_-]+$/.test(repo) || repo == "system") throw new Error("OAuth tokenStore requires a file-backed SBucket repo name");
+        var file = _$(cfg.file, "auth.tokenStore.file").isString().default(__gHDir() + "/.openaf-sec-" + repo + ".yml");
+        file = String(new java.io.File(file).getCanonicalPath());
+        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000);
+        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive");
+        var sec;
+        return {
+            withLock: (key, fn) => _withOAuthFileLock(file + ".lock", timeout, () => {
+                // A private channel alias avoids closing or reusing the caller's $sec handle.
+                var alias = "mcp-oauth-" + sha256(file), mainSecret = cfg.mainSecret;
+                try {
+                    ow.loadSec();
+                    if (isUnDef(mainSecret)) {
+                        var mainFile = String(new java.io.File(__gHDir() + "/.openaf-sec").getCanonicalPath());
+                        _withOAuthFileLock(mainFile + ".lock", timeout, () => {
+                            try {
+                                _createOAuthSecretFile(mainFile, af.encrypt(sha512(genUUID())));
+                                mainSecret = io.readFileString(mainFile);
+                                if (mainSecret.length == 0) throw new Error("Empty key file");
+                            } catch(e) { throw new Error("OAuth credential storage key initialization failed"); }
+                        });
+                    }
+                    try {
+                        _createOAuthSecretFile(file, "{}\n");
+                        if (!isMap(io.readFileYAML(file))) throw new Error("Invalid repository");
+                        sec = $sec(alias, cfg.bucket, cfg.lockSecret, mainSecret, file);
+                    } catch(e) { throw new Error("OAuth credential storage read failed"); }
+                    return fn();
+                } finally {
+                    if (isDef(sec)) { sec.close(); sec = __; }
+                }
+            }),
+            load: key => {
+                // Determine absence structurally; never interpret a decryption error as a miss.
+                var bucket = isString(cfg.bucket) ? cfg.bucket : "default";
+                var raw = io.readFileYAML(file);
+                if (!isMap(raw) || Object.keys(raw).some(k => !isMap(raw[k]))) throw new Error("Invalid repository");
+                if (isUnDef(raw[bucket])) return __;
+                if (raw[bucket].sbucket !== bucket || !isString(raw[bucket].v)) throw new Error("Invalid encrypted bucket");
+                return sec.get(key);
+            },
+            save: (key, record) => sec.set(key, record),
+            clear: key => sec.unset(key)
+        };
+    };
+    const _runAuthStore = (fn, clearing) => {
+        var cfg = aOptions.auth.tokenStore;
+        if (isUnDef(cfg) || ["remote", "http", "sse"].indexOf(aOptions.type) < 0) return fn();
+        _$(cfg, "auth.tokenStore").isMap().$_();
+        if (String(aOptions.auth.type).toLowerCase() != "oauth2") throw new Error("OAuth tokenStore requires auth.type=oauth2");
+        if (_authStoreFailed && !clearing) throw new Error("OAuth credential storage failed; clearAuth or recreate the client before retrying");
+        var reserved = ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "refresh_token", "scope", "audience", "resource"];
+        if (isMap(aOptions.auth.extraParams) && reserved.some(k => isDef(aOptions.auth.extraParams[k]))) {
+            throw new Error("OAuth tokenStore does not allow protocol field overrides in extraParams");
+        }
+        if (isDef(cfg.profile)) _$(cfg.profile, "auth.tokenStore.profile").isString().$_();
+        if (isDef(cfg.key)) _$(cfg.key, "auth.tokenStore.key").isString().$_();
+        var fingerprint = _authFingerprint();
+        var key = isString(cfg.key) ? cfg.key : "oauth2-v1-" + fingerprint;
+        var store;
+        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type");
+        if (cfg.type == "sec" || !["load", "save", "clear", "withLock"].some(name => isDef(cfg[name]))) store = _secTokenStore(cfg);
+        else {
+            ["load", "save", "clear", "withLock"].forEach(name => _$(cfg[name], "auth.tokenStore." + name).isFunction().$_());
+            store = cfg;
+        }
+        var entered = 0, active = true, completed = false, callbackError, result;
+        try {
+            store.withLock(key, () => {
+                entered++;
+                if (!active || entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously once");
+                try {
+                    var record;
+                    try { record = store.load(key); }
+                    catch(e) { throw new Error("OAuth credential storage read failed"); }
+                    _authStore = store; _authStoreKey = key; _authStoreHasRecord = isDef(record);
+                    if (!clearing && isDef(record)) {
+                        if (!isMap(record) || record.version !== 1 || record.fingerprint !== fingerprint) {
+                            throw new Error("OAuth credential profile configuration mismatch; use another profile or clearAuth()");
+                        }
+                        if (!isString(record.token) || !record.token.length || !isString(record.tokenType) ||
+                            !(record.expiresAt === null || (isNumber(record.expiresAt) && isFinite(record.expiresAt))) ||
+                            (isDef(record.refreshToken) && !isString(record.refreshToken))) {
+                            throw new Error("OAuth credential profile is invalid");
+                        }
+                        var sameUnknownToken = record.expiresAt === null && _auth.token === record.token && _auth.expiresAt == Number.MAX_SAFE_INTEGER;
+                        _auth.token = record.token; _auth.tokenType = record.tokenType;
+                        _auth.expiresAt = record.expiresAt === null ? (sameUnknownToken ? Number.MAX_SAFE_INTEGER : 0) : record.expiresAt;
+                        _auth.refreshToken = record.refreshToken;
+                    } else if (!clearing) {
+                        _auth.token = __; _auth.refreshToken = __; _auth.expiresAt = 0;
+                    }
+                    result = fn();
+                    completed = true;
+                    return result;
+                } catch(e) { callbackError = e; throw e; }
+                finally { _authStore = __; }
+            });
+        } catch(e) {
+            if (isDef(callbackError)) throw callbackError;
+            throw new Error("OAuth credential storage lock failed or timed out");
+        } finally { active = false; }
+        if (isDef(callbackError)) throw callbackError;
+        if (entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback once");
+        if (!completed) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously");
+        return result;
+    };
+    const _withAuthStore = (fn, clearing) => {
+        var localLock = $lock(_authLockName), result;
+        var cfg = aOptions.auth.tokenStore;
+        if (isDef(cfg)) {
+            var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000);
+            if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive");
+            if (!localLock.tryLock(() => { result = _runAuthStore(fn, clearing); }, timeout)) {
+                throw new Error("OAuth credential storage lock timed out");
+            }
+            return result;
+        }
+        localLock.lock();
+        try { return _runAuthStore(fn, clearing); }
+        finally { localLock.unlock(); }
+    };
 
-		const _getAuthHeaders = () => {
-			if (isUnDef(aOptions.auth) || !isMap(aOptions.auth)) return __
-			if (aOptions.type != "remote" && aOptions.type != "http" && aOptions.type != "sse") return __
-			if (Object.keys(aOptions.auth).length == 0) return __
+    const _getAuthorizationCode = (_clientId, _scope, _audience, _resource) => {
+        if (isDef(_auth.authorizationCode)) return _auth.authorizationCode;
+        if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
+        var _authURL = _getResolvedAuthURL();
+        _$( _authURL, "authorization_endpoint").isString().$_();
+        var _redirectURI = _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_();
+        var _state = genUUID();
+        // Keep legacy supplied state behavior unless the validating callback listener is enabled.
+        if (aOptions.auth.callback !== true && isString(aOptions.auth.state)) _state = aOptions.auth.state;
+        var _authParams = merge(isMap(aOptions.auth.extraAuthParams) ? aOptions.auth.extraAuthParams : {}, {
+            response_type: "code", client_id: _clientId, redirect_uri: _redirectURI, state: _state,
+            code_challenge: _getPKCEChallenge(), code_challenge_method: "S256"
+        });
+        if (isDef(_scope)) _authParams.scope = _scope;
+        if (isDef(_audience)) _authParams.audience = _audience;
+        if (isDef(_resource)) _authParams.resource = _resource;
+        var _query = Object.keys(_authParams).map(k => _urlEnc(k) + "=" + _urlEnc(_authParams[k])).join("&");
+        var _authFullURL = _authURL + (_authURL.indexOf("?") >= 0 ? "&" : "?") + _query;
+        var pending;
+        try {
+            if (aOptions.auth.callback === true) {
+                var uri = new java.net.URI(_redirectURI), host = String(uri.getHost());
+                if (String(uri.getScheme()) !== "http" || ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(host) < 0 ||
+                    uri.getPort() <= 0 || uri.getRawQuery() !== null || uri.getRawFragment() !== null || uri.getRawUserInfo() !== null) {
+                    throw new Error("OAuth callback requires an HTTP loopback redirectURI with an explicit port and no query or fragment");
+                }
+                var path = String(uri.getPath()) || "/";
+                ow.loadServer();
+                pending = {
+                    latch: new java.util.concurrent.CountDownLatch(1),
+                    code: new java.util.concurrent.atomic.AtomicReference(),
+                    error: new java.util.concurrent.atomic.AtomicReference()
+                };
+                try {
+                    // start() reuses registered ports; OAuth must own its listener exclusively.
+                    if (isDef(ow.server.httpd.getHS(Number(uri.getPort())))) throw new Error("Port in use");
+                    plugin("HTTPServer");
+                    pending.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java");
+                }
+                catch(e) { throw new Error("OAuth callback port unavailable"); }
+                _oauthPending = pending;
+                var routes = {};
+                routes[path] = req => {
+                    var params = isMap(req.params) ? req.params : ow.server.rest.parseQuery(req.query || "");
+                    var requestPath = isString(req.path) ? req.path : String(req.uri || "").split("?")[0];
+                    if (req.method !== "GET" || requestPath !== path || params.state !== _state || pending.latch.getCount() == 0) {
+                        return ow.server.httpd.reply("Invalid OAuth callback", 400, "text/plain", { "Cache-Control": "no-store" });
+                    }
+                    if (isString(params.error)) pending.error.set("OAuth authorization denied");
+                    else if (isString(params.code) && params.code.length > 0) pending.code.set(params.code);
+                    else return ow.server.httpd.reply("Missing OAuth code", 400, "text/plain", {});
+                    pending.latch.countDown();
+                    return ow.server.httpd.reply("Sign-in received. You may close this window.", 200, "text/plain", { "Cache-Control": "no-store" });
+                };
+                ow.server.httpd.route(pending.server, routes, req => ow.server.httpd.reply("Not found", 404, "text/plain", {}));
+            }
+            _openAuthBrowser(_authFullURL);
+            if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL);
+            if (isDef(pending)) {
+                var waitMs = _$(aOptions.auth.loginTimeoutMs, "auth.loginTimeoutMs").isNumber().default(300000);
+                if (!(waitMs > 0) || !isFinite(waitMs)) throw new Error("OAuth login timeout must be positive");
+                if (!pending.latch.await(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS)) throw new Error("OAuth login timed out");
+                if (pending.error.get() !== null) throw new Error(String(pending.error.get()));
+                _auth.authorizationCode = String(pending.code.get());
+            } else if (_$(aOptions.auth.promptForCode, "aOptions.auth.promptForCode").isBoolean().default(true)) {
+                _auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "));
+            } else throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.");
+            return _auth.authorizationCode;
+        } finally {
+            if (isDef(pending) && isDef(pending.server)) ow.server.httpd.stop(pending.server);
+            _oauthPending = __;
+        }
+    };
 
-			var _type = String(_$(aOptions.auth.type, "aOptions.auth.type").isString().default("bearer")).toLowerCase()
-		if (_type == "bearer") {
-			var _token = _$(aOptions.auth.token, "aOptions.auth.token").isString().$_()
-			var _tokenType = _$(aOptions.auth.tokenType, "aOptions.auth.tokenType").isString().default("Bearer")
-			return { Authorization: _tokenType + " " + _token }
-		}
-
-		if (_type == "oauth2") {
-			var _tokenURL = _getResolvedTokenURL()
-			var _clientId = _$(aOptions.auth.clientId, "aOptions.auth.clientId").isString().$_()
-			var _clientSecret = _$(aOptions.auth.clientSecret, "aOptions.auth.clientSecret").isString().default(__)
-			var _grantType = String(_$(aOptions.auth.grantType, "aOptions.auth.grantType").isString().default("client_credentials")).toLowerCase()
-			var _scope = _$(aOptions.auth.scope, "aOptions.auth.scope").isString().default(__)
-			var _audience = _$(aOptions.auth.audience, "aOptions.auth.audience").isString().default(__)
-			var _resource = _getOAuthResource()
-			var _refreshWindowMs = _$(aOptions.auth.refreshWindowMs, "aOptions.auth.refreshWindowMs").isNumber().default(30000)
-			var _now = now()
-			if (isUnDef(_auth.token) || _auth.expiresAt <= (_now + _refreshWindowMs)) {
-				var _tokenParams
-				if (isDef(_auth.refreshToken)) {
-					_tokenParams = {
-						grant_type: "refresh_token",
-						refresh_token: _auth.refreshToken,
-						client_id: _clientId
-					}
-				} else if (_grantType == "authorization_code") {
-					_tokenParams = {
-						grant_type: "authorization_code",
-						code: _getAuthorizationCode(_clientId, _scope, _audience, _resource),
-						redirect_uri: _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_(),
-						client_id: _clientId,
-						code_verifier: _getPKCEVerifier()
-					}
-				} else {
-					_tokenParams = {
-						grant_type: _grantType,
-						client_id: _clientId
-					}
-				}
-				if (isDef(_clientSecret)) _tokenParams.client_secret = _clientSecret
-				if (isDef(_scope)) _tokenParams.scope = _scope
-				if (isDef(_audience)) _tokenParams.audience = _audience
-				if (isDef(_resource)) _tokenParams.resource = _resource
-				if (isMap(aOptions.auth.extraParams)) _tokenParams = merge(_tokenParams, aOptions.auth.extraParams)
-
-				var _tokenRes = $rest({ urlEncode: true }).post(_tokenURL, _tokenParams)
-				if (isUnDef(_tokenRes) || isUnDef(_tokenRes.access_token)) {
-					throw new Error("OAuth2 token response doesn't contain access_token")
-				}
-				_auth.token = _tokenRes.access_token
-				if (isDef(_tokenRes.refresh_token)) _auth.refreshToken = _tokenRes.refresh_token
-				_auth.tokenType = _$(aOptions.auth.tokenType, "aOptions.auth.tokenType").isString().default(_$(
-					_tokenRes.token_type, "token_type").isString().default("Bearer")
-				)
-				var _expiresIn = _$(Number(_tokenRes.expires_in), "expires_in").isNumber().default(__)
-				_auth.expiresAt = isDef(_expiresIn) ? (_now + (_expiresIn * 1000)) : Number.MAX_SAFE_INTEGER
-			}
-			return { Authorization: _auth.tokenType + " " + _auth.token }
-		}
-
-		throw new Error("Unsupported MCP auth.type: " + aOptions.auth.type)
-	}
+    const _getOAuthHeaders = (reauthorizing) => {
+        if (!isMap(aOptions.auth) || Object.keys(aOptions.auth).length == 0) return __;
+        if (["remote", "http", "sse"].indexOf(aOptions.type) < 0) return __;
+        var type = String(aOptions.auth.type || "bearer").toLowerCase();
+        if (type == "bearer") {
+            var token = _$(aOptions.auth.token, "aOptions.auth.token").isString().$_();
+            return { Authorization: (aOptions.auth.tokenType || "Bearer") + " " + token };
+        }
+        if (type != "oauth2") throw new Error("Unsupported MCP authentication type");
+        var windowMs = _$(aOptions.auth.refreshWindowMs, "auth.refreshWindowMs").isNumber().default(30000);
+        if (isUnDef(_auth.token) || _auth.expiresAt <= now() + windowMs) {
+            var tokenURL = _getResolvedTokenURL();
+            var clientId = _$(aOptions.auth.clientId, "auth.clientId").isString().$_();
+            var scope = aOptions.auth.scope, resource = _getOAuthResource(), audience = aOptions.auth.audience;
+            var grant = String(aOptions.auth.grantType || "client_credentials").toLowerCase();
+            var params;
+            if (isString(_auth.refreshToken)) params = { grant_type: "refresh_token", refresh_token: _auth.refreshToken, client_id: clientId };
+            else if (grant == "authorization_code") params = {
+                grant_type: grant, client_id: clientId,
+                code: _getAuthorizationCode(clientId, scope, audience, resource),
+                redirect_uri: aOptions.auth.redirectURI, code_verifier: _getPKCEVerifier()
+            };
+            else params = { grant_type: grant, client_id: clientId };
+            if (isDef(aOptions.auth.clientSecret)) params.client_secret = aOptions.auth.clientSecret;
+            if (isDef(scope)) params.scope = scope;
+            if (isDef(audience)) params.audience = audience;
+            if (isDef(resource)) params.resource = resource;
+            if (isMap(aOptions.auth.extraParams)) params = merge(params, aOptions.auth.extraParams);
+            var res, tokenHttp = ow.loadObj().rest.connectionFactory();
+            try {
+                tokenHttp.setThrowExceptions(false);
+                var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000);
+                res = $rest({ httpClient: tokenHttp, urlEncode: true, timeout: tokenTimeout,
+                    readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params);
+                if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {};
+            }
+            catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }
+            finally {
+                try { tokenHttp.close(); } catch(ignoreClose) {}
+                if (params.grant_type == "authorization_code") { _auth.authorizationCode = __; _auth.pkceVerifier = __; }
+            }
+            if (!isMap(res) || !isString(res.access_token) || res.access_token.length == 0) {
+                if (isMap(res) && (res.error == "invalid_grant" || res.error == "interaction_required")) {
+                    _resetAuth();
+                    _deleteAuth();
+                    if (isDef(_authStore) && params.grant_type == "refresh_token" && res.error == "invalid_grant" && !reauthorizing) return _getOAuthHeaders(true);
+                    throw new Error("OAuth login required; credentials expired or revoked");
+                }
+                throw new Error("OAuth token request failed; provider did not return an access token");
+            }
+            _auth.token = res.access_token;
+            if (isString(res.refresh_token) && res.refresh_token.length > 0) _auth.refreshToken = res.refresh_token;
+            _auth.tokenType = aOptions.auth.tokenType || res.token_type || "Bearer";
+            var lifetime = Number(res.expires_in);
+            _auth.expiresAt = isDef(res.expires_in) && res.expires_in !== null && isFinite(lifetime) && lifetime >= 0 ? now() + lifetime * 1000 : Number.MAX_SAFE_INTEGER;
+            _saveAuth();
+        }
+        return { Authorization: _auth.tokenType + " " + _auth.token };
+    };
+    const _getAuthHeaders = () => _withAuthStore(() => _getOAuthHeaders(false));
 
 	// Protocol version eras this client knows how to speak. Legacy (initialize-handshake-based) eras stay the
 	// default for every caller that doesn't opt into aOptions.protocolVersion == "auto"; the modern (stateless,
@@ -10589,10 +10854,25 @@ const $mcp = function(aOptions) {
 
 			return _r
 		},
+        // Explicit operator authentication; never returns credentials.
+        authenticate: () => { _getAuthHeaders(); return _authStatus(); },
+        getAuthStatus: () => _withAuthStore(() => _authStatus()),
+        clearAuth: () => _withAuthStore(() => {
+            _resetAuth();
+            _deleteAuth();
+            _authStoreFailed = false;
+            return _authStatus();
+        }, true),
+
 		exec: (method, params) => {
 			return _execWithAuth(method, params)
 		},
 		destroy: () => {
+            if (isDef(_oauthPending)) {
+                _oauthPending.error.set("OAuth login cancelled");
+                _oauthPending.latch.countDown();
+                ow.server.httpd.stop(_oauthPending.server);
+            }
 			_jsonrpc.destroy()
 		}
 	}
