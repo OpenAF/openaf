@@ -1,0 +1,72 @@
+include:
+- oJobTest.yaml
+jobs:
+- name: MCPOAuth::PersistentOAuthCallbackAndRefresh
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testPersistentOAuthCallbackAndRefresh
+- name: MCPOAuth::OAuthConcurrentProcessRefresh
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthConcurrentProcessRefresh
+- name: MCPOAuth::OAuthOccupiedCallbackPort
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthOccupiedCallbackPort
+- name: MCPOAuth::OAuthCallbackFailures
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthCallbackFailures
+- name: MCPOAuth::OAuthProfileIsolationAndStorageFailure
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthProfileIsolationAndStorageFailure
+- name: MCPOAuth::OAuthRefreshFailureClassification
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthRefreshFailureClassification
+- name: MCPOAuth::OAuthUnattendedAndCallbackValidation
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthUnattendedAndCallbackValidation
+- name: MCPOAuth::OAuthDestroyCancelsCallback
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthDestroyCancelsCallback
+- name: MCPOAuth::OAuthCustomStoreAndIdentity
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthCustomStoreAndIdentity
+- name: MCPOAuth::OAuthStoreFailureAndRecovery
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthStoreFailureAndRecovery
+- name: MCPOAuth::OAuthExpiryAndFreshLogin
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthExpiryAndFreshLogin
+- name: MCPOAuth::OAuthSecDefaultsAndLockTimeout
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthSecDefaultsAndLockTimeout
+- name: MCPOAuth::OAuthNoStoreAndOverrideValidation
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthNoStoreAndOverrideValidation
+- name: MCPOAuth::OAuthDefaultKeyAcrossProcesses
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthDefaultKeyAcrossProcesses
+- name: MCPOAuth::OAuthConcurrentProcessProfiles
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthConcurrentProcessProfiles
+- name: MCPOAuth::OAuthDiscoveredStoreIdentity
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthDiscoveredStoreIdentity
+- name: MCPOAuth::OAuthSameClientLockTimeout
+  to: oJob Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthSameClientLockTimeout
+todo:
+- MCPOAuth::PersistentOAuthCallbackAndRefresh
+- MCPOAuth::OAuthConcurrentProcessRefresh
+- MCPOAuth::OAuthOccupiedCallbackPort
+- MCPOAuth::OAuthCallbackFailures
+- MCPOAuth::OAuthProfileIsolationAndStorageFailure
+- MCPOAuth::OAuthRefreshFailureClassification
+- MCPOAuth::OAuthUnattendedAndCallbackValidation
+- MCPOAuth::OAuthDestroyCancelsCallback
+- MCPOAuth::OAuthCustomStoreAndIdentity
+- MCPOAuth::OAuthStoreFailureAndRecovery
+- MCPOAuth::OAuthExpiryAndFreshLogin
+- MCPOAuth::OAuthSecDefaultsAndLockTimeout
+- MCPOAuth::OAuthNoStoreAndOverrideValidation
+- MCPOAuth::OAuthDefaultKeyAcrossProcesses
+- MCPOAuth::OAuthConcurrentProcessProfiles
+- MCPOAuth::OAuthDiscoveredStoreIdentity
+- MCPOAuth::OAuthSameClientLockTimeout

@@ -426,7 +426,7 @@
         {
             "description": "Oracle JDBC 23",
             "path": [
-                "lib/ojdbc17-23.26.2.0.0.jar"
+                "lib/ojdbc17-23.26.3.0.0.jar"
             ],
             "version": "23.26.2.0.0",
             "changes": false,
@@ -644,16 +644,16 @@
             "name": "SNMP",
             "removable": true,
             "deps": [
-                "lib/snmp4j-agent-3.9.2.jar",
-                "lib/snmp4j-agent-3.9.2.jar"
+                "lib/snmp4j-agent-3.10.1.jar",
+                "lib/snmp4j-agent-3.10.1.jar"
             ]
         },
         {
             "name": "SNMPServer",
             "removable": true,
             "deps": [
-                "lib/snmp4j-agent-3.9.2.jar",
-                "lib/snmp4j-agent-3.9.2.jar"
+                "lib/snmp4j-agent-3.10.1.jar",
+                "lib/snmp4j-agent-3.10.1.jar"
             ]
         },
         {
@@ -711,7 +711,7 @@
             "name": "Oracle",
             "removable": true,
             "deps": [
-                "lib/ojdbc17-23.26.2.0.0.jar"
+                "lib/ojdbc17-23.26.3.0.0.jar"
             ]
         },
         {

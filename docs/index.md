@@ -10,7 +10,8 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 ## Core
 - openaf.md – Core OpenAF runtime helpers & APIs (`$$`, `_$`, `$from`, `$path`, channels, etc.)
 - ojob.md – Main oJob YAML reference (structure, jobs, built-ins, shortcuts, argument tables)
-- ojob-all.yaml – Exhaustive annotated YAML template
+- ojob-all.yaml – Annotated syntax catalog (illustrative options, not a runnable definition)
+- [ojob-examples.md](./ojob-examples.md) – Patterns and source examples from the ojob.io YAML collection
 - oafp.md – OpenAF Processor (oafp): universal data transformation, SQL/JMESPath queries & formatting
 - odoc.md – ODoc engine, docstrings (`<odoc>`), offline help databases (`.odoc.db`), and `odocweb` server
 - opacks.md – oPacks: manifest format, versioning, the `opack` CLI, scripting integration, building & hosting opack repositories
