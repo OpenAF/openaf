@@ -172,6 +172,42 @@
         });
     };
 
+    exports.testOAuthCallbackUsesServerHelper = function() {
+        withOAuthMCPServer(function(ctx) {
+            var original = ow.server.httpd.oauth2, used = 0;
+            ow.server.httpd.oauth2 = function(options) {
+                used++;
+                ow.test.assert(options.tokenStore, false, "MCP owns persistence without nested helper storage.");
+                return original.call(this, options);
+            };
+            var config = {
+                type: "remote", url: ctx.resource,
+                auth: {
+                    type: "oauth2", grantType: "authorization_code", clientId: "public-client",
+                    redirectURI: "http://127.0.0.1:" + findRandomOpenPort() + "/callback",
+                    callback: true, disableOpenBrowser: true, loginTimeoutMs: 1000,
+                    onAuthorizationURL: function(url) {
+                        var params = ow.server.rest.parseQuery(String(new java.net.URI(url).getRawQuery()));
+                        $rest().get(config.auth.redirectURI + "?state=" + params.state + "&code=callback-code");
+                    }
+                }
+            };
+            var client = $mcp(config);
+            try {
+                client.initialize();
+                ow.test.assert(client.callTool("ping", {}).content[0].text, "pong", "Callback-authenticated MCP tool call.");
+                ow.test.assert(used, 1, "MCP delegates callback login to server helper once.");
+                ow.test.assert(ctx.state.tokenRequests.length, 1, "One code exchange across initialization and tool call.");
+                ow.test.assert(ctx.state.tokenRequests[0].code, "callback-code", "Callback code exchanged.");
+                ow.test.assert(ctx.state.tokenRequests[0].resource, ctx.resource, "Discovered MCP resource passed to helper.");
+                ow.test.assert(ctx.state.mcpAuthHeaders.every(function(h) { return h === "Bearer token-1"; }), true, "MCP requests use received token.");
+            } finally {
+                client.destroy();
+                ow.server.httpd.oauth2 = original;
+            }
+        });
+    };
+
     exports.testOAuthAuthorizationCodeTokenExchange = function() {
         withOAuthMCPServer(function(ctx) {
             var client = $mcp({

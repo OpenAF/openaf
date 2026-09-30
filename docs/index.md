@@ -23,6 +23,7 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - plugins.md – Core Java Plugins reference (`plugin("...")`) covering HTTP, HTTPServer, SSH, FTP, Email, JMX, SNMP, BSDiff, Threads, XML, ZIP, etc.
 
 ## Security & Configuration
+- [mcp-oauth.md](mcp-oauth.md) – Localhost OAuth2 login with `$sec` storage and `$mcp` integration
 - ojob-security.md – Integrity, auditing, unique execution, channel exposure
 - openaf-flags.md – Runtime flags / environment variables
 

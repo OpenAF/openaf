@@ -1,8 +1,100 @@
-# Persistent delegated OAuth for `$mcp`
+# Localhost OAuth2 authentication
 
-Existing authentication remains unchanged unless the new options are enabled.
+`ow.server.httpd.oauth2(options)` provides a reusable browser login for OAuth2
+providers that support authorization-code flow with S256 PKCE and an HTTP loopback
+redirect. It uses OpenAF's HTTPd server to receive the callback and `$sec` to
+retain encrypted credentials. Call `ow.loadServer()` before creating the client.
+
+```javascript
+ow.loadServer();
+var oauth = ow.server.httpd.oauth2({
+  authURL: "https://identity.example.org/authorize",
+  tokenURL: "https://identity.example.org/token",
+  clientId: "registered-client-id",
+  redirectURI: "http://127.0.0.1:17879/callback",
+  scope: "read offline_access",
+  tokenStore: { type: "sec", profile: "alice" }
+});
+try {
+  var tokens = oauth.authenticate();
+  // Use tokens.access_token with the provider's API; do not print credentials.
+  print(stringify(oauth.getAuthStatus())); // Non-secret status only.
+} finally {
+  oauth.cancel(); // Releases a pending callback listener; retains stored tokens.
+}
+```
+
+Register the exact callback URI with your provider. The URI must use `http` with
+`127.0.0.1`, `localhost` or `::1`, an explicit port and no userinfo, query or
+fragment. For IPv6 use, for example, `http://[::1]:17879/callback`. The listener
+binds only to loopback; `localhost` binds to `127.0.0.1`. An occupied callback port
+fails explicitly without reusing or stopping another server. The provider's
+registered client must allow PKCE; confidential clients may supply `clientSecret`.
+Client registration and authorization/token endpoints are supplied by the caller.
+
+`authenticate()` reuses valid credentials, refreshes expiring access tokens, or
+opens the authorization URL and waits for the callback. Every login generates
+fresh state and PKCE material. Invalid state, methods, paths and malformed or
+repeated callback parameters are rejected without accepting the login. Only one
+callback is accepted, including concurrent delivery. Successful callbacks, denial,
+timeout, cancellation and exceptions all release the listener. Browser responses
+contain no tokens and use `Cache-Control: no-store`.
+
+The controller provides four methods:
+
+| Method | Result |
+| --- | --- |
+| `authenticate()` | OAuth token response from a new exchange; cached responses contain `access_token`, `token_type`, optional `refresh_token`, and remaining `expires_in` when known. |
+| `getAuthStatus()` | `{authenticated, expiresAt, refreshable, persistent}`; never starts login or refresh. |
+| `clearAuth()` | Removes the selected stored entry and in-memory credentials; returns non-secret status. Does not revoke provider consent. |
+| `cancel()` | Cancels a pending callback login and closes its listener. Repeated calls are harmless; completed credentials are retained. |
+
+Useful options:
+
+| Option | Behavior/default |
+| --- | --- |
+| `scope`, `resource`, `audience` | Optional parameters sent to both authorization and token endpoints. |
+| `clientSecret` | Optional secret sent to the token endpoint; never persisted. |
+| `extraAuthParams`, `extraParams` | Additional authorization/token parameters; protocol-controlled fields cannot be overridden. |
+| `interactive` | Defaults to `true`; `false` permits cached tokens and refresh only. |
+| `disableOpenBrowser` | Defaults to `false`; set `true` for manual browser handling. |
+| `onAuthorizationURL(url)` | Called when the listener is ready; can display the URL or hand it to a browser. |
+| `loginTimeoutMs` | Callback wait, default `300000`; must be positive. |
+| `tokenTimeoutMs` | Token HTTP timeout, default `60000`; must be positive. |
+| `refreshWindowMs` | Refresh window before expiry, default `30000`; must be non-negative. |
+| `tokenType` | Optional override for the cached token scheme. |
+| `tokenStore` | Defaults to `$sec` storage in repository `oauth2`, bucket/profile `default`; `false` selects in-memory operation. |
+
+Standalone store descriptors accept the same `$sec` and synchronous custom-store
+options described below. The standalone default file is
+`~/.openaf-sec-oauth2.yml` (under `OAF_HOME` when configured). The parent directory
+must exist. Tokens, token type, expiry and configuration identity are persisted;
+client secrets, authorization codes, callback state and PKCE verifiers are not.
+A hashed key separates endpoints, client IDs, scopes, resource/audience, redirect
+URI, profiles and additional parameters. Use distinct profiles for accounts.
+
+Transactions cover load, exchange, save and clear with the existing process/file
+locking adapter. Rotated refresh tokens replace the previous value; omission
+preserves it. A transient provider failure retains credentials. A rejected refresh
+(`invalid_grant`) clears them and attempts one fresh login, subject to `interactive`.
+`interaction_required` clears credentials and reports login required. Storage
+failures stop authentication with sanitized errors; a failed save requires
+`clearAuth()` or a new controller before retrying. OAuth token errors can carry a
+sanitized `oauthError` identifier without exposing the provider response.
+
+Unknown expiry is stored as `null`. The issuing controller may reuse that token;
+a new controller refreshes or authenticates again. Cached responses omit provider
+fields that are not in the stored credential record. `cancel()` controls callback
+login; token HTTP requests are bounded by `tokenTimeoutMs`.
+
+## Persistent delegated OAuth for `$mcp`
+
+`$mcp` uses the same helper for `auth.callback: true`. Persistence remains opt-in
+through `auth.tokenStore`, with the existing repository `mcp-oauth2` and credential
+identity unchanged.
+
 Bearer and client-credentials authentication remain supported. A delegated client
-can now receive a browser callback and retain credentials in an encrypted SBucket:
+can receive a browser callback and retain credentials in an encrypted SBucket:
 
 ```javascript
 var client = $mcp({
@@ -41,7 +133,7 @@ credentials fail with a login-required error; no tool call is automatically
 replayed by these authentication additions. `sendResource: false` omits the OAuth
 `resource` parameter for scope-based providers. `tokenTimeoutMs` defaults to 60000.
 
-## Protected storage
+## Protected storage options
 
 `auth.tokenStore: { type: "sec" }` enables the built-in adapter. Its defaults are
 repository `mcp-oauth2`, bucket `default`, profile `default`, and a 60000 ms lock
@@ -127,7 +219,9 @@ Mini-A WorkIQ without changing existing tool output contracts.
 
 ## Tests
 
-Run `ojob autoTestAll.MCPOAuth.yaml` from `tests/` with the rebuilt runtime, and run
-the existing MCP and Sec suites. The new suite uses temporary SBucket files and
+From `tests/`, run `ojob autoTestAll.ServerOAuth.yaml` and
+`ojob autoTestAll.MCPOAuth.yaml` with the rebuilt runtime, then the MCP, Server and
+Sec suites. The Server suite includes standalone OAuth tests, and the MCP suite
+includes callback login followed by initialization and an authenticated tool call. The new suite uses temporary SBucket files and
 loopback OAuth fixtures, including cross-process token renewal. It does not prove
 a particular identity provider's app registration or consent policy.

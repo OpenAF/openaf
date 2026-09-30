@@ -91,3 +91,12 @@ print("WebSocket endpoint ready at ws://localhost:8080/ws/chat");
 ```
 
 The underlying `WebSockets` class implements the NanoHTTPD WebSocket protocol with text and binary frame support, ping/pong keepalive, and per-session lifecycle callbacks.
+
+## Localhost OAuth2 client
+
+After `ow.loadServer()`, `ow.server.httpd.oauth2(options)` can receive an OAuth2
+authorization-code callback on an exclusively owned localhost HTTPd listener,
+exchange the code using S256 PKCE, and persist access/refresh tokens with `$sec`.
+It provides `authenticate()`, `getAuthStatus()`, `clearAuth()` and `cancel()`.
+`$mcp` reuses it when `auth.callback: true`. See [OAuth2 authentication](../mcp-oauth.md)
+for configuration, storage and examples.

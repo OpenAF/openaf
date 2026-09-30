@@ -9548,7 +9548,7 @@ const $jsonrpc = function (aOptions) {
  *   - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow\
  *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata\
  *   - interactive (boolean): false prohibits browser login and code prompts; omitted preserves existing behavior\
- *   - callback (boolean): opt-in loopback listener at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000\
+ *   - callback (boolean): opt-in loopback login through ow.server.httpd.oauth2 at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000\
  *   - tokenStore (map): opt-in {type: "sec", profile: "default"}; optional repo (default mcp-oauth2), bucket, key, file, lockSecret, mainSecret, lockTimeoutMs (60000). Or a synchronous custom load/save/clear/withLock store.\
  *   - sendResource (boolean): false omits the OAuth resource parameter; default true\
  *   - disableOpenBrowser (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)\
@@ -9919,98 +9919,9 @@ const $mcp = function(aOptions) {
             }
         }
     };
-    // NIO locks are process-wide; pair them with a JVM-local mutex and bound both waits.
-    // Do not use $flock.tryLock: it can swallow exceptions thrown by its callback.
-    const _withOAuthFileLock = (file, timeout, fn) => {
-        var result, deadline = now() + timeout;
-        var acquired = $lock("mcp-oauth-file-" + file).tryLock(() => {
-            var handle, lock;
-            try {
-                try { handle = new java.io.RandomAccessFile(file, "rw"); }
-                catch(e) { throw new Error("OAuth credential storage lock failed"); }
-                while (isUnDef(lock) || isNull(lock)) {
-                    try { lock = handle.getChannel().tryLock(); }
-                    catch(e) {
-                        if (!(e.javaException instanceof java.nio.channels.OverlappingFileLockException)) {
-                            throw new Error("OAuth credential storage lock failed");
-                        }
-                    }
-                    if (isDef(lock) && !isNull(lock)) break;
-                    if (now() >= deadline) throw new Error("OAuth credential storage lock timed out");
-                    sleep(Math.min(50, Math.max(1, deadline - now())), true);
-                }
-                result = fn();
-            } finally {
-                try { if (isDef(lock) && !isNull(lock)) lock.release(); }
-                finally { if (isDef(handle)) handle.close(); }
-            }
-        }, timeout);
-        if (!acquired) throw new Error("OAuth credential storage lock timed out");
-        return result;
-    };
-    const _createOAuthSecretFile = (file, content) => {
-        var path = new java.io.File(file).toPath();
-        var attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 0);
-        var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix");
-        if (posix) {
-            attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 1);
-            attrs[0] = java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
-                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
-        }
-        if (!io.fileExists(file)) {
-            java.nio.file.Files.createFile(path, attrs);
-            io.writeFileString(file, content);
-        } else if (posix) {
-            java.nio.file.Files.setPosixFilePermissions(path,
-                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
-        }
-    };
     const _secTokenStore = cfg => {
-        var repo = _$(cfg.repo, "auth.tokenStore.repo").isString().default("mcp-oauth2");
-        if (!/^[a-zA-Z0-9_-]+$/.test(repo) || repo == "system") throw new Error("OAuth tokenStore requires a file-backed SBucket repo name");
-        var file = _$(cfg.file, "auth.tokenStore.file").isString().default(__gHDir() + "/.openaf-sec-" + repo + ".yml");
-        file = String(new java.io.File(file).getCanonicalPath());
-        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000);
-        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive");
-        var sec;
-        return {
-            withLock: (key, fn) => _withOAuthFileLock(file + ".lock", timeout, () => {
-                // A private channel alias avoids closing or reusing the caller's $sec handle.
-                var alias = "mcp-oauth-" + sha256(file), mainSecret = cfg.mainSecret;
-                try {
-                    ow.loadSec();
-                    if (isUnDef(mainSecret)) {
-                        var mainFile = String(new java.io.File(__gHDir() + "/.openaf-sec").getCanonicalPath());
-                        _withOAuthFileLock(mainFile + ".lock", timeout, () => {
-                            try {
-                                _createOAuthSecretFile(mainFile, af.encrypt(sha512(genUUID())));
-                                mainSecret = io.readFileString(mainFile);
-                                if (mainSecret.length == 0) throw new Error("Empty key file");
-                            } catch(e) { throw new Error("OAuth credential storage key initialization failed"); }
-                        });
-                    }
-                    try {
-                        _createOAuthSecretFile(file, "{}\n");
-                        if (!isMap(io.readFileYAML(file))) throw new Error("Invalid repository");
-                        sec = $sec(alias, cfg.bucket, cfg.lockSecret, mainSecret, file);
-                    } catch(e) { throw new Error("OAuth credential storage read failed"); }
-                    return fn();
-                } finally {
-                    if (isDef(sec)) { sec.close(); sec = __; }
-                }
-            }),
-            load: key => {
-                // Determine absence structurally; never interpret a decryption error as a miss.
-                var bucket = isString(cfg.bucket) ? cfg.bucket : "default";
-                var raw = io.readFileYAML(file);
-                if (!isMap(raw) || Object.keys(raw).some(k => !isMap(raw[k]))) throw new Error("Invalid repository");
-                if (isUnDef(raw[bucket])) return __;
-                if (raw[bucket].sbucket !== bucket || !isString(raw[bucket].v)) throw new Error("Invalid encrypted bucket");
-                return sec.get(key);
-            },
-            save: (key, record) => sec.set(key, record),
-            clear: key => sec.unset(key)
-        };
+        ow.loadServer();
+        return ow.server.httpd.__oauth2SecTokenStore(cfg, "mcp-oauth2");
     };
     const _runAuthStore = (fn, clearing) => {
         var cfg = aOptions.auth.tokenStore;
@@ -10108,60 +10019,12 @@ const $mcp = function(aOptions) {
         if (isDef(_resource)) _authParams.resource = _resource;
         var _query = Object.keys(_authParams).map(k => _urlEnc(k) + "=" + _urlEnc(_authParams[k])).join("&");
         var _authFullURL = _authURL + (_authURL.indexOf("?") >= 0 ? "&" : "?") + _query;
-        var pending;
-        try {
-            if (aOptions.auth.callback === true) {
-                var uri = new java.net.URI(_redirectURI), host = String(uri.getHost());
-                if (String(uri.getScheme()) !== "http" || ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(host) < 0 ||
-                    uri.getPort() <= 0 || uri.getRawQuery() !== null || uri.getRawFragment() !== null || uri.getRawUserInfo() !== null) {
-                    throw new Error("OAuth callback requires an HTTP loopback redirectURI with an explicit port and no query or fragment");
-                }
-                var path = String(uri.getPath()) || "/";
-                ow.loadServer();
-                pending = {
-                    latch: new java.util.concurrent.CountDownLatch(1),
-                    code: new java.util.concurrent.atomic.AtomicReference(),
-                    error: new java.util.concurrent.atomic.AtomicReference()
-                };
-                try {
-                    // start() reuses registered ports; OAuth must own its listener exclusively.
-                    if (isDef(ow.server.httpd.getHS(Number(uri.getPort())))) throw new Error("Port in use");
-                    plugin("HTTPServer");
-                    pending.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java");
-                }
-                catch(e) { throw new Error("OAuth callback port unavailable"); }
-                _oauthPending = pending;
-                var routes = {};
-                routes[path] = req => {
-                    var params = isMap(req.params) ? req.params : ow.server.rest.parseQuery(req.query || "");
-                    var requestPath = isString(req.path) ? req.path : String(req.uri || "").split("?")[0];
-                    if (req.method !== "GET" || requestPath !== path || params.state !== _state || pending.latch.getCount() == 0) {
-                        return ow.server.httpd.reply("Invalid OAuth callback", 400, "text/plain", { "Cache-Control": "no-store" });
-                    }
-                    if (isString(params.error)) pending.error.set("OAuth authorization denied");
-                    else if (isString(params.code) && params.code.length > 0) pending.code.set(params.code);
-                    else return ow.server.httpd.reply("Missing OAuth code", 400, "text/plain", {});
-                    pending.latch.countDown();
-                    return ow.server.httpd.reply("Sign-in received. You may close this window.", 200, "text/plain", { "Cache-Control": "no-store" });
-                };
-                ow.server.httpd.route(pending.server, routes, req => ow.server.httpd.reply("Not found", 404, "text/plain", {}));
-            }
-            _openAuthBrowser(_authFullURL);
-            if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL);
-            if (isDef(pending)) {
-                var waitMs = _$(aOptions.auth.loginTimeoutMs, "auth.loginTimeoutMs").isNumber().default(300000);
-                if (!(waitMs > 0) || !isFinite(waitMs)) throw new Error("OAuth login timeout must be positive");
-                if (!pending.latch.await(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS)) throw new Error("OAuth login timed out");
-                if (pending.error.get() !== null) throw new Error(String(pending.error.get()));
-                _auth.authorizationCode = String(pending.code.get());
-            } else if (_$(aOptions.auth.promptForCode, "aOptions.auth.promptForCode").isBoolean().default(true)) {
-                _auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "));
-            } else throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.");
-            return _auth.authorizationCode;
-        } finally {
-            if (isDef(pending) && isDef(pending.server)) ow.server.httpd.stop(pending.server);
-            _oauthPending = __;
-        }
+        _openAuthBrowser(_authFullURL);
+        if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL);
+        if (_$(aOptions.auth.promptForCode, "aOptions.auth.promptForCode").isBoolean().default(true)) {
+            _auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "));
+        } else throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.");
+        return _auth.authorizationCode;
     };
 
     const _getOAuthHeaders = (reauthorizing) => {
@@ -10179,31 +10042,47 @@ const $mcp = function(aOptions) {
             var clientId = _$(aOptions.auth.clientId, "auth.clientId").isString().$_();
             var scope = aOptions.auth.scope, resource = _getOAuthResource(), audience = aOptions.auth.audience;
             var grant = String(aOptions.auth.grantType || "client_credentials").toLowerCase();
-            var params;
-            if (isString(_auth.refreshToken)) params = { grant_type: "refresh_token", refresh_token: _auth.refreshToken, client_id: clientId };
-            else if (grant == "authorization_code") params = {
-                grant_type: grant, client_id: clientId,
-                code: _getAuthorizationCode(clientId, scope, audience, resource),
-                redirect_uri: aOptions.auth.redirectURI, code_verifier: _getPKCEVerifier()
-            };
-            else params = { grant_type: grant, client_id: clientId };
-            if (isDef(aOptions.auth.clientSecret)) params.client_secret = aOptions.auth.clientSecret;
-            if (isDef(scope)) params.scope = scope;
-            if (isDef(audience)) params.audience = audience;
-            if (isDef(resource)) params.resource = resource;
-            if (isMap(aOptions.auth.extraParams)) params = merge(params, aOptions.auth.extraParams);
-            var res, tokenHttp = ow.loadObj().rest.connectionFactory();
-            try {
-                tokenHttp.setThrowExceptions(false);
-                var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000);
-                res = $rest({ httpClient: tokenHttp, urlEncode: true, timeout: tokenTimeout,
-                    readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params);
-                if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {};
-            }
-            catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }
-            finally {
-                try { tokenHttp.close(); } catch(ignoreClose) {}
-                if (params.grant_type == "authorization_code") { _auth.authorizationCode = __; _auth.pkceVerifier = __; }
+            var params, res;
+            if (!isString(_auth.refreshToken) && grant == "authorization_code" &&
+                aOptions.auth.callback === true && isUnDef(_auth.authorizationCode)) {
+                if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
+                ow.loadServer();
+                // MCP owns the storage transaction, refresh and identity. The helper owns this login only.
+                _oauthPending = ow.server.httpd.oauth2(merge(aOptions.auth, {
+                    authURL: _getResolvedAuthURL(), tokenURL: tokenURL, resource: resource, tokenStore: false
+                }));
+                params = { grant_type: "authorization_code" };
+                try { res = _oauthPending.authenticate(); }
+                catch(e) {
+                    if (e.oauthError == "invalid_grant" || e.oauthError == "interaction_required") res = { error: e.oauthError };
+                    else throw e;
+                } finally { _oauthPending = __; _auth.authorizationCode = __; _auth.pkceVerifier = __; }
+            } else {
+                if (isString(_auth.refreshToken)) params = { grant_type: "refresh_token", refresh_token: _auth.refreshToken, client_id: clientId };
+                else if (grant == "authorization_code") params = {
+                    grant_type: grant, client_id: clientId,
+                    code: _getAuthorizationCode(clientId, scope, audience, resource),
+                    redirect_uri: aOptions.auth.redirectURI, code_verifier: _getPKCEVerifier()
+                };
+                else params = { grant_type: grant, client_id: clientId };
+                if (isDef(aOptions.auth.clientSecret)) params.client_secret = aOptions.auth.clientSecret;
+                if (isDef(scope)) params.scope = scope;
+                if (isDef(audience)) params.audience = audience;
+                if (isDef(resource)) params.resource = resource;
+                if (isMap(aOptions.auth.extraParams)) params = merge(params, aOptions.auth.extraParams);
+                var tokenHttp = ow.loadObj().rest.connectionFactory();
+                try {
+                    tokenHttp.setThrowExceptions(false);
+                    var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000);
+                    res = $rest({ httpClient: tokenHttp, urlEncode: true, timeout: tokenTimeout,
+                        readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params);
+                    if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {};
+                }
+                catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }
+                finally {
+                    try { tokenHttp.close(); } catch(ignoreClose) {}
+                    if (params.grant_type == "authorization_code") { _auth.authorizationCode = __; _auth.pkceVerifier = __; }
+                }
             }
             if (!isMap(res) || !isString(res.access_token) || res.access_token.length == 0) {
                 if (isMap(res) && (res.error == "invalid_grant" || res.error == "interaction_required")) {
@@ -10869,9 +10748,7 @@ const $mcp = function(aOptions) {
 		},
 		destroy: () => {
             if (isDef(_oauthPending)) {
-                _oauthPending.error.set("OAuth login cancelled");
-                _oauthPending.latch.countDown();
-                ow.server.httpd.stop(_oauthPending.server);
+                _oauthPending.cancel();
             }
 			_jsonrpc.destroy()
 		}
