@@ -22,10 +22,15 @@ public final class Terminal {
         if (system == null) {
             // No forced Unix backend: JNI selects the native OS, including Windows Java
             // launched from Cygwin. A dumb terminal also supports redirected stdin.
-            org.jline.terminal.Terminal terminal = TerminalBuilder.builder()
+            TerminalBuilder builder = TerminalBuilder.builder()
                 .name("OpenAF").system(true).dumb(true).ffm(false)
                 .classLoader(TerminalBuilder.class.getClassLoader())
-                .encoding(Charset.defaultCharset()).build();
+                .encoding(Charset.defaultCharset());
+            // Skip JLine's grapheme cluster auto-probe (DECRQM "\e[?2027$p" & co.): terminals
+            // without DECRQM support echo the trailing "p" on screen. Opt in with
+            // -Dorg.jline.terminal.graphemeCluster=true.
+            if (System.getProperty(TerminalBuilder.PROP_GRAPHEME_CLUSTER) == null) builder.graphemeCluster(false);
+            org.jline.terminal.Terminal terminal = builder.build();
             system = new Terminal(terminal);
             Terminal owned = system;
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

@@ -734,6 +734,8 @@ var client = $mcp({
 
 OAuth2 token URLs can also be auto-discovered from the MCP server's OAuth 2.0 Protected Resource Metadata when `tokenURL`/`authURL` are omitted.
 
+To retain OAuth credentials across sessions, opt in with `auth.tokenStore: { type: "sec", profile: "alice" }`. The built-in adapter uses an encrypted SBucket and coordinates token refresh across local processes. Custom synchronous stores are also supported. See [persistent OAuth, callback login and token stores](mcp-oauth.md) for configuration, failure behavior and storage limitations.
+
 ### Tool blacklist
 
 Prevent specific tools from appearing in `listTools()` or being called via `callTool()`:
