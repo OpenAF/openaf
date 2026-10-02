@@ -303,7 +303,9 @@
         ow.test.assert(structured.indexOf("| name | score |") >= 0, true, "Problem with structured Markdown array table.")
         ow.test.assert(structured.indexOf("- one") >= 0, true, "Problem with structured Markdown list.")
         ow.test.assert(structured.indexOf("# text\n\n```\nfirst line\nsecond line\n```") >= 0, true, "Problem with structured Markdown string code block.")
-        ow.test.assert(structured.indexOf("| title | Example |") >= 0 && structured.indexOf("- one") >= 0, true, "Problem with structured Markdown table or list strings.")
+        ow.test.assert(structured.indexOf("# title\n\n```\nExample\n```") >= 0, true, "Problem with a scalar string in a mixed Markdown object.")
+        var flatMap = $output({ title: "Example", active: true }, { __format: "md" }, __, true)
+        ow.test.assert(flatMap.indexOf("| title | Example |") >= 0, true, "Problem with a flat Markdown map table.")
 
         var markdown = $output("# Heading\n\nParagraph", { __format: "md" }, __, true)
         ow.test.assert(markdown.indexOf("```") < 0, true, "Problem with raw Markdown string rendering.")

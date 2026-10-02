@@ -3394,7 +3394,7 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
  * - params: extra request body parameters merged into prompt, image and embedding calls.\
  * - noSystem: when true, system messages are converted to developer messages where supported (defaults to true).\
  * - noResponseFormat: when true, disables OpenAI-compatible JSON response_format injection.\
- * - promptCaching: when true enables Anthropic prompt caching headers and cache_control markers (defaults to false).\
+ * - promptCaching: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false).\
  * \
  * OpenAI-compatible transport options:\
  * - apiVersion: API version/path segment for OpenAI-compatible routes (defaults to "v1"). In Azure legacy mode this becomes the api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version.\
@@ -4129,7 +4129,7 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * - instructions: a string or an array of strings with the instructions for the model (e.g. "json", "boolean", "sql", "js", "path")\
  * - headers: a map with the headers to use in the requests (e.g. { "Content-Type": "application/json" })\
  * - params: a map with the parameters to use in the requests (e.g. { "max_tokens": 1000, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 })\
- * - promptCaching: when true enables Anthropic prompt caching headers and cache_control markers (defaults to false)\
+ * - promptCaching: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false)\
  * \
  * For type "openai", options can also include:\
  * - mode: transport mode ("openai", "azure-openai-v1", "azure-openai-legacy" or "foundry").\

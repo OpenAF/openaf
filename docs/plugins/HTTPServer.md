@@ -100,3 +100,7 @@ exchange the code using S256 PKCE, and persist access/refresh tokens with `$sec`
 It provides `authenticate()`, `getAuthStatus()`, `clearAuth()` and `cancel()`.
 `$mcp` reuses it when `auth.callback: true`. See [OAuth2 authentication](../mcp-oauth.md)
 for configuration, storage and examples.
+
+## Query state on persistent connections
+
+The `nwu` and `nwu2` implementations reset raw query state for each request. For GET requests, `params["NanoHttpd.QUERY_STRING"]` is absent when the URL has no query, and is an empty string for an explicit trailing `?`. A later request on the same connection does not inherit the previous URL query or form parameters.

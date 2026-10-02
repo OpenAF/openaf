@@ -6290,7 +6290,8 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
  * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
  * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true the
  * sequential execution will be forced. aTimeoutMs, if provided, overrides __flags.PFOREACH.wait_timeout_ms as the overall
- * deadline, in milliseconds, to wait for the parallel partitions to complete. On timeout the still-pending partitions
+ * deadline, in milliseconds, from parallel dispatch through queue-pressure and completion waits.
+ * Sequential callbacks remain synchronous and are not interrupted by this deadline. On timeout the still-pending partitions
  * (and their pool worker threads) are cancelled, aErrFn is called with a "pForEach: N of M partitions timed out"
  * diagnostic and whatever results were collected so far are returned (missing entries come back as arrays of __, so the
  * returned array keeps the same length and order as anArray).\
@@ -6359,6 +6360,11 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	const threads_thrs = __flags.PFOREACH.threads_thrs
 	const seq_ratio = __flags.PFOREACH.seq_ratio
 	const timeoutMs = isDef(aTimeoutMs) ? aTimeoutMs : __flags.PFOREACH.wait_timeout_ms
+	// One monotonic budget covers dispatch, backpressure and the final wait.
+	const deadline = nowNano() + timeoutMs * 1000000
+	const remainingMs = () => Math.max(0, (deadline - nowNano()) / 1000000)
+	var parallelCall = !beSeq
+	var stopped = $atomic(false, "boolean")
 
 	// Interrupting a stuck partition on timeout only reclaims its pool slot if the partition's own loop stops
 	// instead of moving on to the next item and blocking again on it.
@@ -6374,6 +6380,10 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 			var _ar = []
 			try {
 				for (var j = part.start; j < part.end; j++) {
+					if (stopped.get()) {
+						while (_ar.length < (part.end - part.start)) _ar.push(__)
+						break
+					}
 					try {
 						var init = nowNano()
 						var _R = aFn(anArray[j], j)
@@ -6397,6 +6407,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	}
 
 	for(var _i_ = 0; _i_ < pres.length; _i_++) {
+		if (parallelCall && remainingMs() <= 0) break
 		try {
 			if (beSeq) {
 				// Use a regular for loop for better performance
@@ -6418,42 +6429,41 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 			} else {
 				_ts.push( $do( fnPar(_i_, pres[_i_]) ).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
 
-				// Cool down and go sequential if too many threads
+				// Apply backpressure without losing the promise needed for cancellation.
 				_tpstats = __getThreadPools()
 				if (_tpstats.queued > _tpstats.poolSize / threads_thrs) {
-					$doWait(_ts.pop())
+					var budget = remainingMs()
+					if (budget > 0) $doWait(_ts[_ts.length - 1], budget)
 				}
 			}
 		} catch(eee) {
 			aErrFn(eee)
 		} finally {
-			// If execution time per call is too low, go sequential
-			if ( typeof aUseSeq === "undefined" && pres.length > 1 && _nc >= 3 ) {
+			// Once parallel dispatch starts, callbacks must stay off the waiting thread.
+			if (!parallelCall && typeof aUseSeq === "undefined" && pres.length > 1 && _nc >= 3) {
 				if ( ((times.get() / execs.get() ) / 1000000) < seqThresholdMs || __getThreadPools().active / _nc > seq_ratio) {
 					beSeq = true
 				} else {
 					beSeq = false
+					parallelCall = true
 				}
 			}
 		}
 	}
 
-	if (_ts.length > 0) {
-		var _all = $doAll(_ts)
-		var _init = now()
-		var tries = 0
-		do {
-			$doWait(_all, Math.max(1, timeoutMs - (now() - _init)))
-			// Only sleep if there's still budget left: on the last iteration $doWait can return right at
-			// timeoutMs, and this sleep must not push the overall wait past the documented deadline.
-			if (parts.get() < pres.length && (now() - _init) < timeoutMs) sleep(__getThreadPools().queued * waitMs, true)
-			tries++
-		} while(parts.get() < pres.length && tries < 100 && (now() - _init) < timeoutMs)
+	if (parallelCall || _ts.length > 0) {
+		var _all = _ts.length > 0 && remainingMs() > 0 ? $doAll(_ts) : __
+		while (isDef(_all) && parts.get() < pres.length && remainingMs() > 0) {
+			$doWait(_all, remainingMs())
+			var budget = remainingMs()
+			if (parts.get() < pres.length && budget > 0) sleep(Math.min(__getThreadPools().queued * waitMs, budget), true)
+		}
 
 		if (parts.get() < pres.length) {
 			// Bounded timeout hit: cancel the aggregator and whatever partitions are still pending so their
 			// pool slots get reclaimed instead of staying poisoned for unrelated future callers.
-			try { _all.cancel("pForEach: wait timed out") } catch(e) {}
+			stopped.set(true)
+			try { if (isDef(_all)) _all.cancel("pForEach: wait timed out") } catch(e) {}
 			var _pending = pres.length - parts.get()
 			_ts.forEach(t => {
 				try {
@@ -6477,7 +6487,6 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	var _byIdx = {}
 	fRes.toArray().forEach(rs => { if (isUnDef(_byIdx[rs.i])) _byIdx[rs.i] = rs.r })
 	fRes.clear()
-	fRes = __
 
 	var res = []
 	for (var _i2 = 0; _i2 < pres.length; _i2++) {
@@ -10419,6 +10428,44 @@ const $mcp = function(aOptions) {
 			}
 		}*/
 	}
+	// Non-cache metadata comes from the first successful page. Only cache bounds and the
+	// continuation cursor are combined with subsequent pages. Conflicting scopes disable caching.
+	// Preserve the response envelope while collecting list pages through the authenticated transport.
+	// An unsuccessful page is returned intact, never presented as a successful partial/empty list.
+	const _listPages = (method, field, filter) => {
+		var all, cursor, pages = 0, expires, scope, hasTTL = false, hasScope = false, scopeChanged = false
+		do {
+			var started = nowNano()
+			var page = _execWithAuth(method, isDef(cursor) ? { cursor: cursor } : {})
+			if (!isMap(page) || isDef(page.error) ||
+				(isDef(page.resultType) && page.resultType != "complete") || !isArray(page[field])) return page
+
+			if (pages == 0) {
+				all = clone(page)
+				scope = page.cacheScope
+			} else {
+				all[field] = all[field].concat(page[field])
+				if (scope !== page.cacheScope) scopeChanged = true
+			}
+			// Missing/invalid lifetime on any page makes an aggregate uncacheable. Account for
+			// elapsed request time; never extend the earliest page's validity while fetching others.
+			var expiry = started + (isNumber(page.ttlMs) && isFinite(page.ttlMs) && page.ttlMs >= 0 ? page.ttlMs : 0) * 1000000
+			expires = pages == 0 ? expiry : Math.min(expires, expiry)
+			hasTTL = hasTTL || isDef(page.ttlMs)
+			hasScope = hasScope || isDef(page.cacheScope)
+			cursor = page.nextCursor
+			pages++
+		} while (isDef(cursor) && pages < 1000)
+
+		if (isDef(cursor)) all.nextCursor = cursor
+		else delete all.nextCursor
+		if (pages > 1) {
+			if (hasTTL || (hasScope && scopeChanged)) all.ttlMs = scopeChanged ? 0 : Math.max(0, Math.floor((expires - nowNano()) / 1000000))
+			if (hasScope && scopeChanged) all.cacheScope = "private"
+		}
+		return isDef(filter) ? filter(all) : all
+	}
+
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
 	
@@ -10511,19 +10558,10 @@ const $mcp = function(aOptions) {
 		// that talk to modern servers using those features should check for this and surface it to the user.
 		isInputRequired: result => isMap(result) && result.resultType == "input_required",
 		listTools: () => {
-            if (!_r._initialized) {
-                throw new Error("MCP client not initialized. Call initialize() first.")
-            }
-			var _all = { tools: [] }
-			var _cursor, _pages = 0
-			do {
-				var _page = _execWithAuth("tools/list", isDef(_cursor) ? { cursor: _cursor } : {})
-				if (!isMap(_page)) break
-				if (isArray(_page.tools)) _all.tools = _all.tools.concat(_page.tools)
-				_cursor = _page.nextCursor
-				_pages++
-			} while (isDef(_cursor) && _pages < 1000)
-			return _filterToolsList(_all)
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			return _listPages("tools/list", "tools", _filterToolsList)
 		},
 		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
@@ -10555,16 +10593,7 @@ const $mcp = function(aOptions) {
 			if (!_r._initialized) {
 				throw new Error("MCP client not initialized. Call initialize() first.")
 			}
-			var _all = { prompts: [] }
-			var _cursor, _pages = 0
-			do {
-				var _page = _execWithAuth("prompts/list", isDef(_cursor) ? { cursor: _cursor } : {})
-				if (!isMap(_page)) break
-				if (isArray(_page.prompts)) _all.prompts = _all.prompts.concat(_page.prompts)
-				_cursor = _page.nextCursor
-				_pages++
-			} while (isDef(_cursor) && _pages < 1000)
-			return _all
+			return _listPages("prompts/list", "prompts")
 		},
 		getPrompt: (promptName, promptArguments) => {
 			if (!_r._initialized) {

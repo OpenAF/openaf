@@ -115,4 +115,52 @@
 
         __setUserAgent(old);
     };
+
+    exports.testHTTPPersistentQueryState = function() {
+        plugin("HTTPServer");
+        ["nwu", "nwu2"].forEach(function(impl) {
+            var port = findRandomOpenPort();
+            var httpd = new HTTPd(port, "127.0.0.1", __, __, __, __, 5000, impl);
+            var received = new java.util.concurrent.LinkedBlockingQueue();
+            var socket;
+            try {
+                httpd.add("/query-state", function(req) {
+                    received.add(stringify(req.params, __, ""));
+                    return httpd.replyOKJSON("OK");
+                });
+                socket = new java.net.Socket("127.0.0.1", port);
+                socket.setSoTimeout(5000);
+                var input = socket.getInputStream(), output = socket.getOutputStream();
+                var request = function(suffix, body) {
+                    var method = isDef(body) ? "POST" : "GET";
+                    var headers = method + " /query-state" + suffix + " HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive\r\n";
+                    if (isDef(body)) headers += "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: " + body.length + "\r\n";
+                    output.write(af.fromString2Bytes(headers + "\r\n" + (isDef(body) ? body : "")));
+                    output.flush();
+                    var response = "", byte;
+                    while (!response.endsWith("\r\n\r\n") && (byte = input.read()) >= 0) response += String.fromCharCode(byte);
+                    ow.test.assert(response.indexOf("HTTP/1.1 200"), 0, "Persistent request failed on " + impl);
+                    var length = /content-length:\s*(\d+)/i.exec(response);
+                    ow.test.assert(isNull(length), false, "Missing response length on " + impl);
+                    for (var i = 0; i < Number(length[1]); i++) ow.test.assert(input.read() >= 0, true, "Truncated response");
+                    var captured = received.poll(5, java.util.concurrent.TimeUnit.SECONDS);
+                    ow.test.assert(isNull(captured), false, "Request handler did not run");
+                    return jsonParse(String(captured));
+                };
+                var first = request("?abc=123");
+                ow.test.assert(first.abc, "123", "Normal query parsing changed");
+                ow.test.assert(first["NanoHttpd.QUERY_STRING"], "abc=123", "Raw query changed");
+                ow.test.assert(request(""), {}, "Queryless request inherited previous parameters on " + impl);
+                ow.test.assert(request("?")["NanoHttpd.QUERY_STRING"], "", "Explicit empty query changed");
+                ow.test.assert(request(""), {}, "Queryless request inherited an empty query on " + impl);
+                ow.test.assert(request("", "form=one").form, "one", "Form parsing changed");
+                ow.test.assert(request(""), {}, "Queryless request inherited POST state on " + impl);
+                ow.test.assert(request("?abc=456").abc, "456", "Subsequent query failed");
+            } finally {
+                if (isDef(socket)) socket.close();
+                httpd.stop();
+            }
+        });
+    };
+
 })();

@@ -225,3 +225,11 @@ Sec suites. The Server suite includes standalone OAuth tests, and the MCP suite
 includes callback login followed by initialization and an authenticated tool call. The new suite uses temporary SBucket files and
 loopback OAuth fixtures, including cross-process token renewal. It does not prove
 a particular identity provider's app registration or consent policy.
+
+## List results
+
+`listTools()` and `listPrompts()` use the same authenticated request path for every page. They preserve the first page's result metadata, including `resultType`, `_meta`, and extension fields, while combining the item arrays. Successful tool lists still apply the configured blacklist. Legacy responses do not acquire modern metadata.
+
+A single page retains its cache metadata. For multiple pages, `ttlMs` is bounded by the earliest remaining page lifetime; a missing or invalid lifetime prevents caching. Different cache scopes produce a private, non-cacheable aggregate (`ttlMs: 0`). After the existing 1,000-page limit, `nextCursor` remains available to indicate that enumeration is incomplete; it is removed only when enumeration finishes.
+
+An error, `input_required`, or malformed list response is returned unchanged, including when it follows successful pages. Callers must inspect the response before treating it as a list; these responses are not converted to empty or partial success.

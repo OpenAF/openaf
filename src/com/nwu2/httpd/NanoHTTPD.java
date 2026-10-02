@@ -936,6 +936,8 @@ public abstract class NanoHTTPD {
                     this.inputStream.skip(this.splitbyte);
                 }
 
+                // A keep-alive session is reused; raw query state belongs to this request only.
+                this.queryParameterString = null;
                 this.parms = new HashMap<String, List<String>>();
                 if (null == this.headers) {
                     this.headers = new HashMap<String, String>();

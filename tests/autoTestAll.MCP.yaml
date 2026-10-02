@@ -64,6 +64,26 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testMCPServerDiscoverIsProbeableWithoutClientCapabilities;
 
+   - name: MCP::List metadata and pagination
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPListMetadataAndPagination;
+
+   - name: MCP::Unsuccessful list pages
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPListUnsuccessfulPages;
+
+   - name: MCP::List page limit
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPListPageLimit;
+
+   - name: MCP::Authenticated modern pagination
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPAuthenticatedModernPagination;
+
 todo:
    - MCP::OAuth discovery with client credentials
    - MCP::OAuth authorization URL includes resource and PKCE
@@ -76,3 +96,7 @@ todo:
    - MCP::legacy client unaffected by dual-era server
    - MCP::modern server rejects unsupported protocol version
    - MCP::server discover is probeable without client capabilities
+   - MCP::List metadata and pagination
+   - MCP::Unsuccessful list pages
+   - MCP::List page limit
+   - MCP::Authenticated modern pagination

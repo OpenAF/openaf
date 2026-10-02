@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilterInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,6 +65,7 @@ public class ZIP extends ScriptableObject {
 	 */
 	private static final long serialVersionUID = -411758788276719694L;
 	protected ZipFile zipFile;
+	private final java.util.Set<ZipFile> streamFiles = ConcurrentHashMap.newKeySet();
 	protected Map<String, ZipEntry> zipEntries = new ConcurrentHashMap<String, ZipEntry>();
 	protected Map<String, byte[]> zipData = new ConcurrentHashMap<String, byte[]>();
 
@@ -165,19 +167,33 @@ public class ZIP extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>ZIP.close()</key>
-	 * Will close the ZIP file associated with this object.
+	 * Closes the loaded ZIP file and all outstanding entry streams associated with this object.
 	 * </odoc>
 	 */
 	@JSFunction
-	public void close() throws IOException {
+	public synchronized void close() throws IOException {
 		clean();
-		if (zipFile != null) zipFile.close();
+		IOException failure = null;
+		if (zipFile != null) {
+			streamFiles.add(zipFile);
+			zipFile = null;
+		}
+		for (ZipFile file : streamFiles) {
+			try {
+				file.close();
+			} catch (IOException e) {
+				if (failure == null) failure = e;
+				else failure.addSuppressed(e);
+			}
+		}
+		streamFiles.clear();
+		if (failure != null) throw failure;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>ZIP.getFile(aFilename) : anArrayOfBytes</key>
-	 * Will uncompress the corresponding aFilename from the ZIP contents into an arrays of bytes.
+	 * Will uncompress the corresponding aFilename from the ZIP contents into an array of bytes. Returns null if the entry is absent.
 	 * </odoc>
 	 */
 	@JSFunction
@@ -186,7 +202,9 @@ public class ZIP extends ScriptableObject {
 		if (res != null) {
 			return res;
 		} else {
-			try ( java.io.InputStream is = zipFile.getInputStream(zipEntries.get(name)) ) {
+			ZipEntry entry = zipEntries.get(name);
+			if (zipFile == null || entry == null) return null;
+			try (InputStream is = zipFile.getInputStream(entry)) {
 				return IOUtils.toByteArray(is);
 			}
 		}
@@ -234,65 +252,57 @@ public class ZIP extends ScriptableObject {
 	 * <odoc>
 	 * <key>ZIP.streamGetFile(aFilePath, aName) : anArrayOfBytes</key>
 	 * Retrieves aName file from aFilePath zip file without loading the zip file contents into memory returning the 
-	 * file contents as an array of bytes.
+	 * file contents as an array of bytes, or null if the entry is absent. Uses an independent archive handle.
 	 * </odoc>
 	 */
 	@JSFunction
 	public Object streamGetFile(String aFilePath, String name) throws IOException {
-		ZipEntry ne;
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(aFilePath));
-		
-		try {
-			do {
-				ne = zis.getNextEntry();
-				if (ne.getName().equals(name)) {
-					if (zipFile != null) zipFile.close();
-					zipFile = new ZipFile(aFilePath);
-					byte res[];
-					try {
-						res = IOUtils.toByteArray(zipFile.getInputStream(ne));
-						return res;
-					} catch(Exception e) {
-						throw e;
-					} finally {
-						zipFile.close();
-					}
-				}
-			} while(ne != null);
-		} catch(Exception e) {
-			throw e;
-		} finally {
-			zis.close();
+		try (ZipFile file = new ZipFile(aFilePath)) {
+			ZipEntry entry = file.getEntry(name);
+			if (entry == null) return null;
+			try (InputStream stream = file.getInputStream(entry)) {
+				return IOUtils.toByteArray(stream);
+			}
 		}
-		
-		return null;
-	}	
-	
+	}
+
 	/**
 	 * <odoc>
 	 * <key>ZIP.streamGetFileStream(aFilePath, aName) : JavaInputStream</key>
 	 * Retrieves aName file from aFilePath zip file without loading the zip file contents into memory returning a 
-	 * Java InputStream.
+	 * Java InputStream, or null if the entry is absent. Each stream owns an independent archive handle.
+	 * Close the stream after use to release that handle. ZIP.close() also closes outstanding streams.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object streamGetFileStream(String aFilePath, String name) throws Exception {
-		ZipEntry ne;
-		
-		try ( ZipInputStream zis = new ZipInputStream(new FileInputStream(aFilePath)) ) {
-			do {
-				ne = zis.getNextEntry();
-				if (ne.getName().equals(name)) {
-					if (zipFile != null) zipFile.close();
-					zipFile = new ZipFile(aFilePath);
-					return zipFile.getInputStream(ne);
+	public synchronized Object streamGetFileStream(String aFilePath, String name) throws Exception {
+		final ZipFile file = new ZipFile(aFilePath);
+		try {
+			ZipEntry entry = file.getEntry(name);
+			if (entry == null) {
+				file.close();
+				return null;
+			}
+			InputStream stream = new FilterInputStream(file.getInputStream(entry)) {
+				@Override
+				public void close() throws IOException {
+					synchronized (ZIP.this) {
+						try (ZipFile archive = file) {
+							super.close();
+						} finally {
+							streamFiles.remove(file);
+						}
+					}
 				}
-			} while(ne != null);
-		} 
-		
-		return null;
+			};
+			streamFiles.add(file);
+			return stream;
+		} catch (Exception e) {
+			try { file.close(); } catch (IOException closeError) { e.addSuppressed(closeError); }
+			throw e;
+		}
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>ZIP.streamPutFile(aFilePath, aName, anArrayOfBytes)</key>
@@ -647,7 +657,9 @@ public class ZIP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public ZIP loadFile(String filename) throws IOException {
+	public synchronized ZIP loadFile(String filename) throws IOException {
+		if (zipFile != null) zipFile.close();
+		zipFile = null;
 		clean();
 		
 		zipFile = new ZipFile(filename);

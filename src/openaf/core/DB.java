@@ -99,17 +99,11 @@ public class DB {
 	 * </odoc>
 	 */
 	public void close() throws SQLException {
-		if (con != null) {
-			//try {
-				closeAllStatements();
-				con.close();
-			//} catch (SQLException e) {
-				//SimpleLog.log(SimpleLog.logtype.ERROR, "Error closing database " + url + ": " + e.getMessage(), e);
-			//	throw e;
-			//}
+		try (Connection connection = con) {
+			closeAllStatements();
 		}
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>DB.getStatements() : Array</key>
@@ -142,15 +136,10 @@ public class DB {
 	 * </odoc>
 	 */
 	public void closeStatement(String aQuery) throws SQLException {
-		if (con != null) {
-			PreparedStatement ps = preparedStatements.get(aQuery);
-			if (ps != null) {
-				ps.close();
-				preparedStatements.remove(aQuery);
-			}
-		}
+		PreparedStatement ps = preparedStatements.remove(aQuery);
+		if (ps != null) ps.close();
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>DB.closeAllStatements()</key>
@@ -159,13 +148,40 @@ public class DB {
 	 * </odoc>
 	 */
 	public void closeAllStatements() throws SQLException {
-		if (con != null) {
-			for(PreparedStatement ps : preparedStatements.values()) {
+		List<PreparedStatement> statements = new ArrayList<>(preparedStatements.values());
+		preparedStatements.clear();
+		Exception failure = null;
+		for (PreparedStatement ps : statements) {
+			try {
 				ps.close();
+			} catch (SQLException | RuntimeException e) {
+				if (failure == null) failure = e;
+				else failure.addSuppressed(e);
 			}
 		}
+		if (failure instanceof SQLException) throw (SQLException) failure;
+		if (failure != null) throw (RuntimeException) failure;
 	}
-	
+
+	private PreparedStatement prepareStatement(String sql, boolean keepStatement) throws SQLException {
+		PreparedStatement ps = preparedStatements.get(sql);
+		if (ps != null && ps.isClosed()) {
+			preparedStatements.remove(sql, ps);
+			ps = null;
+		}
+		if (ps == null) {
+			ps = con.prepareStatement(sql);
+			if (keepStatement) {
+				PreparedStatement existing = preparedStatements.putIfAbsent(sql, ps);
+				if (existing != null) {
+					ps.close();
+					ps = existing;
+				}
+			}
+		}
+		return ps;
+	}
+
 	/**
 	 * <odoc>
         * <key>DB.q(aQuery) : Map</key>
@@ -342,25 +358,24 @@ public class DB {
 	 * exception will be thrown. Optionally you can specify to keepStatement (e.g. boolean) to keep from closing
 	 * the prepared statement used for reuse in another qs call. If you specify to use keepStatement do close this
 	 * query, as soon as possible, using DB.closeStatement(aQuery) (where you provide an exactly equal statement to 
-	 * aQuery) or DB.closeAllStatements.
+	 * aQuery) or DB.closeAllStatements. Cached statements remain open until explicitly closed,
+	 * including when later calls use keepStatement=false. Every execution requires a complete set of bind values.
 	 * </odoc>
 	 */
 	public Object qs(String query, JSEngine.JSList bindVariables, boolean keepStatement) throws IOException, SQLException {
 		if (con != null) {
-			//try {
-				PreparedStatement ps = preparedStatements.get(query);
-				if (ps == null) {
-					ps = con.prepareStatement(query);
-					if (keepStatement) preparedStatements.putIfAbsent(query, ps);
-				}
-				
+			PreparedStatement ps = prepareStatement(query, keepStatement);
+			// A cached statement belongs to the cache even when this call does not request caching.
+			try (PreparedStatement owned = preparedStatements.get(query) == ps ? null : ps) {
+				ps.clearParameters();
+
 				int ii = 0;
 				for (Object obj : bindVariables ) {
 					ii++;
 					ps.setObject(ii, obj);
 				}
 				
-				ResultSet rs = ps.executeQuery();
+				try (ResultSet rs = ps.executeQuery()) {
 				
 				int numberColumns = rs.getMetaData().getColumnCount();
 				JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
@@ -444,14 +459,11 @@ public class DB {
 					records.add(record.getMap());
 				}
 				
-				rs.close();
-				if (!keepStatement) ps.close();
 				no.put("results", records.getList());
 
 				return no.getMap();
-			//} catch (SQLException e) {
-			//	throw e;
-			//}
+				}
+			}
 		}
 		return null;
 	}
@@ -531,49 +543,28 @@ public class DB {
 	 * error an exception will be thrown. Optionally you can specify to keepStatement (e.g. boolean) to keep from closing
 	 * the prepared statement used for reuse in another us call. If you specify to use keepStatement do close this
 	 * query, as soon as possible, using DB.closeStatement(aQuery) (where you provide an exactly equal statement to 
-	 * aQuery) or DB.closeAllStatements.
+	 * aQuery) or DB.closeAllStatements. Cached statements remain open until explicitly closed,
+	 * including when later calls use keepStatement=false. Every execution requires a complete set of bind values.
 	 * </odoc>
 	 */
 	public int us(String sql, JSEngine.JSList objs, boolean keepStatement) throws SQLException {
 		if (con != null) {
-			//try { 
-				PreparedStatement ps = preparedStatements.get(sql);
-				if (ps != null) {
-					keepStatement = true;
-				} else {
-					ps = con.prepareStatement(sql);
-					if (keepStatement) preparedStatements.putIfAbsent(sql, ps);
-				}
-
-				//if (objs instanceof JSEngine.JSList) {
-					int i = 0;
-					for (Object obj : objs ) {
-						i++;
-						if (obj instanceof org.mozilla.javascript.IdScriptableObject) {
-							if (((org.mozilla.javascript.IdScriptableObject) obj).getClassName().equals("Date")) {
-								obj = Context.jsToJava(obj, java.util.Date.class);
-							}
-						}
-
-						try {
-							ps.setObject(i, obj);
-						} catch(Exception e) {
-							System.err.println("ERROR: " + e.getMessage());
-							e.printStackTrace();
-						}
+			PreparedStatement ps = prepareStatement(sql, keepStatement);
+			try (PreparedStatement owned = preparedStatements.get(sql) == ps ? null : ps) {
+				ps.clearParameters();
+				int i = 0;
+				for (Object obj : objs) {
+					if (obj instanceof IdScriptableObject && ((IdScriptableObject) obj).getClassName().equals("Date")) {
+						obj = Context.jsToJava(obj, java.util.Date.class);
 					}
-				//}
-				int res = ps.executeUpdate();
-				if (!keepStatement) ps.close();
-				
-				return res;
-			//} catch (SQLException e) {
-			//	throw e;
-			//}
+					ps.setObject(++i, obj);
+				}
+				return ps.executeUpdate();
+			}
 		}
 		return -1;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>DB.usArray(aSQL, anArrayOfArrays, aBatchSize, keepStatement) : Number</key>
@@ -582,7 +573,8 @@ public class DB {
 	 * affected. In case of error an exception will be thrown. Optionally you can specify to keepStatement (e.g. boolean) to keep
 	 * from closing the prepared statement used for reuse in another usArray call. If you specify to use keepStatement do close this
 	 * query, as soon as possible, using DB.closeStatement(aQuery) (where you provide an exactly equal statement to 
-	 * aQuery) or DB.closeAllStatements. You can also specify aBatchSize (default is 1000) to indicate when a commit
+	 * aQuery) or DB.closeAllStatements. Cached statements remain open until explicitly closed,
+	 * including when later calls use keepStatement=false. Every execution requires a complete set of bind values. You can also specify aBatchSize (default is 1000) to indicate when a commit
 	 * should be performed while executing aSQL for each array of bind variables in anArrayOfArrays.\
 	 * \
 	 * Example:\
@@ -594,21 +586,18 @@ public class DB {
 	 */
 	public long usArray(String sql, JSEngine.JSList objs, int batchSize, boolean keepStatement) throws SQLException {
 		if (con != null) {
-			//try {
-				PreparedStatement ps = preparedStatements.get(sql);
-				if (ps != null) {
-					keepStatement = true;
-				} else {
-					ps = con.prepareStatement(sql);
-					if (keepStatement) preparedStatements.putIfAbsent(sql, ps);
-				}
-				
+			PreparedStatement ps = prepareStatement(sql, keepStatement);
+			try (PreparedStatement owned = preparedStatements.get(sql) == ps ? null : ps;
+				 AutoCloseableBatch batch = new AutoCloseableBatch(ps)) {
+				ps.clearBatch();
+
 				int count = 0;
 				long res = 0; // Use long to prevent overflow with large datasets
 				if (batchSize <= 0) batchSize = 1000;
 				
 				// Use enhanced iteration for better performance
 				for(Object obj : objs) {
+					ps.clearParameters();
 					JSEngine.JSList paramList = (JSEngine.JSList) obj;
 					int paramIndex = 1; // JDBC parameters are 1-indexed
 					
@@ -636,18 +625,28 @@ public class DB {
 					}
 					ps.clearBatch();
 				}
-				
-				if (!keepStatement) ps.close();
-				
+
 				// Handle potential overflow
 				return res > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) res;
-			//} catch (SQLException e) {
-			//	throw e;
-			//}
+			}
 		}
 		return -1;
 	}
 	
+	// Clear queued rows on success and failure; try-with-resources preserves the original error.
+	private static class AutoCloseableBatch implements AutoCloseable {
+		private final PreparedStatement statement;
+
+		AutoCloseableBatch(PreparedStatement statement) {
+			this.statement = statement;
+		}
+
+		@Override
+		public void close() throws SQLException {
+			statement.clearBatch();
+		}
+	}
+
 	/**
 	 * -odoc-
 	 * <key>DB.usArrayHighPerf(aSQL, anArrayOfArrays, aBatchSize, keepStatement, useVirtualThreads) : Number</key>

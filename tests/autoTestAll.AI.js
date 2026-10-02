@@ -515,19 +515,32 @@
         });
 
         try {
-            var url = "http://127.0.0.1:" + port;
-            var gCache = new ow.ai.gpt("anthropic", { key: "test-key", url: url, promptCaching: true });
-            gCache.model._request("v1/messages", {});
-            ow.test.assert(captured[0]["anthropic-beta"], "prompt-caching-2024-07-31", "Problem enabling Anthropic prompt caching beta header on request.");
-
-            captured = [];
-            gCache.model._requestStream("v1/messages", {});
-            ow.test.assert(captured[0]["anthropic-beta"], "prompt-caching-2024-07-31", "Problem enabling Anthropic prompt caching beta header on stream request.");
-
-            captured = [];
-            var gNoCache = new ow.ai.gpt("anthropic", { key: "test-key", url: url, promptCaching: false });
-            gNoCache.model._request("v1/messages", {});
-            ow.test.assert(isUnDef(captured[0]["anthropic-beta"]), true, "Problem keeping Anthropic prompt caching beta header disabled by default.");
+            [
+                { promptCaching: true },
+                { promptCaching: false },
+                { promptCaching: true, headers: { "anthropic-beta": "explicit-test-beta", "x-test-header": "kept" } }
+            ].forEach(function(options) {
+                var g = new ow.ai.gpt("anthropic", merge({ key: "test-key", url: "http://127.0.0.1:" + port }, options));
+                ["_request", "_requestStream"].forEach(function(method) {
+                    captured = [];
+                    var response;
+                    try {
+                        response = g.model[method]("v1/messages", {});
+                        ow.test.assert(captured.length, 1, "Anthropic request did not reach fixture");
+                        ow.test.assert(captured[0]["x-api-key"], "test-key", "Anthropic authentication header changed");
+                        ow.test.assert(captured[0]["anthropic-version"], "2023-06-01", "Anthropic API version changed");
+                        ow.test.assert(captured[0].accept, method == "_requestStream" ? "text/event-stream" : "*/*", "Anthropic Accept header changed");
+                        if (isDef(options.headers)) {
+                            ow.test.assert(captured[0]["anthropic-beta"], "explicit-test-beta", "Explicit beta header was discarded");
+                            ow.test.assert(captured[0]["x-test-header"], "kept", "Custom header was discarded");
+                        } else {
+                            ow.test.assert(isUnDef(captured[0]["anthropic-beta"]), true, "Prompt caching must not inject an obsolete beta header");
+                        }
+                    } finally {
+                        if (isDef(response) && isDef(response.close)) response.close();
+                    }
+                });
+            });
         } finally {
             ow.server.httpd.stop(hs);
         }

@@ -926,6 +926,46 @@
         }
     }
 
+
+    exports.testPForEachQueueTimeout = function() {
+        var nc = getNumberOfCores();
+        if (nc < 3) return;
+        var saved = clone(__flags.PFOREACH);
+        var source = io.readFileString("../js/openaf.js");
+        source = source.substring(source.indexOf("const pForEach ="), source.indexOf("\n/**", source.indexOf("const pForEach =")));
+        // Exercise the current function with deterministic queue pressure and real, bounded workers.
+        var run = (new Function("__getThreadPools", source.replace("const pForEach =", "return")))(() => ({ active: 0, queued: 100, poolSize: 1 }));
+        var interrupted = $atomic(false, "boolean"), started = $atomic(0), sawTimeout = false;
+        var arr = [], perPartition = 4;
+        for (var i = 0; i < nc * perPartition; i++) arr.push(i);
+        __flags.PFOREACH.forceSeq = false;
+        __flags.PFOREACH.min_par_size = 0;
+        __flags.PFOREACH.seq_ratio = 1e6;
+        try {
+            var init = now();
+            var res = run(arr, (v, i) => {
+                if (i < perPartition) return v * 2;
+                started.inc();
+                try { java.lang.Thread.sleep(3000); }
+                catch (e) { interrupted.set(true); throw e; }
+                return v * 2;
+            }, e => { if (String(e).indexOf("timed out") >= 0) sawTimeout = true; }, false, 300);
+            var elapsed = now() - init;
+            ow.test.assert(elapsed < 1500, true, "Queue-pressure wait exceeded deadline: " + elapsed + "ms");
+            ow.test.assert(sawTimeout, true, "Queue-pressure timeout was not reported");
+            ow.test.assert(res.length, arr.length, "Timeout result lost positions");
+            for (var j = 0; j < perPartition; j++) ow.test.assert(res[j], j * 2, "Completed partition moved");
+            for (var j = perPartition; j < arr.length; j++) ow.test.assert(isUnDef(res[j]), true, "Missing partition lacks placeholder");
+            ow.test.assert(started.get(), 1, "Dispatch continued past deadline");
+            for (var j = 0; j < 100 && !interrupted.get(); j++) sleep(10);
+            ow.test.assert(interrupted.get(), true, "Throttled promise was lost and could not be cancelled");
+            ow.test.assert(pForEach(arr, v => v + 1, __, false), arr.map(v => v + 1), "Parallel work after timeout failed");
+            ow.test.assert(pForEach([1, 2, 3], v => v * 2, __, true, 1), [2, 4, 6], "Sequential work changed");
+        } finally {
+            Object.keys(saved).forEach(k => __flags.PFOREACH[k] = saved[k]);
+        }
+    };
+
     exports.test2FA = function() {
         ow.loadFormat();
 
