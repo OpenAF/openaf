@@ -40,6 +40,21 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testLoadCompiledRecursionDepth;
 
+   - name: Compile::partitioned compilation
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPartitionedCompilation;
+
+   - name: Compile::failure preserves jar
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testCompilationFailurePreservesJar;
+
+   - name: Compile::partition size retry
+     from: Compile::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPartitionSizeRetry;
+
 todo:
    # Compile tests
    # ------------
@@ -50,3 +65,6 @@ todo:
    - Compile::loadCompiled stale recompile
    - Compile::loadCompiled purges stale layout
    - Compile::loadCompiled recursion depth
+   - Compile::partitioned compilation
+   - Compile::failure preserves jar
+   - Compile::partition size retry

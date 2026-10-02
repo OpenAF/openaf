@@ -1502,7 +1502,8 @@ public class AFBase extends ScriptableObject {
 		}
 
 		for (int i = 0; i < descriptors.length; i++) {
-			String codeClass = className + "ojsc" + i;
+			// Partitioned bodies have trampolines under their owning shard prefix.
+			String codeClass = descriptors[i].getCode().getClass().getName();
 			try {
 				Class.forName(codeClass, true, loader);
 			} catch (ClassNotFoundException e) {

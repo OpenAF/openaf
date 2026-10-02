@@ -10,7 +10,9 @@ import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.ast.AstRoot;
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.ScriptNode;
+import org.mozilla.javascript.optimizer.OpenAFCodegen;
 import org.mozilla.javascript.optimizer.Codegen;
+import org.mozilla.classfile.ClassFileWriter.ClassFileFormatException;
 import org.mozilla.javascript.optimizer.OptJSCode;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -238,15 +240,28 @@ public class CompileJS2Java {
         codegen.setMainMethodClass(cc.getMainMethodClass());
         JSDescriptor.Builder builder = new JSDescriptor.Builder();
         OptJSCode.BuilderEnv builderEnv = new OptJSCode.BuilderEnv(mainClassName);
-        byte[] mainBytes = codegen.compileToClassFile(cc.getCompilerEnv(), builder, builderEnv, mainClassName, scriptNode, script, false);
+        Object[] bodies;
+        try {
+            byte[] mainBytes = codegen.compileToClassFile(cc.getCompilerEnv(), builder,
+                    builderEnv, mainClassName, scriptNode, script, false);
+            bodies = new Object[] { mainClassName, mainBytes };
+        } catch (ClassFileFormatException ex) {
+            // Only Rhino's constant-pool LDC index overflow enables partitioning.
+            // Codegen has already optimized this complete IR; do not transform it twice.
+            if (!"out of range index".equals(ex.getMessage())) throw ex;
+            OpenAFCodegen partitioned = new OpenAFCodegen();
+            builder = new JSDescriptor.Builder();
+            partitioned.compilePartitioned(cc.getCompilerEnv(), builder, mainClassName,
+                    scriptNode, script);
+            bodies = partitioned.getGeneratedClasses();
+        }
         clearDescriptorRawSources(builder);
         Object[] descriptors = invokeBuildDescriptorsAndMain(cc, mainClassName, builder);
 
         if (isScript) {
-            Object[] out = new Object[descriptors.length + 2];
-            System.arraycopy(descriptors, 0, out, 2, descriptors.length);
-            out[0] = mainClassName;
-            out[1] = mainBytes;
+            Object[] out = new Object[descriptors.length + bodies.length];
+            System.arraycopy(bodies, 0, out, 0, bodies.length);
+            System.arraycopy(descriptors, 0, out, bodies.length, descriptors.length);
             return out;
         }
 
@@ -256,12 +271,11 @@ public class CompileJS2Java {
         Map<String, Integer> functionNames = collectFunctionNames(scriptNode);
         byte[] adapterBytes = JavaAdapter.createAdapterCode(functionNames, className, targetExtends, targetImplements, mainClassName);
 
-        Object[] out = new Object[descriptors.length + 4];
-        System.arraycopy(descriptors, 0, out, 4, descriptors.length);
+        Object[] out = new Object[descriptors.length + bodies.length + 2];
+        System.arraycopy(bodies, 0, out, 2, bodies.length);
+        System.arraycopy(descriptors, 0, out, bodies.length + 2, descriptors.length);
         out[0] = className;
         out[1] = adapterBytes;
-        out[2] = mainClassName;
-        out[3] = mainBytes;
         return out;
     }
 

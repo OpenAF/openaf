@@ -128,4 +128,144 @@
 
         io.rm(__compileScratch);
     };
+
+    // 36,000 distinct literals overflow Rhino's single-class constant pool.
+    // Function boundaries deliberately cross the initial 64-body partition.
+    var __partitionSource = function() {
+        var source = "var shared = 7; var __hoisted = right(3); function buildThing(x) { return new Thing(x); } function right(x) { var n = 0; try { for (var k = 0; k < 2; k++) { if (x >= 0) n += x; } return n; } finally { shared += 0; } }\n";
+        for (var i = 0; i < 600; i++) {
+            source += "function part" + i + "(x) { return [";
+            for (var j = 0; j < 60; j++) source += "'unique_" + i + "_" + j + "',";
+            source += "x + shared," + i + ".5]; }\n";
+        }
+        source += [
+            "function left(x) { return right(x) + part599(x)[60]; }",
+            "function Thing(x) { this.value = left(x); }",
+            "function make(x) { let y = x; return function(z) { y += z; return y + shared; }; }",
+            "function strict() { 'use strict'; return this === undefined; }",
+            "function* gen() { yield left(2); yield /ab+/i.test('ABBB'); }",
+            "function tag(s, x) { return s.raw[0] + x + s[1]; }",
+            "function template() { return tag`before${left(1)}after`; }",
+            "function caught() { try { throw new Error('expected'); } catch(e) { return e.message; } }",
+            "var closure = make(10), iterator = gen();",
+            "var __partitionResult = JSON.stringify([left(3), buildThing(4).value, closure(2), closure(3), strict(), iterator.next().value, iterator.next().value, template(), caught(), right.toString(), part599(3)[0], part599(3)[61], __hoisted, template()]);"
+        ].join("\n");
+        return source;
+    };
+
+    var __validConstantPool = function(bytes) {
+        var u2 = p => ((bytes[p] & 255) << 8) | (bytes[p + 1] & 255);
+        var count = u2(8), pos = 10, refs = [];
+        if (count < 1) return false;
+        for (var i = 1; i < count; i++) {
+            var tag = bytes[pos++] & 255;
+            switch(tag) {
+                case 1: pos += 2 + u2(pos); break;
+                case 3: case 4: pos += 4; break;
+                case 5: case 6: pos += 8; i++; break;
+                case 7: case 8: case 16: case 19: case 20:
+                    refs.push(u2(pos)); pos += 2; break;
+                case 9: case 10: case 11: case 12:
+                    refs.push(u2(pos), u2(pos + 2)); pos += 4; break;
+                case 17: case 18:
+                    refs.push(u2(pos + 2)); pos += 4; break;
+                case 15: refs.push(u2(pos + 1)); pos += 3; break;
+                default: return false;
+            }
+            if (pos > bytes.length) return false;
+        }
+        return pos + 6 <= bytes.length && refs.every(r => r > 0 && r < count);
+    };
+
+    exports.testPartitionedCompilation = function() {
+        __resetScratch();
+        try {
+            var source = __partitionSource();
+            // force interpreted evaluation in a separate context to compare semantics
+            var cx = org.mozilla.javascript.Context.enter();
+            var previous = cx.isInterpretedMode();
+            var expected;
+            try {
+                cx.setInterpretedMode(true);
+                var scope = cx.initStandardObjects();
+                cx.evaluateString(scope, source, "partition-reference", 1, null);
+                expected = String(org.mozilla.javascript.ScriptableObject.getProperty(scope, "__partitionResult"));
+            } finally {
+                cx.setInterpretedMode(previous);
+                org.mozilla.javascript.Context.exit();
+            }
+            var jar = __compileScratch + "PartitionJar.jar";
+            af.compileToJar("PartitionJar", source, jar);
+            af.runFromExternalClass("PartitionJar", jar);
+            ow.test.assert(__partitionResult, expected, "Partitioned JAR semantics differ from interpreted execution.");
+            var loose = __compileScratch + "loose";
+            io.mkdir(loose);
+            af.compileToClasses("PartitionLoose", source, loose);
+            af.runFromExternalClass("PartitionLoose", loose);
+            ow.test.assert(__partitionResult, expected, "Partitioned loose-class semantics differ from interpreted execution.");
+            var classes = io.listFiles(loose).files.filter(f => f.filename.endsWith(".class"));
+            ow.test.assert(classes.some(f => /Shard[0-9]+\.class$/.test(f.filename)), true, "Expected generated body shards.");
+            classes.forEach(f => {
+                var bytes = io.readFileBytes(f.filepath);
+                ow.test.assert(__validConstantPool(bytes), true, "Invalid constant-pool entry or reference bounds: " + f.filename);
+            });
+            var file = __compileScratch + "partitionLoad.js";
+            io.writeFileString(file, source);
+            loadCompiled(file, false, false);
+            ow.test.assert(__partitionResult, expected, "loadCompiled partitioned script changed behavior.");
+            io.writeFileString(__compileScratch + "partitionModule.js", source + "\nexports.result = __partitionResult;");
+            ow.test.assert(requireCompiled(__compileScratch + "partitionModule.js", false, false).result, expected, "requireCompiled partitioned module changed behavior.");
+        } finally {
+            io.rm(__compileScratch);
+        }
+    };
+
+    exports.testCompilationFailurePreservesJar = function() {
+        __resetScratch();
+        try {
+            var jar = __compileScratch + "Preserved.jar";
+            af.compileToJar("Preserved", "var __preserved = 42;", jar);
+            var before = sha256(io.readFileBytes(jar));
+            var failed = false;
+            try { af.compileToJar("Preserved", "function broken( {", jar); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "Unrelated parse error should propagate.");
+            ow.test.assert(sha256(io.readFileBytes(jar)), before, "Failed recompilation replaced the previous JAR.");
+            var small = __compileScratch + "small";
+            io.mkdir(small);
+            af.compileToClasses("Small", "function small() { return 1; }", small);
+            ow.test.assert(io.listFiles(small).files.some(f => /Shard/.test(f.filename)), false, "Small script should retain the single-class path.");
+        } finally { io.rm(__compileScratch); }
+    };
+
+
+    exports.testPartitionSizeRetry = function() {
+        __resetScratch();
+        try {
+            var source = "";
+            for (var i = 0; i < 96; i++) {
+                source += "function adaptive" + i + "() { return [";
+                for (var j = 0; j < 600; j++) source += "'adaptive_" + i + "_" + j + "',";
+                source += "42]; }\n";
+            }
+            source += "var __adaptiveResult = adaptive95()[600];";
+            var loose = __compileScratch + "adaptive";
+            io.mkdir(loose);
+            af.compileToClasses("Adaptive", source, loose);
+            // A 64-body shard still overflows; the retry must reduce it to 32.
+            ow.test.assert(io.fileExists(loose + "/AdaptiveShard3.class"), true, "Expected partition-size reduction after a shard overflow.");
+            af.runFromExternalClass("Adaptive", loose);
+            ow.test.assert(__adaptiveResult, 42, "Reduced partition didn't execute correctly.");
+            var jar = __compileScratch + "Limit.jar";
+            af.compileToJar("Limit", "var __limitValue = 42;", jar);
+            var before = sha256(io.readFileBytes(jar));
+            var oversized = "function oversized() { return [";
+            for (var k = 0; k < 36000; k++) oversized += "'single_" + k + "',";
+            oversized += "42]; }";
+            var failure;
+            try { af.compileToJar("Limit", oversized, jar); } catch(e) { failure = String(e); }
+            ow.test.assert(isDef(failure) && /Native compilation limit/.test(failure), true, "A single oversized body must report the explicit native compilation limit: " + failure);
+            ow.test.assert(sha256(io.readFileBytes(jar)), before, "Terminal partition failure replaced the previous JAR.");
+        } finally { io.rm(__compileScratch); }
+    };
+
 })();
