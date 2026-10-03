@@ -427,3 +427,32 @@ newprovider: {
 ```
 
 This guide should provide sufficient information for implementing new LLM service wrappers that integrate seamlessly with the OpenAF AI ecosystem.
+
+## Optional decision and structured-output hooks
+
+The additive version 1 decision API is described in [Stateless LLM decisions](llm-decisions.md), with [verified contract records](llm-decisions-contracts.md). Existing third-party adapters do not need these hooks for chat or other established operations.
+
+| Hook on the created provider adapter | Contract |
+| --- | --- |
+| `getCapabilities(model)` | Returns a fresh capability map for that model; no HTTP by default |
+| `resetDecisionStats()` | Clears built-in legacy last-call statistics before preflight validation |
+| `rawDecide(request)` | Native isolated execution; returns `{ raw, stats }` from one request |
+| `normalizeDecisionResponse(raw, request)` | Parses native semantics into the canonical named answer map |
+| `rawStructuredPrompt(request)` | Isolated schema-constrained execution; returns `{ raw, stats }` |
+| `normalizeStructuredResponse(raw, request)` | Parses finalized provider text, rejects blocked/truncated/refused output, validates it, and returns canonical answers |
+| `structuredSchemaPrompt(prompt, descriptor, model, temperature, tools)` | Optional conversational schema helper; returns `{ response, stats }` and allows provider-specific parsing without an OpenAI envelope |
+
+The validated decision request contains copied `state`, copied `questions`, `model`, selected `strategy`, `requireProbabilities`, allowlisted `providerOptions`, compiled `schema`, and trusted `instructions`. Provider adapters retain HTTP/authentication/timeout and response-envelope responsibilities. The shared layer owns input validation, strategy eligibility, schema compilation, normalized result validation, and facade forwarding. Decisions never call chat's conversation/tool loop or mutable `cleanPrompt` path.
+
+Capabilities contain `contractVersion: 1`, `inputTypes: ["text", "json"]`, `streaming: false`, and `native`/`structured` objects. Each strategy object contains `implemented`, `contract`, `questionTypes`, `probabilities`, and `availability`. Verified documentation and implementation support do not establish model, endpoint, tenant, or account availability. Use unknown availability when no authoritative evidence is present. Do not infer native support from the generic `openai` provider type or from a compatible chat gateway.
+
+| Adapter | Native | Structured | Probability information |
+| --- | --- | --- | --- |
+| Ollama | System One; implemented, contract verified | Unsupported | Provider distributions/P(true), separate expectation/confidence |
+| Gemini | Unsupported | GenerateContent; implemented | Null probability/expectation fields |
+| OpenAI | Contract unverified; no outbound native request | Responses or explicit Chat; implemented | Null probability/expectation fields |
+| Legacy third-party adapters | Unsupported absent hooks | Unsupported absent hooks | Existing methods remain available |
+
+`rawDecide()` returns `{ contractVersion, provider, model, strategy, raw }`; it does not require a second inference. `decideWithStats()` receives statistics from the execution result rather than rereading mutable shared state. Last-call statistics remain compatible but are not a concurrency-safe result channel. A failed native request never triggers structured generation, and an OpenAI structured request never uses the legacy chat fallback cache.
+
+Gemini's explicit schema helper defaults to `structuredOutputProfile: "response-format"`, using `generationConfig.responseFormat.text.{mimeType,schema}` with `APPLICATION_JSON`. Explicit `legacy-schema` uses the older responseMimeType/responseSchema representation. The new helper rejects inherited schema/MIME conflicts; legacy chat pass-through behavior remains intact. Only the declared supported schema subset is translated, and output validation does not depend on global Ajv coercion/default settings.

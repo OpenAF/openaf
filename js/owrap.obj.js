@@ -3730,90 +3730,241 @@ OpenWrap.obj.prototype.syncArray.prototype.forEach = function(fn) {
 /**
  * <odoc>
  * <key>ow.obj.schemaInit(aOptions)</key>
- * Internally initializes the Ajv library. That initialization will use the options refered in 
- * https://github.com/epoberezkin/ajv#options.
+ * Initializes JSON Schema validation once per process. Without options, enables $data, $comment and useDefaults
+ * (which can modify validated data). Explicit options replace these defaults; later calls do not reconfigure it.
+ * Schemas select draft-07 (the default), draft-2019-09 or draft-2020-12 through $schema.
+ * See https://ajv.js.org/options.html and docs/json-schema.md for options and compatibility notes.
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaInit = function(aOptions) {
-	if (isUnDef(global.__ajv)) {
-		aOptions = _$(aOptions).isMap().default({
-			$data: true,
-			$comment: true,
-			useDefaults: true //,
-			//coerceTypes: true
-		});
-		loadAjv();
-		global.__ajv = new Ajv(aOptions);
-	}
+  if (isDef(global.__ajvState)) return;
+  aOptions = _$(aOptions).isMap().default({ $data: true, $comment: true, useDefaults: true });
+  var options = {}, mode = "fast";
+  Object.keys(aOptions).forEach(function(k) { options[k] = aOptions[k]; });
+  var has = function(k) { return Object.prototype.hasOwnProperty.call(options, k); };
+  if (has("format")) {
+    if ([true, false, "fast", "full"].indexOf(options.format) < 0) throw new Error("schemaInit: format must be true, false, fast or full");
+    mode = options.format === "full" ? "full" : "fast";
+    if (!has("validateFormats")) options.validateFormats = options.format !== false;
+    delete options.format;
+  }
+  if (has("jsonPointers")) {
+    if (!has("jsPropertySyntax")) options.jsPropertySyntax = !options.jsonPointers;
+    delete options.jsonPointers;
+  }
+  if (has("strictKeywords") || has("strictDefaults")) {
+    if (!has("strictSchema") && !has("strict")) options.strictSchema = !!(options.strictKeywords || options.strictDefaults);
+    delete options.strictKeywords;
+    delete options.strictDefaults;
+  }
+  var removed = ["errorDataPath", "nullable", "extendRefs", "missingRefs", "processCode", "sourceCode", "unicode", "uniqueItems", "unknownFormats", "cache", "serialize", "schemaId", "ajvErrors"];
+  removed.forEach(function(k) {
+    if (has(k)) throw new Error("schemaInit: Ajv v6 option '" + k + "' is unsupported; see docs/json-schema.md for migration");
+  });
+  var strictGiven = has("strict");
+  var schemas = options.schemas;
+  delete options.schemas;
+  if (!has("strict")) options.strict = false;
+  options.code = Object.assign({ es5: true }, options.code);
+  loadAjv();
+  var state = { options: options, mode: mode, engines: {}, cache: {}, owners: new Map() };
+  // Publish only after successful creation, so a failed initialization can be retried.
+  var legacy = { unicodeRegExp: false };
+  if (!strictGiven && !has("strictNumbers")) legacy.strictNumbers = false;
+  state.engines["07"] = Ajv.OpenAF.create("07", Object.assign(legacy, options), mode);
+  // Set the draft-07 reference policy after construction to avoid upstream deprecation noise.
+  if (!has("ignoreKeywordsWithRef")) state.engines["07"].opts.ignoreKeywordsWithRef = true;
+  state.cache["07"] = new Map();
+  global.__ajv = state.engines["07"];
+  global.__ajvState = state;
+  try {
+    if (isArray(schemas)) ow.obj.schemaAdd(__, schemas);
+    else if (isMap(schemas)) Object.keys(schemas).forEach(function(k) { ow.obj.schemaAdd(k, schemas[k]); });
+  } catch(e) {
+    delete global.__ajvState;
+    delete global.__ajv;
+    throw e;
+  }
+};
+
+// Internal routing and cache helpers. Content caching retains v6's reuse of equivalent schema objects.
+OpenWrap.obj.prototype.__schemaDraft = function(schema) {
+  if (!isMap(schema) || isUnDef(schema.$schema)) return "07";
+  var uri = String(schema.$schema).replace(/#$/, "");
+  switch (uri) {
+  case "http://json-schema.org/draft-07/schema": return "07";
+  case "https://json-schema.org/draft/2019-09/schema": return "2019-09";
+  case "https://json-schema.org/draft/2020-12/schema": return "2020-12";
+  default: throw new Error("Unsupported JSON Schema dialect: " + schema.$schema);
+  }
+};
+
+OpenWrap.obj.prototype.__schemaEngine = function(draft) {
+  ow.obj.schemaInit();
+  var state = global.__ajvState;
+  if (isUnDef(state.engines[draft])) {
+    state.engines[draft] = Ajv.OpenAF.create(draft, Object.assign({}, state.options), state.mode);
+    state.cache[draft] = new Map();
+  }
+  return state.engines[draft];
+};
+
+OpenWrap.obj.prototype.__schemaKey = function(schema) {
+  var sorted = function(value) {
+    if (Array.isArray(value)) return value.map(sorted);
+    if (isMap(value)) {
+      var result = Object.create(null);
+      Object.keys(value).sort().forEach(function(k) { result[k] = sorted(value[k]); });
+      return result;
+    }
+    return value;
+  };
+  return JSON.stringify(sorted(schema));
+};
+
+OpenWrap.obj.prototype.__schemaClaim = function(schema, key, draft, publish) {
+  var owners = global.__ajvState.owners;
+  Ajv.OpenAF.schemaIds(global.__ajvState.engines[draft], schema, key).forEach(function(id) {
+    if (!isString(id)) return;
+    id = id.replace(/#$/, "");
+    if (owners.has(id) && owners.get(id) !== draft) throw new Error("Schema key or $id '" + id + "' is already registered for draft-" + owners.get(id));
+    if (publish) owners.set(id, draft);
+  });
+};
+
+OpenWrap.obj.prototype.__schemaCompileError = function(error, draft) {
+  if (isDef(error.missingSchema)) {
+    var owners = global.__ajvState.owners;
+    var owner = owners.get(String(error.missingSchema).replace(/#$/, ""));
+    if (isDef(owner) && owner !== draft) throw new Error("Cross-draft $ref is unsupported: draft-" + draft + " references draft-" + owner + " schema " + error.missingSchema);
+  }
+  throw error;
 };
 
 /**
  * <odoc>
  * <key>ow.obj.schemaCompile(aSchema) : Function</key>
- * Given a JSON aSchema returns a specific function to validate data over the provided aSchema.
+ * Compiles a JSON Schema into a reusable validator returning true/false with details in its errors property.
+ * The root $schema selects the draft; absent means draft-07. Compilation errors are thrown.
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaCompile = function(aSchema) {
-	ow.obj.schemaInit();
-	return global.__ajv.compile(aSchema);
+  var draft = ow.obj.__schemaDraft(aSchema), engine = ow.obj.__schemaEngine(draft);
+  var key = ow.obj.__schemaKey(aSchema), cache = global.__ajvState.cache[draft], entry = cache.get(key);
+  if (isDef(entry) && isDef(entry.validate)) return entry.validate;
+  ow.obj.__schemaClaim(aSchema, __, draft, false);
+  try {
+    var schema = isDef(entry) ? entry.schema : aSchema;
+    var validate = engine.compile(schema);
+    cache.set(key, { schema: schema, validate: validate });
+    if (engine.opts.addUsedSchema) ow.obj.__schemaClaim(schema, __, draft, true);
+    return validate;
+  } catch(e) {
+    // Ajv retains an added schema even when a reference prevents compilation.
+    // Keep its identity and ownership so callers can register dependencies and retry.
+    if (engine._cache.has(schema)) {
+      cache.set(key, { schema: schema });
+      if (engine.opts.addUsedSchema) ow.obj.__schemaClaim(schema, __, draft, true);
+    }
+    ow.obj.__schemaCompileError(e, draft);
+  }
 };
 
 /**
  * <odoc>
  * <key>ow.obj.schemaAdd(aKey, aSchema)</key>
- * Adds a JSON aSchema internally referring as aKey.
+ * Registers a JSON Schema under aKey in its selected draft engine. Keys and root $ids cannot collide across drafts.
+ * Register referenced schemas in the same draft before compiling a schema that uses them.
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaAdd = function(aKey, aSchema) {
-	ow.obj.schemaInit();
-	global.__ajv.addSchema(aSchema, aKey);
+  if (isArray(aSchema)) {
+    aSchema.forEach(function(schema) { ow.obj.schemaAdd(__, schema); });
+    return;
+  }
+  var draft = ow.obj.__schemaDraft(aSchema), engine = ow.obj.__schemaEngine(draft);
+  var key = ow.obj.__schemaKey(aSchema), cache = global.__ajvState.cache[draft], entry = cache.get(key);
+  var schema = isDef(entry) ? entry.schema : aSchema;
+  var alias = aKey || (isMap(schema) ? schema.$id : __) || "";
+  ow.obj.__schemaClaim(schema, alias, draft, false);
+  engine.addSchema(schema, aKey);
+  ow.obj.__schemaClaim(schema, alias, draft, true);
+  if (isUnDef(entry)) cache.set(key, { schema: schema });
 };
 
 /**
  * <odoc>
  * <key>ow.obj.schemaRemove(aKey)</key>
- * Removes a previsouly added JSON schema identified as aKey.
+ * Removes schemas by key/$id, regular expression, or schema object across the draft engines.
+ * Without aKey, removes all application schemas, retaining built-in meta-schemas and initialization options.
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaRemove = function(aKey) {
-	ow.obj.schemaInit();
-	global.__ajv.removeSchema(aKey);
+  ow.obj.schemaInit();
+  var state = global.__ajvState;
+  Object.keys(state.engines).forEach(function(draft) {
+    var cache = state.cache[draft], engine = state.engines[draft];
+    var content = isMap(aKey) || isBoolean(aKey) ? ow.obj.__schemaKey(aKey) : __;
+    var entry = isDef(content) ? cache.get(content) : __;
+    // Ajv removes schema objects by identity; resolve the v6-compatible content cache first.
+    engine.removeSchema(isDef(entry) ? entry.schema : aKey);
+    // Retain the original schema identities for entries still held by Ajv.
+    cache.forEach(function(value, key) {
+      if (!engine._cache.has(value.schema)) cache.delete(key);
+    });
+  });
+  state.owners.clear();
+  Object.keys(state.engines).forEach(function(draft) {
+    var engine = state.engines[draft];
+    [engine.schemas, engine.refs].forEach(function(schemas) {
+      Object.keys(schemas).forEach(function(key) {
+        var env = schemas[key];
+        if (env && !env.meta) state.owners.set(key.replace(/#$/, ""), draft);
+      });
+    });
+  });
 };
 
 /**
  * <odoc>
  * <key>ow.obj.schemaCheck(aSchema) : Boolean</key>
- * Returns true/false if aSchema is a valid or not.
+ * Checks whether aSchema is valid in its selected dialect, returning true/false.
+ * Unsupported dialects and configuration errors are thrown; this does not validate application data.
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaCheck = function(aSchema) {
-	ow.obj.schemaInit();
-	return global.__ajv.validateSchema(aSchema);
+  return ow.obj.__schemaEngine(ow.obj.__schemaDraft(aSchema)).validateSchema(aSchema);
 };
 
 /**
  * <odoc>
  * <key>ow.obj.schemaValidate(aSchema, aData, aErrorOptions) : boolean</key>
- * Using a JSON aSchema ill try to validate the provided aData. Optionally error options can be provided.
- * (check more in https://github.com/epoberezkin/ajv)
+ * Validates data against a schema object or registered key/$id. Returns true on success; throws an error string on invalid data.
+ * aErrorOptions supports dataVar (default args) and separator. Defaults can modify aData.
+ * For boolean validation use schemaCompile(aSchema)(aData). See docs/json-schema.md.
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) {
-	aErrorOptions = _$(aErrorOptions).isMap().default({ dataVar: "args" });
-	ow.obj.schemaInit();
-
-	var val;
-	if (isString(aSchema)) {
-		val = global.__ajv.getSchema(aSchema);
-	} else {
-		val = ow.obj.schemaCompile(aSchema);
-	}
-
-	if (val(aData)) {
-		return true;
-	} else {
-		throw global.__ajv.errorsText(val.errors, aErrorOptions);
-	}
+  aErrorOptions = _$(aErrorOptions).isMap().default({ dataVar: "args" });
+  ow.obj.schemaInit();
+  var val, engine;
+  if (isString(aSchema)) {
+    var state = global.__ajvState, id = aSchema.replace(/#$/, "");
+    var draft = state.owners.get(id);
+    var drafts = isDef(draft) ? [draft] : Object.keys(state.engines);
+    for (var i = 0; i < drafts.length; i++) {
+      engine = state.engines[drafts[i]];
+      try { val = engine.getSchema(aSchema); }
+      catch(e) { ow.obj.__schemaCompileError(e, drafts[i]); }
+      if (isDef(val)) break;
+    }
+    if (isUnDef(val)) throw new Error("JSON Schema is not registered: " + aSchema);
+  } else {
+    engine = ow.obj.__schemaEngine(ow.obj.__schemaDraft(aSchema));
+    val = ow.obj.schemaCompile(aSchema);
+  }
+  if (val(aData)) return true;
+  throw engine.errorsText(val.errors, aErrorOptions);
 };
 
 /**
@@ -3822,6 +3973,7 @@ OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) 
  * Given aJson object it tries to return a generated base json-schema (http://json-schema.org/understanding-json-schema/index.html)
  * with an optional aId and optional descriptions based on aDescriptionTmpl (template) with the variables id, required, json, _detail (boolean
  * indicating whent the template is used for items), type, format and key. Some special notation:\
+ * The generator emits draft-07 and infers array items from the first sample item. Review and schemaCheck the result.\
  *   - to indicate a regular expression just use a string starting and ending with a "/"\
  *   - to indicate a numeric range just use a "[" (inclusive) or a "]" (exclusive) to describe a numeric range (e.g "[2, 4[" )\
  *   - for enumeration use a "(" and a ")" on the beginning and end of a string representing an array of values (e.g. "([ 'red', 'blue', 'green' ])" )\

@@ -1,0 +1,97 @@
+# Copyright 2026 Nuno Aguiar
+include:
+- oJobTest.yaml
+jobs:
+- name: AIDecisions::Init
+  exec: args.tests = require("autoTestAll.AIDecisions.js");
+- name: AIDecisions::DecisionNative
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionNative;
+- name: AIDecisions::DecisionValidation
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionValidation;
+- name: AIDecisions::DecisionGeminiStructured
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionGeminiStructured;
+- name: AIDecisions::DecisionOpenAIStructured
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionOpenAIStructured;
+- name: AIDecisions::DecisionRawAndSingleExecution
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionRawAndSingleExecution;
+- name: AIDecisions::DecisionNativeInvalidResponses
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionNativeInvalidResponses;
+- name: AIDecisions::DecisionStructuredInvalidResponses
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionStructuredInvalidResponses;
+- name: AIDecisions::DecisionIsolation
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionIsolation;
+- name: AIDecisions::DecisionSafePropertiesAndValidation
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionSafePropertiesAndValidation;
+- name: AIDecisions::DecisionLimitsAndEndpoint
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionLimitsAndEndpoint;
+- name: AIDecisions::DecisionGeminiSchemaHelper
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionGeminiSchemaHelper;
+- name: AIDecisions::DecisionCapabilitiesAndLegacyAdapters
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionCapabilitiesAndLegacyAdapters;
+- name: AIDecisions::DecisionHTTPBoundary
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionHTTPBoundary;
+- name: AIDecisions::DecisionLegacyChatCompatibility
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionLegacyChatCompatibility;
+- name: AIDecisions::DecisionExecutionScopedStats
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionExecutionScopedStats;
+- name: AIDecisions::DecisionSchemaValidationIsolation
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionSchemaValidationIsolation;
+- name: AIDecisions::DecisionFlatConfigurationAndEnvironment
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionFlatConfigurationAndEnvironment;
+- name: AIDecisions::DecisionNativeCapabilityRequirements
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionNativeCapabilityRequirements;
+todo:
+- AIDecisions::DecisionNative
+- AIDecisions::DecisionValidation
+- AIDecisions::DecisionGeminiStructured
+- AIDecisions::DecisionOpenAIStructured
+- AIDecisions::DecisionRawAndSingleExecution
+- AIDecisions::DecisionNativeInvalidResponses
+- AIDecisions::DecisionStructuredInvalidResponses
+- AIDecisions::DecisionIsolation
+- AIDecisions::DecisionSafePropertiesAndValidation
+- AIDecisions::DecisionLimitsAndEndpoint
+- AIDecisions::DecisionGeminiSchemaHelper
+- AIDecisions::DecisionCapabilitiesAndLegacyAdapters
+- AIDecisions::DecisionHTTPBoundary
+- AIDecisions::DecisionLegacyChatCompatibility
+- AIDecisions::DecisionExecutionScopedStats
+- AIDecisions::DecisionSchemaValidationIsolation
+- AIDecisions::DecisionFlatConfigurationAndEnvironment
+- AIDecisions::DecisionNativeCapabilityRequirements

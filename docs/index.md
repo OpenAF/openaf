@@ -29,12 +29,15 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - openaf-flags.md – Runtime flags / environment variables
 
 ## Advanced & Deep Dives
+- [json-schema.md](json-schema.md) – JSON Schema validation, schema generation, draft selection, and Ajv compatibility
 - openaf-advanced.md – Extended ow.* module coverage, patterns
 - ojob-recipes.md – Practical, composable job recipes
 - testing.md – Testing guidelines and practices
 
 ## AI & Processing
 - ow-ai-gpttypes.md – AI / LLM provider wrappers, standardized interfaces and implementation notes
+- [llm-decisions.md](llm-decisions.md) – Stateless decisions, structured output, capabilities and probability semantics
+- [llm-decisions-contracts.md](llm-decisions-contracts.md) – Provider contract verification and fixture provenance
 - llm-guide.md – General LLM integration guide
 - llm-tui-guide.md – Guide for LLM Terminal User Interfaces
 - llm-frontend-guide.md – Rules for generating offline-first OpenAF frontends with mapped HTTP libs/endpoints

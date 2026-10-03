@@ -7327,6 +7327,13 @@ const loadDiff = function() {
 	if (res) pods.declare("JsDiff", loadDiff());
 }
 
+/**
+ * <odoc>
+ * <key>loadAjv()</key>
+ * Loads the bundled Ajv v8 JSON Schema validator as global Ajv. OpenAF schema helpers automatically load it
+ * and configure formats, draft routing and compatibility options. See ow.obj.schemaInit and docs/json-schema.md.
+ * </odoc>
+ */
 const loadAjv = function() {
 	var res = loadCompiledLib("ajv_js");
 	if (res) pods.declare("Ajv", loadAjv());

@@ -713,6 +713,8 @@ var parsedQuery = nLinqParse(query);
 
 ### Schema Validation
 
+See [JSON Schema validation](json-schema.md) for the `ow.obj.schema*` API, defaults that modify data, draft selection, references, and Ajv v8 migration. For boolean validation, use `ow.loadObj(); ow.obj.schemaCompile(schema)(data)`.
+
 ```javascript
 // JSON Schema validation
 var schema = {
@@ -727,7 +729,7 @@ var schema = {
 
 var user = { name: "John", age: 25, email: "john@example.com" };
 
-// Validate using $$
+// Returns true on success; throws on invalid data
 var isValid = $$(user).isSchema(schema);
 
 // Validate using _$ with error throwing

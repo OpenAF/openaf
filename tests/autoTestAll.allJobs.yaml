@@ -14,7 +14,9 @@ include:
 - autoTestAll.Template.yaml
 - autoTestAll.oDoc.yaml
 - autoTestAll.AI.yaml
+- autoTestAll.AIDecisions.yaml
 - autoTestAll.Server.yaml
+- autoTestAll.Schema.yaml
 - autoTestAll.Obj.yaml   
 - autoTestAll.JMX.yaml
 - autoTestAll.ZIP.yaml

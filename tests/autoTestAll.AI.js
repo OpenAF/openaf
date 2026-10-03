@@ -1117,7 +1117,7 @@
     exports.testAIOpenAIJsonSchemaPromptUnsupportedProvider = function() {
         ow.loadAI();
 
-        [ "gemini", "ollama", "anthropic" ].forEach(provider => {
+        [ "ollama", "anthropic" ].forEach(provider => {
             var g = provider == "ollama" ? new ow.ai.gpt(provider, { url: "http://127.0.0.1:11434", model: "llama-test" }) : new ow.ai.gpt(provider, { key: "test-key" });
             var threw = false;
             try {

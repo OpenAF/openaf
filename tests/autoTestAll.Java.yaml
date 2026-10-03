@@ -26,6 +26,36 @@ jobs:
      to: oJob Test
      exec: args.func = require("autoTestAll.HSPerf.js").testHSPerf;
 
+   - name: Java::JavaMaven
+     from: Java::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJavaMaven;
+
+   - name: Java::JavaJMX
+     from: Java::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJavaJMX;
+
+   - name: Java::JavaIMAP
+     from: Java::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJavaIMAP;
+
+   - name: Java::JavaClassVersion
+     from: Java::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJavaClassVersion;
+
+   - name: Java::JavaJsonMemComm
+     from: Java::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJavaJsonMemComm;
+
+   - name: Java::JavaSSL
+     from: Java::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJavaSSL;
+
 todo:
    # Java tests
    # ------------
@@ -33,3 +63,9 @@ todo:
    - Java::Java Cipher
    - Java::Java ASym Cipher
    - Java::HSPerf
+   - Java::JavaMaven
+   - Java::JavaJMX
+   - Java::JavaIMAP
+   - Java::JavaClassVersion
+   - Java::JavaJsonMemComm
+   - Java::JavaSSL
