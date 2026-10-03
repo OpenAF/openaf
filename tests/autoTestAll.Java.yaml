@@ -21,9 +21,15 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testASymCipher;
 
+   - name: Java::HSPerf
+     from: Java::Init
+     to: oJob Test
+     exec: args.func = require("autoTestAll.HSPerf.js").testHSPerf;
+
 todo:
    # Java tests
    # ------------
    - Java::Init
    - Java::Java Cipher
    - Java::Java ASym Cipher
+   - Java::HSPerf

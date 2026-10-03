@@ -2341,92 +2341,97 @@ OpenWrap.java.prototype.getLocalJavaPIDs = function(aUserID, aTmpDir) {
 
 /**
  * <odoc>
- * <key>ow.java.parseHSPerf(aByteArrayOrFile, retFlat) : Map</key>
+ * <key>ow.java.parseHSPerf(aByteArrayOrFile, retFlat, options) : Map</key>
  * Given aByteArray or a file path for a java (hotspot jvm) hsperf file (using ow.java.getLocalJavaPIDs or similar) will return the java performance information parsed into a map.
- * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent value plus additional calculations with the prefix "__"
+ * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent exact string value. Nested output includes available derived calculations with the prefix "__".
+ * Supports HotSpot perfdata 2.0 (Java 8+), with long scalars and UTF-8 strings. options.metadata=true returns {values, header, entries}; entries use original counter names.
+ * options.strict=true throws descriptive parse errors; otherwise invalid, inaccessible or unsupported buffers return 4. File and argument errors throw.
+ * Header overflow reports counters that could not be stored. Derived timer values use the reported frequency; application time is an estimate.
  * </odoc>
  */
-OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
+OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat, options) {
     if (isString(aByteArray)) aByteArray = io.readFileBytesRO(aByteArray)
-
     if (!isByteArray(aByteArray)) throw "aByteArray argument provided not a java byte array"
-    retFlat    = _$(retFlat, "retFlat").isBoolean().default(false)
-
-    var buffer = aByteArray, pos
-
-    var readName = function(aNameLen) {
-        var sb = ""
-        while(aNameLen-- > 0) {
-            var ch = buffer[pos++] & 0xff
-            if (ch != 0) sb += String.fromCharCode(ch)
+    retFlat = _$(retFlat, "retFlat").isBoolean().default(false)
+    options = _$(options, "options").isMap().default({})
+    var metadata = _$(options.metadata, "options.metadata").isBoolean().default(false)
+    var strict = _$(options.strict, "options.strict").isBoolean().default(false)
+    var res = {}, entries = {}, header
+    var fail = function(field, offset) { throw new Error("Invalid HSPerf " + field + " at offset " + offset) }
+    var buffer = java.nio.ByteBuffer.wrap(aByteArray)
+    var size = aByteArray.length
+    var intAt = function(offset) { return Number(buffer.getInt(offset)) }
+    // BigInteger.toString avoids Rhino unboxing a Java long through a JS Number.
+    var longAt = function(offset) {
+        var bytes = java.util.Arrays.copyOfRange(aByteArray, offset, offset + 8)
+        if (header.byteOrder == 1) {
+            for (var i = 0; i < 4; i++) { var t = bytes[i]; bytes[i] = bytes[7-i]; bytes[7-i] = t }
         }
-        return sb
+        return String(new java.math.BigInteger(bytes).toString())
     }
-
-    var readInt = function() {
-        var v = Number(java.math.BigInteger([ buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++] ].reverse()).intValue())
-        return (v < 0 ? Math.pow(2,32) + v : v)
+    var stringAt = function(offset, end, field) {
+        var stop = offset
+        while (stop < end && aByteArray[stop] != 0) stop++
+        if (stop == end) fail(field + " terminator", offset)
+        return String(new java.lang.String(aByteArray, offset, stop - offset, java.nio.charset.StandardCharsets.UTF_8))
     }
-
-    var readLong = function() {
-        var v = Number(java.math.BigInteger([ buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++] ].reverse()).longValue())
-        return (v < 0 ? Math.pow(2,32) + v : v)
-    }
-
-    var res = {}
     try {
-        pos = 0
-        var value = readInt()
-        if (value != 0xc0c0feca) return 4
-
-        readInt()
-        var length = readInt()
-        if (length > buffer.length) return 4
-
-        readInt()
-        readInt()
-        readInt()
-        readInt()
-
-        var count = readInt()
-        while(count-- > 0) {
-            var start = pos
-            var len = readInt()
-
-            if (start + len > length) return 4
-
-            var nameStart = readInt()
-            if (nameStart + len > length) return 4
-
-            var slen = readInt()
-            var kind = readInt()
-
-            var valStart = readInt()
-            if (valStart + len > length || valStart < nameStart) return 4
-
-            pos = start + nameStart
-            var nameLen = valStart - nameStart
-
-            var propName = readName(nameLen)
-            var s = ""
-            var type = kind & 0xff
-            switch(type) {
-            case 0x4a: s += readLong()   ; break
-            case 66  : s = readName(slen); break
-            default  : s = "0"
-            }
-            res[propName] = s
-
-            pos = start + len
+        if (size < 32) fail("header length", 0)
+        if (intAt(0) != -889274176) fail("magic", 0)
+        header = { magic: "0xcafec0c0", byteOrder: aByteArray[4] & 255,
+            majorVersion: aByteArray[5] & 255, minorVersion: aByteArray[6] & 255,
+            accessible: aByteArray[7] & 255, bufferSize: size }
+        if (header.byteOrder > 1) fail("byte order", 4)
+        if (header.majorVersion != 2 || header.minorVersion != 0) fail("version", 5)
+        if (header.accessible != 1) fail("accessibility", 7)
+        buffer.order(header.byteOrder == 1 ? java.nio.ByteOrder.LITTLE_ENDIAN : java.nio.ByteOrder.BIG_ENDIAN)
+        header.used = intAt(8)
+        header.overflow = intAt(12)
+        header.modificationTimeStamp = longAt(16)
+        header.entryOffset = intAt(24)
+        header.numEntries = intAt(28)
+        if (header.used < 32 || header.used > size) fail("used", 8)
+        if (header.overflow < 0) fail("overflow", 12)
+        if (header.entryOffset < 32 || header.entryOffset > header.used || header.entryOffset % 4) fail("entry offset", 24)
+        if (header.numEntries < 0 || header.numEntries > (header.used - header.entryOffset) / 20) fail("entry count", 28)
+        var start = header.entryOffset
+        for (var n = 0; n < header.numEntries; n++) {
+            if (start % 4 || start + 20 > header.used) fail("entry header", start)
+            var len = intAt(start), nameOffset = intAt(start+4), vectorLength = intAt(start+8)
+            var type = aByteArray[start+12] & 255, flags = aByteArray[start+13] & 255
+            var units = aByteArray[start+14] & 255, variability = aByteArray[start+15] & 255
+            var dataOffset = intAt(start+16)
+            if (len < 20 || len % 4 || len > header.used - start) fail("entry length", start)
+            if (nameOffset < 20 || nameOffset >= len) fail("name offset", start+4)
+            if (dataOffset <= nameOffset || dataOffset >= len) fail("data offset", start+16)
+            if (vectorLength < 0) fail("vector length", start+8)
+            if (units < 1 || units > 6 || variability < 1 || variability > 3) fail("units or variability", start+14)
+            var name = stringAt(start+nameOffset, start+dataOffset, "name")
+            var value
+            if (type == 74 && vectorLength == 0) {
+                if (dataOffset + 8 > len || (start + dataOffset) % 8) fail("long payload", start+dataOffset)
+                value = longAt(start+dataOffset)
+            } else if (type == 66 && vectorLength > 0 && units == 5) {
+                if (vectorLength > len-dataOffset) fail("string payload", start+dataOffset)
+                value = stringAt(start+dataOffset, start+dataOffset+vectorLength, "string")
+            } else fail("type or vector shape", start+12)
+            Object.defineProperty(res, name, { value: value, enumerable: true, configurable: true, writable: true })
+            if (metadata) Object.defineProperty(entries, name, { enumerable: true, value: {
+                type: String.fromCharCode(type), flags: flags, units: units, variability: variability,
+                vectorLength: vectorLength, entryLength: len, entryOffset: start,
+                nameOffset: nameOffset, dataOffset: dataOffset
+            } })
+            start += len
         }
     } catch(e) {
-        throw e
+        if (strict) throw e
+        return 4
     }
 
     if (!retFlat) {
         var res2 = {}
         Object.keys(res).forEach(k => {
-            nk = k.replace(/\.self$/, "_self")
+            var nk = k.replace(/\.self$/, "_self")
             nk = nk.replace(/(\.)0*(\d+)(\.)?/g, "[$2]$3")
     
             if (nk.indexOf("[") > 0) {
@@ -2443,33 +2448,54 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
             $$(res2).set(nk, res[k])
         })
 
-        res2.sun.rt.__createVmBeginDate = new Date(Number(res2.sun.rt.createVmBeginTime))
-        res2.sun.rt.__createVmEndDate   = new Date(Number(res2.sun.rt.createVmEndTime))
-        res2.sun.rt.__vmInitDoneDate    = new Date(Number(res2.sun.rt.vmInitDoneTime))
-        res2.sun.rt.__totalRunningTime  = isDef(res2.sun.os) ? (isDef(res2.sun.os.hrt.ticks) ? Number(res2.sun.os.hrt.ticks) / 1000000 : now() - res2.sun.rt.__createVmBeginDate) : __
-
-        var accTime = 0
-        for(var i in res2.sun.gc.collector) {
-            if (res2.sun.gc.collector[i].lastEntryTime > 0) {
-                res2.sun.gc.collector[i].__lastEntryDate = new Date(Number(res2.sun.rt.createVmBeginTime) + Number(res2.sun.gc.collector[i].lastEntryTime/1000000))
-                res2.sun.gc.collector[i].__lastExitDate  = new Date(Number(res2.sun.rt.createVmBeginTime) + Number(res2.sun.gc.collector[i].lastExitTime/1000000))
-                res2.sun.gc.collector[i].__lastExecTime  = res2.sun.gc.collector[i].__lastExitDate.getTime() - res2.sun.gc.collector[i].__lastEntryDate.getTime()
-                res2.sun.gc.collector[i].__avgExecTime   = (res2.sun.gc.collector[i].time/1000000) / res2.sun.gc.collector[i].invocations
-
-                accTime += res2.sun.gc.collector[i].time/1000000
-            }
+        var sun = res2.sun || {}, rt = sun.rt, gc = sun.gc
+        var hrt = (sun.os || {}).hrt || {}
+        var valid = v => isDef(v) && isFinite(Number(v))
+        var scale = valid(hrt.frequency) && Number(hrt.frequency) > 0 ? 1000 / Number(hrt.frequency) : __
+        if (isMap(rt)) {
+            ["createVmBegin", "createVmEnd", "vmInitDone"].forEach(key => {
+                if (valid(rt[key + "Time"]) && Number(rt[key + "Time"]) > 0) {
+                    var date = new Date(Number(rt[key + "Time"]))
+                    if (isFinite(date.getTime())) rt["__" + key + "Date"] = date
+                }
+            })
+            if (isDef(scale) && valid(hrt.ticks)) rt.__totalRunningTime = Number(hrt.ticks) * scale
+            else if (isDate(rt.__createVmBeginDate)) rt.__totalRunningTime = now() - rt.__createVmBeginDate.getTime()
         }
-        for(var i in res2.sun.gc.generation) {
-            res2.sun.gc.generation[i].__totalUsed = $from(res2.sun.gc.generation[i].space).sum("used")
+        var accTime = 0, hasTime = false
+        if (isMap(gc)) {
+            Object.keys(gc.collector || {}).forEach(key => {
+                var c = gc.collector[key]
+                if (!isMap(c) || isUnDef(scale)) return
+                if (valid(c.time)) {
+                    accTime += Number(c.time) * scale
+                    hasTime = true
+                    if (valid(c.invocations) && Number(c.invocations) > 0) c.__avgExecTime = Number(c.time) * scale / Number(c.invocations)
+                }
+                if (valid(c.lastEntryTime) && Number(c.lastEntryTime) > 0 && rt && isDate(rt.__createVmBeginDate)) {
+                    c.__lastEntryDate = new Date(rt.__createVmBeginDate.getTime() + Number(c.lastEntryTime) * scale)
+                    if (valid(c.lastExitTime) && Number(c.lastExitTime) >= Number(c.lastEntryTime)) {
+                        c.__lastExitDate = new Date(rt.__createVmBeginDate.getTime() + Number(c.lastExitTime) * scale)
+                        c.__lastExecTime = (Number(c.lastExitTime) - Number(c.lastEntryTime)) * scale
+                    }
+                }
+            })
+            Object.keys(gc.generation || {}).forEach(key => {
+                var gen = gc.generation[key], used = 0, found = false
+                Object.keys(gen.space || {}).forEach(k => {
+                    if (valid(gen.space[k].used)) { used += Number(gen.space[k].used); found = true }
+                })
+                if (found) gen.__totalUsed = used
+            })
+            if (hasTime) gc.__collectorsAccTimeMs = accTime
         }
-
-        res2.sun.rt.__percAppTime         = 100 - ((accTime / res2.sun.rt.__totalRunningTime) * 100)
-        res2.sun.gc.__collectorsAccTimeMs = accTime
-
-        return res2
-    } else {
-        return res
+        // An estimate: collector times can overlap for concurrent collectors.
+        if (hasTime && rt && valid(rt.__totalRunningTime) && rt.__totalRunningTime > 0)
+            rt.__percAppTime = 100 - accTime / rt.__totalRunningTime * 100
+        res = res2
     }
+    return metadata ? { values: res, header: header, entries: entries } : res
+
 }
 
 /**
