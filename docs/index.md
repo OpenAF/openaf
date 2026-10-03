@@ -9,6 +9,7 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 
 ## Core
 - openaf.md – Core OpenAF runtime helpers & APIs (`$$`, `_$`, `$from`, `$path`, channels, etc.)
+- [openaf-dollar-functions.md](./openaf-dollar-functions.md) – Additional `$` helpers: formatting, caching, synchronization, argument conversion, JSON-RPC, processes, and output
 - ojob.md – Main oJob YAML reference (structure, jobs, built-ins, shortcuts, argument tables)
 - ojob-all.yaml – Annotated syntax catalog (illustrative options, not a runnable definition)
 - [ojob-examples.md](./ojob-examples.md) – Patterns and source examples from the ojob.io YAML collection

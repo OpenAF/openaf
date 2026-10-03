@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpenAF is a comprehensive JavaScript framework that extends the Mozilla Rhino JavaScript interpreter with powerful helper functions, wrappers, and utilities for Java environments. This reference guide covers the core extensions and helper libraries provided by OpenAF.
+OpenAF is a comprehensive JavaScript framework that extends the Mozilla Rhino JavaScript interpreter with powerful helper functions, wrappers, and utilities for Java environments. This reference guide covers the core extensions and helper libraries provided by OpenAF. See [Additional OpenAF `$` Functions](./openaf-dollar-functions.md) for helpers not covered here, including caching, synchronization, argument conversion, JSON-RPC, and output.
 
 ## Table of Contents
 
