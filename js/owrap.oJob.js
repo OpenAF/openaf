@@ -1637,7 +1637,12 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			ansis = Boolean(__conAnsi && (java.lang.System.console() != null));
 			try {
 				var s = "", ss = "", sn = "", se = "";
-				var w = (isDef(__con)) ? __con.getTerminal().getWidth() : this.__conWidth;
+				var w = this.__conWidth;
+				// Console state can disappear during shutdown. Formatting must not
+				// prevent start/success/error events from being logged.
+				try {
+					if (isDef(__con) && __con != null) w = __con.getTerminal().getWidth();
+				} catch (terminalError) { ansis = false; }
 				var jansi = JavaImporter(Packages.org.fusesource.jansi);
 				
 				if (this.__ojob.logToConsole && ansis) {
@@ -4140,7 +4145,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
  * <ojob>
  * <key>ow.oJob.output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "btable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */

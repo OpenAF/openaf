@@ -55,6 +55,23 @@ public class ConsoleCompatibilityTest {
         completion("😀.na", "\t", "😀.name", (b,p,out) -> { check(p == 5, "UTF-16 callback cursor"); out.add("name"); return 3; });
         completion("he", "\t", "hel", new StringsCompleter("help", "hello"));
         completionColumns();
+        try (org.jline.terminal.impl.DumbTerminal delegate = new org.jline.terminal.impl.DumbTerminal(
+                new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream())) {
+            jline.Terminal terminal = new jline.Terminal(delegate);
+            check(terminal.getWidth() == 80 && terminal.getHeight() == 24, "Unknown size defaults");
+            delegate.setSize(new org.jline.terminal.Size(132, 43));
+            check(terminal.getWidth() == 132 && terminal.getHeight() == 43, "Live terminal size");
+            delegate.setSize(new org.jline.terminal.Size(100, 30));
+            check(terminal.getWidth() == 100 && terminal.getHeight() == 30, "Terminal resize");
+            delegate.close();
+            check(terminal.getWidth() == 100 && terminal.getHeight() == 30, "Closed terminal retains last size");
+        }
+        try (org.jline.terminal.impl.DumbTerminal delegate = new org.jline.terminal.impl.DumbTerminal(
+                new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream())) {
+            jline.Terminal terminal = new jline.Terminal(delegate);
+            delegate.close();
+            check(terminal.getWidth() == 80 && terminal.getHeight() == 24, "Closed unqueried terminal defaults");
+        }
         try (ConsoleReader c = console("hel\t\n")) {
             c.addCompleter(new StringsCompleter("help"));
             check("help ".equals(c.readLine()), "Default completion adds a space");

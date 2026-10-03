@@ -191,12 +191,13 @@ OpenWrap.format.prototype.string = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc, useIndex) : Array</key>
+	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc, useIndex, perRowHeight) : Array</key>
 	 * Given anArray of maps will return an array suitable to use with printTable for a maxTableSize, a separator length
 	 * (sepLen (which defaults to 1)) and an optional line separator function (sepFunc that receives the max length of a 
 	 * column). Word-wrap is achieved by creating new map array entries whenever the calculated max size of each line 
 	 * with sepLen is achieved. The boolean flag useIndex changes the result to a map with lines and idx (array of the positions
-	 * on the lines array that are a new anArray entry). Example of usage:\
+	 * on the lines array that are a new anArray entry). If perRowHeight is true, each record uses its own wrapped height and column sizes are measured per physical line.
+	 * Example of usage:\
 	 * \
 	 *   __initializeCon()\
      *   var maxS = __con.getTerminal().getWidth()\
@@ -204,11 +205,12 @@ OpenWrap.format.prototype.string = {
 	 * 
 	 * </odoc>
 	 */
-	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc, useIndex) => {
+	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc, useIndex, perRowHeight) => {
 		_$(ar, "ar").isArray().$_()
 		_$(maxTableSize, "maxTableSize").isNumber().$_()
 		sepFunc = _$(sepFunc, "sepFunc").isFunction().default(__)
 		sepLen = _$(sepLen, "sepLen").isNumber().default(1)
+		perRowHeight = _$(perRowHeight, "perRowHeight").isBoolean().default(false);
 	
 		if (ar.length == 0) return []
 	
@@ -228,7 +230,7 @@ OpenWrap.format.prototype.string = {
 					_v = column == null ? "" : (isDef(column) ? String(column) : "")
 				}
 				fixedMinSize[i] = Math.max(fixedMinSize[i], _alKeys[i])
-				maxSizes[i] = Math.max(maxSizes[i], visibleLength(_v))
+				maxSizes[i] = Math.max(maxSizes[i], perRowHeight ? String(_v).split("\n").reduce((max, line) => Math.max(max, visibleLength(line)), 0) : visibleLength(_v))
 			}
 		})
 	  
@@ -271,6 +273,7 @@ OpenWrap.format.prototype.string = {
 		var _lines = [], _idx = [ ], _newSize = []
 		var _keys = Object.keys(ar[0])
 		ar.forEach(_ar => {
+		  if (perRowHeight) maxSubLines = 0;
 		  // Processing line
 		  let lines = []
 		  for(var i = 0; i < _keys.length; i++) {
@@ -282,7 +285,7 @@ OpenWrap.format.prototype.string = {
 			} else 
 				_v = v
 			if (chgCols.has(i)) {
-				_newSize[i] = Math.max(fixedMinSize[i], Math.round((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
+				_newSize[i] = Math.max(fixedMinSize[i], (perRowHeight ? Math.floor : Math.round)((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
 			} else {
 				_newSize[i] = Math.max(fixedMinSize[i], maxSizes[i])
 			}

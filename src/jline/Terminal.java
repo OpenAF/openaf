@@ -10,6 +10,8 @@ public final class Terminal {
     private static Terminal system;
     private final org.jline.terminal.Terminal delegate;
     private final Attributes original;
+    private volatile int width = 80;
+    private volatile int height = 24;
     public final Settings settings;
 
     public Terminal(org.jline.terminal.Terminal terminal) {
@@ -41,8 +43,22 @@ public final class Terminal {
     }
 
     public org.jline.terminal.Terminal unwrap() { return delegate; }
-    public int getWidth() { return delegate.getColumns() > 0 ? delegate.getColumns() : 80; }
-    public int getHeight() { return delegate.getRows() > 0 ? delegate.getRows() : 24; }
+    // Shutdown callbacks may still format output after the JVM terminal hook closes
+    // JLine. Keep size queries usable without reopening the terminal or changing it.
+    public int getWidth() {
+        try {
+            int columns = delegate.getColumns();
+            width = columns > 0 ? columns : 80;
+        } catch (IllegalStateException closed) { }
+        return width;
+    }
+    public int getHeight() {
+        try {
+            int rows = delegate.getRows();
+            height = rows > 0 ? rows : 24;
+        } catch (IllegalStateException closed) { }
+        return height;
+    }
     public String getOutputEncoding() { return delegate.outputEncoding().name(); }
     public boolean isSupported() { return !delegate.getType().startsWith("dumb"); }
     public boolean isAnsiSupported() { return isSupported() || "dumb-color".equals(delegate.getType()); }

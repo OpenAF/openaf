@@ -55,6 +55,11 @@ jobs:
   to  : oJob Test
   exec: args.func = args.tests.testOJobEncryptedJSON
 
+- name: oJob::oJobShutdownConsole
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobShutdownConsole
+
 todo:
 # oJob tests
 # --------------
@@ -67,3 +72,4 @@ todo:
 - oJob::oJobPass
 - oJob::oJobEncryptedYAML
 - oJob::oJobEncryptedJSON
+- oJob::oJobShutdownConsole

@@ -332,9 +332,16 @@ var result = $openaf("worker.js", { a: 2, b: 3 });
 
 ### `$output(aObj, args, aFunc, shouldReturn)` and `$o(...)`
 
-`$o` is an alias for `$output`. Formats/prints an object according to `args.__format` (or `args.__FORMAT`), falling back to `global.__format` and then `"human"`. Common formats include `json`, `prettyjson`, `slon`, `ndjson`, `xml`, `yaml`, `table`, `stable`, `ctable`, `tree`, `ctree`, `ntree`, `html`, `text`, `md`, `map`, `jsmap`, `csv`, and `human`.
+`$o` is an alias for `$output`. Formats/prints an object according to `args.__format` (or `args.__FORMAT`), falling back to `global.__format` and then `"human"`. Common formats include `json`, `prettyjson`, `slon`, `ndjson`, `xml`, `yaml`, `table`, `stable`, `ctable`, `btable`, `tree`, `ctree`, `ntree`, `html`, `text`, `md`, `map`, `jsmap`, `csv`, and `human`.
 
 Use `true` as the fourth argument (`shouldReturn`) to return rendered text instead of printing for rendering formats. Human/default rendering uses `aFunc` when supplied; prefer an explicit format when requesting a string. `args.__path`, `args.__from`, and `args.__sql` optionally transform data first, and `args.__csv` configures CSV output. Markdown maps/arrays accept `args.mdformat` as `"structured"` (default), `"json"`, or `"yaml"`.
+
+`btable` renders columns separated by two spaces, with heavy Unicode rules (`━`) under headings. It uses terminal-aware colors, alternating record banding, and a row-count footer. Rules remain Unicode when ANSI colors are unavailable. Set `__rowsep: true` to add light rules (`─`) between complete records; separators are disabled by default and never split wrapped continuation lines or follow the last record. `__width` sets a positive integer wrapping width (numeric strings are accepted); otherwise the available terminal width is used, or no width limit if there is no terminal. Uppercase aliases `__ROWSEP` and `__WIDTH` are accepted; lowercase options take precedence. `__rowsep` also accepts boolean strings.
+
+```javascript
+$output(rows, { __format: "btable", __rowsep: true, __width: 130 });
+var text = $output(rows, { __format: "btable", __width: "130" }, undefined, true);
+```
 
 The `res`, `key`, `args`, `pm`, and `set_<name>` formats route values into oJob arguments, `__pm`, or `$set` storage rather than returning formatted text. See the [oJob reference](./ojob.md) for output conventions.
 

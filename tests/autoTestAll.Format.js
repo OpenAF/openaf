@@ -193,6 +193,110 @@
         ow.test.assert(visibleLength(lines[1].split("┼")[0]), visibleLength(lines[2].split("│")[0]), "Problem with printTable separator alignment.");
     };
 
+    exports.testPrintTableBorderless = function() {
+        var rows = [{ A: "one", B: "1" }, { A: "two", B: "2" }];
+        var plain = printTable(rows, __, false, false, "borderless", __, true, false, false);
+        ow.test.assert(plain, "A    B\n━━━  ━\none  1\ntwo  2\n", "Borderless headings and column gaps");
+        ow.test.assert(printTable(rows, __, false, false, "borderless", __, true, true, false),
+            "A    B\n━━━  ━\none  1\n───  ─\ntwo  2\n", "Separators only between records without a width limit");
+        ow.test.assert(printTable([], 40, true, false, "borderless"), "", "Empty borderless table");
+        ow.test.assert(printTable([rows[0]], __, true, false, "borderless", __, true, true, true),
+            "A    B\n━━━  ━\none  1\n[#1 row]", "Single record has no row separator");
+        ["plain", "utf"].forEach(function(theme) {
+            var rendered = printTable(rows, __, false, false, theme, __, true, false, false).replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+            var join = theme == "utf" ? "│" : "|";
+            var rule = theme == "utf" ? "───┼─" : "---+-";
+            ow.test.assert(rendered, "A  " + join + "B\n" + rule + "\none" + join + "1\ntwo" + join + "2\n", "Legacy " + theme + " table");
+        });
+    };
+
+    exports.testPrintTableBorderlessWrapping = function() {
+        var rows = [
+            { Provider: "Gemini", "llmoptions example": "(type: gemini, model: YOUR_GEMINI_MODEL, key: YOUR_GEMINI_API_KEY)", "Request options": "strategy: structured" },
+            { Provider: "Ollama", "llmoptions example": "(type: ollama, url: 'http://localhost:11434', model: YOUR_DECISION_MODEL)", "Request options": "strategy: native, requireProbabilities: true" }
+        ];
+        var rendered = printTable(rows, 110, true, false, "borderless", __, true, true, true);
+        var lines = rendered.split("\n");
+        ow.test.assert(lines.length > 6, true, "Provider records wrap onto continuation lines");
+        ow.test.assert(lines[1].split("  ").every(function(s) { return /^━+$/.test(s); }), true, "Separate heavy header rules");
+        ow.test.assert(lines.filter(function(s) { return s.indexOf("─") >= 0; }).length, 1, "One rule between wrapped provider records");
+        ow.test.assert(/[│┼|+]/.test(rendered), false, "No renderer-added borders or junctions");
+        ow.test.assert(rendered.indexOf("YOUR_GEMINI_API_KEY") >= 0 && rendered.indexOf("YOUR_DECISION_MODEL") >= 0 && rendered.indexOf("requireProbabilities: true") >= 0,
+            true, "Wrapped provider content retained");
+        ow.test.assert(lines[lines.length - 1], "[#2 rows]", "Count logical records");
+        var noRules = printTable(rows, 110, false, false, "borderless", __, true, false, false);
+        ow.test.assert(noRules.indexOf("─"), -1, "Wrapped separators disabled");
+        var explicit = printTable([{ A: "first\nsecond\nthird", B: "⚽" }, { A: "short", B: "🇵🇹" }], __, false, false, "borderless", __, true, true, false);
+        var explicitLines = explicit.trim().split("\n");
+        ow.test.assert(explicitLines.length, 7, "Each record uses its own height, including explicit newlines");
+        ow.test.assert(explicitLines[5], "──────  ──", "Rule follows all continuation lines");
+        explicitLines.slice(0, -1).forEach(function(line) {
+            ow.test.assert(visibleLength(line), visibleLength(explicitLines[0]), "Unicode visible column alignment");
+        });
+    };
+
+    exports.testOutputBorderless = function() {
+        var oldAnsi = __conAnsi, oldCon = __con, oldFormat = global.__format;
+        try {
+            __conAnsi = false;
+            __con = __;
+            var rows = [{ A: "one", B: "1" }, { A: "two", B: "2" }];
+            var base = $output(rows, { __format: "btable" }, __, true);
+            ow.test.assert(base, "A    B\n━━━  ━\none  1\ntwo  2\n[#2 rows]", "Unicode without ANSI and no default row rules");
+            ow.test.assert($o(rows, { __FORMAT: "BTABLE", __WIDTH: "40", __ROWSEP: "true" }, __, true),
+                "A    B\n━━━  ━\none  1\n───  ─\ntwo  2\n[#2 rows]", "Output alias and uppercase options");
+            ow.test.assert($output(rows, { __format: "btable", __WIDTH: 0, __width: "40", __ROWSEP: true, __rowsep: "false" }, __, true), base, "Lowercase option precedence");
+            global.__format = "btable";
+            ow.test.assert($output(rows, {}, __, true), base, "Global format selection");
+            ow.test.assert($output(rows[0], { __format: "btable" }, __, true).indexOf("[#1 row]") >= 0, true, "Map promoted to one record");
+            ow.test.assert($output([], { __format: "btable" }, __, true), "", "Empty array output");
+            ow.test.assert($output({}, { __format: "btable" }, __, true), "", "Empty map output");
+            ow.test.assert($output({ nested: rows }, { __format: "btable", __path: "nested" }, __, true), base, "Path transform before rendering");
+            [0, -1, 1.5, "bad", "", " ", "1.5", true, {}, [], null, Infinity, NaN].forEach(function(width) {
+                var error;
+                try { $output(rows, { __format: "btable", __width: width }, __, true); } catch(e) { error = String(e); }
+                ow.test.assert(isDef(error) && error.indexOf("positive integer") >= 0, true, "Invalid width rejected: " + width);
+            });
+            __con = { getTerminal: function() { return { getWidth: function() { return 40; } }; } };
+            ow.test.assert($output(rows, { __format: "btable" }, __, true), base, "Available terminal width");
+            ow.test.assert($output(rows, { __format: "table", __width: 0 }, __, true).indexOf("|" ) >= 0, true, "btable options scoped to btable");
+        } finally {
+            __conAnsi = oldAnsi;
+            __con = oldCon;
+            global.__format = oldFormat;
+        }
+    };
+
+    exports.testPrintTableBorderlessColors = function() {
+        var oldAnsi = __ansiColorFlag, oldConsole = __conConsole, oldBand = __colorFormat.table.bandRow;
+        try {
+            __ansiColorFlag = true;
+            __conConsole = true;
+            __colorFormat.table.bandRow = "BG_BLUE";
+            var rows = [{ A: "first\ncontinuation", B: "1" }, { A: "second\ncontinued", B: "2" }, { A: "third", B: "3" }];
+            var colored = printTable(rows, __, false, true, "borderless", __, true, true, true);
+            var lines = colored.split("\n");
+            var plain = colored.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+            ow.test.assert(plain, printTable(rows, __, false, false, "borderless", __, true, true, false), "ANSI does not affect layout");
+            var hasBand = function(line) { return /\033\[(?:[0-9]+;)*44(?:;[0-9]+)*m/.test(line); };
+            ow.test.assert(hasBand(lines[2]), false, "First record unbanded");
+            ow.test.assert(hasBand(lines[3]), false, "First continuation unbanded");
+            ow.test.assert(hasBand(lines[5]) && hasBand(lines[6]), true, "Second record and continuation share banding");
+            ow.test.assert(hasBand(lines[7]), false, "Rule unbanded");
+            ow.test.assert(hasBand(lines[8]), false, "Third record unbanded");
+            var input = [{ A: ansiColor("RED", "⚽ alpha beta gamma"), B: "x" }, { A: "short", B: "y" }];
+            var wrapped = printTable(input, 18, false, true, "borderless", __, true, true, false).replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+            ow.test.assert(wrapped.indexOf("alpha") >= 0 && wrapped.indexOf("gamma") >= 0, true, "ANSI input wraps without losing content");
+            wrapped.trim().split("\n").slice(0, -1).forEach(function(line) {
+                ow.test.assert(visibleLength(line) <= 18, true, "Wrapped ANSI input visible width");
+            });
+        } finally {
+            __ansiColorFlag = oldAnsi;
+            __conConsole = oldConsole;
+            __colorFormat.table.bandRow = oldBand;
+        }
+    };
+
     exports.testWithMDWrap = function() {
         var _oldCon = __con;
         var _oldConStatus = __conStatus;

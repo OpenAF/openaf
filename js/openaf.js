@@ -982,7 +982,8 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
  * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
  * Optionally you can specify aWidthLimit, useAnsi, bandRows and/or aBgColor.
- * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf" or "plain")
+ * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf", "plain" or "borderless"). The "borderless" theme uses two-space column gaps,
+ * heavy Unicode header rules and optional light rules between records (useRowSep), including wrapped records
  * </odoc>
  */
 const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) {
@@ -1029,12 +1030,19 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		}
 	}
 
+	var borderless = aTheme == "borderless";
 	var hLine = "-", vLine = "|", hvJoin = "+";
 	if (aTheme == "utf") {
 		hLine = "─";
 		vLine = "│";
 		hvJoin = "┼";
 	}
+
+	if (borderless) {
+		hLine = "━";
+		vLine = hvJoin = "  ";
+	}
+	var sepSize = visibleLength(vLine);
 
 	//var pShouldBand = false
 	var _getColor = (aValue, ii, prev) => {
@@ -1070,11 +1078,21 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	if (anArrayOfEntries.length == 0) return ""
 	anArrayOfEntries = anArrayOfEntries.map(r => "[object Object]" != Object.prototype.toString.call(r) ? { " ": r } : r)
 
+	if (borderless && Object.keys(anArrayOfEntries[0]).length == 0) return "";
+
 	// If wordwrap generate new array
-	if (aWidthLimit > 0) {
-		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, visibleLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
-		anArrayOfEntries = _t.lines
-		anArrayOfIdxs = _t.idx
+	if (aWidthLimit > 0 || borderless) {
+		// A natural width still expands explicit newlines when there is no width limit.
+		var wrapWidth = aWidthLimit;
+		if (borderless && !(wrapWidth > 0)) {
+			var wrapCols = Object.keys(anArrayOfEntries[0]);
+			wrapWidth = wrapCols.reduce((size, col) => size + anArrayOfEntries.reduce((max, row) =>
+				Math.max(max, visibleLength(String(row[col]))), visibleLength(col)), 1 + sepSize * (wrapCols.length - 1));
+		}
+		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, wrapWidth, sepSize,
+			!borderless && useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true, borderless);
+		anArrayOfEntries = _t.lines;
+		anArrayOfIdxs = _t.idx;
 	}
 	
 	// Find sizes
@@ -1097,6 +1115,23 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	// Produce table
 	//$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
+	var _ruleLine = glyph => {
+		var rule = [], lineSize = borderless ? 0 : 1, outOfWidth = false, colNum = 0;
+		cols.forEach(col => {
+			if (outOfWidth) return;
+			lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1);
+			if (aWidthLimit > 0 && lineSize > (aWidthLimit + (borderless ? 0 : 3))) {
+				rule.push(useAnsi ? [ _colorMap.lines, "...", "\u001b[m" ].join("") : "...")
+				outOfWidth = true
+			} else {
+				rule.push((useAnsi ? [ _colorMap.lines, glyph.repeat(maxsize[col]), "\u001b[m" ].join("") : glyph.repeat(maxsize[col])))
+				if (colNum < (cols.length-1)) rule.push(useAnsi ? [_colorMap.lines, hvJoin, "\u001b[m" ].join("") : hvJoin)
+			}
+			colNum++
+		})
+		rule.push(__separator)
+		return rule.join("");
+	};
 	var _output = new ow.obj.syncArray(range(anArrayOfEntries.length))
 	pForEach(anArrayOfEntries, (row, ii) => {
 		var output = []
@@ -1107,11 +1142,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	
 		if (ii == 0) {
 			output.push(useAnsi ? _colorMap.title : "")
-			lineSize = 1; outOfWidth = false; colNum = 0;
+			lineSize = borderless ? 0 : 1; outOfWidth = false; colNum = 0;
 			cols.forEach(col => {
 				if (outOfWidth) return
-				lineSize += maxsize[col] + 1
-				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
+				lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1)
+				if (aWidthLimit > 0 && lineSize > (aWidthLimit + (borderless ? 0 : 3))) {
 					output.push((useAnsi ? [ _colorMap.title, "...", "\u001b[m" ].join("") : "...")); outOfWidth = true
 				} else {
 					var ansiLengthCol = visibleLength(col);
@@ -1122,33 +1157,24 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				colNum++
 			})
 			output.push(__separator)
-			lineSize = 1; outOfWidth = false; colNum = 0;
-			cols.forEach(col => {
-				if (outOfWidth) return;
-				lineSize += maxsize[col] + 1;
-				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output.push(useAnsi ? [ _colorMap.lines, "...", "\u001b[m" ].join("") : "...")
-					outOfWidth = true
-				} else {
-					output.push((useAnsi ? [ _colorMap.lines, hLine.repeat(maxsize[col]), "\u001b[m" ].join("") : hLine.repeat(maxsize[col])))
-					if (colNum < (cols.length-1)) output.push(useAnsi ? [_colorMap.lines, hvJoin, "\u001b[m" ].join("") : hvJoin)
-				}
-				colNum++
-			})
-			output.push(__separator)
+			output.push(_ruleLine(hLine));
 		}
 
-		lineSize = 1; outOfWidth = false; colNum = 0
+		if (borderless && useRowSep && ii > 0 && anArrayOfIdxs.indexOf(ii) >= 0) {
+			output.push(_ruleLine("─"));
+		}
+
+		lineSize = borderless ? 0 : 1; outOfWidth = false; colNum = 0
 		cols.forEach((col, jj) => {
 			if (outOfWidth) return;
-			lineSize += maxsize[col] + 1
-			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
+			lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1)
+			if (aWidthLimit > 0 && lineSize > (aWidthLimit + (borderless ? 0 : 3))) {
 				output.push("..."); outOfWidth = true
 			} else {	
 				//var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
-				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > (useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(useRowSep ? 2 : 1)][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
+				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > (!borderless && useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(!borderless && useRowSep ? 2 : 1)][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
 				if (colNum < (cols.length-1)) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 			}
 			colNum++
@@ -1162,7 +1188,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		_output.add(useAnsi ? [ _colorMap.lines, summary, "\u001b[m" ].join("") : summary)
 	}
 	
-	return _output.toArray().join("") + "\u001b[m"
+	return _output.toArray().join("") + (borderless && !useAnsi ? "" : "\u001b[m")
 }
 
 /**
@@ -16541,8 +16567,10 @@ const $unset = function(aK) {
  * <ojob>
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "btable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
+ * In "btable", __rowsep (or __ROWSEP) enables light rules between records (default false); __width (or __WIDTH)
+ * sets a positive integer wrapping width, otherwise the available terminal width is used. Unicode rules are always used.
  * If shouldReturn = true the string output will be returned
  * </ojob>
  */
@@ -16643,6 +16671,22 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			if (isMap(res)) res = [res]
 			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
+		case "btable":
+			var tableWidth = isDef(args.__width) ? args.__width : args.__WIDTH;
+			var tableRowSep = isDef(args.__rowsep) ? args.__rowsep : args.__ROWSEP;
+			if (isDef(tableWidth)) {
+				if ((!isNumber(tableWidth) && !isString(tableWidth)) || String(tableWidth).trim() == "" ||
+					!Number.isSafeInteger(Number(tableWidth)) || Number(tableWidth) <= 0) {
+					throw new Error("btable __width must be a positive integer");
+				}
+				tableWidth = Number(tableWidth);
+			} else if (isDef(__con) && __con != "") {
+				var terminalWidth = __con.getTerminal().getWidth();
+				if (terminalWidth > 0) tableWidth = terminalWidth;
+			}
+			if (isMap(res)) res = [res];
+			if (isArray(res)) return fnP(printTable(res, tableWidth, true, __conAnsi, "borderless", __, true, toBoolean(tableRowSep) === true, true));
+			break;
 		case "ctable":
 			__ansiColorFlag = true
 			__conConsole = true
