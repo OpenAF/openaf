@@ -20,8 +20,8 @@ _{{tool}}()
     local shellCompDirectiveFilterDirs=16
     local shellCompDirectiveKeepOrder=32
 
-    local lastParam lastChar flagPrefix requestComp out directive comp lastComp noSpace keepOrder
-    local -a completions
+    local lastParam lastChar flagPrefix out directive comp lastComp noSpace keepOrder
+    local -a completions requestComp
 
     __{{tool}}_debug "\n========= starting completion logic =========="
     __{{tool}}_debug "CURRENT: ${CURRENT}, words[*]: ${words[*]}"
@@ -30,7 +30,7 @@ _{{tool}}()
     # We need to trigger completion from the $CURRENT location, so we need
     # to truncate the command-line ($words) up to the $CURRENT location.
     # (We cannot use $CURSOR as its value does not work when a command is an alias.)
-    words=("${=words[1,CURRENT]}")
+    words=("${(@)words[1,CURRENT]}")
     __{{tool}}_debug "Truncated words[*]: ${words[*]},"
 
     lastParam=${words[-1]}
@@ -45,19 +45,11 @@ _{{tool}}()
         flagPrefix="-P ${BASH_REMATCH}"
     fi
 
-    # Prepare the command to obtain completions
-    requestComp="{{request}} ${words[2,-1]}"
-    if [ "${lastChar}" = "" ]; then
-        # If the last parameter is complete (there is a space following it)
-        # We add an extra empty parameter so we can indicate this to the go completion code.
-        __{{tool}}_debug "Adding extra empty parameter"
-        requestComp="${requestComp} \"\""
-    fi
-
-    __{{tool}}_debug "About to call: eval ${requestComp}"
-
-    # Use eval to handle any environment variables and such
-    out=$(eval ${requestComp} 2>/dev/null)
+    # Preserve each argument, including spaces, shell metacharacters and the
+    # empty current word after a trailing space. Never evaluate command text.
+    requestComp=({{request}} "${(@)words[2,-1]}")
+    __{{tool}}_debug "About to call: ${requestComp[*]}"
+    out=$("${requestComp[@]}" 2>/dev/null)
     __{{tool}}_debug "completion output: ${out}"
 
     # Extract the directive integer following a : from the last line

@@ -72,6 +72,7 @@ jobs:
    - name : Prepare shell complete
      deps : 
      - Repack OpenAFOS
+     - Prepare ojob saved
      - Prepare ojob doc
      exec : |
        sleep(1000, true)
@@ -103,9 +104,22 @@ jobs:
 
        log("Generating completion scripts...")
        ow.loadFormat()
-       pForEach(["oaf", "oafp", "opack"], r => {
-          $sh(ow.format.getJavaHome() + "/bin/java -jar " + global.path + "/openaf.jar --ojob -e \"" + global.path + "/complete/completion.yaml tool=" + r + " file=" + global.path + "/complete/completion_" + r + ".yaml\" > " + global.path + "/complete/completion_" + r + ".sh").exec()
+       var completions = ["oaf", "oafp", "opack"].map(r => {
+          var result = $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "--ojob", "-e",
+             global.path + "/complete/completion.yaml tool=" + r + " file=" + global.path + "/complete/completion_" + r + ".yaml"]).get(0)
+          if (result.exitcode != 0 || !/^#!\/bin\/sh\r?\n/.test(result.stdout)) {
+             throw "Invalid completion script for " + r + ": " + result.stderr + result.stdout
+          }
+          var syntax = $sh(["sh", "-n"], result.stdout).get(0)
+          if (syntax.exitcode != 0) throw "Invalid completion syntax for " + r + ": " + syntax.stderr
+          var check = $sh(["sh", "-s", "--", ""], result.stdout).get(0)
+          if (check.exitcode != 0 || !/\n:[0-9]+\s*$/.test(check.stdout)) {
+             throw "Invalid completion output for " + r + ": " + check.stderr
+          }
+          return { tool: r, source: result.stdout }
        })
+       // Only replace the helpers after every generated script passes validation.
+       completions.forEach(r => io.writeFileString(global.path + "/complete/completion_" + r.tool + ".sh", r.source))
 
        fnCp(global.path + "/complete/completion.yaml", "complete/completion.yaml")
        fnCp(global.path + "/complete/completion_bash.hbs", "complete/completion_bash.hbs")
