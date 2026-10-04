@@ -71,5 +71,21 @@ Use `$path` expressions in templates for dynamic data extraction, and leverage b
 - **Terminal Visualization**: `ow.format.term`, `ow.format.viz`, `printDashboard`, `printHeatmap`, `printBullet`, `printScatter`, `printBoxplot`, `printTimeline` and `printStatusMatrix` provide terminal-first dashboards and live updates
 - **$path Channel Queues**: `chq(name, op, max, value)` adds queue-like channel operations directly inside `$path(...)` expressions for push/pop/shift/size/get flows
 
+## Portable authoring skills
+
+Copy an individual folder from [`skills/`](../skills/) into a GenAI application's skill directory, or use its `SKILL.md` as instructions. Each skill is standalone; executing examples requires OpenAF. Choose by task:
+
+| Skill | Use it for |
+| --- | --- |
+| [OpenAF JavaScript](../skills/openaf-javascript/SKILL.md) | Scripts, validation, queries, IO, and output |
+| [OpenWrap](../skills/openaf-owrap/SKILL.md) | Selecting and using `ow.*` libraries |
+| [oJob authoring](../skills/ojob-authoring/SKILL.md) | YAML workflows, dependencies, failures, and scheduling |
+| [oJob common jobs](../skills/ojob-common-jobs/SKILL.md) | Built-in jobs, shortcuts, and data flow |
+| [oPacks](../skills/openaf-opacks/SKILL.md) | Discovering, consuming, and authoring packages |
+| [LLM workflows](../skills/openaf-llm/SKILL.md) | Provider configuration, structured output, and decisions |
+| [MCP clients](../skills/openaf-mcp/SKILL.md) | Tools, transports, OAuth, and result handling |
+| [JSON Schema](../skills/openaf-json-schema/SKILL.md) | Drafts, validators, references, and errors |
+| [Concurrency](../skills/openaf-concurrency/SKILL.md) | Parallel work, completion, retries, and locks |
+
 ---
 This index is intentionally minimal—open individual docs for full tables of contents.

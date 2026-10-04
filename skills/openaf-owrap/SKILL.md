@@ -60,3 +60,15 @@ print(stringify({ day: day, size: ow.format.toBytesAbbreviation(2048) }, __, "")
 ```
 
 Run it with `openaf -f format-summary.js`. The assertion verifies UTC date formatting; the output contains `1970-01-01` and a formatted size. Deliver the runnable code, dependencies, invocation, and what was actually tested.
+
+## Task-specific references
+
+Read only the guide relevant to the operation:
+
+- [JSON Schema](https://github.com/openaf/openaf/blob/master/docs/json-schema.md): drafts, reusable validators, defaults, and errors.
+- [LLM integration](https://github.com/openaf/openaf/blob/master/docs/llm-guide.md) and [decisions](https://github.com/openaf/openaf/blob/master/docs/llm-decisions.md): conversational versus stateless operations and provider capabilities.
+- [OAuth](https://github.com/openaf/openaf/blob/master/docs/mcp-oauth.md): `ow.server.httpd.oauth2`, callback lifecycle, and token persistence.
+- [Instrumentation](https://github.com/openaf/openaf/blob/master/docs/instrumentation.md): load with `ow.loadInstrumentation()` and inspect `ow.instrumentation` contracts.
+- [Python](https://github.com/openaf/openaf/blob/master/docs/python.md): execution modes, environment requirements, and cleanup.
+
+These guides remain usable without installing any companion skill.

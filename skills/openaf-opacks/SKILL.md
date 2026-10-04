@@ -79,3 +79,7 @@ Verify a small local operation and its output, then test the requested integrati
 - [CLI implementation](https://github.com/openaf/openaf/blob/master/js/opack.js): search, info, install, and exec behavior.
 - [Runtime helpers](https://github.com/openaf/openaf/blob/master/js/openaf.js): `getOPackPath`, `getOPackLocalDB`, `getOPackRemoteDB`, `includeOPack`, and loading.
 - [oJob engine](https://github.com/openaf/openaf/blob/master/js/owrap.oJob.js): dependency checks and include resolution.
+
+## Author a package
+
+When creating or changing an oPack, follow [references/authoring.md](references/authoring.md) for manifest, packaging, and isolated validation. Discovery and consumption do not require this workflow.

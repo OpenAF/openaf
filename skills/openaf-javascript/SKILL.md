@@ -64,3 +64,9 @@ openaf -f filter-records.js -e 'input=records.json;status=active'
 ```
 
 Test with small local fixtures and assert output values, including a missing required parameter and an empty result. Execute with OpenAF, not Node. The example should output only the active record. If using a JAR directly, `java -jar /path/to/openaf.jar -f filter-records.js -e 'input=records.json'` selects that runtime explicitly. Report the tested version. Do not run an operational script merely to syntax-check it.
+
+## Additional helpers and output
+
+Consult the [additional `$` functions guide](https://github.com/openaf/openaf/blob/master/docs/openaf-dollar-functions.md) for streams, caches, locks, process/network helpers, and output. Use `$from` for record queries and its query terminals; use `$stream` for stream-style transformations, checking terminal return shapes. For human-facing output use `$output(value, { __format: "table" })`; `btable` additionally supports `__width` and `__rowsep` on compatible runtimes. Use explicit JSON serialization for a machine protocol. `$output(..., undefined, true)` returns formatted text instead of printing.
+
+For HTTP or subprocess integrations, read [references/http-process.md](references/http-process.md) for result and failure handling.

@@ -67,6 +67,10 @@ Run:
 ojob greeting.yaml name=OpenAF
 ```
 
-For multi-step flows, make inputs/outputs explicit and test that the next step receives the intended value. Keep secrets outside YAML; avoid dumping `args` when it contains credentials. A `catch` that logs and continues can hide failures, so choose recovery/propagation intentionally and verify the observable outcome.
+For multi-step flows, make inputs/outputs explicit and test that the next step receives the intended value. Keep secrets outside YAML; avoid dumping `args` when it contains credentials. A `catch` must return a truthy value to mark a failure handled; logging alone does not handle it. A job catch overrides the global handler. `to` is skipped when the body throws, so mandatory cleanup belongs in `try/finally`. Dependency failure handlers that allow continuation do not schedule missing prerequisites. Verify the observable outcome, not just the process exit code.
 
 Parse the YAML separately from executing it. Then run safe fixtures through OpenAF and verify output, invalid input handling, and dependencies relevant to the change. Parsing alone does not verify job resolution, JavaScript, or scheduling. Do not execute destructive or remote tasks as a validation shortcut. Report the runtime version used, or explicitly state that execution was unavailable.
+
+## Scheduling and trusted includes
+
+For periodic work, read the [bounded validation recipe](references/scheduling.md) before starting a daemon. Use the [security/integrity guide](https://github.com/openaf/openaf/blob/master/docs/ojob-security.md) when loading remote definitions: domain authorization is not content integrity. Strict integrity requires registered hashes and `warn: false` to reject mismatches; a definition's own settings apply to subsequent loads. Verify an entry definition through configuration established before loading it. Inspection/loading is not a sandbox.

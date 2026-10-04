@@ -85,3 +85,37 @@ ojob stored-greeting.yaml
 ```
 
 The expected output is `Hello OpenAF`. The set operation selects the literal input map from `args.greetingData` using `__path`. Put additional business arguments inside `args`, including on shortcut entries; arbitrary sibling keys are not necessarily forwarded. Adapt the named key to avoid collisions in larger workflows. Verify explicit and shortcut forms when translating between them, and inspect results rather than treating YAML acceptance as execution proof. External integrations need their own verification; local store/print examples do not prove file, network, or service behavior.
+
+## Store, branch, and iterate
+
+The following complete workflow is also bundled as [assets/records-shortcuts.yaml](assets/records-shortcuts.yaml); [assets/records-explicit.yaml](assets/records-explicit.yaml) uses equivalent explicit common-job arguments.
+
+```yaml
+ojob:
+  sequential: true
+  logToConsole: false
+jobs:
+- name: Produce
+  each: [Print record]
+  typeArgs:
+    eachThreads: 1
+  exec: |
+    $get("skill.records").records.forEach(function(record) { each(record); });
+- name: Print record
+  exec: |
+    print("record: " + args.id);
+- name: Empty
+  exec: |
+    print("no records");
+todo:
+- (set): skill.records
+  ((path)): payload
+  args:
+    payload:
+      records: [{ id: 1 }, { id: 2 }]
+- (if): '$get("skill.records").records.length > 0'
+  ((then)): [Produce]
+  ((else)): [Empty]
+```
+
+Run `ojob records-shortcuts.yaml`. Expect `record: 1` and `record: 2`; use `records: []` to exercise `no records`. The set job writes `payload` to `skill.records`; the conditional and producer read that named store explicitly, without relying on argument propagation between todo entries. The condition is trusted JavaScript evaluated by `ojob if`; never build it by interpolating untrusted data. `each` is the engine's producer/consumer facility, with each consumer receiving the emitted record. Business arguments on shortcuts remain under `args`. Both forms should produce the same records; check contents rather than depending on parallel output order.
