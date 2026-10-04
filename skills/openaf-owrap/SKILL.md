@@ -72,3 +72,17 @@ Read only the guide relevant to the operation:
 - [Python](https://github.com/openaf/openaf/blob/master/docs/python.md): execution modes, environment requirements, and cleanup.
 
 These guides remain usable without installing any companion skill.
+
+## Python routing
+
+For Python workflows, use `ow.loadPython()` and the [Python guide](https://github.com/openaf/openaf/blob/master/docs/python.md).
+`exec(code, input, outputNames, throwExceptions, shouldFork)` exchanges JSON-compatible named variables;
+`execPM(code, input, throwExceptions, shouldFork)` exchanges `__pm` and returns a new map. A started
+server preserves state and serializes execution; pair explicit `startServer()` calls with `stopServer()`
+in `finally`. `$py` starts implicitly once; `$pyStop()` forces global cleanup. Set `OAF_PYTHON` or
+`setPython` before starting. For full files and argv, use `execStandalone(codeOrFile, reservedInput,
+throwExceptions, argv)` and inspect `exitcode`; stop standalone mode before starting embedded mode.
+Python `_oaf`, `_g`, `_s` provide callbacks; `oaf --oafpy > oaf.py` enables inverse integration.
+Exception flags default to false; true also throws on stderr. Verify installed runtime support for
+persistence, forwarded flags and explicit argv, since older JARs differ. The optional
+[Python skill](../openaf-python/SKILL.md) has a runnable round trip and mode-specific details.

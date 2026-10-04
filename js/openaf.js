@@ -10911,27 +10911,29 @@ const $pyStart = function() {
 
 /**
  * <odoc>
- * <key>$py(aPythonCodeOrFile, aInput, aOutputArray) : Map</key>
+ * <key>$py(aPythonCodeOrFile, aInput, aOutputArray, throwExceptions, shouldFork) : Map</key>
  * Executes aPythonCodeOrFile using a map aInput as variables in python and returns a map with python 
- * variables in aOutputArray.
+ * variables in aOutputArray. Starts an embedded session once if needed. throwExceptions defaults to false;
+ * true throws on stderr, nonzero exit or bridge failure. shouldFork=true isolates this call.
  * </odoc>
  */
-const $py = function(aPythonCode, aInput, aOutputArray) {
-	$pyStart();
+const $py = function(aPythonCode, aInput, aOutputArray, throwExceptions, shouldFork) {
+	ow.loadPython();
+	ow.python.__ensureServer(false);
 	if (aPythonCode.indexOf("\n") < 0 && aPythonCode.endsWith(".py") && io.fileExists(aPythonCode)) aPythonCode = io.readFileString(aPythonCode);
-	return ow.python.exec(aPythonCode, aInput, aOutputArray);
+	return ow.python.exec(aPythonCode, aInput, aOutputArray, throwExceptions, shouldFork);
 };
 
 /**
  * <odoc>
- * <key>$pyExec(aPythonCodeOrFile, aInput)</key>
- * Executes aPythonCodeOrFile using a map aInput as variables in python. The python execution will be 'standalone', with access to OpenAF functionality,
- * but no output will be returned.
+ * <key>$pyExec(aPythonCodeOrFile, aInput, throwExceptions, aArgv) : Map</key>
+ * Runs a standalone script with callbacks and returns a process result including exitcode. aInput is reserved.
+ * aArgv overrides launcher environment arguments; throwExceptions defaults to false.
  * </odoc>
  */
-const $pyExec = function(aPythonCodeOrFile, aInput) {
+const $pyExec = function(aPythonCodeOrFile, aInput, throwExceptions, aArgv) {
 	ow.loadPython()
-	ow.python.execStandalone(aPythonCodeOrFile, aInput)
+	return ow.python.execStandalone(aPythonCodeOrFile, aInput, throwExceptions, aArgv)
 }
 
 /**

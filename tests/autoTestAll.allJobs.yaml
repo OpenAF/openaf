@@ -15,6 +15,7 @@ include:
 - autoTestAll.oDoc.yaml
 - autoTestAll.AI.yaml
 - autoTestAll.AIDecisions.yaml
+- autoTestAll.Python.yaml
 - autoTestAll.Server.yaml
 - autoTestAll.Schema.yaml
 - autoTestAll.Obj.yaml   

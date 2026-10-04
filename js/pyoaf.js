@@ -1,14 +1,16 @@
-var __p = processExpr(" "), __r
-var __pf = Object.keys(__p).filter(r => __p[r].length == 0)
-if (__pf.length > 0 && io.fileExists(__pf[0])) {
-    ow.loadPython()
-    ow.python.setPython("python3")
-    __r = ow.python.execStandalone("exit_code=0\n" + io.readFileString(__pf[0]), __, true)
-} else {
-    throw "No python file provided of found."
-}
-
-if (typeof __r != "undefined")
-    exit(__r.exit_code)
-else
-    exit(0)
+// --py consumes the script and all following arguments, including OpenAF-looking flags.
+var __pyArgs = Array.prototype.map.call(__args, String);
+var __pyIndex = __pyArgs.indexOf("--py");
+__pyArgs = __pyArgs.slice(__pyIndex + 1);
+var __pyLegacy = __pyArgs[0] == "-e";
+if (__pyLegacy) __pyArgs.shift();
+var __pyFile = __pyArgs.shift();
+if (!__pyFile || !io.fileExists(__pyFile)) throw "No Python file provided or found.";
+ow.loadPython();
+ow.python.reset(false, isUnDef(getEnv("OAF_PYTHON")) || getEnv("OAF_PYTHON") == "null");
+var __pyResult;
+try {
+  __pyResult = ow.python.execStandalone(__pyFile, __, false,
+    __pyLegacy && __pyArgs.length == 0 ? __ : __pyArgs);
+} finally { ow.python.stopServer(__, true); }
+exit(__pyResult.exitcode);

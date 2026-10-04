@@ -1,155 +1,53 @@
-# Python OAF Server
+# OpenAF–Python bridge protocol
 
-## Messages between client and server
+The implementation is [owrap.python.js](../../js/owrap.python.js). Both directions bind to
+`127.0.0.1`, use a per-lifetime token, accept one UTF-8 JSON request terminated by LF (`\n`)
+per TCP connection, and close the connection after one response. **Responses are delimited by
+EOF, not by newline.** Buffer bytes before decoding UTF-8; do not decode individual socket chunks.
+These are trusted local code-execution endpoints, not sandboxes.
 
-The client should connect to the provided socket TCP port and interact using JSON. 
+## Python → OpenAF (callback listener, `port`)
 
-### Evaluate code
+Request fields: `{"e":"2 + 2","t":"<token>"}` followed by LF. `e` is JavaScript evaluated
+by `af.eval`. `_`, `_oaf`, `_g` and `_s` use this listener. `_g` and `_s` JSON-quote their keys.
 
-| Element | Mandatory | Description |
-|---------|-----------|-------------|
-| e       | Yes | Expression to evaluate |
-| t       | Yes | Token to authorize access |
+Success is the JSON-encoded expression value (`4` in this example); an undefined value becomes
+`null`. Evaluation, malformed-request and authorization errors are **plain text** beginning
+`__OAF__Exception: `, not a JSON string or structured error object. Python helpers raise an
+exception on that prefix and otherwise parse the complete response as JSON. An incomplete
+request ending at EOF is rejected. The callback listener has a 15-second request-read timeout.
 
-The result will be the literal result value of the expression evaluation. If there is an exception during the expression evaluation it will be returned as "__OAF__Exception: <exception text>".
+## OpenAF → Python (embedded execution listener, `sport`)
 
-**Example 1:**
-
-Client:
-
-```json
-{ e: "2 + 2", t: "123abc" }
-```
-
-Server:
-
-```json
-4
-```
-
-**Example 2:**
-
-Client:
+Request fields: `{"e":"print('hello')","t":"<token>"}` followed by LF. `e` is Python source
+compiled in a persistent per-server namespace. One lock serializes execution and stdout/stderr
+capture. It is released and the original streams restored in `finally`, including on SystemExit.
+Successful execution returns:
 
 ```json
-{ e: "({ x: 123, y: 'abc' })", t: "123abc" }
+{"stdout":"hello\n","stderr":"","exitcode":0}
 ```
 
-Server:
+Python failures return captured output, a traceback in `stderr`, and `exitcode: 1`. This is a
+request status, not a process exit code. Malformed, truncated or unauthorized frames also return
+that error envelope. Bytes are accumulated through LF before UTF-8 decoding. The listener has a
+1500-second request-read timeout; EOF before LF terminates reading with an error.
 
-```json
-{"x":123,"y":"abc"}
-```
+Two control requests are implemented on this direction only:
 
-## Protocol Overview
+- `{"ping":true,"t":"<token>"}` returns the normal empty success envelope plus `"ready":true`.
+- `{"exit":true,"t":"<token>"}` exits the child immediately without a response. OpenAF normally
+  stops its owned process through its process handle, rather than relying on this request.
 
-- Encoding: UTF-8 JSON, one message per line (newline-delimited JSON) or framed by the transport (if applicable). All examples assume newline-delimited JSON.
-- Authentication: The `t` field carries a shared token configured on the server at startup. Requests without a valid token must be rejected.
-- Idempotency/Correlation (optional): Clients may include an `id` field. Servers should echo `id` on responses for easier correlation.
-- Responses: On success, return the literal result of the operation. On error, return an error as documented below.
+`exec` and `execPM` encode their JSON payload as UTF-8/base64 inside `e`. The execution helper
+injects inputs, compiles the user code separately, and appends a unique result marker plus JSON
+to captured stdout. OpenAF extracts that marker even if preceding output has no trailing newline.
+User output preceding the marker is printed; stderr, missing/malformed results, nonzero status
+and transport failures follow `throwExceptions` (false by default). `execPM` returns `__pm`;
+`exec` returns the requested named variables. The result marker is an internal convention.
 
-Example with `id`:
-```json
-{"id": "req-123", "e": "40 + 2", "t": "123abc"}
-```
+No correlation IDs, status requests, varsGet/varsSet messages, TLS, or structured callback-error
+extensions are implemented. Standalone mode starts only the callback listener and launches each
+script as a separate process; it does not provide a persistent Python execution namespace.
 
-## Error Schema
-
-On evaluation errors, the server returns an error indication. Implementations may return either:
-- A string starting with `"__OAF__Exception: "` followed by the message; or
-- A structured object (recommended):
-```json
-{
-  "error": true,
-  "type": "EvaluationError",
-  "message": "<human-readable message>",
-  "details": { "line": 1, "column": 5 }
-}
-```
-
-Clients should handle the string prefix form for backward compatibility.
-
-## Additional Message Types (optional)
-
-These are suggested extensions. Support depends on the server implementation.
-
-### Ping / Health
-Request:
-```json
-{"ping": true, "t": "123abc"}
-```
-Response:
-```json
-{"pong": true, "time": 1700000000000}
-```
-
-### Status
-Request:
-```json
-{"status": true, "t": "123abc"}
-```
-Response (example):
-```json
-{
-  "uptimeMs": 123456,
-  "version": "1.0",
-  "busy": false
-}
-```
-
-### Export Variables
-Request specific variable names to be exported:
-```json
-{"varsGet": ["x", "y"], "t": "123abc"}
-```
-Response:
-```json
-{"vars": {"x": 123, "y": "abc"}}
-```
-
-### Import Variables
-Request:
-```json
-{"varsSet": {"a": 1, "b": 2}, "t": "123abc"}
-```
-Response:
-```json
-{"ok": true}
-```
-
-### Quick Reference: Optional Message Types
-
-| Message     | Request (minimal)                                 | Response (example)                                  | Purpose                     |
-|-------------|----------------------------------------------------|-----------------------------------------------------|-----------------------------|
-| ping/health | `{ "ping": true, "t": "<token>" }`               | `{ "pong": true, "time": 1700000000000 }`          | Liveness/latency check      |
-| status      | `{ "status": true, "t": "<token>" }`             | `{ "uptimeMs": 123456, "version": "1.0" }`        | Basic server status         |
-| varsGet     | `{ "varsGet": ["x","y"], "t": "<token>" }`     | `{ "vars": { "x": 1, "y": "abc" } }`            | Export selected variables   |
-| varsSet     | `{ "varsSet": {"a":1}, "t": "<token>" }`       | `{ "ok": true }`                                   | Import/set variables        |
-
-## Security Considerations
-
-- Always validate the `t` token server-side before executing any request.
-- Consider binding the server to localhost or using TLS termination in front of it if exposed beyond local development.
-- Enforce execution limits (time, memory) and restrict filesystem/network access for evaluated code as appropriate.
-- Log failed auth attempts and malformed payloads.
-
-## Minimal Client and Server Control (OpenAF)
-
-Start/stop the server from OpenAF:
-```javascript
-ow.loadPython();
-ow.python.startServer();
-// ... interact via TCP JSON as per protocol ...
-ow.python.stopServer();
-```
-
-Simple TCP client pseudocode (Node.js-style):
-```js
-const net = require('net');
-const socket = net.createConnection({ host: '127.0.0.1', port: 2000 });
-socket.write(JSON.stringify({ e: "2+2", t: "123abc" }) + "\n");
-socket.on('data', buf => {
-  const lines = buf.toString('utf8').trim().split(/\n+/);
-  for (const line of lines) console.log('RESP:', JSON.parse(line));
-});
-```
+See the [Python guide](../python.md) for lifecycle, API signatures, argv precedence and examples.

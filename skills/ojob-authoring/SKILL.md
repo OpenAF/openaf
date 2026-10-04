@@ -74,3 +74,30 @@ Parse the YAML separately from executing it. Then run safe fixtures through Open
 ## Scheduling and trusted includes
 
 For periodic work, read the [bounded validation recipe](references/scheduling.md) before starting a daemon. Use the [security/integrity guide](https://github.com/openaf/openaf/blob/master/docs/ojob-security.md) when loading remote definitions: domain authorization is not content integrity. Strict integrity requires registered hashes and `warn: false` to reject mismatches; a definition's own settings apply to subsequent loads. Verify an entry definition through configuration established before loading it. Inspection/loading is not a sandbox.
+
+## Python jobs
+
+Use `lang: python` for an inline `exec: |` block, or `typeArgs.execPy` for a Python source file:
+
+```yaml
+jobs:
+- name: Python step
+  lang: python
+  typeArgs:
+    noTemplate: true
+  exec: |
+    args['answer'] = 6 * 7
+todo:
+- Python step
+```
+
+Python receives the `args` dictionary and `id`; returned `args` keys are merged into the job context.
+Both entry points call `$py` with exception propagation enabled (including stderr and process/bridge
+failures). The engine owns the persistent, serialized Python session and stops it on shutdown;
+do not call `$pyStop` inside individual jobs. Scheduling still determines call order. Set
+`OAF_PYTHON` before launching ojob, or configure `ow.python.setPython` before the first Python job.
+Use `typeArgs.noTemplate: true` when source must retain literal template syntax. These are snippets,
+not standalone-file execution: use `execStandalone` explicitly when script filename/argv semantics
+are needed. Check older installed JARs for repaired persistence and exception forwarding. Read the
+[Python guide](https://github.com/openaf/openaf/blob/master/docs/python.md) for API and lifecycle details;
+this guidance does not require another skill.

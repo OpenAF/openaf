@@ -1,0 +1,41 @@
+include:
+- oJobTest.yaml
+jobs:
+- name: Python::Init
+  exec: args.tests = require("autoTestAll.Python.js");
+- name: Python::RoundTrips
+  from: Python::Init
+  to: oJob Test
+  exec: args.func = args.tests.testRoundTrips;
+- name: Python::SessionAndLifecycle
+  from: Python::Init
+  to: oJob Test
+  exec: args.func = args.tests.testSessionAndLifecycle;
+- name: Python::ErrorsAndConcurrency
+  from: Python::Init
+  to: oJob Test
+  exec: args.func = args.tests.testErrorsAndConcurrency;
+- name: Python::InterpreterAndStartup
+  from: Python::Init
+  to: oJob Test
+  exec: args.func = args.tests.testInterpreterAndStartup;
+- name: Python::CallbacksAndFrames
+  from: Python::Init
+  to: oJob Test
+  exec: args.func = args.tests.testCallbacksAndFrames;
+- name: Python::Standalone
+  from: Python::Init
+  to: oJob Test
+  exec: args.func = args.tests.testStandalone;
+- name: Python::Subprocess
+  from: Python::Init
+  to: oJob Test
+  exec: args.func = args.tests.testSubprocess;
+todo:
+- Python::RoundTrips
+- Python::SessionAndLifecycle
+- Python::ErrorsAndConcurrency
+- Python::InterpreterAndStartup
+- Python::CallbacksAndFrames
+- Python::Standalone
+- Python::Subprocess

@@ -3259,13 +3259,13 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				parent.python = true;
 				if (!(res.indexOf("/* __oaf_ojob python */") >= 0)) {
 					var orig = String(res);
-					res = "/* __oaf_ojob python */ $pyStart();" + res + "\n"
+					res = "/* __oaf_ojob python */" + res + "\n"
 					if (aJobTypeArgs.noTemplate) {
 						res += orig + ";try { args = merge(args, $py(" + stringify(origRes) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
 					} else {
 						res += orig + ";try { args = merge(args, $py(templify(" + stringify(origRes) + ", args) + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
 					}
-					res += "} catch(e) { throw e; $pyStop(); };\n";
+					res += "} catch(e) { throw e; };\n";
 				}
 				break;
 			case "ssh":

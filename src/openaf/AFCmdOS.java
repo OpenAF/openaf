@@ -300,9 +300,12 @@ public class AFCmdOS extends AFCmdBase {
 	 */
 	protected void processArgs(String[] args) {
 		boolean checkNext = false;
+        boolean pythonArguments = false;
 		String checkOption = "";
 		
 		for (String a : args) {
+            // pyoaf.js consumes the remaining arguments without OpenAF flag parsing.
+            if (pythonArguments) continue;
 			if (checkNext) {
 				checkNext = false;
 				switch (checkOption) { 			
@@ -438,6 +441,7 @@ public class AFCmdOS extends AFCmdBase {
 				INPUT_TYPE = inputtype.INPUT_SCRIPT;
 				injectclass = true;
 				injectclassfile = "pyoaf_js";
+                pythonArguments = true;
 				continue;
 			case OPTION_BASHCOMPLETION:
 				checkNext = true;
@@ -542,14 +546,14 @@ public class AFCmdOS extends AFCmdBase {
 		
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
 		
-		if (pipe) {
+		if (pipe && !"pyoaf_js".equals(injectclassfile)) {
 			String lineO = "";
 			while((lineO = br.readLine()) != null) {
 				input.append(lineO);
 				input.append("\n");
 			}
 		} else {
-			if (!filescript && !ojob && !injectcode) {
+			if (!filescript && !ojob && !injectcode && !"pyoaf_js".equals(injectclassfile)) {
 				while (br.ready()) {
 					input.append(br.readLine());
 					input.append("\n");

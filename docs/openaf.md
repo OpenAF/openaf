@@ -647,10 +647,10 @@ print(result.result); // 16
 
 // Execute with persistent map
 var pythonMap = { counter: 0, data: [] };
-ow.python.execPM(`
-counter += 1
-data.append("item_" + str(counter))
-total = len(data)
+pythonMap = ow.python.execPM(`
+__pm["counter"] += 1
+__pm["data"].append("item_" + str(__pm["counter"]))
+__pm["total"] = len(__pm["data"])
 `, pythonMap);
 
 print(pythonMap.counter); // 1

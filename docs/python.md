@@ -62,7 +62,17 @@ print(result.result); // 16
 ```
 
 Each call spawns a fresh `python -c ...` unless a server is already running (see below), in which
-case it reuses it transparently.
+case it reuses it transparently. The full signatures are
+`exec(code, input, outputNames, throwExceptions, shouldFork)` and
+`execPM(code, input, throwExceptions, shouldFork)`. Inputs and outputs must be JSON-compatible;
+named variables use ASCII Python identifiers, excluding keywords and the reserved `__oaf_` prefix.
+Embedded code and JSON are encoded through UTF-8/base64, preserving escapes and Unicode.
+
+`throwExceptions` defaults to `false`: errors are printed and a missing result returns `undefined`.
+Set it to `true` to throw on stderr (even with a successful exit), nonzero exit status, malformed
+responses or transport failures. Output produced before an error is retained. `shouldFork=true`
+uses a fresh process, even when an embedded server exists. Callbacks in forked calls require a
+running callback listener.
 
 ### execPM - a persistent map instead of named in/out variables
 
@@ -73,9 +83,9 @@ naming inputs/outputs individually. The map is exposed as the Python variable `_
 var pythonMap = { counter: 0, data: [] };
 
 pythonMap = ow.python.execPM(`
-counter += 1
-data.append("item_" + str(counter))
-total = len(data)
+__pm["counter"] += 1
+__pm["data"].append("item_" + str(__pm["counter"]))
+__pm["total"] = len(__pm["data"])
 `, pythonMap);
 
 print(pythonMap.counter); // 1
@@ -90,7 +100,9 @@ state, so reassign the result (as above) if you want the update to stick.
 
 Starting a server keeps a single Python process alive and dispatches each `exec`/`execPM` call to
 it over a local TCP socket, avoiding the cost of spawning a new interpreter each time. Top-level
-Python state (variables, imports) persists between calls:
+Python state (variables, imports, functions) persists between calls. Execution and stdout/stderr
+capture are serialized; streams are restored even after exceptions. Changes before a failure are
+not rolled back. User-created background threads should not write during another call. Example:
 
 ```javascript
 ow.python.startServer();
@@ -105,18 +117,33 @@ ow.python.stopServer();
 `startServer(aPort, aSendPort, aFn, isAlone)` accepts an optional receive port, send port, an event
 callback (`"connect"`, `"exec"`, `"error"`), and `isAlone` to start only in standalone mode (used
 internally by `execStandalone`, see below) without spawning a background Python listener.
+Every explicit start acquires a reference; `stopServer()` releases one and stops at zero.
+`stopServer(__, true)` forces cleanup; repeated stops return `false`. Implicit `$py` and
+`execStandalone` initialization starts only once. Stop before switching modes or interpreters.
+Each instance owns its child process and callback listener. Startup polls readiness for up to
+10 seconds and rolls back resources on failure; shutdown cleanup is registered for both modes.
 
 ### execStandalone - run a whole script (or inline code) as its own process
 
 Unlike `exec`/`execPM`, `execStandalone` doesn't exchange variables with the caller. It runs a
 `.py` file (or inline code) as a **full, independent process**, with the OpenAF bridge code
-prepended so the script itself can call back into OpenAF:
+installed by a bootstrap so the script itself can call back into OpenAF. User code is compiled
+separately, preserving future imports, the original `__file__`, `sys.argv[0]`, `__name__="__main__"`
+and imports from the script directory. The signature is
+`execStandalone(codeOrFile, reservedInput, throwExceptions, argv)`; it returns a process result
+map containing `exitcode`, inherits stdin and streams stdout/stderr without adding newlines.
+The returned stdout/stderr strings are empty because output has already been streamed.
+`reservedInput` is currently unused.
+Temporary bootstrap files are removed on success and failure. Example:
 
 ```javascript
 ow.loadPython();
 ow.python.setPython("python3");
 
-ow.python.execStandalone("/path/to/script.py");
+try {
+  var result = ow.python.execStandalone("/path/to/script.py", __, false, ["a b", "--help"]);
+  print(result.exitcode);
+} finally { ow.python.stopServer(__, true); }
 ```
 
 Inside `script.py`, the bridge injects these helper functions automatically:
@@ -138,10 +165,10 @@ For quick scripting, four global functions wrap the module above without an expl
 
 | Function | Equivalent to | Notes |
 |---|---|---|
-| `$pyStart()` | `ow.loadPython(); ow.python.startServer()` | Starts the background server |
-| `$py(code, input, output)` | `ow.python.exec(...)` | Starts the server first if needed |
-| `$pyExec(codeOrFile, input)` | `ow.python.execStandalone(...)` | Runs standalone, no return value |
-| `$pyStop()` | `ow.python.stopServer(__, true)` | Stops the background server |
+| `$pyStart()` | `ow.loadPython(); ow.python.startServer()` | Acquires an explicit server reference |
+| `$py(code, input, output, throwExceptions, shouldFork)` | `ow.python.exec(...)` | Starts once if needed; optional flags are forwarded |
+| `$pyExec(codeOrFile, reservedInput, throwExceptions, argv)` | `ow.python.execStandalone(...)` | Runs standalone; returns a process result with `exitcode` |
+| `$pyStop()` | `ow.python.stopServer(__, true)` | Forces cleanup of the global bridge |
 
 ```javascript
 $pyStart();
@@ -200,11 +227,10 @@ $ ./pyoaf greet.py "Ada Lovelace" --loud
 HELLO, ADA LOVELACE!
 ```
 
-Under the hood the launcher scripts capture `"$@"` (or `%*` on Windows) into indexed environment
-variables - `OAF_PY_ARGC` plus `OAF_PY_ARG_0`, `OAF_PY_ARG_1`, ... - which
-`ow.python.execStandalone` reads and passes straight through to the spawned Python process as
-argv. Using indexed variables (rather than joining args into one string) means arguments containing
-spaces, `=`, `;`, or other special characters survive intact:
+Generated launchers forward arguments directly (`"$@"` on Unix and `%*` on Windows).
+Everything after the script path belongs to Python, including `--help`, `-e`, empty strings and
+values containing spaces. Python's exit status becomes the launcher's exit status.
+The CLI honors `OAF_PYTHON`; when unset it tries `python` then `python3`.
 
 ```sh
 ./pyoaf process.py "path with spaces/file.csv" "key=value" "a;b;c"
@@ -216,9 +242,11 @@ print(sys.argv[1:])
 # ['path with spaces/file.csv', 'key=value', 'a;b;c']
 ```
 
-You can also set `OAF_PY_ARGC`/`OAF_PY_ARG_<n>` yourself (or from any other script that shells out
-to `oaf --py`) if you're not going through the generated `pyoaf` launcher - `execStandalone` doesn't
-care how they got set, only that they're present.
+For API calls, the optional fourth `argv` array overrides `OAF_PY_ARGC`/`OAF_PY_ARG_<n>`,
+including when it is empty. Without an explicit array, `execStandalone` reads those environment
+variables for compatibility with older launchers. `oaf --py -e script.py` is retained; when no
+arguments follow that legacy form, it also reads the indexed environment variables. Direct
+`oaf --py script.py [args...]` always takes its arguments from the command line.
 
 ---
 
@@ -244,14 +272,15 @@ print(_g("myVar"))            # {"a": 1}
 ```
 
 Importing `oaf` transparently starts an `oaf -c "ow.loadPython().startServer(...)"` background
-process and registers an `atexit` hook to terminate it when your Python script exits.
+process, waits up to 15 seconds for initialization, and registers an `atexit` hook to terminate
+it when your Python script exits. Startup failure also cleans up that owned child.
 
 ---
 
 ## Python inside oJob (lang: python)
 
 oJob jobs can be written in Python directly with `lang: python`. Under the hood this uses `$py`
-(server mode), so the job's `args` map is passed in as Python variables and any keys your Python
+(server mode), so `args` is a Python dictionary and `id` is also supplied and any keys your Python
 code writes back to `args` are merged back into the oJob execution context:
 
 ```yaml
@@ -269,6 +298,11 @@ jobs:
     execPy: "/path/to/script.py"
 ```
 
+Both entry points request `throwExceptions=true`, so Python exceptions, nonzero exits and stderr
+propagate to oJob's error handling. The oJob engine owns the shared Python session and stops it
+at engine shutdown; individual jobs should not stop it. Calls are serialized but scheduling still
+determines their order. Use `typeArgs.noTemplate: true` for code containing literal template syntax.
+
 See `ojob.md` (Job Languages section) for the full list of supported `lang` values.
 
 ---
@@ -278,8 +312,8 @@ See `ojob.md` (Job Languages section) for the full list of supported `lang` valu
 | Variable | Purpose | Default |
 |---|---|---|
 | `OAF_PYTHON` | Path/command of the Python interpreter to use | `python` |
-| `OAF_PYTHON_VER` | Major Python version to assume (skips auto-detection) | `3` |
-| `OAF_PY_ARGC`, `OAF_PY_ARG_<n>` | Set by `pyoaf`/`pyoaf.bat` to forward CLI args as real `sys.argv` (see above) | unset |
+| `OAF_PYTHON_VER` | Major version to assume until explicit detection; CLI detects the actual interpreter | `3` |
+| `OAF_PY_ARGC`, `OAF_PY_ARG_<n>` | Legacy/API argv fallback when no explicit argv array is provided | unset |
 
 `ow.python.setPython(aPython)` / `ow.python.reset(noException, tryOthers)` let you change or
 re-detect the interpreter and version at runtime instead of using the environment variables.
@@ -300,3 +334,11 @@ re-detect the interpreter and version at runtime instead of using the environmen
 
 For the raw wire protocol used between the Python bridge process and OpenAF (if you're implementing
 a custom client), see `dev/python-oaf-server.md`.
+
+## Runtime compatibility
+
+This guide describes the repaired bridge in this source tree. Older installed JARs may not
+preserve sessions, forward exception flags or support the fourth standalone argv parameter.
+Check `getVersion()` and the installed API help, or rebuild/install the matching revision before
+relying on these contracts. Python 2 syntax compatibility is retained; Python 2 and Windows
+require separate platform validation.
