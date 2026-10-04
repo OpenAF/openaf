@@ -357,6 +357,34 @@ ow.obj.setPath(obj, "user.settings.theme", "dark");
 ow.obj.filter(arrayOfObjects, {name: "John", age: 30});
 ```
 
+`getPath()` returns `undefined` when a key is missing or an intermediate value is
+null, undefined, or a scalar. Terminal values, including `null`, `false`, and `0`,
+are returned unchanged. For example, `ow.obj.getPath({user: null}, "user.name")`
+returns `undefined`. Paths support dot notation and unquoted bracket indexes such
+as `"users[0].name"`.
+
+Use `searchArray()` for partial-map searches. With `useRegEx=true`, a complete
+comparison such as `">=1.5"`, `"<-2"`, or `">=1e3"` compares numbers and numeric
+strings numerically. Missing, null, boolean, empty, and nonnumeric values do not
+match numeric comparisons. Other string patterns are regular expressions;
+`ignoreCase=true` applies to those patterns. With `useRegEx=false`, strings are
+matched literally. Result order is not guaranteed when searching in parallel.
+The global `searchArray()` shortcut loads `ow.obj` automatically and accepts the
+same five arguments: array, partial map, useRegEx, ignoreCase, and thread count.
+
+```javascript
+ow.obj.searchArray([{price: 1.2}, {price: 1.8}], {price: ">=1.5"}, true);
+// [{price: 1.8}]
+
+ow.obj.flatten([{id: 1, detail: {tags: ["a", "b"]}}], "|");
+// [{id: 1, "detail|tags": "a"}, {id: 1, "detail|tags": "b"}]
+```
+
+`flatten()` expands array entries into rows and keeps the full parent path for
+nested scalar arrays. Its separator defaults to `"_"` and is treated literally,
+even when it contains regex characters. Missing columns use the third argument,
+`aNADefault`, which defaults to `""`; the input is not modified.
+
 #### ow.ch - Advanced Channel Operations
 
 ```javascript

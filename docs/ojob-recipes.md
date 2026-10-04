@@ -4,6 +4,8 @@
 
 Each YAML block below is a complete definition. Save it to a file and run `ojob file.yaml`. The periodic and subscriber recipes run until interrupted; the template recipe writes `greeting.txt`. These examples need only OpenAF. Larger integrations and their dependencies are listed in the [examples map](./ojob-examples.md).
 
+For paired JavaScript/oJob examples, bounded scheduling, cleanup tests, and package loading, see [Authoring recipes](./authoring-recipes.md). For a progressive walkthrough, start with [Script to oJob](./authoring.md).
+
 ## 1. Arguments, defaults, and output
 
 Save as `greet.yaml`; run `ojob greet.yaml name=Ada count=2 -json`. Omit `count` to use 1. `help` describes the interface; `check.in` converts and validates input. `ow.oJob.output` respects the CLI's output format.

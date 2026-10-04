@@ -101,6 +101,8 @@ ojob hello.yaml
 # or: openaf --ojob -e 'hello.yaml'
 ```
 
+Continue with [Script to oJob](./authoring.md) to read a real input file, validate arguments, filter records, and test both implementations.
+
 ## 5. Data processing with oafp
 
 `oafp` is the OpenAF data processor — a multi-format `jq`/`yq`/`xq`/`csvkit` replacement:

@@ -1,0 +1,44 @@
+help:
+  text: Filter a JSON array by status; optionally write the result.
+  expects:
+  - name: input
+    desc: Path to a JSON array
+    mandatory: true
+  - name: status
+    desc: Status to select (default active)
+  - name: output
+    desc: Optional output JSON file; overwritten if present
+ojob:
+  sequential: true
+  shareArgs: true
+  logToConsole: false
+  catch: |
+    printErr("filter-records: " + exception);
+    exit(1);
+jobs:
+- name: Read
+  check:
+    in:
+      input: isString
+      status: isString.default("active")
+    out:
+      records: isArray
+  exec: |
+    args.records = io.readFileJSON(args.input);
+- name: Filter
+  check:
+    in:
+      records: isArray
+      status: isString
+    out:
+      result: isArray
+  exec: |
+    args.result = $from(args.records).equals("status", args.status).select();
+- name: Write
+  exec: |
+    if (isDef(args.output)) io.writeFileJSON(_$(args.output).isString().$_(), args.result);
+    print(stringify(args.result, __, ""));
+todo:
+- Read
+- Filter
+- Write

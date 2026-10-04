@@ -327,7 +327,8 @@ OpenWrap.obj.prototype.reorderArrayMap = function (aKs, aArray, removeUnDefs) {
  * Converts any structured arrayOfMaps into a flat array of maps with only one level of keys. The map key path will be converted
  * into a single key using aSeparator (defaults to "_") and the value will be represented as aNADefault (defaults to "") when no 
  * value or key exists in other entries. For each array entry a new array element will be created replicated all other keys.
- * Usefull to convert data to output into CSV for example.
+ * Useful to convert data to output into CSV for example. Nested arrays of scalar values use the full
+ * parent path as their column name. aSeparator is literal, including regular-expression characters.
  * </odoc>
  */
 OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
@@ -339,12 +340,13 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 	function getFlatUniqKey(aK, aP) {
 		var key = "";
 		if (isDef(aP)) {
-			key = aP.replace(/\./g, aSeparator) + (isNumber(aK) ? "" : aSeparator + aK.replace(/\./g, aSeparator));
+			key = aP.split(".").join(aSeparator) + (isNumber(aK) ? "" : aSeparator + aK.split(".").join(aSeparator));
 		} else {
-			key = aK.replace(/\./g, aSeparator);
+			key = aK.split(".").join(aSeparator);
 		}
 	
-		return key.replace(/\["?\d+"?\]/g, "").replace(new RegExp("^" + aSeparator), "");
+		key = key.replace(/\["?\d+"?\]/g, "");
+		return key.indexOf(aSeparator) == 0 ? key.substring(aSeparator.length) : key;
 	}
 	
 	function getFlatKeys(anArrayOfMaps) {
@@ -372,7 +374,7 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 	var keys = getFlatKeys(data);
 	var resData = [];
 
-	_trav = (aM, aD, aP) => {
+	var _trav = (aM, aD, aP) => {
 		var _keys = Object.keys(aD);
 		var parent = isUnDef(aP) ? "" : aP;
 		var m = aM;
@@ -402,7 +404,7 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 					if (isObject(aD[_keys[j]][l])) {
 						res = res.concat(_trav(nm, aD[_keys[j]][l], newParent));
 					} else {
-						nm[_keys[j]] = aD[_keys[j]][l];
+						nm[getFlatUniqKey(_keys[j], parent)] = aD[_keys[j]][l];
 						res.push(nm);
 					}
 				}
@@ -457,7 +459,10 @@ OpenWrap.obj.prototype.fuzzySearch = function(anArrayOfKeys, anArrayOfObjects, s
  * <key>ow.obj.searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) : Array</key>
  * Searches anArray of maps for entries where aPartialMap matches. If useRegEx is true all string entries
  * on aPartialMap will be interpreted as regular expressions. For number entries on the original map you can 
- * have the prefixes &gt;, &lt;, &gt;= and &lt;= to limit the numeric values. Optionally you can provide also
+ * have the prefixes &gt;, &lt;, &gt;= and &lt;= to limit the numeric values. The complete comparison must
+ * contain a signed or unsigned number, optionally with decimals or an exponent (for example, &gt;=-1.5).
+ * Comparisons accept numbers and numeric strings; missing, null, boolean and nonnumeric values do not match.
+ * Other string patterns remain regular expressions. Optionally you can provide also
  * ignoreCase = true to ignore case (will only affect if useRegEx is true). And optionally also useParallel to
  * provide the number of threads to use. Example:\
  * \
@@ -484,12 +489,15 @@ OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ig
 				var ky = okeys[k];
 				var vy = ow.obj.__getObj4Path(aValue, ky);
 				if (useRegEx && (typeof aPartialMap[ky] == "string")) {
-					if (aPartialMap[ky].match(/^([<>]=*)(\d+)/)) {
-						var vs = aPartialMap[ky].match(/^([<>]=*)(\d+)/);
-						if (vs[1] == ">=" && !(vs[2] <= vy)) { return undefined; }
-						if (vs[1] == ">"  && !(vs[2] < vy)) { return undefined; }
-						if (vs[1] == "<=" && !(vs[2] >= vy)) { return undefined; }
-						if (vs[1] == "<"  && !(vs[2] > vy)) { return undefined; }
+					var vs = aPartialMap[ky].match(/^([<>]=?)([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)$/);
+					if (vs) {
+						if (typeof vy != "number" && typeof vy != "string") return undefined;
+						if (typeof vy == "string" && vy.trim().length == 0) return undefined;
+						var actual = Number(vy), limit = Number(vs[2]);
+						if (vs[1] == ">=" && !(actual >= limit)) { return undefined; }
+						if (vs[1] == ">"  && !(actual > limit)) { return undefined; }
+						if (vs[1] == "<=" && !(actual <= limit)) { return undefined; }
+						if (vs[1] == "<"  && !(actual < limit)) { return undefined; }
 					} else {
 						if (!String(vy).match(new RegExp(aPartialMap[ky], (ignoreCase) ? "i": ""))) { 
 							return undefined; 
@@ -3235,7 +3243,9 @@ OpenWrap.obj.prototype.pmSchema = {
 /**
  * <odoc>
  * <key>ow.obj.getPath(aObject, aPath) : Object</key>
- * Given aObject it will try to parse the aPath a retrive the corresponding object under that path. Example:\
+ * Given aObject, retrieves the value at aPath using dot notation or unquoted bracket indexes.
+ * Returns undefined if a key is absent or an intermediate value is null, undefined or a scalar.
+ * A null or scalar at the final path segment is returned unchanged. Example:\
  * \
  * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
  * \
@@ -3255,6 +3265,7 @@ OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
     var a = aPath.split('.');
     for (var i = 0, n = a.length; i < n; ++i) {
         var k = a[i];
+        if (!isObject(aObj)) return undefined;
         if (k in aObj) {
             aObj = aObj[k];
         } else {

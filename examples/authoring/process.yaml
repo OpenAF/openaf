@@ -1,0 +1,25 @@
+help:
+  text: Execute the argv array in a local JSON file.
+  expects:
+  - name: command
+    desc: JSON file containing a nonempty array of strings
+    mandatory: true
+ojob:
+  logToConsole: false
+  catch: |
+    printErr("process: " + exception);
+    exit(1);
+jobs:
+- name: Run command
+  check:
+    in:
+      command: isString
+  exec: |
+    var command = _$(io.readFileJSON(args.command), "argv").isArray().$_();
+    if (command.length === 0) throw "argv must not be empty";
+    command.forEach(function(arg) { _$(arg, "argv element").isString().$_(); });
+    var result = $sh(command).get(0);
+    if (Number(result.exitcode) !== 0) throw "Child exited with " + result.exitcode;
+    print(stringify({ stdout: result.stdout, stderr: result.stderr, exitcode: Number(result.exitcode) }, __, ""));
+todo:
+- Run command

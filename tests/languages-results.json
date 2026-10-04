@@ -1,0 +1,184 @@
+{
+  "pass": 6,
+  "fail": 0,
+  "tests": [
+    {
+      "name": "testLanguageRoundTrips",
+      "status": "pass"
+    },
+    {
+      "name": "testLanguageFailuresAndCleanup",
+      "status": "pass"
+    },
+    {
+      "name": "testLanguageProcessTree",
+      "status": "pass"
+    },
+    {
+      "name": "testLanguageConfiguration",
+      "status": "pass"
+    },
+    {
+      "name": "testLanguageRegistration",
+      "status": "pass"
+    },
+    {
+      "name": "testLanguageOJobIntegration",
+      "status": "pass"
+    }
+  ],
+  "runtimes": [
+    {
+      "lang": "oaf",
+      "kind": "embedded",
+      "options": [],
+      "prerequisites": "See adapter documentation",
+      "available": true
+    },
+    {
+      "lang": "js",
+      "kind": "embedded",
+      "options": [],
+      "prerequisites": "See adapter documentation",
+      "available": true
+    },
+    {
+      "lang": "javascript",
+      "kind": "embedded",
+      "options": [],
+      "prerequisites": "See adapter documentation",
+      "available": true
+    },
+    {
+      "lang": "python",
+      "kind": "python-bridge",
+      "options": [],
+      "prerequisites": "Python (OAF_PYTHON)",
+      "available": true,
+      "diagnostic": "Python 3.14.7"
+    },
+    {
+      "lang": "winssh",
+      "kind": "remote",
+      "options": [],
+      "prerequisites": "See adapter documentation",
+      "available": null,
+      "diagnostic": "No local availability probe defined"
+    },
+    {
+      "lang": "sh",
+      "kind": "shell",
+      "options": [],
+      "prerequisites": "See adapter documentation",
+      "available": null,
+      "diagnostic": "No local availability probe defined"
+    },
+    {
+      "lang": "shell",
+      "kind": "shell",
+      "options": [],
+      "prerequisites": "See adapter documentation",
+      "available": null,
+      "diagnostic": "No local availability probe defined"
+    },
+    {
+      "lang": "ssh",
+      "kind": "remote",
+      "options": [],
+      "prerequisites": "See adapter documentation",
+      "available": null,
+      "diagnostic": "No local availability probe defined"
+    },
+    {
+      "lang": "node",
+      "kind": "local-process",
+      "options": [
+        "langExecutable",
+        "langExecutableArgs",
+        "langTimeout",
+        "pwd"
+      ],
+      "prerequisites": "node",
+      "available": true,
+      "diagnostic": "v26.8.2"
+    },
+    {
+      "lang": "ruby",
+      "kind": "local-process",
+      "options": [
+        "langExecutable",
+        "langExecutableArgs",
+        "langTimeout",
+        "pwd"
+      ],
+      "prerequisites": "ruby",
+      "available": true,
+      "diagnostic": "ruby 4.0.7 (2026-09-15 revision 229531a6cf) +PRISM [arm64-darwin25]"
+    },
+    {
+      "lang": "perl",
+      "kind": "local-process",
+      "options": [
+        "langExecutable",
+        "langExecutableArgs",
+        "langTimeout",
+        "pwd"
+      ],
+      "prerequisites": "perl",
+      "available": true,
+      "diagnostic": "This is perl 5, version 44, subversion 0 (v5.44.0) built for darwin-thread-multi-2level\n\nCopyright 1987-2026, Larry Wall\n\nPerl may be copied only under the terms of either the Artistic License or the\nGNU General Public License, which may be found in the Perl 5 source kit.\n\nComplete documentation for Perl, including FAQ lists, should be found on\nthis system using \"man perl\" or \"perldoc perl\".  If you have access to the\nInternet, point your browser at https://www.perl.org/, the Perl Home Page."
+    },
+    {
+      "lang": "powershell",
+      "kind": "local-process",
+      "options": [
+        "langExecutable",
+        "langExecutableArgs",
+        "langTimeout",
+        "pwd"
+      ],
+      "prerequisites": "powershell",
+      "available": false,
+      "diagnostic": "JavaException: java.io.IOException: Cannot run program \"powershell\": Exec failed, error: 2 (No such file or directory) "
+    },
+    {
+      "lang": "go",
+      "kind": "local-process",
+      "options": [
+        "langExecutable",
+        "langExecutableArgs",
+        "langTimeout",
+        "pwd"
+      ],
+      "prerequisites": "go",
+      "available": true,
+      "diagnostic": "go version go1.27.1 darwin/arm64"
+    },
+    {
+      "lang": "swift",
+      "kind": "local-process",
+      "options": [
+        "langExecutable",
+        "langExecutableArgs",
+        "langTimeout",
+        "pwd"
+      ],
+      "prerequisites": "swift",
+      "available": true,
+      "diagnostic": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0\nswift-driver version: 1.168.6"
+    },
+    {
+      "lang": "java",
+      "kind": "local-process",
+      "options": [
+        "langExecutable",
+        "langExecutableArgs",
+        "langTimeout",
+        "pwd"
+      ],
+      "prerequisites": "JDK 21+",
+      "available": true,
+      "diagnostic": "openjdk version \"27\" 2026-09-15\nOpenJDK Runtime Environment Homebrew (build 27)\nOpenJDK 64-Bit Server VM Homebrew (build 27, mixed mode, sharing)"
+    }
+  ]
+}

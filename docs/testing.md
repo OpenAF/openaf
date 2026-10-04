@@ -1,5 +1,7 @@
 # Testing OpenAF: how to add and run tests
 
+For testing your own scripts and workflows without the source checkout, start with [Test your automation](./authoring-testing.md). Documentation maintainers can run the [example and coverage checks](./documentation-coverage.md).
+
 ## 1. Purpose
 
 This document explains how to create JavaScript test files and orchestrator YAML configurations to test OpenAF functions and modules, and how to run them locally and in CI. It is aimed at contributors who want to add new tests or understand how the existing test suite works. After reading this guide you will be able to write a focused test, hook it into the orchestrator, and verify results locally before opening a pull request.

@@ -26,18 +26,24 @@ import base64
 __oaf_namespace = globals()
 
 def _d(obj):
+    import json
     return json.dumps(obj)
 
 def __oaf_run(encoded, namespace):
     import base64, json, sys
+    try:
+        import builtins
+    except ImportError:
+        import __builtin__ as builtins
     payload = json.loads(base64.b64decode(encoded).decode('utf-8'))
     namespace.update(payload['input'])
-    eval(compile(payload['code'], '<openaf>', 'exec'), namespace, namespace)
-    result = namespace['__pm'] if payload['pm'] else dict((k, namespace[k]) for k in payload['output'])
+    builtins.eval(builtins.compile(payload['code'], '<openaf>', 'exec'), namespace, namespace)
+    result = namespace['__pm'] if payload['pm'] else builtins.dict((k, namespace[k]) for k in payload['output'])
     sys.stdout.write(payload['marker'] + json.dumps(result) + '\\n')
 
 `;
   if (isDef(this.token)) code += `def _(expression):
+    import socket, json
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect(('127.0.0.1', ${this.port}))
@@ -59,9 +65,11 @@ def _oaf(expression):
     return _(expression)
 
 def _g(key):
+    import json
     return _('$get(' + json.dumps(key) + ')')
 
 def _s(key, value):
+    import json
     return _('$set(' + json.dumps(key) + ', ' + _d(value) + ')')
 
 `;
@@ -349,7 +357,12 @@ OpenWrap.python.prototype.__exec = function(code, input, output, pm, throwExcept
   var source = "__oaf_run('" + payload + "', __oaf_namespace)\n", result, error, value;
   try {
     if (shouldFork || isUnDef(this.sport)) {
-      result = $sh([this.python, "-c", this.initCode(true) + source]).get(0);
+      // Keep code and JSON payloads out of the operating system's argv size limit.
+      var temporary = io.createTempFile("openaf-python-", ".py");
+      try {
+        io.writeFileString(temporary, this.initCode(true) + "import sys\nsys.path[0] = ''\nsys.argv[0] = '-c'\ndel __file__\n" + source);
+        result = $sh([this.python, temporary]).get(0);
+      } finally { io.rm(temporary); }
     } else {
       ow.loadObj();
       result = this.__request({ e: source, t: this.token });

@@ -1,0 +1,29 @@
+ojob:
+  sequential: true
+  shareArgs: true
+  logToConsole: false
+jobs:
+- name: Prepare
+  exec: |
+    args.value = 21;
+    print("prepared");
+- name: Double
+  exec: |
+    args.value *= 2;
+- name: Calculate
+  deps: [Prepare]
+  from: [Double]
+  to: [Display]
+  check:
+    in:
+      value: isNumber
+    out:
+      result: isNumber
+  exec: |
+    args.result = args.value;
+- name: Display
+  exec: |
+    print(args.result);
+todo:
+- Prepare
+- Calculate

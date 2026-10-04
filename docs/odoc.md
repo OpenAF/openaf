@@ -1,149 +1,65 @@
-# ODoc Engine & Web Help Reference Guide
+# ODoc: API lookup and documentation generation
 
-`odoc` is OpenAF's documentation compiler, indexer, search engine, offline help database system, and web documentation browser. It extracts structured docstrings embedded in JavaScript code, indexes them into binary documentation databases (`.odoc.db`), and presents them via CLI or an interactive web server (`odocweb`).
+[Index](./index.md) | [CLI](./cli.md) | [Coverage](./documentation-coverage.md)
 
----
+ODoc extracts documentation from JavaScript and Java comments. OpenAF packages a ZIP-format `.odoc.db` and can generate gzip files for web publication. Contracts live in [odoc.js](../js/odoc.js) and [openaf.js](../js/openaf.js).
 
-## Table of Contents
-1. [Overview & CLI Usage](#overview--cli-usage)
-2. [`<odoc>` Docstring Tag Format](#odoc-docstring-tag-format)
-3. [Building & Generating Help Databases (`.odoc.db`)](#building--generating-help-databases-odocdb)
-4. [ODoc Core JavaScript Classes (`js/odoc.js`)](#odoc-core-javascript-classes-jsodocjs)
-5. [Global Help Helper Functions](#global-help-helper-functions)
-6. [Documentation Web Server (`odocweb`)](#documentation-web-server-odocweb)
+## Look up an API
 
----
-
-## Overview & CLI Usage
-
-OpenAF bundles the `odoc` command-line executable (`openaf --odoc` or `odoc`).
-
-```bash
-# Search for documentation matching a query
-odoc search "ow.ch.create"
-
-# Display documentation for a specific key
-odoc key "ow.format.fromDate"
-
-# Launch the offline Web Documentation Server (odocweb)
-odoc web port=8080
-
-# Build an .odoc.db file from JS source code files
-odoc build src/ mylib.odoc.db
+```sh
+openaf -helpscript 'io.readFileJSON'
+openaf -c 'setOfflineHelp(true); print(stringify(searchHelp("io.readFileJSON")));'
 ```
 
----
+In the console use `help io.readFileJSON`. For a unique match, `searchHelp(term, optionalPath, optionalSubjectIds)` returns an array containing `{ id, key, fullkey, text }`. Multiple matches return candidates with `id` and `key`; no match returns an empty array. `setOfflineHelp(true)` selects local help. Installed package help can also be searched.
 
-## `<odoc>` Docstring Tag Format
+Check `openaf -c 'print(getVersion());'` when comparing help to source. Installed help describes the installed artifact, which may differ from source edits.
 
-Documentation in OpenAF source code is authored using block comments containing `<odoc>` XML tags directly preceding functions or object definitions:
+The core launcher does not provide `--odoc`, `odoc search`, `odoc key`, `odoc build`, or `odoc web`. Loading `odoc.js` defines library objects, not a command dispatcher. Separately installed tools may provide other commands.
+
+## Write a docstring
+
+Save this as `greeting.js`:
 
 ```javascript
 /**
  * <odoc>
- * <key>ow.format.fromDate(aDate, aFormat) : String</key>
- * <category>Format</category>
- * <author>Nuno Aguiar</author>
- * <version>20230101</version>
- * <see>ow.format.toDate</see>
- * Formats a JavaScript Date object or epoch timestamp into a string using standard date format patterns.
- * 
- * Parameters:
- *   - aDate   : Date object or epoch milliseconds.
- *   - aFormat : Date format string (e.g. "yyyy-MM-dd HH:mm:ss").
- * 
- * Example:
- *   var formatted = ow.format.fromDate(new Date(), "yyyy-MM-dd");
+ * <key>greeting(aName) : String</key>
+ * Returns a greeting for aName. Example: greeting("Ada") returns "Hello Ada".
  * </odoc>
  */
-OpenWrap.format.prototype.fromDate = function(aDate, aFormat) {
-  // implementation
-};
+function greeting(aName) {
+  return "Hello " + aName;
+}
 ```
 
-### Supported `<odoc>` Tags
+`<key>` supplies the signature. The parser derives the lookup name by stripping the signature after the first `(`, `{`, `[`, or `:`. The body must be XML-compatible: escape literal `&` and `<`. Source comments commonly use a trailing backslash to preserve line breaks.
 
-| Tag | Purpose | Example |
-| :--- | :--- | :--- |
-| `<key>` | Unique symbol name, signature, and return type. | `<key>ow.ch.create(aName, shouldCompress, type, options) : ow.ch</key>` |
-| `<category>` | Functional group or topic classification. | `<category>Channels</category>` |
-| `<author>` | Author name or maintainer. | `<author>Nuno Aguiar</author>` |
-| `<version>` | Minimum OpenAF version or API version. | `<version>20230101</version>` |
-| `<see>` | Cross-reference link to related keys. | `<see>ow.ch.get</see>` |
+The parser does not create searchable fields for `<category>`, `<author>`, `<version>`, or `<see>`. Put compatibility and related-API information in the body instead.
 
----
+## Generate local help
 
-## Building & Generating Help Databases (`.odoc.db`)
+Run from the directory containing `greeting.js`:
 
-You can compile source code docstrings into an offline binary database (`.odoc.db`) for distributions or oPacks:
-
-### Command Line
-```bash
-odoc build dir=js/ out=.odoc.db
+```sh
+openaf -c 'io.mkdir("help"); saveHelp("help", { greetings: "greeting.js" });'
+openaf -c 'setOfflineHelp(true); print(stringify(searchHelp("greeting", "help/")));'
 ```
 
-### Programmatically in JS
-```javascript
-load("odoc.js");
+The first argument is an **output directory**, not a database filename. Each map value is one source filename, not an array or directory. This creates `help/.odoc.db`. `ODoc.parseDir` and `ODoc.saveDB` are not core APIs.
 
-// Extract docstrings from directory and build .odoc.db
-var docDB = new ODoc();
-docDB.parseDir("js/");
-docDB.saveDB(".odoc.db");
-```
+After creating an output directory, `saveHelpWeb("help-web", { greetings: "greeting.js" })` writes subject `.gz` files and `__odockeys.gz`. It does not start a web server. The repository's `odocweb/` directory holds generated data. Publish it through your chosen documentation frontend.
 
----
+## Library interfaces
 
-## ODoc Core JavaScript Classes (`js/odoc.js`)
+Call `loadHelp()` before constructing these objects:
 
-`js/odoc.js` exposes four primary classes for documentation handling:
+| Interface | Contract |
+| --- | --- |
+| `ODoc(initialEntries)` | One subject; `add`, `get`, `getKeys`, and `getAll` manage entries with `{ k: signature, t: text }`. |
+| `ODocsGen(filesBySubject)` | Constructor parses the files. `genODoc(filename)` returns an `ODoc`; `getODoc()` returns plain maps by subject. |
+| `ODocs(path, entries, urls, offline)` | Collection with `loadFile(path)`, `search(term, subjectIds)`, `get(id, key)`, `save()`, and `saveWeb()`. Use a directory with trailing slash to load its `.odoc.db`. |
+| `saveHelp(directory, filesBySubject)` | Extract and save local help. |
+| `saveHelpWeb(directory, filesBySubject)` | Extract and save compressed web data. |
 
-### `ODoc(aoDoc)`
-* `add(aKey, aFullKey, aValue)`: Stores documentation entry.
-* `get(aKey) : Map`: Returns `{ k: "signature", t: "body text" }`.
-* `getKeys() : Array`: Returns array of indexed key names.
-* `getAll() : Map`: Returns full documentation map.
-
-### `ODocsGen(aMapOfFiles)`
-* `genODoc(aFilename) : ODoc`: Parses XML `<odoc>` tags from file comments and returns indexed `ODoc`.
-* `genODocs()`: Processes all files in map.
-
-### `ODocs(aPath, aODocs, anArrayURLs, offline)`
-* `loadFile(aPath)`: Loads `.odoc.db` file into memory.
-* `save()`: Compiles and compresses entries into binary `.odoc.db` ZIP archive (level 9 compression).
-* `saveWeb()`: Generates online `.gz` documentation endpoints.
-* `search(aTerm, anArrayOfIds)`: Performs case-sensitive and case-insensitive exact/contains search across databases.
-* `get(aID, aKey)`: Retrieves documentation entry for a specific subject ID and key.
-
----
-
-## Global Help Helper Functions
-
-OpenAF provides top-level global helpers in `openaf.js` for querying and generating help:
-
-```javascript
-// Toggle offline local .odoc.db search vs remote online lookup
-setOfflineHelp(true);
-
-// Search help across core JAR, oPacks, and external databases
-var results = searchHelp("channel");
-
-// Save offline .odoc.db database
-saveHelp(".odoc.db", { "myModule": ["lib.js"] });
-```
-
----
-
-## Documentation Web Server (`odocweb`)
-
-OpenAF includes `odocweb`, an offline embedded HTTP server that renders interactive, searchable HTML documentation for all core APIs and installed oPacks.
-
-```bash
-# Start odocweb on default port (8090)
-odoc web
-
-# Start odocweb on a custom port
-odoc web port=8888
-```
-
-Open a web browser at `http://localhost:8888` to explore interactive documentation, search APIs, and view usage examples offline.
+The [build script](../buildos.js) uses these helpers for distribution help. Generating help does not verify example behavior; run the [documentation checks](./documentation-coverage.md) too.

@@ -3,53 +3,59 @@
 Core references and extended guides to build and operate oJobs and OpenAF solutions.
 
 ## Getting Started
-- getting-started.md – Install, hello world, first oJob, and where to go next
-- cli.md – `openaf`/`oaf` command-line flags and generated wrapper scripts (`ojob`, `opack`, `oafp`, `pyoaf`, …), shebang scripts (`--sb`), and the update process
-- console.md – Interactive console (`oafc`/`openaf-console`): built-in commands, aliases, profile & history files
+- [getting-started.md](./getting-started.md) – Install, hello world, first oJob, and where to go next
+- [cli.md](./cli.md) – `openaf`/`oaf` command-line flags and generated wrapper scripts (`ojob`, `opack`, `oafp`, `pyoaf`, …), shebang scripts (`--sb`), and the update process
+- [console.md](./console.md) – Interactive console (`oafc`/`openaf-console`): built-in commands, aliases, profile & history files
+
+## Authoring tasks
+- [Script to oJob](./authoring.md) – One task, from CLI script to validated workflow
+- [Authoring recipes](./authoring-recipes.md) – Files, HTTP, processes, packages, concurrency, and cleanup
+- [Test and troubleshoot your automation](./authoring-testing.md) – Standalone assertions and workflow checks
+- [Documentation coverage](./documentation-coverage.md) – Source inventory, curated contracts, and verification
 
 ## Core
-- openaf.md – Core OpenAF runtime helpers & APIs (`$$`, `_$`, `$from`, `$path`, channels, etc.)
+- [openaf.md](./openaf.md) – Core OpenAF runtime helpers & APIs (`$$`, `_$`, `$from`, `$path`, channels, etc.)
 - [openaf-dollar-functions.md](./openaf-dollar-functions.md) – Additional `$` helpers: formatting, caching, synchronization, argument conversion, JSON-RPC, processes, and output
-- ojob.md – Main oJob YAML reference (structure, jobs, built-ins, shortcuts, argument tables)
-- ojob-all.yaml – Annotated syntax catalog (illustrative options, not a runnable definition)
+- [ojob.md](./ojob.md) – Main oJob YAML reference (structure, jobs, built-ins, shortcuts, argument tables)
+- [ojob-all.yaml](./ojob-all.yaml) – Annotated syntax catalog (illustrative options, not a runnable definition)
 - [ojob-examples.md](./ojob-examples.md) – Patterns and source examples from the ojob.io YAML collection
-- oafp.md – OpenAF Processor (oafp): universal data transformation, SQL/JMESPath queries & formatting
-- odoc.md – ODoc engine, docstrings (`<odoc>`), offline help databases (`.odoc.db`), and `odocweb` server
-- opacks.md – oPacks: manifest format, versioning, the `opack` CLI, scripting integration, building & hosting opack repositories
-- python.md – Using Python from OpenAF (ow.python, $py/$pyExec, `--py`/`pyoaf` CLI with argv support, `--oafpy`, oJob `lang: python`)
+- [oafp.md](./oafp.md) – OpenAF Processor (oafp): universal data transformation, SQL/JMESPath queries & formatting
+- [odoc.md](./odoc.md) – API lookup, source docstrings, offline help databases (`.odoc.db`), and generated web data
+- [opacks.md](./opacks.md) – oPacks: manifest format, versioning, the `opack` CLI, scripting integration, building & hosting opack repositories
+- [python.md](./python.md) – Using Python from OpenAF (ow.python, $py/$pyExec, `--py`/`pyoaf` CLI with argv support, `--oafpy`, oJob `lang: python`)
 
 ## Tools & Engines
-- obook.md – Interactive Notebooks (`ow.oBook`) and CLI step-by-step tutorials
-- sigil.md – Sigil macro engine (`<sigil:...>`), environment variable, secret, and template interpolation
-- plugins.md – Core Java Plugins reference (`plugin("...")`) covering HTTP, HTTPServer, SSH, FTP, Email, JMX, SNMP, BSDiff, Threads, XML, ZIP, etc.
+- [obook.md](./obook.md) – Interactive Notebooks (`ow.oBook`) and CLI step-by-step tutorials
+- [sigil.md](./sigil.md) – Sigil macro engine (`<sigil:...>`), environment variable, secret, and template interpolation
+- [plugins.md](./plugins.md) – Core Java Plugins reference (`plugin("...")`) covering HTTP, HTTPServer, SSH, FTP, Email, JMX, SNMP, BSDiff, Threads, XML, ZIP, etc.
 
 ## Security & Configuration
 - [mcp-oauth.md](mcp-oauth.md) – Localhost OAuth2 login with `$sec` storage and `$mcp` integration
-- ojob-security.md – Integrity, auditing, unique execution, channel exposure
-- openaf-flags.md – Runtime flags / environment variables
+- [ojob-security.md](./ojob-security.md) – Integrity, auditing, unique execution, channel exposure
+- [openaf-flags.md](./openaf-flags.md) – Runtime flags / environment variables
 
 ## Advanced & Deep Dives
 - [json-schema.md](json-schema.md) – JSON Schema validation, schema generation, draft selection, and Ajv compatibility
-- openaf-advanced.md – Extended ow.* module coverage, patterns
-- ojob-recipes.md – Practical, composable job recipes
-- testing.md – Testing guidelines and practices
+- [openaf-advanced.md](./openaf-advanced.md) – Extended ow.* module coverage, patterns
+- [ojob-recipes.md](./ojob-recipes.md) – Practical, composable job recipes
+- [testing.md](./testing.md) – Testing guidelines and practices
 
 ## AI & Processing
-- ow-ai-gpttypes.md – AI / LLM provider wrappers, standardized interfaces and implementation notes
+- [ow-ai-gpttypes.md](./ow-ai-gpttypes.md) – AI / LLM provider wrappers, standardized interfaces and implementation notes
 - [llm-decisions.md](llm-decisions.md) – Stateless decisions, structured output, capabilities and probability semantics
 - [llm-decisions-contracts.md](llm-decisions-contracts.md) – Provider contract verification and fixture provenance
-- llm-guide.md – General LLM integration guide
-- llm-tui-guide.md – Guide for LLM Terminal User Interfaces
-- llm-frontend-guide.md – Rules for generating offline-first OpenAF frontends with mapped HTTP libs/endpoints
+- [llm-guide.md](./llm-guide.md) – General LLM integration guide
+- [llm-tui-guide.md](./llm-tui-guide.md) – Guide for LLM Terminal User Interfaces
+- [llm-frontend-guide.md](./llm-frontend-guide.md) – Rules for generating offline-first OpenAF frontends with mapped HTTP libs/endpoints
 
 ## Developer Notes
-- dev/ – Internal docs (Python OAF server protocol, updating bundled libs)
-- testing.md – How to add and run tests
+- [dev/](./dev/) – Internal docs (Python OAF server protocol, updating bundled libs)
+- [testing.md](./testing.md) – How to add and run tests
 
 ## Getting Started Path
 1. Read `getting-started.md` (install + first steps).
 2. Read `openaf.md` (core helpers) & skim `ojob.md` basics.
-3. Copy `ojob-all.yaml` as a scaffold.
+3. Follow [Script to oJob](./authoring.md) and copy its runnable starter. Use `ojob-all.yaml` only as a syntax catalog.
 4. Pick patterns from `ojob-recipes.md`.
 5. Harden with `ojob-security.md` & tune via `openaf-flags.md`.
 6. Explore advanced modules in `openaf-advanced.md`.
@@ -85,6 +91,7 @@ Copy an individual folder from [`skills/`](../skills/) into a GenAI application'
 | [LLM workflows](../skills/openaf-llm/SKILL.md) | Provider configuration, structured output, and decisions |
 | [MCP clients](../skills/openaf-mcp/SKILL.md) | Tools, transports, OAuth, and result handling |
 | [JSON Schema](../skills/openaf-json-schema/SKILL.md) | Drafts, validators, references, and errors |
+| [Python](../skills/openaf-python/SKILL.md) | Python execution, argument exchange, and lifecycle |
 | [Concurrency](../skills/openaf-concurrency/SKILL.md) | Parallel work, completion, retries, and locks |
 
 ---

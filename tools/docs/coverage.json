@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "contracts": [
+    {
+      "symbol": "processExpr",
+      "loader": "core",
+      "reference": "docs/authoring.md",
+      "examples": [
+        "examples/authoring/filter-records.js"
+      ],
+      "test": "test_filter_pair"
+    },
+    {
+      "symbol": "io.readFileJSON",
+      "loader": "core io",
+      "reference": "docs/authoring.md",
+      "examples": [
+        "examples/authoring/filter-records.js",
+        "examples/authoring/filter-records.yaml"
+      ],
+      "test": "test_filter_failures"
+    },
+    {
+      "symbol": "io.writeFileJSON",
+      "loader": "core io",
+      "reference": "docs/authoring.md",
+      "examples": [
+        "examples/authoring/filter-records.js",
+        "examples/authoring/filter-records.yaml"
+      ],
+      "test": "test_filter_pair"
+    },
+    {
+      "symbol": "$rest",
+      "loader": "core helper loads ow.obj",
+      "reference": "docs/authoring-recipes.md",
+      "examples": [
+        "examples/authoring/http-json.js",
+        "examples/authoring/http-json.yaml"
+      ],
+      "test": "test_http_pair"
+    },
+    {
+      "symbol": "$sh",
+      "loader": "core",
+      "reference": "docs/authoring-recipes.md",
+      "examples": [
+        "examples/authoring/process.js",
+        "examples/authoring/process.yaml"
+      ],
+      "test": "test_process_pair"
+    },
+    {
+      "symbol": "ow.test.assert",
+      "loader": "ow.loadTest()",
+      "reference": "docs/authoring-testing.md",
+      "examples": [
+        "examples/authoring/test-filter.js"
+      ],
+      "test": "test_standalone_assertions"
+    },
+    {
+      "symbol": "$doA2B",
+      "loader": "core",
+      "reference": "docs/openaf-dollar-functions.md",
+      "examples": [
+        "skills/openaf-concurrency/assets/bounded-work.js"
+      ],
+      "test": "test_existing_skill_assets"
+    },
+    {
+      "symbol": "saveHelp",
+      "loader": "core helper loads ODoc",
+      "reference": "docs/odoc.md",
+      "examples": [],
+      "test": "test_odoc_roundtrip"
+    },
+    {
+      "symbol": "searchHelp",
+      "loader": "core helper loads ODoc",
+      "reference": "docs/odoc.md",
+      "examples": [],
+      "test": "test_odoc_roundtrip"
+    }
+  ],
+  "features": [
+    {
+      "symbol": "ojob.shareArgs",
+      "source": "js/owrap.oJob.js",
+      "source_token": "shareArgs",
+      "reference": "docs/authoring.md",
+      "examples": [
+        "examples/authoring/filter-records.yaml"
+      ],
+      "test": "test_filter_pair"
+    },
+    {
+      "symbol": "ojob.check.in/out",
+      "source": "js/owrap.oJob.js",
+      "source_token": "check",
+      "reference": "docs/ojob.md",
+      "examples": [
+        "examples/authoring/filter-records.yaml"
+      ],
+      "test": "test_filter_failures"
+    },
+    {
+      "symbol": "ojob.catch and finally",
+      "source": "js/owrap.oJob.js",
+      "source_token": "catch",
+      "reference": "docs/authoring.md",
+      "examples": [
+        "examples/authoring/cleanup.yaml"
+      ],
+      "test": "test_lifecycle"
+    },
+    {
+      "symbol": "ojob.periodic/shutdown",
+      "source": "js/owrap.oJob.js",
+      "source_token": "daemonFunc",
+      "reference": "docs/authoring-recipes.md",
+      "examples": [
+        "examples/authoring/bounded-periodic.yaml"
+      ],
+      "test": "test_lifecycle"
+    },
+    {
+      "symbol": "Badgen integration",
+      "source": "skills/openaf-opacks/SKILL.md",
+      "source_token": "Badgen",
+      "reference": "docs/authoring-recipes.md",
+      "examples": [
+        "skills/openaf-opacks/assets/badge.js",
+        "examples/authoring/package.yaml"
+      ],
+      "test": "test_package_integration",
+      "optional": true
+    },
+    {
+      "symbol": "ojob.deps/from/to",
+      "source": "js/owrap.oJob.js",
+      "source_token": "deps",
+      "reference": "docs/authoring-recipes.md",
+      "examples": [
+        "examples/authoring/composition.yaml"
+      ],
+      "test": "test_composition_and_workers"
+    },
+    {
+      "symbol": "ojob.each/eachThreads",
+      "source": "js/owrap.oJob.js",
+      "source_token": "eachThreads",
+      "reference": "docs/authoring-recipes.md",
+      "examples": [
+        "examples/authoring/bounded-workers.yaml"
+      ],
+      "test": "test_composition_and_workers"
+    }
+  ],
+  "copies": [
+    {
+      "document": "skills/openaf-javascript/SKILL.md",
+      "asset": "skills/openaf-javascript/assets/filter-records.js",
+      "language": "javascript"
+    },
+    {
+      "document": "skills/ojob-authoring/SKILL.md",
+      "asset": "skills/ojob-authoring/assets/greeting.yaml",
+      "language": "yaml"
+    },
+    {
+      "document": "skills/openaf-owrap/SKILL.md",
+      "asset": "skills/openaf-owrap/assets/format-summary.js",
+      "language": "javascript"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+ojob:
+  logToConsole: false
+jobs:
+- name: Produce
+  each: [Consume]
+  typeArgs:
+    eachThreads: 2
+  exec: |
+    [1, 2, 3].forEach(function(id) { each({ id: id }); });
+- name: Consume
+  exec: |
+    print("record: " + args.id);
+todo:
+- Produce

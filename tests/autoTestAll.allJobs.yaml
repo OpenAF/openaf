@@ -26,6 +26,7 @@ include:
 - autoTestAll.CDS.yaml
 - autoTestAll.Repack.yaml
 - autoTestAll.Sec.yaml
+- autoTestAll.Languages.yaml
 - autoTestAll.oJob.yaml
 - autoTestAll.MCP.yaml
 - autoTestAll.TOON.yaml

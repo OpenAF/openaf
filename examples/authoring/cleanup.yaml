@@ -1,0 +1,33 @@
+ojob:
+  sequential: true
+  shareArgs: true
+  logToConsole: false
+jobs:
+- name: Work
+  to: Unreachable
+  exec: |
+    var stream = io.writeFileStream("temporary.txt");
+    try {
+      throw "fixture failure";
+    } finally {
+      stream.close();
+      io.rm("temporary.txt");
+      args.cleaned = true;
+    }
+  catch: |
+    if (String(exception).indexOf("fixture failure") < 0) throw exception;
+    args.recovered = true;
+    return true;
+- name: Unreachable
+  exec: |
+    print("unexpected: to ran");
+- name: Report
+  exec: |
+    ow.loadTest();
+    ow.test.assert(args.cleaned, true, "finally ran");
+    ow.test.assert(args.recovered, true, "catch recovered");
+    ow.test.assert(io.fileExists("temporary.txt"), false, "temporary file removed");
+    print("cleanup recovery: ok");
+todo:
+- Work
+- Report

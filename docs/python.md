@@ -61,12 +61,15 @@ print(result.c);      // 8
 print(result.result); // 16
 ```
 
-Each call spawns a fresh `python -c ...` unless a server is already running (see below), in which
+Each call spawns a fresh Python process unless a server is already running (see below), in which
 case it reuses it transparently. The full signatures are
 `exec(code, input, outputNames, throwExceptions, shouldFork)` and
 `execPM(code, input, throwExceptions, shouldFork)`. Inputs and outputs must be JSON-compatible;
 named variables use ASCII Python identifiers, excluding keywords and the reserved `__oaf_` prefix.
 Embedded code and JSON are encoded through UTF-8/base64, preserving escapes and Unicode.
+Forked calls use a temporary script, removed after execution, so large inputs do not exceed
+operating system command-line limits. They retain inline execution semantics, including imports
+from the current directory. User variables can shadow built-ins such as `eval`, `compile` and `dict`.
 
 `throwExceptions` defaults to `false`: errors are printed and a missing result returns `undefined`.
 Set it to `true` to throw on stderr (even with a successful exit), nonzero exit status, malformed

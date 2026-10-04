@@ -7712,7 +7712,8 @@ const mapArray = function(anArray, selectors, limit) {
  * </odoc>
  */
 const searchArray = function(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) {
-	return ow.loadObj.searhArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel);
+	ow.loadObj();
+	return ow.obj.searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel);
 }
 
 /**

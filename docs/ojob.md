@@ -701,7 +701,7 @@ jobs:
 - name: "PowerShell Job"
   lang: powershell
   exec: | #powershell
-    $_args.psResult = "success"
+    $_args | Add-Member -NotePropertyName psResult -NotePropertyValue "success" -Force
 
 # Alternative Python execution
 - name: "Python File Job"
@@ -728,7 +728,50 @@ jobs:
     args.nodeResult = "success"
 ```
 
-Without `lang`, jobs run as OpenAF JavaScript (`oaf`, `js`, or `javascript`). For JSON-based external runners, reserve stdout for the returned argument map; extra diagnostic output can prevent parsing. `sh` executes commands line by line through `$sh`; `shell` executes a script and can map a final `# return name, otherName` declaration back into args.
+Without `lang`, jobs run as **OpenAF JavaScript** (`oaf`, `js`, or `javascript`), with OpenAF APIs in the current JVM. `lang: node` runs **Node.js** in a separate process: it has Node APIs and JSON arguments, not OpenAF globals. There is no TypeScript adapter.
+
+Node, Go, Ruby, Perl, Swift, PowerShell, and Java exchange `args` through UTF-8 JSON files. stdout and stderr are logs and no longer interfere with results. A successful job must produce a JSON object; the generated wrapper does this automatically. Results merge using the existing OpenAF `merge` behavior (including array concatenation). Failed jobs never merge their result. JSON cannot represent arbitrary runtime objects or exact integers beyond JavaScript's safe range.
+
+```yaml
+jobs:
+- name: Java example
+  lang: java
+  typeArgs:
+    langTimeout: 30000
+    langArgs:
+      javaImports: [java.time.Instant]
+      javaClasspath: []
+  exec: |
+    System.out.println("Java is running");
+    args.put("javaResult", Instant.now().toString());
+```
+
+Java uses a JDK 21+ source launcher, defaulting to the current Java installation, and Gson from the OpenAF distribution. `exec` (or `file`) is a Java method body with `Map<String,Object> args`. JSON numbers are `Long` or `Double`; use `Number` when reading them. Imports omit the final semicolon; classpath entries are paths, not a platform-separated string. No dependencies are downloaded. Java source is literal by default; set `noTemplate: false` to opt into source templating. Other existing language defaults remain unchanged.
+
+For these local structured runners:
+
+| Option | Meaning |
+| --- | --- |
+| `typeArgs.langExecutable` | Executable name or path, overriding the adapter default; e.g. `pwsh` instead of `powershell`. |
+| `typeArgs.langExecutableArgs` | Array of extra arguments before the script arguments. |
+| `typeArgs.langTimeout` | Positive milliseconds covering compilation and execution; absent means unlimited. Separate from job-level `timeout`. |
+| `typeArgs.pwd` | Child working directory. Paths and executable arguments containing spaces are supported. |
+| `typeArgs.shellPrefix` | Prefix buffered stdout/stderr log lines after execution. |
+| `typeArgs.noTemplate` | Keep source literal when true. Pass data through `args` rather than interpolating it into code. |
+
+Temporary input, source, and result files are removed on success, failure, and timeout. Timeouts terminate the direct process and tracked descendants. OS restrictions can prevent descendant enumeration, and deliberately detached children are not a containment guarantee. The process helper reports `descendantTracking` so callers can distinguish that limitation.
+
+`ow.oJob.getLanguages()` lists registered languages, prerequisites, and supported process options. `getLanguages(true)` additionally runs local probes with a five-second limit; it does not install software. `available: null` means the adapter has no local probe. Python retains `OAF_PYTHON` and its existing bridge configuration; new process options are rejected for Python, shell/SSH, and legacy adapters that do not advertise support.
+
+**Migration:** built-in structured runners now require the generated result file; printing JSON alone or exiting before the wrapper finishes no longer returns arguments. stdout is always logging. Arguments are no longer copied into environment variables for these runners; use their existing `args` variable (`$_args` in PowerShell, `$args` in Perl). Source runs from a temporary file; Node's `require` resolves from the child working directory. Python retains its existing bridge. `sh`, `shell`, SSH and Kubernetes retain their current conventions, including shell `# return` support.
+
+### Custom language adapters
+
+Existing `ojob.langs` entries using `shell`, `pre`, `pos`, `withFile`, `returnRE`, `returnFn`, or `langFn` retain their contract, including overrides of built-in names. To use file-based argument exchange, explicitly register `protocol: json-file-v1` with an `executable`, `extension`, optional `scriptArgs`/`versionArgs`, and `pre`/`pos` wrappers. The wrapper reads `OJOB_ARGS_FILE` and writes a JSON object to `OJOB_RESULT_FILE`. `pre` receives template variables `argsFile`, `resultFile`, and `langArgs`; `pos` is literal source. Paths are also available through the environment, avoiding source quoting issues.
+
+For adapters implementing their own protocol, `ow.oJob.runLanguageProcess(argv, {pwd, env, timeout})` returns `{stdout, stderr, exitcode, timedOut, descendantTracking}` with concurrent UTF-8 output capture. `env` overlays the inherited environment; stdin is closed. Set `processOptions: true` only when the adapter implements the documented process options. Register cleanup with `ow.oJob.registerLanguageCleanup(name, fn)`; it runs after oJob workers stop.
+
+The optional Rust oPack retains complete Rust programs, environment arguments, and JSON stdout results, with compilation caching and bounded execution. Prolog and Kubernetes remain optional adapters with their existing interfaces.
 
 ### Job Execution Control
 

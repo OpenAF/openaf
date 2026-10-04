@@ -19,7 +19,12 @@ exports.testRoundTrips = function() {
       eq(py.exec("result = value", { value: data }, ["result"], true).result, data, "Exact JSON round trip");
       eq(py.execPM("__pm['count'] = 2", merge(data, { count: 1 }), true), merge(data, { count: 2 }), "PM map");
       eq(py.exec("import sys\nsys.stdout.write('no newline')\nx = 7", {}, ["x"], true).x, 7, "Unterminated output");
+      eq(py.exec("result = value", { value: 42, eval: 1, compile: 2, dict: 3 }, ["result"], true).result, 42, "Builtin names are valid input variables");
+      eq(py.exec("dict = 4\nresult = dict", {}, ["result"], true).result, 4, "User code can shadow result construction builtins");
     });
+    var large = "雪".repeat(700000);
+    eq(py.exec("size = len(value)", { value: large }, ["size"], true, true).size, large.length, "Fork payload exceeds argv limits");
+    eq(py.exec("import sys\nresult = [sys.argv[0], sys.path[0], '__file__' in globals()]", {}, ["result"], true, true).result, ["-c", "", false], "Fork retains inline execution semantics");
     fails(() => py.exec("pass", { "x;bad": 1 }, [], true), "Invalid Python variable");
   } finally { py.stopServer(__, true); }
 };
@@ -134,6 +139,8 @@ exports.testStandalone = function() {
     eq(py.cServer.get(), 1, "Implicit standalone starts once");
     eq(py.execStandalone("pass", __, false, []).exitcode, 0, "Inline standalone");
     eq(py.cServer.get(), 1, "Repeated standalone retains reference");
+    eq(py.execStandalone("json = 42\nsocket = 43\n_s('python-standalone', {'value': _g('python-standalone')['value'] + 1})", __, true, []).exitcode, 0, "Callback modules cannot be shadowed by user globals");
+    eq($get("python-standalone").value, 24, "Callbacks still exchange values after module shadowing");
     fails(() => py.execStandalone("import sys\nsys.stderr.write('warning')", __, true, []), "standalone execution failed");
   } finally { py.stopServer(__, true); io.rm(dir); $unset("python-standalone"); }
 };

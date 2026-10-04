@@ -4,10 +4,11 @@
     exports.testJMX = function() {
         plugin("JMXServer");
         
-        log("Creating JMX server on port 12346");
+        var port = findRandomOpenPort();
+        log("Creating JMX server on port " + port);
         var jmxServer = new JMXServer("com.openaf:type=Values");
         var BINGO = "OK";
-        jmxServer.start(12346);
+        jmxServer.start(port);
         jmxServer.addBean({"a": "writable double", "b": "long", "c": "writable string" },
             function(aKey) {
                 switch(aKey) {
@@ -23,7 +24,7 @@
     
         log("Using JMX client to connect to JMX server");
         plugin("JMX");
-        var jmx = new JMX("service:jmx:rmi:///jndi/rmi://127.0.0.1:12346/jmxrmi");
+        var jmx = new JMX("service:jmx:rmi:///jndi/rmi://127.0.0.1:" + port + "/jmxrmi");
         var jmxObj = jmx.getObject("com.openaf:type=Values");
         if (jmxObj.get("a") != 12.3 ||
             jmxObj.get("b") != 123 ||

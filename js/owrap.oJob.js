@@ -97,46 +97,6 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.oJobShouldStop = false;
 
 	this.__langs = {
-		"powershell": {
-			lang : "powershell",
-			shell: "powershell -",
-			pre  : "$_args = ConvertFrom-Json '{{{args}}}'\n",
-			pos  : "\n(ConvertTo-Json $_args -Compress)\n"
-		},
-		"go": {
-			lang: "go",
-			shell: "go run ",
-			pre: "package main\nimport (\"encoding/json\"; \"fmt\"{{#each langArgs.goImports}}; {{{this}}}{{/each}})\nfunc main(){var args map[string]interface{}\njson.Unmarshal([]byte(`{{{args}}}`), &args)\n",
-			pos: "\n_args, _err := json.Marshal(args); if _err != nil { return }; fmt.Println(string(_args))}",
-			withFile: ".go"
-		},
-		"node": {
-			lang : "node",
-			shell: "node",
-			pre  : "var args = {{{args}}};",
-			pos  : ";console.log(JSON.stringify(args, void 0, ''))"
-		},
-		"ruby": {
-			lang : "ruby",
-			shell: "ruby -",
-			pre  : "require 'json'\nargs = JSON.parse('{{{args}}}')\n",
-			pos  : "\nputs JSON.generate(args)"
-		},
-		"perl": {
-			lang: "perl",
-			shell: "perl",
-			// should use JSON CPAN module when available
-			pre     : "if (eval { require JSON; 1 }) { $args = JSON::decode_json('{{{args}}}'); };\n",
-			pos     : "\nif (eval { require JSON; 1 }) { print JSON::encode_json($args).'\n'; };",
-			returnRE: "\\s*#\\s+return (.+)[\\s\\n]+",
-			returnFn: "var _j='{'+_args.split(',').map(k=>\"'\"+k.trim()+\"':\\\\\\\"\$\"+k.trim()+\"\\\\\\\"\").join(',')+'}';return \";print \\\"\" + _j + \"\\\";\" "
-		},
-		"swift": {
-			lang: "swift",
-            shell: "swift -",
-            pre: "import Foundation; let __argsString = \"{{{$path args 'replace(@,`\\\"`,`g`,`\\\\\\\"`)'}}}\"; if let __argsData = __argsString.data(using: .utf8) { do { if var args = try JSONSerialization.jsonObject(with: __argsData, options: []) as? [String: Any] {\n",
-            pos: "if let __argsString = String(data: try JSONSerialization.data(withJSONObject: args, options: []), encoding: .utf8) { print(__argsString) } } } }\n"
-		},
 		"sh" : { 
 			lang: "sh",
 			langFn: "var s = $sh(); code.split('\\n').forEach(l => s = s.sh(templify(l, args)) ); if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.pwd)) { s = s.pwd(job.typeArgs.pwd) }; if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.shellPrefix)) { s = s.prefix(job.typeArgs.shellPrefix); s.get(); } else { s.exec(); }"
@@ -157,6 +117,8 @@ OpenWrap.oJob = function(isNonLocal) {
 	};
 
 
+	this.__languageLock = new java.util.concurrent.locks.ReentrantLock();
+	this.__languageDefaults();
 	this.periodicFuncs = [];
 	this.__periodicFunc = () => {
 		this.periodicFuncs.forEach((f) => f());
@@ -1828,6 +1790,11 @@ OpenWrap.oJob.prototype.stop = function() {
 
 		if (this.__ojob.logToConsole && Boolean(__conAnsi && (java.lang.System.console() != null))) ansiStop();
 	}
+	if (isDef(this.__languageCleanups)) {
+		var cleanups = this.__languageCleanups;
+		this.__languageCleanups = {};
+		Object.keys(cleanups).forEach(k => cleanups[k]());
+	}
 };
 
 OpenWrap.oJob.prototype.__getCachedFn = function(aSource) {
@@ -3230,6 +3197,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 			var m = parent.__langs[aJobTypeArgs.lang]
 			if (isDef(aJobTypeArgs.lang) && isUnDef(m) && ["javascript", "oaf", "js", "python"].indexOf(aJobTypeArgs.lang) === -1) throw "Language '" + aJobTypeArgs.lang + "' not supported or defined for job '" + aName + "'."
+			if ((!m || (m.protocol != "json-file-v1" && m.processOptions !== true)) && ["langExecutable", "langExecutableArgs", "langTimeout"].some(k => isDef(aJobTypeArgs[k]))) throw new Error("Language " + aJobTypeArgs.lang + " does not support local process options");
 			if (isDef(m) && isUnDef(aJobTypeArgs.returnRE) && isDef(m.returnRE)) aJobTypeArgs.returnRE = m.returnRE
 			if (isDef(m) && isUnDef(aJobTypeArgs.returnFn) && isDef(m.returnFn)) aJobTypeArgs.returnFn = m.returnFn
 
@@ -3249,7 +3217,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 				}
 			}
-			switch(aJobTypeArgs.lang) {
+			if (isDef(m) && m.protocol == "json-file-v1") {
+				res += "\nargs = ow.oJob.__runLanguage(" + stringify(aJobTypeArgs.lang) + ", " + stringify(origRes) + ", args, " + stringify(aJobTypeArgs) + ", " + stringify(aName) + ");\n";
+			} else switch(aJobTypeArgs.lang) {
 			case "javascript":
 			case "js":
 			case "oaf":
@@ -4152,3 +4122,191 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 OpenWrap.oJob.prototype.output = $output
 
 //ow.oJob = new OpenWrap.oJob();
+
+/**
+ * <odoc>
+ * <key>oJob.runLanguageProcess(aCommand, aOptions) : Map</key>
+ * Runs an argv array locally with concurrent UTF-8 output capture. Options: pwd, env, timeout (positive milliseconds).
+ * Returns stdout, stderr, exitcode, timedOut and descendantTracking. Does not install runtimes or parse output.
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.runLanguageProcess = function(command, options) {
+  _$(command, "language command").isArray().$_();
+  if (command.length == 0 || command.some(v => !isString(v))) throw new Error("Language command must be a nonempty string array");
+  options = _$(options).isMap().default({});
+  var request = { command: command };
+  if (isDef(options.pwd)) request.cwd = _$(options.pwd, "pwd").isString().$_();
+  if (isDef(options.env)) request.env = _$(options.env, "env").isMap().$_();
+  if (isDef(options.timeout)) {
+    if (!isNumber(options.timeout) || !isFinite(options.timeout) || options.timeout <= 0) throw new Error("Language timeout must be positive milliseconds");
+    request.timeout = Math.max(1, Math.ceil(options.timeout));
+  }
+  return jsonParse(String(Packages.openaf.OJobLanguageProcess.run(stringify(request, __, ""))));
+};
+
+OpenWrap.oJob.prototype.__languageDefaults = function() {
+  var defs = {
+    node: { executable: "node", extension: ".js", versionArgs: ["--version"],
+      pre: "var require = require('module').createRequire(require('path').join(process.cwd(), '__ojob__.js')); var __ojobFs = require('fs'); var args = JSON.parse(__ojobFs.readFileSync(process.env.OJOB_ARGS_FILE, 'utf8'));\n",
+      pos: "\n;__ojobFs.writeFileSync(process.env.OJOB_RESULT_FILE, JSON.stringify(args), 'utf8');\n" },
+    ruby: { executable: "ruby", extension: ".rb", versionArgs: ["--version"],
+      pre: "require 'json'\nargs = JSON.parse(File.read(ENV.fetch('OJOB_ARGS_FILE'), encoding: 'UTF-8'))\n",
+      pos: "\nFile.write(ENV.fetch('OJOB_RESULT_FILE'), JSON.generate(args), encoding: 'UTF-8')\n" },
+    perl: { executable: "perl", extension: ".pl", versionArgs: ["-v"],
+      pre: "use JSON::PP; use Encode qw(decode encode); open(my $ojob_in, '<:raw', $ENV{'OJOB_ARGS_FILE'}) or die $!; our $args = JSON::PP->new->utf8->decode(do { local $/; <$ojob_in> }); close($ojob_in);\n",
+      pos: "\nopen(my $ojob_out, '>:raw', $ENV{'OJOB_RESULT_FILE'}) or die $!; print $ojob_out JSON::PP->new->utf8->encode($args); close($ojob_out) or die $!;\n" },
+    powershell: { executable: "powershell", extension: ".ps1", versionArgs: ["-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"],
+      pre: "$ErrorActionPreference = 'Stop'\n[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding\n$_args = ConvertFrom-Json ([IO.File]::ReadAllText($env:OJOB_ARGS_FILE, [Text.Encoding]::UTF8))\n",
+      pos: "\n[IO.File]::WriteAllText($env:OJOB_RESULT_FILE, (ConvertTo-Json -InputObject $_args -Depth 100 -Compress), (New-Object Text.UTF8Encoding($false)))\n" },
+    go: { executable: "go", extension: ".go", versionArgs: ["version"],
+      pre: 'package main\nimport ("encoding/json"; "fmt"; "os"{{#each langArgs.goImports}}; {{{this}}}{{/each}})\nfunc main() { _ = fmt.Sprint; var args map[string]interface{}; _ojobIn, _ojobErr := os.ReadFile(os.Getenv("OJOB_ARGS_FILE")); if _ojobErr != nil { panic(_ojobErr) }; if _ojobErr = json.Unmarshal(_ojobIn, &args); _ojobErr != nil { panic(_ojobErr) }\n',
+      pos: '\n_ojobOut, _ojobErr := json.Marshal(args); if _ojobErr != nil { panic(_ojobErr) }; if _ojobErr = os.WriteFile(os.Getenv("OJOB_RESULT_FILE"), _ojobOut, 0600); _ojobErr != nil { panic(_ojobErr) }\n}\n' },
+    swift: { executable: "swift", extension: ".swift", versionArgs: ["--version"],
+      pre: 'import Foundation\nlet _ojobEnv = ProcessInfo.processInfo.environment\nlet _ojobData = try Data(contentsOf: URL(fileURLWithPath: _ojobEnv["OJOB_ARGS_FILE"]!))\nvar args = try JSONSerialization.jsonObject(with: _ojobData) as! [String: Any]\n',
+      pos: '\ntry JSONSerialization.data(withJSONObject: args).write(to: URL(fileURLWithPath: _ojobEnv["OJOB_RESULT_FILE"]!))\n' },
+    java: { executable: String(java.lang.System.getProperty("java.home")) + "/bin/java" + (ow.format.isWindows() ? ".exe" : ""), extension: ".java", versionArgs: ["-version"],
+      pre: 'import java.util.*;\nimport java.nio.file.*;\nimport java.nio.charset.StandardCharsets;\nimport com.google.gson.*;\nimport com.google.gson.reflect.TypeToken;\n{{#each langArgs.javaImports}}import {{{this}}};\n{{/each}}class OJobJava { public static void main(String[] argv) throws Exception {\nGson _ojobJson = new GsonBuilder().serializeNulls().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();\nMap<String,Object> args = _ojobJson.fromJson(Files.readString(Path.of(System.getenv("OJOB_ARGS_FILE")), StandardCharsets.UTF_8), new TypeToken<Map<String,Object>>(){}.getType());\n',
+      pos: '\nFiles.writeString(Path.of(System.getenv("OJOB_RESULT_FILE")), _ojobJson.toJson(args), StandardCharsets.UTF_8);\n}}\n' }
+  };
+  Object.keys(defs).forEach(k => {
+    defs[k].lang = k;
+    defs[k].protocol = "json-file-v1";
+    defs[k].kind = "local-process";
+    this.__langs[k] = defs[k];
+  });
+};
+
+// An unrepacked distribution stores Gson as a nested JAR, which javac cannot read directly.
+OpenWrap.oJob.prototype.__languageJavaDependency = function(directory, jarPath) {
+  var jar = new java.util.jar.JarFile(jarPath || getOpenAFJar());
+  try {
+    var entries = jar.entries();
+    while (entries.hasMoreElements()) {
+      var entry = entries.nextElement();
+      if (/^gson-[^/]+\.jar$/.test(String(entry.getName()))) {
+        var target = new java.io.File(directory, "gson.jar").toPath();
+        var input = jar.getInputStream(entry);
+        try { java.nio.file.Files.copy(input, target); } finally { input.close(); }
+        return String(target.toAbsolutePath());
+      }
+    }
+  } finally { jar.close(); }
+  return String(new java.io.File(java.lang.Class.forName("com.google.gson.Gson").getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath());
+};
+
+OpenWrap.oJob.prototype.__languageLogs = function(result, prefix) {
+  var output = (value, error) => {
+    if (!isString(value) || value.length == 0) return;
+    if (isDef(prefix)) value = value.split(/\r?\n/).map(l => l.length ? "[" + prefix + "] " + l : l).join("\n");
+    if (error) printErrnl(value); else printnl(value);
+  };
+  output(result.stdout, false);
+  output(result.stderr, true);
+};
+
+OpenWrap.oJob.prototype.__runLanguage = function(lang, source, args, options, name) {
+  var definition = this.__langs[lang];
+  options = _$(options).isMap().default({});
+  var label = "Job '" + name + "' language '" + lang + "'", directory;
+  var stage = "prepare";
+  try {
+    var executable = _$(options.langExecutable, "langExecutable").isString().default(definition.executable);
+    if (!isString(executable) || executable.length == 0) throw new Error("Missing executable");
+    var extra = _$(options.langExecutableArgs, "langExecutableArgs").isArray().default([]);
+    if (extra.some(v => !isString(v))) throw new Error("langExecutableArgs must contain strings");
+    if (isDef(options.langTimeout) && (!isNumber(options.langTimeout) || !isFinite(options.langTimeout) || options.langTimeout <= 0)) throw new Error("langTimeout must be positive milliseconds");
+    directory = String(java.nio.file.Files.createTempDirectory("ojob-language-"));
+    var input = directory + "/args.json", resultFile = directory + "/result.json";
+    var script = directory + "/OJobJava" + _$(definition.extension).isString().default(".txt");
+    io.writeFileString(input, stringify(args, __, ""), "UTF-8");
+    var context = { argsFile: input, resultFile: resultFile, langArgs: clone(options.langArgs || {}) };
+    if (lang == "go" && isArray(context.langArgs.goImports)) context.langArgs.goImports = context.langArgs.goImports.filter(v => ['"os"', '"fmt"', '"encoding/json"'].indexOf(v) < 0);
+    var literal = isDef(options.noTemplate) ? options.noTemplate : lang == "java";
+    if (!literal) source = templify(source, args);
+    // Preserve Perl's # return a,b convention, but write the result through the JSON bridge.
+    if (lang == "perl") source = source.replace(/\s*#\s+return ([^\n]+)(?:\n|$)/, function(all, fields) {
+      var keys = fields.split(",").map(k => k.trim());
+      if (keys.some(k => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k))) throw new Error("Invalid Perl return variable");
+      return "\n$args = {" + keys.map(k => "'" + k + "' => $" + k).join(",") + "};\n";
+    });
+    io.writeFileString(script, (lang == "powershell" ? "\uFEFF" : "") + templify(definition.pre || "", context) + source + (definition.pos || ""), "UTF-8");
+    var command = [executable].concat(extra);
+    if (lang == "go") command.push("run");
+    if (lang == "powershell") command = command.concat(["-NoProfile", "-NonInteractive", "-File"]);
+    if (lang == "java") {
+      var classpath = _$(context.langArgs.javaClasspath, "javaClasspath").isArray().default([]);
+      if (classpath.some(v => !isString(v))) throw new Error("javaClasspath must contain strings");
+      var gson = this.__languageJavaDependency(directory);
+      command = command.concat(["--class-path", [gson].concat(classpath).join(String(java.io.File.pathSeparator))]);
+    }
+    if (isArray(definition.scriptArgs)) command = command.concat(definition.scriptArgs);
+    command.push(script);
+    // Large structured values belong in the input file, not the process environment.
+    var env = { OJOB_ARGS_FILE: input, OJOB_RESULT_FILE: resultFile };
+    stage = "execute";
+    var result = this.runLanguageProcess(command, { pwd: options.pwd, env: env, timeout: options.langTimeout });
+    this.__languageLogs(result, isDef(options.shellPrefix) ? objOrStr(args, String(options.shellPrefix)) : __);
+    if (result.timedOut) throw new Error("timed out after " + options.langTimeout + "ms");
+    if (result.exitcode != 0) throw new Error("exit status " + result.exitcode);
+    stage = "result";
+    if (!io.fileExists(resultFile)) throw new Error("Missing JSON result file");
+    var returned;
+    try { returned = JSON.parse(io.readFileString(resultFile, "UTF-8")); } catch (e) { throw new Error("Invalid JSON result file"); }
+    if (!isMap(returned)) throw new Error("Language result must be a JSON object");
+    return merge(args, returned);
+  } catch (e) {
+    throw new Error(label + " (" + stage + "): " + e);
+  } finally {
+    if (isDef(directory)) io.rm(directory);
+  }
+};
+
+/**
+ * <odoc>
+ * <key>oJob.getLanguages(probe) : Array</key>
+ * Lists registered languages, prerequisites and supported process options. With probe=true,
+ * performs local availability checks bounded to five seconds; never installs a runtime.
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getLanguages = function(probe) {
+  var names = ["oaf", "js", "javascript", "python", "winssh"].concat(Object.keys(this.__langs));
+  return names.map(name => {
+    var d = this.__langs[name] || {};
+    var local = d.protocol == "json-file-v1" || d.processOptions === true;
+    var r = { lang: name, kind: d.kind || (name == "python" ? "python-bridge" : ["oaf", "js", "javascript"].indexOf(name) >= 0 ? "embedded" : ["ssh", "winssh"].indexOf(name) >= 0 ? "remote" : ["sh", "shell"].indexOf(name) >= 0 ? "shell" : "custom"),
+      options: local ? ["langExecutable", "langExecutableArgs", "langTimeout", "pwd"] : [],
+      prerequisites: d.prerequisites || (name == "java" ? "JDK 21+" : d.executable || (name == "python" ? "Python (OAF_PYTHON)" : "See adapter documentation")) };
+    if (probe === true) {
+      if (r.kind == "embedded") r.available = true;
+      else if (isString(d.executable) && isArray(d.versionArgs)) {
+        try {
+          var result = this.runLanguageProcess([d.executable].concat(d.versionArgs), { timeout: 5000 });
+          r.available = !result.timedOut && result.exitcode == 0;
+          if (name == "java" && isNull(javax.tools.ToolProvider.getSystemJavaCompiler())) { r.available = false; result.stderr += " JDK compiler unavailable"; }
+          r.diagnostic = result.timedOut ? "Availability probe timed out" : (result.stdout + result.stderr).trim();
+        } catch (e) { r.available = false; r.diagnostic = String(e); }
+      } else if (name == "python") {
+        try {
+          ow.loadPython();
+          var result = this.runLanguageProcess([ow.python.python, "--version"], { timeout: 5000 });
+          r.available = !result.timedOut && result.exitcode == 0;
+          r.diagnostic = (result.stdout + result.stderr).trim();
+        } catch (e) { r.available = false; r.diagnostic = String(e); }
+      } else { r.available = null; r.diagnostic = "No local availability probe defined"; }
+    }
+    return r;
+  });
+};
+
+/**
+ * <odoc>
+ * <key>oJob.registerLanguageCleanup(aName, aFunction)</key>
+ * Registers one cleanup per adapter, run after oJob workers stop. Replacing a name replaces its callback.
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.registerLanguageCleanup = function(name, fn) {
+  _$(name, "language cleanup name").isString().$_();
+  _$(fn, "language cleanup function").isFunction().$_();
+  if (isUnDef(this.__languageCleanups)) this.__languageCleanups = {};
+  this.__languageCleanups[name] = fn;
+};
