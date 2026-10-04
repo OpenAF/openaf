@@ -32,7 +32,20 @@ State is a nonempty text string or a JSON data object/array. Whitespace-only tex
 
 Every question is evaluated against the same supplied state. Decisions ignore stored conversation, `withInstructions`, `withContext`, tools, MCP tools, and callbacks. They neither append history nor run tools. Sequential decisions require explicit separate calls. Structured requests place the question specification in system instructions and state in user data. A returned routing label is data; application code remains responsible for authorization and execution policies.
 
-Version 1 supports text/JSON only. Images, streaming, tool options, and other unsupported option keys are rejected.
+Version 1 supports text/JSON and Ollama native image input. Streaming, tool options, and other unsupported option keys are rejected.
+
+### Image decisions with Ollama
+
+Pass `options.images` as a nonempty array of raw base64 strings, in request order. Images are shared by every question; `state` is still required. URLs, data URLs, file paths, malformed base64, and image options on other providers are rejected before HTTP. The server validates image contents and model vision support. Use local Ollama v0.35.1+ with CLEF or CLEF Flash vision weights; no model is downloaded automatically.
+
+```javascript
+var local = $llm({ type: "ollama", url: "http://localhost:11434", model: "clef-flash" });
+var result = local.decide("Inspect this screenshot.", {
+  visible: { type: "boolean", instructions: "Does the image show a browser?" }
+}, { images: [af.fromBytes2String(af.toBase64Bytes(io.readFileBytes("screenshot.png")))] });
+```
+
+PNG, JPEG, and WebP are supported by Ollama. The UTF-8 serialized request limit is 32 MiB with images (including base64 and JSON), and remains 64 KiB without images. `rawDecide` and `decideWithStats` accept the same option. Capability `inputTypes` includes `image` for the Ollama adapter; actual model vision availability remains unverified until execution.
 
 ## Strategies and capabilities
 

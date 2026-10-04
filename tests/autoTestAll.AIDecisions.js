@@ -254,6 +254,35 @@
     var cloud = make("ollama", { model: "nimble:cloud" });
     expectError(function() { cloud.decide("state", questions); }, "LLM_DECISION_UNSUPPORTED");
   };
+  exports.testDecisionImages = function() {
+    ow.loadAI();
+    var g = make("ollama", { model: "clef-flash" }), calls = [];
+    var images = ["aGVsbG8=", "d29ybGQ="];
+    g.getGPT().model._decisionRequest = function(uri, body) {
+      calls.push(body);
+      ow.test.assert(uri, "/v1/systemone", "Image decision endpoint");
+      var result = nativeFixture(); result.model = body.model; return result;
+    };
+    g.decideWithStats("state", questions, { images: images });
+    ow.test.assert(calls[0].images, images, "Preserve image order");
+    ow.test.assert(calls[0].images === images, false, "Copy image input");
+    ow.test.assert(g.getCapabilities().inputTypes, ["text", "json", "image"], "Advertise image input");
+    g.rawDecide("a".repeat(65536), questions, { images: images });
+    var body = calls[1], overhead = af.fromString2Bytes(JSON.stringify(body), "UTF-8").length - body.state.length;
+    var exact = "a".repeat(32 * 1024 * 1024 - overhead);
+    g.rawDecide(exact, questions, { images: images });
+    expectError(function() { g.rawDecide(exact + "a", questions, { images: images }); }, "LLM_DECISION_INVALID_REQUEST");
+    [[], "aGVsbG8=", [""], ["https://example.com/x.png"], ["data:image/png;base64,aGVsbG8="], ["abc"], ["a=== "], [123]].forEach(function(value) {
+      expectError(function() { g.decide("state", questions, { images: value }); }, "LLM_DECISION_INVALID_REQUEST");
+    });
+    ["gemini", "openai"].forEach(function(provider) {
+      var other = make(provider);
+      other.getGPT().model._decisionRequest = function() { throw "must not call"; };
+      expectError(function() { other.decide("state", questions, { images: images }); }, "LLM_DECISION_INVALID_REQUEST");
+      ow.test.assert(other.getCapabilities().inputTypes, ["text", "json"], "Other providers retain text/JSON");
+    });
+    ow.test.assert(calls.length, 3, "Invalid image requests fail before HTTP");
+  };
   exports.testDecisionGeminiSchemaHelper = function() {
     ow.loadAI();
     var g = make("gemini"), calls = [], schema = { name: "Person", description: "Example", strict: true, schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"], additionalProperties: false } };

@@ -76,7 +76,12 @@ jobs:
   from: AIDecisions::Init
   to: oJob Test
   exec: args.func = args.tests.testDecisionNativeCapabilityRequirements;
+- name: AIDecisions::DecisionImages
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionImages;
 todo:
+- AIDecisions::DecisionImages
 - AIDecisions::DecisionNative
 - AIDecisions::DecisionValidation
 - AIDecisions::DecisionGeminiStructured
