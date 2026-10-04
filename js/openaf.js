@@ -16671,6 +16671,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			if (isMap(res)) res = [res]
 			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
+	        case "bstable":
+			args.__rowsep = true
 		case "btable":
 			var tableWidth = isDef(args.__width) ? args.__width : args.__WIDTH;
 			var tableRowSep = isDef(args.__rowsep) ? args.__rowsep : args.__ROWSEP;
