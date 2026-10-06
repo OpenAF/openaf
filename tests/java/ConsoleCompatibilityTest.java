@@ -63,6 +63,8 @@ public class ConsoleCompatibilityTest {
             check(terminal.getWidth() == 132 && terminal.getHeight() == 43, "Live terminal size");
             delegate.setSize(new org.jline.terminal.Size(100, 30));
             check(terminal.getWidth() == 100 && terminal.getHeight() == 30, "Terminal resize");
+            delegate.setSize(new org.jline.terminal.Size(0, 0));
+            check(terminal.getWidth() == 100 && terminal.getHeight() == 30, "Unknown size retains last dimensions");
             delegate.close();
             check(terminal.getWidth() == 100 && terminal.getHeight() == 30, "Closed terminal retains last size");
         }

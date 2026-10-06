@@ -15,7 +15,7 @@ import java.lang.String;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20261005";
+	public static String VERSION = "20261006";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 

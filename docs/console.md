@@ -92,6 +92,19 @@ currently defined aliases, including any you add):
 Custom aliases are defined with `alias name=<console command line>` and cannot reuse a reserved
 word. Aliases persist only for the session unless recreated from `.openaf-console_profile`.
 
+## Terminal dimensions with piped input
+
+When stdin is piped but stdout is a terminal, OpenAF falls back to querying
+stdout's native dimensions if JLine reports an unknown size. This lets formats
+such as `btable` use the actual terminal width without consuming piped input.
+Both width and height are refreshed on demand, including after a resize.
+If dimensions remain unavailable, OpenAF retains the last known values
+(initially 80 columns and 24 rows). This fallback does not query stderr or open
+`/dev/tty` when stdout is redirected.
+
+The POSIX pipeline and resize regression can be run after building with
+`python3 tests/test-terminal-size.py openaf.jar` from the repository root.
+
 ## See also
 
 - [cli.md](./cli.md) — full `openaf`/`oaf` flag reference and generated wrapper scripts.

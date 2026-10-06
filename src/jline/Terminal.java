@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.terminal.Size;
+import org.jline.nativ.CLibrary;
+import org.jline.nativ.Kernel32;
 
 /** OpenAF's legacy terminal facade. All terminal I/O is owned by JLine 4. */
 public final class Terminal {
     private static Terminal system;
     private final org.jline.terminal.Terminal delegate;
     private final Attributes original;
+    private boolean systemTerminal;
     private volatile int width = 80;
     private volatile int height = 24;
     public final Settings settings;
@@ -34,6 +38,7 @@ public final class Terminal {
             if (System.getProperty(TerminalBuilder.PROP_GRAPHEME_CLUSTER) == null) builder.graphemeCluster(false);
             org.jline.terminal.Terminal terminal = builder.build();
             system = new Terminal(terminal);
+            system.systemTerminal = true;
             Terminal owned = system;
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try { owned.restore(); terminal.close(); } catch (Exception ignored) { }
@@ -46,18 +51,46 @@ public final class Terminal {
     // Shutdown callbacks may still format output after the JVM terminal hook closes
     // JLine. Keep size queries usable without reopening the terminal or changing it.
     public int getWidth() {
-        try {
-            int columns = delegate.getColumns();
-            width = columns > 0 ? columns : 80;
-        } catch (IllegalStateException closed) { }
+        refreshSize();
         return width;
     }
     public int getHeight() {
-        try {
-            int rows = delegate.getRows();
-            height = rows > 0 ? rows : 24;
-        } catch (IllegalStateException closed) { }
+        refreshSize();
         return height;
+    }
+    private void refreshSize() {
+        try {
+            Size size = delegate.getSize();
+            int columns = size.getColumns(), rows = size.getRows();
+            if (systemTerminal && (columns <= 0 || rows <= 0)) {
+                Size outputSize = outputSize();
+                if (columns <= 0) columns = outputSize.getColumns();
+                if (rows <= 0) rows = outputSize.getRows();
+            }
+            if (columns > 0) width = columns;
+            if (rows > 0) height = rows;
+        } catch (IllegalStateException closed) { }
+    }
+
+    // A pipe on stdin makes JLine use a dumb terminal even when stdout is a TTY.
+    // Query only stdout, without opening a reader or changing terminal attributes.
+    // Redirected output must not inherit the dimensions of an unrelated stderr/TTY.
+    private static Size outputSize() {
+        try {
+            if (System.getProperty("os.name", "").startsWith("Windows")) {
+                Kernel32.CONSOLE_SCREEN_BUFFER_INFO info = new Kernel32.CONSOLE_SCREEN_BUFFER_INFO();
+                long handle = Kernel32.GetStdHandle(Kernel32.STD_OUTPUT_HANDLE);
+                if (Kernel32.GetConsoleScreenBufferInfo(handle, info) != 0)
+                    return new Size(info.windowWidth(), info.windowHeight());
+            } else if (CLibrary.isatty(1) == 1) {
+                CLibrary.WinSize size = new CLibrary.WinSize();
+                if (CLibrary.ioctl(1, CLibrary.TIOCGWINSZ, size) == 0)
+                    return new Size(Short.toUnsignedInt(size.ws_col), Short.toUnsignedInt(size.ws_row));
+            }
+        } catch (LinkageError | RuntimeException unavailable) {
+            // Native support is optional; keep the last known size or defaults.
+        }
+        return new Size(0, 0);
     }
     public String getOutputEncoding() { return delegate.outputEncoding().name(); }
     public boolean isSupported() { return !delegate.getType().startsWith("dumb"); }
