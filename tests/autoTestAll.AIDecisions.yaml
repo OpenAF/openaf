@@ -80,7 +80,27 @@ jobs:
   from: AIDecisions::Init
   to: oJob Test
   exec: args.func = args.tests.testDecisionImages;
+- name: AIDecisions::DecisionOpenAINative
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionOpenAINative;
+- name: AIDecisions::DecisionOpenAINativeInvalidResponses
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionOpenAINativeInvalidResponses;
+- name: AIDecisions::DecisionOpenAINativeImagesAndCapabilities
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionOpenAINativeImagesAndCapabilities;
+- name: AIDecisions::DecisionOpenAINativeHTTP
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionOpenAINativeHTTP;
 todo:
+- AIDecisions::DecisionOpenAINative
+- AIDecisions::DecisionOpenAINativeInvalidResponses
+- AIDecisions::DecisionOpenAINativeImagesAndCapabilities
+- AIDecisions::DecisionOpenAINativeHTTP
 - AIDecisions::DecisionImages
 - AIDecisions::DecisionNative
 - AIDecisions::DecisionValidation

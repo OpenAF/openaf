@@ -32,11 +32,11 @@ State is a nonempty text string or a JSON data object/array. Whitespace-only tex
 
 Every question is evaluated against the same supplied state. Decisions ignore stored conversation, `withInstructions`, `withContext`, tools, MCP tools, and callbacks. They neither append history nor run tools. Sequential decisions require explicit separate calls. Structured requests place the question specification in system instructions and state in user data. A returned routing label is data; application code remains responsible for authorization and execution policies.
 
-Version 1 supports text/JSON and Ollama native image input. Streaming, tool options, and other unsupported option keys are rejected.
+Version 1 supports text/JSON and native image input for Ollama and OpenAI. Streaming, tool options, and other unsupported option keys are rejected.
 
 ### Image decisions with Ollama
 
-Pass `options.images` as a nonempty array of raw base64 strings, in request order. Images are shared by every question; `state` is still required. URLs, data URLs, file paths, malformed base64, and image options on other providers are rejected before HTTP. The server validates image contents and model vision support. Use local Ollama v0.35.1+ with CLEF or CLEF Flash vision weights; no model is downloaded automatically.
+Pass `options.images` as a nonempty array of raw base64 strings, in request order. Images are shared by every question; `state` is still required. For Ollama, URLs, data URLs, file paths, and malformed base64 are rejected before HTTP. Other providers retain their own input rules below. The server validates image contents and model vision support. Use local Ollama v0.35.1+ with CLEF or CLEF Flash vision weights; no model is downloaded automatically.
 
 ```javascript
 var local = $llm({ type: "ollama", url: "http://localhost:11434", model: "clef-flash" });
@@ -46,6 +46,20 @@ var result = local.decide("Inspect this screenshot.", {
 ```
 
 PNG, JPEG, and WebP are supported by Ollama. The UTF-8 serialized request limit is 32 MiB with images (including base64 and JSON), and remains 64 KiB without images. `rawDecide` and `decideWithStats` accept the same option. Capability `inputTypes` includes `image` for the Ollama adapter; actual model vision availability remains unverified until execution.
+
+### Image decisions with OpenAI
+
+For native OpenAI decisions, `options.images` is a nonempty array of inline base64 image data URLs, for example `data:image/png;base64,...`. Up to 128 images are accepted, in request order, shared by all questions alongside the required text/JSON state. Raw base64, external URLs, file IDs, paths, and malformed data URLs are rejected locally. The server validates image contents and model support. Structured decisions reject images before HTTP.
+
+```javascript
+var openai = $llm({ type: "openai", key: getEnv("OPENAI_API_KEY"), model: "gpt-6-luna" });
+var result = openai.decide("Inspect this screenshot.", {
+  visible: { type: "boolean", instructions: "Does the image show a browser?" }
+}, {
+  requireProbabilities: true,
+  images: ["data:image/png;base64," + af.fromBytes2String(af.toBase64Bytes(io.readFileBytes("screenshot.png")))]
+});
+```
 
 ## Strategies and capabilities
 
@@ -65,9 +79,16 @@ One strategy handles the entire request. A failed request never triggers a strat
 | --- | --- | --- |
 | Ollama | `keepAlive` | Duration string or finite seconds; translates to `keep_alive`, including zero/negative values |
 | Gemini | `schemaProfile`, `temperature`, `maxOutputTokens` | Profile is `response-format` or `legacy-schema`; temperature is 0–2; token limit is a positive integer |
-| OpenAI | `transport`, `temperature`, `maxOutputTokens` | Transport is `responses` or `chat`; chosen before HTTP; temperature is 0–2; token limit is a positive integer |
+| OpenAI structured | `transport`, `temperature`, `maxOutputTokens` | Transport is `responses` or `chat`; chosen before HTTP; temperature is 0–2; token limit is a positive integer |
+| OpenAI native | `safetyIdentifier` | Optional string of at most 128 characters; maps to `safety_identifier` |
 
-OpenAI defaults to `responses`; configuration `decisionTransport` can select `chat`. This setting is separate from `mode`. It never consults or updates conversational Responses fallback state. Configured Azure/Foundry/gateway URL and authentication routing remain in effect; actual structured-output availability is unknown until exercised. `noResponseFormat: true` disables eligibility for structured decisions.
+OpenAI structured execution defaults to `responses`; configuration `decisionTransport` can select `chat`. This setting is separate from `mode`. It never consults or updates conversational Responses fallback state. Configured Azure/Foundry/gateway URL and authentication routing remain in effect; actual structured-output availability is unknown until exercised. `noResponseFormat: true` disables eligibility for structured decisions.
+
+Native OpenAI uses `POST /v1/decisions` on the official `https://api.openai.com` base (optionally ending in `/v1`), with `mode: "openai"` and API version `v1`. The verified model is `gpt-6-luna`; `auto` selects native for that model and structured for other models. Explicit `strategy: "structured"` remains available. Unsupported models reject explicit native requests before HTTP; the model is never substituted. Azure, Foundry, and third-party gateways retain structured-only eligibility. Account availability remains unknown until execution.
+
+Native requests reject `transport`, `temperature`, and `maxOutputTokens`; structured requests reject `safetyIdentifier`. Configuration `decisionTransport` applies only to structured execution. `noResponseFormat` disables structured eligibility but leaves eligible native requests available.
+
+The named question map becomes an ordered array: boolean questions become predicates (including optional true/false criteria in instructions), choice criteria become string-valued choices with descriptions, and score criteria become ordered levels with stringified index labels and criterion descriptions. Text state is sent directly; JSON state is serialized as text. OpenAI's broader typed choice values and message inputs are not additional public contract types.
 
 Decision builders do not merge arbitrary `params` into their requests. Gemini rejects inherited output schema/MIME configuration for the explicit schema helper or decisions: remove those conflicting fields or use the established chat pass-through API separately.
 
@@ -77,13 +98,13 @@ var capabilities = $llm(config).getCapabilities();
 // { implemented, contract, questionTypes, probabilities, availability }
 ```
 
-Capabilities also include `contractVersion`, `inputTypes`, and `streaming`. Contract states are `verified`, `unverified`, or `unsupported`. Availability is usually `unknown`; known incompatible Ollama cloud model tags report `incompatible`. Implemented support describes adapter code, not installed models, endpoint presence, account access, or calibrated probabilities. The public capability snapshot describes the configured model; an override is evaluated separately at execution time. Adapters without new hooks retain their existing operations and report unsupported decisions.
+Capabilities also include `contractVersion`, `inputTypes`, and `streaming`. Contract states are `verified`, `unverified`, or `unsupported`. Availability is usually `unknown`; known incompatible Ollama cloud model tags and OpenAI models other than `gpt-6-luna` report `incompatible` for native execution. Implemented support describes adapter code, not installed models, endpoint presence, account access, or calibrated probabilities. The public capability snapshot describes the configured model; an override is evaluated separately at execution time. Adapters without new hooks retain their existing operations and report unsupported decisions.
 
 | Provider | Native decisions | Structured decisions | Runtime availability |
 | --- | --- | --- | --- |
 | Ollama | Implemented; verified System One contract | Unsupported | Requires caller-supplied compatible local model/runner |
 | Gemini | Unsupported | Implemented; GenerateContent | Model/endpoint/account availability unknown |
-| OpenAI | Contract unverified; no native request | Implemented; Responses or explicit Chat | Model/endpoint/account availability unknown |
+| OpenAI | Implemented; verified Decisions contract for official endpoints and `gpt-6-luna` | Implemented; Responses or explicit Chat | Account availability unknown; other models incompatible with native |
 | Other existing adapters | Unsupported without optional hooks | Unsupported without optional hooks | Existing operations unchanged |
 
 ## Results and probabilities
@@ -98,9 +119,9 @@ Capabilities also include `contractVersion`, `inputTypes`, and `streaming`. Cont
 
 Structured answers have null probability fields and null `providerConfidence`; structured score expectations are null. They never contain generated confidence estimates.
 
-For Ollama booleans, `value` is true when P(true) >= 0.5, including the exact tie. The complement supplies P(false). For native scores, the selected level is the mode, with ties resolved by original order. The expectation is preserved independently; it is not rounded into a selected level. Native choice labels must agree with a maximal supplied probability. These interpretation rules do not establish application safety or authorization policy.
+For native booleans, `value` is true when P(true) >= 0.5, including the exact tie. The complement supplies P(false). For native scores, the selected level is the mode, with ties resolved by original order. The expectation is preserved independently; it is not rounded into a selected level. Native choice labels must agree with a maximal supplied probability. These interpretation rules do not establish application safety or authorization policy.
 
-Ollama's documented choice/score `confidence` is preserved as `providerConfidence`; boolean confidence remains null. It measures concentration of the distribution, not the selected alternative's probability or a universally calibrated probability of correctness. `probabilitySource: "provider"` includes deterministic transformations of documented provider probabilities, such as a boolean complement or an indexed distribution array.
+OpenAI and Ollama choice/score `confidence` is preserved as `providerConfidence`; boolean confidence remains null. Ollama documents it as distribution concentration. OpenAI supplies it separately from probabilities. Neither field is treated as the selected alternative's probability or universally calibrated correctness. `probabilitySource: "provider"` includes deterministic transformations of documented provider probabilities, such as a boolean complement or an indexed distribution array.
 
 Distributions require complete known keys, finite values in [0,1], and a sum within `N * 0.00005 + 1e-8` of 1, allowing four-decimal rounding across N entries. No renormalization occurs. Native score expectation consistency allows `(N - 1) * N * 0.00005 + 0.00005 + 1e-8`; expectations must still lie on the requested ordinal scale. Refused, blocked, truncated, missing, extra, malformed, and incompatible answers are rejected.
 
@@ -143,7 +164,9 @@ var openai = $llm({
   model: getEnv("OPENAI_MODEL")
 });
 var openaiResult = openai.decide(state, questions, { strategy: "structured" });
-// Native OpenAI remains gated: strategy: "native" throws without HTTP.
+var nativeResult = openai.decide(state, questions, {
+  model: "gpt-6-luna", strategy: "native", requireProbabilities: true
+});
 ```
 
 Ollama requires v0.35.0+ and compatible scoring-capable GGUF weights/runner. An arbitrary chat model is insufficient. Choice and score questions support 2–26 criteria. The entire serialized UTF-8 text-only body must be <= 65,536 bytes; state is never truncated. Root URLs and URLs ending in `/v1` are supported without duplicate version segments; a base ending in `/api` is rejected. Context-window failures remain visible provider errors.
@@ -177,7 +200,7 @@ Errors are Error objects with stable `code`, sanitized `provider`, and numeric H
 | --- | --- |
 | `LLM_DECISION_INVALID_REQUEST` | Invalid data/questions/options/schema, unsupported schema keyword, conflicting profile, or request-size limit |
 | `LLM_DECISION_UNSUPPORTED` | Requested strategy/types/requirements are ineligible |
-| `LLM_DECISION_CONTRACT_UNVERIFIED` | Official OpenAI native Decisions contract has not been verified |
+| `LLM_DECISION_CONTRACT_UNVERIFIED` | Reserved for an adapter whose native contract remains unverified |
 | `LLM_DECISION_INVALID_RESPONSE` | Malformed JSON, refusal/truncation, invalid answers, or invalid probability semantics |
 | `LLM_DECISION_PROVIDER_ERROR` | HTTP/API error, timeout, or transport failure |
 
@@ -195,4 +218,4 @@ Ordinary CI does not perform provider inference. A separate smoke script can be 
 OPENAF_DECISIONS_LIVE=1 java -jar openaf.jar -f tests/ai-decisions-live.js
 ```
 
-The script skips without the opt-in flag, fails without caller-supplied model/configuration, and prints only metadata/statistics. It never selects a provider/model, downloads a model, or switches strategies. Native Ollama requires a compatible already-available local model. Gemini/OpenAI require caller credentials and a schema-capable configured model. Native OpenAI is blocked pending its verified contract; it is not counted as implemented or live-tested.
+The script skips without the opt-in flag, fails without caller-supplied model/configuration, and prints only metadata/statistics. It never selects a provider/model, downloads a model, or switches strategies. Native Ollama requires a compatible already-available local model. Gemini/OpenAI require caller credentials and a model compatible with the selected strategy. For OpenAI `gpt-6-luna`, the script selects native and requires probabilities; other OpenAI models retain structured smoke coverage. Native OpenAI fixtures establish serialization/normalization only; live access requires an explicit smoke run.

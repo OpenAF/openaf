@@ -34,10 +34,15 @@ These records distinguish verified HTTP documentation, synthetic fixtures, and l
 - Provenance: `openaiFixture()` and Chat envelopes in `tests/autoTestAll.AIDecisions.js` are synthetic documented response shapes. Existing OpenAI chat/Responses and Azure/Foundry URL/authentication regression tests remain applicable.
 - Gateway/model/account support is unknown. Implemented structured serialization is not a guarantee of every OpenAI-compatible endpoint's support.
 
-## OpenAI native Decisions — unverified
+## OpenAI native Decisions
 
-- [29 September announcement](https://openai.com/index/devday-2026-recap/) confirms a limited preview.
-- [Public reference](https://developers.openai.com/api/reference/overview) and official-domain searches were checked on 3 October. No authoritative HTTP request/response contract was located.
-- Method/path, native model identifiers, request/response fields, question types, probability semantics, errors, and usage mapping remain unverified.
-- Native implementation is blocked on that contract. Explicit official OpenAI native requests throw LLM_DECISION_CONTRACT_UNVERIFIED before HTTP. Azure/Foundry/third-party gateways report unsupported native Decisions rather than inheriting official OpenAI eligibility.
-- No native OpenAI transport, invented-contract fixture, or live-success claim is included.
+Verified **7 October 2026** against the [Decisions guide](https://developers.openai.com/api/docs/guides/decisions) and [create reference](https://developers.openai.com/api/reference/resources/decisions/methods/create), replacing the earlier unverified preview record.
+
+- Profile: public beta, official OpenAI `POST /v1/decisions`, model `gpt-6-luna`. Native eligibility requires the official root or `/v1` base, OpenAI mode, and API version v1. Other models are incompatible; Azure/Foundry/gateway native support is not asserted. No automatic model switch or HTTP fallback.
+- Request: model, shared input, ordered questions, optional safety_identifier (at most 128 characters). Text input is direct; JSON state becomes JSON text. Images are inline base64 data URLs in ordered input_image parts alongside input_text in one user message, at most 128. External URLs/files/audio/tools/history/streaming are not included.
+- Questions: predicate has instructions and name; choice has choices with string/boolean value and optional description; score has levels with label and optional description. The OpenAF v1 adapter retains string-valued choice keys, maps boolean to predicate (optional criteria included in instructions), and uses zero-based index labels for ordered score descriptions.
+- Response: model, ordered answers, usage. Predicate has probability = P(true). Choice has choice, confidence, and probabilities entries {value, probability}. Score has score, confidence, and probabilities entries {value, label, probability}; value is the zero-based index and score is its probability-weighted expectation. A per-question refusal has type refusal and name.
+- Normalization: enforce ordered name/type coverage, exact distribution coverage, finite probabilities and existing rounding tolerance. Boolean uses >= 0.5; score level is the modal index with first-index ties; expectation and provider confidence remain separate. Refusals fail normalized calls; raw calls retain the original envelope unless requireProbabilities forces validation.
+- Usage: input_tokens/output_tokens/total_tokens and token details use existing OpenAI parsing; zero counts and full usage are preserved. Statistics are captured before answer validation.
+- Provenance: openaiNativeFixture() and dedicated native tests use synthetic reference-shaped envelopes. Tests cover the HTTP boundary, authentication and URL routing without contacting OpenAI.
+- Live status: not established by fixtures. The opt-in smoke script selects native for caller-configured OpenAI gpt-6-luna and requires probabilities. Account/model access is not inferred from documented adapter support.

@@ -142,7 +142,18 @@ OpenWrap.ai.prototype.__decision = {
         options = typeof options == "undefined" ? {} : this.copy(options);
         this.only(options, ["strategy", "model", "requireProbabilities", "providerOptions", "images"]);
         if (this.has(options, "images")) {
-            if (provider != "ollama" || !Array.isArray(options.images) || options.images.length == 0 || options.images.some(v => typeof v != "string" || v.length == 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(v))) this.invalid();
+            if (["ollama", "openai"].indexOf(provider) < 0 || !Array.isArray(options.images) || options.images.length == 0) this.invalid();
+            if (provider == "openai" && options.images.length > 128) this.invalid();
+            options.images.forEach(v => {
+                if (typeof v != "string" || v.length == 0) this.invalid();
+                var base64 = v;
+                if (provider == "openai") {
+                    var match = /^data:image\/[A-Za-z0-9.+-]+;base64,(.+)$/.exec(v);
+                    if (!match) this.invalid();
+                    base64 = match[1];
+                }
+                if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(base64)) this.invalid();
+            });
         }
         var strategy = this.has(options, "strategy") ? options.strategy : "auto";
         if (["auto", "native", "structured"].indexOf(strategy) < 0) this.invalid();
@@ -150,12 +161,13 @@ OpenWrap.ai.prototype.__decision = {
         if (!this.text(model)) this.invalid();
         if (this.has(options, "requireProbabilities") && typeof options.requireProbabilities != "boolean") this.invalid();
         var po = this.has(options, "providerOptions") ? options.providerOptions : {};
-        var allowed = provider == "ollama" ? ["keepAlive"] : provider == "gemini" ? ["schemaProfile", "temperature", "maxOutputTokens"] : provider == "openai" ? ["transport", "temperature", "maxOutputTokens"] : [];
+        var allowed = provider == "ollama" ? ["keepAlive"] : provider == "gemini" ? ["schemaProfile", "temperature", "maxOutputTokens"] : provider == "openai" ? ["transport", "temperature", "maxOutputTokens", "safetyIdentifier"] : [];
         this.only(po, allowed);
         if (this.has(po, "keepAlive") && !(this.text(po.keepAlive) || (typeof po.keepAlive == "number" && isFinite(po.keepAlive)))) this.invalid();
         if (this.has(po, "temperature") && !(typeof po.temperature == "number" && po.temperature >= 0 && po.temperature <= 2)) this.invalid();
         if (this.has(po, "maxOutputTokens") && !(Number.isInteger(po.maxOutputTokens) && po.maxOutputTokens > 0)) this.invalid();
         if (this.has(po, "transport") && ["responses", "chat"].indexOf(po.transport) < 0) this.invalid();
+        if (this.has(po, "safetyIdentifier") && (typeof po.safetyIdentifier != "string" || po.safetyIdentifier.length > 128)) this.invalid();
         if (this.has(po, "schemaProfile") && ["response-format", "legacy-schema"].indexOf(po.schemaProfile) < 0) this.invalid();
         Object.keys(questions).forEach(k => {
             if (!this.text(k)) this.invalid();
@@ -280,6 +292,51 @@ OpenWrap.ai.prototype.__decision = {
                 sk.forEach((i, n) => { if (p[i] > p[String(level)]) level = n; expectation += n * p[i]; });
                 if (Math.abs(expectation - r.score) > (sk.length - 1) * sk.length * 0.00005 + 0.00005 + 1e-8) this.badResponse();
                 a.level = level; a.expectedScore = r.score; a.probabilities = sk.map(i => p[i]); a.selectedProbability = p[String(level)];
+            }
+            this.put(answers, k, a);
+        });
+        return answers;
+    },
+    openaiAnswers: function(raw, request) {
+        var keys = Object.keys(request.questions), answers = {};
+        if (!this.map(raw) || !this.text(raw.model) || !Array.isArray(raw.answers) || raw.answers.length != keys.length) this.badResponse();
+        keys.forEach((k, index) => {
+            var q = request.questions[k], r = raw.answers[index];
+            if (!this.map(r) || r.name !== k || r.type !== (q.type == "boolean" ? "predicate" : q.type)) this.badResponse();
+            var a = { type: q.type, probabilities: null, selectedProbability: null, providerConfidence: null, probabilitySource: "provider" };
+            if (q.type == "boolean") {
+                a.probabilityTrue = this.probability(r.probability);
+                a.value = a.probabilityTrue >= 0.5;
+                a.probabilities = { "false": 1 - a.probabilityTrue, "true": a.probabilityTrue };
+                a.selectedProbability = a.value ? a.probabilityTrue : 1 - a.probabilityTrue;
+            } else {
+                a.providerConfidence = this.probability(r.confidence);
+                var labels = q.type == "choice" ? Object.keys(q.criteria) : q.criteria.map((v, i) => String(i));
+                if (!Array.isArray(r.probabilities) || r.probabilities.length != labels.length) this.badResponse();
+                var p = {};
+                r.probabilities.forEach(entry => {
+                    if (!this.map(entry)) this.badResponse();
+                    var key;
+                    if (q.type == "choice") {
+                        if (typeof entry.value != "string") this.badResponse();
+                        key = entry.value;
+                    } else {
+                        if (!Number.isInteger(entry.value) || entry.value < 0 || entry.value >= labels.length || entry.label !== String(entry.value)) this.badResponse();
+                        key = String(entry.value);
+                    }
+                    if (labels.indexOf(key) < 0 || this.has(p, key)) this.badResponse();
+                    this.put(p, key, entry.probability);
+                });
+                this.distribution(p, labels);
+                if (q.type == "choice") {
+                    if (typeof r.choice != "string" || labels.indexOf(r.choice) < 0 || labels.some(c => p[c] > p[r.choice])) this.badResponse();
+                    a.value = r.choice; a.probabilities = p; a.selectedProbability = p[r.choice];
+                } else {
+                    var level = 0, expectation = 0;
+                    labels.forEach((label, i) => { if (p[label] > p[String(level)]) level = i; expectation += i * p[label]; });
+                    if (typeof r.score != "number" || !isFinite(r.score) || r.score < 0 || r.score > labels.length - 1 || Math.abs(expectation - r.score) > (labels.length - 1) * labels.length * 0.00005 + 0.00005 + 1e-8) this.badResponse();
+                    a.level = level; a.expectedScore = r.score; a.probabilities = labels.map(label => p[label]); a.selectedProbability = p[String(level)];
+                }
             }
             this.put(answers, k, a);
         });
@@ -695,13 +752,34 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 resetDecisionStats: () => _resetStats(),
-                getCapabilities: () => {
-                    var official = aOptions.mode == "openai" && /^https:\/\/api\.openai\.com(?:\/v1)?\/?$/.test(aOptions.url);
-                    return ow.ai.__decision.capabilities(false, !aOptions.noResponseFormat, official ? "unverified" : "unsupported");
+                getCapabilities: model => {
+                    var official = aOptions.mode == "openai" && aOptions.apiVersion == "v1" && /^https:\/\/api\.openai\.com(?:\/v1)?\/?$/.test(aOptions.url);
+                    var caps = ow.ai.__decision.capabilities(official, !aOptions.noResponseFormat, official ? "verified" : "unsupported", (model || _model) == "gpt-6-luna" ? "unknown" : "incompatible");
+                    if (official) caps.inputTypes.push("image");
+                    return caps;
                 },
                 _decisionRequest: (uri, body) => ow.ai.__decision.http(_buildURL(uri), body, _headers("application/json"), _timeout, "openai", _debugCh),
+                rawDecide: request => {
+                    var d = ow.ai.__decision, po = request.providerOptions;
+                    if (["transport", "temperature", "maxOutputTokens"].some(k => d.has(po, k))) d.invalid();
+                    var questions = Object.keys(request.questions).map(k => {
+                        var q = request.questions[k], out = { name: k, type: q.type == "boolean" ? "predicate" : q.type, instructions: q.instructions };
+                        if (q.type == "choice") out.choices = Object.keys(q.criteria).map(value => ({ value: value, description: q.criteria[value] }));
+                        if (q.type == "score") out.levels = q.criteria.map((description, i) => ({ label: String(i), description: description }));
+                        if (q.type == "boolean" && q.criteria) out.instructions += "\nFalse: " + q.criteria.false + "\nTrue: " + q.criteria.true;
+                        return out;
+                    });
+                    var input = typeof request.state == "string" ? request.state : JSON.stringify(request.state);
+                    if (isDef(request.images)) input = [{ role: "user", content: [{ type: "input_text", text: input }].concat(request.images.map(url => ({ type: "input_image", image_url: url }))) }];
+                    var body = { model: request.model, input: input, questions: questions };
+                    if (d.has(po, "safetyIdentifier")) body.safety_identifier = po.safetyIdentifier;
+                    var raw = d.execution(() => _r._decisionRequest(_route("decisions", request.model), body), "openai");
+                    return { raw: raw, stats: _captureStats(raw, body) };
+                },
+                normalizeDecisionResponse: (raw, request) => ow.ai.__decision.openaiAnswers(raw, request),
                 rawStructuredPrompt: request => {
                     var d = ow.ai.__decision, po = request.providerOptions;
+                    if (d.has(po, "safetyIdentifier")) d.invalid();
                     // Select transport before HTTP; never consult or update chat's fallback cache.
                     var transport = po.transport || aOptions.decisionTransport || "responses";
                     if (["responses", "chat"].indexOf(transport) < 0) d.invalid();
@@ -3931,6 +4009,7 @@ OpenWrap.ai.prototype.gpt.prototype.__executeDecision = function(state, question
             var code = request.strategy == "native" && caps.native && caps.native.contract == "unverified" ? "LLM_DECISION_CONTRACT_UNVERIFIED" : "LLM_DECISION_UNSUPPORTED";
             throw d.error(code, provider);
         }
+        if (isDef(request.images) && (request.strategy != "native" || !caps.inputTypes || caps.inputTypes.indexOf("image") < 0)) d.invalid();
         var hook = request.strategy == "native" ? "rawDecide" : "rawStructuredPrompt";
         var execution = d.execution(() => this.model[hook](request), provider);
         if (!execution || !d.has(execution, "raw")) d.badResponse();
@@ -3978,7 +4057,7 @@ OpenWrap.ai.prototype.gpt.prototype.__executeDecision = function(state, question
  * <odoc>
  * <key>ow.ai.gpt.decide(aState, aQuestions, aOptions) : Map</key>
  * Evaluates text/JSON state with named choice, boolean and ordinal score questions. Returns contractVersion 1.
- * Options: strategy (auto/native/structured), model, requireProbabilities, providerOptions, images (Ollama native base64 image array). Stateless: ignores conversation and tools.
+ * Options: strategy (auto/native/structured), model, requireProbabilities, providerOptions, images (Ollama raw base64 or OpenAI inline image data URLs; native only). Stateless: ignores conversation and tools.
  * Native probabilities are provider information, not calibrated correctness. Structured probability fields are null.
  * </odoc>
  */
