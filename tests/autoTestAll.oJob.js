@@ -1,6 +1,26 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    exports.testOJobHelpExamples = function() {
+        ow.loadOJob();
+        __initializeCon();
+        var oldSimpleUI = __flags.OJOB_HELPSIMPLEUI, oldAnsi = __conAnsi;
+        try {
+            [true, false].forEach(function(simpleUI) {
+                __flags.OJOB_HELPSIMPLEUI = simpleUI;
+                __conAnsi = true;
+                [42, 0, true, false, { value: 1 }, [1, 2], "two words"].forEach(function(value) {
+                    var help = { expects: [{ name: "value", example: value }] };
+                    ow.test.assert(ow.oJob.showHelp(help, {}, true), true, "Help should be displayed");
+                    ow.test.assert(help.expects[0].example, value, "Help should preserve the example value");
+                });
+            });
+        } finally {
+            __flags.OJOB_HELPSIMPLEUI = oldSimpleUI;
+            __conAnsi = oldAnsi;
+        }
+    };
+
     exports.testOJob = function() {
         var testOJob = {
             todo: [

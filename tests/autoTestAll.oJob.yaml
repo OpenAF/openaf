@@ -10,6 +10,11 @@ jobs:
   exec: |
     args.tests = require("autoTestAll.oJob.js");
 
+- name: oJob::oJobHelpExamples
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobHelpExamples
+
 - name: oJob::oJob
   from: oJob::Init
   to  : oJob Test
@@ -73,3 +78,4 @@ todo:
 - oJob::oJobEncryptedYAML
 - oJob::oJobEncryptedJSON
 - oJob::oJobShutdownConsole
+- oJob::oJobHelpExamples
