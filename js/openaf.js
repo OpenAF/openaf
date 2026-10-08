@@ -2105,9 +2105,24 @@ const stringify = function(aobj, replacer, space) {
 
 /**
  * <odoc>
- * <key>colorify(aObject) : String</key>
- * Tries to ANSI colorify a json aObject for use with cprint, cprintErr, cprintErrnl and cprintnl
- * </odoc> 
+ * <key>__colorFormat</key>
+ * Global map with the ANSI color/style settings used when printing colored output (colorify, cprint*, printTable/printTree,
+ * ask/askChoose/askChooseMultiple prompts and markdown rendering). Each color value is a comma-separated list of ansiColor
+ * attributes (e.g. "BOLD,CYAN", "FG(12)", "RESET"). Entries can be changed at runtime to customize the theme:\
+ * \
+ *   - key, number, string, boolean, date, default: colors used by colorify and tree/table values per data type.\
+ *   - askPre, askQuestion, askChoose, askChooseFilter, askPos: colors used by ask, askChoose and askChooseMultiple.\
+ *   - askChooseChars: characters used in choose prompts (chooseMultipleSelected, chooseMultipleUnselected, chooseUp, chooseDown, chooseLine).\
+ *   - table: { lines, value, title, bandRow, format } colors for table output; the optional "format" (table, stable, ctable, btable or bstable)\
+ *     selects the default table renderer for $output when no global or explicit format is set.\
+ *   - tree: { lines } color for tree connecting lines (other tree options are merged with __flags.TREE).\
+ *   - md: colors used by ow.format.withMD: codeBlock {line, text, theme}, codeInline {text, surround}, heads {h1..h4}, line, link {text, url},\
+ *     bullets, list, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.\
+ * \
+ * Example:\
+ * \
+ *   __colorFormat.string = "GREEN"; __colorFormat.table.title = "BOLD,UNDERLINE"; __colorFormat.md.heads.h1 = "CYAN,BOLD"\
+ * </odoc>
  */
 var __colorFormat = {
 	//key: "BOLD,BLACK",
@@ -2159,6 +2174,12 @@ var __colorFormat = {
 		}
 	}
 };
+/**
+ * <odoc>
+ * <key>colorify(aObject) : String</key>
+ * Tries to ANSI colorify a json aObject for use with cprint, cprintErr, cprintErrnl and cprintnl. Colors are defined in __colorFormat.
+ * </odoc>
+ */
 const colorify = function(json, aOptions, spacing) {
 	if (isUnDef(aOptions)) aOptions = {}
 	else if (!isMap(aOptions)) throw "options is not a map"

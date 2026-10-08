@@ -5550,6 +5550,24 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	return res
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.withSideLineThemes() : Map</key>
+ * Returns a map of theme name to theme definition for use as the aTheme argument of ow.format.withSideLine (and the "theme" entries of
+ * __colorFormat.md). A theme is a map with the optional characters ltop, tmiddle, rtop (top border), lmiddle, rmiddle (left and right sides),
+ * lbottom, bmiddle, rbottom (bottom border) and tab (replacement for tab characters, default 3 spaces). The top/bottom border is only drawn when
+ * the corner entries are defined. Built-in themes: closedOneSpace, simpleOneSpace, simpleLine, doubleOneSpace, doubleLine, simpleLineWithTips,
+ * simpleLineWithBottomTip, simpleLineWithTopTip, simpleLineWithCTips, simpleLineWithCBottomTip, simpleLineWithCTopTip, simpleLineWithRTips,
+ * simpleLineWithRTopTip, simpleLineWithRBottomTip, doubleLineWithRTips, doubleLineBothSides, closedRect, closedDoubleRect, closedCurvedRect,
+ * openTopRect, openBottomRect, openRect, openTopCurvedRect, openBottomCurvedRect, openCurvedRect, openCurvedSpace and blockCurvedSpace.
+ * Custom themes can be added (built-in themes win on name clashes) by setting __flags.sideLineCustomThemes to a map of name to theme before calling it.\
+ * \
+ * Example:\
+ * \
+ *   __flags.sideLineCustomThemes = { arrow: { lmiddle: ">" } }\
+ *   print(ow.format.withSideLine("hello", __, "GREEN", __, ow.format.withSideLineThemes().arrow))\
+ * </odoc>
+ */
 OpenWrap.format.prototype.withSideLineThemes = function() {
 	var _s = ow.format.syms()
 	return merge(__flags.sideLineCustomThemes, {
