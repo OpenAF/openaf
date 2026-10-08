@@ -235,6 +235,36 @@
         });
     };
 
+    exports.testDefaultTableFormat = function() {
+        var oldFormat = global.__format, oldTable = __colorFormat.table.format;
+        var oldAnsi = __conAnsi, oldCon = __con, oldFlag = __ansiColorFlag, oldConsole = __conConsole;
+        try {
+            global.__format = __;
+            __conAnsi = false;
+            __con = __;
+            var rows = [{ A: "one" }, { A: "two" }];
+            ["table", "stable", "ctable", "btable", "bstable"].forEach(function(format) {
+                __colorFormat.table.format = format;
+                ow.test.assert($output(rows, {}, __, true), $output(rows, { __format: format }, __, true), "Default " + format);
+            });
+            __colorFormat.table.format = "btable";
+            global.__format = "json";
+            ow.test.assert($output(rows, {}, __, true), stringify(rows, __, ""), "Global overrides preference");
+            ow.test.assert($output(rows, { __format: "json" }, __, true), stringify(rows, __, ""), "Explicit format overrides preference");
+            global.__format = __;
+            ow.test.assert(__defaultTableFormat(), "btable", "Valid preference retained");
+            __colorFormat.table.format = "invalid";
+            ow.test.assert(__defaultTableFormat(), __, "Unsupported preference ignored");
+        } finally {
+            global.__format = oldFormat;
+            __colorFormat.table.format = oldTable;
+            __conAnsi = oldAnsi;
+            __con = oldCon;
+            __ansiColorFlag = oldFlag;
+            __conConsole = oldConsole;
+        }
+    };
+
     exports.testOutputBorderless = function() {
         var oldAnsi = __conAnsi, oldCon = __con, oldFormat = global.__format;
         try {

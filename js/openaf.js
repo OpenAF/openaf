@@ -2129,6 +2129,7 @@ var __colorFormat = {
 		chooseDown: "v",
 		chooseLine: ">"
 	},
+	// Optional table.format: table, stable, ctable, btable or bstable.
 	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" },
 	tree: { lines: "" },
 	sideLineCustomThemes: {},
@@ -16566,12 +16567,24 @@ const $unset = function(aK) {
 	$ch("oaf::global").unset({ k: aK });
 }
 
+// Ignore unsupported preferences so existing output remains usable.
+function __defaultTableFormat() {
+	var format = (__colorFormat.table || {}).format;
+	if (isString(format)) {
+		format = format.toLowerCase();
+		if (["table", "stable", "ctable", "btable", "bstable"].indexOf(format) >= 0) return format;
+	}
+	return __;
+}
+
 /**
  * <ojob>
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
  * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "btable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
+ * For map/array output, __colorFormat.table.format selects a default table renderer when no global or explicit format is set.
+ * Supported preferences: table, stable, ctable, btable, bstable; unset/unsupported values preserve human output.
  * In "btable", __rowsep (or __ROWSEP) enables light rules between records (default false); __width (or __WIDTH)
  * sets a positive integer wrapping width, otherwise the available terminal width is used. Unicode rules are always used.
  * If shouldReturn = true the string output will be returned
@@ -16600,7 +16613,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			fnP(isString(obj) ? obj : stringify(obj))
 	});
 
-	var format = (isDef(global.__format) ? global.__format : "human")
+	var format = (isDef(global.__format) ? global.__format : ((isArray(aObj) || isMap(aObj)) ? __defaultTableFormat() || "human" : "human"))
 	var path = __, csv = __, from = __, key = "res", sql = __, pause = false
 
 	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()

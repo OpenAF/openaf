@@ -397,3 +397,8 @@ todo:
    - Format::Escape/Unescape HTML4
    - Format::SLON
    - Format::TimeAbbreviation
+
+   - name: Format::Default table format
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDefaultTableFormat;
