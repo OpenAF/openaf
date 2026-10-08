@@ -37,6 +37,36 @@ python3 tools/docs/test_examples.py --jar openaf.jar
 
 The runner requires Python 3 and Java, uses the chosen JAR, loopback HTTP, scratch directories, and process deadlines, and reports runtime version and JAR hash. On POSIX it kills timed-out process groups. `--integration` additionally tests already-installed Badgen; it never installs packages. CI runs the default suite against its build artifact. See [coverage](./documentation-coverage.md) for reports and static checks.
 
+## Test an embedded module from a file
+
+The [self-contained workflow](../examples/authoring/code-separation.yaml) embeds `handlers.js`, and [test-code-separation.js](../examples/authoring/test-code-separation.js) calls its `Normalize` export directly. From a source checkout, run:
+
+```sh
+ojob examples/authoring/code-separation.yaml text=hello
+# HELLO
+
+ojob examples/authoring/code-separation.yaml -exportcode dir=/tmp/openaf-module-test
+(cd /tmp/openaf-module-test && openaf -f /absolute/path/to/openaf/examples/authoring/test-code-separation.js)
+# module assertions: ok
+```
+
+Use a fresh scratch directory and substitute your checkout's absolute path. Edit `/tmp/openaf-module-test/handlers.js`, run the assertions again, then import the changes:
+
+```sh
+ojob examples/authoring/code-separation.yaml -importcode dir=/tmp/openaf-module-test output=/tmp/code-separation.updated.yaml
+ojob /tmp/code-separation.updated.yaml text=hello
+# HELLO for the original module
+```
+
+The first test verifies the exported module's argument mutations. The last command verifies the embedded module and oJob wiring. Embedded source takes precedence over disk files, so editing an exported file alone does not change the original workflow. Modules use OpenAF's `require` contract; they are not automatically Node.js programs. For raw `exec` bodies, supply the job variables and any adapter protocol in a harness, or test them through an oJob.
+
+Contributor regressions for source exchange and embedded loading:
+
+```sh
+python3 tests/test-ojob-code.py --jar openaf.jar
+java -jar openaf.jar -f tests/runOJobCode.js
+```
+
 ## Troubleshooting
 
 | Symptom | Check |

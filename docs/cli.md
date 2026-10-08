@@ -166,6 +166,10 @@ openaf -f hello.js
 openaf --ojob -e 'myjob.yaml'
 ojob myjob.yaml
 
+# Exchange embedded code with standalone files (local YAML/JSON)
+ojob myjob.yaml -exportcode dir=myjob-code
+ojob myjob.yaml -importcode dir=myjob-code output=myjob.updated.yaml
+
 # Run the opack package manager
 opack list
 openaf --opack -e 'list'

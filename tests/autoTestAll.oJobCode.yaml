@@ -1,0 +1,26 @@
+include:
+- oJobTest.yaml
+
+jobs:
+- name: oJobCode::Init
+  exec: args.tests = require("autoTestAll.oJobCode.js");
+
+- name: oJobCode::EmbeddedCall
+  from: oJobCode::Init
+  to: oJob Test
+  exec: args.func = args.tests.testEmbeddedBodyWithFunctionCall;
+
+- name: oJobCode::EmbeddedAssignment
+  from: oJobCode::Init
+  to: oJob Test
+  exec: args.func = args.tests.testEmbeddedBodyWithoutFunctionCall;
+
+- name: oJobCode::EmbeddedModule
+  from: oJobCode::Init
+  to: oJob Test
+  exec: args.func = args.tests.testEmbeddedModuleStillRequires;
+
+todo:
+- oJobCode::EmbeddedCall
+- oJobCode::EmbeddedAssignment
+- oJobCode::EmbeddedModule

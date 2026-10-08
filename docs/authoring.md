@@ -64,6 +64,6 @@ Use `try/finally` for mandatory cleanup: throwing skips ordinary `to` code. A `c
 openaf -f test-filter.js
 ```
 
-The [standalone assertions](../examples/authoring/test-filter.js) verify selection and empty results. Test both CLIs with missing input, invalid JSON, and an object instead of an array. See [Testing](./authoring-testing.md) for end-to-end checks.
+The [standalone assertions](../examples/authoring/test-filter.js) verify selection and empty results. Test both CLIs with missing input, invalid JSON, and an object instead of an array. See [Testing](./authoring-testing.md) for end-to-end checks and [embedded module testing](./authoring-testing.md#test-an-embedded-module-from-a-file) to export, test, and re-embed the same source.
 
 Continue with [authoring recipes](./authoring-recipes.md). Use [ojob-all.yaml](./ojob-all.yaml) as a syntax catalog, not an executable scaffold. For AI-assisted work, consult the [JavaScript skill](../skills/openaf-javascript/SKILL.md) and [oJob skill](../skills/ojob-authoring/SKILL.md).

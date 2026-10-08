@@ -98,6 +98,25 @@ class Examples(unittest.TestCase):
             self.assertEqual(result.stdout.strip(), "", detail)
         return result
 
+    def test_code_separation(self):
+        result = self.run_example("code-separation.yaml", {"text": "hello"})
+        self.assertEqual(result.stdout.strip(), "HELLO")
+        command = [self.java, "-jar", str(self.jar), "--ojob", "-e"]
+        exported = execute(command + ["code-separation.yaml -exportcode dir=module"], self.cwd)
+        self.assertEqual(exported.returncode, 0, exported.stdout + exported.stderr)
+        shutil.copy2(self.cwd / "test-code-separation.js", self.cwd / "module/test-code-separation.js")
+        tested = execute([self.java, "-jar", str(self.jar), "-f", "test-code-separation.js"], self.cwd / "module")
+        self.assertEqual(tested.returncode, 0, tested.stdout + tested.stderr)
+        self.assertEqual(tested.stdout.strip(), "module assertions: ok")
+        self.executed.add("examples/authoring/test-code-separation.js")
+        handler = self.cwd / "module/handlers.js"
+        handler.write_text(handler.read_text().replace("args.text.toUpperCase()", 'args.text.toUpperCase() + "!"'))
+        imported = execute(command + ["code-separation.yaml -importcode dir=module output=updated.yaml"], self.cwd)
+        self.assertEqual(imported.returncode, 0, imported.stdout + imported.stderr)
+        packaged = execute(command + ["updated.yaml text=hello"], self.cwd)
+        self.assertEqual(packaged.returncode, 0, packaged.stdout + packaged.stderr)
+        self.assertEqual(packaged.stdout.strip(), "HELLO!")
+
     def test_filter_pair(self):
         for suffix in ("js", "yaml"):
             for status, expected in ((None, RECORDS[:1]), ("inactive", RECORDS[1:]), ("missing", [])):

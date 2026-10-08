@@ -729,6 +729,9 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos, dontLoadJobs) 
 		if (!dontLoadJobs && isMap(res.code)) {
 			if (isUnDef(require.cache)) require.cache = {};
 			Object.keys(res.code).forEach(k => {
+				// A source may be both a require module and an execFile body.
+				// Keep the body even when the legacy module heuristic matches it.
+				this._code[k] = res.code[k];
 				if (k.endsWith(".js")) {
 					try {
 						if (res.code[k].trim().match(/\(.+\);?/)) {

@@ -155,6 +155,17 @@
         "examples/authoring/bounded-workers.yaml"
       ],
       "test": "test_composition_and_workers"
+    },
+    {
+      "symbol": "ojob embedded source exchange",
+      "source": "js/ojob.js",
+      "source_token": "ojob_code",
+      "reference": "docs/ojob.md",
+      "examples": [
+        "examples/authoring/code-separation.yaml",
+        "examples/authoring/test-code-separation.js"
+      ],
+      "test": "test_code_separation"
     }
   ],
   "copies": [

@@ -28,6 +28,7 @@ include:
 - autoTestAll.Sec.yaml
 - autoTestAll.Languages.yaml
 - autoTestAll.oJob.yaml
+- autoTestAll.oJobCode.yaml
 - autoTestAll.MCP.yaml
 - autoTestAll.TOON.yaml
 # - autoTestAll.SNMP.yaml   // Test servers don't work

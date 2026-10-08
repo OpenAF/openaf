@@ -118,6 +118,11 @@ jobs:
         name: openaf.jar.orig
         path: .
 
+    - name: Test oJob source exchange against the build
+      run: |
+        python3 tests/test-ojob-code.py --jar openaf.jar
+        java -jar openaf.jar -f tests/runOJobCode.js
+
     - name: Test documentation examples against the build
       run: python3 tools/docs/test_examples.py --jar openaf.jar --report authoring-results.json
 
