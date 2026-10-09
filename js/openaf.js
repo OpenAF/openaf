@@ -1266,6 +1266,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 	_aPrefix  = _$(_aPrefix, "aPrefix").isString().default("")
 	_aWidth   = _$(_aWidth, "aWidth").isNumber().default(__)
 	if (isUnDef(_aWidth) && isDef(__con)) _aWidth = Number(__con.getTerminal().getWidth())
+	if (!isNumber(_aWidth) || !isFinite(_aWidth) || _aWidth <= 0) _aWidth = 80
 
 	// Prepare aux functions
 	var _clr = __, _ac = __, _al = __
@@ -13400,6 +13401,37 @@ IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallba
 			aErrorCallback(e);
 		}
 	}, __, __, anEncoding)
+};
+
+/**
+ * <odoc>
+ * <key>io.readJSONArray(source, callback, encoding, raw) : Number</key>
+ * Reads a top-level JSON array from a filename or a Java input stream, retaining only one element at a time.
+ * Calls callback(value, zeroBasedIndex) for each element. Return true to stop early.
+ * Encoding defaults to UTF-8. With raw=true the callback receives each element as JSON text instead.
+ * Returns the number of delivered elements. Non-array roots, malformed JSON and trailing content throw.
+ * Filename streams are closed even on errors; caller-provided streams remain owned by the caller.
+ * </odoc>
+ */
+IO.prototype.readJSONArray = function(source, callback, encoding, raw) {
+    var owned = Object.prototype.toString.call(source) == "[object String]"
+    var stream = owned ? io.readFileStream(source) : source
+    var count = 0
+    try {
+        var reader = new java.io.InputStreamReader(stream, encoding || "UTF-8")
+        var json = new Packages.com.google.gson.stream.JsonReader(reader)
+        json.setLenient(false)
+        json.beginArray()
+        while (json.hasNext()) {
+            var text = String(Packages.com.google.gson.internal.Streams.parse(json).toString())
+            if (callback(raw === true ? text : jsonParse(text), count++) === true) return count
+        }
+        json.endArray()
+        if (String(json.peek()) != "END_DOCUMENT") throw "Unexpected content after JSON array"
+        return count
+    } finally {
+        if (owned) stream.close()
+    }
 };
 
 /**

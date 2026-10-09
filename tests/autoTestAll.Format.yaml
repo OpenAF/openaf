@@ -4,6 +4,11 @@ include:
    - oJobTest.yaml
 
 jobs:
+   - name: Format::Print tree without console
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPrintTreeWithoutConsole;
+
    # Format tests
    # --------------
    - name: Format::Init
@@ -351,6 +356,7 @@ jobs:
      exec: args.func = args.tests.testCheckVersionSpec
 
 todo:
+   - Format::Print tree without console
    # Format tests
    # ------------
    

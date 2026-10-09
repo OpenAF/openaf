@@ -1,6 +1,25 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    exports.testPrintTreeWithoutConsole = function() {
+        var previousCon = __con;
+        try {
+            __con = __;
+            [false, true].forEach(function(noansi) {
+                var options = { noansi: noansi, color: false };
+                var data = [{ "COUNT(*)": 194835 }];
+                var expected = printTree(data, 80, options);
+                ow.test.assert(printTree(data, __, options), expected, "Tree lost a value without a console width");
+                __con = { getTerminal: function() { return { getWidth: function() { return 0; } }; } };
+                ow.test.assert(printTree(data, __, options), expected, "Tree lost a value with a zero terminal width");
+                __con = __;
+                ow.test.assert(printTree(data, 40, options).indexOf("194835") >= 0, true, "Tree lost a value with an explicit width");
+            });
+        } finally {
+            __con = previousCon;
+        }
+    };
+
     exports.testLoadFormat = function() {
         ow.loadFormat();
     };

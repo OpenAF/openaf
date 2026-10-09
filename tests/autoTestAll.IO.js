@@ -10,6 +10,36 @@
         io.rm(file);
     };
 
+    exports.testJSONArray = function() {
+        var fixture = [null, true, false, 1.25, "€\\\"", [], {}, {nested:[1,{x:"y"}]}];
+        var file = io.createTempFile("json-array", ".json");
+        try {
+            io.writeFileString(file, stringify(fixture));
+            var values = [], indexes = [];
+            ow.test.assert(io.readJSONArray(file, (v, i) => { values.push(v); indexes.push(i); }), fixture.length, "Count");
+            ow.test.assert(values, fixture, "JSON values and empty containers");
+            ow.test.assert(indexes, fixture.map((v, i) => i), "Indexes");
+            var stream = io.readFileStream(file);
+            try {
+                ow.test.assert(io.readJSONArray(stream, () => true), 1, "Early stop");
+                ow.test.assert(stream.read() >= -1, true, "Borrowed stream remains open");
+            } finally { stream.close(); }
+            var raw = [];
+            io.readJSONArray(file, v => { raw.push(jsonParse(v)); }, "UTF-8", true);
+            ow.test.assert(raw, fixture, "Raw JSON mode");
+            ["{}", "[1,]", "[", "[1]true", "[NaN]", "[\"unfinished]"].forEach(text => {
+                io.writeFileString(file, text);
+                var failed = false;
+                try { io.readJSONArray(file, () => {}); } catch(e) { failed = true; }
+                ow.test.assert(failed, true, "Reject malformed JSON: " + text);
+            });
+            io.writeFileString(file, "[1]");
+            var failed = false;
+            try { io.readJSONArray(file, () => { throw "callback-failure"; }); } catch(e) { failed = String(e).indexOf("callback-failure") >= 0; }
+            ow.test.assert(failed, true, "Propagate callback errors");
+        } finally { io.rm(file); }
+    };
+
     exports.testIOStreamJSON = function() {
         var o = io.readStreamJSON("../versionsAndDeps.json", p=>(/^\$\.external\[\d+\]\.description/).test(p))
 
