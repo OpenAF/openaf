@@ -1,0 +1,46 @@
+[
+  {
+    "name": "lookup",
+    "js": "\"a\"",
+    "java": "\"a\"",
+    "equal": true
+  },
+  {
+    "name": "filter",
+    "js": "[\"b\"]",
+    "java": "[\"b\"]",
+    "equal": true
+  },
+  {
+    "name": "expref-sort",
+    "js": "\"b\"",
+    "java": "\"b\"",
+    "equal": true
+  },
+  {
+    "name": "missing",
+    "js": "null",
+    "java": "null",
+    "equal": true
+  },
+  {
+    "name": "undefined",
+    "js": "\"null\"",
+    "java": "\"null\"",
+    "equal": true
+  },
+  {
+    "name": "sparse-array",
+    "js": "[1,null,3]",
+    "java": "[1,3]",
+    "equal": false
+  },
+  {
+    "name": "concatenated-string",
+    "error": "JavaException: java.lang.IllegalStateException: Unknown node type encountered: org.mozilla.javascript.ConsString"
+  },
+  {
+    "name": "identity",
+    "same": true
+  }
+]

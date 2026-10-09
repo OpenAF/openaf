@@ -1963,7 +1963,9 @@ THE SOFTWARE.
 Third-party name      : JMESPath
 Version               : 0.16.0
 Changed from original : Yes
-Location in openaf.jar: js/jmespath.js
+Location in openaf.jar: js/jmespath.js, openaf/core/jmespath/*.class
+Java modifications    : Parser, evaluator and standard functions translated for OpenAF;
+                       direct Rhino values/callbacks and bounded immutable syntax cache.
 License               : 
 
 Copyright 2014 James Saryerwinnie

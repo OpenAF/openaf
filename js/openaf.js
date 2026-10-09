@@ -269,7 +269,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		colorify : true,
 		restart  : true,
 		toTOON   : true,
-		fromTOON : true 
+		fromTOON : true,
+		path     : true
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -303,6 +304,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	JAVA_CERT_BC_PROVIDER       : false,
 	PATH_CFN                    : __,             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
 	PATH_SAFE                   : false,
+	PATH_CACHE_SIZE             : 256, // Java $path syntax cache; 0 disables and clears it.
 	PFOREACH                    : {
 		seq_thrs_ms        : 6,
 		threads_thrs       : 2,
@@ -5176,7 +5178,9 @@ var $from = function(a) {
  * <odoc>
  * <key>$path(obj, path, customFunctions) : Object</key>
  * Shortcut for the JMESPath library for easy query and access to arrays/objects. To see all the available options
- * please refer to http://jmespath.org. Optional you can provide a map of customFunctions. Examples:\
+ * please refer to http://jmespath.org. Uses the Java engine by default; set __flags.ALTERNATIVES.path=false
+ * to use the Javascript engine. __flags.PATH_CACHE_SIZE controls the Java syntax cache (256 entries by default; 0 disables).
+ * Optional you can provide a map of customFunctions. Examples:\
  * \
  * [Slicing]: \
  *   $path(arr, "[0:5]"); $path(arr, "[5:10]"); $path(arr, "[:5]"); $path(arr, "[::2]"); $path(arr, "[::-1]");\
@@ -5872,7 +5876,7 @@ const $path = function(aObj, aPath, customFunctions) {
 	}, customFunctions)
 
 	if (isDef(aObj))
-		return jmespath.search(aObj, aPath, customFunctions);
+		return __flags.ALTERNATIVES.path ? af.pathJava(aObj, aPath, customFunctions) : jmespath.search(aObj, aPath, customFunctions);
 	else
 		return jmespath.types;
 };

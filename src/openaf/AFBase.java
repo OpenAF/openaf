@@ -285,6 +285,21 @@ public class AFBase extends ScriptableObject {
 
 	/**
 	 * <odoc>
+	 * <key>af.pathJava(obj, expression, customFunctions) : Object</key>
+	 * Evaluates a JMESPath expression directly against Rhino values using the Java engine.
+	 * Uses __flags.PATH_CACHE_SIZE (default 256, 0 disables caching). Prefer $path for OpenAF extensions.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static Object pathJava(Context cx, Scriptable self, Object[] args, Function function) {
+		Object input = args.length > 0 ? args[0] : Undefined.instance;
+		String expression = args.length > 1 ? Context.toString(args[1]) : "@";
+		Object functions = args.length > 2 ? args[2] : Undefined.instance;
+		return openaf.core.jmespath.PathEngine.search(cx, ScriptableObject.getTopLevelScope(self), input, expression, functions);
+	}
+
+	/**
+	 * <odoc>
 	 * <key>af.toTOONJava(aObj) : String</key>
 	 * Tries to convert aObj into a TOON string using the native Java TOON engine (json-io) instead
 	 * of the bundled Javascript one. See __flags.ALTERNATIVES.toTOON.
