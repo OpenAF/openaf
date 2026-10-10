@@ -29,10 +29,16 @@ if nested:
     jar = nested_jar
 
 
-def run(script, exchanges, expected, exitcode=0):
+def run(script, exchanges, expected, exitcode=0, piped_input=None):
     with tempfile.TemporaryDirectory(prefix="openaf-console-pty-") as home:
         pid, fd = pty.fork()
         if pid == 0:
+            if piped_input is not None:
+                read_fd, write_fd = os.pipe()
+                os.write(write_fd, piped_input)
+                os.close(write_fd)
+                os.dup2(read_fd, 0)
+                os.close(read_fd)
             os.environ["TERM"] = "xterm-256color"
             os.execvp("java", ["java", "--enable-native-access=ALL-UNNAMED", "-Duser.home=" + home,
                               "-jar", jar] + (["--console"] if script is None else ["-c", script]))
@@ -93,6 +99,15 @@ run(base + 'print("EOF="+c.readLinePrompt("EOF> "));', [("EOF> ", b"\x04")], ["E
 run(base + 'c.readLinePrompt("INT> ");', [("INT> ", b"\x03")], [], exitcode=130)
 if not nested:
     run(None, [("> ", b'print("CONSOLE_RESULT="+io.fileExi\t("__missing_console_test_file__")); exit(0);\n')], ["CONSOLE_RESULT=false"])
+if not nested:
+    run('var ui=askConsole();try {ui.ansi=false;'
+        'var a=askStruct([{name:"target",type:"choose",options:["one","two"]},'
+        '{name:"features",type:"multiple",options:["logs","metrics"]}],ui);'
+        'print("TARGET="+a[0].answer);print("FEATURES="+a[1].answer.join(","));'
+        '}finally {ui.close();}print("PIPE="+af.fromInputStream2String(java.lang.System.in));',
+        [("number, blank to cancel", b"2\n"), ("comma-separated numbers", b"1,2\n")],
+        ["TARGET=two", "FEATURES=logs,metrics", "PIPE=untouched"],
+        piped_input=b"untouched")
 if nested:
     nested_dir.cleanup()
 print("PTY tests passed: JNI, dimensions, Tab, masking, raw/line input, EOF, Ctrl-C, terminal restoration")

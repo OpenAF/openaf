@@ -1945,65 +1945,78 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 	return argss;
 };
 
-OpenWrap.oJob.prototype.askOnHelp = function(aHelpMap) {
+/**
+ * <odoc>
+ * <key>ow.oJob.askOnHelp(aHelpMap, aUI) : Map</key>
+ * Collects job arguments interactively. Pass an askConsole-compatible UI to borrow
+ * its terminal, or true to open an independent terminal and close it on completion.
+ * Without aUI, retains the default process console and output.
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.askOnHelp = function(aHelpMap, aUI) {
 	_$(aHelpMap, "helpMap").isMap().$_()
 
-	if (!__flags.OJOB_HELPSIMPLEUI) __initializeCon()
+  var ownedUI = aUI === true;
+  if (ownedUI) aUI = askConsole();
+  var write = aUI ? aUI.write : print;
+  try {
+	if (!aUI && !__flags.OJOB_HELPSIMPLEUI) __initializeCon()
 
 	if (isDef(aHelpMap) && aHelpMap.text) 
-		print(ansiColor("FAINT,ITALIC", "oJob | ") + aHelpMap.text)
+		write(ansiColor("FAINT,ITALIC", "oJob | ") + aHelpMap.text)
 	else
-		print(ansiColor("FAINT,ITALIC", "oJob | ") + "(none available)")
+		write(ansiColor("FAINT,ITALIC", "oJob | ") + "(none available)")
 
-	print()
+	write()
 
 	_args = {}
 	var _cen = []
 	if (isDef(aHelpMap.expects)) {
-		print(ansiColor("ITALIC,FAINT", "please fill out the job arguments (no value entered is equivalent to not providing the argument; (*) means a value it's mandatory):"))
-		print()
+		write(ansiColor("ITALIC,FAINT", "please fill out the job arguments (no value entered is equivalent to not providing the argument; (*) means a value it's mandatory):"))
+		write()
 		aHelpMap.expects.forEach(param => {
 			if (isDef(param.name)) {
-				if (isDef(param.desc)) print(param.desc)
+				if (isDef(param.desc)) write(param.desc)
 				
 				var p = param.name
 				if (isDef(param.mandatory) && param.mandatory) p = p + " (*)"
 				p += ": "
 
 				if (param.secret) {
-					_args[param.name] = ask(p, String.fromCharCode(0))
+					_args[param.name] = ask(p, String.fromCharCode(0), aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write)
 					_cen.push(param.name)
 				} else {
 					if (isDef(param.options)) {
-						var _v = askChoose(p, param.options)
+						var _v = askChoose(p, param.options, __, __, aUI)
 						if (isNumber(_v)) _args[param.name] = param.options[_v]
 					} else if (isDef(param.moptions)) {
-						_args[param.name] = askChooseMultiple(p, param.moptions).join(",")
+						_args[param.name] = (askChooseMultiple(p, param.moptions, __, __, aUI) || []).join(",")
 					} else {
-						_args[param.name] = ask(p)
+						_args[param.name] = ask(p, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write)
 					}
 				}
 
-				print()
+				write()
 			}
 		})
 	} else {
-		var _res = askChoose("no arguments to fill out; should execution proceed? ", ["yes", "no"])
-		if (_res == 1) return __
-		print()
+		var _res = askChoose("no arguments to fill out; should execution proceed? ", ["yes", "no"], __, __, aUI)
+		if (_res !== 0) return __
+		write()
 	}
 
 	Object.keys(_args).forEach(k => {
 		if (isUnDef(_args[k]) || String(_args[k]).length == 0) delete _args[k]
 	})
 
-	print(ansiColor("FAINT,ITALIC", "executing the equivalent command to:"))
-	print(ansiColor("YELLOW", " ojob " + this.__file + " " + Object.keys(_args).map(k => k + "=" + (_cen.indexOf(k) >= 0 ? "***" : _args[k])).join(" ")))
-	print()
-	print(ansiColor("FAINT", repeat(6, "─")))
-	print()
+	write(ansiColor("FAINT,ITALIC", "executing the equivalent command to:"))
+	write(ansiColor("YELLOW", " ojob " + this.__file + " " + Object.keys(_args).map(k => k + "=" + (_cen.indexOf(k) >= 0 ? "***" : _args[k])).join(" ")))
+	write()
+	write(ansiColor("FAINT", repeat(6, "─")))
+	write()
 
 	return _args
+  } finally { if (ownedUI) aUI.close(); }
 }
 
 /**

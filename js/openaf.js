@@ -208,6 +208,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_ADAPTIVE_POLL         : false,  // If true, the oJob scan loop backs off its poll interval on idle cycles
 	OJOB_SHAREARGS             : true,
 	OJOB_HELPSIMPLEUI          : false,
+	OJOB_INTERACTIVETTY        : false,
 	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
 	OJOB_CONSOLE_STDERR        : getEnvsDef("OJOB_CONSOLE_STDERR", __, true),
 	OJOB_INIT_ARRAY_ARGS_LIST  : true,
@@ -13611,6 +13612,35 @@ IO.prototype.copyJSONRange = function(aFile, aStart, anEnd, anOutputStream, aOpt
 
 /**
  * <odoc>
+ * <key>io.extractJSON(aFile, aPath, anOutputStream, aOptions) : boolean</key>
+ * Copies the JSON value at a literal key/index path to a borrowed output stream.
+ * An empty path selects the root. Returns false without writing when absent.
+ * Uses bounded buffers and preserves original JSON bytes. The source must remain
+ * unchanged during extraction. Options cancel/progress/maxNodes apply to scanning;
+ * copy progress restarts at zero. Early selection does not validate the unread suffix.
+ * </odoc>
+ */
+IO.prototype.extractJSON = function(aFile, aPath, anOutputStream, aOptions) {
+  _$(aPath, "aPath").isArray().$_();
+  aPath.forEach(k => {
+    if (!isString(k) && !(isNumber(k) && k >= 0 && Math.floor(k) == k)) throw "Invalid JSON path segment";
+  });
+  var selected;
+  this.scanJSON(aFile, e => {
+    var prefix = e.path.length <= aPath.length && e.path.every((k, i) => k === aPath[i]);
+    if (e.phase == "value" && (!prefix || e.path.length == aPath.length)) return "skip";
+    if (e.phase == "end" && prefix && e.path.length == aPath.length) {
+      selected = e;
+      return "stop";
+    }
+  }, aOptions);
+  if (!selected) return false;
+  this.copyJSONRange(aFile, selected.start, selected.end, anOutputStream, aOptions);
+  return true;
+};
+
+/**
+ * <odoc>
  * <key>askConsole() : Map</key>
  * Opens an independent controlling terminal (including with piped stdin/redirected stdout).
  * Returns console/write/ansi/close for injection into askChoose and ask. Close in finally.
@@ -13622,7 +13652,7 @@ const askConsole = () => {
   var con = new Console(true), term = con.getConsoleReader().getTerminal().unwrap();
   return {
     console:con, ansi:con.isAnsiSupported() && String(term.getType()) != "windows",
-    write:function(text, newline) { term.writer().print(String(text) + (newline === false ? "" : "\n")); term.writer().flush(); },
+    write:function(text, newline) { term.writer().print((isDef(text) ? String(text) : "") + (newline === false ? "" : "\n")); term.writer().flush(); },
     close:function() { con.close(); }
   };
 };
@@ -14001,34 +14031,34 @@ const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
 
 /**
  * <odoc>
- * <key>askEncrypt(aPrompt) : String</key>
+ * <key>askEncrypt(aPrompt, aConsole, noAnsi, aWrite) : String</key>
  * Similar to ask but the return user input will be encrypted.
  * If an empty string is entered by the user the function will return undefined.
  * </odoc>
  */
-const askEncrypt = (aPrompt, _con) => {
+const askEncrypt = (aPrompt, _con, noAnsi, aWrite) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
-	var v = ask(aPrompt, String.fromCharCode(0), _con);
+	var v = ask(aPrompt, String.fromCharCode(0), _con, noAnsi, aWrite);
 	if (isString(v) && v == "") return __;
 	return af.encrypt(v);
 }
 
 /**
  * <odoc>
- * <key>ask1(aPrompt, allowed) : String</key>
+ * <key>ask1(aPrompt, allowed, aConsole, aWrite) : String</key>
  * Stops for user interaction prompting aPrompt waiting for a single character within the allowed string (a set of characters).
  * Returns the user input.
  * </odoc>
  */
-const ask1 = (aPrompt, allowed, _con) => {
-	if (isDef(aPrompt)) printnl(aPrompt);
+const ask1 = (aPrompt, allowed, _con, aWrite) => {
+	if (isDef(aPrompt)) { if (aWrite) aWrite(aPrompt, false); else printnl(aPrompt); }
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	return _con.readChar(allowed);
 }
 
 /**
  * <odoc>
- * <key>askN(aPromptFn, aStopFn) : String</key>
+ * <key>askN(aPromptFn, aStopFn, aConsole) : String</key>
  * Stops for a multi-line user interaction prompting, for each line, the result of calling aPromptFn that receives the current user input 
  * (if a string is provided it will default to a function that returns that string). The interaction will stop when aStopFn function, that receives the current
  * user input as an argument, returns true (if the function is not provided it will default to 3 new lines).
@@ -14043,6 +14073,7 @@ const askN = (aPromptFn, aStopFn, _con) => {
 	var r = "";
 	do {
 		var l = _con.readLinePrompt(aPromptFn(r));
+		if (l == null) return r;
 		r += l + "\n";
 	} while (!aStopFn(r));
 	return r;
@@ -14050,16 +14081,17 @@ const askN = (aPromptFn, aStopFn, _con) => {
 
 /**
  * <odoc>
- * <key>askDef(aInit, aQuestion, isSecret, isVoidable) : String</key>
+ * <key>askDef(aInit, aQuestion, isSecret, isVoidable, aUI) : String</key>
  * If aInit is not defined will ask aQuestion (if isSecret = true it will askEncrypt) and return
  * the value. If isVoidable = true and no answer is provided it will return undefined.
  * </odoc>
  */
-const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
+const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI) => {
 	aQuestion = _$(aQuestion, "aQuestion").isString().default("Question: ");
 	if (isUnDef(aInit)) {
 		var r;
-		if (isSecret) r = askEncrypt(aQuestion); else r = ask(aQuestion);
+		if (isSecret) r = askEncrypt(aQuestion, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write);
+		else r = ask(aQuestion, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write);
 		if (isVoidable && isString(r) && r.length == 0) r = __;
 		return r; 
 	} else {
@@ -14196,16 +14228,34 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 
 /**
  * <odoc>
- * <key>askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText) : Array</key>
+ * <key>askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText, aUI) : Array</key>
  * Stops for user interaction prompting aPrompt waiting for a single character to choose multiple from the provided anArray of options. Optionally
  * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns an array with the chosen options.
  * </odoc>
  */
-const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
+const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 	_$(aPrompt, "aPrompt").isString().$_()
 	_$(anArray, "anArray").isArray().$_()
 	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
 	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, space to select, enter to submit)"))
+
+
+  if (!anArray.length) return [];
+  var _write = aUI ? aUI.write : printErr;
+  var _move = n => aUI ? _write("\x1b[" + n + "A", false) : ow.format.string.ansiMoveUp(n);
+  if (aUI && !aUI.ansi) {
+    while (true) {
+      anArray.forEach((text, i) => _write((i + 1) + ". " + text));
+      var answer = ask(aPrompt + " [comma-separated numbers, blank for none]: ", __, aUI.console, true, _write);
+      if (answer == null) return __;
+      if (answer.trim() === "") return [];
+      var parts = answer.split(",").map(v => v.trim());
+      if (parts.every(v => /^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= anArray.length)) {
+        var indices = parts.map(Number);
+        return anArray.filter((v, i) => indices.indexOf(i + 1) >= 0);
+      }
+    }
+  }
 
 	let chooseMultipleSelected = __colorFormat.askChooseChars.chooseMultipleSelected
 	let chooseMultipleEmpty    = __colorFormat.askChooseChars.chooseMultipleUnselected
@@ -14218,10 +14268,10 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
 	let filter = ""
 
-	if (__flags.ANSICOLOR_ASK) {
-		aSelectMap = new Map()
+	if (aUI ? aUI.ansi : __flags.ANSICOLOR_ASK) {
+		var aSelectMap = new Map()
 		plugin("Console")
-		let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize) + chooseMultipleSize
+		let _con = aUI ? aUI.console : new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize) + chooseMultipleSize
 		anArray = anArray.map(l => {
 			if (l.length + _maxls >= _maxl)
 				return l.substring(0, _maxl - _maxls - 4) + "..."
@@ -14232,8 +14282,9 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
 		if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
-		printErr("\x1B[?25l" + _v)
+		_write("\x1B[?25l" + _v)
 
+		aMaxDisplay = Math.max(1, Math.floor(aMaxDisplay));
 		let option = 0, firstTime = true, span = 0, cancelled = false
 		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
 		let _print = () => {
@@ -14241,7 +14292,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 			var _o = anArray
 					 .map((l, i) => {
 						if (i >= span && i - span < aMaxDisplay) {
-							selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
+							var selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
 							if (i == option) {
 								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize -5, " "))
 								if (filter.length > 0) {
@@ -14257,15 +14308,17 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					 })
 					 .filter(l => l.length > 0)
 					 .join("\n")
-			if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
-			printErr(_o)
+			if (!firstTime) _move(aMaxDisplay); else firstTime = false
+			_write(_o)
 		}
 
 		let c = 0
+		try {
 		do {
 			_print()
 			var _c = _con.readChar("")
 			c = String(_c).charCodeAt(0)
+			if (c == 3 || c == 65535) { cancelled = true; break; }
 			if (c == 27) {
 				c = String(_con.readChar("")).charCodeAt(0)
 				if (c == 27) {
@@ -14288,28 +14341,30 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					if (c > 32 && c < 255) filter += _c
 				}
 				if (filter.length > 0) {
-					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+					var found = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0);
+					if (found >= 0) option = found
 				}
 			}
 		} while (c != 13 && c != 10)
-		ow.format.string.ansiMoveUp(aMaxDisplay)
-		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
-		ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		printErrnl(repeat(_v.length, " ") + "\r")
+		_move(aMaxDisplay)
+		_write(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
+		_move(aMaxDisplay+1)
+		_write(repeat(_v.length, " ") + "\r")
 
 		if (!cancelled) {
 			let options = []
 			aSelectMap.forEach((v, k) => { if (v) options.push(k) })
-			printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
-			ow.format.string.ansiMoveUp(2)
-			printErr("\x1B[?25h\n")
+			_write("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
+			_move(2)
+			_write("\x1B[?25h\n")
 
 			return options
 		}
-		ow.format.string.ansiMoveUp(2)
-		printErr("\x1B[?25h\n")
+		_move(2)
+		_write("\x1B[?25h\n")
 
 		return __
+		} finally { _write("\x1B[?25h", false); }
 	} else {
 		throw "Choose options not supported on the current terminal."
 	}
@@ -14319,7 +14374,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
 /**
  * <odoc>
- * <key>askStruct(anArrayOfQuestions) : Array</key>
+ * <key>askStruct(anArrayOfQuestions, aUI) : Array</key>
  * Given anArrayOfQuestions with a structure like:\
  * \
  * [\
@@ -14341,7 +14396,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
  * - "multiple" (requires options)
  * </odoc>
  */
-const askStruct = (ar) => {
+const askStruct = (ar, aUI) => {
 	if (isArray(ar)) {
 		var _r = ar.map(t => {
 			_$(t.name, "name").isString().$_()
@@ -14353,13 +14408,13 @@ const askStruct = (ar) => {
 			if (isString(t.help)) t.help = ansiColor("FAINT,ITALIC", t.help)
 
 			switch(t.type) {
-			case 'secret'  : __r.answer = askEncrypt(t.prompt); break
-			case 'char'    : __r.answer = ask1(t.prompt, t.options); break
-			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help)]; break
-			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help); break
+			case 'secret'  : __r.answer = askEncrypt(t.prompt, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write); break
+			case 'char'    : __r.answer = ask1(t.prompt, t.options, aUI && aUI.console, aUI && aUI.write); break
+			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help, aUI)]; break
+			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help, aUI); break
 			case "question": 
 			case '?'       : 
-			default        : __r.answer = ask(t.prompt)
+			default        : __r.answer = ask(t.prompt, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write)
 			}
 			if (isDef(t.output) && t.output == "index") {
 				if (isArray(__r.answer)) {

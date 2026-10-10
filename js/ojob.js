@@ -533,7 +533,7 @@ function ojob_askOnHelp() {
 		var oj = ow.loadOJob().previewFile(file)
 
 		if (isDef(oj.help)) {
-			_r = ow.oJob.askOnHelp(oj.help)
+			_r = ow.oJob.askOnHelp(oj.help, __flags.OJOB_INTERACTIVETTY ? true : __)
 		}
 	}
 

@@ -75,7 +75,13 @@ jobs:
      to: oJob Test
      exec: args.func = args.tests.testJSONMetadata;
 
+   - name: IO::JSON extraction
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJSONExtraction;
+
 todo:
+   - IO::JSON extraction
    - IO::JSON metadata traversal
    - IO::IO Test JSON array stream
    # IO tests

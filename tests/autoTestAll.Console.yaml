@@ -24,7 +24,13 @@ jobs:
   to: oJob Test
   exec: args.func = args.tests.testInjectedPrompts;
 
+- name: Console::prompt family
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testPromptFamily;
+
 todo:
+- Console::prompt family
 - Console::injected prompts
 - Console::legacy history
 - Console::completion callback

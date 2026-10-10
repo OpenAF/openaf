@@ -223,3 +223,21 @@ exports.testJSONMetadata = function() {
     eq(io.scanJSON(file,() => {}).nodes,1,"Scalar root");
   } finally {io.rm(file);}
 };
+
+exports.testJSONExtraction = function() {
+  var file = io.createTempFile("json-extract", ".json");
+  try {
+    io.writeFileString(file, '{"a.b": [1.2300, { "x": "café" }], "a":{"b":2}}');
+    var out = new java.io.ByteArrayOutputStream();
+    ow.test.assert(io.extractJSON(file, ["a.b", 0], out), true, "Literal key extraction");
+    ow.test.assert(String(out.toString("UTF-8")), "1.2300", "Preserves numeric spelling");
+    out.reset();
+    ow.test.assert(io.extractJSON(file, ["a.b", 1], out), true, "Container extraction");
+    ow.test.assert(String(out.toString("UTF-8")), '{ "x": "café" }', "Preserves UTF-8 and spacing");
+    out.reset();
+    ow.test.assert(io.extractJSON(file, ["a.b", "0"], out), false, "Array indices require numbers");
+    ow.test.assert(out.size(), 0, "Missing path writes nothing");
+    ow.test.assert(io.extractJSON(file, [], out), true, "Extract root");
+    ow.test.assert(String(out.toString("UTF-8")), io.readFileString(file), "Exact root bytes");
+  } finally {io.rm(file);}
+};

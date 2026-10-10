@@ -82,3 +82,35 @@ exports.testInjectedPrompts = function() {
   chars=["\x03"];ui.ansi=true;
   eq(askChoose("Cancel",["one"],5,undefined,ui),undefined,"Ctrl-C cancels menu");
 };
+
+exports.testPromptFamily = function() {
+  var answers = ["bad", "2,1,2", "", null, "value", "secret"], output = [];
+  var ui = {ansi:false, write:function(s) {output.push(s);}, console:{
+    readLinePrompt:function() {return answers.shift();}, readChar:function() {return "Y";}
+  }};
+  ow.test.assert(askChooseMultiple("Pick", ["one","two"], __, __, ui), ["one","two"], "Validate and deduplicate numbered selections");
+  ow.test.assert(askChooseMultiple("None", ["one"], __, __, ui), [], "Blank selects none");
+  ow.test.assert(askChooseMultiple("EOF", ["one"], __, __, ui), __, "EOF cancels multiple selection");
+  ow.test.assert(askDef(__, "Value", false, false, ui), "value", "Default prompt uses injected console");
+  ow.test.assert(af.decrypt(askStruct([{name:"password",type:"secret"}], ui)[0].answer), "secret", "Structured secrets use injected console");
+  ow.test.assert(askStruct([{name:"confirm",type:"char",options:"YN"}], ui)[0].answer, "Y", "Structured char uses injected console");
+  ow.test.assert(output.indexOf("confirm: ") >= 0, true, "Char prompt uses injected writer");
+  var chars = ["z", " ", "\n"];
+  ui.ansi = true;
+  ui.console.readChar = function() {return chars.shift();};
+  ui.console.getConsoleReader = function() {return {getTerminal:function() {return {getWidth:function() {return 100;}};}};};
+  ow.test.assert(askChooseMultiple("Filter", ["one","two"], 0, __, ui), ["one"], "No-match filter keeps valid selection");
+  chars = ["\x03"];
+  ow.test.assert(askChooseMultiple("Cancel", ["one"], __, __, ui), __, "Ctrl-C cancels multiple selection");
+  ui.console.readChar = function() {throw "read failed";};
+  output = [];
+  var failed = false;
+  try {askChooseMultiple("Failure", ["one"], __, __, ui);} catch(e) {failed = true;}
+  ow.test.assert(failed, true, "Read error propagates");
+  ow.test.assert(output[output.length - 1], "\x1B[?25h", "Read error restores cursor");
+  ui.ansi = false;
+  ow.loadOJob();
+  answers = ["two", "2", "1,2"];
+  var result = ow.oJob.askOnHelp({expects:[{name:"text"},{name:"option",options:["one","two"]},{name:"multi",moptions:["one","two"]}]}, ui);
+  ow.test.assert(result, {text:"two",option:"two",multi:"one,two"}, "oJob routes all prompts through UI");
+};

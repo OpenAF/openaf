@@ -987,7 +987,14 @@ function __chooseEditHistory() {
 	var choices = commands.map(function(command) {
 		return command.replace(/\r\n|\r|\n|\^J/g, ansiColor("FG(240)", " ↵ "));
 	}).concat(["🔙 Cancel"]);
-	var selected = askChoose("Choose a command to edit: ", choices, Math.min(choices.length, 10));
+	var selected = askChoose("Choose a command to edit: ", choices, Math.min(choices.length, 10), __, {
+    console: con, ansi: con.isAnsiSupported() && __flags.ANSICOLOR_ASK,
+    write: function(text, newline) {
+      var writer = con.getConsoleReader().getTerminal().unwrap().writer();
+      writer.print((isDef(text) ? String(text) : "") + (newline === false ? "" : "\n"));
+      writer.flush();
+    }
+  });
 	if (!isNumber(selected) || selected < 0 || selected >= commands.length) return __;
 	return commands[selected].replace(/\^J/g, "\n");
 }
