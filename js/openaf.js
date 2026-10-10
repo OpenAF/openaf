@@ -13505,6 +13505,130 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 
 /**
  * <odoc>
+ * <key>io.scanJSON(aFile, aVisitor, aOptions) : Map</key>
+ * Visits UTF-8 JSON without materializing values. Events have phase (value/end), path (an array
+ * of literal keys/indices), type, start and, on end, end (exclusive byte offsets) and size for
+ * traversed containers. Return "skip" on a value to skip its children, or "stop" to stop.
+ * Options: cancel (function), progress (function receiving byte offset), maxNodes.
+ * A stopped scan does not validate the unread suffix. The file and parser are always closed.
+ * </odoc>
+ */
+IO.prototype.scanJSON = function(aFile, aVisitor, aOptions) {
+  _$(aFile, "aFile").isString().$_();
+  _$(aVisitor, "aVisitor").isFunction().$_();
+  var opts = aOptions || {}, parser;
+  var ranges = new java.io.RandomAccessFile(aFile, "r"), stack = [], nodes = 0, roots = 0, stopped = false;
+  var offset = () => Number(parser.currentTokenLocation().getByteOffset());
+  var emit = e => { if (aVisitor(e) == "stop") stopped = true; };
+  // Jackson leaves strings lazy. Advancing skips their text; trim only the JSON separators.
+  var endScalar = end => {
+    while (end > 0) {
+      ranges.seek(end - 1);
+      var c = ranges.read();
+      if (c != 32 && c != 9 && c != 10 && c != 13 && c != 44) break;
+      end--;
+    }
+    return end;
+  };
+  try {
+    for (var i = 0; i < Math.min(4, Number(ranges.length())); i++) {
+      var byte = ranges.read();
+      if (byte == 0 || byte == 254 || byte == 255) throw "io.scanJSON requires UTF-8 JSON";
+    }
+    parser = new Packages.com.fasterxml.jackson.core.JsonFactory().createParser(new java.io.File(aFile));
+    var token = parser.nextToken();
+    while (token != null && !stopped) {
+      if (nodes % 4096 == 0 && isFunction(opts.cancel) && opts.cancel()) throw "JSON scan cancelled";
+      if (isFunction(opts.progress) && nodes % 4096 == 0) opts.progress(offset());
+      var name = String(token), parent = stack[stack.length - 1];
+      if (name == "FIELD_NAME") {
+        parent.key = String(parser.currentName());
+        token = parser.nextToken();
+        continue;
+      }
+      if (name == "END_OBJECT" || name == "END_ARRAY") {
+        var frame = stack.pop();
+        emit({phase:"end", path:frame.path, type:frame.type, start:frame.start,
+              end:Number(parser.currentLocation().getByteOffset()), size:frame.count});
+        token = stopped ? null : parser.nextToken();
+        continue;
+      }
+      if (!parent && roots++ > 0) throw "Multiple JSON root values";
+      var path = parent ? parent.path.concat([parent.type == "array" ? parent.count : parent.key]) : [];
+      if (parent) parent.count++;
+      var type = name == "START_OBJECT" ? "map" : name == "START_ARRAY" ? "array" :
+                 name == "VALUE_STRING" ? "string" : name == "VALUE_NULL" ? "null" :
+                 name == "VALUE_TRUE" || name == "VALUE_FALSE" ? "boolean" : "number";
+      var event = {phase:"value", path:path, type:type, start:offset()};
+      if (++nodes > (opts.maxNodes || Infinity)) throw "JSON node limit exceeded";
+      var action = aVisitor(event);
+      if (action == "stop") { stopped = true; break; }
+      if (type == "map" || type == "array") {
+        if (action != "skip") {
+          stack.push({path:path, type:type, start:event.start, count:0});
+          token = parser.nextToken();
+          continue;
+        }
+        parser.skipChildren();
+        event.end = Number(parser.currentLocation().getByteOffset());
+        token = parser.nextToken();
+      } else {
+        token = parser.nextToken();
+        event.end = endScalar(token == null ? Number(ranges.length()) : offset());
+      }
+      emit({phase:"end", path:event.path, type:event.type, start:event.start, end:event.end});
+    }
+    if (!stopped && (roots != 1 || stack.length)) throw "Incomplete JSON document";
+    return {complete:!stopped, nodes:nodes, bytes:Number(parser.currentLocation().getByteOffset())};
+  } finally { try { if (parser) parser.close(); } finally { ranges.close(); } }
+};
+
+/**
+ * <odoc>
+ * <key>io.copyJSONRange(aFile, aStart, anEnd, anOutputStream, aOptions)</key>
+ * Copies an exclusive byte range discovered by io.scanJSON using bounded buffers.
+ * The output is borrowed and remains open. Input is always closed. Optional cancel/progress functions work as in io.scanJSON.
+ * </odoc>
+ */
+IO.prototype.copyJSONRange = function(aFile, aStart, anEnd, anOutputStream, aOptions) {
+  var input = new java.io.RandomAccessFile(aFile, "r"), opts = aOptions || {}, chunks = 0;
+  try {
+    if (aStart < 0 || anEnd < aStart || anEnd > Number(input.length())) throw "Invalid JSON byte range";
+    input.seek(aStart);
+    var buffer = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 65536), left = anEnd - aStart;
+    while (left > 0) {
+      if (chunks++ % 64 == 0) {
+        if (isFunction(opts.cancel) && opts.cancel()) throw "JSON copy cancelled";
+        if (isFunction(opts.progress)) opts.progress(anEnd - aStart - left);
+      }
+      var n = input.read(buffer, 0, Math.min(left, buffer.length));
+      if (n < 0) throw "JSON source changed during copy";
+      anOutputStream.write(buffer, 0, n);
+      left -= n;
+    }
+  } finally { input.close(); }
+};
+
+/**
+ * <odoc>
+ * <key>askConsole() : Map</key>
+ * Opens an independent controlling terminal (including with piped stdin/redirected stdout).
+ * Returns console/write/ansi/close for injection into askChoose and ask. Close in finally.
+ * Throws if no controlling terminal is available. Does not replace process input or output.
+ * </odoc>
+ */
+const askConsole = () => {
+  plugin("Console");
+  var con = new Console(true), term = con.getConsoleReader().getTerminal().unwrap();
+  return {
+    console:con, ansi:con.isAnsiSupported() && String(term.getType()) != "windows",
+    write:function(text, newline) { term.writer().print(String(text) + (newline === false ? "" : "\n")); term.writer().flush(); },
+    close:function() { con.close(); }
+  };
+};
+
+/**
+ * <odoc>
  * <key>io.isBinaryFile(aFile, confirmLimit) : boolean</key>
  * Tries to determine if the provided aFile is a binary or text file by checking the first 1024 chars (limit can be changed using
  * confirmLimit). Returns true if file is believed to be binary. Based on the function isBinaryArray.
@@ -13857,18 +13981,18 @@ ow.loadSec();
 
 /**
  * <odoc>
- * <key>ask(aPrompt, aMask) : String</key>
+ * <key>ask(aPrompt, aMask, aConsole, noAnsi, aWrite) : String</key>
  * Stops for user interaction prompting aPrompt waiting for an entire line of characters and, optionally, masking the user input with aMask (e.g. "*").
  * Returns the user input.
  * </odoc>
  */
-const ask = (aPrompt, aMask, _con, noAnsi) => {
+const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
 	aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
 		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
-		printErr("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
+		;(aWrite || printErr)("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
 		return _con.readLinePrompt(aPrompt, aMask)
@@ -13945,17 +14069,30 @@ const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
 
 /**
  * <odoc>
- * <key>askChoose(aPrompt, anArray, aMaxDisplay, aHelpText) : Number</key>
+ * <key>askChoose(aPrompt, anArray, aMaxDisplay, aHelpText, aUI) : Number</key>
  * Stops for user interaction prompting aPrompt waiting for a single character to choose from the provided anArray of options. Optionally
- * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.
+ * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.\
+ * Optional aUI is the console/write/ansi map returned by askConsole (or a compatible injected UI).
  * </odoc>
  */
-const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
+const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 	_$(aPrompt, "aPrompt").isString().$_()
 	_$(anArray, "anArray").isArray().$_()
 	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
 	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, enter to select)"))
 
+	if (!anArray.length) return __
+	var _write = aUI ? aUI.write : printErr
+	var _display = aUI ? aUI.write : print
+	var _move = n => aUI ? _write("\x1b[" + n + "A", false) : ow.format.string.ansiMoveUp(n)
+	if (aUI && !aUI.ansi) {
+		while (true) {
+			anArray.forEach((text, i) => _write((i + 1) + ". " + text))
+			var answer = ask(aPrompt + " [number, blank to cancel]: ", __, aUI.console, true, _write)
+			if (answer == null || answer === "") return __
+			if (/^\d+$/.test(answer) && Number(answer) >= 1 && Number(answer) <= anArray.length) return Number(answer) - 1
+		}
+	}
 	let chooseLine = __colorFormat.askChooseChars.chooseLine
 	let chooseLineSize = visibleLength(chooseLine) + 1
 	let chooseUp = __colorFormat.askChooseChars.chooseUp
@@ -13963,10 +14100,10 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
 	let filter = ""
 
-	if (__flags.ANSICOLOR_ASK) {
+	if (aUI ? aUI.ansi : __flags.ANSICOLOR_ASK) {
 		anArray = clone(anArray)
 		plugin("Console")
-		let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
+		let _con = aUI ? aUI.console : new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
 		anArray = anArray.map(l => {
 			if (l.length + _maxls >= _maxl)
 				return l.substring(0, _maxl - _maxls - 4) + "..."
@@ -13976,8 +14113,9 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
 		if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
-		printErr("\x1B[?25l" + _v)
+		_write("\x1B[?25l" + _v)
 
+		aMaxDisplay = Math.max(1, Math.floor(aMaxDisplay))
 		let option = 0, firstTime = true, span = 0, cancelled = false
 		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
 		ow.loadFormat()
@@ -14001,15 +14139,17 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					 })
 					 .filter(l => l.length > 0)
 					 .join("\n")
-			if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
-			print(_o)
+			if (!firstTime) _move(aMaxDisplay); else firstTime = false
+			_display(_o)
 		}
 
 		let c = 0
+		try {
 		do {
 			_print()
 			var _c = _con.readChar("")
 			c = String(_c).charCodeAt(0)
+			if (c == 3 || c == 65535) { cancelled = true; break }
 			if (c == 27) {
 				c = String(_con.readChar("")).charCodeAt(0)
 				if (c == 27) {
@@ -14030,21 +14170,23 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					if (c >= 32 && c < 255) filter += _c
 				}
 				if (filter.length > 0) {
-					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+					var found = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+					if (found >= 0) option = found
 				}
 			}
 		} while (c != 13 && c != 10)
-		ow.format.string.ansiMoveUp(aMaxDisplay)
-		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
-		ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		printErrnl(repeat(_v.length, " ") + "\r")
+		_move(aMaxDisplay)
+		_write(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
+		_move(aMaxDisplay+1)
+		_write(repeat(_v.length, " ") + "\r")
 		if (!cancelled) {
-			printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
+			_write("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
 		}
-		ow.format.string.ansiMoveUp(2)
-		printErr("\x1B[?25h\n")
+		_move(2)
+		_write("\x1B[?25h\n")
 
 		return cancelled ? __ : option
+		} finally { _write("\x1B[?25h", false) }
 	} else {
 		throw "Choose options not supported on the current terminal."
 	}

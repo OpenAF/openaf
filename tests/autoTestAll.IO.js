@@ -179,3 +179,47 @@
         ow.test.assert(af.fromBytes2String(io.readFileTARBytes(tmp1, "test.txt")), str, "Problem with writeFileTARBytes/readFileTARBytes")
     }
 })();
+exports.testJSONMetadata = function() {
+  var file = io.createTempFile("json-metadata", ".json");
+  var fixture = {"a.b":[null,true,1.25,"café €",{},[]], "": {"a[0]":0}, "quote\"":false};
+  var eq = (a,b,msg) => ow.test.assert(a,b,msg);
+  try {
+    io.writeFileString(file, stringify(fixture));
+    var events = [];
+    eq(io.scanJSON(file, e => {events.push(e);}).complete, true, "Complete traversal");
+    eq(events.filter(e => e.phase == "value").length, 11, "Each JSON node visited once");
+    events.filter(e => e.phase == "end").forEach(e => {
+      var out = new java.io.ByteArrayOutputStream();
+      io.copyJSONRange(file,e.start,e.end,out);
+      var value = fixture;
+      e.path.forEach(k => {value = value[k];});
+      eq(jsonParse(String(out.toString("UTF-8"))),value,"Exact UTF-8 range " + stringify(e.path));
+    });
+    eq(events[0].phase,"value","Retained events are independent snapshots");
+    eq(events[events.length-1].size,3,"Root property count");
+    var visited = [];
+    io.scanJSON(file,e => {if(e.phase == "value") {visited.push(e.path); if(e.path.length == 1) return "skip";}});
+    eq(visited,[[],["a.b"],[""],["quote\""]],"Skip children without losing sibling locations");
+    eq(io.scanJSON(file,() => "stop").complete,false,"Early stop");
+    ["", "[1,]", "[", "{}true", "{\"x\":}", "[\"unfinished]"].forEach(text => {
+      io.writeFileString(file,text);
+      var failed = false;
+      try {io.scanJSON(file,() => {});} catch(e) {failed = true;}
+      eq(failed,true,"Reject malformed JSON " + text);
+    });
+    io.writeFileString(file,"[1,2,3]");
+    var failed = false;
+    try {io.scanJSON(file,() => {},{maxNodes:2});} catch(e) {failed = true;}
+    eq(failed,true,"Node limit");
+    failed = false;
+    try {io.scanJSON(file,() => {},{cancel:() => true});} catch(e) {failed = true;}
+    eq(failed,true,"Cancellation closes resources");
+    eq(io.scanJSON(file,() => {}).complete,true,"Reader remains usable after failures");
+    io.writeFileBytes(file, af.fromString2Bytes("{}", "UTF-16"));
+    failed = false;
+    try {io.scanJSON(file,() => {});} catch(e) {failed = true;}
+    eq(failed,true,"Reject non-UTF-8 source offsets");
+    io.writeFileString(file,'"scalar root"');
+    eq(io.scanJSON(file,() => {}).nodes,1,"Scalar root");
+  } finally {io.rm(file);}
+};

@@ -19,7 +19,13 @@ jobs:
   from: Console::Init
   to: oJob Test
   exec: args.func = args.tests.testLauncherSettings;
+- name: Console::injected prompts
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testInjectedPrompts;
+
 todo:
+- Console::injected prompts
 - Console::legacy history
 - Console::completion callback
 - Console::facade

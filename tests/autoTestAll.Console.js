@@ -62,3 +62,23 @@ exports.testLauncherSettings = function() {
   ow.test.assert(source.indexOf("--enable-native-access=ALL-UNNAMED") >= 0, true, "Java 24 native-access flag missing.");
   ow.test.assert(source.indexOf("chcp 65001") >= 0, true, "Windows UTF-8 setup missing.");
 };
+
+exports.testInjectedPrompts = function() {
+  var eq = (a,b,msg) => ow.test.assert(a,b,msg), output = [], answers = ["wrong","2"], chars = ["z","\n"];
+  var console = {
+    readLinePrompt:function() {return answers.shift();},
+    readChar:function() {return chars.shift();},
+    getConsoleReader:function() {return {getTerminal:function() {return {getWidth:function() {return 100;}};}};}
+  };
+  var ui = {console:console,ansi:false,write:function(s) {output.push(s);}};
+  eq(askChoose("Pick",["one","two"],5,undefined,ui),1,"Numbered choice validation");
+  eq(output.length > 0,true,"Injected writer receives numbered menu");
+  ui.ansi = true;output=[];
+  eq(askChoose("Pick",["one","two"],5,undefined,ui),0,"No-match search retains valid choice");
+  eq(output.join("").indexOf("\x1B[?25h") >= 0,true,"Restore cursor");
+  eq(askChoose("Empty",[],5,undefined,ui),undefined,"Empty choices cancel safely");
+  answers=[null];ui.ansi=false;
+  eq(askChoose("EOF",["one"],5,undefined,ui),undefined,"EOF cancels");
+  chars=["\x03"];ui.ansi=true;
+  eq(askChoose("Cancel",["one"],5,undefined,ui),undefined,"Ctrl-C cancels menu");
+};

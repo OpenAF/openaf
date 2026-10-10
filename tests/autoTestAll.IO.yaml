@@ -70,7 +70,13 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testTAR;
 
+   - name: IO::JSON metadata traversal
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJSONMetadata;
+
 todo:
+   - IO::JSON metadata traversal
    - IO::IO Test JSON array stream
    # IO tests
    # --------

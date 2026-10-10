@@ -47,6 +47,26 @@ public final class Terminal {
         return system;
     }
 
+    /** Independent controlling terminal; never consumes redirected process stdin. */
+    public static Terminal interactive() throws IOException {
+        // Bypass TerminalBuilder's process singleton: another OpenAF console may own it.
+        boolean windows = System.getProperty("os.name", "").startsWith("Windows");
+        org.jline.terminal.spi.TerminalProvider provider =
+            org.jline.terminal.spi.TerminalProvider.load(windows ? "jni" : "exec", TerminalBuilder.class.getClassLoader());
+        if (windows) return new Terminal(org.jline.terminal.impl.jni.win.OpenAFWinSysTerminal.open(provider));
+        Charset encoding = java.nio.charset.StandardCharsets.UTF_8;
+        // The outer JLine reader supplies timeouts. Avoid ExecPty's extra polling
+        // wrapper, which can rewrite VMIN/VTIME after attributes have been restored.
+        org.jline.terminal.spi.Pty pty = new org.jline.terminal.impl.exec.ExecPty(provider, null, "/dev/tty") {
+            @Override public java.io.InputStream getSlaveInput() throws IOException {
+                return new java.io.FileInputStream(getName());
+            }
+        };
+        return new Terminal(new org.jline.terminal.impl.PosixSysTerminal(provider, "OpenAF-interactive",
+            TerminalBuilder.builder().computeType(), pty, encoding, encoding, encoding,
+            true, org.jline.terminal.Terminal.SignalHandler.SIG_DFL));
+    }
+
     public org.jline.terminal.Terminal unwrap() { return delegate; }
     // Shutdown callbacks may still format output after the JVM terminal hook closes
     // JLine. Keep size queries usable without reopening the terminal or changing it.
