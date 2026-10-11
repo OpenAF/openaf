@@ -15102,6 +15102,70 @@ oPromise.prototype.__exec = function() {
 
 };
 
+/**
+ * <odoc>
+ * <key>joniRegExp(pattern, options) : Object</key>
+ * Compiles an Oniguruma (Ruby syntax) pattern once. Options are ignoreCase, dotAll and extended
+ * (booleans, default false). Methods: test(input), match(input), matchAll(input),
+ * replace(input, replacement), replaceAll(input, replacement), split(input, limit).
+ * Matches contain text, index, end (UTF-16 offsets), captures and groups. Replacement strings
+ * use JavaScript dollar tokens; callbacks receive match, captures, offset, input and named groups.
+ * Inputs must be strings without unpaired surrogates. See docs/joni.md for details.
+ * </odoc>
+ */
+const joniRegExp = (pattern, options) => {
+  var compiled = af.joniJava(pattern, options);
+  var substitute = (template, m, input) => {
+    return template.replace(/\$([$&`']|[0-9]{1,2}|<[^>]*>)/g, (token, key) => {
+      if (key == "$") return "$";
+      if (key == "&") return m.text;
+      if (key == "`") return input.slice(0, m.index);
+      if (key == "'") return input.slice(m.end);
+      if (key.charAt(0) == "<") {
+        if (Object.keys(m.groups).length == 0) return token;
+        var name = key.slice(1, -1);
+        return Object.prototype.hasOwnProperty.call(m.groups, name) && isDef(m.groups[name]) ? m.groups[name] : "";
+      }
+      var n = Number(key);
+      if (n > 0 && n <= m.captures.length) return isDef(m.captures[n - 1]) ? m.captures[n - 1] : "";
+      if (key.length == 2 && Number(key.charAt(0)) > 0 && Number(key.charAt(0)) <= m.captures.length) {
+        var capture = m.captures[Number(key.charAt(0)) - 1];
+        return (isDef(capture) ? capture : "") + key.charAt(1);
+      }
+      return token;
+    });
+  };
+  var replace = (input, replacement, all) => {
+    if (!isString(replacement) && !isFunction(replacement)) throw new TypeError("replacement must be a string or function");
+    var matches;
+    if (all) matches = compiled.matchAll(input);
+    else {
+      var first = compiled.match(input);
+      matches = first === null ? [] : [first];
+    }
+    var out = [], last = 0;
+    matches.forEach(m => {
+      out.push(input.slice(last, m.index));
+      if (isFunction(replacement)) {
+        var args = [m.text].concat(m.captures, [m.index, input]);
+        if (Object.keys(m.groups).length > 0) args.push(m.groups);
+        out.push(String(replacement.apply(undefined, args)));
+      } else out.push(substitute(replacement, m, input));
+      last = m.end;
+    });
+    out.push(input.slice(last));
+    return out.join("");
+  };
+  return {
+    test: input => compiled.test(input),
+    match: input => compiled.match(input),
+    matchAll: input => compiled.matchAll(input),
+    replace: (input, replacement) => replace(input, replacement, false),
+    replaceAll: (input, replacement) => replace(input, replacement, true),
+    split: (input, limit) => compiled.split(input, limit)
+  };
+};
+
 const javaRegExp = (text) => {
 	var s = java.lang.String(text);
 	var calcMods = (mods) => {

@@ -25,6 +25,7 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - [python.md](./python.md) – Using Python from OpenAF (ow.python, $py/$pyExec, `--py`/`pyoaf` CLI with argv support, `--oafpy`, oJob `lang: python`)
 
 ## Tools & Engines
+- [joni.md](./joni.md) – Oniguruma regex patterns, structured captures, replacement, and splitting with `joniRegExp`
 - [obook.md](./obook.md) – Interactive Notebooks (`ow.oBook`) and CLI step-by-step tutorials
 - [sigil.md](./sigil.md) – Sigil macro engine (`<sigil:...>`), environment variable, secret, and template interpolation
 - [plugins.md](./plugins.md) – Core Java Plugins reference (`plugin("...")`) covering HTTP, HTTPServer, SSH, FTP, Email, JMX, SNMP, BSDiff, Threads, XML, ZIP, etc.

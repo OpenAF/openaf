@@ -297,6 +297,14 @@ public class AFBase extends ScriptableObject {
 		return openaf.core.jq.JqEngine.search(cx, ScriptableObject.getTopLevelScope(self), input, expression, options);
 	}
 
+	/** Compile an Oniguruma pattern. Prefer the public joniRegExp helper. */
+	@JSFunction
+	public static Object joniJava(Context cx, Scriptable self, Object[] args, Function function) {
+		return openaf.core.regex.JoniEngine.compile(cx, ScriptableObject.getTopLevelScope(self),
+			args.length > 0 ? args[0] : Undefined.instance,
+			args.length > 1 ? args[1] : Undefined.instance);
+	}
+
 	/**
 	 * <odoc>
 	 * <key>af.pathJava(obj, expression, customFunctions) : Object</key>
