@@ -257,16 +257,21 @@ OpenWrap.ai.prototype.__decision = {
         return answers;
     },
     probability: function(p) { if (typeof p != "number" || !isFinite(p) || p < 0 || p > 1) this.badResponse(); return p; },
-    distribution: function(p, keys) {
+    distribution: function(p, keys, decimals) {
         if (!this.map(p) || Object.keys(p).length != keys.length || keys.some(k => !this.has(p, k))) this.badResponse();
         var sum = 0;
         keys.forEach(k => { sum += this.probability(p[k]); });
-        // Up to half a unit in the fourth decimal place per entry; do not renormalize.
-        if (Math.abs(sum - 1) > keys.length * 0.00005 + 1e-8) this.badResponse();
+        // Allow half a rounding unit per entry; preserve the original probabilities.
+        if (Math.abs(sum - 1) > keys.length * 0.5 * Math.pow(10, -(decimals === undefined ? 4 : decimals)) + 1e-8) this.badResponse();
         return p;
     },
     ollamaAnswers: function(raw, request) {
-        if (!this.map(raw) || raw.model !== request.model || !this.map(raw.answers)) this.badResponse();
+        if (!this.map(raw) || raw.model !== request.model) this.badResponse();
+        return this.namedAnswers(raw, request);
+    },
+    namedAnswers: function(raw, request, decimals) {
+        if (!this.map(raw) || !this.text(raw.model) || !this.map(raw.answers)) this.badResponse();
+        var unit = 0.5 * Math.pow(10, -(decimals === undefined ? 4 : decimals));
         var keys = Object.keys(request.questions);
         if (Object.keys(raw.answers).length != keys.length || keys.some(k => !this.has(raw.answers, k))) this.badResponse();
         var answers = {};
@@ -281,16 +286,16 @@ OpenWrap.ai.prototype.__decision = {
                 a.probabilities = { "false": 1 - a.probabilityTrue, "true": a.probabilityTrue };
                 a.selectedProbability = a.value ? a.probabilityTrue : 1 - a.probabilityTrue;
             } else if (q.type == "choice") {
-                var ck = Object.keys(q.criteria), p = this.distribution(r.probabilities, ck);
+                var ck = Object.keys(q.criteria), p = this.distribution(r.probabilities, ck, decimals);
                 if (typeof r.choice != "string" || ck.indexOf(r.choice) < 0 || ck.some(c => p[c] > p[r.choice])) this.badResponse();
                 a.value = r.choice; a.probabilities = this.copy(p); a.selectedProbability = p[r.choice];
             } else {
-                var sk = q.criteria.map((v, i) => String(i)), p = this.distribution(r.probabilities, sk);
+                var sk = q.criteria.map((v, i) => String(i)), p = this.distribution(r.probabilities, sk, decimals);
                 if (!this.map(r.legend) || Object.keys(r.legend).length != sk.length || sk.some(i => !this.has(r.legend, i) || r.legend[i] !== q.criteria[Number(i)])) this.badResponse();
                 if (typeof r.score != "number" || !isFinite(r.score) || r.score < 0 || r.score > sk.length - 1) this.badResponse();
                 var level = 0, expectation = 0;
                 sk.forEach((i, n) => { if (p[i] > p[String(level)]) level = n; expectation += n * p[i]; });
-                if (Math.abs(expectation - r.score) > (sk.length - 1) * sk.length * 0.00005 + 0.00005 + 1e-8) this.badResponse();
+                if (Math.abs(expectation - r.score) > (sk.length - 1) * sk.length / (decimals === undefined ? 1 : 2) * unit + unit + 1e-8) this.badResponse();
                 a.level = level; a.expectedScore = r.score; a.probabilities = sk.map(i => p[i]); a.selectedProbability = p[String(level)];
             }
             this.put(answers, k, a);
@@ -398,6 +403,20 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.deployment = _$(aOptions.deployment, "aOptions.deployment").isString().default("")
             aOptions.authType = _$(aOptions.authType, "aOptions.authType").isString().default([ "azure-openai-v1", "azure-v1", "azure-openai-legacy", "azure-legacy", "foundry", "azure-foundry" ].indexOf(aOptions.mode) >= 0 ? "api-key" : "bearer")
             aOptions.authType = aOptions.authType.toLowerCase()
+
+            var _decisionApi = isUnDef(aOptions.decisionApi) ? "openai" : aOptions.decisionApi;
+            var _decisionUrl;
+            if (["openai", "openrouter"].indexOf(_decisionApi) < 0) ow.ai.__decision.invalid();
+            if (isDef(aOptions.decisionUrl) && (typeof aOptions.decisionUrl != "string" || !/^https?:\/\/[^\s/?#]+(?:[/?][^\s#]*)?$/.test(aOptions.decisionUrl))) ow.ai.__decision.invalid();
+            if (_decisionApi == "openrouter") {
+                if (aOptions.mode != "openai") ow.ai.__decision.invalid();
+                var base = aOptions.url.replace(/\/+$/, "");
+                _decisionUrl = aOptions.decisionUrl;
+                if (isUnDef(_decisionUrl)) {
+                    if (!/^https?:\/\/[^\s?#]+\/v1$/.test(base)) ow.ai.__decision.invalid();
+                    _decisionUrl = base.replace(/\/v1$/, "/alpha/decisions");
+                }
+            }
 
             var _key = aOptions.key
             var _timeout = aOptions.timeout
@@ -753,6 +772,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 resetDecisionStats: () => _resetStats(),
                 getCapabilities: model => {
+                    if (_decisionApi == "openrouter") {
+                        var caps = ow.ai.__decision.capabilities(true, !aOptions.noResponseFormat, "verified", "unknown");
+                        caps.native.probabilityDecimals = 2;
+                        return caps;
+                    }
                     var official = aOptions.mode == "openai" && aOptions.apiVersion == "v1" && /^https:\/\/api\.openai\.com(?:\/v1)?\/?$/.test(aOptions.url);
                     var caps = ow.ai.__decision.capabilities(official, !aOptions.noResponseFormat, official ? "verified" : "unsupported", (model || _model) == "gpt-6-luna" ? "unknown" : "incompatible");
                     if (official) caps.inputTypes.push("image");
@@ -761,6 +785,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                 _decisionRequest: (uri, body) => ow.ai.__decision.http(_buildURL(uri), body, _headers("application/json"), _timeout, "openai", _debugCh),
                 rawDecide: request => {
                     var d = ow.ai.__decision, po = request.providerOptions;
+                    if (_decisionApi == "openrouter") {
+                        if (isDef(request.images) || Object.keys(po).length) d.invalid();
+                        var questions = d.copy(request.questions);
+                        Object.keys(questions).forEach(k => { if (questions[k].type == "boolean") questions[k].type = "noul"; });
+                        var body = { model: request.model, state: request.state, questions: questions };
+                        var raw = d.execution(() => _r._decisionRequest(_decisionUrl, body), "openai");
+                        return { raw: raw, stats: _captureStats(raw, body) };
+                    }
                     if (["transport", "temperature", "maxOutputTokens"].some(k => d.has(po, k))) d.invalid();
                     var questions = Object.keys(request.questions).map(k => {
                         var q = request.questions[k], out = { name: k, type: q.type == "boolean" ? "predicate" : q.type, instructions: q.instructions };
@@ -776,7 +808,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var raw = d.execution(() => _r._decisionRequest(_route("decisions", request.model), body), "openai");
                     return { raw: raw, stats: _captureStats(raw, body) };
                 },
-                normalizeDecisionResponse: (raw, request) => ow.ai.__decision.openaiAnswers(raw, request),
+                normalizeDecisionResponse: (raw, request) => _decisionApi == "openrouter" ? ow.ai.__decision.namedAnswers(raw, request, 2) : ow.ai.__decision.openaiAnswers(raw, request),
                 rawStructuredPrompt: request => {
                     var d = ow.ai.__decision, po = request.providerOptions;
                     if (d.has(po, "safetyIdentifier")) d.invalid();
@@ -4032,12 +4064,12 @@ OpenWrap.ai.prototype.gpt.prototype.__executeDecision = function(state, question
                     if (a.probabilities !== null || a.selectedProbability !== null || (q.type == "boolean" && a.probabilityTrue !== null) || request.requireProbabilities) d.badResponse();
                 } else {
                     if (q.type == "boolean") d.probability(a.probabilityTrue);
-                    if (q.type == "choice") d.distribution(a.probabilities, Object.keys(q.criteria));
+                    if (q.type == "choice") d.distribution(a.probabilities, Object.keys(q.criteria), caps.native.probabilityDecimals);
                     if (q.type == "score") {
                         if (!isArray(a.probabilities) || a.probabilities.length != q.criteria.length) d.badResponse();
                         var probabilities = {};
                         a.probabilities.forEach((p, i) => d.put(probabilities, String(i), p));
-                        d.distribution(probabilities, q.criteria.map((c, i) => String(i)));
+                        d.distribution(probabilities, q.criteria.map((c, i) => String(i)), caps.native.probabilityDecimals);
                     }
                     d.probability(a.selectedProbability);
                 }

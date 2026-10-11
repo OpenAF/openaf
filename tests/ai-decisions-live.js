@@ -9,7 +9,7 @@ if (getEnv("OPENAF_DECISIONS_LIVE") !== "1") {
     if (!isMap(config) || !isString(config.model) || !config.model.trim()) throw new Error("Live smoke requires an explicit model.");
     if (["ollama", "gemini", "openai"].indexOf(config.type) < 0) throw new Error("Unsupported live smoke provider.");
     if (config.type != "ollama" && (!isString(config.key) || !config.key.length)) throw new Error("Live smoke requires caller-supplied credentials.");
-    var strategy = config.type == "ollama" || (config.type == "openai" && config.model == "gpt-6-luna") ? "native" : "structured";
+    var strategy = config.type == "ollama" || (config.type == "openai" && (config.model == "gpt-6-luna" || config.decisionApi == "openrouter")) ? "native" : "structured";
     var result = $llm(config).decideWithStats({ ticket: "A customer was charged twice." }, {
       route: { type: "choice", instructions: "Select the responsible team.", criteria: { billing: "Payments and refunds", technical: "Software errors" } },
       urgent: { type: "boolean", instructions: "Does this ticket report a critical outage?" },

@@ -81,10 +81,11 @@ One strategy handles the entire request. A failed request never triggers a strat
 | Gemini | `schemaProfile`, `temperature`, `maxOutputTokens` | Profile is `response-format` or `legacy-schema`; temperature is 0–2; token limit is a positive integer |
 | OpenAI structured | `transport`, `temperature`, `maxOutputTokens` | Transport is `responses` or `chat`; chosen before HTTP; temperature is 0–2; token limit is a positive integer |
 | OpenAI native | `safetyIdentifier` | Optional string of at most 128 characters; maps to `safety_identifier` |
+| OpenRouter native (`type: "openai"`) | None | Rejects all provider options; see the OpenRouter configuration below |
 
 OpenAI structured execution defaults to `responses`; configuration `decisionTransport` can select `chat`. This setting is separate from `mode`. It never consults or updates conversational Responses fallback state. Configured Azure/Foundry/gateway URL and authentication routing remain in effect; actual structured-output availability is unknown until exercised. `noResponseFormat: true` disables eligibility for structured decisions.
 
-Native OpenAI uses `POST /v1/decisions` on the official `https://api.openai.com` base (optionally ending in `/v1`), with `mode: "openai"` and API version `v1`. The verified model is `gpt-6-luna`; `auto` selects native for that model and structured for other models. Explicit `strategy: "structured"` remains available. Unsupported models reject explicit native requests before HTTP; the model is never substituted. Azure, Foundry, and third-party gateways retain structured-only eligibility. Account availability remains unknown until execution.
+Native OpenAI uses `POST /v1/decisions` on the official `https://api.openai.com` base (optionally ending in `/v1`), with `mode: "openai"` and API version `v1`. The verified model is `gpt-6-luna`; `auto` selects native for that model and structured for other models. Explicit `strategy: "structured"` remains available. Unsupported models reject explicit native requests before HTTP; the model is never substituted. Azure and Foundry retain structured-only eligibility. Third-party gateways retain structured-only eligibility unless explicitly configured with `decisionApi: "openrouter"` as described below. Account availability remains unknown until execution.
 
 Native requests reject `transport`, `temperature`, and `maxOutputTokens`; structured requests reject `safetyIdentifier`. Configuration `decisionTransport` applies only to structured execution. `noResponseFormat` disables structured eligibility but leaves eligible native requests available.
 
@@ -219,3 +220,30 @@ OPENAF_DECISIONS_LIVE=1 java -jar openaf.jar -f tests/ai-decisions-live.js
 ```
 
 The script skips without the opt-in flag, fails without caller-supplied model/configuration, and prints only metadata/statistics. It never selects a provider/model, downloads a model, or switches strategies. Native Ollama requires a compatible already-available local model. Gemini/OpenAI require caller credentials and a model compatible with the selected strategy. For OpenAI `gpt-6-luna`, the script selects native and requires probabilities; other OpenAI models retain structured smoke coverage. Native OpenAI fixtures establish serialization/normalization only; live access requires an explicit smoke run.
+
+## OpenRouter native decisions through the OpenAI adapter
+
+Set `decisionApi: "openrouter"` explicitly to use the [OpenRouter Decisions API](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request). The default is `"openai"`; other selectors are rejected. OpenRouter requires `mode: "openai"` and cannot be combined with Azure or Foundry modes.
+
+```javascript
+var llm = $llm({
+  type: "openai",
+  url: "https://openrouter.ai/api/v1",
+  key: getEnv("OPENROUTER_API_KEY"),
+  model: "microsoft/microsoft-decision-1",
+  decisionApi: "openrouter"
+});
+var result = llm.decide(state, questions, { requireProbabilities: true });
+```
+
+Trailing slashes are removed before replacing a final `/v1` with `/alpha/decisions`. For a base without that suffix, provide `decisionUrl`, an absolute HTTP(S) endpoint URL; proxy routes are never guessed. Authentication, configured headers, and timeout are reused.
+
+Native choice, boolean, and score decisions support probabilities. Model/account availability is `unknown`, with no fixed model allowlist. `auto` prefers native; explicit `structured` retains the existing generation route and `decisionTransport`. Chat, Responses, and structured-output routing are unchanged.
+
+Native requests contain only `{model, state, questions}`. Text, object, and array state remain intact; boolean questions become `noul`, retaining optional criteria. Images and all `providerOptions` are rejected before native HTTP. Conversational `params`, tools, and history are excluded. OpenRouter routing and tracing body options are outside this initial support.
+
+`native.probabilityDecimals: 2` permits half a rounding unit per distribution entry and the corresponding weighted score tolerance, following the [official provider changelog](https://github.com/OpenRouterTeam/ai-sdk-provider/blob/main/CHANGELOG.md). Returned probabilities are preserved without renormalization. Existing adapters retain four-decimal tolerance. Score level is the first modal index; expected score and provider confidence remain independent. Resolved/versioned response model identifiers are accepted.
+
+Results retain contract version 1 and `provider: "openai"`. `rawDecide()` preserves the provider envelope; statistics retain zero token counts and raw usage/cost. Failures are typed and never trigger automatic retries or fallback.
+
+For an opt-in live smoke, supply the example configuration as `OAF_MODEL` and run `OPENAF_DECISIONS_LIVE=1 java -jar openaf.jar -f tests/ai-decisions-live.js`. The script uses native decisions and requires probabilities when `decisionApi` is `openrouter`. Fixture success is separate from live model/account verification.

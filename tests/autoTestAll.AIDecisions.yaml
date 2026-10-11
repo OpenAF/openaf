@@ -96,7 +96,17 @@ jobs:
   from: AIDecisions::Init
   to: oJob Test
   exec: args.func = args.tests.testDecisionOpenAINativeHTTP;
+- name: AIDecisions::DecisionOpenRouter
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionOpenRouter;
+- name: AIDecisions::DecisionOpenRouterHTTP
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testDecisionOpenRouterHTTP;
 todo:
+- AIDecisions::DecisionOpenRouter
+- AIDecisions::DecisionOpenRouterHTTP
 - AIDecisions::DecisionOpenAINative
 - AIDecisions::DecisionOpenAINativeInvalidResponses
 - AIDecisions::DecisionOpenAINativeImagesAndCapabilities

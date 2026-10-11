@@ -217,6 +217,100 @@
       ow.test.assert(records.length, 9, "No strategy fallback or additional inference");
     } finally { ow.obj.http = original; }
   };
+  exports.testDecisionOpenRouter = function() {
+    ow.loadAI();
+    var config = { decisionApi: "openrouter", url: "https://openrouter.ai/api/v1/", model: "microsoft/microsoft-decision-1", params: { tools: ["ignored"] } };
+    var g = make("openai", config), calls = [], fixture = nativeFixture();
+    fixture.model = "microsoft/microsoft-decision-1:resolved";
+    fixture.usage.cost = 0;
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: body }); return copy(fixture); };
+    g.withInstructions("private history").withContext({ private: true }, "private context");
+    var conversation = JSON.stringify(g.getGPT().model.conversation);
+    var caps = g.getCapabilities();
+    ow.test.assert(caps.native.probabilityDecimals, 2, "OpenRouter precision");
+    ow.test.assert(caps.native.availability, "unknown", "No model allowlist");
+    var q = copy(questions); q.urgent.criteria = { "false": "No", "true": "Yes" };
+    ["text", { ticket: "data" }, ["data"]].forEach(state => {
+      var r = g.decideWithStats(state, q, { requireProbabilities: true, model: "custom-model" });
+      var c = calls[calls.length - 1];
+      ow.test.assert(c.uri, "https://openrouter.ai/api/alpha/decisions", "Derived endpoint");
+      ow.test.assert(c.body.state, state, "State remains JSON or text");
+      ow.test.assert(c.body.model, "custom-model", "Model override");
+      ow.test.assert(c.body.questions.urgent, merge(q.urgent, { type: "noul" }), "Boolean criteria retained");
+      ow.test.assert(Object.keys(c.body).sort(), ["model", "questions", "state"], "Dedicated body");
+      ow.test.assert(r.response.model, fixture.model, "Resolved identifier accepted");
+      ow.test.assert(r.stats.tokens.completion, 0, "Zero tokens");
+      ow.test.assert(r.stats.usage.cost, 0, "Raw cost");
+    });
+    ow.test.assert(g.rawDecide("state", q).raw, fixture, "Raw envelope preserved");
+    ow.test.assert(JSON.stringify(g.getGPT().model.conversation), conversation, "Stateless decisions");
+    var original = copy(fixture);
+    [0.33, 0.34].forEach(p => {
+      fixture.answers.priority.probabilities = { "0": p, "1": p, "2": 0.33 };
+      fixture.answers.priority.score = p + 0.66;
+      var r = g.decide("state", q, { strategy: "native" });
+      ow.test.assert(r.answers.priority.level, 0, "First modal level on tie");
+      ow.test.assert(r.answers.priority.probabilities[0], p, "No renormalization");
+    });
+    fixture = copy(original);
+    [0, 1].forEach(p => {
+      fixture.answers.urgent.noul = p;
+      ow.test.assert(g.decide("state", q).answers.urgent.probabilityTrue, p, "Boolean endpoints preserved");
+    });
+    [0.49, 0.51].forEach(p => {
+      fixture.answers.route.probabilities = { billing: 0.5, technical: p };
+      fixture.answers.route.choice = p > 0.5 ? "technical" : "billing";
+      var r = g.decide("state", q);
+      ow.test.assert(r.answers.route.probabilities.technical, p, "Rounded choice distribution retained");
+    });
+    fixture = copy(original);
+    fixture.answers.priority.score = 1.13;
+    expectError(() => g.decide("state", q), "LLM_DECISION_INVALID_RESPONSE");
+    fixture = copy(original);
+    [f => { delete f.answers.route; }, f => { f.answers.extra = {}; }, f => { f.answers.route.probabilities.billing = 0.5; }, f => { f.answers.priority.score = 0; }, f => { f.answers.urgent.noul = 2; }].forEach(change => {
+      fixture = copy(original); change(fixture);
+      expectError(() => g.decide("state", q), "LLM_DECISION_INVALID_RESPONSE");
+    });
+    fixture = original;
+    var before = calls.length;
+    ["transport", "temperature", "maxOutputTokens", "safetyIdentifier"].forEach(k => {
+      var po = {}; po[k] = k == "transport" ? "chat" : k == "safetyIdentifier" ? "user" : 1;
+      expectError(() => g.decide("state", q, { providerOptions: po }), "LLM_DECISION_INVALID_REQUEST");
+    });
+    expectError(() => g.decide("state", q, { images: ["data:image/png;base64,YQ=="] }), "LLM_DECISION_INVALID_REQUEST");
+    ow.test.assert(calls.length, before, "Preflight rejection");
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri }); return openaiFixture('{"route":"billing","urgent":false,"priority":0}'); };
+    ow.test.assert(g.decide("state", q, { strategy: "structured" }).strategy, "structured", "Explicit generation retained");
+    g.getGPT().model._decisionRequest = function() { before++; return { error: "failure" }; };
+    var n = before;
+    expectError(() => g.decide("state", q), "LLM_DECISION_PROVIDER_ERROR");
+    ow.test.assert(before, n + 1, "No retry or fallback");
+    ow.test.assert(isUnDef(g.getLastStats()), true, "Failure clears statistics");
+    [{ decisionApi: "invalid" }, { decisionApi: "openrouter", mode: "foundry" }, { decisionApi: "openrouter", url: "https://proxy/custom" }, { decisionApi: "openrouter", decisionUrl: "/relative" }].forEach(c => {
+      expectError(() => make("openai", c).getCapabilities(), "LLM_DECISION_INVALID_REQUEST");
+    });
+  };
+  exports.testDecisionOpenRouterHTTP = function() {
+    ow.loadAI();
+    var original = ow.obj.http, records = [], fixture = nativeFixture(); fixture.model = "resolved";
+    var builder = { retryOnConnectionFailure: function(v) { ow.test.assert(v, false, "No retries"); return this; }, build: function() { return this; }, newBuilder: function() { return this; } };
+    try {
+      ow.obj.http = function() {
+        this.client = builder; this.setThrowExceptions = function() {}; this.close = function() {};
+        this.exec = function(url, method, body, headers) { records.push({ url: url, method: method, headers: headers }); return { responseCode: 200, response: JSON.stringify(fixture) }; };
+      };
+      ["https://openrouter.ai/api/v1", "https://openrouter.ai/api/v1///"].forEach(url => {
+        make("openai", { decisionApi: "openrouter", url: url, headers: { "X-Fixture": "yes" } }).decide("state", questions);
+        var r = records[records.length - 1];
+        ow.test.assert(r.url, "https://openrouter.ai/api/alpha/decisions", "HTTP endpoint");
+        ow.test.assert(r.method, "POST", "HTTP method");
+        ow.test.assert(r.headers["X-Fixture"], "yes", "Custom headers");
+        ow.test.assert(r.headers.Authorization, "Bearer fixture-key", "Authentication");
+      });
+      make("openai", { decisionApi: "openrouter", url: "https://proxy/custom", decisionUrl: "https://proxy/decide" }).decide("state", questions);
+      ow.test.assert(records[2].url, "https://proxy/decide", "Explicit proxy URL");
+    } finally { ow.obj.http = original; }
+  };
   exports.testDecisionOpenAIStructured = function() {
     ow.loadAI();
     var g = make("openai"), calls = [];
