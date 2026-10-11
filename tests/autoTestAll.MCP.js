@@ -624,4 +624,102 @@
         });
     };
 
+
+    exports.testJSONRPCStdioConcurrentExec = function() {
+        var py = $sh("python3 -c \"print(1)\"").get(0)
+        if (py.exitcode != 0) return
+
+        var script = io.createTempFile("jsonrpc-echo", ".py")
+        io.writeFileString(script, [
+            "import sys, json, time",
+            "for line in sys.stdin:",
+            "    line = line.strip()",
+            "    if not line: continue",
+            "    m = json.loads(line)",
+            "    if 'id' not in m: continue",
+            "    time.sleep(0.05)",
+            "    sys.stdout.write(json.dumps({'jsonrpc': '2.0', 'id': m['id'], 'result': {'v': m['params'].get('v')}}) + '\\n')",
+            "    sys.stdout.flush()"
+        ].join("\n"))
+
+        var c = $jsonrpc({ cmd: "python3 -u " + script, timeout: 15000 })
+        try {
+            var n = 8, res = []
+            $doWait($doAll(range(n, 0).map(i => $do(() => { res[i] = c.exec("echo", { v: i }) }))))
+            for (var i = 0; i < n; i++) {
+                ow.test.assert(isMap(res[i]) ? res[i].v : res[i], i, "Concurrent stdio exec " + i + " got the wrong response")
+            }
+            // a notification followed by a request must not reuse the same id
+            c.exec("notify", { v: -1 }, true)
+            ow.test.assert(c.exec("echo", { v: 42 }).v, 42, "Request after a notification got the wrong response")
+        } finally {
+            c.destroy()
+        }
+    };
+
+    exports.testOAuthRejectsInsecureEndpointsAndIssuerMismatch = function() {
+        ow.loadServer();
+        var mk = function(extra) {
+            return ow.server.httpd.oauth2(merge({ authURL: "http://auth.example.com/authorize", tokenURL: "http://auth.example.com/token",
+                clientId: "c", redirectURI: "http://127.0.0.1:12345/cb", tokenStore: false, interactive: false }, extra || {}));
+        };
+        var err;
+        try { mk().getAuthStatus(); } catch(e) { err = String(e); }
+        ow.test.assert(isDef(err) && err.indexOf("HTTPS") >= 0, true, "Remote plain-HTTP OAuth endpoints should be rejected: " + err);
+        err = __;
+        try { mk({ allowHTTP: true }).getAuthStatus(); } catch(e) { err = String(e); }
+        ow.test.assert(isUnDef(err) || err.indexOf("HTTPS") < 0, true, "allowHTTP should allow plain-HTTP OAuth endpoints: " + err);
+
+        withOAuthMCPServer(function(ctx) {
+            var client = $mcp({
+                type: "remote",
+                url: ctx.resource,
+                auth: {
+                    type: "oauth2",
+                    grantType: "client_credentials",
+                    clientId: "client-a",
+                    clientSecret: "secret-a",
+                    authorizationServer: "http://127.0.0.1:" + ctx.port + "/other",
+                    authorizationServerMetadataURL: "http://127.0.0.1:" + ctx.port + "/.well-known/oauth-authorization-server/as"
+                }
+            });
+            var ierr;
+            try { client.initialize(); } catch(e) { ierr = String(e); } finally { client.destroy(); }
+            ow.test.assert(isDef(ierr) && ierr.indexOf("issuer") >= 0, true, "Mismatched OAuth metadata issuer should be rejected: " + ierr);
+            ow.test.assert(ctx.state.tokenRequests.length, 0, "No token request should be sent to an unverified issuer");
+        });
+    };
+
+    exports.testMCPAutoClientLegacyOnlyDiscoverError = function() {
+        ow.loadServer();
+        var port = findRandomOpenPort(), methods = [];
+        var hs = ow.server.httpd.start(port, "127.0.0.1");
+        ow.server.httpd.route(hs, {
+            "/mcp": function(req) {
+                var body = (isDef(req.files) && isDef(req.files.postData)) ? req.files.postData : req.data;
+                var rpc = jsonParse(body);
+                methods.push(rpc.method);
+                if (isUnDef(rpc.id) || isNull(rpc.id)) return ow.server.httpd.reply("", 204, "text/plain", {});
+                if (rpc.method == "server/discover") return ow.server.httpd.reply({ jsonrpc: "2.0", id: rpc.id,
+                    error: { code: -32022, message: "Unsupported protocol version", data: { supported: ["2024-11-05", "2025-06-18"] } } }, 200, "application/json", {});
+                var result = {};
+                if (rpc.method == "initialize") result = { protocolVersion: "2025-06-18", capabilities: {}, serverInfo: { name: "Legacy", version: "1" } };
+                if (rpc.method == "tools/list") result = { tools: [ { name: "ping", description: "p", inputSchema: { type: "object", properties: {} } } ] };
+                return ow.server.httpd.reply({ jsonrpc: "2.0", id: rpc.id, result: result }, 200, "application/json", {});
+            }
+        });
+        try {
+            var client = $mcp({ type: "remote", strict: false, url: "http://127.0.0.1:" + port + "/mcp", protocolVersion: "auto" });
+            try {
+                client.initialize({ name: "TestClient", version: "9.9.9" });
+                ow.test.assert(client.getClientInfo().era, "legacy", "A server listing only legacy versions must use the legacy era");
+                ow.test.assert(methods.indexOf("initialize") >= 0, true, "Legacy fallback must perform the initialize handshake");
+                ow.test.assert(client.listTools().tools[0].name, "ping", "Legacy fallback should list tools");
+            } finally {
+                client.destroy();
+            }
+        } finally {
+            ow.server.httpd.stop(hs);
+        }
+    };
 })();

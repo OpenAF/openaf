@@ -74,7 +74,7 @@ public class FileHistory
         if (file.exists()) {
             FileReader reader = null;
             try{
-                reader = new FileReader(file);
+                reader = new FileReader(file, java.nio.charset.StandardCharsets.UTF_8);
                 load(reader);
             } finally{
                 if(reader != null){
@@ -109,7 +109,7 @@ public class FileHistory
             }
         }
 
-        PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(file)));
+        PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(file)), false, java.nio.charset.StandardCharsets.UTF_8);
         try {
             for (Entry entry : this) {
                 out.println(entry.value());

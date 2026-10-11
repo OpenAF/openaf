@@ -67,8 +67,8 @@ final class Builtins {
                 for (int i = 0; i < v.length(a); i++) sum = ScriptRuntime.add(sum, v.get(a, i), v.cx);
                 return name.equals("avg") ? ScriptRuntime.toNumber(sum) / v.length(a) : sum;
             case "contains": return ScriptRuntime.toNumber(v.call(a, "indexOf", b)) >= 0;
-            case "starts_with": return ScriptRuntime.shallowEq(v.call(a, "lastIndexOf", b), 0);
-            case "ends_with": return ScriptRuntime.shallowEq(v.call(a, "indexOf", b, v.length(a) - v.length(b)), v.length(a) - v.length(b));
+            case "starts_with": return Values.str(a).startsWith(Values.str(b));
+            case "ends_with": return Values.str(a).endsWith(Values.str(b));
             case "length": return v.isObject(a) ? v.keys(a).size() : v.get(a, "length");
             case "map":
                 List<Object> mapped = new ArrayList<>();

@@ -49,9 +49,10 @@
     'items[*].{n:name,s:score}','items[*].[name,score]','items[*].name | [0]','a.*.*',
     '{x:a.b.c,y:missing}','[a, missing, @]','nested[]','sparse[*]','sparse[:]','sparse[]',
     'nil || nums','yes && items','no && items','!nil','!nums','!missing','!`{}`','!`[]`','!`0`',
-    '(`1`)','"a".b.c',"'a\\'b'",'`abc`','`{"__proto__":{"x":1}}`','`{"a":[1]}`','`[]`','`null`',
+    '(`1`)','"a".b.c',"'a\\'b'",'`abc`','`{"__proto__":{"x":1}}`','`{"a":[1]}`','`{"1":"a"}`."1"','values(`{"1":"a","b":"c"}`)','{x:&name}.x','`[]`','`null`',
     'abs(`-2`)','avg(nums)','avg(`[]`)','ceil(`1.2`)','floor(`-1.2`)','sum(nums)',
     'contains(text, \'a\')','contains(nums, `10`)','starts_with(text, \'a\')','ends_with(text, \'a\')',
+    'starts_with(text, \'ab\')','starts_with(text, \'ba\')','ends_with(text, \'ba\')','ends_with(text, \'xaba\')','ends_with(\'a\', \'ab\')',
     'length(items)','length(a)','length(unicode)','map(&name, items)','map(&missing, items)',
     'merge(a, `{ "x": 2 }`)','max(nums)','min(nums)','max(words)','min(words)','max(`[]`)','min(`[]`)',
     'max_by(items,&score)','min_by(items,&score)','max_by(items,&name)','min_by(items,&name)',
@@ -75,6 +76,10 @@
     var search=reference();
     assertEqual(search({x:1},'x',{}),1,'Reference lookup');
     assertEqual(search([2,10],'sort(@)',{}),[10,2],'Reference lexicographic numeric sort');
+    assertEqual(search({t:'aba'},"starts_with(t, 'a')",{}),true,'Reference starts_with with a repeated prefix');
+    assertEqual(search({t:'aba'},"starts_with(t, 'b')",{}),false,'Reference starts_with with a non-prefix');
+    assertEqual(search({t:'aba'},"ends_with(t, 'ba')",{}),true,'Reference ends_with');
+    assertEqual(search({t:'a'},"ends_with(t, 'ab')",{}),false,'Reference ends_with with a longer suffix');
     queries.forEach(function(q) { run(search,standard,q); });
     print('Path reference corpus: '+queries.length+' expressions');
   };

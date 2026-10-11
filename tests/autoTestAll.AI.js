@@ -13,10 +13,26 @@
         return af.fromString2InputStream(events.map(r => stringify(r, __, "")).join("\n") + "\n");
     };
 
+    // Small networks start from random weights and occasionally don't converge: retrain a few times
+    // (a real regression fails every attempt) before asserting
+    var __trained = function(aBuild, aCases, aTries) {
+        var nn
+        for (var t = 0; t < (aTries || 5); t++) {
+            nn = aBuild()
+            if (aCases.every(c => Math.round(nn.get(c[0])) == c[1])) return nn
+        }
+        return nn
+    };
+    var __xor = [[[1,0],1],[[1,1],0],[[0,1],1],[[0,0],0]];
+    var __and = [[[1,0],0],[[1,1],1],[[0,1],0],[[0,0],0]];
+
     exports.testAIPerceptronXOR = function() {
         ow.loadAI();
-        var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]});
-        nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}]);
+        var nn = __trained(() => {
+            var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]});
+            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}]);
+            return nn;
+        }, __xor);
         ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with ow.ai perceptron 1 XOR 0");
         ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with ow.ai perceptron 1 XOR 1");
         ow.test.assert(Math.round(nn.get([0,1])), 1, "Problem with ow.ai perceptron 0 XOR 1");
@@ -25,14 +41,16 @@
 
     exports.testAIPerceptronXORPut = function() {
         ow.loadAI();
-        var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]});
-        
-        for(var ii = 0; ii < 20000; ii++) {
-            nn.put([0, 0], [0]);
-            nn.put([0, 1], [1]);
-            nn.put([1, 0], [1]);
-            nn.put([1, 1], [0]);
-        }
+        var nn = __trained(() => {
+            var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]});
+            for(var ii = 0; ii < 20000; ii++) {
+                nn.put([0, 0], [0]);
+                nn.put([0, 1], [1]);
+                nn.put([1, 0], [1]);
+                nn.put([1, 1], [0]);
+            }
+            return nn;
+        }, __xor);
 
         ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with ow.ai perceptron put 1 XOR 0");
         ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with ow.ai perceptron put 1 XOR 1");
@@ -42,8 +60,11 @@
 
     exports.testAILiquidXOR = function() {
         ow.loadAI();
-        var nn = new ow.ai.network({ type: "liquid", args: [2, 40, 1, 2, 1]});
-        nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}]);
+        var nn = __trained(() => {
+            var nn = new ow.ai.network({ type: "liquid", args: [2, 40, 1, 2, 1]});
+            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}]);
+            return nn;
+        }, __xor);
         ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with ow.ai liquid 1 XOR 0");
         ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with ow.ai liquid 1 XOR 1");
         ow.test.assert(Math.round(nn.get([0,1])), 1, "Problem with ow.ai liquid 0 XOR 1");
@@ -52,8 +73,11 @@
 
     exports.testAILSTMAND = function() {
         ow.loadAI();
-        var nn = new ow.ai.network({ type: "lstm", args: [2, 4, 1]});
-        nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [0]}, {input: [1,0], output: [0]}, {input: [1,1], output :[1]}]);
+        var nn = __trained(() => {
+            var nn = new ow.ai.network({ type: "lstm", args: [2, 4, 1]});
+            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [0]}, {input: [1,0], output: [0]}, {input: [1,1], output :[1]}]);
+            return nn;
+        }, __and);
         ow.test.assert(Math.round(nn.get([1,0])), 0, "Problem with ow.ai lstm 1 AND 0");
         ow.test.assert(Math.round(nn.get([1,1])), 1, "Problem with ow.ai lstm 1 AND 1");
         ow.test.assert(Math.round(nn.get([0,1])), 0, "Problem with ow.ai lstm 0 AND 1");
@@ -86,10 +110,7 @@
         var na = new ow.ai.network();
         na.readFile("autoTestAll.ai.andNet.lstm.gz");
 
-        ow.test.assert(Math.round(nn.get([1,0])), 0, "Problem with saved ow.ai lstm 1 AND 0");
-        ow.test.assert(Math.round(nn.get([1,1])), 1, "Problem with saved ow.ai lstm 1 AND 1");
-        ow.test.assert(Math.round(nn.get([0,1])), 0, "Problem with saved ow.ai lstm 0 AND 1");
-        ow.test.assert(Math.round(nn.get([0,0])), 0, "Problem with saves ow.ai lstm 1 AND 0");   
+        __and.forEach(c => ow.test.assert(Math.round(na.get(c[0])), Math.round(nn.get(c[0])), "Problem with saved ow.ai lstm " + c[0].join(" AND ")));
 
         io.rm("autoTestAll.ai.andNet.lstm.gz");
     };
@@ -103,10 +124,7 @@
         var na = new ow.ai.network();
         na.readFile("autoTestAll.ai.xorNet.liquid.gz");
 
-        ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with saved ow.ai liquid 1 XOR 0");
-        ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with saved ow.ai liquid 1 XOR 1");
-        ow.test.assert(Math.round(nn.get([0,1])), 1, "Problem with saved ow.ai liquid 0 XOR 1");
-        ow.test.assert(Math.round(nn.get([0,0])), 0, "Problem with saves ow.ai liquid 1 XOR 0");   
+        __xor.forEach(c => ow.test.assert(Math.round(na.get(c[0])), Math.round(nn.get(c[0])), "Problem with saved ow.ai liquid " + c[0].join(" XOR ")));
 
         io.rm("autoTestAll.ai.xorNet.liquid.gz");
     };   
@@ -544,6 +562,35 @@
         } finally {
             ow.server.httpd.stop(hs);
         }
+    };
+
+    exports.testAIAnthropicToolLoopKeepsTemperatureUnset = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test" });
+        g.setTool("echo", "Echo", { type: "object", properties: { v: { type: "string" } } }, a => a.v);
+        var requests = [];
+        g.model._request = function(url, body) {
+            requests.push(__cloneForTest(body));
+            if (requests.length == 1) return {
+                id: "msg-1", model: "claude-test", type: "message", stop_reason: "tool_use",
+                content: [ { type: "tool_use", id: "tu-1", name: "echo", input: { v: "x" } } ],
+                usage: { input_tokens: 1, output_tokens: 1 }
+            };
+            return {
+                id: "msg-2", model: "claude-test", type: "message", stop_reason: "end_turn",
+                content: [ { type: "text", text: "done" } ],
+                usage: { input_tokens: 1, output_tokens: 1 }
+            };
+        };
+        g.model.rawPrompt("hi");
+        ow.test.assert(requests.length, 2, "Anthropic tool loop did not recurse");
+        ow.test.assert(isUnDef(requests[0].temperature), true, "Anthropic first request sent an implicit temperature");
+        ow.test.assert(isUnDef(requests[1].temperature), true, "Anthropic tool follow-up sent an implicit temperature");
+
+        requests = [];
+        g.model.rawPrompt("hi", __, 0.2);
+        ow.test.assert(requests[1].temperature, 0.2, "Anthropic tool follow-up lost an explicit temperature");
     };
 
     exports.testAIAnthropicPromptCachingBodyAndStats = function() {

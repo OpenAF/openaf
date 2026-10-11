@@ -30,7 +30,7 @@ final class Values {
         object = export.apply(object);
         return found(ScriptRuntime.getObjectIndex(object, index, cx, scope));
     }
-    void put(Scriptable object, String key, Object value) { ScriptRuntime.setObjectElem(object, key, value, cx, scope); }
+    void put(Scriptable object, String key, Object value) { ScriptRuntime.setObjectElem(object, key, export.apply(value), cx, scope); }
     int length(Object object) { return (int) ScriptRuntime.toNumber(get(object, "length")); }
     Scriptable array(List<?> values) { return cx.newArray(scope, values.stream().map(export).toArray()); }
     Scriptable array(Object... values) { return cx.newArray(scope, java.util.Arrays.stream(values).map(export).toArray()); }
@@ -146,7 +146,12 @@ final class Values {
         }
         if (value instanceof Map<?, ?> map) {
             Scriptable result = object();
-            map.forEach((key, child) -> ScriptableObject.defineProperty(result, (String) key, thaw(child), 0));
+            map.forEach((key, child) -> {
+                // Index-like keys ("1") must be stored as indexes or Rhino's element lookup won't find them
+                long index = ScriptRuntime.indexFromString((String) key);
+                if (index >= 0) result.put((int) index, result, thaw(child));
+                else ScriptableObject.defineProperty(result, (String) key, thaw(child), 0);
+            });
             return result;
         }
         return value;

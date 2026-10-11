@@ -908,13 +908,20 @@ public class AFCmdOS extends AFCmdBase {
 				AFBase.initCompiledClass(cls);
 				return new JSScript((JSDescriptor) descriptors[0], null);
 			} catch (Throwable initFailure) {
-				return compileScriptFromResource(cls, className);
+				try {
+					return compileScriptFromResource(cls, className);
+				} catch (Exception fallbackFailure) {
+					fallbackFailure.addSuppressed(initFailure);
+					throw fallbackFailure;
+				}
 			}
 		}
 	}
 
 	private static Script compileScriptFromResource(Class<?> cls, String className) throws Exception {
-		String resourceName = "js/openaf.js";
+		// Compiled class names map back to their js/ source (e.g. openaf_js -> js/openaf.js, owrap_format_js -> js/owrap.format.js)
+		String simpleName = className.substring(className.lastIndexOf('.') + 1);
+		String resourceName = "js/" + simpleName.replaceAll("_js$", "").replace('_', '.') + ".js";
 		try (InputStream in = cls.getClassLoader().getResourceAsStream(resourceName)) {
 			if (in == null) {
 				throw new IllegalStateException("Unable to load " + resourceName + " for " + className);

@@ -259,6 +259,10 @@
             ow.test.assert(rejected(manager, [cert("unrelated.net", [[6, "https://example.com"]])]), true, "URI SAN cannot authorize domain");
             ow.test.assert(rejected(manager, [trusted]), false, "normal trusted certificates accepted");
             java.lang.System.setProperty(properties[1], "secret");
+            ow.java.setIgnoreSSLDomains([".example.com"]);
+            ow.test.assert(rejected(global.__httpX509TrustManager, [allowed]), false, "leading-dot entry matches subdomains");
+            ow.test.assert(rejected(global.__httpX509TrustManager, [cert("example.com")]), true, "leading-dot entry only matches subdomains");
+            java.lang.System.setProperty(properties[1], "secret");
             ow.java.setIgnoreSSLDomains([]);
             ow.test.assert(rejected(global.__httpX509TrustManager, [allowed]), true, "empty list validates all");
             ow.java.setIgnoreSSLDomains();

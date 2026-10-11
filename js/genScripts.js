@@ -296,7 +296,9 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "DIR=`pwd`\n"
   s += "cd \"$CDIR\"\n"
   s += genUnixSttyRestore()
-  if (isCon) s += "if stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
+  // isCon == "notty": only when stdin isn't the terminal (e.g. oafp reading typed input needs canonical mode for Ctrl-D/echo)
+  if (isCon == "notty") s += "if [ ! -t 0 ] && stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
+  else if (isCon) s += "if stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
@@ -434,8 +436,8 @@ var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, u
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixPyScript = generateUnixPyScript()
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
-  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"", __, __, true)
-  unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"", __, __, true)
+  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"", __, __, "notty")
+  unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"", __, __, "notty")
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 //}
 

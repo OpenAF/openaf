@@ -95,6 +95,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIAnthropicPromptCachingHeaders;
 
+   - name: AI::Anthropic tool loop keeps temperature unset
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIAnthropicToolLoopKeepsTemperatureUnset;
+
    - name: AI::Anthropic prompt caching body and stats
      from: AI::Init
      to  : oJob Test
@@ -185,6 +190,7 @@ todo:
    - AI::OpenAI transport modes
    - AI::OpenAI stats capture includes cached and reasoning
    - AI::Anthropic prompt caching headers
+   - AI::Anthropic tool loop keeps temperature unset
    - AI::Anthropic prompt caching body and stats
    - AI::OpenAI tool recursion without duplication
    - AI::OpenAI streaming tool recursion without duplication

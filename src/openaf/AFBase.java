@@ -307,7 +307,7 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public static Object pathJava(Context cx, Scriptable self, Object[] args, Function function) {
 		Object input = args.length > 0 ? args[0] : Undefined.instance;
-		String expression = args.length > 1 ? Context.toString(args[1]) : "@";
+		String expression = args.length > 1 && args[1] != null && !Undefined.isUndefined(args[1]) ? Context.toString(args[1]) : "@";
 		Object functions = args.length > 2 ? args[2] : Undefined.instance;
 		return openaf.core.jmespath.PathEngine.search(cx, ScriptableObject.getTopLevelScope(self), input, expression, functions);
 	}
@@ -1916,9 +1916,11 @@ public class AFBase extends ScriptableObject {
 			|| (cp >= 0x2753 && cp <= 0x2755) || cp == 0x2757
 			|| (cp >= 0x2795 && cp <= 0x2797)
 			|| cp == 0x27B0 || cp == 0x27BF
-			|| cp == 0x2934 || cp == 0x2935
 			|| (cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55
-			|| cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299;
+			|| cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299
+			|| cp == 0x1F004 || cp == 0x1F0CF || cp == 0x1F18E || (cp >= 0x1F191 && cp <= 0x1F19A)
+			|| cp == 0x1F201 || cp == 0x1F21A || cp == 0x1F22F || (cp >= 0x1F232 && cp <= 0x1F236)
+			|| (cp >= 0x1F238 && cp <= 0x1F23A) || (cp >= 0x1F250 && cp <= 0x1F251);
 	}
 
 	private static boolean visibleLengthIsWide(int cp) {

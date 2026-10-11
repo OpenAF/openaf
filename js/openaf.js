@@ -313,9 +313,10 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		waitms             : 50,
 		forceSeq           : false,
 		seq_ratio          : 1,
-		// Overall deadline, in ms, for a pForEach call to wait for its parallel partitions to complete
+		// Optional overall deadline, in ms, for a pForEach call to wait for its parallel partitions to complete
 		// before timing out, cancelling whatever is still pending and returning partial results.
-		wait_timeout_ms    : 60000,
+		// Undefined (default) or <= 0 means wait for all partitions to complete.
+		wait_timeout_ms    : __,
 		// Minimum array-size-per-core multiplier below which pForEach always goes sequential, regardless
 		// of the adaptive timing heuristic (which only has data after the first partition completes).
 		// Defaults to 0 (disabled, arS < _nc * 0 is never true) so existing sequential/parallel switching
@@ -705,8 +706,10 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 
 	aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
-	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
-	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
+	// __con may be "" when a console couldn't be created; only query it when no explicit size was given
+	var _hasCon = isObject(__con) || isJavaObject(__con)
+	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(hSize) && _hasCon ? __con.getTerminal().getWidth() : __)
+	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(vSize) && _hasCon ? __con.getTerminal().getHeight() - 5 : __)
 	options = _$(options, "options").isMap().default({})
 
 	if (type == "clean" && name != "__") {
@@ -832,8 +835,10 @@ const printChartArray = function(anArray, aType, hSize, vSize, aMax, aMin, optio
 
 	aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
-	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
-	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
+	// __con may be "" when a console couldn't be created; only query it when no explicit size was given
+	var _hasCon = isObject(__con) || isJavaObject(__con)
+	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(hSize) && _hasCon ? __con.getTerminal().getWidth() : __)
+	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(vSize) && _hasCon ? __con.getTerminal().getHeight() - 5 : __)
 	options = _$(options, "options").isMap().default({})
 	options = merge(options, { width: hSize, height: vSize, max: aMax, min: aMin })
 
@@ -1192,7 +1197,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		_output.add(useAnsi ? [ _colorMap.lines, summary, "\u001b[m" ].join("") : summary)
 	}
 	
-	return _output.toArray().join("") + (borderless && !useAnsi ? "" : "\u001b[m")
+	return _output.toArray().join("") + (useAnsi ? "\u001b[m" : "")
 }
 
 /**
@@ -1360,17 +1365,23 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		return Array.from(ar)
 	}
 
-	var _isFlatArray = ar => ar.length > 0 && ar.every(el => {
-		if (el === null || "undefined" === typeof el) return true
-		if (Array.isArray(el)) return false
-		if ("[object Object]" == Object.prototype.toString.call(el)) {
-			return Object.keys(el).every(kk => {
+	// printTable takes its columns from the first row so only homogeneous arrays can be rendered as a table:
+	// either all scalars or all maps with the same set of (non-map/array) fields
+	var _isFlatArray = ar => {
+		if (ar.length == 0) return false
+		var _isM = el => "[object Object]" == Object.prototype.toString.call(el)
+		if (!_isM(ar[0])) return ar.every(el => !_isM(el) && !Array.isArray(el))
+		var _k = Object.keys(ar[0]).sort().join("\u0000")
+		return ar.every(el => {
+			if (!_isM(el)) return false
+			var _ks = Object.keys(el)
+			if (_ks.sort().join("\u0000") != _k) return false
+			return _ks.every(kk => {
 				var vv = el[kk]
-				return !(vv !== null && ("[object Object]" == Object.prototype.toString.call(vv) || Array.isArray(vv)))
+				return !(vv !== null && (_isM(vv) || Array.isArray(vv)))
 			})
-		}
-		return true
-	})
+		})
+	}
 
 	let _pt = (aM, aWidth, aOptions, aPrefix, isSub) => {
 		//isSub = _$(isSub, "isSub").isBoolean().default(false)
@@ -1455,7 +1466,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			let repeatResult = _ac("", ("undefined" !== typeof vsize ? " ".repeat(vsize - lv+1) : " "))
 
 			let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
-			let reset = __ansiColorCache["RESET"]
+			let reset = aOptions.noansi ? "" : __ansiColorCache["RESET"]
 			let suffix
 
 			if ("undefined" !== typeof aM[k] && aM[k] != null && ("[object Object]" == Object.prototype.toString.call(aM[k]) || Array.isArray(aM[k]))) {
@@ -1463,7 +1474,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 				if (aOptions.tableArrays && Array.isArray(aM[k]) && _isFlatArray(aM[k])) {
 					let tblWidth = isNumber(aWidth) ? (aWidth - _al(contPrefix)) : __
 					let tLines = printTable(aM[k], tblWidth, __, !aOptions.noansi, (aOptions.noansi ? __ : "utf")).split("\n")
-					if (tLines.length > 0 && tLines[tLines.length - 1] == "") tLines.pop()
+					while (tLines.length > 0 && tLines[tLines.length - 1].replace(/\033\[[0-9;]*m/g, "").trim() == "") tLines.pop()
 					suffix = tLines.map((l, ii) => ii == 0 ? l : contPrefix + l).join("\n")
 				} else {
 					suffix = _pt(aM[k], aWidth, aOptions, contPrefix, true)
@@ -4616,6 +4627,8 @@ const exit = function(exitCode, force) {
 		t.runOpenAFShutdownHooksNow();
 		t.nativeExit(exitCode);
 	} else {
+		// let an armed fast exit (see armFastExitOnShutdown) keep this exit code
+		try { Packages.openaf.plugins.Threads.setRequestedExitCode(exitCode) } catch(e) {}
 		java.lang.System.exit(exitCode)
 	}
 }
@@ -5045,9 +5058,11 @@ const __visibleLengthIsEmojiDefaultPresentation = cp => (
 	(cp >= 0x2753 && cp <= 0x2755) || cp == 0x2757 ||
 	(cp >= 0x2795 && cp <= 0x2797) ||
 	cp == 0x27B0 || cp == 0x27BF ||
-	cp == 0x2934 || cp == 0x2935 ||
 	(cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55 ||
-	cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299
+	cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299 ||
+	cp == 0x1F004 || cp == 0x1F0CF || cp == 0x1F18E || (cp >= 0x1F191 && cp <= 0x1F19A) ||
+	cp == 0x1F201 || cp == 0x1F21A || cp == 0x1F22F || (cp >= 0x1F232 && cp <= 0x1F236) ||
+	(cp >= 0x1F238 && cp <= 0x1F23A) || (cp >= 0x1F250 && cp <= 0x1F251)
 )
 const __visibleLengthIsWide = cp => (
 	cp >= 0x1100 && (
@@ -6367,7 +6382,8 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
  * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
  * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true the
  * sequential execution will be forced. aTimeoutMs, if provided, overrides __flags.PFOREACH.wait_timeout_ms as the overall
- * deadline, in milliseconds, from parallel dispatch through queue-pressure and completion waits.
+ * deadline, in milliseconds, from parallel dispatch through queue-pressure and completion waits. If neither is a positive
+ * number (the default) pForEach waits for all partitions to complete.
  * Sequential callbacks remain synchronous and are not interrupted by this deadline. On timeout the still-pending partitions
  * (and their pool worker threads) are cancelled, aErrFn is called with a "pForEach: N of M partitions timed out"
  * diagnostic and whatever results were collected so far are returned (missing entries come back as arrays of __, so the
@@ -6437,9 +6453,11 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	const threads_thrs = __flags.PFOREACH.threads_thrs
 	const seq_ratio = __flags.PFOREACH.seq_ratio
 	const timeoutMs = isDef(aTimeoutMs) ? aTimeoutMs : __flags.PFOREACH.wait_timeout_ms
-	// One monotonic budget covers dispatch, backpressure and the final wait.
-	const deadline = nowNano() + timeoutMs * 1000000
-	const remainingMs = () => Math.max(0, (deadline - nowNano()) / 1000000)
+	// One monotonic budget covers dispatch, backpressure and the final wait (unbounded if no positive timeout).
+	const bounded = isNumber(timeoutMs) && timeoutMs > 0
+	const deadline = bounded ? nowNano() + timeoutMs * 1000000 : __
+	const remainingMs = () => bounded ? Math.max(0, (deadline - nowNano()) / 1000000) : Infinity
+	const waitBudget = () => bounded ? remainingMs() : __
 	var parallelCall = !beSeq
 	var stopped = $atomic(false, "boolean")
 
@@ -6509,8 +6527,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 				// Apply backpressure without losing the promise needed for cancellation.
 				_tpstats = __getThreadPools()
 				if (_tpstats.queued > _tpstats.poolSize / threads_thrs) {
-					var budget = remainingMs()
-					if (budget > 0) $doWait(_ts[_ts.length - 1], budget)
+					if (remainingMs() > 0) $doWait(_ts[_ts.length - 1], waitBudget())
 				}
 			}
 		} catch(eee) {
@@ -6531,7 +6548,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	if (parallelCall || _ts.length > 0) {
 		var _all = _ts.length > 0 && remainingMs() > 0 ? $doAll(_ts) : __
 		while (isDef(_all) && parts.get() < pres.length && remainingMs() > 0) {
-			$doWait(_all, remainingMs())
+			$doWait(_all, waitBudget())
 			var budget = remainingMs()
 			if (parts.get() < pres.length && budget > 0) sleep(Math.min(__getThreadPools().queued * waitMs, budget), true)
 		}
@@ -6808,6 +6825,10 @@ const isCoreCompiledLib = function(aClass) {
 	return (_lc === "openaf_js" || _lc === "openafsigil_js");
 }
 
+// Maps a compiled library class name back to its source file name (e.g. owrap_format_js -> owrap.format.js);
+// none of the bundled js/ file names contain underscores so every "_" was originally a "."
+const __compiledClass2Source = aClass => String(aClass).replace(/_js$/, "").replace(/_/g, ".") + ".js";
+
 /**
  * <odoc>
  * <key>loadCompiledLib(aLibClass, forceReload, aFunction, withSync) : boolean</key>
@@ -6820,7 +6841,7 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
-	var _libPath = getOpenAFJar() + "::js/" + aClass.replace(/_js$/, ".js");
+	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass);
 	var _loadCompiled = () => {
 		try {
 			af.runFromClass(af.newScriptInstance(aClass));
@@ -6857,7 +6878,7 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 }
 
 const loadCompiledRequire = function(aClass, forceReload, aFunction) {
-	var _libPath = getOpenAFJar() + "::js/" + aClass.replace(/_js$/, ".js");
+	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass);
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
@@ -8968,7 +8989,8 @@ const $rest = function(ops) {
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string|map|array): Required for stdio type - the command to execute or the map/array accepted by $sh\
  * - pwd (string): For stdio type - the working directory to use when executing cmd (default: the JSONRPC.cmd.defaultDir flag, if set)\
- * - envs (map): For stdio type - a map of environment variables to use when executing cmd. Note: this replaces the child process' environment entirely (same semantics as $sh.envs/sh()), it does not merge with the current environment\
+ * - envs (map): For stdio type - a map of environment variables to use when executing cmd. Note: by default these are merged over the current process environment (so secrets in the parent environment are inherited); set envsOnly to true to use only this map\
+ * - envsOnly (boolean): For stdio type - when true the child process environment will be exactly the envs map instead of merging it with the current environment (default: false)\
  * - options (map): Additional options passed to $rest for remote connections\
  * - sse (boolean): When true, remote/http requests expect Server-Sent Events responses with JSON-RPC payloads in `data:` events\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
@@ -8980,7 +9002,7 @@ const $rest = function(ops) {
  * - url(aURL): Set the URL and switch to remote type\
  * - sh(aCommand): Set the command and switch to stdio type\
  * - pwd(aPath): Set the working directory to use for stdio execution\
- * - envs(aMap): Set the environment variables map to use for stdio execution (replaces the child process' environment)\
+ * - envs(aMap): Set the environment variables map to use for stdio execution (merged with the current environment unless envsOnly is true)\
  * - exec(aMethod, aParams, aNotification): Execute a JSON-RPC method\
  * - destroy(): Stop the client and cleanup resources\
  * \
@@ -9146,6 +9168,11 @@ const $jsonrpc = function (aOptions) {
 		_sy: $sync(),
 		_q: {},
 		_r: {},
+		// stdio: ids queued for the writer thread, per-request response latches and process readiness
+		// (java.util.concurrent primitives so that a signal sent before the other side waits isn't lost)
+		_wq: new java.util.concurrent.LinkedBlockingQueue(),
+		_w: new java.util.concurrent.ConcurrentHashMap(),
+		_ready: new java.util.concurrent.CountDownLatch(1),
 		_info: __,
 		_pwd: _$(aOptions.pwd, "aOptions.pwd").isString().default(_defaultCmdDir),
 		_envs: _$(aOptions.envs, "aOptions.envs").isMap().default(__),
@@ -9175,7 +9202,11 @@ const $jsonrpc = function (aOptions) {
 					_go = true
 				}
 			})
-			if (!_go) return _r
+			if (!_go) {
+				// another caller is starting the process: wait until it is ready to accept requests
+				_r._ready.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+				return _r
+			}
 
 			aOptions.cmd = cmd
 			aOptions.type = "stdio"
@@ -9201,59 +9232,53 @@ const $jsonrpc = function (aOptions) {
 								[
 									// in stream
 									$doV(() => {
-										$await("__jsonrpc_" + _main_id).notifyAll()
-										do {
-											var _id = _r._ids.get()
-											$await("__jsonrpc_q-" + _id + "-" + _main_id).wait()
-											if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
+										_r._ready.countDown()
+										while (!_r._s) {
+											var _wid = _r._wq.poll(250, java.util.concurrent.TimeUnit.MILLISECONDS)
+											if (_wid == null) continue
+											var _id = Number(_wid)
+											var _qe = _r._q[_id]
+											delete _r._q[_id]
+											if (isMap(_qe) && isDef(_qe.method)) {
 												var _m = {
 													jsonrpc: "2.0",
 													id: _id,
-													method: _r._q[_id].method,
-													params: _r._q[_id].params
+													method: _qe.method,
+													params: _qe.params
 												}
-												if (_r._q[_id].__notify) {
+												if (_qe.__notify) {
 													delete _m.id
 												}
 												var msg = stringify(_m, __, "") + "\n"
 												_debug("jsonrpc -> " + msg)
 												ioStreamWrite(i, msg)
 												i.flush()
-												delete _r._q[_id]
-												_r._ids.inc()
 											}
-											$await("__jsonrpc_q-" + _id + "-" + _main_id).destroy()
-											$await("__jsonrpc_r-" + _id + "-" + _main_id).notify()
-										} while (!_r._s)
+										}
 									}),
 									// out stream
 									$doV(() => {
-										do {
-											var _id = _r._ids.get()
-											$await("__jsonrpc_r-" + _id + "-" + _main_id).wait()
-											ioStreamReadLines(o, line => {
-												_debug("jsonrpc <- " + line)
-												var _l = jsonParse(line)
-												if (isMap(_l) && isDef(_l.jsonrpc)) {
-													if (isDef(_l.id)) {
-														_r._r[_l.id] = _l
-														$await("__jsonrpc_a-" + _l.id + "-" + _main_id).notify()
-													} else {
-														_r._notifications = _r._notifications || []
-														_r._notifications.push(_l)
-														if (_r._notifications.length > 50) _r._notifications.shift()
-														if (isFunction(aOptions.onNotification)) {
-															try { aOptions.onNotification(_l) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
-														}
-													}
+										ioStreamReadLines(o, line => {
+											_debug("jsonrpc <- " + line)
+											var _l = jsonParse(line)
+											if (isMap(_l) && isDef(_l.jsonrpc)) {
+												if (isDef(_l.id)) {
+													_r._r[_l.id] = _l
+													var _lw = _r._w.get(String(_l.id))
+													if (_lw != null) _lw.countDown()
 												} else {
-													_debug("jsonrpc <- (ignored non-JSON-RPC line) " + line)
+													_r._notifications = _r._notifications || []
+													_r._notifications.push(_l)
+													if (_r._notifications.length > 50) _r._notifications.shift()
+													if (isFunction(aOptions.onNotification)) {
+														try { aOptions.onNotification(_l) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
+													}
 												}
-												$await("__jsonrpc_r-" + _id + "-" + _main_id).destroy()
-												return false
-											}, __, true, "UTF-8")
-											o.flush()
-										} while (!_r._s)
+											} else {
+												_debug("jsonrpc <- (ignored non-JSON-RPC line) " + line)
+											}
+											return !!_r._s
+										}, __, true, "UTF-8")
 									}),
 									// err stream (drain stderr to avoid deadlocking the child on a full pipe buffer)
 									$doV(() => {
@@ -9281,7 +9306,7 @@ const $jsonrpc = function (aOptions) {
 				_debug("jsonrpc process error: " + e)
 				$err(e)
 			})
-			$await("__jsonrpc_" + _main_id).wait()
+			if (!_r._ready.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)) _debug("jsonrpc process not ready after " + aOptions.timeout + "ms")
 			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
@@ -9409,34 +9434,31 @@ const $jsonrpc = function (aOptions) {
 						}
 						_r.sh(aOptions.cmd)
 					}
-					var _id
-					// atomically allocate the next id and queue the request so concurrent exec() calls
-					// (e.g. with shared:true) never claim the same slot
+					var _id, _req = {
+						method: _$(aMethod, "aMethod").isString().$_(),
+						params: _$(aParams, "aParams").isMap().default({}),
+						__notify: !!aNotification
+					}
+
+					var _res, _wl
+					// ids are unique per connection and responses are matched by id, so concurrent exec() calls
+					// (e.g. with shared:true) can be pipelined safely
 					_r._sy.run(() => {
 						_id = _r._ids.get()
-						_r._q[_id] = {
-							method: _$(aMethod, "aMethod").isString().$_(),
-							params: _$(aParams, "aParams").isMap().default({}),
-							__notify: !!aNotification
+						_r._ids.inc()
+						_r._q[_id] = _req
+						if (!aNotification) {
+							_wl = new java.util.concurrent.CountDownLatch(1)
+							_r._w.put(String(_id), _wl)
 						}
 					})
-
-					var _res
-					// for stdio concorrency is not supported by nature so we use locks and awaits to
-					// serialize requests and responses
-					var _locked = $lock("__jsonrpc_q-" + _id + "-" + _main_id).tryLock(() => {
-						$await("__jsonrpc_q-" + _id + "-" + _main_id).notifyAll()
-						// If this is a notification (no reply expected) skip waiting for a response
-						if (!!aNotification) {
-							// cleanup waiter and return undefined
-							$await("__jsonrpc_a-" + _id + "-" + _main_id).destroy()
-							return
-						}
-						$await("__jsonrpc_a-" + _id + "-" + _main_id).wait(aOptions.timeout)
-					}, aOptions.timeout)
-					if (!_locked) {
-						delete _r._q[_id]
-						throw new Error("MCP/JSON-RPC stdio request " + _id + " could not acquire the request lock within " + aOptions.timeout + "ms")
+					_r._wq.put(_id)
+					// If this is a notification (no reply expected) skip waiting for a response
+					if (!!aNotification) return __
+					try {
+						if (!_wl.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)) _debug("jsonrpc request " + _id + " timed out after " + aOptions.timeout + "ms")
+					} finally {
+						_r._w.remove(String(_id))
 					}
 					if (isMap(_r._r[_id])) {
 						_res = _r._r[_id]
@@ -9622,7 +9644,8 @@ const $jsonrpc = function (aOptions) {
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string|array): Required for stdio type - the command to launch the MCP server (an array is executed directly, without going through a shell)\
  * - pwd (string): For stdio type - the working directory to use when launching the MCP server\
- * - envs (map): For stdio type - a map of environment variables to use when launching the MCP server. Note: this replaces the child process' environment entirely, it does not merge with the current environment\
+ * - envs (map): For stdio type - a map of environment variables to use when launching the MCP server. Note: by default these are merged over the current process environment (so secrets in the parent environment are inherited); set envsOnly to true to use only this map\
+ * - envsOnly (boolean): For stdio type - when true the MCP server environment will be exactly the envs map instead of merging it with the current environment (default: false)\
  * - options (map): Additional options:\
  *   - For remote/stdio: passed to underlying JSON-RPC client\
  *   - For dummy: { fns: map of function implementations, fnsMeta: map of function metadata }\
@@ -9640,7 +9663,7 @@ const $jsonrpc = function (aOptions) {
  *   - token (string): Bearer token when type is "bearer"\
  *   - tokenType (string): Authorization scheme prefix (default: "Bearer")\
  *   - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow\
- *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata\
+ *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata (the metadata issuer must match and discovered endpoints must use HTTPS unless they are loopback addresses or allowHTTP is true)\
  *   - interactive (boolean): false prohibits browser login and code prompts; omitted preserves existing behavior\
  *   - callback (boolean): opt-in loopback login through ow.server.httpd.oauth2 at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000\
  *   - tokenStore (map): opt-in {type: "sec", profile: "default"}; optional repo (default mcp-oauth2), bucket, key, file, lockSecret, mainSecret, lockTimeoutMs (60000). Or a synchronous custom load/save/clear/withLock store.\
@@ -9928,6 +9951,20 @@ const $mcp = function(aOptions) {
 		if (!isMap(_authServerMetadata)) {
 			throw new Error("OAuth authorization server metadata response is invalid for " + _authServerMetadataURL)
 		}
+		// RFC 8414 section 3.3: the metadata issuer must match the issuer it was requested for
+		if (isDef(_authServerMetadata.issuer) && String(_authServerMetadata.issuer).replace(/\/+$/, "") != String(_issuer).replace(/\/+$/, "")) {
+			throw new Error("OAuth authorization server metadata issuer '" + _authServerMetadata.issuer + "' doesn't match '" + _issuer + "'")
+		}
+		// Discovered endpoints come from the (possibly untrusted) server: don't send secrets in clear text to remote hosts
+		;["authorization_endpoint", "token_endpoint", "registration_endpoint"].forEach(k => {
+			if (!isString(_authServerMetadata[k]) || aOptions.auth.allowHTTP === true) return
+			var _u
+			try { _u = new java.net.URI(_authServerMetadata[k]) } catch(e) { throw new Error("OAuth discovered " + k + " is not a valid URL") }
+			var _sch = String(_u.getScheme()).toLowerCase()
+			if (_sch == "https") return
+			if (_sch == "http" && ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(_u.getHost()).toLowerCase()) >= 0) return
+			throw new Error("OAuth discovered " + k + " must use HTTPS (set auth.allowHTTP=true to override): " + _authServerMetadata[k])
+		})
 		_auth.protectedResourceMetadataURL = _resourceMetadataURL
 		_auth.protectedResourceMetadata = _resourceMetadata
 		_auth.authorizationServerIssuer = _issuer
@@ -10232,7 +10269,9 @@ const $mcp = function(aOptions) {
 			_versions = _discover.error.data.supported
 		}
 		if (isUnDef(_versions)) return false
-		var _mutual = _versions.filter(v => _MCP_KNOWN_VERSIONS.indexOf(v) >= 0).sort()
+		// Only modern-era versions can skip the initialize handshake; a server that only lists legacy
+		// versions must go through the legacy initialize fallback instead
+		var _mutual = _versions.filter(v => _MCP_KNOWN_VERSIONS.indexOf(v) >= 0 && v >= _MCP_MODERN_THRESHOLD).sort()
 		if (_mutual.length == 0) return false
 
 		_r._negotiatedVersion = _mutual[_mutual.length - 1]
@@ -14700,6 +14739,15 @@ const __getThreadPool = function(wantVirt) {
 	   __threadPoolsDegraded = [ false ]
    }
 
+	// Retire degraded pools once their stuck workers are gone (keeping at least one pool)
+	for(let i = __threadPools.length - 1; i >= 0 && __threadPools.length > 1; i--) {
+		if (__threadPoolsDegraded[i] && __threadPools[i].isQuiescent()) {
+			__threadPools[i].shutdown()
+			__threadPools.splice(i, 1)
+			__threadPoolsDegraded.splice(i, 1)
+		}
+	}
+
 	for(let i = 0; i < __threadPools.length; i++) {
 		if (!__threadPoolsDegraded[i] && __threadPools[i].getActiveThreadCount() < __threadPools[i].getParallelism()) return __threadPools[i]
 	}
@@ -17022,10 +17070,10 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
 	        case "bstable":
-			args.__rowsep = true
 		case "btable":
 			var tableWidth = isDef(args.__width) ? args.__width : args.__WIDTH;
-			var tableRowSep = isDef(args.__rowsep) ? args.__rowsep : args.__ROWSEP;
+			// bstable always uses row separators (without changing the caller's args)
+			var tableRowSep = format == "bstable" ? true : (isDef(args.__rowsep) ? args.__rowsep : args.__ROWSEP);
 			if (isDef(tableWidth)) {
 				if ((!isNumber(tableWidth) && !isString(tableWidth)) || String(tableWidth).trim() == "" ||
 					!Number.isSafeInteger(Number(tableWidth)) || Number(tableWidth) <= 0) {

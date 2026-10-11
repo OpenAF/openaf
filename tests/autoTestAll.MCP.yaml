@@ -84,6 +84,21 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testMCPAuthenticatedModernPagination;
 
+   - name: MCP::JSON-RPC stdio concurrent exec
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testJSONRPCStdioConcurrentExec;
+
+   - name: MCP::OAuth rejects insecure endpoints and issuer mismatch
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testOAuthRejectsInsecureEndpointsAndIssuerMismatch;
+
+   - name: MCP::auto client legacy-only discover error
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMCPAutoClientLegacyOnlyDiscoverError;
+
 todo:
    - MCP::OAuth discovery with client credentials
    - MCP::OAuth authorization URL includes resource and PKCE
@@ -100,3 +115,6 @@ todo:
    - MCP::Unsuccessful list pages
    - MCP::List page limit
    - MCP::Authenticated modern pagination
+   - MCP::JSON-RPC stdio concurrent exec
+   - MCP::OAuth rejects insecure endpoints and issuer mismatch
+   - MCP::auto client legacy-only discover error

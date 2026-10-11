@@ -1669,6 +1669,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                         contents: request.contents || [{ role: "user", parts: [{ text: typeof request.state == "string" ? request.state : JSON.stringify(request.state) }] }],
                         generationConfig: {}
                     };
+                    // Gemini rejects empty text parts: omit the system instruction when there is none
+                    if (!isString(request.instructions) || request.instructions.length == 0) delete body.system_instruction;
                     if (isDef(po.temperature)) body.generationConfig.temperature = po.temperature;
                     if (isDef(po.maxOutputTokens)) body.generationConfig.maxOutputTokens = po.maxOutputTokens;
                     if (profile == "response-format") body.generationConfig.responseFormat = { text: { mimeType: "APPLICATION_JSON", schema: request.schema } };
@@ -3402,7 +3404,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             })
                             if (followUps.length > 0) {
                                 _r.conversation = _r.conversation.concat(followUps)
-                                return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
+                                return _r.rawPrompt([], aModel, _temperatureExplicit ? aTemperature : __, aJsonFlag, aTools)
                             }
                         }
 
@@ -3628,7 +3630,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (_p.length > 0) {
                             _r.conversation = _r.conversation.concat(_p)
                             // Recursively call rawPromptStream to continue streaming with tool results
-                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            var toolResult = _r.rawPromptStream([], aModel, _temperatureExplicit ? aTemperature : __, aJsonFlag, aTools, aOnDelta)
                             if (isMap(toolResult)) {
                                 // Merge events from both calls
                                 if (isArray(toolResult.events)) {

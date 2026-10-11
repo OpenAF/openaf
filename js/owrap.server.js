@@ -1986,7 +1986,11 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
         var _wrap = (aBody, isList) => ow.server.mcp.wrapResult(aBody, _era, { isList: isList === true, serverInfo: initData.serverInfo })
 
         var _res = ow.server.jsonRPC(_pline, merge({
-            initialize                 : params => (isMap(params) && isString(params.protocolVersion)) ? merge(initData, { protocolVersion: params.protocolVersion }) : initData,
+            // Only agree to a requested version this server supports (and that uses the initialize handshake);
+            // otherwise answer with the server's own version so the client can decide (MCP lifecycle spec)
+            initialize                 : params => (isMap(params) && isString(params.protocolVersion) &&
+                                                    ow.server.mcp.versions.supported.indexOf(params.protocolVersion) >= 0 &&
+                                                    params.protocolVersion < ow.server.mcp.versions.modernThreshold) ? merge(initData, { protocolVersion: params.protocolVersion }) : initData,
             "prompts/list"             : () => _wrap({ prompts: [] }, true),
             "notifications/initialized": () => ({}),
             ping                       : () => ({}),
@@ -3317,7 +3321,8 @@ OpenWrap.server.prototype.httpd = {
    * loopback redirectURI with an explicit port. authenticate() returns tokens, reusing or refreshing cached
    * credentials; getAuthStatus() returns non-secret status; clearAuth() removes credentials; cancel() stops
    * a pending login. Uses fresh state and S256 PKCE. Optional clientSecret, scope, audience, resource,
-   * extraAuthParams and extraParams configure the provider. interactive defaults to true, disableOpenBrowser
+   * extraAuthParams and extraParams configure the provider. authURL and tokenURL must use HTTPS unless they are
+   * loopback addresses or allowHTTP is true. interactive defaults to true, disableOpenBrowser
    * to false, loginTimeoutMs to 300000, tokenTimeoutMs to 60000 and refreshWindowMs to 30000.
    * onAuthorizationURL(url) receives the login URL after the listener is ready. tokenStore defaults to
    * {type:"sec", repo:"oauth2", profile:"default"}; false disables persistence. Store options match $mcp's
@@ -3350,6 +3355,11 @@ OpenWrap.server.prototype.httpd = {
         if (isUnDef(endpoint) || ["http", "https"].indexOf(String(endpoint.getScheme())) < 0 ||
             endpoint.getHost() === null || endpoint.getRawUserInfo() !== null || endpoint.getRawFragment() !== null) {
           throw new Error("OAuth " + name + " requires an HTTP(S) endpoint");
+        }
+        // Client secrets, codes, PKCE verifiers and refresh tokens must not travel in clear text to remote hosts
+        if (String(endpoint.getScheme()) === "http" && aOptions.allowHTTP !== true &&
+            ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(endpoint.getHost()).toLowerCase()) < 0) {
+          throw new Error("OAuth " + name + " requires an HTTPS endpoint (plain HTTP is only allowed for loopback hosts or with allowHTTP=true)");
         }
       });
       var uri;
@@ -3465,6 +3475,9 @@ OpenWrap.server.prototype.httpd = {
     };
     var stop = function(attempt) {
       if (isDef(attempt) && isDef(attempt.server) && attempt.stopped.compareAndSet(false, true)) {
+        // The callback handler signals the latch before its reply is written: give it a moment to reach
+        // the browser before stopping the server (which interrupts handler threads)
+        if (isDef(attempt.result) && attempt.result.get() !== null) sleep(250, true);
         httpd.stop(attempt.server);
       }
     };

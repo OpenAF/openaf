@@ -1325,13 +1325,13 @@
     },
 
     _functionStartsWith: function(resolvedArgs) {
-        return resolvedArgs[0].lastIndexOf(resolvedArgs[1]) === 0;
+        return resolvedArgs[0].indexOf(resolvedArgs[1]) === 0;
     },
 
     _functionEndsWith: function(resolvedArgs) {
         var searchStr = resolvedArgs[0];
         var suffix = resolvedArgs[1];
-        return searchStr.indexOf(suffix, searchStr.length - suffix.length) !== -1;
+        return searchStr.length >= suffix.length && searchStr.indexOf(suffix, searchStr.length - suffix.length) !== -1;
     },
 
     _functionReverse: function(resolvedArgs) {

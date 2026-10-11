@@ -17,6 +17,9 @@ import java.util.concurrent.TimeUnit;
 public final class OJobLanguageProcess {
     private OJobLanguageProcess() { }
 
+    // How long to keep draining stdout/stderr after the process exited (see run)
+    private static final long DRAIN_GRACE_MS = 2000;
+
     private static Thread drain(InputStream input, ByteArrayOutputStream output) {
         Thread thread = new Thread(() -> {
             try (InputStream stream = input) {
@@ -71,10 +74,21 @@ public final class OJobLanguageProcess {
         Map<Long, ProcessHandle> descendants = new LinkedHashMap<>();
         boolean timedOut = false;
         boolean descendantTracking = true;
+        long lastTrack = 0, exitedAt = 0;
         try {
             while (process.isAlive() || out.isAlive() || err.isAlive()) {
-                descendantTracking &= track(process, descendants);
-                if (timeout > 0 && TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) >= timeout) {
+                long nowNs = System.nanoTime();
+                // Enumerating OS processes is expensive: refresh the descendants snapshot at most every 100ms
+                if (process.isAlive() && nowNs - lastTrack >= TimeUnit.MILLISECONDS.toNanos(100)) {
+                    descendantTracking &= track(process, descendants);
+                    lastTrack = nowNs;
+                }
+                if (!process.isAlive()) {
+                    // A detached grandchild that inherited stdout/stderr keeps the pipes (and drain threads) open
+                    // after the process itself exited: don't wait for it beyond a short grace period
+                    if (exitedAt == 0) exitedAt = nowNs;
+                    if (nowNs - exitedAt >= TimeUnit.MILLISECONDS.toNanos(DRAIN_GRACE_MS)) break;
+                } else if (timeout > 0 && TimeUnit.NANOSECONDS.toMillis(nowNs - start) >= timeout) {
                     timedOut = true;
                     terminate(process, descendants);
                     break;

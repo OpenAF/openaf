@@ -927,6 +927,31 @@
     }
 
 
+    exports.testPForEachNoDefaultTimeout = function() {
+        ow.test.assert(isUnDef(__flags.PFOREACH.wait_timeout_ms), true, "pForEach should not have a default wait deadline")
+        var nc = getNumberOfCores()
+        if (nc < 3) return
+
+        var arr = []
+        for (var i = 0; i < nc * 4; i++) arr.push(i)
+        var _sr = __flags.PFOREACH.seq_ratio, _mp = __flags.PFOREACH.min_par_size, _wt = __flags.PFOREACH.wait_timeout_ms
+        __flags.PFOREACH.seq_ratio = 1e6
+        __flags.PFOREACH.min_par_size = 0
+        try {
+            // A non-positive timeout must also mean "wait for everything"
+            var errs = []
+            var res = pForEach(arr, (v, idx) => { if (idx == 0) sleep(1500, true); return v * 2 }, e => errs.push(String(e)), false, 0)
+            ow.test.assert(errs.length, 0, "pForEach without deadline reported errors: " + errs.join("; "))
+            ow.test.assert(res.length, arr.length, "pForEach without deadline lost positions")
+            ow.test.assert(res[0], 0, "pForEach without deadline dropped the slow partition")
+            ow.test.assert(res[arr.length - 1], (arr.length - 1) * 2, "pForEach without deadline returned wrong values")
+        } finally {
+            __flags.PFOREACH.seq_ratio = _sr
+            __flags.PFOREACH.min_par_size = _mp
+            __flags.PFOREACH.wait_timeout_ms = _wt
+        }
+    }
+
     exports.testPForEachQueueTimeout = function() {
         var nc = getNumberOfCores();
         if (nc < 3) return;

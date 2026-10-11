@@ -2428,7 +2428,13 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat, options) {
             } else if (type == 66 && vectorLength > 0 && units == 5) {
                 if (vectorLength > len-dataOffset) fail("string payload", start+dataOffset)
                 value = stringAt(start+dataOffset, start+dataOffset+vectorLength, "string")
-            } else fail("type or vector shape", start+12)
+            } else if (strict) {
+                fail("type or vector shape", start+12)
+            } else {
+                // Unknown counter types/shapes (e.g. from newer JVMs) are skipped instead of failing the whole buffer
+                start += len
+                continue
+            }
             Object.defineProperty(res, name, { value: value, enumerable: true, configurable: true, writable: true })
             if (metadata) Object.defineProperty(entries, name, { enumerable: true, value: {
                 type: String.fromCharCode(type), flags: flags, units: units, variability: variability,
@@ -2586,7 +2592,10 @@ OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
                 ignore = checks.some(check => aList.some(domain => {
                     domain = String(domain).toLowerCase().replace(/\.$/, "");
                     var name = check.name.replace(/\.$/, "");
-                    return domain.length > 0 && (name == domain ||
+                    // a leading dot (e.g. ".corp.local") keeps its previous meaning: any subdomain of it
+                    var subOnly = domain.startsWith(".");
+                    domain = domain.replace(/^\.+/, "");
+                    return domain.length > 0 && ((!subOnly && name == domain) ||
                         (check.dns && name.endsWith("." + domain)));
                 }));
             }

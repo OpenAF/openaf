@@ -153,6 +153,10 @@
         ow.test.assert(visibleLength("⚽️"), 2, "Problem with explicit emoji-presentation symbol visible width.");
         ow.test.assert(af.visibleLength("⚽️"), 2, "Problem with af.visibleLength explicit emoji-presentation symbol visible width.");
         ow.test.assert(visibleLength("⚽︎"), 1, "Problem with text-presentation symbol visible width.");
+        ow.test.assert(visibleLength("\u2934"), 1, "Problem with text-default arrow visible width.");
+        ow.test.assert(af.visibleLength("\u2934"), 1, "Problem with af.visibleLength text-default arrow visible width.");
+        ow.test.assert(visibleLength("\ud83c\udc04"), 2, "Problem with mahjong tile emoji visible width.");
+        ow.test.assert(af.visibleLength("\ud83c\udc04"), 2, "Problem with af.visibleLength mahjong tile emoji visible width.");
         ow.test.assert(af.visibleLength("⚽︎"), 1, "Problem with af.visibleLength text-presentation symbol visible width.");
 
         // Opt-out (per-call param or __flags.VISIBLELENGTH_WIDE_EMOJI = false): matches plain
@@ -265,6 +269,17 @@
         explicitLines.slice(0, -1).forEach(function(line) {
             ow.test.assert(visibleLength(line), visibleLength(explicitLines[0]), "Unicode visible column alignment");
         });
+    };
+
+    exports.testTreeTableArraysHeterogeneous = function() {
+        var out = printTreeOrS({ x: [ { a: 1 }, { b: 2 } ], z: [ 1, { c: 3 } ] }, 80, { noansi: true, tableArrays: true });
+        ow.test.assert(out.indexOf("b") >= 0 && out.indexOf("2") >= 0, true, "Heterogeneous map rows lost a field: " + out);
+        ow.test.assert(out.indexOf("c") >= 0 && out.indexOf("3") >= 0, true, "Mixed scalar/map rows lost a map: " + out);
+        ow.test.assert(out.indexOf("undefined") < 0, true, "Heterogeneous rows rendered undefined cells: " + out);
+
+        var tbl = printTreeOrS({ x: [ { a: 1, b: 2 }, { b: 3, a: 4 } ] }, 80, { noansi: true, tableArrays: true });
+        ow.test.assert(tbl.indexOf("─") >= 0 || tbl.indexOf("-") >= 0, true, "Homogeneous rows should still render as a table: " + tbl);
+        ow.test.assert(tbl.indexOf("\x1b") < 0 && tbl.indexOf("[m") < 0, true, "noansi table leaked ANSI resets: " + tbl);
     };
 
     exports.testDefaultTableFormat = function() {
@@ -804,6 +819,7 @@
         var target = "(s: abc, num: -1.23456, bol: true, subMap: (x: 1, y: -1), subArr: [1 | 2 | 3], dt: 2020-01-01/12:34:56.000, subArr2: [(n: 1, b: true, s: abc, p: (x: 1, y: -1)) | (n: 2, b: false, s: 'xyz \\'a\\'', a: [4 | 5 | 6]) | (n: 3, b: false, s: axZ xyz)])";
 
         ow.test.assert(ow.format.toSLON(orig), target, "Problem with toSLON.");
+        ow.test.assert(af.fromSLON(ow.format.toSLON({ p: "C:\\temp\\x" })).p, "C:\\temp\\x", "Problem with toSLON backslash round trip.");
 
         var slon = "(a: 1, b: abc, c: 123aBc, d: 1.1, e: 1.2.3, f: [ 'ab:12' | '12:ab' ], g: [ ( x: 1 ) | ( y: abc , z :  ab  cd  ) ])"
         var json = {"a":1,"b":"abc","c":"123aBc","d":1.1,"e":"1.2.3","f":["ab:12","12:ab"],"g":[{"x":1},{"y":"abc","z":"ab  cd"}]}

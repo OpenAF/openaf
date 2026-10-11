@@ -40,9 +40,10 @@ public final class Terminal {
             system = new Terminal(terminal);
             system.systemTerminal = true;
             Terminal owned = system;
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            // Registered through OpenAF so it also runs on fast exits (exit(code, true), armed fast exit)
+            openaf.plugins.Threads.registerShutdownAction(() -> {
                 try { owned.restore(); terminal.close(); } catch (Exception ignored) { }
-            }, "OpenAF-terminal-restore"));
+            });
         }
         return system;
     }

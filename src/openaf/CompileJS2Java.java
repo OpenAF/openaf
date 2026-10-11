@@ -78,7 +78,7 @@ public class CompileJS2Java {
 
     public static void main(String args[]) {
 		try {
-			String script = new String(Files.readAllBytes(Paths.get(args[1])));
+			String script = new String(Files.readAllBytes(Paths.get(args[1])), java.nio.charset.StandardCharsets.UTF_8);
 			CompilationMethod method = CompilationMethod.RHINO_LEGACY;
 			String path = args.length > 2 ? args[2] : null;
 

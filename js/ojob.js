@@ -831,6 +831,19 @@ function ojob_code() {
     var temp = java.nio.file.Files.createTempFile(parent.toPath(), ".ojob-code-", ".tmp");
     try {
       io.writeFileString(String(temp), w.text);
+      // createTempFile is owner-only (0600): keep the replaced file's permissions (e.g. an executable shebang yaml)
+      var target = new java.io.File(w.file).toPath();
+      if (java.nio.file.Files.exists(target)) {
+        try {
+          java.nio.file.Files.setPosixFilePermissions(temp, java.nio.file.Files.getPosixFilePermissions(target));
+        } catch(e) {
+          // Non-POSIX file systems (e.g. Windows)
+        }
+      } else {
+        try {
+          java.nio.file.Files.setPosixFilePermissions(temp, java.nio.file.attribute.PosixFilePermissions.fromString("rw-r--r--"));
+        } catch(e) {}
+      }
       var options = java.lang.reflect.Array.newInstance(java.nio.file.CopyOption, 2);
       options[0] = java.nio.file.StandardCopyOption.REPLACE_EXISTING;
       options[1] = java.nio.file.StandardCopyOption.ATOMIC_MOVE;

@@ -1498,9 +1498,12 @@ OpenWrap.format.prototype.string = {
 		// Get current terminal settings
 		var current = _c.getConsoleReader().getTerminal().settings.get("icanon echo")
 		_c.getConsoleReader().getTerminal().settings.set("-icanon min 1 -echo")
-		while(pres >= 0) pres = __pauseArray(lines, pres)
-		// Restore terminal settings
-		_c.getConsoleReader().getTerminal().settings.set(current)
+		try {
+			while(pres >= 0) pres = __pauseArray(lines, pres)
+		} finally {
+			// Restore terminal settings (also on errors/interrupts)
+			_c.getConsoleReader().getTerminal().settings.set(current)
+		}
 	}
 };
 
@@ -3759,7 +3762,7 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	if (isNumber(aObj)) {
 		return String(aObj)
 	}
-	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
+	var _escape = s => s.replace(/\\/g, "\\\\").replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
 	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && aObj.match(new RegExp(dTheme.specialRE))) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
 }
 
@@ -3802,7 +3805,7 @@ OpenWrap.format.prototype.toCSLON = function(aObj, cTheme) {
 	if (isDate(aObj)) {
 		return ansiColor("reset", ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS'))
 	}
-	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
+	var _escape = s => s.replace(/\\/g, "\\\\").replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
 	if (!isMap(aObj) && !isArray(aObj)) return ansiColor("reset", (isString(aObj) && aObj.match(new RegExp(dTheme.specialRE))) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj))
 }
 

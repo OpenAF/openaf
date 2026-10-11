@@ -18,7 +18,7 @@ OpenWrap.python.prototype.__encode = function(value) {
   return String(java.util.Base64.getEncoder().encodeToString(af.fromString2Bytes(stringify(value, __, ""), "UTF-8")));
 };
 
-OpenWrap.python.prototype.initCode = function(includeCoding) {
+OpenWrap.python.prototype.initCode = function(includeCoding, embedToken) {
   var code = includeCoding ? "# -*- coding: utf-8 -*-\n" : "";
   code += `import json
 import socket
@@ -42,12 +42,13 @@ def __oaf_run(encoded, namespace):
     sys.stdout.write(payload['marker'] + json.dumps(result) + '\\n')
 
 `;
+  // The token is passed through the OAF_PY_TOKEN environment variable (not the command line/source, visible in ps)
   if (isDef(this.token)) code += `def _(expression):
-    import socket, json
+    import socket, json, os
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect(('127.0.0.1', ${this.port}))
-        s.sendall(json.dumps({'e': expression, 't': '${this.token}'}).encode('utf-8') + b'\\n')
+        s.sendall(json.dumps({'e': expression, 't': ${embedToken ? "'" + this.token + "'" : "os.environ.get('OAF_PY_TOKEN', '')"}}).encode('utf-8') + b'\\n')
         chunks = []
         while True:
             chunk = s.recv(4096)
@@ -119,7 +120,8 @@ class Handler(socketserver.BaseRequestHandler):
             if extra.strip():
                 raise ValueError('Multiple request frames')
             request = json.loads(frame.decode('utf-8'))
-            if not isinstance(request, dict) or request.get('t') != '${this.token}':
+            token = os.environ.get('OAF_PY_TOKEN')
+            if not token or not isinstance(request, dict) or request.get('t') != token:
                 raise ValueError('Unauthorized request')
             if request.get('exit'):
                 os._exit(0)
@@ -215,8 +217,10 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn, isAlone)
         this.__log = io.createTempFile("openaf-python-", ".log");
         var command = new java.util.ArrayList();
         [this.python, "-u", "-c", this.__serverCode()].forEach(v => command.add(String(v)));
-        this.__process = new java.lang.ProcessBuilder(command).redirectErrorStream(true)
-          .redirectOutput(new java.io.File(this.__log)).start();
+        var pb = new java.lang.ProcessBuilder(command).redirectErrorStream(true)
+          .redirectOutput(new java.io.File(this.__log));
+        pb.environment().put("OAF_PY_TOKEN", String(this.token));
+        this.__process = pb.start();
         var deadline = now() + 10000, ready = false;
         while (now() < deadline) {
           if (!this.__process.isAlive()) throw "Python startup failed: " + io.readFileString(this.__log);
@@ -361,7 +365,9 @@ OpenWrap.python.prototype.__exec = function(code, input, output, pm, throwExcept
       var temporary = io.createTempFile("openaf-python-", ".py");
       try {
         io.writeFileString(temporary, this.initCode(true) + "import sys\nsys.path[0] = ''\nsys.argv[0] = '-c'\ndel __file__\n" + source);
-        result = $sh([this.python, temporary]).get(0);
+        var _sh = $sh([this.python, temporary]);
+        if (isDef(this.token)) _sh = _sh.envs({ OAF_PY_TOKEN: String(this.token) }, true);
+        result = _sh.get(0);
       } finally { io.rm(temporary); }
     } else {
       ow.loadObj();
@@ -453,8 +459,10 @@ eval(__oaf_compiled, globals(), globals())
     io.writeFileString(temporary, bootstrap);
     var stderr = false, command = new java.util.ArrayList();
     [this.python, temporary].concat(argv).forEach(v => command.add(String(v)));
-    child = new java.lang.ProcessBuilder(command)
-      .redirectInput(java.lang.ProcessBuilder.Redirect.INHERIT).start();
+    var pb = new java.lang.ProcessBuilder(command)
+      .redirectInput(java.lang.ProcessBuilder.Redirect.INHERIT);
+    if (isDef(this.token)) pb.environment().put("OAF_PY_TOKEN", String(this.token));
+    child = pb.start();
     this.__standalone.put(child, true);
     $doWait($doAll([
       $do(() => { child.getInputStream().transferTo(java.lang.System.out); java.lang.System.out.flush(); }),

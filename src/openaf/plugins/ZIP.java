@@ -197,7 +197,7 @@ public class ZIP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object getFile(String name) throws IOException {
+	public synchronized Object getFile(String name) throws IOException {
 		Object res = zipData.get(name);
 		if (res != null) {
 			return res;

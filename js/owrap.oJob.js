@@ -14,6 +14,8 @@ OpenWrap.oJob = function(isNonLocal) {
 	if (isDef(ow.oJob)) return ow.oJob; else ow.oJob = this
 
 	this.__promises = [];
+	// guards __promises: jobs can be started concurrently (async todos, periodic/subscribed jobs, nested $job)
+	this.__promisesSync = new java.lang.Object();
 	var parent = this;
 
 	this.__host = "localhost";
@@ -1769,7 +1771,8 @@ OpenWrap.oJob.prototype.stop = function() {
 	}
 
 	if (this.running) {
-		$doWait($doAll(this.__promises));
+		var _pending = syncFn(() => this.__promises.slice(), this.__promisesSync);
+		$doWait($doAll(_pending));
 		if (isDef(ow.metrics)) ow.metrics.stopCollecting( isDef(this.__ojob.metrics) && isDef(this.__ojob.metrics.chName) ? this.__ojob.metrics.chName : __ );
 		//this.getLogCh().waitForJobs(250);
 		this.getLogCh().waitForJobs();
@@ -2857,8 +2860,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					_run(aJob.exec, args, aJob, aId);
 					this.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 				} else {
-					parent.__promises = parent.__promises.filter(p => !(p.executors.isEmpty() && !p.executing.get() && (p.state.get() == p.states.FULFILLED || p.state.get() == p.states.FAILED)))
-					parent.__promises.push($do(() => {
+					var _jp = $do(() => {
 						_run(aJob.exec, args, aJob, aId);
 					}).then(() => {
 						parent.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
@@ -2866,7 +2868,11 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						parent.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
 						// If catch handlers exist, they already handled the error in _run, so re-throw
 						if (isDef(aJob.catch) || isDef(parent.__ojob.catch)) throw e;
-					}));
+					})
+					sync(() => {
+						parent.__promises = parent.__promises.filter(p => !(p.executors.isEmpty() && !p.executing.get() && (p.state.get() == p.states.FULFILLED || p.state.get() == p.states.FAILED)))
+						parent.__promises.push(_jp)
+					}, parent.__promisesSync)
 				}
 			} catch(e) {
 				this.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
@@ -4273,7 +4279,8 @@ OpenWrap.oJob.prototype.__runLanguage = function(lang, source, args, options, na
   } catch (e) {
     throw new Error(label + " (" + stage + "): " + e);
   } finally {
-    if (isDef(directory)) io.rm(directory);
+    // a cleanup failure (e.g. a file still locked on Windows) must not replace the job's own result/error
+    if (isDef(directory)) try { io.rm(directory); } catch (e) { logWarn("Couldn't remove language temporary directory '" + directory + "': " + e); }
   }
 };
 
