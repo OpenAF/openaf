@@ -308,6 +308,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	JQ_CACHE_SIZE               : 256, // Java $jq compiled query cache; 0 disables and clears it.
 	PATH_CACHE_SIZE             : 256, // Java $path syntax cache; 0 disables and clears it.
 	PFOREACH                    : {
+        useGPU: true, // OAF_PFOREACH_GPU=false or per-call useGPU:false bypasses delegation.
 		seq_thrs_ms        : 6,
 		threads_thrs       : 2,
 		waitms             : 50,
@@ -6250,6 +6251,8 @@ const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 /**
  * <odoc>
  * <key>parallelArray(anArray, aReduceFunction, initValue, aAggFunction, numThreads, aControlMap) : Object</key>
+ * An installed GPU opack may handle calls without an explicit thread count/control map. Set
+ * OAF_PFOREACH_GPU=false, __flags.PFOREACH.useGPU=false or options.useGPU=false to bypass it.
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aReduceFunction(pr, cv, i, arr),
  * where pr = previous result, cv = current value, i = index and arr = array subset, will be executed for each value in sequence.
  * The pr value for the first execution on each thread will have the value initValue if provided. The returned result, in each thread,
@@ -6342,7 +6345,7 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
 
 /**
  * <odoc>
- * <key>parallel4Array(anArray, aFunction, numThreads, aControlMap) : Object</key>
+ * <key>parallel4Array(anArray, aFunction, numThreads, aControlMap, options) : Object</key>
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFunction(aValue)
  * will be executed for each value in sequence. An array with all the aFunction results will be returned. If no numThreads is 
  * provided, the number of threads will be automatically determined. Optionally you can provide a empty map as aControlMap
@@ -6361,7 +6364,31 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
  * );\
  * </odoc>
  */
-const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
+var __gpuDelegateLoading = false
+const __gpuDelegate = function(method, options) {
+  if (options && options.useGPU === false) return undefined
+  if (__flags.PFOREACH.useGPU === false || __flags.PFOREACH.forceSeq) return undefined
+  if (/^(false|0|no|off)$/i.test(String(java.lang.System.getenv("OAF_PFOREACH_GPU")))) return undefined
+  if (__gpuDelegateLoading) return undefined
+  __gpuDelegateLoading = true
+  try {
+    if (isUnDef(ow.gpu) || typeof ow.gpu[method] != "function") {
+      var root = getOPackPath("GPU")
+      if (isUnDef(root)) return undefined
+      loadLib(root + "/gpu.js")
+      ow.loadGPU()
+    }
+    return typeof ow.gpu[method] == "function" ? ow.gpu : undefined
+  } catch(e) { return undefined }
+  finally { __gpuDelegateLoading = false }
+}
+
+const parallel4Array = function(anArray, aFunction, numberOfThreads, threads, options) {
+  // Explicit thread counts/control maps retain their original scheduler and synchronization API.
+  if (isUnDef(numberOfThreads) && isUnDef(threads)) {
+    var gpu = __gpuDelegate("parallel4Array", options)
+    if (gpu) return gpu.parallel4Array(anArray, aFunction, options)
+  }
 	var res = parallelArray(anArray,
 		function(p, c, ii, a) {
 			var subres = aFunction(c, ii)
@@ -6377,7 +6404,7 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 
 /**
  * <odoc>
- * <key>pForEach(anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) : Array</key>
+ * <key>pForEach(anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) : Array</key>
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
  * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
  * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true the
@@ -6401,7 +6428,20 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
  * )\
  * </odoc>
  */
-const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
+// options: useGPU:false bypasses installed opack delegation; execution:"sequential"/"parallel"
+// requests a CPU route when bypassing; maxWorkers caps partitions; metrics receives the actual route.
+const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) => {
+  options = options || {}
+  // Positive deadlines keep the existing cancellable CPU implementation.
+  var budget = isDef(aTimeoutMs) ? aTimeoutMs : __flags.PFOREACH.wait_timeout_ms
+  if (!aUseSeq && !(isNumber(budget) && budget > 0)) {
+    var gpu = __gpuDelegate("pForEach", options)
+    if (gpu) return gpu.pForEach(anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options)
+  }
+  if (options.execution == "sequential") aUseSeq = true
+  var metrics = options.metrics
+  if (metrics) { metrics.execution = "sequential"; metrics.timedOut = false }
+
 	_$(anArray, "anArray").isArray().$_()
 	_$(aFn, "aFn").isFunction().$_()
 	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(printErr)
@@ -6437,7 +6477,8 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 		return partitions
 	}
 
-	var pres = calculatePartitions(arS, _nc)
+	if (isNumber(options.maxWorkers) && options.maxWorkers > 0) _nc = Math.min(_nc, Math.max(1, Math.floor(options.maxWorkers)))
+	var pres = calculatePartitions(arS, Math.min(arS, _nc))
 	var _ts = [], parts = $atomic(0, "long")
 
 	// If not enough cores, too many threads already in the pool, or too few items per core to be worth the
@@ -6448,6 +6489,8 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	            _tpstats.active / _nc > __flags.PFOREACH.seq_ratio ||
 	            arS < _nc * __flags.PFOREACH.min_par_size
 
+	if (options.execution == "parallel" && !aUseSeq && !__flags.PFOREACH.forceSeq && _nc >= 3 &&
+      _tpstats.active / _nc <= __flags.PFOREACH.seq_ratio) beSeq = false
 	const waitMs = __flags.PFOREACH.waitms
 	const seqThresholdMs = __flags.PFOREACH.seq_thrs_ms
 	const threads_thrs = __flags.PFOREACH.threads_thrs
@@ -6522,6 +6565,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 				fRes.add( { i: _i_, r: ar } )
 				parts.inc()
 			} else {
+				if (metrics) metrics.execution = "parallel"
 				_ts.push( $do( fnPar(_i_, pres[_i_]) ).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
 
 				// Apply backpressure without losing the promise needed for cancellation.
@@ -6534,7 +6578,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 			aErrFn(eee)
 		} finally {
 			// Once parallel dispatch starts, callbacks must stay off the waiting thread.
-			if (!parallelCall && typeof aUseSeq === "undefined" && pres.length > 1 && _nc >= 3) {
+			if (!options.execution && !parallelCall && typeof aUseSeq === "undefined" && pres.length > 1 && _nc >= 3) {
 				if ( ((times.get() / execs.get() ) / 1000000) < seqThresholdMs || __getThreadPools().active / _nc > seq_ratio) {
 					beSeq = true
 				} else {
@@ -6557,6 +6601,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 			// Bounded timeout hit: cancel the aggregator and whatever partitions are still pending so their
 			// pool slots get reclaimed instead of staying poisoned for unrelated future callers.
 			stopped.set(true)
+			if (metrics) metrics.timedOut = true
 			try { if (isDef(_all)) _all.cancel("pForEach: wait timed out") } catch(e) {}
 			var _pending = pres.length - parts.get()
 			_ts.forEach(t => {
