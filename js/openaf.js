@@ -13653,9 +13653,66 @@ const askConsole = () => {
   return {
     console:con, ansi:con.isAnsiSupported() && String(term.getType()) != "windows",
     write:function(text, newline) { term.writer().print((isDef(text) ? String(text) : "") + (newline === false ? "" : "\n")); term.writer().flush(); },
-    close:function() { con.close(); }
+    close:function() { con.close(); },
+    // Raw code reader (-2 on timeout, -1 on EOF); blocking when aTimeoutMs is undefined. Used by askKey.
+    read:function(aTimeoutMs) { return isDef(aTimeoutMs) ? Number(term.reader().read(aTimeoutMs)) : Number(term.reader().read()); },
+    size:function() { return { width: Number(term.getWidth()), height: Number(term.getHeight()) }; },
+    // Runs aFn with the terminal in raw mode, always restoring the previous attributes.
+    raw:function(aFn) { var attrs = term.enterRawMode(); try { return aFn(); } finally { term.setAttributes(attrs); } },
+    // Switches the alternate screen buffer (and hides/shows the cursor) on or off.
+    altScreen:function(on) { term.writer().print(on ? "\x1b[?1049h\x1b[?25l\x1b[2J\x1b[H" : "\x1b[?25h\x1b[?1049l"); term.writer().flush(); }
   };
 };
+
+/**
+ * <odoc>
+ * <key>askKey(aUI, aTimeoutMs) : String</key>
+ * Reads a single key from aUI (a map returned by askConsole or compatible, providing read(aTimeoutMs) that returns a character code,
+ * -2 on timeout and -1 on end of input) and returns a normalized name: "up", "down", "left", "right", "home", "end", "pgup", "pgdn",
+ * "delete", "insert", "enter", "tab", "shift-tab", "backspace", "esc", "eof", "ctrl-&lt;letter&gt;", "alt-&lt;char&gt;" or the printable character itself.
+ * Returns undefined if aTimeoutMs expires without input. A lone ESC is told apart from escape sequences with a short timeout.
+ * </odoc>
+ */
+const askKey = (aUI, aTimeoutMs) => {
+  _$(aUI, "aUI").isMap().$_()
+  _$(aUI.read, "aUI.read").isFunction().$_()
+  var rd = t => Number(aUI.read(t))
+  var c = rd(aTimeoutMs)
+  if (c == -2) return __
+  if (c == -1) return "eof"
+  if (c == 27) {
+    var n = rd(50)
+    if (n < 0) return "esc"
+    if (n != 91 && n != 79) return "alt-" + String.fromCharCode(n)
+    var param = "", f
+    for (var i = 0; i < 16; i++) {
+      f = rd(50)
+      if (f < 0) return "esc"
+      if (f >= 64 && f <= 126) break
+      param += String.fromCharCode(f)
+    }
+    var p = param.split(";")[0]
+    switch(String.fromCharCode(f)) {
+    case "A": return "up"
+    case "B": return "down"
+    case "C": return "right"
+    case "D": return "left"
+    case "H": return "home"
+    case "F": return "end"
+    case "Z": return "shift-tab"
+    case "~": return ({ "1": "home", "2": "insert", "3": "delete", "4": "end", "5": "pgup", "6": "pgdn", "7": "home", "8": "end" })[p]
+    }
+    return __
+  }
+  if (c == 13 || c == 10) return "enter"
+  if (c == 9) return "tab"
+  if (c == 127 || c == 8) return "backspace"
+  if (c >= 1 && c <= 26) return "ctrl-" + String.fromCharCode(96 + c)
+  if (c < 32) return __
+  var r = String.fromCharCode(c)
+  if (c >= 0xD800 && c <= 0xDBFF) { var lo = rd(50); if (lo >= 0) r += String.fromCharCode(lo) }
+  return r
+}
 
 /**
  * <odoc>

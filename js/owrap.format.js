@@ -908,6 +908,43 @@ OpenWrap.format.prototype.string = {
 		return _r
 	},
 
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiClip(aStr, aWidth, aEllipsis) : String</key>
+	 * Clips aStr to, at most, aWidth visible columns (wide emoji count as 2) without ever cutting an ANSI escape sequence.
+	 * If clipped, aEllipsis (default "…") is appended and any open ANSI styling is reset.
+	 * </odoc>
+	 */
+	ansiClip: (aStr, aWidth, aEllipsis) => {
+		aStr = String(aStr)
+		aWidth = _$(aWidth, "aWidth").isNumber().$_()
+		aEllipsis = _$(aEllipsis, "aEllipsis").isString().default("\u2026")
+		if (visibleLength(aStr) <= aWidth) return aStr
+		var limit = Math.max(0, aWidth - visibleLength(aEllipsis)), out = "", w = 0, hasEsc = false, re = /\x1b\[[0-9;?]*[ -\/]*[@-~]/y
+		for (var i = 0; i < aStr.length; ) {
+			re.lastIndex = i
+			var m = re.exec(aStr)
+			if (m) { out += m[0]; i += m[0].length; hasEsc = true; continue }
+			var cp = aStr.codePointAt(i), ch = String.fromCodePoint(cp), cw = visibleLength(ch)
+			if (w + cw > limit) break
+			out += ch; w += cw; i += ch.length
+		}
+		return out + aEllipsis + (hasEsc ? "\x1b[0m" : "")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiPad(aStr, aWidth) : String</key>
+	 * Right-pads aStr with spaces up to aWidth visible columns (ANSI escape sequences and wide emoji are accounted for). Never truncates.
+	 * </odoc>
+	 */
+	ansiPad: (aStr, aWidth) => {
+		aStr = String(aStr)
+		aWidth = _$(aWidth, "aWidth").isNumber().$_()
+		var l = visibleLength(aStr)
+		return l >= aWidth ? aStr : aStr + repeat(aWidth - l, " ")
+	},
+
     /**
 	 * <odoc>
 	 * <key>ow.format.string.ansiMoveUp(nLines)</key>

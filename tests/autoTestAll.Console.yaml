@@ -36,3 +36,7 @@ todo:
 - Console::completion callback
 - Console::facade
 - Console::launcher settings
+- name: Console::askKey
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testAskKey;

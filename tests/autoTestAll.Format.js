@@ -20,6 +20,19 @@
         }
     };
 
+    exports.testAnsiClipPad = function() {
+        ow.loadFormat();
+        var S = ow.format.string;
+        ow.test.assert(S.ansiClip("hello", 10), "hello", "No clip when it fits");
+        ow.test.assert(S.ansiClip("hello world", 6), "hello\u2026", "Plain clip");
+        var c = S.ansiClip("\x1b[31mhello world\x1b[0m", 6);
+        ow.test.assert(visibleLength(c), 6, "Clipped ANSI width");
+        ow.test.assert(c.indexOf("\x1b[31m") == 0 && c.slice(-4), "\x1b[0m", "ANSI preserved and reset");
+        ow.test.assert(visibleLength(S.ansiClip("\ud83d\udcc1\ud83d\udcc1\ud83d\udcc1", 5)) <= 5, true, "Wide emoji clip");
+        ow.test.assert(visibleLength(S.ansiPad("\x1b[32mab\x1b[0m", 5)), 5, "ANSI pad");
+        ow.test.assert(S.ansiPad("abcdef", 3), "abcdef", "Pad never truncates");
+    };
+
     exports.testLoadFormat = function() {
         ow.loadFormat();
     };

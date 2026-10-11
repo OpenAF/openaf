@@ -114,3 +114,28 @@ exports.testPromptFamily = function() {
   var result = ow.oJob.askOnHelp({expects:[{name:"text"},{name:"option",options:["one","two"]},{name:"multi",moptions:["one","two"]}]}, ui);
   ow.test.assert(result, {text:"two",option:"two",multi:"one,two"}, "oJob routes all prompts through UI");
 };
+
+exports.testAskKey = function() {
+  var keys = codes => { var q = codes.slice(); return { read: t => q.length ? q.shift() : -2 }; };
+  var one = codes => askKey(keys(codes));
+  var seq = s => s.split("").map(c => c.charCodeAt(0));
+  ow.test.assert(one(seq("\x1b[A")), "up", "CSI up");
+  ow.test.assert(one(seq("\x1bOB")), "down", "SS3 down");
+  ow.test.assert(one(seq("\x1b[C")), "right", "CSI right");
+  ow.test.assert(one(seq("\x1b[1;5D")), "left", "Modified left");
+  ow.test.assert(one(seq("\x1b[H")), "home", "Home");
+  ow.test.assert(one(seq("\x1b[4~")), "end", "End (tilde)");
+  ow.test.assert(one(seq("\x1b[5~")), "pgup", "PgUp");
+  ow.test.assert(one(seq("\x1b[6~")), "pgdn", "PgDn");
+  ow.test.assert(one(seq("\x1b[3~")), "delete", "Delete");
+  ow.test.assert(one(seq("\x1b[Z")), "shift-tab", "Shift-Tab");
+  ow.test.assert(one([27]), "esc", "Lone ESC");
+  ow.test.assert(one(seq("\x1bx")), "alt-x", "Alt key");
+  ow.test.assert(one([13]), "enter", "Enter");
+  ow.test.assert(one([127]), "backspace", "Backspace");
+  ow.test.assert(one([3]), "ctrl-c", "Ctrl-C");
+  ow.test.assert(one([97]), "a", "Printable");
+  ow.test.assert(one([0xD83D, 0xDE00]), "\uD83D\uDE00", "Surrogate pair");
+  ow.test.assert(one([-2]), __, "Timeout");
+  ow.test.assert(one([-1]), "eof", "EOF");
+};
