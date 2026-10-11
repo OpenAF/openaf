@@ -285,6 +285,20 @@ public class AFBase extends ScriptableObject {
 
 	/**
 	 * <odoc>
+	 * <key>af.jqJava(input, expression, options) : Object</key>
+	 * Evaluates jq 1.6 against JSON values. Prefer $jq for the documented public interface.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static Object jqJava(Context cx, Scriptable self, Object[] args, Function function) {
+		Object input = args.length > 0 ? args[0] : Undefined.instance;
+		Object expression = args.length > 1 ? args[1] : Undefined.instance;
+		Object options = args.length > 2 ? args[2] : Undefined.instance;
+		return openaf.core.jq.JqEngine.search(cx, ScriptableObject.getTopLevelScope(self), input, expression, options);
+	}
+
+	/**
+	 * <odoc>
 	 * <key>af.pathJava(obj, expression, customFunctions) : Object</key>
 	 * Evaluates a JMESPath expression directly against Rhino values using the Java engine.
 	 * Uses __flags.PATH_CACHE_SIZE (default 256, 0 disables caching). Prefer $path for OpenAF extensions.

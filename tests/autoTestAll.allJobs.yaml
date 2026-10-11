@@ -4,6 +4,7 @@ include:
 - oJobTest.yaml
 - autoTestAll.Generic.yaml
 - autoTestAll.Path.yaml
+- autoTestAll.Jq.yaml
 - autoTestAll.CSV.yaml
 - autoTestAll.IO.yaml
 - autoTestAll.DB.yaml   

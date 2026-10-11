@@ -305,6 +305,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	JAVA_CERT_BC_PROVIDER       : false,
 	PATH_CFN                    : __,             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
 	PATH_SAFE                   : false,
+	JQ_CACHE_SIZE               : 256, // Java $jq compiled query cache; 0 disables and clears it.
 	PATH_CACHE_SIZE             : 256, // Java $path syntax cache; 0 disables and clears it.
 	PFOREACH                    : {
 		seq_thrs_ms        : 6,
@@ -5173,6 +5174,28 @@ const $$from = function(a) {
 var $from = function(a) {
 	loadCompiledLib("openafnlinq_js");
 	return $from(a);
+};
+
+/**
+ * <odoc>
+ * <key>$jq(input, expression, options) : Object</key>
+ * Evaluates jq syntax (jq 1.6 mode, jackson-jq 1.6.5) against one JSON value.
+ * expression defaults to ".". Zero outputs return undefined, one returns the value,
+ * and multiple outputs return an array. options.all=true always returns an array of outputs.
+ * options.vars binds JSON values by variable name without the leading $. Examples:\
+ *   $jq({ a: 2 }, ".a"); // 2\
+ *   $jq([1, 2], ".[]", { all: true }); // [1, 2]\
+ *   $jq([1, 3], "map(select(. > $min))", { vars: { min: 2 } }); // [3]\
+ * Accepts plain objects, dense arrays, strings, finite numbers, booleans and null.
+ * Rejects unsupported values and cycles with their location. Does not mutate inputs.
+ * Results are detached JavaScript values; numbers have JavaScript precision.
+ * __flags.JQ_CACHE_SIZE controls compiled query caching (256 entries; 0 clears/disables).
+ * Filesystem imports, CLI input streams and OpenAF callbacks are unavailable.
+ * See docs/jq.md for compatibility, value boundaries and error behavior.
+ * </odoc>
+ */
+const $jq = function(input, expression, options) {
+  return af.jqJava(input, expression, options);
 };
 
 /**
