@@ -626,19 +626,19 @@ function __help(aTerm) {
 		
 		if (isArray(h)) {
 			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
-				if (__ansiflag) {
-					__o("**" + h[0].fullkey + "**");
-					__o("**" + repeat(h[0].fullkey.length, HELPSEPARATOR_ANSI) + "**");
-					__o(h[0].text, true);
+				if (__ansiflag && con.isAnsiSupported()) {
+					__o(ansiColor("BOLD", h[0].fullkey), true);
+					__o(ansiColor("BOLD", repeat(h[0].fullkey.length, HELPSEPARATOR_ANSI)), true);
+					__o(h[0].text, h[0].format != "markdown");
 				} else {
-					__o(h[0].fullkey);
-					__o(repeat(h[0].fullkey.length, HELPSEPARATOR));
+					__o(h[0].fullkey, true);
+					__o(repeat(h[0].fullkey.length, HELPSEPARATOR), true);
 					__o(h[0].text, true);
 				}
 			} else {
 				if (h.length > 1) {
 					for(var i in h) {
-						__o(h[i].key);
+						__o(h[i].key + " (" + h[i].id + ")", true);
 					}
 				} else {
 					__o("Term '" + aTerm + "' not found.");

@@ -7522,22 +7522,26 @@ if (isUnDef(__offlineHelp)) {
  * <odoc>
  * <key>setOfflineHelp(aBoolean)</key>
  * Forces help (odoc) to be retrieved locally (if aBoolean is true) or reestablishes the normal behaviour
- * of retrieving from online first (if aBoolean is false)
+ * of loading local documentation with online fallback and background refresh (if aBoolean is false)
  * </odoc>
  */
 const setOfflineHelp = function(aBoolean) {
 	__offlineHelp = aBoolean;
-	if (isDef(__odocs)) __odocs = undefined; //__odocs.offline = __offlineHelp;
+	if (isDef(__odocs)) {
+		__odocs.offline = aBoolean;
+		__odocs = undefined;
+	}
+	__odocsfiles = [];
 }
 
 /**
  * <odoc>
- * <key>searchHelp(aTerm, aPath, anArrayOfIds) : Map</key>
+ * <key>searchHelp(aTerm, aPath, anArrayOfIds) : Array</key>
  * Searches the OpenAF ODoc help system for a specific term. Optionally you can provide a path of where to 
- * search for ODoc help files. If an exact match is found the function will return an array with a single
- * a map with the corresponding ODoc id, key, fullkey and text. If no exact match is found the function will
- * return an array of alternative matches or an empty array if no alternatives are found. Optionally you can
- * also restrict by anArrayOfIds.
+ * search for ODoc help files. A unique result returns an array with one map containing id, key, fullkey
+ * and raw text, plus format for explicitly marked entries. Ambiguous results contain id and key only.
+ * Matches prefer case-sensitive exact keys, then case-insensitive exact keys, then substrings.
+ * Returns an empty array when nothing is found. Optionally restrict by anArrayOfIds.
  * </odoc>
  */
 const searchHelp = function(aTerm, aPath, aId) {
@@ -7547,7 +7551,8 @@ const searchHelp = function(aTerm, aPath, aId) {
 	if (isDef(aPath)) __odocs.loadFile(aPath);
 	var keys = __odocs.search(aTerm, aId);
 
-	if (keys.length != 1) {
+	// Discover package subjects once, including duplicates of a core key.
+	{
 		var newloaded = false;
 		var paths = [ getOpenAFJar() ];
 		try {
@@ -7555,7 +7560,7 @@ const searchHelp = function(aTerm, aPath, aId) {
 		} catch(e) {
 		}
 		paths.forEach(path => {
-			if (!(path.match(/\.(jar|db|zip)/))) path += "/";
+			if (!(path.match(/\.(jar|db|zip)$/i))) path += "/";
 			if (__odocsfiles.indexOf(path) < 0) {
 				__odocs.loadFile(path);
 				__odocsfiles.push(path);
@@ -7569,14 +7574,15 @@ const searchHelp = function(aTerm, aPath, aId) {
 	
 	if (keys.length == 1) {
 		var contents = __odocs.get(keys[0].id, keys[0].key);
-		return [ {
+		if (isUnDef(contents)) return [];
+		var result = {
 			"id": keys[0].id,
 			"key": keys[0].key,
 			"fullkey": contents.k,
 			"text": contents.t
-		} ];
-	} else {
-		keys = keys.sort(function(a, b) { return (a.key.toLowerCase() > b.key.toLowerCase()) ? 1 : -1; });
+		};
+		if (isDef(contents.format)) result.format = contents.format;
+		return [ result ];
 	}
 	return uniqArray(keys);
 }
@@ -7584,7 +7590,7 @@ const searchHelp = function(aTerm, aPath, aId) {
 /**
  * <odoc>
  * <key>saveHelp(aPath, aMapOfFiles)</key>
- * Given aMapOfFiles, or basically an array of JavaScript or Java source filenames, each file will 
+ * Given aMapOfFiles mapping subject ids to JavaScript or Java source filenames, each file will
  * be processed for ODoc XML tags and the corresponding ODoc database will be generated on the 
  * provided aPath suitable for offline use.
  * </odoc>
@@ -7600,7 +7606,7 @@ const saveHelp = function(aPath, aMapOfFiles) {
 /**
  * <odoc>
  * <key>saveHelpWeb(aPath, aMapOfFiles)</key>
- * Given aMapOfFiles, or basically an array of JavaScript or Java source filenames, each file will 
+ * Given aMapOfFiles mapping subject ids to JavaScript or Java source filenames, each file will
  * be processed for ODoc XML tags and the corresponding ODoc database will be generated on the 
  * provided aPath suitable for online use.
  * </odoc>
@@ -13981,7 +13987,7 @@ const $fnDef4Help = (aFnName) => {
 	if (isDef(__oaf_fnDef_cache[aFnName])) return __oaf_fnDef_cache[aFnName]
 	var res = searchHelp(aFnName)
 
-	if (isDef(res) && isArray(res) && res.length > 0) {
+	if (isArray(res) && res.length == 1 && isString(res[0].fullkey)) {
 		var _r = res[0].fullkey.replace(/ +/g, "").replace(/.+\((.*)\) *:*.*/, "$1").split(/,/)
 		__oaf_fnDef_cache[aFnName] = _r
 		return _r

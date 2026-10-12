@@ -5401,7 +5401,7 @@ OpenWrap.server.prototype.httpd.browse = {
 					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
 			
 					var lst = $cache("__hB_oDoc").get({})
-					const parts = puri.split("/").filter(r => r != "")
+					const parts = puri.split("/").filter(r => r != "").map(decodeURIComponent)
 					if (parts.length > 1) {
 						return { isFile: $from(lst).equals("id", parts[0]).equals("key", parts[1]).any() }
 					} else {
@@ -5431,11 +5431,12 @@ OpenWrap.server.prototype.httpd.browse = {
 					const uri = request.uri
 					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
 
-					const parts = puri.split("/").filter(r => r != "")
-					var _h = searchHelp(parts[1], parts[0])
-					if (isArray(_h)) {
+					const parts = puri.split("/").filter(r => r != "").map(decodeURIComponent)
+					var _h = searchHelp(parts[1], __, [parts[0]])
+					if (isArray(_h) && _h.length == 1 && isString(_h[0].text)) {
+						var escapeHTML = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
 						return {
-							data: `\`\`\`javascript\n${_h[0].fullkey}\n\`\`\`\n---\n<pre style="white-space: pre-wrap;">${_h[0].text}\n</pre>\n---\n`,
+							data: `<pre style="white-space: pre-wrap;">${escapeHTML(_h[0].fullkey)}</pre><hr><pre style="white-space: pre-wrap;">${escapeHTML(_h[0].text)}</pre>`,
 							type: "raw"
 						}
 					} else {
