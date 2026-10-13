@@ -16,6 +16,8 @@ OpenWrap.ch.prototype.channels = {};
 OpenWrap.ch.prototype.type = {};
 OpenWrap.ch.prototype.lock = {};
 OpenWrap.ch.prototype.lock2 = {};
+// One reentrant lock also protects backend registries shared by different channel names.
+OpenWrap.ch.prototype.__lifecycleLock = new java.util.concurrent.locks.ReentrantLock();
 
 OpenWrap.ch.prototype.__types = {
 	// Obj BIG channel implementation
@@ -3280,21 +3282,24 @@ OpenWrap.ch.prototype.__types = {
  * </odoc>
  */
 OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
-	if (Object.keys(this.channels).indexOf(aName) < 0) {
-		type = (isDef(type)) ? type : "simple";
+	this.__lifecycleLock.lock();
+	try {
+		if (Object.keys(this.channels).indexOf(aName) < 0) {
+			type = (isDef(type)) ? type : "simple";
+			this.__types[type].create(aName, shouldCompress, options);
 
-		this.__types[type].create(aName, shouldCompress, options);
-
-		this.subscribers[aName] = {};
-		this.peers[aName] = {};
-		this.expose[aName] = [];
-		this.jobs[aName] = {};
-		this.channels[aName] = type;
-		this.vers[aName] = nowUTC();
-		sync(() => {
-			ow.ch.lock[aName] = new java.util.concurrent.locks.ReentrantLock()
-			ow.ch.lock2[aName] = new java.util.concurrent.locks.ReentrantLock()
-		}, this)
+			this.subscribers[aName] = {};
+			this.peers[aName] = {};
+			this.expose[aName] = [];
+			this.jobs[aName] = {};
+			this.vers[aName] = nowUTC();
+			this.lock[aName] = new java.util.concurrent.locks.ReentrantLock();
+			this.lock2[aName] = new java.util.concurrent.locks.ReentrantLock();
+			// Publish only after all per-channel state is initialized.
+			this.channels[aName] = type;
+		}
+	} finally {
+		this.__lifecycleLock.unlock();
 	}
 	return this;
 };
@@ -3361,32 +3366,42 @@ OpenWrap.ch.prototype.stopAllJobs = function(aName) {
  * </odoc>
  */
 OpenWrap.ch.prototype.list = function() {
-	return Object.keys(this.channels);
+	this.__lifecycleLock.lock();
+	try {
+		return Object.keys(this.channels);
+	} finally {
+		this.__lifecycleLock.unlock();
+	}
 };
 	 
 /**
  * <odoc>
  * <key>ow.ch.destroy(aName) : ow.ch</key>
- * Deletes all data and removes references to the channel aName.
+ * Deletes all data and removes references to the channel aName, including its locks.
+ * Stop producers and wait for pending channel operations/subscriber jobs before destroying a channel.
+ * Channel creation, destruction and listing are serialized; destruction does not drain active operations.
  * </odoc>
  */
 OpenWrap.ch.prototype.destroy = function(aName) {
-//	switch(this.channels[aName]) {
-//	case "ignite": { this.__types.ignite.destroy(aName); break; }
-//	case "remote": { this.__types.remote.destroy(aName); break; }
-//	default      : { this.__types.big.destroy(aName); }
-//	}
-	if (isDef(this.__types[this.channels[aName]])) {
-		this.__types[this.channels[aName]].destroy(aName);
-		
-		delete this.channels[aName];
-		delete this.subscribers[aName];
-		delete this.peers[aName];
-		delete this.expose[aName];
-		delete this.jobs[aName];
-		delete this.vers[aName];
+	this.__lifecycleLock.lock();
+	try {
+		if (isDef(this.__types[this.channels[aName]])) {
+			// Preserve the registration if backend cleanup fails so it can be retried.
+			this.__types[this.channels[aName]].destroy(aName);
+
+			delete this.channels[aName];
+			delete this.subscribers[aName];
+			delete this.peers[aName];
+			delete this.expose[aName];
+			delete this.jobs[aName];
+			delete this.vers[aName];
+			delete this.lock[aName];
+			delete this.lock2[aName];
+		}
+	} finally {
+		this.__lifecycleLock.unlock();
 	}
-	
+
 	return this;
 };
 	

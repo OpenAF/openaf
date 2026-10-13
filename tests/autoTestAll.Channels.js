@@ -15,6 +15,125 @@
         }
     };
 
+    // Futures surface raw Java exceptions that Rhino script catch blocks can miss.
+    var runLifecycleWorkers = function(fn) {
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(8);
+        var start = new java.util.concurrent.CountDownLatch(1);
+        var futures = [];
+        try {
+            for (var w = 0; w < 8; w++) {
+                (function(worker) {
+                    futures.push(pool.submit(new java.util.concurrent.Callable({ call: function() {
+                        start.await();
+                        fn(worker);
+                        return true;
+                    } })));
+                })(w);
+            }
+            start.countDown();
+            futures.forEach(function(f) { f.get(60, java.util.concurrent.TimeUnit.SECONDS); });
+        } finally {
+            start.countDown();
+            pool.shutdownNow();
+            pool.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
+        }
+    };
+
+    exports.testConcurrentLifecycle = function() {
+        var prefix = "lifecycle-" + genUUID() + "-";
+        var type = prefix + "type";
+        var registry = {};
+        var completed = new java.util.concurrent.atomic.AtomicInteger();
+        // Like the Dynamo backend: different channel names mutate one shared JS map.
+        ow.ch.__types[type] = {
+            create: function(name) { registry[name] = {}; },
+            destroy: function(name) { delete registry[name]; }
+        };
+        try {
+            runLifecycleWorkers(function(worker) {
+                for (var i = 0; i < 500; i++) {
+                    var name = prefix + worker + "-" + i;
+                    $ch(name).create(false, type);
+                    ow.test.assert($ch().list().indexOf(name) >= 0, true, "Listing must include live channel");
+                    $ch(name).destroy();
+                    completed.incrementAndGet();
+                }
+            });
+            ow.test.assert(Number(completed.get()), 4000, "All lifecycle operations must complete");
+            ow.test.assert(Object.keys(registry).length, 0, "Backend registrations must be removed");
+            ["channels", "subscribers", "peers", "expose", "jobs", "vers", "lock", "lock2"].forEach(function(key) {
+                ow.test.assert(Object.keys(ow.ch[key]).filter(function(n) { return n.indexOf(prefix) == 0; }).length,
+                    0, "Lifecycle must not retain " + key + " entries");
+            });
+        } finally {
+            ow.ch.list().filter(function(n) { return n.indexOf(prefix) == 0; }).forEach(function(n) { $ch(n).destroy(); });
+            delete ow.ch.__types[type];
+        }
+    };
+
+    exports.testLifecycleIdempotency = function() {
+        var name = "lifecycle-same-" + genUUID(), type = name + "-type";
+        var creates = new java.util.concurrent.atomic.AtomicInteger();
+        var destroys = new java.util.concurrent.atomic.AtomicInteger();
+        ow.ch.__types[type] = {
+            create: function(n) { creates.incrementAndGet(); sleep(5, true); },
+            destroy: function(n) { destroys.incrementAndGet(); sleep(5, true); }
+        };
+        try {
+            runLifecycleWorkers(function() { $ch(name).create(false, type); });
+            ow.test.assert(Number(creates.get()), 1, "Concurrent duplicate creates must initialize once");
+            var originalLock = ow.ch.lock[name];
+            $ch(name).create(false, type);
+            ow.test.assert(ow.ch.lock[name] === originalLock, true, "Duplicate create must preserve locks");
+            runLifecycleWorkers(function() { $ch(name).destroy(); });
+            ow.test.assert(Number(destroys.get()), 1, "Concurrent duplicate destroys must clean up once");
+            ow.test.assert(isUnDef(ow.ch.lock[name]) && isUnDef(ow.ch.lock2[name]), true, "Destroy must remove both locks");
+            $ch(name).create(false, type);
+            ow.test.assert(ow.ch.lock[name] === originalLock, false, "Recreation must allocate a new lock");
+        } finally {
+            $ch(name).destroy();
+            delete ow.ch.__types[type];
+        }
+    };
+
+    exports.testLifecycleFailureAndReentry = function() {
+        var name = "lifecycle-failure-" + genUUID(), type = name + "-type", child = name + "-child";
+        var failCreate = true, failDestroy = true;
+        ow.ch.__types[type] = {
+            create: function(n) {
+                if (failCreate) throw "expected create failure";
+                $ch(child).create();
+                ow.ch.list();
+            },
+            destroy: function(n) {
+                if (failDestroy) throw "expected destroy failure";
+                $ch(child).destroy();
+            }
+        };
+        try {
+            var caught = false;
+            try { $ch(name).create(false, type); } catch(e) { caught = true; }
+            ow.test.assert(caught, true, "Backend create errors must propagate");
+            ow.test.assert(ow.ch.list().indexOf(name), -1, "Failed creation must not publish channel");
+            failCreate = false;
+            // Another thread proves that the lifecycle lock was released on failure.
+            runLifecycleWorkers(function() { $ch(name).create(false, type); });
+            var originalLock = ow.ch.lock[name];
+            caught = false;
+            try { $ch(name).destroy(); } catch(e) { caught = true; }
+            ow.test.assert(caught, true, "Backend destroy errors must propagate");
+            ow.test.assert(ow.ch.lock[name] === originalLock, true, "Failed destruction must preserve locks for retry");
+            failDestroy = false;
+            runLifecycleWorkers(function() { $ch(name).destroy(); });
+            ow.test.assert(ow.ch.list().indexOf(child), -1, "Backend lifecycle must support nested channel cleanup");
+        } finally {
+            failDestroy = false;
+            $ch(name).destroy();
+            $ch(child).destroy();
+            delete ow.ch.__types[type];
+        }
+    };
+
     exports.testFileMultifileReadDelete = function() {
         [{}, { yaml: true }, { toon: true }].forEach(function(format) {
             [{}, { gzip: true }, { lz4: true }].forEach(function(compression) {
