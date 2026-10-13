@@ -1,6 +1,56 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    exports.testPauseNavigation = function() {
+        ow.loadFormat();
+        function run(keys, count, fail) {
+            var pages = [], percentages = [], settings = [], reads = 0;
+            var terminal = { getHeight: () => 5, getWidth: () => 80,
+                settings: { get: () => "original", set: value => settings.push(value) } };
+            var MockConsole = function() {
+                this.getConsoleReader = () => ({ getTerminal: () => terminal });
+                this.readChar = function() {
+                    if (fail || reads >= keys.length) throw new Error("input exhausted");
+                    return keys.charAt(reads++);
+                };
+            };
+            var pager = new Function("Console", "plugin", "print", "printnl", "tprintnl",
+                "return (" + ow.format.string.pauseString.toString() + ")")(
+                MockConsole, () => {}, text => pages.push(text), () => {},
+                (msg, values) => percentages.push(values.percentage));
+            var lines = []; for (var i = 0; i < count; i++) lines.push(String(i));
+            var error = false;
+            try { pager(lines.join("\n")); } catch (e) { error = true; }
+            ow.test.assert(error, !!fail, "Unexpected pager error");
+            ow.test.assert(settings[settings.length - 1], "original", "Terminal restored");
+            ow.test.assert(reads, keys.length, "Whole key sequences consumed");
+            return { starts: pages.map(text => Number(text.split("\n")[0])), percentages: percentages, pages: pages };
+        }
+        var esc = "\x1b[";
+        ow.test.assert(run(esc+"6~"+esc+"5~"+esc+"C"+esc+"Dq", 13).starts,
+            [0,4,0,4,0], "Page keys and arrow aliases");
+        ow.test.assert(run(esc+"6;2~"+esc+"5;2~"+esc+"6;2~"+esc+"Dq", 13).starts,
+            [0,9,0,9,5], "Modified keys and navigation from bottom");
+        ow.test.assert(run(esc+"1;2C"+esc+"1;2D"+esc+"1;2C"+esc+"Dq", 13).starts,
+            [0,9,0,9,5], "Shift arrows jump to bottom and top");
+        ow.test.assert(run(esc+"B"+esc+"6~"+esc+"5~"+esc+"A"+esc+"Aq", 13).starts,
+            [0,1,5,1,0,0], "Line keys and exact previous page boundary");
+        ["4~", "8~", "F"].forEach(key => {
+            var result = run(esc+key+" ", 13);
+            ow.test.assert(result.starts, [0,9], "End goes to final full page");
+            ow.test.assert(result.percentages, [30,100], "Bottom shows 100 percent");
+        });
+        ["1~", "7~", "H"].forEach(key => {
+            ow.test.assert(run(esc+"6~"+esc+key+"Q", 13).starts, [0,4,0], "Home goes to top");
+        });
+        ["6~", "C"].forEach(key => {
+            ow.test.assert(run(esc+"6;2~"+esc+key, 13).starts, [0,9], "Forward at bottom exits");
+        });
+        ow.test.assert(run("    ", 13).starts, [0,4,8,9], "Ordinary paging exits at bottom");
+        ow.test.assert(run("", 4).pages, ["0\n1\n2\n3"], "Short output needs no input");
+        run("", 13, true);
+    };
+
     exports.testPrintTreeWithoutConsole = function() {
         var previousCon = __con;
         try {

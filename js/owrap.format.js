@@ -1398,98 +1398,59 @@ OpenWrap.format.prototype.string = {
 	/**
 	 * <odoc>
 	 * <key>ow.format.string.pauseString(aString, aMsg)</key>
-	 * Given aString starts an interactive paging of the contents of aString. 
+	 * Given aString starts an interactive paging of the contents of aString.
+	 * PgUp/Left and PgDown/Right move by a page; Up/Down move by a line.
+	 * Shift+Left/Home jumps to the top and Shift+Right/End jumps to the bottom.
+	 * Shift+PgUp and Shift+PgDown are also supported as top/bottom aliases.
+	 * At the bottom navigation remains available; forward paging or any ordinary key exits. Use q to quit.
 	 * Optionally aMsg can be provided to be displayed with the paging percentage (use \{{percentage}} to be replaced by the percentage).
 	 * </odoc>
 	 */
 	pauseString: (aString, aMsg) => {
 		_$(aString, "aString").isString().$_()
-		aMsg = _$(aMsg, "aMsg").isString().default("{{percentage}}% (Press any key to paginate or use arrow keys or 'q' to quit)")
+		aMsg = _$(aMsg, "aMsg").isString().default("{{percentage}}% (PgUp/Left: back, PgDown/Right: forward, Shift+Left/Right: top/bottom, Up/Down: line, q: quit)")
 
 		//__initializeCon()
 		plugin("Console")
-		_c = new Console()
+		var _c = new Console()
 
 		var __pauseArray = (aText, aStart) => {
 			_$(aText, "aText").isArray().$_()
 	
-			var height = _c.getConsoleReader().getTerminal().getHeight() 
+			var terminal = _c.getConsoleReader().getTerminal()
+			var pageSize = Math.max(1, terminal.getHeight() - 1)
 			var lines = aText.length
-	
-			if (lines <= (height - 1)) {
+			if (lines <= pageSize) {
 				print(aText.join("\n"))
 				return -1
 			}
-	
-			if (isUnDef(aStart) || aStart < 0) {
-				aStart = 0
-			} else {
-				if (aStart > (lines - height + 1)) aStart = (lines - height + 1)
-			}
-	
-			print(aText.slice(aStart, aStart + height - 1).join("\n"))
-	
-			if ((aStart + height -1) < lines) {
-				tprintnl(aMsg, { percentage: Math.floor(( ((aStart + height -1)*100 / lines))) })
-				var c
-				c = String(_c.readChar(""))
-				printnl("\r" + repeat(_c.getConsoleReader().getTerminal().getWidth(), ' ') + "\r")
-				if (c.charCodeAt(0) != 113 && c.charCodeAt(0) != 81) {
-					if (c.charCodeAt(0) == 27) {
-						c = String(_c.readChar(""))
-						if (c.charCodeAt(0) == 27) {
-							// get out
-						}
-						if (c.charCodeAt(0) == 91) {
-							c = String(_c.readChar(""))
-							// home
-							if (c.charCodeAt(0) == 49) {
-								c = String(_c.readChar(""))
-								if (c.charCodeAt(0) == 126) {
-									return 0
-								}
-							}
-							// end
-							if (c.charCodeAt(0) == 52) {
-								c = String(_c.readChar(""))
-								if (c.charCodeAt(0) == 126) {
-									return lines - height - 1
-								}
-							}
-							// pgup
-							if (c.charCodeAt(0) == 53) {
-								c = String(_c.readChar(""))
-								if (c.charCodeAt(0) == 126) {
-									if (aStart - height -1 < 0)
-										return 0
-									else
-										return aStart - height + 1
-								}
-							}
-							// pgdw
-							if (c.charCodeAt(0) == 54) {
-								c = String(_c.readChar(""))
-								if (c.charCodeAt(0) == 126) {
-									return aStart + height - 1
-								}
-							}
-							// up
-							if (c.charCodeAt(0) == 65) {
-								if (aStart - 1 < 0)
-									return 0
-								else
-									return aStart - 1
-							}
-							// down
-							if (c.charCodeAt(0) == 66) {
-								return aStart + 1
-							}
-						}
-					}
-					return aStart + height - 1
-				} else {
-					return -1
+			var last = lines - pageSize
+			aStart = Math.max(0, Math.min(last, isUnDef(aStart) ? 0 : aStart))
+			print(aText.slice(aStart, aStart + pageSize).join("\n"))
+			tprintnl(aMsg, { percentage: Math.floor((aStart + pageSize) * 100 / lines) })
+			var key = String(_c.readChar(""))
+			if (key == "\x1b") {
+				var prefix = String(_c.readChar(""))
+				key += prefix
+				if (prefix == "[" || prefix == "O") {
+					// Consume the whole sequence, including modifier parameters.
+					var ch
+					do {
+						ch = String(_c.readChar(""))
+						key += ch
+					} while (!/[@-~]/.test(ch))
 				}
+			}
+			printnl("\r" + repeat(terminal.getWidth(), " ") + "\r")
+			switch (key) {
+			case "q": case "Q": return -1
+			case "\x1b[5~": case "\x1b[D": return Math.max(0, aStart - pageSize)
+			case "\x1b[6~": case "\x1b[C": return aStart == last ? -1 : Math.min(last, aStart + pageSize)
+			case "\x1b[1;2D": case "\x1b[5;2~": case "\x1b[1~": case "\x1b[7~": case "\x1b[H": case "\x1bOH": return 0
+			case "\x1b[1;2C": case "\x1b[6;2~": case "\x1b[4~": case "\x1b[8~": case "\x1b[F": case "\x1bOF": return last
+			case "\x1b[A": return Math.max(0, aStart - 1)
+			case "\x1b[B": return Math.min(last, aStart + 1)
+			default: return aStart == last ? -1 : Math.min(last, aStart + pageSize)
 			}
 		}
 		
