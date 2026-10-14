@@ -48,6 +48,20 @@ class DocumentationChecks(unittest.TestCase):
         self.write("docs/guide.md", "# Guide\n")
         self.assertEqual(self.run_check()[0], 0)
 
+    def test_generated_test_links_can_be_absent_on_fresh_checkout(self):
+        self.write("README.md", '![asserts](tests/asserts.svg)\n'
+                   '[![tests](tests/results.svg)](tests/autoTestAll.md)\n')
+        self.write("docs/testing.md", '[report](../tests/autoTestAll.md)\n')
+        self.assertEqual(self.run_check()[0], 0)
+
+    def test_generated_link_exception_only_matches_exact_targets(self):
+        self.write("docs/testing.md", '[typo](../tests/result.svg)\n'
+                   '[other](autoTestAll.md)\n[report](../tests/autoTestAll.md)\n')
+        status, report = self.run_check()
+        self.assertEqual(status, 1)
+        self.assertEqual(report["errors"], ["docs/testing.md: missing link ../tests/result.svg",
+                                            "docs/testing.md: missing link autoTestAll.md"])
+
     def test_embedded_copy_drift(self):
         self.write("examples/sample.js", 'print("new");\n')
         self.write("docs/guide.md", '```javascript\nprint("old");\n```\n')
