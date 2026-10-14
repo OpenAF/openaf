@@ -62,7 +62,7 @@
       var spaced = dir + "/working directory";
       io.mkdir(spaced);
       var cwd = ow.oJob.__runLanguage("node", "args.cwd=process.cwd()", {}, {pwd:spaced}, "cwd");
-      ow.test.assert(cwd.cwd.replace(/\\/g,"/"), String(new java.io.File(spaced).getCanonicalPath()).replace(/\\/g,"/"), "Working directory with spaces");
+      ow.test.assert(java.nio.file.Files.isSameFile(new java.io.File(cwd.cwd).toPath(), new java.io.File(spaced).toPath()), true, "Working directory with spaces");
       var templated = ow.oJob.__runLanguage("node", 'args.out="{{value}}"', {value:"rendered"}, {}, "template");
       ow.test.assert(templated.out,"rendered","Legacy template default");
     } finally { io.rm(dir); }

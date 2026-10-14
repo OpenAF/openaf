@@ -190,6 +190,28 @@ class Examples(unittest.TestCase):
         result = self.run_example("bounded-workers.yaml")
         self.assertEqual(sorted(result.stdout.strip().splitlines()), ["record: 1", "record: 2", "record: 3"])
 
+    def test_concurrent_worker_output(self):
+        # Race the first writes after resetting the buffered writers, on both streams.
+        code = '''
+for (var round = 0; round < 50; round++) {
+  bfprintSetStreamSize(8192);
+  var ready = new java.util.concurrent.CountDownLatch(2);
+  $doA2B(send => [0, 1, 2].forEach(send), n => {
+    if (n < 2) {
+      ready.countDown();
+      if (!ready.await(5, java.util.concurrent.TimeUnit.SECONDS)) throw "workers did not start";
+    }
+    print("record: " + round + ":" + n);
+    printErr("error: " + round + ":" + n);
+  }, 2, 10, e => { throw e; }, false);
+}
+'''
+        result = execute([self.java, "-jar", str(self.jar), "-c", code], self.cwd)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        for prefix, output in (("record", result.stdout), ("error", result.stderr)):
+            expected = ["%s: %s:%s" % (prefix, r, n) for r in range(50) for n in range(3)]
+            self.assertEqual(sorted(output.splitlines()), sorted(expected))
+
     def test_yaml_parsing(self):
         code = ('io.listFiles(".").files.filter(function(f) { return /\\.yaml$/.test(f.filename); })'
                 '.forEach(function(f) { var d = af.fromYAML(io.readFileString(f.filename));'

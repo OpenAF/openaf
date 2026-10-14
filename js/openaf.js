@@ -396,27 +396,41 @@ const print = function(str) {
 
 var __bfprint = {}
 var __bfprintErr = {}
+var __bfprintLock = new java.util.concurrent.locks.ReentrantLock()
+var __bfprintErrLock = new java.util.concurrent.locks.ReentrantLock()
 var __bfprintCodePage = io.getDefaultEncoding()
 const bfprintnl = function(str, codePage) {
 	if (isUnDef(codePage)) codePage = __bfprintCodePage
-	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), __flags.PRINT_BUFFER_STREAM)
-
-	__bfprint[codePage].write(str)
-	__bfprint[codePage].flush()
+	// Keep lazy writer creation, writing and flushing together across worker threads.
+	__bfprintLock.lock()
+	try {
+		if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), __flags.PRINT_BUFFER_STREAM)
+		__bfprint[codePage].write(str)
+		__bfprint[codePage].flush()
+	} finally { __bfprintLock.unlock() }
 }
 
 const bfprintErrnl = function(str, codePage) {
 	if (isUnDef(codePage)) codePage = __bfprintCodePage
-	if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), __flags.PRINT_BUFFER_STREAM)
-
-	__bfprintErr[codePage].write(str)
-	__bfprintErr[codePage].flush()
+	__bfprintErrLock.lock()
+	try {
+		if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), __flags.PRINT_BUFFER_STREAM)
+		__bfprintErr[codePage].write(str)
+		__bfprintErr[codePage].flush()
+	} finally { __bfprintErrLock.unlock() }
 }
 
 const bfprintSetStreamSize = function(aStreamSize) {
-	__flags.PRINT_BUFFER_STREAM = aStreamSize
-	__bfprint = {}
-	__bfprintErr = {}
+	__bfprintLock.lock()
+	__bfprintErrLock.lock()
+	try {
+		__flags.PRINT_BUFFER_STREAM = aStreamSize
+		__bfprint = {}
+		__bfprintErr = {}
+	} finally {
+		__bfprintErrLock.unlock()
+		__bfprintLock.unlock()
+	}
 }
 
 const bfprint = function(str, codePage) {
