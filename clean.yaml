@@ -1,0 +1,70 @@
+# Run from the repository root: ojob clean.yaml
+# Preview: ojob clean.yaml dryrun=true
+# Also clean build directories: ojob clean.yaml jsmin=true jslib=true bin=true
+help:
+  text: Clean discardable test outputs, optionally including build directories.
+  expects:
+  - name: path
+    desc: Repository root (defaults to the current directory).
+    example: .
+  - name: dryrun
+    desc: List matching outputs without deleting them (defaults to false).
+    example: true
+  - name: jsmin
+    desc: Remove jsmin and buildSHA.json (defaults to false).
+    example: true
+  - name: jslib
+    desc: Remove jslib and buildSHA.json (defaults to false).
+    example: true
+  - name: bin
+    desc: Remove bin (defaults to false).
+    example: true
+
+ojob:
+  sequential: true
+  logToConsole: false
+  catch: throw exception;
+
+todo:
+- Clean outputs
+
+jobs:
+- name: Clean outputs
+  exec: |
+    var root = io.fileInfo(_$(args.path, "path").isString().default(".")).canonicalPath;
+    ["tests", "js", "src", "build.yaml"].forEach(function(name) {
+      if (!io.fileExists(root + "/" + name)) throw "Not an OpenAF repository root: " + root;
+    });
+    var enabled = function(name) {
+      return _$(args[name], name).toBoolean().isBoolean().default(false);
+    };
+    var dryrun = enabled("dryrun");
+    var jsmin = enabled("jsmin"), jslib = enabled("jslib"), bin = enabled("bin");
+    // Explicit names keep test sources, fixtures and benchmark baselines intact.
+    var outputs = [
+      "autoTestAll.results.json", "autoTestAllResults.xml", "autoTestAll.md",
+      "results.svg", "asserts.svg", "languages-results.json", "data-file.json",
+      "autoTestAll.test", "autoTestAll.txt", "autoTestAll.xml", "autoTestAll.xlsx",
+      "autoTestAll.gz", "autoTestAll.jar", "autoTestAll.zip",
+      "autoTestAll.csv", "autoTestAll1.csv", "autoTestAll.Cache.db", "autoTestAll.auth.db",
+      "autoTestAll.xorNet.gz", "autoTestAll.ai.andNet.lstm.gz", "autoTestAll.ai.xorNet.liquid.gz",
+      "autoTestAll.compile.tmp", "autoTest.ndjson", "__autoTest.js", "__autoNewTest.js",
+      "dt.json.gz", "rt.json.gz", "C45.json.gz", "testMVS.db", "test.jks",
+      "server.pid", "test_checkin.pid"
+    ].map(function(name) { return "tests/" + name; });
+    io.listFiles(root + "/tests").files.forEach(function(file) {
+      // The DB persistence test uses a timestamp followed by .test.
+      if (/^\d{14}\.test(?:\.(?:mv\.db|trace\.db|lock\.db))?$/.test(file.filename)) {
+        outputs.push("tests/" + file.filename);
+      }
+    });
+    if (jsmin) outputs.push("jsmin");
+    if (jslib) outputs.push("jslib");
+    if (bin) outputs.push("bin");
+    if (jsmin || jslib) outputs.push("buildSHA.json");
+    outputs.forEach(function(name) {
+      var target = root + "/" + name;
+      if (!io.fileExists(target)) return;
+      print((dryrun ? "Would remove " : "Removing ") + name);
+      if (!dryrun && !io.rm(target)) throw "Could not remove " + target;
+    });
