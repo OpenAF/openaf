@@ -125,13 +125,23 @@ ojob build.yaml
 
 ## Testing a build
 
-After building, on the tests sub-folder, the recommend way is to use the just openaf just built:
+After running `ojob build.yaml`, run the test suite with the newly built `openaf.jar`. From the repository root:
 
-````
-ojob autoTestAll.yaml
-````
+```bash
+cd tests
+java --enable-native-access=ALL-UNNAMED -jar ../openaf.jar --ojob -e autoTestAll.yaml
+```
 
-But you can use a previous stable openaf build if the ow.test and ojob functionality could be broken by your changes.
+The suite requires the `oJob-common` oPack. Check the printed pass/fail counts and `tests/autoTestAll.results.json` (paths relative to the repository root); a successful run has `fail: 0`. The suite also writes a Markdown report to `tests/autoTestAll.md` and JUnit XML to `tests/autoTestAllResults.xml`. Check the results even when the command exits successfully, since the runner currently exits with code 0 after reporting test failures.
+
+To run a focused suite, replace `autoTestAll.yaml` with an area-specific runner, for example:
+
+```bash
+# Run from tests/
+java --enable-native-access=ALL-UNNAMED -jar ../openaf.jar --ojob -e autoTestAll.IO.yaml
+```
+
+If changes affect `ow.test` or oJob itself, you can also run `ojob autoTestAll.yaml` from `tests/` using a previously installed stable OpenAF. That command uses the installed runtime; use the explicit JAR command above to validate the new build. See [BUILD.md](BUILD.md) for build prerequisites and bootstrap instructions.
 
 ## Links
 
