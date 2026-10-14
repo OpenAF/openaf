@@ -2,6 +2,7 @@
 
 include:
    - oJobTest.yaml
+   - autoTestAll.ServerOAuth.yaml
 
 jobs:
    # Server tests

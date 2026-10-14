@@ -208,6 +208,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_ADAPTIVE_POLL         : false,  // If true, the oJob scan loop backs off its poll interval on idle cycles
 	OJOB_SHAREARGS             : true,
 	OJOB_HELPSIMPLEUI          : false,
+	OJOB_INTERACTIVETTY        : false,
 	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
 	OJOB_CONSOLE_STDERR        : getEnvsDef("OJOB_CONSOLE_STDERR", __, true),
 	OJOB_INIT_ARRAY_ARGS_LIST  : true,
@@ -269,7 +270,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		colorify : true,
 		restart  : true,
 		toTOON   : true,
-		fromTOON : true 
+		fromTOON : true,
+		path     : true
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -303,15 +305,19 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	JAVA_CERT_BC_PROVIDER       : false,
 	PATH_CFN                    : __,             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
 	PATH_SAFE                   : false,
+	JQ_CACHE_SIZE               : 256, // Java $jq compiled query cache; 0 disables and clears it.
+	PATH_CACHE_SIZE             : 256, // Java $path syntax cache; 0 disables and clears it.
 	PFOREACH                    : {
+        useGPU: true, // OAF_PFOREACH_GPU=false or per-call useGPU:false bypasses delegation.
 		seq_thrs_ms        : 6,
 		threads_thrs       : 2,
 		waitms             : 50,
 		forceSeq           : false,
 		seq_ratio          : 1,
-		// Overall deadline, in ms, for a pForEach call to wait for its parallel partitions to complete
+		// Optional overall deadline, in ms, for a pForEach call to wait for its parallel partitions to complete
 		// before timing out, cancelling whatever is still pending and returning partial results.
-		wait_timeout_ms    : 60000,
+		// Undefined (default) or <= 0 means wait for all partitions to complete.
+		wait_timeout_ms    : __,
 		// Minimum array-size-per-core multiplier below which pForEach always goes sequential, regardless
 		// of the adaptive timing heuristic (which only has data after the first partition completes).
 		// Defaults to 0 (disabled, arS < _nc * 0 is never true) so existing sequential/parallel switching
@@ -390,27 +396,41 @@ const print = function(str) {
 
 var __bfprint = {}
 var __bfprintErr = {}
+var __bfprintLock = new java.util.concurrent.locks.ReentrantLock()
+var __bfprintErrLock = new java.util.concurrent.locks.ReentrantLock()
 var __bfprintCodePage = io.getDefaultEncoding()
 const bfprintnl = function(str, codePage) {
 	if (isUnDef(codePage)) codePage = __bfprintCodePage
-	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), __flags.PRINT_BUFFER_STREAM)
-
-	__bfprint[codePage].write(str)
-	__bfprint[codePage].flush()
+	// Keep lazy writer creation, writing and flushing together across worker threads.
+	__bfprintLock.lock()
+	try {
+		if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), __flags.PRINT_BUFFER_STREAM)
+		__bfprint[codePage].write(str)
+		__bfprint[codePage].flush()
+	} finally { __bfprintLock.unlock() }
 }
 
 const bfprintErrnl = function(str, codePage) {
 	if (isUnDef(codePage)) codePage = __bfprintCodePage
-	if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), __flags.PRINT_BUFFER_STREAM)
-
-	__bfprintErr[codePage].write(str)
-	__bfprintErr[codePage].flush()
+	__bfprintErrLock.lock()
+	try {
+		if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), __flags.PRINT_BUFFER_STREAM)
+		__bfprintErr[codePage].write(str)
+		__bfprintErr[codePage].flush()
+	} finally { __bfprintErrLock.unlock() }
 }
 
 const bfprintSetStreamSize = function(aStreamSize) {
-	__flags.PRINT_BUFFER_STREAM = aStreamSize
-	__bfprint = {}
-	__bfprintErr = {}
+	__bfprintLock.lock()
+	__bfprintErrLock.lock()
+	try {
+		__flags.PRINT_BUFFER_STREAM = aStreamSize
+		__bfprint = {}
+		__bfprintErr = {}
+	} finally {
+		__bfprintErrLock.unlock()
+		__bfprintLock.unlock()
+	}
 }
 
 const bfprint = function(str, codePage) {
@@ -701,8 +721,10 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 
 	aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
-	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
-	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
+	// __con may be "" when a console couldn't be created; only query it when no explicit size was given
+	var _hasCon = isObject(__con) || isJavaObject(__con)
+	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(hSize) && _hasCon ? __con.getTerminal().getWidth() : __)
+	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(vSize) && _hasCon ? __con.getTerminal().getHeight() - 5 : __)
 	options = _$(options, "options").isMap().default({})
 
 	if (type == "clean" && name != "__") {
@@ -828,8 +850,10 @@ const printChartArray = function(anArray, aType, hSize, vSize, aMax, aMin, optio
 
 	aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
-	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
-	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
+	// __con may be "" when a console couldn't be created; only query it when no explicit size was given
+	var _hasCon = isObject(__con) || isJavaObject(__con)
+	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(hSize) && _hasCon ? __con.getTerminal().getWidth() : __)
+	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(vSize) && _hasCon ? __con.getTerminal().getHeight() - 5 : __)
 	options = _$(options, "options").isMap().default({})
 	options = merge(options, { width: hSize, height: vSize, max: aMax, min: aMin })
 
@@ -982,7 +1006,8 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
  * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
  * Optionally you can specify aWidthLimit, useAnsi, bandRows and/or aBgColor.
- * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf" or "plain")
+ * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf", "plain" or "borderless"). The "borderless" theme uses two-space column gaps,
+ * heavy Unicode header rules and optional light rules between records (useRowSep), including wrapped records
  * </odoc>
  */
 const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) {
@@ -1029,12 +1054,19 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		}
 	}
 
+	var borderless = aTheme == "borderless";
 	var hLine = "-", vLine = "|", hvJoin = "+";
 	if (aTheme == "utf") {
 		hLine = "─";
 		vLine = "│";
 		hvJoin = "┼";
 	}
+
+	if (borderless) {
+		hLine = "━";
+		vLine = hvJoin = "  ";
+	}
+	var sepSize = visibleLength(vLine);
 
 	//var pShouldBand = false
 	var _getColor = (aValue, ii, prev) => {
@@ -1070,11 +1102,21 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	if (anArrayOfEntries.length == 0) return ""
 	anArrayOfEntries = anArrayOfEntries.map(r => "[object Object]" != Object.prototype.toString.call(r) ? { " ": r } : r)
 
+	if (borderless && Object.keys(anArrayOfEntries[0]).length == 0) return "";
+
 	// If wordwrap generate new array
-	if (aWidthLimit > 0) {
-		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, visibleLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
-		anArrayOfEntries = _t.lines
-		anArrayOfIdxs = _t.idx
+	if (aWidthLimit > 0 || borderless) {
+		// A natural width still expands explicit newlines when there is no width limit.
+		var wrapWidth = aWidthLimit;
+		if (borderless && !(wrapWidth > 0)) {
+			var wrapCols = Object.keys(anArrayOfEntries[0]);
+			wrapWidth = wrapCols.reduce((size, col) => size + anArrayOfEntries.reduce((max, row) =>
+				Math.max(max, visibleLength(String(row[col]))), visibleLength(col)), 1 + sepSize * (wrapCols.length - 1));
+		}
+		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, wrapWidth, sepSize,
+			!borderless && useRowSep ? s => useAnsi ? ansiColor("FAINT", "-".repeat(s)) : "-".repeat(s) : __, true, borderless);
+		anArrayOfEntries = _t.lines;
+		anArrayOfIdxs = _t.idx;
 	}
 	
 	// Find sizes
@@ -1097,6 +1139,23 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	// Produce table
 	//$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
+	var _ruleLine = glyph => {
+		var rule = [], lineSize = borderless ? 0 : 1, outOfWidth = false, colNum = 0;
+		cols.forEach(col => {
+			if (outOfWidth) return;
+			lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1);
+			if (aWidthLimit > 0 && lineSize > (aWidthLimit + (borderless ? 0 : 3))) {
+				rule.push(useAnsi ? [ _colorMap.lines, "...", "\u001b[m" ].join("") : "...")
+				outOfWidth = true
+			} else {
+				rule.push((useAnsi ? [ _colorMap.lines, glyph.repeat(maxsize[col]), "\u001b[m" ].join("") : glyph.repeat(maxsize[col])))
+				if (colNum < (cols.length-1)) rule.push(useAnsi ? [_colorMap.lines, hvJoin, "\u001b[m" ].join("") : hvJoin)
+			}
+			colNum++
+		})
+		rule.push(__separator)
+		return rule.join("");
+	};
 	var _output = new ow.obj.syncArray(range(anArrayOfEntries.length))
 	pForEach(anArrayOfEntries, (row, ii) => {
 		var output = []
@@ -1107,11 +1166,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	
 		if (ii == 0) {
 			output.push(useAnsi ? _colorMap.title : "")
-			lineSize = 1; outOfWidth = false; colNum = 0;
+			lineSize = borderless ? 0 : 1; outOfWidth = false; colNum = 0;
 			cols.forEach(col => {
 				if (outOfWidth) return
-				lineSize += maxsize[col] + 1
-				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
+				lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1)
+				if (aWidthLimit > 0 && lineSize > (aWidthLimit + (borderless ? 0 : 3))) {
 					output.push((useAnsi ? [ _colorMap.title, "...", "\u001b[m" ].join("") : "...")); outOfWidth = true
 				} else {
 					var ansiLengthCol = visibleLength(col);
@@ -1122,33 +1181,24 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				colNum++
 			})
 			output.push(__separator)
-			lineSize = 1; outOfWidth = false; colNum = 0;
-			cols.forEach(col => {
-				if (outOfWidth) return;
-				lineSize += maxsize[col] + 1;
-				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output.push(useAnsi ? [ _colorMap.lines, "...", "\u001b[m" ].join("") : "...")
-					outOfWidth = true
-				} else {
-					output.push((useAnsi ? [ _colorMap.lines, hLine.repeat(maxsize[col]), "\u001b[m" ].join("") : hLine.repeat(maxsize[col])))
-					if (colNum < (cols.length-1)) output.push(useAnsi ? [_colorMap.lines, hvJoin, "\u001b[m" ].join("") : hvJoin)
-				}
-				colNum++
-			})
-			output.push(__separator)
+			output.push(_ruleLine(hLine));
 		}
 
-		lineSize = 1; outOfWidth = false; colNum = 0
+		if (borderless && useRowSep && ii > 0 && anArrayOfIdxs.indexOf(ii) >= 0) {
+			output.push(_ruleLine("─"));
+		}
+
+		lineSize = borderless ? 0 : 1; outOfWidth = false; colNum = 0
 		cols.forEach((col, jj) => {
 			if (outOfWidth) return;
-			lineSize += maxsize[col] + 1
-			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
+			lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1)
+			if (aWidthLimit > 0 && lineSize > (aWidthLimit + (borderless ? 0 : 3))) {
 				output.push("..."); outOfWidth = true
 			} else {	
 				//var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
-				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > (useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(useRowSep ? 2 : 1)][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
+				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > (!borderless && useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(!borderless && useRowSep ? 2 : 1)][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
 				if (colNum < (cols.length-1)) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 			}
 			colNum++
@@ -1162,7 +1212,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		_output.add(useAnsi ? [ _colorMap.lines, summary, "\u001b[m" ].join("") : summary)
 	}
 	
-	return _output.toArray().join("") + "\u001b[m"
+	return _output.toArray().join("") + (useAnsi ? "\u001b[m" : "")
 }
 
 /**
@@ -1240,6 +1290,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 	_aPrefix  = _$(_aPrefix, "aPrefix").isString().default("")
 	_aWidth   = _$(_aWidth, "aWidth").isNumber().default(__)
 	if (isUnDef(_aWidth) && isDef(__con)) _aWidth = Number(__con.getTerminal().getWidth())
+	if (!isNumber(_aWidth) || !isFinite(_aWidth) || _aWidth <= 0) _aWidth = 80
 
 	// Prepare aux functions
 	var _clr = __, _ac = __, _al = __
@@ -1329,17 +1380,23 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		return Array.from(ar)
 	}
 
-	var _isFlatArray = ar => ar.length > 0 && ar.every(el => {
-		if (el === null || "undefined" === typeof el) return true
-		if (Array.isArray(el)) return false
-		if ("[object Object]" == Object.prototype.toString.call(el)) {
-			return Object.keys(el).every(kk => {
+	// printTable takes its columns from the first row so only homogeneous arrays can be rendered as a table:
+	// either all scalars or all maps with the same set of (non-map/array) fields
+	var _isFlatArray = ar => {
+		if (ar.length == 0) return false
+		var _isM = el => "[object Object]" == Object.prototype.toString.call(el)
+		if (!_isM(ar[0])) return ar.every(el => !_isM(el) && !Array.isArray(el))
+		var _k = Object.keys(ar[0]).sort().join("\u0000")
+		return ar.every(el => {
+			if (!_isM(el)) return false
+			var _ks = Object.keys(el)
+			if (_ks.sort().join("\u0000") != _k) return false
+			return _ks.every(kk => {
 				var vv = el[kk]
-				return !(vv !== null && ("[object Object]" == Object.prototype.toString.call(vv) || Array.isArray(vv)))
+				return !(vv !== null && (_isM(vv) || Array.isArray(vv)))
 			})
-		}
-		return true
-	})
+		})
+	}
 
 	let _pt = (aM, aWidth, aOptions, aPrefix, isSub) => {
 		//isSub = _$(isSub, "isSub").isBoolean().default(false)
@@ -1424,7 +1481,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			let repeatResult = _ac("", ("undefined" !== typeof vsize ? " ".repeat(vsize - lv+1) : " "))
 
 			let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
-			let reset = __ansiColorCache["RESET"]
+			let reset = aOptions.noansi ? "" : __ansiColorCache["RESET"]
 			let suffix
 
 			if ("undefined" !== typeof aM[k] && aM[k] != null && ("[object Object]" == Object.prototype.toString.call(aM[k]) || Array.isArray(aM[k]))) {
@@ -1432,7 +1489,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 				if (aOptions.tableArrays && Array.isArray(aM[k]) && _isFlatArray(aM[k])) {
 					let tblWidth = isNumber(aWidth) ? (aWidth - _al(contPrefix)) : __
 					let tLines = printTable(aM[k], tblWidth, __, !aOptions.noansi, (aOptions.noansi ? __ : "utf")).split("\n")
-					if (tLines.length > 0 && tLines[tLines.length - 1] == "") tLines.pop()
+					while (tLines.length > 0 && tLines[tLines.length - 1].replace(/\033\[[0-9;]*m/g, "").trim() == "") tLines.pop()
 					suffix = tLines.map((l, ii) => ii == 0 ? l : contPrefix + l).join("\n")
 				} else {
 					suffix = _pt(aM[k], aWidth, aOptions, contPrefix, true)
@@ -1453,7 +1510,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			out = ("undefined" !== typeof out[out.length - 1] && out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
 		}
 		
-		var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
+		var _res = out.join("\n") + (!isSub && !aOptions.noansi && __conConsole ? __ansiColorCache["RESET"] : "")
 		return _res
 	}
 	var res = _pt(_aM, _aWidth, _aOptions, _aPrefix, _isSub)
@@ -2079,9 +2136,24 @@ const stringify = function(aobj, replacer, space) {
 
 /**
  * <odoc>
- * <key>colorify(aObject) : String</key>
- * Tries to ANSI colorify a json aObject for use with cprint, cprintErr, cprintErrnl and cprintnl
- * </odoc> 
+ * <key>__colorFormat</key>
+ * Global map with the ANSI color/style settings used when printing colored output (colorify, cprint*, printTable/printTree,
+ * ask/askChoose/askChooseMultiple prompts and markdown rendering). Each color value is a comma-separated list of ansiColor
+ * attributes (e.g. "BOLD,CYAN", "FG(12)", "RESET"). Entries can be changed at runtime to customize the theme:\
+ * \
+ *   - key, number, string, boolean, date, default: colors used by colorify and tree/table values per data type.\
+ *   - askPre, askQuestion, askChoose, askChooseFilter, askPos: colors used by ask, askChoose and askChooseMultiple.\
+ *   - askChooseChars: characters used in choose prompts (chooseMultipleSelected, chooseMultipleUnselected, chooseUp, chooseDown, chooseLine).\
+ *   - table: { lines, value, title, bandRow, format } colors for table output; the optional "format" (table, stable, ctable, btable or bstable)\
+ *     selects the default table renderer for $output when no global or explicit format is set.\
+ *   - tree: { lines } color for tree connecting lines (other tree options are merged with __flags.TREE).\
+ *   - md: colors used by ow.format.withMD: codeBlock {line, text, theme}, codeInline {text, surround}, heads {h1..h4}, line, link {text, url},\
+ *     bullets, list, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.\
+ * \
+ * Example:\
+ * \
+ *   __colorFormat.string = "GREEN"; __colorFormat.table.title = "BOLD,UNDERLINE"; __colorFormat.md.heads.h1 = "CYAN,BOLD"\
+ * </odoc>
  */
 var __colorFormat = {
 	//key: "BOLD,BLACK",
@@ -2103,6 +2175,7 @@ var __colorFormat = {
 		chooseDown: "v",
 		chooseLine: ">"
 	},
+	// Optional table.format: table, stable, ctable, btable or bstable.
 	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" },
 	tree: { lines: "" },
 	sideLineCustomThemes: {},
@@ -2132,6 +2205,12 @@ var __colorFormat = {
 		}
 	}
 };
+/**
+ * <odoc>
+ * <key>colorify(aObject) : String</key>
+ * Tries to ANSI colorify a json aObject for use with cprint, cprintErr, cprintErrnl and cprintnl. Colors are defined in __colorFormat.
+ * </odoc>
+ */
 const colorify = function(json, aOptions, spacing) {
 	if (isUnDef(aOptions)) aOptions = {}
 	else if (!isMap(aOptions)) throw "options is not a map"
@@ -4563,6 +4642,8 @@ const exit = function(exitCode, force) {
 		t.runOpenAFShutdownHooksNow();
 		t.nativeExit(exitCode);
 	} else {
+		// let an armed fast exit (see armFastExitOnShutdown) keep this exit code
+		try { Packages.openaf.plugins.Threads.setRequestedExitCode(exitCode) } catch(e) {}
 		java.lang.System.exit(exitCode)
 	}
 }
@@ -4992,9 +5073,11 @@ const __visibleLengthIsEmojiDefaultPresentation = cp => (
 	(cp >= 0x2753 && cp <= 0x2755) || cp == 0x2757 ||
 	(cp >= 0x2795 && cp <= 0x2797) ||
 	cp == 0x27B0 || cp == 0x27BF ||
-	cp == 0x2934 || cp == 0x2935 ||
 	(cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55 ||
-	cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299
+	cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299 ||
+	cp == 0x1F004 || cp == 0x1F0CF || cp == 0x1F18E || (cp >= 0x1F191 && cp <= 0x1F19A) ||
+	cp == 0x1F201 || cp == 0x1F21A || cp == 0x1F22F || (cp >= 0x1F232 && cp <= 0x1F236) ||
+	(cp >= 0x1F238 && cp <= 0x1F23A) || (cp >= 0x1F250 && cp <= 0x1F251)
 )
 const __visibleLengthIsWide = cp => (
 	cp >= 0x1100 && (
@@ -5125,9 +5208,33 @@ var $from = function(a) {
 
 /**
  * <odoc>
+ * <key>$jq(input, expression, options) : Object</key>
+ * Evaluates jq syntax (jq 1.6 mode, jackson-jq 1.6.5) against one JSON value.
+ * expression defaults to ".". Zero outputs return undefined, one returns the value,
+ * and multiple outputs return an array. options.all=true always returns an array of outputs.
+ * options.vars binds JSON values by variable name without the leading $. Examples:\
+ *   $jq({ a: 2 }, ".a"); // 2\
+ *   $jq([1, 2], ".[]", { all: true }); // [1, 2]\
+ *   $jq([1, 3], "map(select(. > $min))", { vars: { min: 2 } }); // [3]\
+ * Accepts plain objects, dense arrays, strings, finite numbers, booleans and null.
+ * Rejects unsupported values and cycles with their location. Does not mutate inputs.
+ * Results are detached JavaScript values; numbers have JavaScript precision.
+ * __flags.JQ_CACHE_SIZE controls compiled query caching (256 entries; 0 clears/disables).
+ * Filesystem imports, CLI input streams and OpenAF callbacks are unavailable.
+ * See docs/jq.md for compatibility, value boundaries and error behavior.
+ * </odoc>
+ */
+const $jq = function(input, expression, options) {
+  return af.jqJava(input, expression, options);
+};
+
+/**
+ * <odoc>
  * <key>$path(obj, path, customFunctions) : Object</key>
  * Shortcut for the JMESPath library for easy query and access to arrays/objects. To see all the available options
- * please refer to http://jmespath.org. Optional you can provide a map of customFunctions. Examples:\
+ * please refer to http://jmespath.org. Uses the Java engine by default; set __flags.ALTERNATIVES.path=false
+ * to use the Javascript engine. __flags.PATH_CACHE_SIZE controls the Java syntax cache (256 entries by default; 0 disables).
+ * Optional you can provide a map of customFunctions. Examples:\
  * \
  * [Slicing]: \
  *   $path(arr, "[0:5]"); $path(arr, "[5:10]"); $path(arr, "[:5]"); $path(arr, "[::2]"); $path(arr, "[::-1]");\
@@ -5823,7 +5930,7 @@ const $path = function(aObj, aPath, customFunctions) {
 	}, customFunctions)
 
 	if (isDef(aObj))
-		return jmespath.search(aObj, aPath, customFunctions);
+		return __flags.ALTERNATIVES.path ? af.pathJava(aObj, aPath, customFunctions) : jmespath.search(aObj, aPath, customFunctions);
 	else
 		return jmespath.types;
 };
@@ -6158,6 +6265,8 @@ const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 /**
  * <odoc>
  * <key>parallelArray(anArray, aReduceFunction, initValue, aAggFunction, numThreads, aControlMap) : Object</key>
+ * An installed GPU opack may handle calls without an explicit thread count/control map. Set
+ * OAF_PFOREACH_GPU=false, __flags.PFOREACH.useGPU=false or options.useGPU=false to bypass it.
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aReduceFunction(pr, cv, i, arr),
  * where pr = previous result, cv = current value, i = index and arr = array subset, will be executed for each value in sequence.
  * The pr value for the first execution on each thread will have the value initValue if provided. The returned result, in each thread,
@@ -6250,7 +6359,7 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
 
 /**
  * <odoc>
- * <key>parallel4Array(anArray, aFunction, numThreads, aControlMap) : Object</key>
+ * <key>parallel4Array(anArray, aFunction, numThreads, aControlMap, options) : Object</key>
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFunction(aValue)
  * will be executed for each value in sequence. An array with all the aFunction results will be returned. If no numThreads is 
  * provided, the number of threads will be automatically determined. Optionally you can provide a empty map as aControlMap
@@ -6269,7 +6378,31 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
  * );\
  * </odoc>
  */
-const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
+var __gpuDelegateLoading = false
+const __gpuDelegate = function(method, options) {
+  if (options && options.useGPU === false) return undefined
+  if (__flags.PFOREACH.useGPU === false || __flags.PFOREACH.forceSeq) return undefined
+  if (/^(false|0|no|off)$/i.test(String(java.lang.System.getenv("OAF_PFOREACH_GPU")))) return undefined
+  if (__gpuDelegateLoading) return undefined
+  __gpuDelegateLoading = true
+  try {
+    if (isUnDef(ow.gpu) || typeof ow.gpu[method] != "function") {
+      var root = getOPackPath("GPU")
+      if (isUnDef(root)) return undefined
+      loadLib(root + "/gpu.js")
+      ow.loadGPU()
+    }
+    return typeof ow.gpu[method] == "function" ? ow.gpu : undefined
+  } catch(e) { return undefined }
+  finally { __gpuDelegateLoading = false }
+}
+
+const parallel4Array = function(anArray, aFunction, numberOfThreads, threads, options) {
+  // Explicit thread counts/control maps retain their original scheduler and synchronization API.
+  if (isUnDef(numberOfThreads) && isUnDef(threads)) {
+    var gpu = __gpuDelegate("parallel4Array", options)
+    if (gpu) return gpu.parallel4Array(anArray, aFunction, options)
+  }
 	var res = parallelArray(anArray,
 		function(p, c, ii, a) {
 			var subres = aFunction(c, ii)
@@ -6285,12 +6418,14 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 
 /**
  * <odoc>
- * <key>pForEach(anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) : Array</key>
+ * <key>pForEach(anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) : Array</key>
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
  * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
  * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true the
  * sequential execution will be forced. aTimeoutMs, if provided, overrides __flags.PFOREACH.wait_timeout_ms as the overall
- * deadline, in milliseconds, to wait for the parallel partitions to complete. On timeout the still-pending partitions
+ * deadline, in milliseconds, from parallel dispatch through queue-pressure and completion waits. If neither is a positive
+ * number (the default) pForEach waits for all partitions to complete.
+ * Sequential callbacks remain synchronous and are not interrupted by this deadline. On timeout the still-pending partitions
  * (and their pool worker threads) are cancelled, aErrFn is called with a "pForEach: N of M partitions timed out"
  * diagnostic and whatever results were collected so far are returned (missing entries come back as arrays of __, so the
  * returned array keeps the same length and order as anArray).\
@@ -6307,7 +6442,20 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
  * )\
  * </odoc>
  */
-const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
+// options: useGPU:false bypasses installed opack delegation; execution:"sequential"/"parallel"
+// requests a CPU route when bypassing; maxWorkers caps partitions; metrics receives the actual route.
+const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) => {
+  options = options || {}
+  // Positive deadlines keep the existing cancellable CPU implementation.
+  var budget = isDef(aTimeoutMs) ? aTimeoutMs : __flags.PFOREACH.wait_timeout_ms
+  if (!aUseSeq && !(isNumber(budget) && budget > 0)) {
+    var gpu = __gpuDelegate("pForEach", options)
+    if (gpu) return gpu.pForEach(anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options)
+  }
+  if (options.execution == "sequential") aUseSeq = true
+  var metrics = options.metrics
+  if (metrics) { metrics.execution = "sequential"; metrics.timedOut = false }
+
 	_$(anArray, "anArray").isArray().$_()
 	_$(aFn, "aFn").isFunction().$_()
 	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(printErr)
@@ -6343,7 +6491,8 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 		return partitions
 	}
 
-	var pres = calculatePartitions(arS, _nc)
+	if (isNumber(options.maxWorkers) && options.maxWorkers > 0) _nc = Math.min(_nc, Math.max(1, Math.floor(options.maxWorkers)))
+	var pres = calculatePartitions(arS, Math.min(arS, _nc))
 	var _ts = [], parts = $atomic(0, "long")
 
 	// If not enough cores, too many threads already in the pool, or too few items per core to be worth the
@@ -6354,11 +6503,20 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	            _tpstats.active / _nc > __flags.PFOREACH.seq_ratio ||
 	            arS < _nc * __flags.PFOREACH.min_par_size
 
+	if (options.execution == "parallel" && !aUseSeq && !__flags.PFOREACH.forceSeq && _nc >= 3 &&
+      _tpstats.active / _nc <= __flags.PFOREACH.seq_ratio) beSeq = false
 	const waitMs = __flags.PFOREACH.waitms
 	const seqThresholdMs = __flags.PFOREACH.seq_thrs_ms
 	const threads_thrs = __flags.PFOREACH.threads_thrs
 	const seq_ratio = __flags.PFOREACH.seq_ratio
 	const timeoutMs = isDef(aTimeoutMs) ? aTimeoutMs : __flags.PFOREACH.wait_timeout_ms
+	// One monotonic budget covers dispatch, backpressure and the final wait (unbounded if no positive timeout).
+	const bounded = isNumber(timeoutMs) && timeoutMs > 0
+	const deadline = bounded ? nowNano() + timeoutMs * 1000000 : __
+	const remainingMs = () => bounded ? Math.max(0, (deadline - nowNano()) / 1000000) : Infinity
+	const waitBudget = () => bounded ? remainingMs() : __
+	var parallelCall = !beSeq
+	var stopped = $atomic(false, "boolean")
 
 	// Interrupting a stuck partition on timeout only reclaims its pool slot if the partition's own loop stops
 	// instead of moving on to the next item and blocking again on it.
@@ -6374,6 +6532,10 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 			var _ar = []
 			try {
 				for (var j = part.start; j < part.end; j++) {
+					if (stopped.get()) {
+						while (_ar.length < (part.end - part.start)) _ar.push(__)
+						break
+					}
 					try {
 						var init = nowNano()
 						var _R = aFn(anArray[j], j)
@@ -6397,6 +6559,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	}
 
 	for(var _i_ = 0; _i_ < pres.length; _i_++) {
+		if (parallelCall && remainingMs() <= 0) break
 		try {
 			if (beSeq) {
 				// Use a regular for loop for better performance
@@ -6416,44 +6579,44 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 				fRes.add( { i: _i_, r: ar } )
 				parts.inc()
 			} else {
+				if (metrics) metrics.execution = "parallel"
 				_ts.push( $do( fnPar(_i_, pres[_i_]) ).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
 
-				// Cool down and go sequential if too many threads
+				// Apply backpressure without losing the promise needed for cancellation.
 				_tpstats = __getThreadPools()
 				if (_tpstats.queued > _tpstats.poolSize / threads_thrs) {
-					$doWait(_ts.pop())
+					if (remainingMs() > 0) $doWait(_ts[_ts.length - 1], waitBudget())
 				}
 			}
 		} catch(eee) {
 			aErrFn(eee)
 		} finally {
-			// If execution time per call is too low, go sequential
-			if ( typeof aUseSeq === "undefined" && pres.length > 1 && _nc >= 3 ) {
+			// Once parallel dispatch starts, callbacks must stay off the waiting thread.
+			if (!options.execution && !parallelCall && typeof aUseSeq === "undefined" && pres.length > 1 && _nc >= 3) {
 				if ( ((times.get() / execs.get() ) / 1000000) < seqThresholdMs || __getThreadPools().active / _nc > seq_ratio) {
 					beSeq = true
 				} else {
 					beSeq = false
+					parallelCall = true
 				}
 			}
 		}
 	}
 
-	if (_ts.length > 0) {
-		var _all = $doAll(_ts)
-		var _init = now()
-		var tries = 0
-		do {
-			$doWait(_all, Math.max(1, timeoutMs - (now() - _init)))
-			// Only sleep if there's still budget left: on the last iteration $doWait can return right at
-			// timeoutMs, and this sleep must not push the overall wait past the documented deadline.
-			if (parts.get() < pres.length && (now() - _init) < timeoutMs) sleep(__getThreadPools().queued * waitMs, true)
-			tries++
-		} while(parts.get() < pres.length && tries < 100 && (now() - _init) < timeoutMs)
+	if (parallelCall || _ts.length > 0) {
+		var _all = _ts.length > 0 && remainingMs() > 0 ? $doAll(_ts) : __
+		while (isDef(_all) && parts.get() < pres.length && remainingMs() > 0) {
+			$doWait(_all, waitBudget())
+			var budget = remainingMs()
+			if (parts.get() < pres.length && budget > 0) sleep(Math.min(__getThreadPools().queued * waitMs, budget), true)
+		}
 
 		if (parts.get() < pres.length) {
 			// Bounded timeout hit: cancel the aggregator and whatever partitions are still pending so their
 			// pool slots get reclaimed instead of staying poisoned for unrelated future callers.
-			try { _all.cancel("pForEach: wait timed out") } catch(e) {}
+			stopped.set(true)
+			if (metrics) metrics.timedOut = true
+			try { if (isDef(_all)) _all.cancel("pForEach: wait timed out") } catch(e) {}
 			var _pending = pres.length - parts.get()
 			_ts.forEach(t => {
 				try {
@@ -6477,7 +6640,6 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs) => {
 	var _byIdx = {}
 	fRes.toArray().forEach(rs => { if (isUnDef(_byIdx[rs.i])) _byIdx[rs.i] = rs.r })
 	fRes.clear()
-	fRes = __
 
 	var res = []
 	for (var _i2 = 0; _i2 < pres.length; _i2++) {
@@ -6722,6 +6884,10 @@ const isCoreCompiledLib = function(aClass) {
 	return (_lc === "openaf_js" || _lc === "openafsigil_js");
 }
 
+// Maps a compiled library class name back to its source file name (e.g. owrap_format_js -> owrap.format.js);
+// none of the bundled js/ file names contain underscores so every "_" was originally a "."
+const __compiledClass2Source = aClass => String(aClass).replace(/_js$/, "").replace(/_/g, ".") + ".js";
+
 /**
  * <odoc>
  * <key>loadCompiledLib(aLibClass, forceReload, aFunction, withSync) : boolean</key>
@@ -6734,7 +6900,7 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
-	var _libPath = getOpenAFJar() + "::js/" + aClass.replace(/_js$/, ".js");
+	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass);
 	var _loadCompiled = () => {
 		try {
 			af.runFromClass(af.newScriptInstance(aClass));
@@ -6771,7 +6937,7 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 }
 
 const loadCompiledRequire = function(aClass, forceReload, aFunction) {
-	var _libPath = getOpenAFJar() + "::js/" + aClass.replace(/_js$/, ".js");
+	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass);
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
@@ -7318,6 +7484,13 @@ const loadDiff = function() {
 	if (res) pods.declare("JsDiff", loadDiff());
 }
 
+/**
+ * <odoc>
+ * <key>loadAjv()</key>
+ * Loads the bundled Ajv v8 JSON Schema validator as global Ajv. OpenAF schema helpers automatically load it
+ * and configure formats, draft routing and compatibility options. See ow.obj.schemaInit and docs/json-schema.md.
+ * </odoc>
+ */
 const loadAjv = function() {
 	var res = loadCompiledLib("ajv_js");
 	if (res) pods.declare("Ajv", loadAjv());
@@ -7363,22 +7536,26 @@ if (isUnDef(__offlineHelp)) {
  * <odoc>
  * <key>setOfflineHelp(aBoolean)</key>
  * Forces help (odoc) to be retrieved locally (if aBoolean is true) or reestablishes the normal behaviour
- * of retrieving from online first (if aBoolean is false)
+ * of loading local documentation with online fallback and background refresh (if aBoolean is false)
  * </odoc>
  */
 const setOfflineHelp = function(aBoolean) {
 	__offlineHelp = aBoolean;
-	if (isDef(__odocs)) __odocs = undefined; //__odocs.offline = __offlineHelp;
+	if (isDef(__odocs)) {
+		__odocs.offline = aBoolean;
+		__odocs = undefined;
+	}
+	__odocsfiles = [];
 }
 
 /**
  * <odoc>
- * <key>searchHelp(aTerm, aPath, anArrayOfIds) : Map</key>
+ * <key>searchHelp(aTerm, aPath, anArrayOfIds) : Array</key>
  * Searches the OpenAF ODoc help system for a specific term. Optionally you can provide a path of where to 
- * search for ODoc help files. If an exact match is found the function will return an array with a single
- * a map with the corresponding ODoc id, key, fullkey and text. If no exact match is found the function will
- * return an array of alternative matches or an empty array if no alternatives are found. Optionally you can
- * also restrict by anArrayOfIds.
+ * search for ODoc help files. A unique result returns an array with one map containing id, key, fullkey
+ * and raw text, plus format for explicitly marked entries. Ambiguous results contain id and key only.
+ * Matches prefer case-sensitive exact keys, then case-insensitive exact keys, then substrings.
+ * Returns an empty array when nothing is found. Optionally restrict by anArrayOfIds.
  * </odoc>
  */
 const searchHelp = function(aTerm, aPath, aId) {
@@ -7388,7 +7565,8 @@ const searchHelp = function(aTerm, aPath, aId) {
 	if (isDef(aPath)) __odocs.loadFile(aPath);
 	var keys = __odocs.search(aTerm, aId);
 
-	if (keys.length != 1) {
+	// Discover package subjects once, including duplicates of a core key.
+	{
 		var newloaded = false;
 		var paths = [ getOpenAFJar() ];
 		try {
@@ -7396,7 +7574,7 @@ const searchHelp = function(aTerm, aPath, aId) {
 		} catch(e) {
 		}
 		paths.forEach(path => {
-			if (!(path.match(/\.(jar|db|zip)/))) path += "/";
+			if (!(path.match(/\.(jar|db|zip)$/i))) path += "/";
 			if (__odocsfiles.indexOf(path) < 0) {
 				__odocs.loadFile(path);
 				__odocsfiles.push(path);
@@ -7410,14 +7588,15 @@ const searchHelp = function(aTerm, aPath, aId) {
 	
 	if (keys.length == 1) {
 		var contents = __odocs.get(keys[0].id, keys[0].key);
-		return [ {
+		if (isUnDef(contents)) return [];
+		var result = {
 			"id": keys[0].id,
 			"key": keys[0].key,
 			"fullkey": contents.k,
 			"text": contents.t
-		} ];
-	} else {
-		keys = keys.sort(function(a, b) { return (a.key.toLowerCase() > b.key.toLowerCase()) ? 1 : -1; });
+		};
+		if (isDef(contents.format)) result.format = contents.format;
+		return [ result ];
 	}
 	return uniqArray(keys);
 }
@@ -7425,7 +7604,7 @@ const searchHelp = function(aTerm, aPath, aId) {
 /**
  * <odoc>
  * <key>saveHelp(aPath, aMapOfFiles)</key>
- * Given aMapOfFiles, or basically an array of JavaScript or Java source filenames, each file will 
+ * Given aMapOfFiles mapping subject ids to JavaScript or Java source filenames, each file will
  * be processed for ODoc XML tags and the corresponding ODoc database will be generated on the 
  * provided aPath suitable for offline use.
  * </odoc>
@@ -7441,7 +7620,7 @@ const saveHelp = function(aPath, aMapOfFiles) {
 /**
  * <odoc>
  * <key>saveHelpWeb(aPath, aMapOfFiles)</key>
- * Given aMapOfFiles, or basically an array of JavaScript or Java source filenames, each file will 
+ * Given aMapOfFiles mapping subject ids to JavaScript or Java source filenames, each file will
  * be processed for ODoc XML tags and the corresponding ODoc database will be generated on the 
  * provided aPath suitable for online use.
  * </odoc>
@@ -7670,7 +7849,8 @@ const mapArray = function(anArray, selectors, limit) {
  * </odoc>
  */
 const searchArray = function(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) {
-	return ow.loadObj.searhArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel);
+	ow.loadObj();
+	return ow.obj.searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel);
 }
 
 /**
@@ -8874,7 +9054,8 @@ const $rest = function(ops) {
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string|map|array): Required for stdio type - the command to execute or the map/array accepted by $sh\
  * - pwd (string): For stdio type - the working directory to use when executing cmd (default: the JSONRPC.cmd.defaultDir flag, if set)\
- * - envs (map): For stdio type - a map of environment variables to use when executing cmd. Note: this replaces the child process' environment entirely (same semantics as $sh.envs/sh()), it does not merge with the current environment\
+ * - envs (map): For stdio type - a map of environment variables to use when executing cmd. Note: by default these are merged over the current process environment (so secrets in the parent environment are inherited); set envsOnly to true to use only this map\
+ * - envsOnly (boolean): For stdio type - when true the child process environment will be exactly the envs map instead of merging it with the current environment (default: false)\
  * - options (map): Additional options passed to $rest for remote connections\
  * - sse (boolean): When true, remote/http requests expect Server-Sent Events responses with JSON-RPC payloads in `data:` events\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
@@ -8886,7 +9067,7 @@ const $rest = function(ops) {
  * - url(aURL): Set the URL and switch to remote type\
  * - sh(aCommand): Set the command and switch to stdio type\
  * - pwd(aPath): Set the working directory to use for stdio execution\
- * - envs(aMap): Set the environment variables map to use for stdio execution (replaces the child process' environment)\
+ * - envs(aMap): Set the environment variables map to use for stdio execution (merged with the current environment unless envsOnly is true)\
  * - exec(aMethod, aParams, aNotification): Execute a JSON-RPC method\
  * - destroy(): Stop the client and cleanup resources\
  * \
@@ -9052,6 +9233,11 @@ const $jsonrpc = function (aOptions) {
 		_sy: $sync(),
 		_q: {},
 		_r: {},
+		// stdio: ids queued for the writer thread, per-request response latches and process readiness
+		// (java.util.concurrent primitives so that a signal sent before the other side waits isn't lost)
+		_wq: new java.util.concurrent.LinkedBlockingQueue(),
+		_w: new java.util.concurrent.ConcurrentHashMap(),
+		_ready: new java.util.concurrent.CountDownLatch(1),
 		_info: __,
 		_pwd: _$(aOptions.pwd, "aOptions.pwd").isString().default(_defaultCmdDir),
 		_envs: _$(aOptions.envs, "aOptions.envs").isMap().default(__),
@@ -9081,7 +9267,11 @@ const $jsonrpc = function (aOptions) {
 					_go = true
 				}
 			})
-			if (!_go) return _r
+			if (!_go) {
+				// another caller is starting the process: wait until it is ready to accept requests
+				_r._ready.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+				return _r
+			}
 
 			aOptions.cmd = cmd
 			aOptions.type = "stdio"
@@ -9107,59 +9297,53 @@ const $jsonrpc = function (aOptions) {
 								[
 									// in stream
 									$doV(() => {
-										$await("__jsonrpc_" + _main_id).notifyAll()
-										do {
-											var _id = _r._ids.get()
-											$await("__jsonrpc_q-" + _id + "-" + _main_id).wait()
-											if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
+										_r._ready.countDown()
+										while (!_r._s) {
+											var _wid = _r._wq.poll(250, java.util.concurrent.TimeUnit.MILLISECONDS)
+											if (_wid == null) continue
+											var _id = Number(_wid)
+											var _qe = _r._q[_id]
+											delete _r._q[_id]
+											if (isMap(_qe) && isDef(_qe.method)) {
 												var _m = {
 													jsonrpc: "2.0",
 													id: _id,
-													method: _r._q[_id].method,
-													params: _r._q[_id].params
+													method: _qe.method,
+													params: _qe.params
 												}
-												if (_r._q[_id].__notify) {
+												if (_qe.__notify) {
 													delete _m.id
 												}
 												var msg = stringify(_m, __, "") + "\n"
 												_debug("jsonrpc -> " + msg)
 												ioStreamWrite(i, msg)
 												i.flush()
-												delete _r._q[_id]
-												_r._ids.inc()
 											}
-											$await("__jsonrpc_q-" + _id + "-" + _main_id).destroy()
-											$await("__jsonrpc_r-" + _id + "-" + _main_id).notify()
-										} while (!_r._s)
+										}
 									}),
 									// out stream
 									$doV(() => {
-										do {
-											var _id = _r._ids.get()
-											$await("__jsonrpc_r-" + _id + "-" + _main_id).wait()
-											ioStreamReadLines(o, line => {
-												_debug("jsonrpc <- " + line)
-												var _l = jsonParse(line)
-												if (isMap(_l) && isDef(_l.jsonrpc)) {
-													if (isDef(_l.id)) {
-														_r._r[_l.id] = _l
-														$await("__jsonrpc_a-" + _l.id + "-" + _main_id).notify()
-													} else {
-														_r._notifications = _r._notifications || []
-														_r._notifications.push(_l)
-														if (_r._notifications.length > 50) _r._notifications.shift()
-														if (isFunction(aOptions.onNotification)) {
-															try { aOptions.onNotification(_l) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
-														}
-													}
+										ioStreamReadLines(o, line => {
+											_debug("jsonrpc <- " + line)
+											var _l = jsonParse(line)
+											if (isMap(_l) && isDef(_l.jsonrpc)) {
+												if (isDef(_l.id)) {
+													_r._r[_l.id] = _l
+													var _lw = _r._w.get(String(_l.id))
+													if (_lw != null) _lw.countDown()
 												} else {
-													_debug("jsonrpc <- (ignored non-JSON-RPC line) " + line)
+													_r._notifications = _r._notifications || []
+													_r._notifications.push(_l)
+													if (_r._notifications.length > 50) _r._notifications.shift()
+													if (isFunction(aOptions.onNotification)) {
+														try { aOptions.onNotification(_l) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
+													}
 												}
-												$await("__jsonrpc_r-" + _id + "-" + _main_id).destroy()
-												return false
-											}, __, true, "UTF-8")
-											o.flush()
-										} while (!_r._s)
+											} else {
+												_debug("jsonrpc <- (ignored non-JSON-RPC line) " + line)
+											}
+											return !!_r._s
+										}, __, true, "UTF-8")
 									}),
 									// err stream (drain stderr to avoid deadlocking the child on a full pipe buffer)
 									$doV(() => {
@@ -9187,7 +9371,7 @@ const $jsonrpc = function (aOptions) {
 				_debug("jsonrpc process error: " + e)
 				$err(e)
 			})
-			$await("__jsonrpc_" + _main_id).wait()
+			if (!_r._ready.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)) _debug("jsonrpc process not ready after " + aOptions.timeout + "ms")
 			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
@@ -9315,34 +9499,31 @@ const $jsonrpc = function (aOptions) {
 						}
 						_r.sh(aOptions.cmd)
 					}
-					var _id
-					// atomically allocate the next id and queue the request so concurrent exec() calls
-					// (e.g. with shared:true) never claim the same slot
+					var _id, _req = {
+						method: _$(aMethod, "aMethod").isString().$_(),
+						params: _$(aParams, "aParams").isMap().default({}),
+						__notify: !!aNotification
+					}
+
+					var _res, _wl
+					// ids are unique per connection and responses are matched by id, so concurrent exec() calls
+					// (e.g. with shared:true) can be pipelined safely
 					_r._sy.run(() => {
 						_id = _r._ids.get()
-						_r._q[_id] = {
-							method: _$(aMethod, "aMethod").isString().$_(),
-							params: _$(aParams, "aParams").isMap().default({}),
-							__notify: !!aNotification
+						_r._ids.inc()
+						_r._q[_id] = _req
+						if (!aNotification) {
+							_wl = new java.util.concurrent.CountDownLatch(1)
+							_r._w.put(String(_id), _wl)
 						}
 					})
-
-					var _res
-					// for stdio concorrency is not supported by nature so we use locks and awaits to
-					// serialize requests and responses
-					var _locked = $lock("__jsonrpc_q-" + _id + "-" + _main_id).tryLock(() => {
-						$await("__jsonrpc_q-" + _id + "-" + _main_id).notifyAll()
-						// If this is a notification (no reply expected) skip waiting for a response
-						if (!!aNotification) {
-							// cleanup waiter and return undefined
-							$await("__jsonrpc_a-" + _id + "-" + _main_id).destroy()
-							return
-						}
-						$await("__jsonrpc_a-" + _id + "-" + _main_id).wait(aOptions.timeout)
-					}, aOptions.timeout)
-					if (!_locked) {
-						delete _r._q[_id]
-						throw new Error("MCP/JSON-RPC stdio request " + _id + " could not acquire the request lock within " + aOptions.timeout + "ms")
+					_r._wq.put(_id)
+					// If this is a notification (no reply expected) skip waiting for a response
+					if (!!aNotification) return __
+					try {
+						if (!_wl.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)) _debug("jsonrpc request " + _id + " timed out after " + aOptions.timeout + "ms")
+					} finally {
+						_r._w.remove(String(_id))
 					}
 					if (isMap(_r._r[_id])) {
 						_res = _r._r[_id]
@@ -9528,7 +9709,8 @@ const $jsonrpc = function (aOptions) {
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string|array): Required for stdio type - the command to launch the MCP server (an array is executed directly, without going through a shell)\
  * - pwd (string): For stdio type - the working directory to use when launching the MCP server\
- * - envs (map): For stdio type - a map of environment variables to use when launching the MCP server. Note: this replaces the child process' environment entirely, it does not merge with the current environment\
+ * - envs (map): For stdio type - a map of environment variables to use when launching the MCP server. Note: by default these are merged over the current process environment (so secrets in the parent environment are inherited); set envsOnly to true to use only this map\
+ * - envsOnly (boolean): For stdio type - when true the MCP server environment will be exactly the envs map instead of merging it with the current environment (default: false)\
  * - options (map): Additional options:\
  *   - For remote/stdio: passed to underlying JSON-RPC client\
  *   - For dummy: { fns: map of function implementations, fnsMeta: map of function metadata }\
@@ -9546,9 +9728,9 @@ const $jsonrpc = function (aOptions) {
  *   - token (string): Bearer token when type is "bearer"\
  *   - tokenType (string): Authorization scheme prefix (default: "Bearer")\
  *   - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow\
- *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata\
+ *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata (the metadata issuer must match and discovered endpoints must use HTTPS unless they are loopback addresses or allowHTTP is true)\
  *   - interactive (boolean): false prohibits browser login and code prompts; omitted preserves existing behavior\
- *   - callback (boolean): opt-in loopback listener at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000\
+ *   - callback (boolean): opt-in loopback login through ow.server.httpd.oauth2 at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000\
  *   - tokenStore (map): opt-in {type: "sec", profile: "default"}; optional repo (default mcp-oauth2), bucket, key, file, lockSecret, mainSecret, lockTimeoutMs (60000). Or a synchronous custom load/save/clear/withLock store.\
  *   - sendResource (boolean): false omits the OAuth resource parameter; default true\
  *   - disableOpenBrowser (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)\
@@ -9834,6 +10016,20 @@ const $mcp = function(aOptions) {
 		if (!isMap(_authServerMetadata)) {
 			throw new Error("OAuth authorization server metadata response is invalid for " + _authServerMetadataURL)
 		}
+		// RFC 8414 section 3.3: the metadata issuer must match the issuer it was requested for
+		if (isDef(_authServerMetadata.issuer) && String(_authServerMetadata.issuer).replace(/\/+$/, "") != String(_issuer).replace(/\/+$/, "")) {
+			throw new Error("OAuth authorization server metadata issuer '" + _authServerMetadata.issuer + "' doesn't match '" + _issuer + "'")
+		}
+		// Discovered endpoints come from the (possibly untrusted) server: don't send secrets in clear text to remote hosts
+		;["authorization_endpoint", "token_endpoint", "registration_endpoint"].forEach(k => {
+			if (!isString(_authServerMetadata[k]) || aOptions.auth.allowHTTP === true) return
+			var _u
+			try { _u = new java.net.URI(_authServerMetadata[k]) } catch(e) { throw new Error("OAuth discovered " + k + " is not a valid URL") }
+			var _sch = String(_u.getScheme()).toLowerCase()
+			if (_sch == "https") return
+			if (_sch == "http" && ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(_u.getHost()).toLowerCase()) >= 0) return
+			throw new Error("OAuth discovered " + k + " must use HTTPS (set auth.allowHTTP=true to override): " + _authServerMetadata[k])
+		})
 		_auth.protectedResourceMetadataURL = _resourceMetadataURL
 		_auth.protectedResourceMetadata = _resourceMetadata
 		_auth.authorizationServerIssuer = _issuer
@@ -9919,98 +10115,9 @@ const $mcp = function(aOptions) {
             }
         }
     };
-    // NIO locks are process-wide; pair them with a JVM-local mutex and bound both waits.
-    // Do not use $flock.tryLock: it can swallow exceptions thrown by its callback.
-    const _withOAuthFileLock = (file, timeout, fn) => {
-        var result, deadline = now() + timeout;
-        var acquired = $lock("mcp-oauth-file-" + file).tryLock(() => {
-            var handle, lock;
-            try {
-                try { handle = new java.io.RandomAccessFile(file, "rw"); }
-                catch(e) { throw new Error("OAuth credential storage lock failed"); }
-                while (isUnDef(lock) || isNull(lock)) {
-                    try { lock = handle.getChannel().tryLock(); }
-                    catch(e) {
-                        if (!(e.javaException instanceof java.nio.channels.OverlappingFileLockException)) {
-                            throw new Error("OAuth credential storage lock failed");
-                        }
-                    }
-                    if (isDef(lock) && !isNull(lock)) break;
-                    if (now() >= deadline) throw new Error("OAuth credential storage lock timed out");
-                    sleep(Math.min(50, Math.max(1, deadline - now())), true);
-                }
-                result = fn();
-            } finally {
-                try { if (isDef(lock) && !isNull(lock)) lock.release(); }
-                finally { if (isDef(handle)) handle.close(); }
-            }
-        }, timeout);
-        if (!acquired) throw new Error("OAuth credential storage lock timed out");
-        return result;
-    };
-    const _createOAuthSecretFile = (file, content) => {
-        var path = new java.io.File(file).toPath();
-        var attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 0);
-        var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix");
-        if (posix) {
-            attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 1);
-            attrs[0] = java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
-                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
-        }
-        if (!io.fileExists(file)) {
-            java.nio.file.Files.createFile(path, attrs);
-            io.writeFileString(file, content);
-        } else if (posix) {
-            java.nio.file.Files.setPosixFilePermissions(path,
-                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
-        }
-    };
     const _secTokenStore = cfg => {
-        var repo = _$(cfg.repo, "auth.tokenStore.repo").isString().default("mcp-oauth2");
-        if (!/^[a-zA-Z0-9_-]+$/.test(repo) || repo == "system") throw new Error("OAuth tokenStore requires a file-backed SBucket repo name");
-        var file = _$(cfg.file, "auth.tokenStore.file").isString().default(__gHDir() + "/.openaf-sec-" + repo + ".yml");
-        file = String(new java.io.File(file).getCanonicalPath());
-        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000);
-        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive");
-        var sec;
-        return {
-            withLock: (key, fn) => _withOAuthFileLock(file + ".lock", timeout, () => {
-                // A private channel alias avoids closing or reusing the caller's $sec handle.
-                var alias = "mcp-oauth-" + sha256(file), mainSecret = cfg.mainSecret;
-                try {
-                    ow.loadSec();
-                    if (isUnDef(mainSecret)) {
-                        var mainFile = String(new java.io.File(__gHDir() + "/.openaf-sec").getCanonicalPath());
-                        _withOAuthFileLock(mainFile + ".lock", timeout, () => {
-                            try {
-                                _createOAuthSecretFile(mainFile, af.encrypt(sha512(genUUID())));
-                                mainSecret = io.readFileString(mainFile);
-                                if (mainSecret.length == 0) throw new Error("Empty key file");
-                            } catch(e) { throw new Error("OAuth credential storage key initialization failed"); }
-                        });
-                    }
-                    try {
-                        _createOAuthSecretFile(file, "{}\n");
-                        if (!isMap(io.readFileYAML(file))) throw new Error("Invalid repository");
-                        sec = $sec(alias, cfg.bucket, cfg.lockSecret, mainSecret, file);
-                    } catch(e) { throw new Error("OAuth credential storage read failed"); }
-                    return fn();
-                } finally {
-                    if (isDef(sec)) { sec.close(); sec = __; }
-                }
-            }),
-            load: key => {
-                // Determine absence structurally; never interpret a decryption error as a miss.
-                var bucket = isString(cfg.bucket) ? cfg.bucket : "default";
-                var raw = io.readFileYAML(file);
-                if (!isMap(raw) || Object.keys(raw).some(k => !isMap(raw[k]))) throw new Error("Invalid repository");
-                if (isUnDef(raw[bucket])) return __;
-                if (raw[bucket].sbucket !== bucket || !isString(raw[bucket].v)) throw new Error("Invalid encrypted bucket");
-                return sec.get(key);
-            },
-            save: (key, record) => sec.set(key, record),
-            clear: key => sec.unset(key)
-        };
+        ow.loadServer();
+        return ow.server.httpd.__oauth2SecTokenStore(cfg, "mcp-oauth2");
     };
     const _runAuthStore = (fn, clearing) => {
         var cfg = aOptions.auth.tokenStore;
@@ -10108,60 +10215,12 @@ const $mcp = function(aOptions) {
         if (isDef(_resource)) _authParams.resource = _resource;
         var _query = Object.keys(_authParams).map(k => _urlEnc(k) + "=" + _urlEnc(_authParams[k])).join("&");
         var _authFullURL = _authURL + (_authURL.indexOf("?") >= 0 ? "&" : "?") + _query;
-        var pending;
-        try {
-            if (aOptions.auth.callback === true) {
-                var uri = new java.net.URI(_redirectURI), host = String(uri.getHost());
-                if (String(uri.getScheme()) !== "http" || ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(host) < 0 ||
-                    uri.getPort() <= 0 || uri.getRawQuery() !== null || uri.getRawFragment() !== null || uri.getRawUserInfo() !== null) {
-                    throw new Error("OAuth callback requires an HTTP loopback redirectURI with an explicit port and no query or fragment");
-                }
-                var path = String(uri.getPath()) || "/";
-                ow.loadServer();
-                pending = {
-                    latch: new java.util.concurrent.CountDownLatch(1),
-                    code: new java.util.concurrent.atomic.AtomicReference(),
-                    error: new java.util.concurrent.atomic.AtomicReference()
-                };
-                try {
-                    // start() reuses registered ports; OAuth must own its listener exclusively.
-                    if (isDef(ow.server.httpd.getHS(Number(uri.getPort())))) throw new Error("Port in use");
-                    plugin("HTTPServer");
-                    pending.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java");
-                }
-                catch(e) { throw new Error("OAuth callback port unavailable"); }
-                _oauthPending = pending;
-                var routes = {};
-                routes[path] = req => {
-                    var params = isMap(req.params) ? req.params : ow.server.rest.parseQuery(req.query || "");
-                    var requestPath = isString(req.path) ? req.path : String(req.uri || "").split("?")[0];
-                    if (req.method !== "GET" || requestPath !== path || params.state !== _state || pending.latch.getCount() == 0) {
-                        return ow.server.httpd.reply("Invalid OAuth callback", 400, "text/plain", { "Cache-Control": "no-store" });
-                    }
-                    if (isString(params.error)) pending.error.set("OAuth authorization denied");
-                    else if (isString(params.code) && params.code.length > 0) pending.code.set(params.code);
-                    else return ow.server.httpd.reply("Missing OAuth code", 400, "text/plain", {});
-                    pending.latch.countDown();
-                    return ow.server.httpd.reply("Sign-in received. You may close this window.", 200, "text/plain", { "Cache-Control": "no-store" });
-                };
-                ow.server.httpd.route(pending.server, routes, req => ow.server.httpd.reply("Not found", 404, "text/plain", {}));
-            }
-            _openAuthBrowser(_authFullURL);
-            if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL);
-            if (isDef(pending)) {
-                var waitMs = _$(aOptions.auth.loginTimeoutMs, "auth.loginTimeoutMs").isNumber().default(300000);
-                if (!(waitMs > 0) || !isFinite(waitMs)) throw new Error("OAuth login timeout must be positive");
-                if (!pending.latch.await(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS)) throw new Error("OAuth login timed out");
-                if (pending.error.get() !== null) throw new Error(String(pending.error.get()));
-                _auth.authorizationCode = String(pending.code.get());
-            } else if (_$(aOptions.auth.promptForCode, "aOptions.auth.promptForCode").isBoolean().default(true)) {
-                _auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "));
-            } else throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.");
-            return _auth.authorizationCode;
-        } finally {
-            if (isDef(pending) && isDef(pending.server)) ow.server.httpd.stop(pending.server);
-            _oauthPending = __;
-        }
+        _openAuthBrowser(_authFullURL);
+        if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL);
+        if (_$(aOptions.auth.promptForCode, "aOptions.auth.promptForCode").isBoolean().default(true)) {
+            _auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "));
+        } else throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.");
+        return _auth.authorizationCode;
     };
 
     const _getOAuthHeaders = (reauthorizing) => {
@@ -10179,31 +10238,47 @@ const $mcp = function(aOptions) {
             var clientId = _$(aOptions.auth.clientId, "auth.clientId").isString().$_();
             var scope = aOptions.auth.scope, resource = _getOAuthResource(), audience = aOptions.auth.audience;
             var grant = String(aOptions.auth.grantType || "client_credentials").toLowerCase();
-            var params;
-            if (isString(_auth.refreshToken)) params = { grant_type: "refresh_token", refresh_token: _auth.refreshToken, client_id: clientId };
-            else if (grant == "authorization_code") params = {
-                grant_type: grant, client_id: clientId,
-                code: _getAuthorizationCode(clientId, scope, audience, resource),
-                redirect_uri: aOptions.auth.redirectURI, code_verifier: _getPKCEVerifier()
-            };
-            else params = { grant_type: grant, client_id: clientId };
-            if (isDef(aOptions.auth.clientSecret)) params.client_secret = aOptions.auth.clientSecret;
-            if (isDef(scope)) params.scope = scope;
-            if (isDef(audience)) params.audience = audience;
-            if (isDef(resource)) params.resource = resource;
-            if (isMap(aOptions.auth.extraParams)) params = merge(params, aOptions.auth.extraParams);
-            var res, tokenHttp = ow.loadObj().rest.connectionFactory();
-            try {
-                tokenHttp.setThrowExceptions(false);
-                var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000);
-                res = $rest({ httpClient: tokenHttp, urlEncode: true, timeout: tokenTimeout,
-                    readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params);
-                if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {};
-            }
-            catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }
-            finally {
-                try { tokenHttp.close(); } catch(ignoreClose) {}
-                if (params.grant_type == "authorization_code") { _auth.authorizationCode = __; _auth.pkceVerifier = __; }
+            var params, res;
+            if (!isString(_auth.refreshToken) && grant == "authorization_code" &&
+                aOptions.auth.callback === true && isUnDef(_auth.authorizationCode)) {
+                if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
+                ow.loadServer();
+                // MCP owns the storage transaction, refresh and identity. The helper owns this login only.
+                _oauthPending = ow.server.httpd.oauth2(merge(aOptions.auth, {
+                    authURL: _getResolvedAuthURL(), tokenURL: tokenURL, resource: resource, tokenStore: false
+                }));
+                params = { grant_type: "authorization_code" };
+                try { res = _oauthPending.authenticate(); }
+                catch(e) {
+                    if (e.oauthError == "invalid_grant" || e.oauthError == "interaction_required") res = { error: e.oauthError };
+                    else throw e;
+                } finally { _oauthPending = __; _auth.authorizationCode = __; _auth.pkceVerifier = __; }
+            } else {
+                if (isString(_auth.refreshToken)) params = { grant_type: "refresh_token", refresh_token: _auth.refreshToken, client_id: clientId };
+                else if (grant == "authorization_code") params = {
+                    grant_type: grant, client_id: clientId,
+                    code: _getAuthorizationCode(clientId, scope, audience, resource),
+                    redirect_uri: aOptions.auth.redirectURI, code_verifier: _getPKCEVerifier()
+                };
+                else params = { grant_type: grant, client_id: clientId };
+                if (isDef(aOptions.auth.clientSecret)) params.client_secret = aOptions.auth.clientSecret;
+                if (isDef(scope)) params.scope = scope;
+                if (isDef(audience)) params.audience = audience;
+                if (isDef(resource)) params.resource = resource;
+                if (isMap(aOptions.auth.extraParams)) params = merge(params, aOptions.auth.extraParams);
+                var tokenHttp = ow.loadObj().rest.connectionFactory();
+                try {
+                    tokenHttp.setThrowExceptions(false);
+                    var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000);
+                    res = $rest({ httpClient: tokenHttp, urlEncode: true, timeout: tokenTimeout,
+                        readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params);
+                    if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {};
+                }
+                catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }
+                finally {
+                    try { tokenHttp.close(); } catch(ignoreClose) {}
+                    if (params.grant_type == "authorization_code") { _auth.authorizationCode = __; _auth.pkceVerifier = __; }
+                }
             }
             if (!isMap(res) || !isString(res.access_token) || res.access_token.length == 0) {
                 if (isMap(res) && (res.error == "invalid_grant" || res.error == "interaction_required")) {
@@ -10259,7 +10334,9 @@ const $mcp = function(aOptions) {
 			_versions = _discover.error.data.supported
 		}
 		if (isUnDef(_versions)) return false
-		var _mutual = _versions.filter(v => _MCP_KNOWN_VERSIONS.indexOf(v) >= 0).sort()
+		// Only modern-era versions can skip the initialize handshake; a server that only lists legacy
+		// versions must go through the legacy initialize fallback instead
+		var _mutual = _versions.filter(v => _MCP_KNOWN_VERSIONS.indexOf(v) >= 0 && v >= _MCP_MODERN_THRESHOLD).sort()
 		if (_mutual.length == 0) return false
 
 		_r._negotiatedVersion = _mutual[_mutual.length - 1]
@@ -10540,6 +10617,44 @@ const $mcp = function(aOptions) {
 			}
 		}*/
 	}
+	// Non-cache metadata comes from the first successful page. Only cache bounds and the
+	// continuation cursor are combined with subsequent pages. Conflicting scopes disable caching.
+	// Preserve the response envelope while collecting list pages through the authenticated transport.
+	// An unsuccessful page is returned intact, never presented as a successful partial/empty list.
+	const _listPages = (method, field, filter) => {
+		var all, cursor, pages = 0, expires, scope, hasTTL = false, hasScope = false, scopeChanged = false
+		do {
+			var started = nowNano()
+			var page = _execWithAuth(method, isDef(cursor) ? { cursor: cursor } : {})
+			if (!isMap(page) || isDef(page.error) ||
+				(isDef(page.resultType) && page.resultType != "complete") || !isArray(page[field])) return page
+
+			if (pages == 0) {
+				all = clone(page)
+				scope = page.cacheScope
+			} else {
+				all[field] = all[field].concat(page[field])
+				if (scope !== page.cacheScope) scopeChanged = true
+			}
+			// Missing/invalid lifetime on any page makes an aggregate uncacheable. Account for
+			// elapsed request time; never extend the earliest page's validity while fetching others.
+			var expiry = started + (isNumber(page.ttlMs) && isFinite(page.ttlMs) && page.ttlMs >= 0 ? page.ttlMs : 0) * 1000000
+			expires = pages == 0 ? expiry : Math.min(expires, expiry)
+			hasTTL = hasTTL || isDef(page.ttlMs)
+			hasScope = hasScope || isDef(page.cacheScope)
+			cursor = page.nextCursor
+			pages++
+		} while (isDef(cursor) && pages < 1000)
+
+		if (isDef(cursor)) all.nextCursor = cursor
+		else delete all.nextCursor
+		if (pages > 1) {
+			if (hasTTL || (hasScope && scopeChanged)) all.ttlMs = scopeChanged ? 0 : Math.max(0, Math.floor((expires - nowNano()) / 1000000))
+			if (hasScope && scopeChanged) all.cacheScope = "private"
+		}
+		return isDef(filter) ? filter(all) : all
+	}
+
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
 	
@@ -10632,19 +10747,10 @@ const $mcp = function(aOptions) {
 		// that talk to modern servers using those features should check for this and surface it to the user.
 		isInputRequired: result => isMap(result) && result.resultType == "input_required",
 		listTools: () => {
-            if (!_r._initialized) {
-                throw new Error("MCP client not initialized. Call initialize() first.")
-            }
-			var _all = { tools: [] }
-			var _cursor, _pages = 0
-			do {
-				var _page = _execWithAuth("tools/list", isDef(_cursor) ? { cursor: _cursor } : {})
-				if (!isMap(_page)) break
-				if (isArray(_page.tools)) _all.tools = _all.tools.concat(_page.tools)
-				_cursor = _page.nextCursor
-				_pages++
-			} while (isDef(_cursor) && _pages < 1000)
-			return _filterToolsList(_all)
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			return _listPages("tools/list", "tools", _filterToolsList)
 		},
 		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
@@ -10676,16 +10782,7 @@ const $mcp = function(aOptions) {
 			if (!_r._initialized) {
 				throw new Error("MCP client not initialized. Call initialize() first.")
 			}
-			var _all = { prompts: [] }
-			var _cursor, _pages = 0
-			do {
-				var _page = _execWithAuth("prompts/list", isDef(_cursor) ? { cursor: _cursor } : {})
-				if (!isMap(_page)) break
-				if (isArray(_page.prompts)) _all.prompts = _all.prompts.concat(_page.prompts)
-				_cursor = _page.nextCursor
-				_pages++
-			} while (isDef(_cursor) && _pages < 1000)
-			return _all
+			return _listPages("prompts/list", "prompts")
 		},
 		getPrompt: (promptName, promptArguments) => {
 			if (!_r._initialized) {
@@ -10869,9 +10966,7 @@ const $mcp = function(aOptions) {
 		},
 		destroy: () => {
             if (isDef(_oauthPending)) {
-                _oauthPending.error.set("OAuth login cancelled");
-                _oauthPending.latch.countDown();
-                ow.server.httpd.stop(_oauthPending.server);
+                _oauthPending.cancel();
             }
 			_jsonrpc.destroy()
 		}
@@ -10972,27 +11067,29 @@ const $pyStart = function() {
 
 /**
  * <odoc>
- * <key>$py(aPythonCodeOrFile, aInput, aOutputArray) : Map</key>
+ * <key>$py(aPythonCodeOrFile, aInput, aOutputArray, throwExceptions, shouldFork) : Map</key>
  * Executes aPythonCodeOrFile using a map aInput as variables in python and returns a map with python 
- * variables in aOutputArray.
+ * variables in aOutputArray. Starts an embedded session once if needed. throwExceptions defaults to false;
+ * true throws on stderr, nonzero exit or bridge failure. shouldFork=true isolates this call.
  * </odoc>
  */
-const $py = function(aPythonCode, aInput, aOutputArray) {
-	$pyStart();
+const $py = function(aPythonCode, aInput, aOutputArray, throwExceptions, shouldFork) {
+	ow.loadPython();
+	ow.python.__ensureServer(false);
 	if (aPythonCode.indexOf("\n") < 0 && aPythonCode.endsWith(".py") && io.fileExists(aPythonCode)) aPythonCode = io.readFileString(aPythonCode);
-	return ow.python.exec(aPythonCode, aInput, aOutputArray);
+	return ow.python.exec(aPythonCode, aInput, aOutputArray, throwExceptions, shouldFork);
 };
 
 /**
  * <odoc>
- * <key>$pyExec(aPythonCodeOrFile, aInput)</key>
- * Executes aPythonCodeOrFile using a map aInput as variables in python. The python execution will be 'standalone', with access to OpenAF functionality,
- * but no output will be returned.
+ * <key>$pyExec(aPythonCodeOrFile, aInput, throwExceptions, aArgv) : Map</key>
+ * Runs a standalone script with callbacks and returns a process result including exitcode. aInput is reserved.
+ * aArgv overrides launcher environment arguments; throwExceptions defaults to false.
  * </odoc>
  */
-const $pyExec = function(aPythonCodeOrFile, aInput) {
+const $pyExec = function(aPythonCodeOrFile, aInput, throwExceptions, aArgv) {
 	ow.loadPython()
-	ow.python.execStandalone(aPythonCodeOrFile, aInput)
+	return ow.python.execStandalone(aPythonCodeOrFile, aInput, throwExceptions, aArgv)
 }
 
 /**
@@ -13440,6 +13537,37 @@ IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallba
 
 /**
  * <odoc>
+ * <key>io.readJSONArray(source, callback, encoding, raw) : Number</key>
+ * Reads a top-level JSON array from a filename or a Java input stream, retaining only one element at a time.
+ * Calls callback(value, zeroBasedIndex) for each element. Return true to stop early.
+ * Encoding defaults to UTF-8. With raw=true the callback receives each element as JSON text instead.
+ * Returns the number of delivered elements. Non-array roots, malformed JSON and trailing content throw.
+ * Filename streams are closed even on errors; caller-provided streams remain owned by the caller.
+ * </odoc>
+ */
+IO.prototype.readJSONArray = function(source, callback, encoding, raw) {
+    var owned = Object.prototype.toString.call(source) == "[object String]"
+    var stream = owned ? io.readFileStream(source) : source
+    var count = 0
+    try {
+        var reader = new java.io.InputStreamReader(stream, encoding || "UTF-8")
+        var json = new Packages.com.google.gson.stream.JsonReader(reader)
+        json.setLenient(false)
+        json.beginArray()
+        while (json.hasNext()) {
+            var text = String(Packages.com.google.gson.internal.Streams.parse(json).toString())
+            if (callback(raw === true ? text : jsonParse(text), count++) === true) return count
+        }
+        json.endArray()
+        if (String(json.peek()) != "END_DOCUMENT") throw "Unexpected content after JSON array"
+        return count
+    } finally {
+        if (owned) stream.close()
+    }
+};
+
+/**
+ * <odoc>
  * <key>io.readStreamJSON(aJSONFile, aValFunc) : Map</key>
  * Reads a JSON file (aJSONFile) without loading all structures to memory (usefull to handling large JSON files).
  * The aValFunc receives a single string argument with the current JSON path being processed (for example $.log.entries[123].request),
@@ -13501,6 +13629,216 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 	tmp.forEach(r => $$(result).set(r.k.substring(2), r.v))
 	
 	return result
+}
+
+/**
+ * <odoc>
+ * <key>io.scanJSON(aFile, aVisitor, aOptions) : Map</key>
+ * Visits UTF-8 JSON without materializing values. Events have phase (value/end), path (an array
+ * of literal keys/indices), type, start and, on end, end (exclusive byte offsets) and size for
+ * traversed containers. Return "skip" on a value to skip its children, or "stop" to stop.
+ * Options: cancel (function), progress (function receiving byte offset), maxNodes.
+ * A stopped scan does not validate the unread suffix. The file and parser are always closed.
+ * </odoc>
+ */
+IO.prototype.scanJSON = function(aFile, aVisitor, aOptions) {
+  _$(aFile, "aFile").isString().$_();
+  _$(aVisitor, "aVisitor").isFunction().$_();
+  var opts = aOptions || {}, parser;
+  var ranges = new java.io.RandomAccessFile(aFile, "r"), stack = [], nodes = 0, roots = 0, stopped = false;
+  var offset = () => Number(parser.currentTokenLocation().getByteOffset());
+  var emit = e => { if (aVisitor(e) == "stop") stopped = true; };
+  // Jackson leaves strings lazy. Advancing skips their text; trim only the JSON separators.
+  var endScalar = end => {
+    while (end > 0) {
+      ranges.seek(end - 1);
+      var c = ranges.read();
+      if (c != 32 && c != 9 && c != 10 && c != 13 && c != 44) break;
+      end--;
+    }
+    return end;
+  };
+  try {
+    for (var i = 0; i < Math.min(4, Number(ranges.length())); i++) {
+      var byte = ranges.read();
+      if (byte == 0 || byte == 254 || byte == 255) throw "io.scanJSON requires UTF-8 JSON";
+    }
+    parser = new Packages.com.fasterxml.jackson.core.JsonFactory().createParser(new java.io.File(aFile));
+    var token = parser.nextToken();
+    while (token != null && !stopped) {
+      if (nodes % 4096 == 0 && isFunction(opts.cancel) && opts.cancel()) throw "JSON scan cancelled";
+      if (isFunction(opts.progress) && nodes % 4096 == 0) opts.progress(offset());
+      var name = String(token), parent = stack[stack.length - 1];
+      if (name == "FIELD_NAME") {
+        parent.key = String(parser.currentName());
+        token = parser.nextToken();
+        continue;
+      }
+      if (name == "END_OBJECT" || name == "END_ARRAY") {
+        var frame = stack.pop();
+        emit({phase:"end", path:frame.path, type:frame.type, start:frame.start,
+              end:Number(parser.currentLocation().getByteOffset()), size:frame.count});
+        token = stopped ? null : parser.nextToken();
+        continue;
+      }
+      if (!parent && roots++ > 0) throw "Multiple JSON root values";
+      var path = parent ? parent.path.concat([parent.type == "array" ? parent.count : parent.key]) : [];
+      if (parent) parent.count++;
+      var type = name == "START_OBJECT" ? "map" : name == "START_ARRAY" ? "array" :
+                 name == "VALUE_STRING" ? "string" : name == "VALUE_NULL" ? "null" :
+                 name == "VALUE_TRUE" || name == "VALUE_FALSE" ? "boolean" : "number";
+      var event = {phase:"value", path:path, type:type, start:offset()};
+      if (++nodes > (opts.maxNodes || Infinity)) throw "JSON node limit exceeded";
+      var action = aVisitor(event);
+      if (action == "stop") { stopped = true; break; }
+      if (type == "map" || type == "array") {
+        if (action != "skip") {
+          stack.push({path:path, type:type, start:event.start, count:0});
+          token = parser.nextToken();
+          continue;
+        }
+        parser.skipChildren();
+        event.end = Number(parser.currentLocation().getByteOffset());
+        token = parser.nextToken();
+      } else {
+        token = parser.nextToken();
+        event.end = endScalar(token == null ? Number(ranges.length()) : offset());
+      }
+      emit({phase:"end", path:event.path, type:event.type, start:event.start, end:event.end});
+    }
+    if (!stopped && (roots != 1 || stack.length)) throw "Incomplete JSON document";
+    return {complete:!stopped, nodes:nodes, bytes:Number(parser.currentLocation().getByteOffset())};
+  } finally { try { if (parser) parser.close(); } finally { ranges.close(); } }
+};
+
+/**
+ * <odoc>
+ * <key>io.copyJSONRange(aFile, aStart, anEnd, anOutputStream, aOptions)</key>
+ * Copies an exclusive byte range discovered by io.scanJSON using bounded buffers.
+ * The output is borrowed and remains open. Input is always closed. Optional cancel/progress functions work as in io.scanJSON.
+ * </odoc>
+ */
+IO.prototype.copyJSONRange = function(aFile, aStart, anEnd, anOutputStream, aOptions) {
+  var input = new java.io.RandomAccessFile(aFile, "r"), opts = aOptions || {}, chunks = 0;
+  try {
+    if (aStart < 0 || anEnd < aStart || anEnd > Number(input.length())) throw "Invalid JSON byte range";
+    input.seek(aStart);
+    var buffer = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 65536), left = anEnd - aStart;
+    while (left > 0) {
+      if (chunks++ % 64 == 0) {
+        if (isFunction(opts.cancel) && opts.cancel()) throw "JSON copy cancelled";
+        if (isFunction(opts.progress)) opts.progress(anEnd - aStart - left);
+      }
+      var n = input.read(buffer, 0, Math.min(left, buffer.length));
+      if (n < 0) throw "JSON source changed during copy";
+      anOutputStream.write(buffer, 0, n);
+      left -= n;
+    }
+  } finally { input.close(); }
+};
+
+/**
+ * <odoc>
+ * <key>io.extractJSON(aFile, aPath, anOutputStream, aOptions) : boolean</key>
+ * Copies the JSON value at a literal key/index path to a borrowed output stream.
+ * An empty path selects the root. Returns false without writing when absent.
+ * Uses bounded buffers and preserves original JSON bytes. The source must remain
+ * unchanged during extraction. Options cancel/progress/maxNodes apply to scanning;
+ * copy progress restarts at zero. Early selection does not validate the unread suffix.
+ * </odoc>
+ */
+IO.prototype.extractJSON = function(aFile, aPath, anOutputStream, aOptions) {
+  _$(aPath, "aPath").isArray().$_();
+  aPath.forEach(k => {
+    if (!isString(k) && !(isNumber(k) && k >= 0 && Math.floor(k) == k)) throw "Invalid JSON path segment";
+  });
+  var selected;
+  this.scanJSON(aFile, e => {
+    var prefix = e.path.length <= aPath.length && e.path.every((k, i) => k === aPath[i]);
+    if (e.phase == "value" && (!prefix || e.path.length == aPath.length)) return "skip";
+    if (e.phase == "end" && prefix && e.path.length == aPath.length) {
+      selected = e;
+      return "stop";
+    }
+  }, aOptions);
+  if (!selected) return false;
+  this.copyJSONRange(aFile, selected.start, selected.end, anOutputStream, aOptions);
+  return true;
+};
+
+/**
+ * <odoc>
+ * <key>askConsole() : Map</key>
+ * Opens an independent controlling terminal (including with piped stdin/redirected stdout).
+ * Returns console/write/ansi/close for injection into askChoose and ask. Close in finally.
+ * Throws if no controlling terminal is available. Does not replace process input or output.
+ * </odoc>
+ */
+const askConsole = () => {
+  plugin("Console");
+  var con = new Console(true), term = con.getConsoleReader().getTerminal().unwrap();
+  return {
+    console:con, ansi:con.isAnsiSupported() && String(term.getType()) != "windows",
+    write:function(text, newline) { term.writer().print((isDef(text) ? String(text) : "") + (newline === false ? "" : "\n")); term.writer().flush(); },
+    close:function() { con.close(); },
+    // Raw code reader (-2 on timeout, -1 on EOF); blocking when aTimeoutMs is undefined. Used by askKey.
+    read:function(aTimeoutMs) { return isDef(aTimeoutMs) ? Number(term.reader().read(aTimeoutMs)) : Number(term.reader().read()); },
+    size:function() { return { width: Number(term.getWidth()), height: Number(term.getHeight()) }; },
+    // Runs aFn with the terminal in raw mode, always restoring the previous attributes.
+    raw:function(aFn) { var attrs = term.enterRawMode(); try { return aFn(); } finally { term.setAttributes(attrs); } },
+    // Switches the alternate screen buffer (and hides/shows the cursor) on or off.
+    altScreen:function(on) { term.writer().print(on ? "\x1b[?1049h\x1b[?25l\x1b[2J\x1b[H" : "\x1b[?25h\x1b[?1049l"); term.writer().flush(); }
+  };
+};
+
+/**
+ * <odoc>
+ * <key>askKey(aUI, aTimeoutMs) : String</key>
+ * Reads a single key from aUI (a map returned by askConsole or compatible, providing read(aTimeoutMs) that returns a character code,
+ * -2 on timeout and -1 on end of input) and returns a normalized name: "up", "down", "left", "right", "home", "end", "pgup", "pgdn",
+ * "delete", "insert", "enter", "tab", "shift-tab", "backspace", "esc", "eof", "ctrl-&lt;letter&gt;", "alt-&lt;char&gt;" or the printable character itself.
+ * Returns undefined if aTimeoutMs expires without input. A lone ESC is told apart from escape sequences with a short timeout.
+ * </odoc>
+ */
+const askKey = (aUI, aTimeoutMs) => {
+  _$(aUI, "aUI").isMap().$_()
+  _$(aUI.read, "aUI.read").isFunction().$_()
+  var rd = t => Number(aUI.read(t))
+  var c = rd(aTimeoutMs)
+  if (c == -2) return __
+  if (c == -1) return "eof"
+  if (c == 27) {
+    var n = rd(50)
+    if (n < 0) return "esc"
+    if (n != 91 && n != 79) return "alt-" + String.fromCharCode(n)
+    var param = "", f
+    for (var i = 0; i < 16; i++) {
+      f = rd(50)
+      if (f < 0) return "esc"
+      if (f >= 64 && f <= 126) break
+      param += String.fromCharCode(f)
+    }
+    var p = param.split(";")[0]
+    switch(String.fromCharCode(f)) {
+    case "A": return "up"
+    case "B": return "down"
+    case "C": return "right"
+    case "D": return "left"
+    case "H": return "home"
+    case "F": return "end"
+    case "Z": return "shift-tab"
+    case "~": return ({ "1": "home", "2": "insert", "3": "delete", "4": "end", "5": "pgup", "6": "pgdn", "7": "home", "8": "end" })[p]
+    }
+    return __
+  }
+  if (c == 13 || c == 10) return "enter"
+  if (c == 9) return "tab"
+  if (c == 127 || c == 8) return "backspace"
+  if (c >= 1 && c <= 26) return "ctrl-" + String.fromCharCode(96 + c)
+  if (c < 32) return __
+  var r = String.fromCharCode(c)
+  if (c >= 0xD800 && c <= 0xDBFF) { var lo = rd(50); if (lo >= 0) r += String.fromCharCode(lo) }
+  return r
 }
 
 /**
@@ -13663,7 +14001,7 @@ const $fnDef4Help = (aFnName) => {
 	if (isDef(__oaf_fnDef_cache[aFnName])) return __oaf_fnDef_cache[aFnName]
 	var res = searchHelp(aFnName)
 
-	if (isDef(res) && isArray(res) && res.length > 0) {
+	if (isArray(res) && res.length == 1 && isString(res[0].fullkey)) {
 		var _r = res[0].fullkey.replace(/ +/g, "").replace(/.+\((.*)\) *:*.*/, "$1").split(/,/)
 		__oaf_fnDef_cache[aFnName] = _r
 		return _r
@@ -13857,18 +14195,18 @@ ow.loadSec();
 
 /**
  * <odoc>
- * <key>ask(aPrompt, aMask) : String</key>
+ * <key>ask(aPrompt, aMask, aConsole, noAnsi, aWrite) : String</key>
  * Stops for user interaction prompting aPrompt waiting for an entire line of characters and, optionally, masking the user input with aMask (e.g. "*").
  * Returns the user input.
  * </odoc>
  */
-const ask = (aPrompt, aMask, _con, noAnsi) => {
+const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
 	aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
 		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
-		printErr("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
+		;(aWrite || printErr)("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
 		return _con.readLinePrompt(aPrompt, aMask)
@@ -13877,34 +14215,34 @@ const ask = (aPrompt, aMask, _con, noAnsi) => {
 
 /**
  * <odoc>
- * <key>askEncrypt(aPrompt) : String</key>
+ * <key>askEncrypt(aPrompt, aConsole, noAnsi, aWrite) : String</key>
  * Similar to ask but the return user input will be encrypted.
  * If an empty string is entered by the user the function will return undefined.
  * </odoc>
  */
-const askEncrypt = (aPrompt, _con) => {
+const askEncrypt = (aPrompt, _con, noAnsi, aWrite) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
-	var v = ask(aPrompt, String.fromCharCode(0), _con);
+	var v = ask(aPrompt, String.fromCharCode(0), _con, noAnsi, aWrite);
 	if (isString(v) && v == "") return __;
 	return af.encrypt(v);
 }
 
 /**
  * <odoc>
- * <key>ask1(aPrompt, allowed) : String</key>
+ * <key>ask1(aPrompt, allowed, aConsole, aWrite) : String</key>
  * Stops for user interaction prompting aPrompt waiting for a single character within the allowed string (a set of characters).
  * Returns the user input.
  * </odoc>
  */
-const ask1 = (aPrompt, allowed, _con) => {
-	if (isDef(aPrompt)) printnl(aPrompt);
+const ask1 = (aPrompt, allowed, _con, aWrite) => {
+	if (isDef(aPrompt)) { if (aWrite) aWrite(aPrompt, false); else printnl(aPrompt); }
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	return _con.readChar(allowed);
 }
 
 /**
  * <odoc>
- * <key>askN(aPromptFn, aStopFn) : String</key>
+ * <key>askN(aPromptFn, aStopFn, aConsole) : String</key>
  * Stops for a multi-line user interaction prompting, for each line, the result of calling aPromptFn that receives the current user input 
  * (if a string is provided it will default to a function that returns that string). The interaction will stop when aStopFn function, that receives the current
  * user input as an argument, returns true (if the function is not provided it will default to 3 new lines).
@@ -13919,6 +14257,7 @@ const askN = (aPromptFn, aStopFn, _con) => {
 	var r = "";
 	do {
 		var l = _con.readLinePrompt(aPromptFn(r));
+		if (l == null) return r;
 		r += l + "\n";
 	} while (!aStopFn(r));
 	return r;
@@ -13926,16 +14265,17 @@ const askN = (aPromptFn, aStopFn, _con) => {
 
 /**
  * <odoc>
- * <key>askDef(aInit, aQuestion, isSecret, isVoidable) : String</key>
+ * <key>askDef(aInit, aQuestion, isSecret, isVoidable, aUI) : String</key>
  * If aInit is not defined will ask aQuestion (if isSecret = true it will askEncrypt) and return
  * the value. If isVoidable = true and no answer is provided it will return undefined.
  * </odoc>
  */
-const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
+const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI) => {
 	aQuestion = _$(aQuestion, "aQuestion").isString().default("Question: ");
 	if (isUnDef(aInit)) {
 		var r;
-		if (isSecret) r = askEncrypt(aQuestion); else r = ask(aQuestion);
+		if (isSecret) r = askEncrypt(aQuestion, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write);
+		else r = ask(aQuestion, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write);
 		if (isVoidable && isString(r) && r.length == 0) r = __;
 		return r; 
 	} else {
@@ -13945,17 +14285,30 @@ const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
 
 /**
  * <odoc>
- * <key>askChoose(aPrompt, anArray, aMaxDisplay, aHelpText) : Number</key>
+ * <key>askChoose(aPrompt, anArray, aMaxDisplay, aHelpText, aUI) : Number</key>
  * Stops for user interaction prompting aPrompt waiting for a single character to choose from the provided anArray of options. Optionally
- * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.
+ * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.\
+ * Optional aUI is the console/write/ansi map returned by askConsole (or a compatible injected UI).
  * </odoc>
  */
-const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
+const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 	_$(aPrompt, "aPrompt").isString().$_()
 	_$(anArray, "anArray").isArray().$_()
 	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
 	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, enter to select)"))
 
+	if (!anArray.length) return __
+	var _write = aUI ? aUI.write : printErr
+	var _display = aUI ? aUI.write : print
+	var _move = n => aUI ? _write("\x1b[" + n + "A", false) : ow.format.string.ansiMoveUp(n)
+	if (aUI && !aUI.ansi) {
+		while (true) {
+			anArray.forEach((text, i) => _write((i + 1) + ". " + text))
+			var answer = ask(aPrompt + " [number, blank to cancel]: ", __, aUI.console, true, _write)
+			if (answer == null || answer === "") return __
+			if (/^\d+$/.test(answer) && Number(answer) >= 1 && Number(answer) <= anArray.length) return Number(answer) - 1
+		}
+	}
 	let chooseLine = __colorFormat.askChooseChars.chooseLine
 	let chooseLineSize = visibleLength(chooseLine) + 1
 	let chooseUp = __colorFormat.askChooseChars.chooseUp
@@ -13963,10 +14316,10 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
 	let filter = ""
 
-	if (__flags.ANSICOLOR_ASK) {
+	if (aUI ? aUI.ansi : __flags.ANSICOLOR_ASK) {
 		anArray = clone(anArray)
 		plugin("Console")
-		let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
+		let _con = aUI ? aUI.console : new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
 		anArray = anArray.map(l => {
 			if (l.length + _maxls >= _maxl)
 				return l.substring(0, _maxl - _maxls - 4) + "..."
@@ -13976,8 +14329,9 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
 		if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
-		printErr("\x1B[?25l" + _v)
+		_write("\x1B[?25l" + _v)
 
+		aMaxDisplay = Math.max(1, Math.floor(aMaxDisplay))
 		let option = 0, firstTime = true, span = 0, cancelled = false
 		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
 		ow.loadFormat()
@@ -14001,15 +14355,17 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					 })
 					 .filter(l => l.length > 0)
 					 .join("\n")
-			if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
-			print(_o)
+			if (!firstTime) _move(aMaxDisplay); else firstTime = false
+			_display(_o)
 		}
 
 		let c = 0
+		try {
 		do {
 			_print()
 			var _c = _con.readChar("")
 			c = String(_c).charCodeAt(0)
+			if (c == 3 || c == 65535) { cancelled = true; break }
 			if (c == 27) {
 				c = String(_con.readChar("")).charCodeAt(0)
 				if (c == 27) {
@@ -14030,21 +14386,23 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					if (c >= 32 && c < 255) filter += _c
 				}
 				if (filter.length > 0) {
-					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+					var found = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+					if (found >= 0) option = found
 				}
 			}
 		} while (c != 13 && c != 10)
-		ow.format.string.ansiMoveUp(aMaxDisplay)
-		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
-		ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		printErrnl(repeat(_v.length, " ") + "\r")
+		_move(aMaxDisplay)
+		_write(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
+		_move(aMaxDisplay+1)
+		_write(repeat(_v.length, " ") + "\r")
 		if (!cancelled) {
-			printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
+			_write("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
 		}
-		ow.format.string.ansiMoveUp(2)
-		printErr("\x1B[?25h\n")
+		_move(2)
+		_write("\x1B[?25h\n")
 
 		return cancelled ? __ : option
+		} finally { _write("\x1B[?25h", false) }
 	} else {
 		throw "Choose options not supported on the current terminal."
 	}
@@ -14054,16 +14412,34 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
 /**
  * <odoc>
- * <key>askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText) : Array</key>
+ * <key>askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText, aUI) : Array</key>
  * Stops for user interaction prompting aPrompt waiting for a single character to choose multiple from the provided anArray of options. Optionally
  * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns an array with the chosen options.
  * </odoc>
  */
-const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
+const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 	_$(aPrompt, "aPrompt").isString().$_()
 	_$(anArray, "anArray").isArray().$_()
 	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
 	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, space to select, enter to submit)"))
+
+
+  if (!anArray.length) return [];
+  var _write = aUI ? aUI.write : printErr;
+  var _move = n => aUI ? _write("\x1b[" + n + "A", false) : ow.format.string.ansiMoveUp(n);
+  if (aUI && !aUI.ansi) {
+    while (true) {
+      anArray.forEach((text, i) => _write((i + 1) + ". " + text));
+      var answer = ask(aPrompt + " [comma-separated numbers, blank for none]: ", __, aUI.console, true, _write);
+      if (answer == null) return __;
+      if (answer.trim() === "") return [];
+      var parts = answer.split(",").map(v => v.trim());
+      if (parts.every(v => /^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= anArray.length)) {
+        var indices = parts.map(Number);
+        return anArray.filter((v, i) => indices.indexOf(i + 1) >= 0);
+      }
+    }
+  }
 
 	let chooseMultipleSelected = __colorFormat.askChooseChars.chooseMultipleSelected
 	let chooseMultipleEmpty    = __colorFormat.askChooseChars.chooseMultipleUnselected
@@ -14076,10 +14452,10 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
 	let filter = ""
 
-	if (__flags.ANSICOLOR_ASK) {
-		aSelectMap = new Map()
+	if (aUI ? aUI.ansi : __flags.ANSICOLOR_ASK) {
+		var aSelectMap = new Map()
 		plugin("Console")
-		let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize) + chooseMultipleSize
+		let _con = aUI ? aUI.console : new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize) + chooseMultipleSize
 		anArray = anArray.map(l => {
 			if (l.length + _maxls >= _maxl)
 				return l.substring(0, _maxl - _maxls - 4) + "..."
@@ -14090,8 +14466,9 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
 		if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
-		printErr("\x1B[?25l" + _v)
+		_write("\x1B[?25l" + _v)
 
+		aMaxDisplay = Math.max(1, Math.floor(aMaxDisplay));
 		let option = 0, firstTime = true, span = 0, cancelled = false
 		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
 		let _print = () => {
@@ -14099,7 +14476,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 			var _o = anArray
 					 .map((l, i) => {
 						if (i >= span && i - span < aMaxDisplay) {
-							selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
+							var selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
 							if (i == option) {
 								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize -5, " "))
 								if (filter.length > 0) {
@@ -14115,15 +14492,17 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					 })
 					 .filter(l => l.length > 0)
 					 .join("\n")
-			if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
-			printErr(_o)
+			if (!firstTime) _move(aMaxDisplay); else firstTime = false
+			_write(_o)
 		}
 
 		let c = 0
+		try {
 		do {
 			_print()
 			var _c = _con.readChar("")
 			c = String(_c).charCodeAt(0)
+			if (c == 3 || c == 65535) { cancelled = true; break; }
 			if (c == 27) {
 				c = String(_con.readChar("")).charCodeAt(0)
 				if (c == 27) {
@@ -14146,28 +14525,30 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					if (c > 32 && c < 255) filter += _c
 				}
 				if (filter.length > 0) {
-					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+					var found = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0);
+					if (found >= 0) option = found
 				}
 			}
 		} while (c != 13 && c != 10)
-		ow.format.string.ansiMoveUp(aMaxDisplay)
-		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
-		ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		printErrnl(repeat(_v.length, " ") + "\r")
+		_move(aMaxDisplay)
+		_write(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
+		_move(aMaxDisplay+1)
+		_write(repeat(_v.length, " ") + "\r")
 
 		if (!cancelled) {
 			let options = []
 			aSelectMap.forEach((v, k) => { if (v) options.push(k) })
-			printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
-			ow.format.string.ansiMoveUp(2)
-			printErr("\x1B[?25h\n")
+			_write("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
+			_move(2)
+			_write("\x1B[?25h\n")
 
 			return options
 		}
-		ow.format.string.ansiMoveUp(2)
-		printErr("\x1B[?25h\n")
+		_move(2)
+		_write("\x1B[?25h\n")
 
 		return __
+		} finally { _write("\x1B[?25h", false); }
 	} else {
 		throw "Choose options not supported on the current terminal."
 	}
@@ -14177,7 +14558,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
 /**
  * <odoc>
- * <key>askStruct(anArrayOfQuestions) : Array</key>
+ * <key>askStruct(anArrayOfQuestions, aUI) : Array</key>
  * Given anArrayOfQuestions with a structure like:\
  * \
  * [\
@@ -14199,7 +14580,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
  * - "multiple" (requires options)
  * </odoc>
  */
-const askStruct = (ar) => {
+const askStruct = (ar, aUI) => {
 	if (isArray(ar)) {
 		var _r = ar.map(t => {
 			_$(t.name, "name").isString().$_()
@@ -14211,13 +14592,13 @@ const askStruct = (ar) => {
 			if (isString(t.help)) t.help = ansiColor("FAINT,ITALIC", t.help)
 
 			switch(t.type) {
-			case 'secret'  : __r.answer = askEncrypt(t.prompt); break
-			case 'char'    : __r.answer = ask1(t.prompt, t.options); break
-			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help)]; break
-			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help); break
+			case 'secret'  : __r.answer = askEncrypt(t.prompt, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write); break
+			case 'char'    : __r.answer = ask1(t.prompt, t.options, aUI && aUI.console, aUI && aUI.write); break
+			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help, aUI)]; break
+			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help, aUI); break
 			case "question": 
 			case '?'       : 
-			default        : __r.answer = ask(t.prompt)
+			default        : __r.answer = ask(t.prompt, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write)
 			}
 			if (isDef(t.output) && t.output == "index") {
 				if (isArray(__r.answer)) {
@@ -14422,6 +14803,15 @@ const __getThreadPool = function(wantVirt) {
 	   __threadPools = [ new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) ]
 	   __threadPoolsDegraded = [ false ]
    }
+
+	// Retire degraded pools once their stuck workers are gone (keeping at least one pool)
+	for(let i = __threadPools.length - 1; i >= 0 && __threadPools.length > 1; i--) {
+		if (__threadPoolsDegraded[i] && __threadPools[i].isQuiescent()) {
+			__threadPools[i].shutdown()
+			__threadPools.splice(i, 1)
+			__threadPoolsDegraded.splice(i, 1)
+		}
+	}
 
 	for(let i = 0; i < __threadPools.length; i++) {
 		if (!__threadPoolsDegraded[i] && __threadPools[i].getActiveThreadCount() < __threadPools[i].getParallelism()) return __threadPools[i]
@@ -14775,6 +15165,70 @@ oPromise.prototype.__exec = function() {
                 // Try again if null
         } while(isUnDef(this.__f) || this.__f == null);
 
+};
+
+/**
+ * <odoc>
+ * <key>joniRegExp(pattern, options) : Object</key>
+ * Compiles an Oniguruma (Ruby syntax) pattern once. Options are ignoreCase, dotAll and extended
+ * (booleans, default false). Methods: test(input), match(input), matchAll(input),
+ * replace(input, replacement), replaceAll(input, replacement), split(input, limit).
+ * Matches contain text, index, end (UTF-16 offsets), captures and groups. Replacement strings
+ * use JavaScript dollar tokens; callbacks receive match, captures, offset, input and named groups.
+ * Inputs must be strings without unpaired surrogates. See docs/joni.md for details.
+ * </odoc>
+ */
+const joniRegExp = (pattern, options) => {
+  var compiled = af.joniJava(pattern, options);
+  var substitute = (template, m, input) => {
+    return template.replace(/\$([$&`']|[0-9]{1,2}|<[^>]*>)/g, (token, key) => {
+      if (key == "$") return "$";
+      if (key == "&") return m.text;
+      if (key == "`") return input.slice(0, m.index);
+      if (key == "'") return input.slice(m.end);
+      if (key.charAt(0) == "<") {
+        if (Object.keys(m.groups).length == 0) return token;
+        var name = key.slice(1, -1);
+        return Object.prototype.hasOwnProperty.call(m.groups, name) && isDef(m.groups[name]) ? m.groups[name] : "";
+      }
+      var n = Number(key);
+      if (n > 0 && n <= m.captures.length) return isDef(m.captures[n - 1]) ? m.captures[n - 1] : "";
+      if (key.length == 2 && Number(key.charAt(0)) > 0 && Number(key.charAt(0)) <= m.captures.length) {
+        var capture = m.captures[Number(key.charAt(0)) - 1];
+        return (isDef(capture) ? capture : "") + key.charAt(1);
+      }
+      return token;
+    });
+  };
+  var replace = (input, replacement, all) => {
+    if (!isString(replacement) && !isFunction(replacement)) throw new TypeError("replacement must be a string or function");
+    var matches;
+    if (all) matches = compiled.matchAll(input);
+    else {
+      var first = compiled.match(input);
+      matches = first === null ? [] : [first];
+    }
+    var out = [], last = 0;
+    matches.forEach(m => {
+      out.push(input.slice(last, m.index));
+      if (isFunction(replacement)) {
+        var args = [m.text].concat(m.captures, [m.index, input]);
+        if (Object.keys(m.groups).length > 0) args.push(m.groups);
+        out.push(String(replacement.apply(undefined, args)));
+      } else out.push(substitute(replacement, m, input));
+      last = m.end;
+    });
+    out.push(input.slice(last));
+    return out.join("");
+  };
+  return {
+    test: input => compiled.test(input),
+    match: input => compiled.match(input),
+    matchAll: input => compiled.matchAll(input),
+    replace: (input, replacement) => replace(input, replacement, false),
+    replaceAll: (input, replacement) => replace(input, replacement, true),
+    split: (input, limit) => compiled.split(input, limit)
+  };
 };
 
 const javaRegExp = (text) => {
@@ -16624,12 +17078,26 @@ const $unset = function(aK) {
 	$ch("oaf::global").unset({ k: aK });
 }
 
+// Ignore unsupported preferences so existing output remains usable.
+function __defaultTableFormat() {
+	var format = (__colorFormat.table || {}).format;
+	if (isString(format)) {
+		format = format.toLowerCase();
+		if (["table", "stable", "ctable", "btable", "bstable"].indexOf(format) >= 0) return format;
+	}
+	return __;
+}
+
 /**
  * <ojob>
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "btable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
+ * For map/array output, __colorFormat.table.format selects a default table renderer when no global or explicit format is set.
+ * Supported preferences: table, stable, ctable, btable, bstable; unset/unsupported values preserve human output.
+ * In "btable", __rowsep (or __ROWSEP) enables light rules between records (default false); __width (or __WIDTH)
+ * sets a positive integer wrapping width, otherwise the available terminal width is used. Unicode rules are always used.
  * If shouldReturn = true the string output will be returned
  * </ojob>
  */
@@ -16656,7 +17124,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			fnP(isString(obj) ? obj : stringify(obj))
 	});
 
-	var format = (isDef(global.__format) ? global.__format : "human")
+	var format = (isDef(global.__format) ? global.__format : ((isArray(aObj) || isMap(aObj)) ? __defaultTableFormat() || "human" : "human"))
 	var path = __, csv = __, from = __, key = "res", sql = __, pause = false
 
 	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
@@ -16730,6 +17198,24 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			if (isMap(res)) res = [res]
 			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
+	        case "bstable":
+		case "btable":
+			var tableWidth = isDef(args.__width) ? args.__width : args.__WIDTH;
+			// bstable always uses row separators (without changing the caller's args)
+			var tableRowSep = format == "bstable" ? true : (isDef(args.__rowsep) ? args.__rowsep : args.__ROWSEP);
+			if (isDef(tableWidth)) {
+				if ((!isNumber(tableWidth) && !isString(tableWidth)) || String(tableWidth).trim() == "" ||
+					!Number.isSafeInteger(Number(tableWidth)) || Number(tableWidth) <= 0) {
+					throw new Error("btable __width must be a positive integer");
+				}
+				tableWidth = Number(tableWidth);
+			} else if (isDef(__con) && __con != "") {
+				var terminalWidth = __con.getTerminal().getWidth();
+				if (terminalWidth > 0) tableWidth = terminalWidth;
+			}
+			if (isMap(res)) res = [res];
+			if (isArray(res)) return fnP(printTable(res, tableWidth, true, __conAnsi, "borderless", __, true, toBoolean(tableRowSep) === true, true));
+			break;
 		case "ctable":
 			__ansiColorFlag = true
 			__conConsole = true

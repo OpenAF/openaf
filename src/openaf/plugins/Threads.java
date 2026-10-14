@@ -46,6 +46,9 @@ public class Threads extends ScriptableObject {
 	// armFastExitOnShutdown so it can tell when it is the last one left.
 	private static final java.util.concurrent.atomic.AtomicInteger pendingShutdownActions = new java.util.concurrent.atomic.AtomicInteger(0);
 	private static volatile int autoFastExitCode = 0;
+	// Exit status explicitly requested (e.g. by the JS exit()) before System.exit is called. A JVM shutdown
+	// hook can't see the status passed to System.exit so the armed fast-exit hook uses this one when set.
+	private static volatile Integer requestedExitCode = null;
 	private static final java.util.concurrent.atomic.AtomicBoolean autoFastExitHookRegistered = new java.util.concurrent.atomic.AtomicBoolean(false);
 
 	private static boolean isShutdownHookDebugEnabled() {
@@ -60,7 +63,6 @@ public class Threads extends ScriptableObject {
 	 */
 	private static void registerGuardedShutdownAction(final Runnable aAction, final String aThreadName) {
 		final java.util.concurrent.atomic.AtomicBoolean ran = new java.util.concurrent.atomic.AtomicBoolean(false);
-		pendingShutdownActions.incrementAndGet();
 		Runnable guarded = new Runnable() {
 			public void run() {
 				if (ran.compareAndSet(false, true)) {
@@ -72,8 +74,16 @@ public class Threads extends ScriptableObject {
 				}
 			}
 		};
+		// Count it as pending only once the hook is actually registered (addShutdownHook throws
+		// IllegalStateException during shutdown, which would otherwise leave the counter stuck)
+		pendingShutdownActions.incrementAndGet();
+		try {
+			Runtime.getRuntime().addShutdownHook(new Thread(guarded, aThreadName));
+		} catch(RuntimeException e) {
+			pendingShutdownActions.decrementAndGet();
+			throw e;
+		}
 		shutdownActions.add(0, guarded);
-		Runtime.getRuntime().addShutdownHook(new Thread(guarded, aThreadName));
 	}
 
 	/**
@@ -281,10 +291,23 @@ public class Threads extends ScriptableObject {
 						}
 						waitedMs += 5;
 					}
-					nativeExit(autoFastExitCode);
+					Integer requested = requestedExitCode;
+					nativeExit(requested != null ? requested.intValue() : autoFastExitCode);
 				}
 			}, "OpenAF-auto-fast-exit"));
 		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.setRequestedExitCode(anExitCode)</key>
+	 * Records anExitCode as the status the process is about to exit with (to be called right before System.exit)
+	 * so that, if armFastExitOnShutdown is armed, the fast exit preserves it instead of using the armed exit code.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static void setRequestedExitCode(int anExitCode) {
+		requestedExitCode = anExitCode;
 	}
 
 	/**

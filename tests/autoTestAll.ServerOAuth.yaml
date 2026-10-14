@@ -1,0 +1,40 @@
+include:
+- oJobTest.yaml
+jobs:
+- name: ServerOAuth::LoginStorageAndRefresh
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testLoginStorageAndRefresh
+- name: ServerOAuth::CallbackValidationAndCleanup
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testCallbackValidationAndCleanup
+- name: ServerOAuth::ConcurrentCallbacks
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testConcurrentCallbacks
+- name: ServerOAuth::ConfigurationAndUnattended
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testConfigurationAndUnattended
+- name: ServerOAuth::RecoveryAndUnknownExpiry
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testRecoveryAndUnknownExpiry
+- name: ServerOAuth::StorageIdentityAndFailures
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testStorageIdentityAndFailures
+- name: ServerOAuth::ConcurrentProcessRefresh
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testConcurrentProcessRefresh
+- name: ServerOAuth::JavaListenerWorkerCleanup
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testJavaListenerWorkerCleanup
+- name: ServerOAuth::DefaultStorageWithoutDescriptor
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testDefaultStorageWithoutDescriptor
+todo:
+- ServerOAuth::DefaultStorageWithoutDescriptor
+- ServerOAuth::JavaListenerWorkerCleanup
+- ServerOAuth::LoginStorageAndRefresh
+- ServerOAuth::CallbackValidationAndCleanup
+- ServerOAuth::ConcurrentCallbacks
+- ServerOAuth::ConfigurationAndUnattended
+- ServerOAuth::RecoveryAndUnknownExpiry
+- ServerOAuth::StorageIdentityAndFailures
+- ServerOAuth::ConcurrentProcessRefresh

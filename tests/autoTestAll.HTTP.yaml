@@ -30,6 +30,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testChangingUserAgent
 
+   - name: HTTP::Persistent query state
+     from: HTTP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPPersistentQueryState;
+
 todo:
    # HTTP tests
    # ----------
@@ -37,3 +42,4 @@ todo:
    - HTTP::HTTP plugin web socket client
    - HTTP::HTTP plugin test basic auth
    - HTTP::HTTP changing user agent
+   - HTTP::Persistent query state

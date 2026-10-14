@@ -47,6 +47,10 @@
  
        var res = sb.getSNewObj("myCSV");
        ow.test.assert(res.csv()[0].A, 1, "Problem with GetSetObj.");
+       sb.setSNewObj("positionalCSV", "CSV", [stringify("A;B\n3;4", __, "")]);
+       ow.test.assert(sb.getSNewObj("positionalCSV").csv()[0].A, 3, "Positional constructor expressions remain supported.");
+       sb.setSNewObj("defaultCSV", "CSV", {});
+       ow.test.assert(sb.getNewObj(void 0, void 0, "defaultCSV", { aCsvString: "A;B\n5;6" }).csv()[0].A, 5, "Constructor help fallback also maps default arguments.");
  
        $ch("t").destroy();
     };

@@ -4,12 +4,18 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.terminal.Size;
+import org.jline.nativ.CLibrary;
+import org.jline.nativ.Kernel32;
 
 /** OpenAF's legacy terminal facade. All terminal I/O is owned by JLine 4. */
 public final class Terminal {
     private static Terminal system;
     private final org.jline.terminal.Terminal delegate;
     private final Attributes original;
+    private boolean systemTerminal;
+    private volatile int width = 80;
+    private volatile int height = 24;
     public final Settings settings;
 
     public Terminal(org.jline.terminal.Terminal terminal) {
@@ -32,17 +38,81 @@ public final class Terminal {
             if (System.getProperty(TerminalBuilder.PROP_GRAPHEME_CLUSTER) == null) builder.graphemeCluster(false);
             org.jline.terminal.Terminal terminal = builder.build();
             system = new Terminal(terminal);
+            system.systemTerminal = true;
             Terminal owned = system;
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            // Registered through OpenAF so it also runs on fast exits (exit(code, true), armed fast exit)
+            openaf.plugins.Threads.registerShutdownAction(() -> {
                 try { owned.restore(); terminal.close(); } catch (Exception ignored) { }
-            }, "OpenAF-terminal-restore"));
+            });
         }
         return system;
     }
 
+    /** Independent controlling terminal; never consumes redirected process stdin. */
+    public static Terminal interactive() throws IOException {
+        // Bypass TerminalBuilder's process singleton: another OpenAF console may own it.
+        boolean windows = System.getProperty("os.name", "").startsWith("Windows");
+        org.jline.terminal.spi.TerminalProvider provider =
+            org.jline.terminal.spi.TerminalProvider.load(windows ? "jni" : "exec", TerminalBuilder.class.getClassLoader());
+        if (windows) return new Terminal(org.jline.terminal.impl.jni.win.OpenAFWinSysTerminal.open(provider));
+        Charset encoding = java.nio.charset.StandardCharsets.UTF_8;
+        // The outer JLine reader supplies timeouts. Avoid ExecPty's extra polling
+        // wrapper, which can rewrite VMIN/VTIME after attributes have been restored.
+        org.jline.terminal.spi.Pty pty = new org.jline.terminal.impl.exec.ExecPty(provider, null, "/dev/tty") {
+            @Override public java.io.InputStream getSlaveInput() throws IOException {
+                return new java.io.FileInputStream(getName());
+            }
+        };
+        return new Terminal(new org.jline.terminal.impl.PosixSysTerminal(provider, "OpenAF-interactive",
+            TerminalBuilder.builder().computeType(), pty, encoding, encoding, encoding,
+            true, org.jline.terminal.Terminal.SignalHandler.SIG_DFL));
+    }
+
     public org.jline.terminal.Terminal unwrap() { return delegate; }
-    public int getWidth() { return delegate.getColumns() > 0 ? delegate.getColumns() : 80; }
-    public int getHeight() { return delegate.getRows() > 0 ? delegate.getRows() : 24; }
+    // Shutdown callbacks may still format output after the JVM terminal hook closes
+    // JLine. Keep size queries usable without reopening the terminal or changing it.
+    public int getWidth() {
+        refreshSize();
+        return width;
+    }
+    public int getHeight() {
+        refreshSize();
+        return height;
+    }
+    private void refreshSize() {
+        try {
+            Size size = delegate.getSize();
+            int columns = size.getColumns(), rows = size.getRows();
+            if (systemTerminal && (columns <= 0 || rows <= 0)) {
+                Size outputSize = outputSize();
+                if (columns <= 0) columns = outputSize.getColumns();
+                if (rows <= 0) rows = outputSize.getRows();
+            }
+            if (columns > 0) width = columns;
+            if (rows > 0) height = rows;
+        } catch (IllegalStateException closed) { }
+    }
+
+    // A pipe on stdin makes JLine use a dumb terminal even when stdout is a TTY.
+    // Query only stdout, without opening a reader or changing terminal attributes.
+    // Redirected output must not inherit the dimensions of an unrelated stderr/TTY.
+    private static Size outputSize() {
+        try {
+            if (System.getProperty("os.name", "").startsWith("Windows")) {
+                Kernel32.CONSOLE_SCREEN_BUFFER_INFO info = new Kernel32.CONSOLE_SCREEN_BUFFER_INFO();
+                long handle = Kernel32.GetStdHandle(Kernel32.STD_OUTPUT_HANDLE);
+                if (Kernel32.GetConsoleScreenBufferInfo(handle, info) != 0)
+                    return new Size(info.windowWidth(), info.windowHeight());
+            } else if (CLibrary.isatty(1) == 1) {
+                CLibrary.WinSize size = new CLibrary.WinSize();
+                if (CLibrary.ioctl(1, CLibrary.TIOCGWINSZ, size) == 0)
+                    return new Size(Short.toUnsignedInt(size.ws_col), Short.toUnsignedInt(size.ws_row));
+            }
+        } catch (LinkageError | RuntimeException unavailable) {
+            // Native support is optional; keep the last known size or defaults.
+        }
+        return new Size(0, 0);
+    }
     public String getOutputEncoding() { return delegate.outputEncoding().name(); }
     public boolean isSupported() { return !delegate.getType().startsWith("dumb"); }
     public boolean isAnsiSupported() { return isSupported() || "dumb-color".equals(delegate.getType()); }

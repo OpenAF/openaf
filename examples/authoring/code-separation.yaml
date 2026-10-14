@@ -1,0 +1,24 @@
+# A self-contained module that can also be tested from an exported file.
+ojob:
+  logToConsole: false
+
+jobs:
+- name: Normalize
+  check:
+    in:
+      text: isString.default("hello")
+  execRequire: handlers.js
+  to: Print result
+- name: Print result
+  exec: print(args.text);
+
+todo:
+- Normalize
+
+code:
+  handlers.js: |-
+    (function() {
+      exports.Normalize = function(args) {
+        args.text = args.text.toUpperCase();
+      };
+    })();

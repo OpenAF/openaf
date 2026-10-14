@@ -22,6 +22,7 @@ public class Console extends ScriptableObject {
 	 */
 	private static final long serialVersionUID = 2822583540432845379L;
 	protected ConsoleReader cr;
+    private jline.Terminal ownedTerminal;
 
 	/**
 	 * Obtain the class name
@@ -37,8 +38,16 @@ public class Console extends ScriptableObject {
 	 * Creates a new instance of the object Console.
 	 * </odoc>
 	 */
+	public void newConsole() throws IOException { newConsole(false); }
+
 	@JSConstructor
-	public void newConsole() throws IOException {
+	public void newConsole(Object interactive) throws IOException {
+		if (Boolean.TRUE.equals(interactive)) {
+			ownedTerminal = jline.Terminal.interactive();
+			cr = new ConsoleReader(ownedTerminal);
+			cr.setHandleUserInterrupt(true);
+			return;
+		}
 		try {
 			cr = new ConsoleReader();
 		} catch(Exception e) {
@@ -46,6 +55,15 @@ public class Console extends ScriptableObject {
 		}
 	}
 	
+    /** Close only an explicitly owned terminal. Default shared terminals remain usable. */
+    @JSFunction
+    public void close() throws IOException {
+        if (ownedTerminal != null) {
+            try { ownedTerminal.restore(); }
+            finally { ownedTerminal.unwrap().close(); ownedTerminal = null; }
+        }
+    }
+
 	/** 
 	 * <odoc>
 	 * <key>Console.readLinePrompt(aPrompt, aMaskchar) : String</key>

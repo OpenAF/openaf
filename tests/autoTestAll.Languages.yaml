@@ -1,0 +1,40 @@
+include:
+- oJobTest.yaml
+
+jobs:
+- name: Languages::Init
+  exec: args.tests = require("autoTestAll.Languages.js");
+- name: Languages::RoundTrips
+  from: Languages::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLanguageRoundTrips;
+- name: Languages::FailuresAndCleanup
+  from: Languages::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLanguageFailuresAndCleanup;
+- name: Languages::Registration
+  from: Languages::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLanguageRegistration;
+- name: Languages::OJobIntegration
+  from: Languages::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLanguageOJobIntegration;
+
+- name: Languages::ProcessTree
+  from: Languages::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLanguageProcessTree;
+
+- name: Languages::Configuration
+  from: Languages::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLanguageConfiguration;
+
+todo:
+- Languages::RoundTrips
+- Languages::FailuresAndCleanup
+- Languages::Registration
+- Languages::OJobIntegration
+- Languages::ProcessTree
+- Languages::Configuration

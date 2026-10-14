@@ -1,0 +1,9 @@
+ojob:
+  catch: false
+todo:
+- GPU delegation
+jobs:
+- name: GPU delegation
+  exec: |
+    ow.loadTest()
+    require("autoTestAll.GPU.js").testGPUDelegation()

@@ -138,7 +138,7 @@ $cache("odoc")
 .fn(id => searchHelp("", __, id));
 
 var sHelp, pHelp = $do(() => {
-	sHelp = searchHelp("").map(r => r.key).sort();
+	sHelp = searchHelp("");
 });
 // for(var i in paths) {
 // 	try {
@@ -223,34 +223,27 @@ ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, 
             var terms = [];
             var id = req.uri.replace(/^\/odoc\/*/g, "");
 
-            // if (Object.keys(__odocs.aodocskeys).indexOf(id) > 0) {
-            //     terms = terms.concat($stream($cache("odoc").get(id).map(function(r) { return r.key; })).toArray());
-            //     terms = terms.sort();
-            // } else {
-            //     terms = terms.concat($stream(searchHelp(id, __).map(function(r) { return r.key; })).toArray());
-            //     terms = terms.sort();
-            // }
-			if (id == "") {
-				if (isUnDef(sHelp)) $doWait(pHelp);
-				terms = terms.concat( sHelp );
-			} else {
-				terms = terms.concat( searchHelp(id, __).map(r => r.key) ).sort();
-			}
-
-            if (terms.length == 1) {
-                odoc.contents = templates("odoc", { "id": id, "list": false, "terms": terms, "res": searchHelp(id)[0], "uriPrefix": guiPrefix() });
+            if (id == "") {
+              if (isUnDef(sHelp)) $doWait(pHelp);
+              terms = sHelp;
             } else {
-                odoc.contents = templates("odoc", { "id": id, "list": true, "terms": terms, "uriPrefix": guiPrefix() });
+              terms = searchHelp(id).map(r => ({ id: r.id, key: r.key }));
             }
+            odoc.contents = templates("odoc", { id: id, terms: terms, uriPrefix: guiPrefix() });
             return httpServer.replyOKHTML(templates("index", withGuiPage(odoc)));
         }catch(e) {logErr(e)}
     },
     "/odocKey": function(req) {
         try {
-        	var res = searchHelp(req.params.q)[0];
-        	if (isDefined(res.text)) res.text = res.text.replace(/  /g, " &nbsp;");
-            return httpServer.replyOKJSON(stringify(res));
-        } catch(e) { logErr(e)}
+          var matches = searchHelp(req.params.q, __, isDef(req.params.id) ? [req.params.id] : __);
+          if (matches.length == 1 && isString(matches[0].text)) {
+            return httpServer.replyOKJSON(stringify(matches[0]));
+          }
+          return httpServer.replyOKJSON(stringify({ error: matches.length ? "Ambiguous term" : "Term not found", matches: matches }));
+        } catch(e) {
+          logErr(e);
+          return httpServer.replyOKJSON(stringify({ error: "Unable to load documentation", matches: [] }));
+        }
     },
     "/opack": function(req) {
         try {

@@ -191,12 +191,13 @@ OpenWrap.format.prototype.string = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc, useIndex) : Array</key>
+	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc, useIndex, perRowHeight) : Array</key>
 	 * Given anArray of maps will return an array suitable to use with printTable for a maxTableSize, a separator length
 	 * (sepLen (which defaults to 1)) and an optional line separator function (sepFunc that receives the max length of a 
 	 * column). Word-wrap is achieved by creating new map array entries whenever the calculated max size of each line 
 	 * with sepLen is achieved. The boolean flag useIndex changes the result to a map with lines and idx (array of the positions
-	 * on the lines array that are a new anArray entry). Example of usage:\
+	 * on the lines array that are a new anArray entry). If perRowHeight is true, each record uses its own wrapped height and column sizes are measured per physical line.
+	 * Example of usage:\
 	 * \
 	 *   __initializeCon()\
      *   var maxS = __con.getTerminal().getWidth()\
@@ -204,11 +205,12 @@ OpenWrap.format.prototype.string = {
 	 * 
 	 * </odoc>
 	 */
-	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc, useIndex) => {
+	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc, useIndex, perRowHeight) => {
 		_$(ar, "ar").isArray().$_()
 		_$(maxTableSize, "maxTableSize").isNumber().$_()
 		sepFunc = _$(sepFunc, "sepFunc").isFunction().default(__)
 		sepLen = _$(sepLen, "sepLen").isNumber().default(1)
+		perRowHeight = _$(perRowHeight, "perRowHeight").isBoolean().default(false);
 	
 		if (ar.length == 0) return []
 	
@@ -228,7 +230,7 @@ OpenWrap.format.prototype.string = {
 					_v = column == null ? "" : (isDef(column) ? String(column) : "")
 				}
 				fixedMinSize[i] = Math.max(fixedMinSize[i], _alKeys[i])
-				maxSizes[i] = Math.max(maxSizes[i], visibleLength(_v))
+				maxSizes[i] = Math.max(maxSizes[i], perRowHeight ? String(_v).split("\n").reduce((max, line) => Math.max(max, visibleLength(line)), 0) : visibleLength(_v))
 			}
 		})
 	  
@@ -271,6 +273,7 @@ OpenWrap.format.prototype.string = {
 		var _lines = [], _idx = [ ], _newSize = []
 		var _keys = Object.keys(ar[0])
 		ar.forEach(_ar => {
+		  if (perRowHeight) maxSubLines = 0;
 		  // Processing line
 		  let lines = []
 		  for(var i = 0; i < _keys.length; i++) {
@@ -282,7 +285,7 @@ OpenWrap.format.prototype.string = {
 			} else 
 				_v = v
 			if (chgCols.has(i)) {
-				_newSize[i] = Math.max(fixedMinSize[i], Math.round((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
+				_newSize[i] = Math.max(fixedMinSize[i], (perRowHeight ? Math.floor : Math.round)((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
 			} else {
 				_newSize[i] = Math.max(fixedMinSize[i], maxSizes[i])
 			}
@@ -905,6 +908,43 @@ OpenWrap.format.prototype.string = {
 		return _r
 	},
 
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiClip(aStr, aWidth, aEllipsis) : String</key>
+	 * Clips aStr to, at most, aWidth visible columns (wide emoji count as 2) without ever cutting an ANSI escape sequence.
+	 * If clipped, aEllipsis (default "…") is appended and any open ANSI styling is reset.
+	 * </odoc>
+	 */
+	ansiClip: (aStr, aWidth, aEllipsis) => {
+		aStr = String(aStr)
+		aWidth = _$(aWidth, "aWidth").isNumber().$_()
+		aEllipsis = _$(aEllipsis, "aEllipsis").isString().default("\u2026")
+		if (visibleLength(aStr) <= aWidth) return aStr
+		var limit = Math.max(0, aWidth - visibleLength(aEllipsis)), out = "", w = 0, hasEsc = false, re = /\x1b\[[0-9;?]*[ -\/]*[@-~]/y
+		for (var i = 0; i < aStr.length; ) {
+			re.lastIndex = i
+			var m = re.exec(aStr)
+			if (m) { out += m[0]; i += m[0].length; hasEsc = true; continue }
+			var cp = aStr.codePointAt(i), ch = String.fromCodePoint(cp), cw = visibleLength(ch)
+			if (w + cw > limit) break
+			out += ch; w += cw; i += ch.length
+		}
+		return out + aEllipsis + (hasEsc ? "\x1b[0m" : "")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiPad(aStr, aWidth) : String</key>
+	 * Right-pads aStr with spaces up to aWidth visible columns (ANSI escape sequences and wide emoji are accounted for). Never truncates.
+	 * </odoc>
+	 */
+	ansiPad: (aStr, aWidth) => {
+		aStr = String(aStr)
+		aWidth = _$(aWidth, "aWidth").isNumber().$_()
+		var l = visibleLength(aStr)
+		return l >= aWidth ? aStr : aStr + repeat(aWidth - l, " ")
+	},
+
     /**
 	 * <odoc>
 	 * <key>ow.format.string.ansiMoveUp(nLines)</key>
@@ -1358,98 +1398,59 @@ OpenWrap.format.prototype.string = {
 	/**
 	 * <odoc>
 	 * <key>ow.format.string.pauseString(aString, aMsg)</key>
-	 * Given aString starts an interactive paging of the contents of aString. 
+	 * Given aString starts an interactive paging of the contents of aString.
+	 * PgUp/Left and PgDown/Right move by a page; Up/Down move by a line.
+	 * Shift+Left/Home jumps to the top and Shift+Right/End jumps to the bottom.
+	 * Shift+PgUp and Shift+PgDown are also supported as top/bottom aliases.
+	 * At the bottom navigation remains available; forward paging or any ordinary key exits. Use q to quit.
 	 * Optionally aMsg can be provided to be displayed with the paging percentage (use \{{percentage}} to be replaced by the percentage).
 	 * </odoc>
 	 */
 	pauseString: (aString, aMsg) => {
 		_$(aString, "aString").isString().$_()
-		aMsg = _$(aMsg, "aMsg").isString().default("{{percentage}}% (Press any key to paginate or use arrow keys or 'q' to quit)")
+		aMsg = _$(aMsg, "aMsg").isString().default("{{percentage}}% (PgUp/Left: back, PgDown/Right: forward, Shift+Left/Right: top/bottom, Up/Down: line, q: quit)")
 
 		//__initializeCon()
 		plugin("Console")
-		_c = new Console()
+		var _c = new Console()
 
 		var __pauseArray = (aText, aStart) => {
 			_$(aText, "aText").isArray().$_()
 	
-			var height = _c.getConsoleReader().getTerminal().getHeight() 
+			var terminal = _c.getConsoleReader().getTerminal()
+			var pageSize = Math.max(1, terminal.getHeight() - 1)
 			var lines = aText.length
-	
-			if (lines <= (height - 1)) {
+			if (lines <= pageSize) {
 				print(aText.join("\n"))
 				return -1
 			}
-	
-			if (isUnDef(aStart) || aStart < 0) {
-				aStart = 0
-			} else {
-				if (aStart > (lines - height + 1)) aStart = (lines - height + 1)
-			}
-	
-			print(aText.slice(aStart, aStart + height - 1).join("\n"))
-	
-			if ((aStart + height -1) < lines) {
-				tprintnl(aMsg, { percentage: Math.floor(( ((aStart + height -1)*100 / lines))) })
-				var c
-				c = String(_c.readChar(""))
-				printnl("\r" + repeat(_c.getConsoleReader().getTerminal().getWidth(), ' ') + "\r")
-				if (c.charCodeAt(0) != 113 && c.charCodeAt(0) != 81) {
-					if (c.charCodeAt(0) == 27) {
-						c = String(_c.readChar(""))
-						if (c.charCodeAt(0) == 27) {
-							// get out
-						}
-						if (c.charCodeAt(0) == 91) {
-							c = String(_c.readChar(""))
-							// home
-							if (c.charCodeAt(0) == 49) {
-								c = String(_c.readChar(""))
-								if (c.charCodeAt(0) == 126) {
-									return 0
-								}
-							}
-							// end
-							if (c.charCodeAt(0) == 52) {
-								c = String(_c.readChar(""))
-								if (c.charCodeAt(0) == 126) {
-									return lines - height - 1
-								}
-							}
-							// pgup
-							if (c.charCodeAt(0) == 53) {
-								c = String(_c.readChar(""))
-								if (c.charCodeAt(0) == 126) {
-									if (aStart - height -1 < 0)
-										return 0
-									else
-										return aStart - height + 1
-								}
-							}
-							// pgdw
-							if (c.charCodeAt(0) == 54) {
-								c = String(_c.readChar(""))
-								if (c.charCodeAt(0) == 126) {
-									return aStart + height - 1
-								}
-							}
-							// up
-							if (c.charCodeAt(0) == 65) {
-								if (aStart - 1 < 0)
-									return 0
-								else
-									return aStart - 1
-							}
-							// down
-							if (c.charCodeAt(0) == 66) {
-								return aStart + 1
-							}
-						}
-					}
-					return aStart + height - 1
-				} else {
-					return -1
+			var last = lines - pageSize
+			aStart = Math.max(0, Math.min(last, isUnDef(aStart) ? 0 : aStart))
+			print(aText.slice(aStart, aStart + pageSize).join("\n"))
+			tprintnl(aMsg, { percentage: Math.floor((aStart + pageSize) * 100 / lines) })
+			var key = String(_c.readChar(""))
+			if (key == "\x1b") {
+				var prefix = String(_c.readChar(""))
+				key += prefix
+				if (prefix == "[" || prefix == "O") {
+					// Consume the whole sequence, including modifier parameters.
+					var ch
+					do {
+						ch = String(_c.readChar(""))
+						key += ch
+					} while (!/[@-~]/.test(ch))
 				}
+			}
+			printnl("\r" + repeat(terminal.getWidth(), " ") + "\r")
+			switch (key) {
+			case "q": case "Q": return -1
+			case "\x1b[5~": case "\x1b[D": return Math.max(0, aStart - pageSize)
+			case "\x1b[6~": case "\x1b[C": return aStart == last ? -1 : Math.min(last, aStart + pageSize)
+			case "\x1b[1;2D": case "\x1b[5;2~": case "\x1b[1~": case "\x1b[7~": case "\x1b[H": case "\x1bOH": return 0
+			case "\x1b[1;2C": case "\x1b[6;2~": case "\x1b[4~": case "\x1b[8~": case "\x1b[F": case "\x1bOF": return last
+			case "\x1b[A": return Math.max(0, aStart - 1)
+			case "\x1b[B": return Math.min(last, aStart + 1)
+			default: return aStart == last ? -1 : Math.min(last, aStart + pageSize)
 			}
 		}
 		
@@ -1458,9 +1459,12 @@ OpenWrap.format.prototype.string = {
 		// Get current terminal settings
 		var current = _c.getConsoleReader().getTerminal().settings.get("icanon echo")
 		_c.getConsoleReader().getTerminal().settings.set("-icanon min 1 -echo")
-		while(pres >= 0) pres = __pauseArray(lines, pres)
-		// Restore terminal settings
-		_c.getConsoleReader().getTerminal().settings.set(current)
+		try {
+			while(pres >= 0) pres = __pauseArray(lines, pres)
+		} finally {
+			// Restore terminal settings (also on errors/interrupts)
+			_c.getConsoleReader().getTerminal().settings.set(current)
+		}
 	}
 };
 
@@ -3719,7 +3723,7 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	if (isNumber(aObj)) {
 		return String(aObj)
 	}
-	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
+	var _escape = s => s.replace(/\\/g, "\\\\").replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
 	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && aObj.match(new RegExp(dTheme.specialRE))) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
 }
 
@@ -3762,7 +3766,7 @@ OpenWrap.format.prototype.toCSLON = function(aObj, cTheme) {
 	if (isDate(aObj)) {
 		return ansiColor("reset", ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS'))
 	}
-	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
+	var _escape = s => s.replace(/\\/g, "\\\\").replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t")
 	if (!isMap(aObj) && !isArray(aObj)) return ansiColor("reset", (isString(aObj) && aObj.match(new RegExp(dTheme.specialRE))) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj))
 }
 
@@ -5547,6 +5551,24 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	return res
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.withSideLineThemes() : Map</key>
+ * Returns a map of theme name to theme definition for use as the aTheme argument of ow.format.withSideLine (and the "theme" entries of
+ * __colorFormat.md). A theme is a map with the optional characters ltop, tmiddle, rtop (top border), lmiddle, rmiddle (left and right sides),
+ * lbottom, bmiddle, rbottom (bottom border) and tab (replacement for tab characters, default 3 spaces). The top/bottom border is only drawn when
+ * the corner entries are defined. Built-in themes: closedOneSpace, simpleOneSpace, simpleLine, doubleOneSpace, doubleLine, simpleLineWithTips,
+ * simpleLineWithBottomTip, simpleLineWithTopTip, simpleLineWithCTips, simpleLineWithCBottomTip, simpleLineWithCTopTip, simpleLineWithRTips,
+ * simpleLineWithRTopTip, simpleLineWithRBottomTip, doubleLineWithRTips, doubleLineBothSides, closedRect, closedDoubleRect, closedCurvedRect,
+ * openTopRect, openBottomRect, openRect, openTopCurvedRect, openBottomCurvedRect, openCurvedRect, openCurvedSpace and blockCurvedSpace.
+ * Custom themes can be added (built-in themes win on name clashes) by setting __flags.sideLineCustomThemes to a map of name to theme before calling it.\
+ * \
+ * Example:\
+ * \
+ *   __flags.sideLineCustomThemes = { arrow: { lmiddle: ">" } }\
+ *   print(ow.format.withSideLine("hello", __, "GREEN", __, ow.format.withSideLineThemes().arrow))\
+ * </odoc>
+ */
 OpenWrap.format.prototype.withSideLineThemes = function() {
 	var _s = ow.format.syms()
 	return merge(__flags.sideLineCustomThemes, {

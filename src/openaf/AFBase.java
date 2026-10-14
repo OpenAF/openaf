@@ -285,6 +285,43 @@ public class AFBase extends ScriptableObject {
 
 	/**
 	 * <odoc>
+	 * <key>af.jqJava(input, expression, options) : Object</key>
+	 * Evaluates jq 1.6 against JSON values. Prefer $jq for the documented public interface.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static Object jqJava(Context cx, Scriptable self, Object[] args, Function function) {
+		Object input = args.length > 0 ? args[0] : Undefined.instance;
+		Object expression = args.length > 1 ? args[1] : Undefined.instance;
+		Object options = args.length > 2 ? args[2] : Undefined.instance;
+		return openaf.core.jq.JqEngine.search(cx, ScriptableObject.getTopLevelScope(self), input, expression, options);
+	}
+
+	/** Compile an Oniguruma pattern. Prefer the public joniRegExp helper. */
+	@JSFunction
+	public static Object joniJava(Context cx, Scriptable self, Object[] args, Function function) {
+		return openaf.core.regex.JoniEngine.compile(cx, ScriptableObject.getTopLevelScope(self),
+			args.length > 0 ? args[0] : Undefined.instance,
+			args.length > 1 ? args[1] : Undefined.instance);
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.pathJava(obj, expression, customFunctions) : Object</key>
+	 * Evaluates a JMESPath expression directly against Rhino values using the Java engine.
+	 * Uses __flags.PATH_CACHE_SIZE (default 256, 0 disables caching). Prefer $path for OpenAF extensions.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static Object pathJava(Context cx, Scriptable self, Object[] args, Function function) {
+		Object input = args.length > 0 ? args[0] : Undefined.instance;
+		String expression = args.length > 1 && args[1] != null && !Undefined.isUndefined(args[1]) ? Context.toString(args[1]) : "@";
+		Object functions = args.length > 2 ? args[2] : Undefined.instance;
+		return openaf.core.jmespath.PathEngine.search(cx, ScriptableObject.getTopLevelScope(self), input, expression, functions);
+	}
+
+	/**
+	 * <odoc>
 	 * <key>af.toTOONJava(aObj) : String</key>
 	 * Tries to convert aObj into a TOON string using the native Java TOON engine (json-io) instead
 	 * of the bundled Javascript one. See __flags.ALTERNATIVES.toTOON.
@@ -1502,7 +1539,8 @@ public class AFBase extends ScriptableObject {
 		}
 
 		for (int i = 0; i < descriptors.length; i++) {
-			String codeClass = className + "ojsc" + i;
+			// Partitioned bodies have trampolines under their owning shard prefix.
+			String codeClass = descriptors[i].getCode().getClass().getName();
 			try {
 				Class.forName(codeClass, true, loader);
 			} catch (ClassNotFoundException e) {
@@ -1886,9 +1924,11 @@ public class AFBase extends ScriptableObject {
 			|| (cp >= 0x2753 && cp <= 0x2755) || cp == 0x2757
 			|| (cp >= 0x2795 && cp <= 0x2797)
 			|| cp == 0x27B0 || cp == 0x27BF
-			|| cp == 0x2934 || cp == 0x2935
 			|| (cp >= 0x2B1B && cp <= 0x2B1C) || cp == 0x2B50 || cp == 0x2B55
-			|| cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299;
+			|| cp == 0x3030 || cp == 0x303D || cp == 0x3297 || cp == 0x3299
+			|| cp == 0x1F004 || cp == 0x1F0CF || cp == 0x1F18E || (cp >= 0x1F191 && cp <= 0x1F19A)
+			|| cp == 0x1F201 || cp == 0x1F21A || cp == 0x1F22F || (cp >= 0x1F232 && cp <= 0x1F236)
+			|| (cp >= 0x1F238 && cp <= 0x1F23A) || (cp >= 0x1F250 && cp <= 0x1F251);
 	}
 
 	private static boolean visibleLengthIsWide(int cp) {

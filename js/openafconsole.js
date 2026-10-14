@@ -332,7 +332,7 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 				if (timeCommand) __timeResult = now() - __start;
 				if (res.results.length > 0) {
 					if (!descSQL) {
-						outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly, __ansiflag && con.isAnsiSupported(), (isDef(__codepage) ? "utf" : __));
+						outputres = __consoleTable(res.results, returnOnly, __ansiflag && con.isAnsiSupported());
 					} /* else {
 						outputres = Object.keys(res.results[0]).join("\n");
 					}*/
@@ -626,19 +626,19 @@ function __help(aTerm) {
 		
 		if (isArray(h)) {
 			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
-				if (__ansiflag) {
-					__o("**" + h[0].fullkey + "**");
-					__o("**" + repeat(h[0].fullkey.length, HELPSEPARATOR_ANSI) + "**");
-					__o(h[0].text, true);
+				if (__ansiflag && con.isAnsiSupported()) {
+					__o(ansiColor("BOLD", h[0].fullkey), true);
+					__o(ansiColor("BOLD", repeat(h[0].fullkey.length, HELPSEPARATOR_ANSI)), true);
+					__o(h[0].text, h[0].format != "markdown");
 				} else {
-					__o(h[0].fullkey);
-					__o(repeat(h[0].fullkey.length, HELPSEPARATOR));
+					__o(h[0].fullkey, true);
+					__o(repeat(h[0].fullkey.length, HELPSEPARATOR), true);
 					__o(h[0].text, true);
 				}
 			} else {
 				if (h.length > 1) {
 					for(var i in h) {
-						__o(h[i].key);
+						__o(h[i].key + " (" + h[i].id + ")", true);
 					}
 				} else {
 					__o("Term '" + aTerm + "' not found.");
@@ -803,15 +803,37 @@ function __pause(aFlag) {
 		__outputConsoleComments("Pause of output is disabled.");
 }
 
+// Keep console width/color and legacy rendering when no preference is configured.
+function __consoleTable(rows, count, color) {
+	var format = __defaultTableFormat();
+	if (isUnDef(format)) return printTable(rows, con.getConsoleReader().getTerminal().getWidth(), count, color, (isDef(__codepage) ? "utf" : __));
+	var oldAnsi = __conAnsi, oldCon = __con, oldFlag = __ansiColorFlag, oldConsole = __conConsole;
+	try {
+		__conAnsi = color;
+		__con = con.getConsoleReader();
+		return $output(rows, { __format: format, __width: con.getConsoleReader().getTerminal().getWidth() }, __, true);
+	} finally {
+		__conAnsi = oldAnsi;
+		__con = oldCon;
+		__ansiColorFlag = oldFlag;
+		__conConsole = oldConsole;
+	}
+}
+
+function __consoleResult(obj) {
+	if (isDef(__defaultTableFormat()) && isArray(obj) && obj.length > 0 && obj.every(isMap)) return __consoleTable(obj, true, colorCommand);
+	return printTreeOrS(obj, __, { noansi: !colorCommand });
+}
+
 function __table(aCmd) {
 	var __res = __processCmdLine(aCmd, true);
 	if (isArray(__res) && __res.length > 0 && isObject(__res[0]) && isObject(__res[__res.length -1])) {
 		var __pres = 0;
 		if (pauseCommand) {
-			var __lines = printTable(__res, con.getConsoleReader().getTerminal().getWidth(), true, colorCommand, (isDef(__codepage) ? "utf" : __)).split(/\n/);
+			var __lines = __consoleTable(__res, true, colorCommand).split(/\n/);
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
-			__outputConsole(printTable(__res, con.getConsoleReader().getTerminal().getWidth(), true, colorCommand, (isDef(__codepage) ? "utf" : __)));
+			__outputConsole(__consoleTable(__res, true, colorCommand));
 		}
 		return true;
 	} else {
@@ -965,7 +987,14 @@ function __chooseEditHistory() {
 	var choices = commands.map(function(command) {
 		return command.replace(/\r\n|\r|\n|\^J/g, ansiColor("FG(240)", " ↵ "));
 	}).concat(["🔙 Cancel"]);
-	var selected = askChoose("Choose a command to edit: ", choices, Math.min(choices.length, 10));
+	var selected = askChoose("Choose a command to edit: ", choices, Math.min(choices.length, 10), __, {
+    console: con, ansi: con.isAnsiSupported() && __flags.ANSICOLOR_ASK,
+    write: function(text, newline) {
+      var writer = con.getConsoleReader().getTerminal().unwrap().writer();
+      writer.print((isDef(text) ? String(text) : "") + (newline === false ? "" : "\n"));
+      writer.flush();
+    }
+  });
 	if (!isNumber(selected) || selected < 0 || selected >= commands.length) return __;
 	return commands[selected].replace(/\^J/g, "\n");
 }
@@ -998,14 +1027,14 @@ function __view(aCmd, fromCommand, shouldClear) {
 			if (pauseCommand) {
 				var __lines
 				if (__flags.CONSOLE.view == "tree") {
-					__lines = (prefix + printTreeOrS(__res, __, { noansi: !colorCommand })).split(/\n/)
+					__lines = (prefix + __consoleResult(__res)).split(/\n/)
 				} else {
 					__lines = (prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand)).split(/\n/)
 				}
 				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 			} else {
 				if (__flags.CONSOLE.view == "tree") {
-					__outputConsole(prefix + printTreeOrS(__res, __, { noansi: !colorCommand }))
+					__outputConsole(prefix + __consoleResult(__res))
 				} else {
 					__outputConsole(prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand))
 				}

@@ -15,17 +15,18 @@ var ODoc = function(aoDoc) {
 
 /**
  * <odoc>
- * <key>ODoc.add(aKey, aFullKey, aValue)</key>
+ * <key>ODoc.add(aKey, aFullKey, aValue, aFormat)</key>
  * Adds a ODoc entry given a key (a unique name), a full key (a function or object signature) and a
- * corresponding text value.
+ * corresponding text value. Optionally set aFormat to "markdown" or "md" to enable Markdown display.
  * </odoc>
  */
-ODoc.prototype.add = function(aKey, aFullKey, aValue) {
+ODoc.prototype.add = function(aKey, aFullKey, aValue, aFormat) {
 	var item = {
 		"k": aFullKey,
 		"t": aValue
 	};
 
+	if (aFormat == "markdown" || aFormat == "md") item.format = "markdown";
 	this.odoc[aKey] = item;
 }
 
@@ -67,7 +68,7 @@ ODoc.prototype.getAll = function() {
 
 /**
  * <odoc>
- * <key>ODoc.addAll()</key>
+ * <key>ODoc.addAll(aODoc)</key>
  * Adds an ODoc Map structure imported from another ODoc object.
  * </odoc>
  */
@@ -81,7 +82,8 @@ ODoc.prototype.addAll = function(aODoc) {
  * <odoc>
  * <key>ODocs(aPath, aODocs, anArrayURLs, offline)</key>
  * Object to hold ODocs objects, search them, load or save them (either offline or online). The parameter aPath
- * should be use as a path to save for offline use or as a path to save for online use. The parameter aODocs
+ * can be a directory containing .odoc.db, a standalone database ZIP, or a JAR/ZIP containing .odoc.db.
+ * Saving requires a directory path. The parameter aODocs
  * is optional but it can be used to link with ODocsGen contents (e.g (new ODocsGen(aMapOfFiles)).getODoc())).
  * It's also possible to additionally specify anArrayURLs to load ODocs via web. Optional you can force it to
  * only work offline (offline = true)
@@ -94,22 +96,29 @@ var ODocs = function(aPath, aODocs, anArrayURLs, offline) {
 	this.keyLoadFromWeb = false;
 	this.offline = offline;
 	this.keysfile = "__odockeys";
-	this.arrayurls = anArrayURLs;
+	this.arrayurls = anArrayURLs || [];
 	this.aFilename = (isUnDef(aPath)) ? getOpenAFJar() : aPath;
 	this.filesIds = {};
-	this.loadFile();
+	this.loadFile(aPath);
 	if (isDef(aODocs)) this.addAll(aODocs);
 };
 
+/**
+ * <odoc>
+ * <key>ODocs.loadFile(aPath)</key>
+ * Loads a local documentation index. Defaults to the constructor path. Online fallback and background
+ * refresh are enabled only when offline is false and no explicit aPath was supplied.
+ * </odoc>
+ */
 ODocs.prototype.loadFile = function(aPath) {
 	try { 
-		this.load(__, aPath); 
+		this.load(__, isDef(aPath) ? aPath : this.aFilename);
 		if(!this.offline && isUnDef(aPath)) {
 			this.backgroundLoadWeb(); 
 		}
 	} catch(e) { 
 		// Try another way
-		if (isUnDef(aPath)) this.loadWeb();
+		if (!this.offline && isUnDef(aPath)) this.loadWeb();
 	}
 };
 
@@ -123,200 +132,203 @@ ODocs.prototype.addAll = function(aODoc) {
 	for(var i in aODoc) {
 		this.aodocs[i] = new ODoc(aODoc[i]);
 		this.aodocskeys[i] = this.aodocs[i].getKeys();
+		delete this.filesIds[i];
 	}
 }
 
 /**
  * <odoc>
  * <key>ODocs.save()</key>
- * Saves the current ODocs into the filename provided on the constructor in a way suitable
+ * Saves the current ODocs into .odoc.db in the directory provided on the constructor in a way suitable
  * for offline use.
  * </odoc>
  */
 ODocs.prototype.save = function() {
-	plugin("ZIP");
-
-	var zip = new ZIP();
-	var odocskeys = {};
-	try {
-		zip.loadFile(this.aFilename + "/.odoc.db");
-		odocskeys = af.fromJson(af.fromBytes2String(zip.getFile(this.keysfile)));
-	} catch(e) {
-	}
-
-	for(var i in this.aodocs) {
-		zip.putFile(i, af.fromString2Bytes(beautifier(this.aodocs[i].getAll())));
-		odocskeys[i] = this.aodocs[i].getKeys();
-	}
-
-	zip.putFile(this.keysfile, af.fromString2Bytes(beautifier(odocskeys)));
-	io.writeFileBytes(this.aFilename + "/.odoc.db", zip.generate({"compressionLevel":9}));
-	zip.close();
+  plugin("ZIP");
+  var zip = new ZIP();
+  var odocskeys = {};
+  try {
+    io.mkdir(this.aFilename);
+    try {
+      zip.loadFile(this.aFilename + "/.odoc.db");
+      odocskeys = af.fromJson(af.fromBytes2String(zip.getFile(this.keysfile)));
+    } catch(e) {
+      if (io.fileExists(this.aFilename + "/.odoc.db")) throw e;
+    }
+    for(var i in this.aodocs) {
+      zip.putFile(i, af.fromString2Bytes(beautifier(this.aodocs[i].getAll())));
+      odocskeys[i] = this.aodocs[i].getKeys();
+    }
+    zip.putFile(this.keysfile, af.fromString2Bytes(beautifier(odocskeys)));
+    io.writeFileBytes(this.aFilename + "/.odoc.db", zip.generate({ compressionLevel: 9 }));
+  } finally {
+    zip.close();
+  }
 }
 
 /**
  * <odoc>
  * <key>ODocs.saveWeb()</key>
- * Saves the current ODocs into the path provided on the constructor with files suitable from loading
+ * Saves the current ODocs into the path provided on the constructor with files suitable for loading
  * from web.
  * </odoc>
  */
 ODocs.prototype.saveWeb = function() {
-	plugin("ZIP");
-
-	var zip = new ZIP();
-	io.mkdir(this.aFilename);
-	var odocskeys = {};
-	try {
-		odocskeys = af.fromJson(zip.gunzip(af.fromBytes2String(io.readFileBytes(this.aFilename + "/" + this.keysfile + ".gz"))));
-	} catch(e) {
-	}
-
-	for(var i in this.aodocs) {
-		io.writeFileBytes(this.aFilename + "/" + i + ".gz", zip.gzip(af.fromString2Bytes(beautifier(this.aodocs[i].getAll()))));
-		odocskeys[i] = this.aodocs[i].getKeys();
-	}
-
-	io.writeFileBytes(this.aFilename + "/" + this.keysfile + ".gz", zip.gzip(af.fromString2Bytes(beautifier(odocskeys))));
+  io.mkdir(this.aFilename);
+  var odocskeys = {};
+  var keysPath = this.aFilename + "/" + this.keysfile + ".gz";
+  if (io.fileExists(keysPath)) {
+    odocskeys = af.fromJson(af.fromBytes2String(io.gunzip(io.readFileBytes(keysPath))));
+  }
+  for(var i in this.aodocs) {
+    io.writeFileBytes(this.aFilename + "/" + i + ".gz", io.gzip(af.fromString2Bytes(beautifier(this.aodocs[i].getAll()))));
+    odocskeys[i] = this.aodocs[i].getKeys();
+  }
+  io.writeFileBytes(keysPath, io.gzip(af.fromString2Bytes(beautifier(odocskeys))));
 }
 
+/**
+ * <odoc>
+ * <key>ODocs.loadWeb(aID) : Boolean</key>
+ * Loads web documentation from the configured URLs, trying the next URL on invalid responses.
+ * Without aID, loads only the index. Returns false when offline or loading fails.
+ * </odoc>
+ */
 ODocs.prototype.loadWeb = function(aID) {
-	plugin("HTTP");
-	var parent = this;
-	
-	function getFromWeb(aSuffix) {
- 		if (isUnDef(aSuffix) || aSuffix == "undefined.gz") return null;
-
-		for(var i in parent.arrayurls) {
-			try {
-				var h = new HTTP(parent.arrayurls[i] + "/" + aSuffix, "GET", "", {}, true, 500);
-				if (isDef(h)) {
-					return h.responseBytes();
-				} else {
-					return null;
-				}
-			} catch(e) {
-			}
-		}
-		return null;
-	}
-	
-	try {
-		var b;
-		//if(!(this.keyLoadFromWeb)) {
-			this.keyLoadFromWeb = false;
-			b = getFromWeb(this.keysfile + ".gz");
-			if (b != null) {
-				this.aodocskeys = merge(af.fromJson(af.fromBytes2String(io.gunzip(b))), this.aodocskeys);
-				this.keyLoadFromWeb = true;
-			}
-		//}
-
-		b = getFromWeb(aID + ".gz");
-		if (b != null) {
-			var odoc = af.fromJson(af.fromBytes2String(io.gunzip(b)));
-			this.aodocs[aID] = new ODoc(odoc);
-			this.loadFromWeb = true;
-			return true;
-		} else {
-			return false;
-		}
-	} catch(e) {
-		this.loadFromWeb = false;
-		return false;
-	}
+  if (this.offline) return false;
+  plugin("HTTP");
+  var parent = this;
+  function getFromWeb(aSuffix) {
+    for(var i = 0; i < parent.arrayurls.length && !parent.offline; i++) {
+      try {
+        var h = new HTTP(parent.arrayurls[i] + "/" + aSuffix, "GET", "", {}, true, 500);
+        // Decode within the loop so an invalid response can fall back to the next URL.
+        var data = af.fromJson(af.fromBytes2String(io.gunzip(h.responseBytes())));
+        if (!isMap(data)) continue;
+        if (aSuffix == parent.keysfile + ".gz" &&
+            !Object.keys(data).every(k => isArray(data[k]))) continue;
+        if (aSuffix != parent.keysfile + ".gz" &&
+            !Object.keys(data).every(k => isMap(data[k]) && isString(data[k].k) && isString(data[k].t))) continue;
+        return data;
+      } catch(e) {
+      }
+    }
+  }
+  if (!this.keyLoadFromWeb) {
+    var keys = getFromWeb(this.keysfile + ".gz");
+    if (isDef(keys)) {
+      this.aodocskeys = merge(keys, this.aodocskeys);
+      this.keyLoadFromWeb = true;
+    }
+  }
+  if (this.offline) return false;
+  if (isUnDef(aID)) return this.keyLoadFromWeb;
+  var data = getFromWeb(aID + ".gz");
+  this.loadFromWeb = isDef(data);
+  if (this.loadFromWeb) {
+    this.aodocs[aID] = new ODoc(data);
+    this.aodocskeys[aID] = this.aodocs[aID].getKeys();
+  }
+  return this.loadFromWeb;
 }
 
+/**
+ * <odoc>
+ * <key>ODocs.load(aID, aFilename)</key>
+ * Loads a local documentation index and optionally one subject. Uses the remembered subject source
+ * or constructor path when aFilename is omitted. Accepts directories and standalone or nested ZIP archives.
+ * </odoc>
+ */
 ODocs.prototype.load = function(aID, aFilename) {
-	plugin("ZIP");
-
-	var zip;
-	if (isUnDef(aFilename) && isDef(this.filesIds[aID])) aFileName = this.filesIds[aID];
-	if (isUnDef(aFilename)) aFilename = getOpenAFJar()
-	if (aFilename.match(/\.(jar|db|zip)$/)) {
-		var zipContainer = new ZIP();
-		zip = new ZIP(zipContainer.streamGetFile(aFilename, ".odoc.db"));
-	} else {
-		zip = new ZIP();
-		zip.loadFile(aFilename + "/.odoc.db");
-	}
-
-	if (this.offline) this.keyLoadFromWeb = false;
-	
-	var list = zip.list();
-	for(var i in list) {
-		if (i == this.keysfile) { // && (!(this.keyLoadFromWeb))) {
-			var b = zip.getFile(i);
-			if (b.length > 1) this.aodocskeys = merge(af.fromJson(af.fromBytes2String(b)), this.aodocskeys);
-			continue;
-		} else {
-			this.filesIds[i] = aFilename;
-		}
-
-		if (i == aID) {
-			var id = list[i].name;
-			var odoc = af.fromJson(af.fromBytes2String(zip.getFile(id)));
-			this.aodocs[id] = new ODoc(odoc);
-		}
-	}
-
-	zip.close();
+  plugin("ZIP");
+  if (isUnDef(aFilename)) aFilename = this.filesIds[aID];
+  if (isUnDef(aFilename)) aFilename = this.aFilename;
+  var zip = new ZIP(), zipContainer;
+  try {
+    if (/\.(jar|db|zip)$/i.test(aFilename)) {
+      zip.loadFile(aFilename);
+      if (isDef(zip.list()[".odoc.db"])) {
+        zipContainer = zip;
+        zip = new ZIP(zipContainer.getFile(".odoc.db"));
+      }
+    } else {
+      zip.loadFile(aFilename + "/.odoc.db");
+    }
+    if (this.offline) this.keyLoadFromWeb = false;
+    var keys = af.fromJson(af.fromBytes2String(zip.getFile(this.keysfile)));
+    for(var id in keys) {
+      if (this.filesIds[id] != aFilename) delete this.aodocs[id];
+      this.filesIds[id] = aFilename;
+      this.aodocskeys[id] = keys[id];
+    }
+    if (isDef(aID) && isDef(keys[aID])) {
+      this.aodocs[aID] = new ODoc(af.fromJson(af.fromBytes2String(zip.getFile(aID))));
+    }
+  } finally {
+    try { zip.close(); } finally { if (isDef(zipContainer)) zipContainer.close(); }
+  }
 };
 
+/**
+ * <odoc>
+ * <key>ODocs.search(aTerm, anArrayOfIds) : Array</key>
+ * Returns id/key candidates across the selected subjects. Prefers case-sensitive exact keys, then
+ * case-insensitive exact keys, then substrings. Ambiguous keys retain each matching subject.
+ * </odoc>
+ */
 ODocs.prototype.search = function(aTerm, anArrayOfIds) {
-	var ids = (isUnDef(anArrayOfIds)) ? Object.keys(this.aodocskeys) : anArrayOfIds;
-	var resArray = [];
-
-	for(var id in this.aodocskeys) {
-		if (ids.indexOf(id) >= 0) {
-			var temp = uniqArray($from(this.aodocskeys[id]).useCase(false).equals(aTerm).select(function(r) { return { "id": id, "key": r};}));
-			if (temp.length > 0) {
-				var tempCase = uniqArray($from(this.aodocskeys[id]).useCase(true).equals(aTerm).select(function(r) { return {"id": id, "key": r};}));
-				if (tempCase.length == 1) {
-					return tempCase;
-				} else {
-					return temp;
-				}
-				//return [{"id": id, "key": aTerm}];
-			} else {
-				var res = $from(this.aodocskeys[id]).useCase(false).contains(aTerm).select(function(r) { return {"id": id, "key": r};});
-				resArray = resArray.concat(res);
-			}
-		}
-	}
-
-	return resArray;
+  var ids = isUnDef(anArrayOfIds) ? Object.keys(this.aodocskeys) : anArrayOfIds;
+  var exact = [], folded = [], partial = [], term = String(aTerm), lower = term.toLowerCase();
+  ids.forEach(id => {
+    (this.aodocskeys[id] || []).forEach(key => {
+      var item = { id: id, key: key };
+      if (key == term) exact.push(item);
+      if (key.toLowerCase() == lower) folded.push(item);
+      if (key.toLowerCase().indexOf(lower) >= 0) partial.push(item);
+    });
+  });
+  var result = exact.length ? exact : (folded.length ? folded : partial);
+  return uniqArray(result).sort(function(a, b) {
+    var ak = a.key.toLowerCase(), bk = b.key.toLowerCase();
+    return ak < bk ? -1 : ak > bk ? 1 : a.key < b.key ? -1 : a.key > b.key ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
 };
 
 ODocs.prototype.backgroundLoadWeb = function(aID) {
-	var parent = this;
-	plugin("Threads");
-	var t = new Threads();
-	t.addThread(function(uuid) { parent.loadWeb(aID); t.stop(true); });
-	t.startNoWait();	
+  if (this.offline || this.arrayurls.length == 0) return;
+  var parent = this;
+  plugin("Threads");
+  var t = new Threads();
+  t.addThread(function(uuid) { try { parent.loadWeb(aID); } finally { t.stop(true); } });
+  t.startNoWait();
 }
 
+/**
+ * <odoc>
+ * <key>ODocs.get(aID, aKey) : Map</key>
+ * Returns the raw entry for a subject and key, loading missing subjects lazily and retaining cached entries.
+ * Returns undefined if the entry cannot be found. Offline mode prevents web fallback.
+ * </odoc>
+ */
 ODocs.prototype.get = function(aID, aKey) {
-    // Clean stuff
-    this.aodocs = {};
-
-    if (isUnDef(this.aodocskeys) ||
-        this.aodocskeys == {} || 
-        isUnDef(this.aodocs[aID])) {
-    	try {
-			this.load(aID, this.filesIds[aID]);
-			if(!this.offline) {
-				this.backgroundLoadWeb(aID);
-			}
-		} catch(e) {
-			// Try another way
-			this.loadWeb(aID);
-		}
+  if (isUnDef(this.aodocs[aID])) {
+    try {
+      this.load(aID, this.filesIds[aID]);
+      if (!this.offline && isDef(this.aodocs[aID])) this.backgroundLoadWeb(aID);
+    } catch(e) {
+      // A missing or invalid local archive can fall back below when online.
     }
-
-    return this.aodocs[aID].get(aKey);
+    if (isUnDef(this.aodocs[aID]) && !this.offline) this.loadWeb(aID);
+  }
+  return isDef(this.aodocs[aID]) ? this.aodocs[aID].get(aKey) : undefined;
 }
 
+/**
+ * <odoc>
+ * <key>ODocs.getODoc(aID) : ODoc</key>
+ * Returns a currently loaded subject without loading it. Returns undefined if the subject is not cached.
+ * </odoc>
+ */
 ODocs.prototype.getODoc = function(aID) {
 	return this.aodocs[aID];
 }
@@ -339,25 +351,45 @@ var ODocsGen = function(aMapOfFiles) {
 
 /**
  * <odoc>
- * <key>ODocsGen.genODoc(aFileName) : Map</key>
+ * <key>ODocsGen.genODoc(aFileName) : ODoc</key>
  * Generates a ODoc map where each key will be the identified odoc key and the value a map where
  * k will represent the original key and t the associated text.
  * </odoc>
  */
 ODocsGen.prototype.genODoc = function(aFilename) {
-	var s = io.readFileString(aFilename);
-
-	var xmls = s.replace(/\r/mg, "").replace(/\\\n/mg, "%%br%%").replace(/([\n|%%br%%])[ |\t]+\*+[ |\t]/mg, "$1").replace(/\n+/mg, " ").match(/\<odoc\>.+?\<\/odoc\>/img);
-	var odoc = new ODoc();
-
-	for(var i in xmls) {
-		var xml = new XMLList(xmls[i]);
-		var key = (xml.key + "").replace(/\%\%br\%\%/g, "");
-
-		odoc.add(key.replace(/[\(|\{|\[|\:].+/, ""), xml.key + "", (xml.text() + "").replace(/\%\%br\%\%/g, "\n"));
-	}
-
-	return odoc;
+  var source = io.readFileString(aFilename).replace(/\r/g, "");
+  var blocks = source.match(/<odoc(?:\s+[^>]*?)?>[\s\S]*?<\/odoc>/gi) || [];
+  var odoc = new ODoc();
+  blocks.forEach(function(block, index) {
+    var markdown = /^<odoc\s+format\s*=\s*["'](?:markdown|md)["']\s*>/i.test(block);
+    var oldWhitespace = XML.ignoreWhitespace;
+    try {
+      if (markdown) {
+        block = block.replace(/^[ \t]*\*(?: |(?=$))/mg, "");
+        XML.ignoreWhitespace = false;
+      } else {
+        block = block.replace(/\\\n/mg, "%%br%%").replace(/([\n|%%br%%])[ |\t]+\*+[ |\t]/mg, "$1").replace(/\n+/mg, " ");
+      }
+      var xml = new XMLList(block);
+      var key = String(xml.key).replace(/%%br%%/g, "").trim();
+      var text = String(xml.text());
+      if (markdown) {
+        // Rhino's text() omits CDATA nodes; children() includes them as text.
+        text = "";
+        var children = xml.children();
+        for (var i = 0; i < children.length(); i++) {
+          if (children[i].nodeKind() == "text") text += String(children[i]);
+        }
+        text = text.replace(/^(?:[ \t]*\n)+/, "").replace(/(?:\n[ \t]*)+$/, "");
+      } else text = text.replace(/%%br%%/g, "\n");
+      odoc.add(key.replace(/[({\[:].*$/, "").trim(), key, text, markdown ? "markdown" : undefined);
+    } catch(e) {
+      throw new Error("Invalid odoc in " + aFilename + " (entry " + (index + 1) + "): " + e);
+    } finally {
+      XML.ignoreWhitespace = oldWhitespace;
+    }
+  });
+  return odoc;
 }
 
 /**
@@ -389,7 +421,7 @@ ODocsGen.prototype.getODoc = function() {
 
 /**
  * <odoc>
- * <key>ODocsGen.getODocKeys() : Array</key>
+ * <key>ODocsGen.getODocKeys() : Map</key>
  * Gets the current odocs keys per id.
  * </odoc>
  */

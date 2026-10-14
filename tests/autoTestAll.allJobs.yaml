@@ -3,6 +3,9 @@
 include:
 - oJobTest.yaml
 - autoTestAll.Generic.yaml
+- autoTestAll.Path.yaml
+- autoTestAll.Jq.yaml
+- autoTestAll.Joni.yaml
 - autoTestAll.CSV.yaml
 - autoTestAll.IO.yaml
 - autoTestAll.DB.yaml   
@@ -14,7 +17,10 @@ include:
 - autoTestAll.Template.yaml
 - autoTestAll.oDoc.yaml
 - autoTestAll.AI.yaml
+- autoTestAll.AIDecisions.yaml
+- autoTestAll.Python.yaml
 - autoTestAll.Server.yaml
+- autoTestAll.Schema.yaml
 - autoTestAll.Obj.yaml   
 - autoTestAll.JMX.yaml
 - autoTestAll.ZIP.yaml
@@ -23,7 +29,9 @@ include:
 - autoTestAll.CDS.yaml
 - autoTestAll.Repack.yaml
 - autoTestAll.Sec.yaml
+- autoTestAll.Languages.yaml
 - autoTestAll.oJob.yaml
+- autoTestAll.oJobCode.yaml
 - autoTestAll.MCP.yaml
 - autoTestAll.TOON.yaml
 # - autoTestAll.SNMP.yaml   // Test servers don't work

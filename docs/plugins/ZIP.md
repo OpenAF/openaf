@@ -18,7 +18,7 @@ var zip = new ZIP(zipBytes);
 | Category | Method | Parameters | Return Type | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **In-Memory** | `load(bytes)` / `loadFile(path)` | `byte[] \| String` | `ZIP` | Loads archive contents into memory. |
-| | `getFile(name)` | `String` | `byte[]` | Extracts file entry contents by name. |
+| | `getFile(name)` | `String` | `byte[]` | Extracts file entry contents by name; returns `null` if absent. |
 | | `putFile(name, data)` | `String, byte[] \| String` | `void` | Adds/overwrites entry in memory. |
 | | `remove(name)` | `String` | `ZIP` | Removes entry from in-memory ZIP archive. |
 | | `list(filePath)` | `[String]` | `Map` | Returns `{ "<entry>": { name, size, compressedSize, comment, crc, time }, ... }`. |
@@ -27,8 +27,8 @@ var zip = new ZIP(zipBytes);
 | | `close()` | *none* | `void` | Clears in-memory buffers and closes file handles. |
 | **Streaming NIO** | `streamCreate(path)` | `String` | `void` | Creates an empty ZIP file on disk. |
 | | `streamCreateFolder(path, folder)` | `String, String` | `boolean` | Creates directory entry in disk ZIP. |
-| | `streamGetFile(path, name)` | `String, String` | `byte[]` | Extracts single entry without loading full archive. |
-| | `streamGetFileStream(path, name)` | `String, String` | `InputStream` | Streams entry directly from disk archive. |
+| | `streamGetFile(path, name)` | `String, String` | `byte[]` | Extracts single entry using a local archive handle; returns `null` if absent. |
+| | `streamGetFileStream(path, name)` | `String, String` | `InputStream` | Streams entry using an independent archive handle; returns `null` if absent. |
 | | `streamPutFile(path, name, bytes, useTmp)` | `String, String, byte[], bool` | `void` | Writes entry into disk archive directly. |
 | | `streamPutFileStream(path, name, is, useTmp)` | `String, String, InputStream\|Array, bool` | `void` | Streams file or batch array `[{ n, s }]` into disk archive. |
 | | `streamRemoveFile(path, name, useTmp)` | `String, String, bool` | `void` | Deletes entry directly from disk archive. |
@@ -37,6 +37,8 @@ var zip = new ZIP(zipBytes);
 | **Compress Adapters** | `getCompressInputStream(is)` / `getCompressOutputStream(os, type)` / `getArchiveInputStream(is)` | *varies* | *varies* | Apache Commons Compress stream factories. |
 
 ---
+
+Each stream returned by `streamGetFileStream` owns its archive handle. Close it in a `finally` block after use. Opening another stream, reading bytes, or closing a different stream does not invalidate it. Calling `ZIP.close()` closes all outstanding streams as well as the loaded archive.
 
 ## Practical Code Example
 

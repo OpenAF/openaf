@@ -22,7 +22,57 @@ jobs:
           ow.test.assert(id1, "index", "Online or offline oDoc missing index.");
           ow.test.assert(id2, "index", "Offline oDoc missing index.");
 
+   - name: oDoc::MemoryAndSearch
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testMemoryAndSearch;
+
+   - name: oDoc::StoragePaths
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testStoragePaths;
+
+   - name: oDoc::Offline
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testOffline;
+
+   - name: oDoc::Generator
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testGenerator;
+
+   - name: oDoc::WebAppend
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testWebAppend;
+
+   - name: oDoc::WebFallback
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testWebFallback;
+
+   - name: oDoc::SearchHelp
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testSearchHelp;
+
+   - name: oDoc::ResourceCleanup
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testResourceCleanup;
+
+   - name: oDoc::ConsoleDisplay
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testConsoleDisplay;
+
+   - name: oDoc::BrowserHandlers
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testBrowserHandlers;
+
 todo:
    # oDoc Tests
    # ----------
    - oDoc::Test access to oDoc
+   - oDoc::MemoryAndSearch
+   - oDoc::StoragePaths
+   - oDoc::Offline
+   - oDoc::Generator
+   - oDoc::WebAppend
+   - oDoc::WebFallback
+   - oDoc::SearchHelp
+   - oDoc::ResourceCleanup
+   - oDoc::ConsoleDisplay
+   - oDoc::BrowserHandlers

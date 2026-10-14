@@ -25,6 +25,21 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testRESTClosesOwnedClientAfterFailure;
 
+   - name: Obj::Edge cases
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjectEdgeCases;
+
+   - name: Obj::Array to ordered object
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testArray2OrdObj;
+
+   - name: Obj::Ordered object to array
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testOrdObj2Array;
+
    - name: Obj::Get Path
      from: Obj::Init
      to  : oJob Test
@@ -144,6 +159,9 @@ todo:
 - Obj::Thread-safe map
 
 - Obj::Object pool capacity
+- Obj::Edge cases
+- Obj::Array to ordered object
+- Obj::Ordered object to array
 - Obj::Object pool batch growth
 - Obj::Object pool stop without close
 - Obj::Object pool added and failed batch

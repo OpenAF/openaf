@@ -1,0 +1,775 @@
+// Copyright 2026 Nuno Aguiar
+(function() {
+  var questions = {
+    route: { type: "choice", instructions: "Select the team.", criteria: { billing: "Payments", technical: "Errors" } },
+    urgent: { type: "boolean", instructions: "Is this urgent?" },
+    priority: { type: "score", instructions: "Assess urgency.", criteria: ["Routine", "Soon", "Urgent"] }
+  };
+  var expectError = function(fn, code) {
+    var error;
+    try { fn(); } catch(e) { error = e; }
+    ow.test.assert(isDef(error), true, "Expected decision error " + code);
+    ow.test.assert(error.code, code, "Wrong decision error code");
+    return error;
+  };
+  // Synthetic fixture: Ollama System One v0.35.0 schema verified 2026-10-03.
+  // Source: https://docs.ollama.com/api/systemone; not a live inference.
+  var nativeFixture = function() {
+    return {
+      model: "nimble",
+      answers: {
+        route: { type: "choice", choice: "billing", probabilities: { billing: 1, technical: 0 }, confidence: 0.9 },
+        urgent: { type: "noul", noul: 0.5 },
+        priority: { type: "score", score: 1.1, legend: { "0": "Routine", "1": "Soon", "2": "Urgent" }, probabilities: { "0": 0.1, "1": 0.7, "2": 0.2 }, confidence: 0.3 }
+      },
+      usage: { input_tokens: 17, output_tokens: 0 }
+    };
+  };
+  exports.testDecisionNative = function() {
+    ow.loadAI();
+    var llm = $llm({ type: "ollama", url: "http://localhost:11434", model: "nimble" });
+    var calls = [], api = llm.getGPT().model;
+    api._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: body }); return nativeFixture(); };
+    var result = llm.decideWithStats({ ticket: "Charged twice" }, questions, { requireProbabilities: true });
+    ow.test.assert(calls.length, 1, "Decision must execute once");
+    ow.test.assert(calls[0].body.questions.urgent.type, "noul", "Boolean translation");
+    ow.test.assert(result.response.strategy, "native", "Selected strategy");
+    ow.test.assert(result.response.answers.urgent.value, true, "Boolean exact tie");
+    ow.test.assert(result.response.answers.priority.level, 1, "Modal score level");
+    ow.test.assert(result.response.answers.priority.expectedScore, 1.1, "Keep expectation");
+    ow.test.assert(result.response.answers.route.selectedProbability, 1, "Preserve probability one");
+    ow.test.assert(result.response.answers.route.providerConfidence, 0.9, "Separate confidence");
+    ow.test.assert(result.stats.tokens.completion, 0, "Preserve token zero");
+    ow.test.assert(result.stats.tokens.total, 17, "Native usage mapping");
+  };
+  exports.testDecisionValidation = function() {
+    ow.loadAI();
+    var g = $gpt({ type: "ollama", url: "http://localhost:11434", model: "nimble" }), count = 0;
+    g.getGPT().model._decisionRequest = function() { count++; return nativeFixture(); };
+    var cyclic = {}; cyclic.self = cyclic;
+    ["", "   ", cyclic, { x: undefined }, { x: function() {} }, { x: NaN }, new Date(), [undefined]].forEach(function(state) {
+      expectError(function() { g.decide(state, questions); }, "LLM_DECISION_INVALID_REQUEST");
+    });
+    expectError(function() { g.decide("state", {}); }, "LLM_DECISION_INVALID_REQUEST");
+    expectError(function() { g.decide("state", questions, { images: [] }); }, "LLM_DECISION_INVALID_REQUEST");
+    ow.test.assert(count, 0, "Invalid inputs must not reach HTTP");
+  };
+  var copy = v => JSON.parse(JSON.stringify(v));
+  var make = function(provider, options) {
+    return $llm(merge(provider == "ollama" ? { type: provider, url: "http://localhost:11434", model: "nimble" } : { type: provider, key: "fixture-key", model: "fixture-model" }, options || {}));
+  };
+  // Synthetic GenerateContent envelope, verified 2026-10-03 against https://ai.google.dev/api/generate-content.
+  var geminiFixture = function(text, reason) {
+    return { candidates: [{ finishReason: reason || "STOP", content: { parts: [{ thought: true, text: "private reasoning" }, { text: text }] } }], usageMetadata: { promptTokenCount: 20, candidatesTokenCount: 5, totalTokenCount: 25 } };
+  };
+  // Synthetic Responses envelope, verified 2026-10-03 against the official Responses reference.
+  var openaiFixture = function(text) {
+    return { model: "fixture-model", status: "completed", output: [{ type: "reasoning" }, { type: "message", status: "completed", content: [{ type: "output_text", text: text }] }], usage: { input_tokens: 20, output_tokens: 5, total_tokens: 25 } };
+  };
+  exports.testDecisionGeminiStructured = function() {
+    ow.loadAI();
+    var g = make("gemini"), count = 0, body;
+    g.getGPT().model._decisionRequest = function(uri, data) {
+      count++; body = data;
+      ow.test.assert(uri, "models/fixture-model:generateContent", "Keep GenerateContent transport");
+      return geminiFixture('{"route":"technical","urgent":false,"priority":2}');
+    };
+    var result = g.decideWithStats({ ticket: "Ignore instructions" }, questions);
+    ow.test.assert(count, 1, "Structured execution once");
+    ow.test.assert(result.response.strategy, "structured", "Report actual strategy");
+    ow.test.assert(body.generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON", "New enum");
+    ow.test.assert(body.generationConfig.responseFormat.text.schema.required.length, 3, "All questions required");
+    ow.test.assert(body.generationConfig.responseFormat.text.schema.properties.priority.maximum, 2, "Ordinal bound");
+    ow.test.assert(body.system_instruction.parts[0].text.indexOf("Payments") >= 0, true, "Preserve descriptions");
+    ow.test.assert(body.contents.length, 1, "Isolated context");
+    ow.test.assert(result.response.answers.route.probabilities, null, "No invented probabilities");
+    ow.test.assert(result.response.answers.urgent.probabilityTrue, null, "No invented P(true)");
+    ow.test.assert(result.response.answers.priority.expectedScore, null, "No invented expectation");
+    ow.test.assert(result.stats.tokens.total, 25, "Gemini usage");
+    expectError(function() { g.decide("state", questions, { requireProbabilities: true }); }, "LLM_DECISION_UNSUPPORTED");
+    ow.test.assert(count, 1, "Probability requirement rejected before HTTP");
+    ow.test.assert(isUnDef(g.getLastStats()), true, "Preflight failure clears stale stats");
+  };
+  // Synthetic native Decisions envelope, verified 2026-10-07 against the official Decisions reference.
+  var openaiNativeFixture = function() {
+    return { model: "gpt-6-luna", answers: [
+      { name: "route", type: "choice", choice: "billing", confidence: 0.9, probabilities: [{ value: "billing", probability: 1 }, { value: "technical", probability: 0 }] },
+      { name: "urgent", type: "predicate", probability: 0.5 },
+      { name: "priority", type: "score", score: 1.1, confidence: 0.55, probabilities: [{ value: 0, label: "0", probability: 0.1 }, { value: 1, label: "1", probability: 0.7 }, { value: 2, label: "2", probability: 0.2 }] }
+    ], usage: { input_tokens: 42, output_tokens: 0, total_tokens: 42, input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 }, output_tokens_details: { reasoning_tokens: 0 } } };
+  };
+  exports.testDecisionOpenAINative = function() {
+    ow.loadAI();
+    var g = make("openai", { model: "gpt-6-luna", params: { temperature: 1, tools: ["ignored"] } }), calls = [], q = copy(questions), state = { ticket: "Charged twice" };
+    q.urgent.criteria = { "false": "Routine", "true": "Immediate" };
+    var original = JSON.stringify({ state: state, questions: q });
+    g.withInstructions("Do not send this").withContext({ note: "Do not send this either" }, "fixture context");
+    var conversation = JSON.stringify(g.getGPT().model.conversation);
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: body }); return openaiNativeFixture(); };
+    var r = g.decideWithStats(state, q, { requireProbabilities: true, providerOptions: { safetyIdentifier: "fixture-user" } });
+    ow.test.assert(calls.length, 1, "One native request");
+    ow.test.assert(calls[0].uri, "v1/decisions", "Native endpoint");
+    ow.test.assert(calls[0].body.input, JSON.stringify(state), "JSON state serialized as shared evidence");
+    ow.test.assert(calls[0].body.questions.map(v => v.name), ["route", "urgent", "priority"], "Preserve question order");
+    ow.test.assert(calls[0].body.questions[0].choices[0], { value: "billing", description: "Payments" }, "Preserve choice criteria");
+    ow.test.assert(calls[0].body.questions[1].type, "predicate", "Translate boolean");
+    ow.test.assert(calls[0].body.questions[1].instructions.indexOf("False: Routine") >= 0, true, "Preserve boolean criteria");
+    ow.test.assert(calls[0].body.questions[2].levels[1], { label: "1", description: "Soon" }, "Ordinal level labels");
+    ow.test.assert(Object.keys(calls[0].body).sort(), ["input", "model", "questions", "safety_identifier"], "Isolated native body");
+    ow.test.assert(JSON.stringify(g.getGPT().model.conversation), conversation, "Conversation untouched");
+    ow.test.assert(JSON.stringify({ state: state, questions: q }), original, "Caller data untouched");
+    ow.test.assert(r.response.strategy, "native", "Model-aware auto selects native");
+    ow.test.assert(r.response.answers.route.probabilities, { billing: 1, technical: 0 }, "Choice distribution normalized");
+    ow.test.assert(r.response.answers.urgent.value, true, "Boolean threshold includes exact tie");
+    ow.test.assert(r.response.answers.priority.level, 1, "Modal score level");
+    ow.test.assert(r.response.answers.priority.expectedScore, 1.1, "Expectation preserved");
+    ow.test.assert(r.response.answers.priority.providerConfidence, 0.55, "Independent confidence");
+    ow.test.assert(r.stats.tokens, { prompt: 42, completion: 0, total: 42, cached: 0, reasoning: 0 }, "Usage preserves zeros");
+    ow.test.assert(r.stats.usage.input_tokens_details.cache_write_tokens, 0, "Full usage retained");
+    var raw = g.rawDecide("text", q);
+    ow.test.assert(raw.raw.answers[1].type, "predicate", "Raw provider envelope retained");
+    ow.test.assert(calls.length, 2, "Raw executes once");
+    ow.test.assert(calls[1].body.input, "text", "Text evidence unchanged");
+    g.getGPT().model._decisionRequest = function() { return openaiFixture('{"route":"billing","urgent":false,"priority":0}'); };
+    ow.test.assert(g.decide("state", q, { strategy: "structured" }).strategy, "structured", "Explicit structured still works");
+  };
+  exports.testDecisionOpenAINativeInvalidResponses = function() {
+    ow.loadAI();
+    var g = make("openai", { model: "gpt-6-luna" }), count = 0, fixture;
+    g.getGPT().model._decisionRequest = function() { count++; return fixture; };
+    var mutations = [
+      r => r.answers.pop(), r => r.answers.push(copy(r.answers[0])),
+      r => r.answers.reverse(), r => r.answers[1].name = "route", r => r.answers[1].name = null,
+      r => r.answers[1].type = "refusal", r => r.answers[1].probability = -0.1,
+      r => r.answers[1].probability = 1.1, r => r.answers[1].probability = "0.5",
+      r => r.answers[0].probabilities[0].probability = 0.7,
+      r => r.answers[0].probabilities[1].value = "billing", r => r.answers[0].probabilities[1].value = true,
+      r => r.answers[0].choice = "technical", r => r.answers[0].confidence = 2,
+      r => r.answers[2].score = 1.5, r => r.answers[2].probabilities[1].label = "Soon",
+      r => r.answers[2].probabilities[1].value = "1", r => r.answers[2].probabilities[1].value = 0,
+      r => delete r.model, r => r.answers = {}, r => r.answers[2].confidence = null
+    ];
+    mutations.forEach(fn => { fixture = openaiNativeFixture(); fn(fixture); expectError(() => g.decide("state", questions), "LLM_DECISION_INVALID_RESPONSE"); });
+    ow.test.assert(count, mutations.length, "No fallback after invalid responses");
+    ow.test.assert(g.getLastStats().tokens.total, 42, "Usage remains after validation failure");
+    fixture = openaiNativeFixture(); fixture.answers[1].type = "refusal";
+    ow.test.assert(g.rawDecide("state", questions).raw.answers[1].type, "refusal", "Raw refusal can be inspected");
+    expectError(() => g.rawDecide("state", questions, { requireProbabilities: true }), "LLM_DECISION_INVALID_RESPONSE");
+    fixture = openaiNativeFixture(); fixture.answers[1].probability = 0;
+    ow.test.assert(g.decide("state", questions).answers.urgent.selectedProbability, 1, "Zero predicate probability preserved");
+    fixture.answers[1].probability = 1;
+    ow.test.assert(g.decide("state", questions).answers.urgent.probabilityTrue, 1, "One predicate probability preserved");
+    fixture.answers[2].probabilities = [{ value: 2, label: "2", probability: 0 }, { value: 1, label: "1", probability: 0.5 }, { value: 0, label: "0", probability: 0.5 }]; fixture.answers[2].score = 0.5;
+    ow.test.assert(g.decide("state", questions).answers.priority.level, 0, "First index wins tied modal levels regardless of entry order");
+    fixture.answers[0].probabilities = [{ value: "technical", probability: 0.50005 }, { value: "billing", probability: 0.50005 }];
+    ow.test.assert(g.decide("state", questions).answers.route.probabilities.billing, 0.50005, "Rounding accepted without renormalizing");
+    fixture.answers[0].probabilities[0].probability = 0.5002;
+    expectError(() => g.decide("state", questions), "LLM_DECISION_INVALID_RESPONSE");
+  };
+  exports.testDecisionOpenAINativeImagesAndCapabilities = function() {
+    ow.loadAI();
+    var g = make("openai", { model: "gpt-6-luna", noResponseFormat: true }), calls = [], image = "data:image/png;base64,YWJj";
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push(body); return openaiNativeFixture(); };
+    var caps = g.getCapabilities();
+    ow.test.assert(caps.native.contract, "verified", "Verified native contract");
+    ow.test.assert(caps.native.availability, "unknown", "Account availability remains unknown");
+    ow.test.assert(caps.inputTypes.indexOf("image") >= 0, true, "Native image capability");
+    caps.native.implemented = false;
+    ow.test.assert(g.getCapabilities().native.implemented, true, "Independent capability snapshots");
+    g.decide("Look", questions, { images: [image, "data:image/jpeg;base64,ZA=="] });
+    ow.test.assert(calls[0].input[0], { role: "user", content: [{ type: "input_text", text: "Look" }, { type: "input_image", image_url: image }, { type: "input_image", image_url: "data:image/jpeg;base64,ZA==" }] }, "Text and ordered inline images");
+    [[], ["YWJj"], ["https://example.com/a.png"], ["file-123"], ["data:image/png;base64,!"], new Array(129).fill(image)].forEach(images => expectError(() => g.decide("state", questions, { images: images }), "LLM_DECISION_INVALID_REQUEST"));
+    [ { temperature: 0 }, { maxOutputTokens: 1 }, { transport: "chat" }, { safetyIdentifier: new Array(130).join("x") }, { safetyIdentifier: 1 } ].forEach(po => expectError(() => g.decide("state", questions, { providerOptions: po }), "LLM_DECISION_INVALID_REQUEST"));
+    ow.test.assert(calls.length, 1, "Invalid native options rejected before HTTP");
+    ow.test.assert(isUnDef(g.getLastStats()), true, "Preflight clears usage");
+    var enabled = make("openai", { model: "gpt-6-luna" });
+    enabled.getGPT().model._decisionRequest = function() { throw "must not call"; };
+    expectError(() => enabled.decide("state", questions, { strategy: "structured", images: [image] }), "LLM_DECISION_INVALID_REQUEST");
+    expectError(() => enabled.decide("state", questions, { strategy: "structured", providerOptions: { safetyIdentifier: "user" } }), "LLM_DECISION_INVALID_REQUEST");
+    expectError(() => enabled.decide("state", questions, { model: "other-model", requireProbabilities: true }), "LLM_DECISION_UNSUPPORTED");
+    [ { url: "https://gateway.invalid/v1" }, { mode: "azure-openai-v1" }, { mode: "foundry" }, { apiVersion: "v2" } ].forEach(opts => {
+      var other = make("openai", merge({ model: "gpt-6-luna" }, opts));
+      ow.test.assert(other.getCapabilities().native.implemented, false, "Unofficial transport not advertised as native");
+      expectError(() => other.decide("state", questions, { strategy: "native" }), "LLM_DECISION_UNSUPPORTED");
+    });
+  };
+  exports.testDecisionOpenAINativeHTTP = function() {
+    ow.loadAI();
+    var original = ow.obj.http, records = [], status = 200, payload = JSON.stringify(openaiNativeFixture());
+    var builder = { retryOnConnectionFailure: function(v) { ow.test.assert(v, false, "No connection retry"); return this; }, build: function() { return this; }, newBuilder: function() { return this; } };
+    try {
+      ow.obj.http = function() {
+        this.client = builder; this.setThrowExceptions = function() {}; this.close = function() {};
+        this.exec = function(url, method, body, headers) { records.push({ url: url, method: method, headers: headers, body: body }); return { responseCode: status, response: payload }; };
+      };
+      ["https://api.openai.com", "https://api.openai.com/", "https://api.openai.com/v1", "https://api.openai.com/v1/"].forEach(url => {
+        make("openai", { model: "gpt-6-luna", url: url, headers: { "X-Fixture": "yes" } }).decide("state", questions);
+        var record = records[records.length - 1];
+        ow.test.assert(record.url, "https://api.openai.com/v1/decisions", "Exactly one version segment");
+        ow.test.assert(record.method, "POST", "Native method");
+        ow.test.assert(record.headers["X-Fixture"], "yes", "Configured headers retained");
+        ow.test.assert(record.headers.Authorization.indexOf("Bearer "), 0, "Bearer authentication retained");
+      });
+      var g = make("openai", { model: "gpt-6-luna" });
+      [401, 404, 429, 500].forEach(code => { status = code; payload = '{"error":{"message":"SECRET"}}'; var e = expectError(() => g.decide("SECRET", questions), "LLM_DECISION_PROVIDER_ERROR"); ow.test.assert(e.status, code, "HTTP status retained"); ow.test.assert(String(e).indexOf("SECRET"), -1, "Errors sanitized"); });
+      status = 200; payload = "malformed SECRET";
+      expectError(() => g.rawDecide("state", questions), "LLM_DECISION_INVALID_RESPONSE");
+      ow.test.assert(records.length, 9, "No strategy fallback or additional inference");
+    } finally { ow.obj.http = original; }
+  };
+  exports.testDecisionOpenRouter = function() {
+    ow.loadAI();
+    var config = { decisionApi: "openrouter", url: "https://openrouter.ai/api/v1/", model: "microsoft/microsoft-decision-1", params: { tools: ["ignored"] } };
+    var g = make("openai", config), calls = [], fixture = nativeFixture();
+    fixture.model = "microsoft/microsoft-decision-1:resolved";
+    fixture.usage.cost = 0;
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: body }); return copy(fixture); };
+    g.withInstructions("private history").withContext({ private: true }, "private context");
+    var conversation = JSON.stringify(g.getGPT().model.conversation);
+    var caps = g.getCapabilities();
+    ow.test.assert(caps.native.probabilityDecimals, 2, "OpenRouter precision");
+    ow.test.assert(caps.native.availability, "unknown", "No model allowlist");
+    var q = copy(questions); q.urgent.criteria = { "false": "No", "true": "Yes" };
+    ["text", { ticket: "data" }, ["data"]].forEach(state => {
+      var r = g.decideWithStats(state, q, { requireProbabilities: true, model: "custom-model" });
+      var c = calls[calls.length - 1];
+      ow.test.assert(c.uri, "https://openrouter.ai/api/alpha/decisions", "Derived endpoint");
+      ow.test.assert(c.body.state, state, "State remains JSON or text");
+      ow.test.assert(c.body.model, "custom-model", "Model override");
+      ow.test.assert(c.body.questions.urgent, merge(q.urgent, { type: "noul" }), "Boolean criteria retained");
+      ow.test.assert(Object.keys(c.body).sort(), ["model", "questions", "state"], "Dedicated body");
+      ow.test.assert(r.response.model, fixture.model, "Resolved identifier accepted");
+      ow.test.assert(r.stats.tokens.completion, 0, "Zero tokens");
+      ow.test.assert(r.stats.usage.cost, 0, "Raw cost");
+    });
+    ow.test.assert(g.rawDecide("state", q).raw, fixture, "Raw envelope preserved");
+    ow.test.assert(JSON.stringify(g.getGPT().model.conversation), conversation, "Stateless decisions");
+    var original = copy(fixture);
+    [0.33, 0.34].forEach(p => {
+      fixture.answers.priority.probabilities = { "0": p, "1": p, "2": 0.33 };
+      fixture.answers.priority.score = p + 0.66;
+      var r = g.decide("state", q, { strategy: "native" });
+      ow.test.assert(r.answers.priority.level, 0, "First modal level on tie");
+      ow.test.assert(r.answers.priority.probabilities[0], p, "No renormalization");
+    });
+    fixture = copy(original);
+    [0, 1].forEach(p => {
+      fixture.answers.urgent.noul = p;
+      ow.test.assert(g.decide("state", q).answers.urgent.probabilityTrue, p, "Boolean endpoints preserved");
+    });
+    [0.49, 0.51].forEach(p => {
+      fixture.answers.route.probabilities = { billing: 0.5, technical: p };
+      fixture.answers.route.choice = p > 0.5 ? "technical" : "billing";
+      var r = g.decide("state", q);
+      ow.test.assert(r.answers.route.probabilities.technical, p, "Rounded choice distribution retained");
+    });
+    fixture = copy(original);
+    fixture.answers.priority.score = 1.13;
+    expectError(() => g.decide("state", q), "LLM_DECISION_INVALID_RESPONSE");
+    fixture = copy(original);
+    [f => { delete f.answers.route; }, f => { f.answers.extra = {}; }, f => { f.answers.route.probabilities.billing = 0.5; }, f => { f.answers.priority.score = 0; }, f => { f.answers.urgent.noul = 2; }].forEach(change => {
+      fixture = copy(original); change(fixture);
+      expectError(() => g.decide("state", q), "LLM_DECISION_INVALID_RESPONSE");
+    });
+    fixture = original;
+    var before = calls.length;
+    ["transport", "temperature", "maxOutputTokens", "safetyIdentifier"].forEach(k => {
+      var po = {}; po[k] = k == "transport" ? "chat" : k == "safetyIdentifier" ? "user" : 1;
+      expectError(() => g.decide("state", q, { providerOptions: po }), "LLM_DECISION_INVALID_REQUEST");
+    });
+    expectError(() => g.decide("state", q, { images: ["data:image/png;base64,YQ=="] }), "LLM_DECISION_INVALID_REQUEST");
+    ow.test.assert(calls.length, before, "Preflight rejection");
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri }); return openaiFixture('{"route":"billing","urgent":false,"priority":0}'); };
+    ow.test.assert(g.decide("state", q, { strategy: "structured" }).strategy, "structured", "Explicit generation retained");
+    g.getGPT().model._decisionRequest = function() { before++; return { error: "failure" }; };
+    var n = before;
+    expectError(() => g.decide("state", q), "LLM_DECISION_PROVIDER_ERROR");
+    ow.test.assert(before, n + 1, "No retry or fallback");
+    ow.test.assert(isUnDef(g.getLastStats()), true, "Failure clears statistics");
+    [{ decisionApi: "invalid" }, { decisionApi: "openrouter", mode: "foundry" }, { decisionApi: "openrouter", url: "https://proxy/custom" }, { decisionApi: "openrouter", decisionUrl: "/relative" }].forEach(c => {
+      expectError(() => make("openai", c).getCapabilities(), "LLM_DECISION_INVALID_REQUEST");
+    });
+  };
+  exports.testDecisionOpenRouterHTTP = function() {
+    ow.loadAI();
+    var original = ow.obj.http, records = [], fixture = nativeFixture(); fixture.model = "resolved";
+    var builder = { retryOnConnectionFailure: function(v) { ow.test.assert(v, false, "No retries"); return this; }, build: function() { return this; }, newBuilder: function() { return this; } };
+    try {
+      ow.obj.http = function() {
+        this.client = builder; this.setThrowExceptions = function() {}; this.close = function() {};
+        this.exec = function(url, method, body, headers) { records.push({ url: url, method: method, headers: headers }); return { responseCode: 200, response: JSON.stringify(fixture) }; };
+      };
+      ["https://openrouter.ai/api/v1", "https://openrouter.ai/api/v1///"].forEach(url => {
+        make("openai", { decisionApi: "openrouter", url: url, headers: { "X-Fixture": "yes" } }).decide("state", questions);
+        var r = records[records.length - 1];
+        ow.test.assert(r.url, "https://openrouter.ai/api/alpha/decisions", "HTTP endpoint");
+        ow.test.assert(r.method, "POST", "HTTP method");
+        ow.test.assert(r.headers["X-Fixture"], "yes", "Custom headers");
+        ow.test.assert(r.headers.Authorization, "Bearer fixture-key", "Authentication");
+      });
+      make("openai", { decisionApi: "openrouter", url: "https://proxy/custom", decisionUrl: "https://proxy/decide" }).decide("state", questions);
+      ow.test.assert(records[2].url, "https://proxy/decide", "Explicit proxy URL");
+    } finally { ow.obj.http = original; }
+  };
+  // Synthetic Microsoft System One envelope; not a live Foundry inference.
+  // Sources: Microsoft Learn Decision-1 guide and Microsoft Community Hub example.
+  var microsoftFixture = function() {
+    var fixture = nativeFixture();
+    fixture.model = "microsoft-decision-1";
+    fixture.answers.priority.probabilities = { "0": 0.0004, "1": 0.0124, "2": 0.9872 };
+    fixture.answers.priority.score = 1.9868;
+    fixture.answers.priority.confidence = 0.9808;
+    return fixture;
+  };
+  exports.testDecisionMicrosoft = function() {
+    ow.loadAI();
+    var config = { mode: "foundry", decisionApi: "microsoft", url: "https://resource.services.ai.azure.com", model: "custom-deployment", params: { tools: ["ignored"] } };
+    var g = make("openai", config), calls = [], fixture = microsoftFixture();
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: copy(body) }); return copy(fixture); };
+    g.withInstructions("private history").withContext({ private: true }, "private context");
+    var conversation = JSON.stringify(g.getGPT().model.conversation), caps = g.getCapabilities();
+    ow.test.assert(caps.native.implemented, true, "Microsoft native implemented");
+    ow.test.assert(caps.native.contract, "verified", "Documented Microsoft contract");
+    ow.test.assert(caps.native.availability, "unknown", "Deployment availability unknown");
+    ow.test.assert(caps.native.probabilityDecimals, 4, "Microsoft precision");
+    ow.test.assert(caps.inputTypes, ["text", "json"], "Microsoft text and JSON inputs");
+    var q = copy(questions); q.urgent.criteria = { "false": "No", "true": "Yes" };
+    ["text", { ticket: "data" }, ["data"]].forEach(state => {
+      var r = g.decideWithStats(state, q, { requireProbabilities: true, model: "override-deployment" });
+      var c = calls[calls.length - 1];
+      ow.test.assert(c.uri, config.url + "/providers/microsoft/v1/systemone", "Microsoft endpoint");
+      ow.test.assert(c.body.model, "override-deployment", "Deployment override sent unchanged");
+      ow.test.assert(c.body.state, state, "Preserve JSON state");
+      ow.test.assert(c.body.questions.urgent, merge(q.urgent, { type: "noul" }), "Boolean criteria preserved");
+      ow.test.assert(Object.keys(c.body).sort(), ["model", "questions", "state"], "Dedicated Microsoft request");
+      ow.test.assert(r.response.model, fixture.model, "Underlying model differs from deployment");
+      ow.test.assert(r.response.strategy, "native", "Auto selects Microsoft native");
+      ow.test.assert(r.response.answers.priority.level, 2, "Modal score level");
+      ow.test.assert(r.response.answers.priority.expectedScore, 1.9868, "Weighted score");
+      ow.test.assert(r.response.answers.priority.providerConfidence, 0.9808, "Independent confidence");
+      ow.test.assert(r.response.answers.priority.probabilities, [0.0004, 0.0124, 0.9872], "Exact probabilities retained");
+      ow.test.assert(r.stats.tokens.completion, 0, "Zero tokens preserved");
+      ow.test.assert(isUnDef(r.stats.tokens.total), true, "Unreported total remains absent");
+    });
+    ow.test.assert(g.rawDecide("state", q).raw, fixture, "Raw response unchanged");
+    ow.test.assert(calls[calls.length - 1].body.model, "custom-deployment", "Configured deployment used");
+    ow.test.assert(JSON.stringify(g.getGPT().model.conversation), conversation, "Decision isolation");
+    [0, 0.5, 1].forEach(p => {
+      fixture.answers.urgent.noul = p;
+      var r = g.decide("state", q, { strategy: "native" });
+      ow.test.assert(r.answers.urgent.probabilityTrue, p, "Boolean probability preserved");
+      ow.test.assert(r.answers.urgent.value, p >= 0.5, "Boolean threshold");
+    });
+    fixture = microsoftFixture();
+    fixture.answers.priority.probabilities = { "0": 0.3333, "1": 0.3333, "2": 0.3333 };
+    fixture.answers.priority.score = 0.9999;
+    ow.test.assert(g.decide("state", q).answers.priority.level, 0, "First modal index wins ties");
+    [f => { delete f.answers.route; }, f => { f.answers.extra = {}; }, f => { f.answers.urgent.type = "boolean"; },
+      f => { f.answers.urgent.noul = 2; }, f => { f.answers.route.probabilities.billing = 0.5; },
+      f => { f.answers.priority.legend["0"] = "wrong"; }, f => { f.answers.priority.score = 0; },
+      f => { f.answers.priority.confidence = -1; }, f => { f.model = ""; }].forEach(change => {
+      fixture = microsoftFixture(); change(fixture);
+      expectError(() => g.decide("state", q), "LLM_DECISION_INVALID_RESPONSE");
+    });
+    ow.test.assert(g.getLastStats().tokens.prompt, 17, "Response usage retained after validation failure");
+    var before = calls.length;
+    ["transport", "temperature", "maxOutputTokens", "safetyIdentifier"].forEach(k => {
+      var po = {}; po[k] = k == "transport" ? "chat" : k == "safetyIdentifier" ? "user" : 1;
+      expectError(() => g.decide("state", q, { providerOptions: po }), "LLM_DECISION_INVALID_REQUEST");
+    });
+    expectError(() => g.decide("state", q, { images: ["data:image/png;base64,YQ=="] }), "LLM_DECISION_INVALID_REQUEST");
+    ow.test.assert(calls.length, before, "Unsupported options rejected before HTTP");
+    ow.test.assert(isUnDef(g.getLastStats()), true, "Preflight clears previous stats");
+    g.getGPT().model._decisionRequest = function(uri, body) {
+      calls.push({ uri: uri }); return openaiFixture('{"route":"billing","urgent":false,"priority":0}');
+    };
+    ow.test.assert(g.decide("state", q, { strategy: "structured" }).strategy, "structured", "Explicit structured retained");
+    ow.test.assert(calls[calls.length - 1].uri, "openai/v1/responses", "Existing Foundry structured route");
+    [{ mode: "openai" }, { mode: "azure-openai-v1" }, { apiVersion: "2024-05-01-preview" },
+      { url: "https://resource/openai/v1" }, { url: "https://resource/models" }, { url: "https://resource/api/projects/p" },
+      { url: "https://resource?x=1" }, { decisionUrl: "/relative" }, { model: "" }, { model: "   " }].forEach(opts => {
+      expectError(() => make("openai", merge(config, opts)).getCapabilities(), "LLM_DECISION_INVALID_REQUEST");
+    });
+    var missing = merge(config, { key: "fixture-key" }); delete missing.model;
+    expectError(() => $llm(merge({ type: "openai" }, missing)).getCapabilities(), "LLM_DECISION_INVALID_REQUEST");
+    [() => $gpt(merge({ type: "openai", key: "fixture-key" }, config)), () => new ow.ai.gpt("openai", merge({ key: "fixture-key" }, config))].forEach(factory => {
+      ow.test.assert(factory().getCapabilities().native.implemented, true, "Public facade support");
+    });
+    delete config.decisionApi;
+    ow.test.assert(make("openai", config).getCapabilities().native.implemented, false, "Foundry default remains structured only");
+  };
+  exports.testDecisionMicrosoftHTTP = function() {
+    ow.loadAI();
+    var original = ow.obj.http, records = [], fixture = microsoftFixture(), status = 200, payload = JSON.stringify(fixture);
+    var builder = { retryOnConnectionFailure: function(v) { ow.test.assert(v, false, "No retries"); return this; }, build: function() { return this; }, newBuilder: function() { return this; } };
+    var config = { decisionApi: "microsoft", mode: "foundry", model: "deployment", url: "https://resource.services.ai.azure.com" };
+    try {
+      ow.obj.http = function() {
+        this.client = builder; this.setThrowExceptions = function() {}; this.close = function() {};
+        this.exec = function(url, method, body, headers) { records.push({ url: url, method: method, body: JSON.parse(body), headers: headers }); return { responseCode: status, response: payload }; };
+      };
+      [config.url, config.url + "///", config.url + "/providers/microsoft/v1/systemone/"].forEach(url => {
+        make("openai", merge(config, { url: url, headers: { "X-Fixture": "yes" } })).decide("state", questions);
+        var r = records[records.length - 1];
+        ow.test.assert(r.url, config.url + "/providers/microsoft/v1/systemone", "Exact HTTP endpoint");
+        ow.test.assert(r.method, "POST", "Microsoft POST");
+        ow.test.assert("" + r.headers["api-key"], "fixture-key", "Default API key");
+        ow.test.assert(isUnDef(r.headers.Authorization), true, "No extra bearer header");
+        ow.test.assert(r.headers["X-Fixture"], "yes", "Custom headers");
+        ow.test.assert(r.body.model, "deployment", "HTTP deployment name");
+      });
+      make("openai", merge(config, { mode: "azure-foundry", authType: "bearer" })).decide("state", questions);
+      ow.test.assert(records[3].headers.Authorization, "Bearer fixture-key", "Entra token authentication");
+      ow.test.assert(isUnDef(records[3].headers["api-key"]), true, "Bearer replaces API key");
+      make("openai", merge(config, { url: "https://proxy/custom", decisionUrl: "https://proxy/decide" })).decide("state", questions);
+      ow.test.assert(records[4].url, "https://proxy/decide", "Explicit endpoint override");
+      var g = make("openai", config);
+      [401, 403, 404, 422, 429, 500].forEach(code => {
+        status = code; payload = '{"error":{"message":"SECRET"}}';
+        var before = records.length, e = expectError(() => g.decide("SECRET", questions), "LLM_DECISION_PROVIDER_ERROR");
+        ow.test.assert(e.status, code, "HTTP status retained");
+        ow.test.assert(String(e).indexOf("SECRET"), -1, "Provider errors sanitized");
+        ow.test.assert(records.length, before + 1, "No fallback or retry");
+      });
+      status = 200; payload = "invalid SECRET";
+      expectError(() => g.rawDecide("state", questions), "LLM_DECISION_INVALID_RESPONSE");
+    } finally { ow.obj.http = original; }
+  };
+  exports.testDecisionOpenAIStructured = function() {
+    ow.loadAI();
+    var g = make("openai"), calls = [];
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: body }); return openaiFixture('{"route":"billing","urgent":true,"priority":0}'); };
+    var response = g.decide("state", questions);
+    ow.test.assert(response.strategy, "structured", "OpenAI structured is implemented independently");
+    ow.test.assert(calls[0].uri, "v1/responses", "Responses routing");
+    ow.test.assert(calls[0].body.store, false, "No server conversation storage requested");
+    ow.test.assert(calls[0].body.text.format.type, "json_schema", "Schema constraint");
+    ow.test.assert(calls[0].body.input.length, 2, "Trusted spec and untrusted state separate");
+    expectError(function() { g.decide("state", questions, { strategy: "native" }); }, "LLM_DECISION_UNSUPPORTED");
+    ow.test.assert(calls.length, 1, "Incompatible model makes no request");
+    g.getGPT().model._decisionRequest = function(uri, body) {
+      calls.push({ uri: uri, body: body });
+      return { choices: [{ finish_reason: "stop", message: { content: '{"route":"billing","urgent":true,"priority":0}' } }] };
+    };
+    g.decide("state", questions, { model: "override", providerOptions: { transport: "chat" } });
+    ow.test.assert(calls[1].uri, "v1/chat/completions", "Explicit transport selected before HTTP");
+    ow.test.assert(calls[1].body.model, "override", "Request model override");
+    ow.test.assert(calls[1].body.response_format.type, "json_schema", "Chat schema constraint");
+    var gateway = make("openai", { url: "https://gateway.invalid/v1", mode: "azure-openai-v1" });
+    expectError(function() { gateway.decide("state", questions, { strategy: "native" }); }, "LLM_DECISION_UNSUPPORTED");
+    var disabled = make("openai", { noResponseFormat: true });
+    expectError(function() { disabled.decide("state", questions); }, "LLM_DECISION_UNSUPPORTED");
+  };
+  exports.testDecisionRawAndSingleExecution = function() {
+    ow.loadAI();
+    var g = make("ollama"), count = 0;
+    g.getGPT().model._decisionRequest = function() { count++; return { model: "nimble", answers: {} }; };
+    var raw = g.rawDecide("state", questions);
+    ow.test.assert(raw.strategy, "native", "Raw metadata");
+    ow.test.assert(raw.contractVersion, 1, "Raw contract version");
+    ow.test.assert(Object.keys(raw.raw.answers).length, 0, "Inspect malformed successful answer content");
+    ow.test.assert(count, 1, "Raw does not make another inference");
+    expectError(function() { g.rawDecide("state", questions, { requireProbabilities: true }); }, "LLM_DECISION_INVALID_RESPONSE");
+    ow.test.assert(count, 2, "Required probabilities validated on actual raw response");
+    g.getGPT().model._decisionRequest = function() { count++; return { error: "SECRET STATE", status: 429 }; };
+    var e = expectError(function() { g.rawDecide("state", questions); }, "LLM_DECISION_PROVIDER_ERROR");
+    ow.test.assert(e.status, 429, "Keep sanitized status");
+    ow.test.assert(String(e).indexOf("SECRET") < 0, true, "Do not echo provider body");
+    ow.test.assert(isUnDef(g.getLastStats()), true, "Provider failure clears stale stats");
+    ow.test.assert(count, 3, "No downgrade/retry");
+  };
+  exports.testDecisionNativeInvalidResponses = function() {
+    ow.loadAI();
+    var g = make("ollama"), fixture;
+    g.getGPT().model._decisionRequest = function() { return fixture; };
+    var mutations = [
+      r => delete r.answers.urgent,
+      r => r.answers.extra = r.answers.urgent,
+      r => r.answers.route.choice = "unknown",
+      r => r.answers.route.probabilities.billing = 0.5,
+      r => r.answers.route.probabilities.technical = -0.1,
+      r => r.answers.route.probabilities.billing = NaN,
+      r => r.answers.route.probabilities.extra = 0,
+      r => r.answers.urgent.noul = 1.1,
+      r => r.answers.urgent.type = "boolean",
+      r => r.answers.priority.legend["1"] = "different",
+      r => r.answers.priority.score = 0,
+      r => r.answers.priority.probabilities["0"] = Infinity,
+      r => r.answers.route.confidence = 2,
+      r => r.model = "wrong-model"
+    ];
+    mutations.forEach(function(mutate) { fixture = nativeFixture(); mutate(fixture); expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE"); });
+    fixture = nativeFixture(); fixture.answers.priority.probabilities = { "0": 0.4, "1": 0.4, "2": 0.2 }; fixture.answers.priority.score = 0.8;
+    var result = g.decide("state", questions);
+    ow.test.assert(result.answers.priority.level, 0, "Stable score tie by original order");
+    ow.test.assert(result.answers.priority.expectedScore, 0.8, "Expectation is not rounded into level");
+    fixture = nativeFixture(); fixture.answers.urgent.noul = 0;
+    ow.test.assert(g.decide("state", questions).answers.urgent.value, false, "P(true)=0");
+    fixture.answers.urgent.noul = 1;
+    fixture.answers.urgent.confidence = 0.8;
+    var booleanResult = g.decide("state", questions).answers.urgent;
+    ow.test.assert(booleanResult.value, true, "P(true)=1");
+    ow.test.assert(booleanResult.providerConfidence, null, "Undocumented boolean confidence stays unknown");
+    delete fixture.usage;
+    ow.test.assert(isUnDef(g.decideWithStats("state", questions).stats.tokens), true, "Missing usage remains absent");
+  };
+  exports.testDecisionStructuredInvalidResponses = function() {
+    ow.loadAI();
+    ["gemini", "openai"].forEach(function(provider) {
+      var g = make(provider), fixture;
+      g.getGPT().model._decisionRequest = function() { return fixture; };
+      ['{}', '{"route":"unknown","urgent":false,"priority":0}', '{"route":"billing","urgent":"false","priority":0}', '{"route":"billing","urgent":false,"priority":1.5}', '{"route":"billing","urgent":false,"priority":3}', '{"route":"billing","urgent":false,"priority":0,"extra":0}', '```json\n{}\n```', '{'].forEach(function(text) {
+        fixture = provider == "gemini" ? geminiFixture(text) : openaiFixture(text);
+        expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE");
+      });
+      if (provider == "gemini") {
+        [{ candidates: [] }, { promptFeedback: { blockReason: "SAFETY" } }, geminiFixture('{}', 'MAX_TOKENS'), { candidates: [{ finishReason: "STOP", content: { parts: [{ functionCall: { name: "tool" } }] } }] }].forEach(function(r) {
+          fixture = r; expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE");
+        });
+      } else {
+        fixture = openaiFixture('{}'); fixture.status = "incomplete";
+        expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE");
+        fixture = openaiFixture('{}'); fixture.output[1].content = [{ type: "refusal", refusal: "blocked" }];
+        expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE");
+        fixture = { choices: [{ finish_reason: "length", message: { content: '{}' } }] };
+        expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE");
+      }
+    });
+  };
+  exports.testDecisionIsolation = function() {
+    ow.loadAI();
+    ["ollama", "gemini", "openai"].forEach(function(provider) {
+      var config = { params: { tools: [{ type: "function" }], previous_response_id: "old", messages: ["old"], options: { temperature: 1 } } };
+      var g = make(provider, config), api = g.getGPT().model, executed = 0, fail = false;
+      g.withInstructions("Old instructions"); g.withContext({ old: "Old context" }, "Old context");
+      api.setTool("forbidden", "Never run", { type: "object" }, function() { executed++; });
+      var conversation = JSON.stringify(api.conversation), toolList = api.tools, configBefore = JSON.stringify(config), state = { ticket: "Charged twice" }, stateBefore = JSON.stringify(state), qBefore = JSON.stringify(questions);
+      api._decisionRequest = function(uri, body) {
+        ow.test.assert(isUnDef(body.tools), true, "No tools sent");
+        ow.test.assert(isUnDef(body.previous_response_id), true, "No conversation linkage");
+        ow.test.assert(JSON.stringify(body).indexOf("Old instructions") < 0, true, "Ignore stored instructions");
+        ow.test.assert(JSON.stringify(body).indexOf("Old context") < 0, true, "Ignore stored context");
+        if (fail) throw new Error("secret key and state");
+        return provider == "ollama" ? nativeFixture() : provider == "gemini" ? geminiFixture('{"route":"billing","urgent":false,"priority":0}') : openaiFixture('{"route":"billing","urgent":false,"priority":0}');
+      };
+      g.decide(state, questions);
+      fail = true;
+      var e = expectError(function() { g.decide(state, questions); }, "LLM_DECISION_PROVIDER_ERROR");
+      ow.test.assert(String(e).indexOf("secret") < 0, true, "Sanitize transport exceptions");
+      ow.test.assert(JSON.stringify(api.conversation), conversation, "Conversation unchanged on success/failure");
+      ow.test.assert(api.tools === toolList, true, "Tool registration unchanged");
+      ow.test.assert(JSON.stringify(config), configBefore, "Configuration unchanged");
+      ow.test.assert(JSON.stringify(state), stateBefore, "Caller state unchanged");
+      ow.test.assert(JSON.stringify(questions), qBefore, "Caller questions unchanged");
+      ow.test.assert(executed, 0, "No callback executed");
+    });
+  };
+  exports.testDecisionSafePropertiesAndValidation = function() {
+    ow.loadAI();
+    var g = make("gemini"), body, count = 0;
+    var safe = JSON.parse('{"__proto__":{"type":"choice","instructions":"Choose.","criteria":{"constructor":"A","__proto__":"B"}},"constructor":{"type":"boolean","instructions":"True?"}}');
+    g.getGPT().model._decisionRequest = function(uri, data) { count++; body = data; return geminiFixture('{"__proto__":"constructor","constructor":true}'); };
+    var result = g.decide("state", safe);
+    ow.test.assert(result.answers["__proto__"].value, "constructor", "Safe question and criterion names");
+    ow.test.assert(Object.keys(body.generationConfig.responseFormat.text.schema.properties).length, 2, "Safe schema property names");
+    var sparse = []; sparse.length = 2;
+    var accessor = {}; Object.defineProperty(accessor, "x", { enumerable: true, get: function() { throw "must not invoke"; } });
+    var toJSON = { toJSON: function() { throw "must not invoke"; } };
+    [sparse, accessor, toJSON, new java.util.HashMap(), { x: Infinity }, { x: undefined }, null, 123, true].forEach(function(state) { expectError(function() { g.decide(state, safe); }, "LLM_DECISION_INVALID_REQUEST"); });
+    [ { strategy: "bad" }, { requireProbabilities: 1 }, { providerOptions: { unknown: 1 } }, { providerOptions: { temperature: "1" } }, { providerOptions: { maxOutputTokens: 0 } } ].forEach(function(options) { expectError(function() { g.decide("state", safe, options); }, "LLM_DECISION_INVALID_REQUEST"); });
+    var invalid = [ { x: { type: "boolean", instructions: "" } }, { x: { type: "unknown", instructions: "Choose" } }, { x: { type: "choice", instructions: "Choose", criteria: { a: "A" } } }, { x: { type: "score", instructions: "Choose", criteria: ["A", ""] } }, { x: { type: "boolean", instructions: "Choose", criteria: { true: "Yes" } } } ];
+    invalid.forEach(q => expectError(function() { g.decide("state", q); }, "LLM_DECISION_INVALID_REQUEST"));
+    ow.test.assert(count, 1, "Invalid inputs rejected before request");
+  };
+  exports.testDecisionLimitsAndEndpoint = function() {
+    ow.loadAI();
+    var g = make("ollama", { url: "http://localhost:11434/v1/" }), count = 0, body;
+    g.getGPT().model._decisionRequest = function(uri, data) { count++; body = data; ow.test.assert(uri, "/systemone", "Avoid duplicate v1"); return nativeFixture(); };
+    g.decide("state", questions, { providerOptions: { keepAlive: 0 } });
+    ow.test.assert(body.keep_alive, 0, "Keep zero keep_alive");
+    ow.test.assert(Object.keys(body).sort(), ["keep_alive", "model", "questions", "state"], "Dedicated native body");
+    var overhead = af.fromString2Bytes(JSON.stringify({ model: "nimble", state: "", questions: body.questions }), "UTF-8").length;
+    var exact = "a".repeat(65536 - overhead);
+    g.decide(exact, questions);
+    expectError(function() { g.decide(exact + "a", questions); }, "LLM_DECISION_INVALID_REQUEST");
+    expectError(function() { g.decide("é".repeat(33000), questions); }, "LLM_DECISION_INVALID_REQUEST");
+    var q = copy(questions); q.priority.criteria = Array(27).fill("level");
+    expectError(function() { g.decide("state", q); }, "LLM_DECISION_INVALID_REQUEST");
+    ow.test.assert(count, 2, "UTF-8 limit and criteria rejected before HTTP");
+    var cloud = make("ollama", { model: "nimble:cloud" });
+    expectError(function() { cloud.decide("state", questions); }, "LLM_DECISION_UNSUPPORTED");
+  };
+  exports.testDecisionImages = function() {
+    ow.loadAI();
+    var g = make("ollama", { model: "clef-flash" }), calls = [];
+    var images = ["aGVsbG8=", "d29ybGQ="];
+    g.getGPT().model._decisionRequest = function(uri, body) {
+      calls.push(body);
+      ow.test.assert(uri, "/v1/systemone", "Image decision endpoint");
+      var result = nativeFixture(); result.model = body.model; return result;
+    };
+    g.decideWithStats("state", questions, { images: images });
+    ow.test.assert(calls[0].images, images, "Preserve image order");
+    ow.test.assert(calls[0].images === images, false, "Copy image input");
+    ow.test.assert(g.getCapabilities().inputTypes, ["text", "json", "image"], "Advertise image input");
+    g.rawDecide("a".repeat(65536), questions, { images: images });
+    var body = calls[1], overhead = af.fromString2Bytes(JSON.stringify(body), "UTF-8").length - body.state.length;
+    var exact = "a".repeat(32 * 1024 * 1024 - overhead);
+    g.rawDecide(exact, questions, { images: images });
+    expectError(function() { g.rawDecide(exact + "a", questions, { images: images }); }, "LLM_DECISION_INVALID_REQUEST");
+    [[], "aGVsbG8=", [""], ["https://example.com/x.png"], ["data:image/png;base64,aGVsbG8="], ["abc"], ["a=== "], [123]].forEach(function(value) {
+      expectError(function() { g.decide("state", questions, { images: value }); }, "LLM_DECISION_INVALID_REQUEST");
+    });
+    ["gemini", "openai"].forEach(function(provider) {
+      var other = make(provider);
+      other.getGPT().model._decisionRequest = function() { throw "must not call"; };
+      expectError(function() { other.decide("state", questions, { images: images }); }, "LLM_DECISION_INVALID_REQUEST");
+      ow.test.assert(other.getCapabilities().inputTypes, provider == "openai" ? ["text", "json", "image"] : ["text", "json"], "Provider-specific input capabilities");
+    });
+    ow.test.assert(calls.length, 3, "Invalid image requests fail before HTTP");
+  };
+  exports.testDecisionGeminiSchemaHelper = function() {
+    ow.loadAI();
+    var g = make("gemini"), calls = [], schema = { name: "Person", description: "Example", strict: true, schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"], additionalProperties: false } };
+    g.withInstructions("Conversation instruction");
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push(body); return geminiFixture('{"name":"Alice"}'); };
+    var response = g.jsonSchemaPromptWithStats("Name?", schema);
+    ow.test.assert(response.response.name, "Alice", "Gemini schema helper parses provider response");
+    ow.test.assert(response.stats.tokens.total, 25, "Schema helper execution stats");
+    ow.test.assert(calls[0].system_instruction.parts[0].text, "Conversation instruction", "Conversational helper retains instructions");
+    ow.test.assert(isUnDef(calls[0].generationConfig.responseFormat.text.schema.name), true, "Descriptor not transmitted as schema");
+    var unsupported = copy(schema); unsupported.schema.properties.name.minLength = 1;
+    expectError(function() { g.jsonSchemaPrompt("Name?", unsupported); }, "LLM_DECISION_INVALID_REQUEST");
+    expectError(function() { g.jsonSchemaPrompt("Name?", schema, undefined, undefined, [{}]); }, "LLM_DECISION_INVALID_REQUEST");
+    var legacy = make("gemini", { structuredOutputProfile: "legacy-schema" });
+    var legacyBody;
+    legacy.getGPT().model._decisionRequest = function(uri, body) { legacyBody = body; return geminiFixture('{"name":"Alice"}'); };
+    var legacySchema = copy(schema); delete legacySchema.schema.additionalProperties;
+    legacy.jsonSchemaPrompt("Name?", legacySchema);
+    ow.test.assert(legacyBody.generationConfig.responseMimeType, "application/json", "Legacy MIME string");
+    ow.test.assert(legacyBody.generationConfig.responseSchema.type, "OBJECT", "Legacy Schema type enum");
+    ow.test.assert(isUnDef(legacyBody.generationConfig.responseFormat), true, "Do not mix profiles");
+    var conflict = make("gemini", { params: { generationConfig: { responseMimeType: "application/json" } } });
+    conflict.getGPT().model._decisionRequest = function() { throw "must not call"; };
+    expectError(function() { conflict.decide("state", questions); }, "LLM_DECISION_INVALID_REQUEST");
+  };
+  exports.testDecisionCapabilitiesAndLegacyAdapters = function() {
+    ow.loadAI();
+    var count = 0, g = make("ollama");
+    g.getGPT().model._decisionRequest = function() { count++; return nativeFixture(); };
+    var caps = g.getCapabilities();
+    ow.test.assert(caps.native.implemented, true, "Native adapter implemented");
+    ow.test.assert(caps.native.availability, "unknown", "No fabricated runtime availability");
+    caps.native.implemented = false;
+    ow.test.assert(g.getCapabilities().native.implemented, true, "Capability snapshots independent");
+    ow.test.assert(count, 0, "Capabilities make no HTTP call");
+    var old = ow.ai.__gpttypes.fixtureLegacy;
+    try {
+      ow.ai.__gpttypes.fixtureLegacy = { create: function() { return { getModelName: () => "old", prompt: () => "legacy works" }; } };
+      var legacy = new ow.ai.gpt("fixtureLegacy", {});
+      ow.test.assert(legacy.prompt("hello"), "legacy works", "Existing operations preserved");
+      ow.test.assert(legacy.getCapabilities().native.implemented, false, "Optional hooks");
+      expectError(function() { legacy.decide("state", questions); }, "LLM_DECISION_UNSUPPORTED");
+    } finally { if (isUnDef(old)) delete ow.ai.__gpttypes.fixtureLegacy; else ow.ai.__gpttypes.fixtureLegacy = old; }
+  };
+  exports.testDecisionHTTPBoundary = function() {
+    ow.loadAI();
+    var original = ow.obj.http, records = [], status = 200, payload = JSON.stringify(nativeFixture());
+    var builder = { retryOnConnectionFailure: function(value) { ow.test.assert(value, false, "Disable implicit connection retries"); return this; }, build: function() { return this; }, newBuilder: function() { return this; } };
+    try {
+      ow.obj.http = function() {
+        this.client = builder;
+        this.setThrowExceptions = function() {};
+        this.exec = function(url, method, body, headers) { records.push({ url: url, method: method, body: body, headers: headers }); return { responseCode: status, response: payload }; };
+        this.close = function() {};
+      };
+      ["http://localhost:11434", "http://localhost:11434/", "http://localhost:11434/v1", "http://localhost:11434/v1/"].forEach(function(url) {
+        var g = make("ollama", { url: url, headers: { "X-Fixture": "yes" } });
+        g.decide("state", questions);
+        ow.test.assert(records[records.length - 1].url, "http://localhost:11434/v1/systemone", "Correct full native URL");
+        ow.test.assert(records[records.length - 1].headers["X-Fixture"], "yes", "Preserve native headers");
+      });
+      var g = make("ollama");
+      [401, 404, 429, 500].forEach(function(code) { status = code; var e = expectError(function() { g.decide("state", questions); }, "LLM_DECISION_PROVIDER_ERROR"); ow.test.assert(e.status, code, "Status retained without classifying unavailable"); });
+      status = 200; payload = "malformed SECRET";
+      expectError(function() { g.rawDecide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE");
+      ow.test.assert(records.length, 9, "No extra inference on HTTP errors");
+    } finally { ow.obj.http = original; }
+  };
+  exports.testDecisionLegacyChatCompatibility = function() {
+    ow.loadAI();
+    var legacySchema = { type: "OBJECT", properties: { name: { type: "STRING" } }, required: ["name"] };
+    var g = new ow.ai.gpt("gemini", { key: "fixture-key", model: "fixture-model", params: { generationConfig: { responseMimeType: "application/json", responseSchema: legacySchema } } }), bodies = [];
+    g.model._request = function(uri, body) { bodies.push(body); return geminiFixture('{"name":"Alice"}'); };
+    g.rawPrompt("Name?", "fixture-model", 0.2, true, []);
+    ow.test.assert(bodies[0].generationConfig.responseSchema, legacySchema, "Existing Gemini schema pass-through retained");
+    ow.test.assert(bodies[0].generationConfig.responseMimeType, "application/json", "Existing Gemini JSON prompt retained");
+    ow.test.assert(isUnDef(bodies[0].generationConfig.responseFormat), true, "Legacy chat does not inherit new representation");
+    var ollama = new ow.ai.gpt("ollama", { url: "http://localhost:11434", model: "chat-model" });
+    ollama.model._request = function(uri, body) {
+      ow.test.assert(uri, "/api/chat", "Existing Ollama chat endpoint retained");
+      ow.test.assert(isArray(body.messages), true, "Existing chat messages retained");
+      return { model: "chat-model", message: { role: "assistant", content: "hello" }, done: true };
+    };
+    ow.test.assert(ollama.prompt("hello"), "hello", "Ollama chat continues working");
+  };
+  exports.testDecisionExecutionScopedStats = function() {
+    ow.loadAI();
+    var g = make("openai"), count = 0;
+    g.getGPT().model.getLastStats = function() { return { tokens: { total: 999 } }; };
+    g.getGPT().model._decisionRequest = function() { count++; return openaiFixture('{"route":"billing","urgent":false,"priority":0}'); };
+    ow.test.assert(g.decideWithStats("state", questions).stats.tokens.total, 25, "Stats wrapper must not reread last-call state");
+    ow.test.assert(count, 1, "Stats require only one execution");
+    var q = copy(questions), native = make("ollama");
+    native.getGPT().model._decisionRequest = function() { var r = nativeFixture(); r.answers.route.probabilities = { billing: 0.50005, technical: 0.50005 }; r.answers.route.choice = "billing"; return r; };
+    ow.test.assert(native.decide("state", q).answers.route.probabilities.technical, 0.50005, "Rounding tolerance without renormalization");
+    native.getGPT().model._decisionRequest = function() { var r = nativeFixture(); r.answers.route.probabilities = { billing: 0.5001, technical: 0.5001 }; return r; };
+    expectError(function() { native.decide("state", q); }, "LLM_DECISION_INVALID_RESPONSE");
+    var legacy = make("gemini"), captured;
+    legacy.getGPT().model._decisionRequest = function(uri, body) { captured = body; return geminiFixture('{"route":"technical","urgent":true,"priority":1}'); };
+    legacy.decide("state", q, { providerOptions: { schemaProfile: "legacy-schema" } });
+    ow.test.assert(captured.generationConfig.responseSchema.properties.priority.type, "INTEGER", "Legacy decision integer schema");
+    ow.test.assert(captured.generationConfig.responseSchema.properties.priority.maximum, 2, "Legacy bounds preserved");
+  };
+  exports.testDecisionSchemaValidationIsolation = function() {
+    ow.loadAI();
+    var g = make("gemini"), count = 0;
+    var schema = { name: "Small", schema: { type: "object", properties: { level: { type: "integer", minimum: 0, maximum: 2 } }, required: ["level"], additionalProperties: false } }, before = JSON.stringify(schema);
+    g.getGPT().model._decisionRequest = function() { count++; return geminiFixture('{"level":"1"}'); };
+    expectError(function() { g.jsonSchemaPrompt("test", schema); }, "LLM_DECISION_INVALID_RESPONSE");
+    ow.test.assert(JSON.stringify(schema), before, "Schema input is immutable even after invalid output");
+    var bad = copy(schema); bad.schema.properties.level.default = 0;
+    expectError(function() { g.jsonSchemaPrompt("test", bad); }, "LLM_DECISION_INVALID_REQUEST");
+    bad = copy(schema); bad.schema.properties.level.enum = ["1"];
+    expectError(function() { g.jsonSchemaPrompt("test", bad); }, "LLM_DECISION_INVALID_REQUEST");
+    bad = copy(schema); bad.schema.properties.level.type = ["integer", "null"];
+    expectError(function() { g.jsonSchemaPrompt("test", bad); }, "LLM_DECISION_INVALID_REQUEST");
+    ow.test.assert(count, 1, "Unsupported schemas rejected before HTTP");
+  };
+  exports.testDecisionFlatConfigurationAndEnvironment = function() {
+    ow.loadAI();
+    var config = { type: "ollama", url: "http://localhost:11434", model: "nimble" };
+    var g = $gpt(config);
+    ow.test.assert(g.getGPT().getType(), "ollama", "Flat provider configuration retained");
+    var program = 'var g=$llm(); g.getGPT().model._decisionRequest=function(){return {model:"nimble",answers:{}};}; var r=g.rawDecide("state",{q:{type:"boolean",instructions:"True?"}}); print(JSON.stringify({provider:r.provider,model:r.model,strategy:r.strategy}));';
+    var result = $sh().envs(merge(getEnvs(), { OAF_MODEL: JSON.stringify(config) })).sh([String(java.lang.System.getProperty("java.home")) + "/bin/java", "-jar", getOpenAFJar(), "-c", program]).get(0);
+    ow.test.assert(result.exitcode, 0, "Environment-loaded facade subprocess succeeds");
+    ow.test.assert(JSON.parse(result.stdout.trim()), { provider: "ollama", model: "nimble", strategy: "native" }, "OAF_MODEL flows through lazy $llm binding");
+  };
+  exports.testDecisionNativeCapabilityRequirements = function() {
+    ow.loadAI();
+    var g = make("ollama"), count = 0;
+    g.getGPT().model.getCapabilities = function() { var caps = ow.ai.__decision.capabilities(true, false, "verified"); caps.native.probabilities = false; return caps; };
+    g.getGPT().model._decisionRequest = function() { count++; return { model: "nimble", answers: {} }; };
+    g.getGPT().model.normalizeDecisionResponse = function() { return { q: { type: "boolean", value: false, probabilityTrue: null, probabilities: null, selectedProbability: null, providerConfidence: 0.4, probabilitySource: "none" } }; };
+    var q = { q: { type: "boolean", instructions: "True?" } };
+    var result = g.decide("state", q);
+    ow.test.assert(result.answers.q.probabilityTrue, null, "Native alone does not establish probability support");
+    ow.test.assert(result.answers.q.providerConfidence, 0.4, "Keep independent native confidence");
+    expectError(function() { g.decide("state", q, { requireProbabilities: true }); }, "LLM_DECISION_UNSUPPORTED");
+    ow.test.assert(count, 1, "Reject native probability requirements before HTTP when not advertised");
+    var gemini = make("gemini");
+    var error = expectError(function() { gemini.jsonSchemaPrompt("state", { schema: {} }); }, "LLM_DECISION_INVALID_REQUEST");
+    ow.test.assert(error.provider, "gemini", "Schema-helper errors carry sanitized provider context");
+  };
+})();

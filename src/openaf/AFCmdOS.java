@@ -300,9 +300,12 @@ public class AFCmdOS extends AFCmdBase {
 	 */
 	protected void processArgs(String[] args) {
 		boolean checkNext = false;
+        boolean pythonArguments = false;
 		String checkOption = "";
 		
 		for (String a : args) {
+            // pyoaf.js consumes the remaining arguments without OpenAF flag parsing.
+            if (pythonArguments) continue;
 			if (checkNext) {
 				checkNext = false;
 				switch (checkOption) { 			
@@ -438,6 +441,7 @@ public class AFCmdOS extends AFCmdBase {
 				INPUT_TYPE = inputtype.INPUT_SCRIPT;
 				injectclass = true;
 				injectclassfile = "pyoaf_js";
+                pythonArguments = true;
 				continue;
 			case OPTION_BASHCOMPLETION:
 				checkNext = true;
@@ -542,14 +546,14 @@ public class AFCmdOS extends AFCmdBase {
 		
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
 		
-		if (pipe) {
+		if (pipe && !"pyoaf_js".equals(injectclassfile)) {
 			String lineO = "";
 			while((lineO = br.readLine()) != null) {
 				input.append(lineO);
 				input.append("\n");
 			}
 		} else {
-			if (!filescript && !ojob && !injectcode) {
+			if (!filescript && !ojob && !injectcode && !"pyoaf_js".equals(injectclassfile)) {
 				while (br.ready()) {
 					input.append(br.readLine());
 					input.append("\n");
@@ -904,13 +908,20 @@ public class AFCmdOS extends AFCmdBase {
 				AFBase.initCompiledClass(cls);
 				return new JSScript((JSDescriptor) descriptors[0], null);
 			} catch (Throwable initFailure) {
-				return compileScriptFromResource(cls, className);
+				try {
+					return compileScriptFromResource(cls, className);
+				} catch (Exception fallbackFailure) {
+					fallbackFailure.addSuppressed(initFailure);
+					throw fallbackFailure;
+				}
 			}
 		}
 	}
 
 	private static Script compileScriptFromResource(Class<?> cls, String className) throws Exception {
-		String resourceName = "js/openaf.js";
+		// Compiled class names map back to their js/ source (e.g. openaf_js -> js/openaf.js, owrap_format_js -> js/owrap.format.js)
+		String simpleName = className.substring(className.lastIndexOf('.') + 1);
+		String resourceName = "js/" + simpleName.replaceAll("_js$", "").replace('_', '.') + ".js";
 		try (InputStream in = cls.getClassLoader().getResourceAsStream(resourceName)) {
 			if (in == null) {
 				throw new IllegalStateException("Unable to load " + resourceName + " for " + className);

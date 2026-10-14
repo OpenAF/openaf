@@ -1,6 +1,26 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    exports.testOJobHelpExamples = function() {
+        ow.loadOJob();
+        __initializeCon();
+        var oldSimpleUI = __flags.OJOB_HELPSIMPLEUI, oldAnsi = __conAnsi;
+        try {
+            [true, false].forEach(function(simpleUI) {
+                __flags.OJOB_HELPSIMPLEUI = simpleUI;
+                __conAnsi = true;
+                [42, 0, true, false, { value: 1 }, [1, 2], "two words"].forEach(function(value) {
+                    var help = { expects: [{ name: "value", example: value }] };
+                    ow.test.assert(ow.oJob.showHelp(help, {}, true), true, "Help should be displayed");
+                    ow.test.assert(help.expects[0].example, value, "Help should preserve the example value");
+                });
+            });
+        } finally {
+            __flags.OJOB_HELPSIMPLEUI = oldSimpleUI;
+            __conAnsi = oldAnsi;
+        }
+    };
+
     exports.testOJob = function() {
         var testOJob = {
             todo: [
@@ -340,4 +360,30 @@
 
         ow.test.assert(r.t, tk, "Problem with oJob encrypted JSON file.");
     };
+    exports.testOJobShutdownConsole = function() {
+        var tmpOJob = io.createTempFile("oJobShutdown", ".yaml").replace(/\\/g, "/");
+        try {
+            ["", "; __con = null", "; __con = { getTerminal: function() { throw new Error('unavailable terminal'); } }"].forEach(function(consoleState) {
+                io.writeFileString(tmpOJob, af.toYAML({
+                    ojob: { logToConsole: true },
+                    todo: ["Initialize terminal", "Shutdown probe"],
+                    jobs: [
+                        { name: "Initialize terminal", exec: "__initializeCon()" + consoleState },
+                        { name: "Shutdown probe", type: "shutdown", exec: "sleep(200); print('SHUTDOWN_BODY_RAN');" }
+                    ]
+                }));
+                var r = $sh().sh([ow.format.getJavaHome() + "/bin/java", "-jar", getOpenAFPath() + "openaf.jar", "--ojob", "-e", tmpOJob]).get(0);
+                var output = String(r.stdout) + String(r.stderr);
+                ow.test.assert(r.exitcode, 0, "Shutdown child JVM failed");
+                ow.test.assert(output.indexOf("SHUTDOWN_BODY_RAN") >= 0, true, "Shutdown job did not run");
+                ow.test.assert(output.indexOf("Terminal has been closed") < 0, true, "Shutdown logging used a closed terminal");
+                ow.test.assert(/\[Shutdown probe\].*STARTED/.test(output), true, "Shutdown start event missing");
+                ow.test.assert(/\[Shutdown probe\].*SUCCESS/.test(output), true, "Shutdown success event missing");
+                ow.test.assert(output.indexOf("| ERROR |") < 0, true, "Shutdown console fallback logged an error: " + output);
+            });
+        } finally {
+            io.rm(tmpOJob);
+        }
+    };
+
 })()

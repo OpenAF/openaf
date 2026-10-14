@@ -172,6 +172,42 @@
         });
     };
 
+    exports.testOAuthCallbackUsesServerHelper = function() {
+        withOAuthMCPServer(function(ctx) {
+            var original = ow.server.httpd.oauth2, used = 0;
+            ow.server.httpd.oauth2 = function(options) {
+                used++;
+                ow.test.assert(options.tokenStore, false, "MCP owns persistence without nested helper storage.");
+                return original.call(this, options);
+            };
+            var config = {
+                type: "remote", url: ctx.resource,
+                auth: {
+                    type: "oauth2", grantType: "authorization_code", clientId: "public-client",
+                    redirectURI: "http://127.0.0.1:" + findRandomOpenPort() + "/callback",
+                    callback: true, disableOpenBrowser: true, loginTimeoutMs: 1000,
+                    onAuthorizationURL: function(url) {
+                        var params = ow.server.rest.parseQuery(String(new java.net.URI(url).getRawQuery()));
+                        $rest().get(config.auth.redirectURI + "?state=" + params.state + "&code=callback-code");
+                    }
+                }
+            };
+            var client = $mcp(config);
+            try {
+                client.initialize();
+                ow.test.assert(client.callTool("ping", {}).content[0].text, "pong", "Callback-authenticated MCP tool call.");
+                ow.test.assert(used, 1, "MCP delegates callback login to server helper once.");
+                ow.test.assert(ctx.state.tokenRequests.length, 1, "One code exchange across initialization and tool call.");
+                ow.test.assert(ctx.state.tokenRequests[0].code, "callback-code", "Callback code exchanged.");
+                ow.test.assert(ctx.state.tokenRequests[0].resource, ctx.resource, "Discovered MCP resource passed to helper.");
+                ow.test.assert(ctx.state.mcpAuthHeaders.every(function(h) { return h === "Bearer token-1"; }), true, "MCP requests use received token.");
+            } finally {
+                client.destroy();
+                ow.server.httpd.oauth2 = original;
+            }
+        });
+    };
+
     exports.testOAuthAuthorizationCodeTokenExchange = function() {
         withOAuthMCPServer(function(ctx) {
             var client = $mcp({
@@ -283,12 +319,16 @@
             "server/discover": () => ow.server.mcp.discoverResult(description)
         };
 
+        var requests = [];
         ow.server.httpd.route(hs, {
-            "/mcp": req => ow.server.httpd.replyJSONRPC(hs, req, rpcFns, function() {}, function() {}, { modern: true, serverInfo: description.serverInfo })
+            "/mcp": req => {
+                requests.push(req);
+                return ow.server.httpd.replyJSONRPC(hs, req, rpcFns, function() {}, function() {}, { modern: true, serverInfo: description.serverInfo });
+            }
         });
 
         try {
-            testFn({ port: port, hs: hs, url: "http://127.0.0.1:" + port + "/mcp" });
+            testFn({ port: port, hs: hs, url: "http://127.0.0.1:" + port + "/mcp", fns: rpcFns, requests: requests });
         } finally {
             ow.server.httpd.stop(hs);
         }
@@ -445,6 +485,241 @@
         } finally {
             client.destroy();
             io.rm(tf);
+        }
+    };
+
+    var withListClient = function(fn) {
+        // Replace only the dummy server's list handlers after initialization, exercising the real
+        // client pagination/auth dispatch without thousands of HTTP requests in the limit test.
+        var options = { type: "dummy", blacklist: ["hidden"], options: { fns: {} } };
+        var client = $mcp(options);
+        try {
+            client.initialize();
+            fn(client, options.options.fns);
+        } finally {
+            client.destroy();
+        }
+    };
+
+    exports.testMCPListMetadataAndPagination = function() {
+        withListClient(function(client, fns) {
+            ["tools", "prompts"].forEach(function(field) {
+                var call = () => field == "tools" ? client.listTools() : client.listPrompts();
+                var first = { resultType: "complete", ttlMs: 60000, cacheScope: "public", _meta: { server: "test" }, extension: "retained" };
+                first[field] = [{ name: "one" }, { name: "hidden" }];
+                fns[field + "/list"] = () => first;
+                var single = call();
+                ow.test.assert(single.resultType, "complete", "List lost resultType");
+                ow.test.assert(single.ttlMs, 60000, "Single-page lifetime changed");
+                ow.test.assert(single.cacheScope, "public", "List lost scope");
+                ow.test.assert(single._meta, first._meta, "List lost metadata");
+                ow.test.assert(single.extension, "retained", "List lost extension fields");
+                ow.test.assert(single[field].length, field == "tools" ? 1 : 2, "Tool filtering changed");
+                ow.test.assert(first[field].length, 2, "Client mutated the server's response");
+
+                var scopes = ["public", "public"], ttls = [60000, 30000], calls;
+                fns[field + "/list"] = function(params) {
+                    var index = isDef(params.cursor) ? 1 : 0;
+                    calls.push(params.cursor);
+                    var page = { resultType: "complete", ttlMs: ttls[index], cacheScope: scopes[index], _meta: { server: "test" } };
+                    page[field] = [{ name: index == 0 ? "one" : "two" }];
+                    if (index == 0) page.nextCursor = "second";
+                    return page;
+                };
+                calls = [];
+                var pages = call();
+                ow.test.assert(calls.length, 2, "Pagination sent wrong number of requests");
+                ow.test.assert(isUnDef(calls[0]), true, "First list request sent a cursor");
+                ow.test.assert(calls[1], "second", "Pagination sent wrong cursor");
+                ow.test.assert(pages[field].map(v => v.name), ["one", "two"], "Pagination lost order or items");
+                ow.test.assert(isUnDef(pages.nextCursor), true, "Completed list retained a cursor");
+                ow.test.assert(pages.ttlMs > 0 && pages.ttlMs <= 30000, true, "Aggregate extended cache validity");
+                ow.test.assert(pages.cacheScope, "public", "Matching scopes changed");
+                ow.test.assert(pages._meta, { server: "test" }, "Paged list lost metadata");
+                scopes[1] = "private"; calls = [];
+                var privatePages = call();
+                ow.test.assert(privatePages.cacheScope, "private", "Aggregate widened cache scope");
+                ow.test.assert(privatePages.ttlMs, 0, "Conflicting scopes must disable aggregate caching");
+                scopes[1] = "public"; ttls[1] = __; calls = [];
+                ow.test.assert(call().ttlMs, 0, "Missing page lifetime allowed aggregate caching");
+                var legacyCalls = 0;
+                fns[field + "/list"] = function(params) {
+                    var page = {}; page[field] = [{ name: String(++legacyCalls) }];
+                    if (legacyCalls == 1) page.nextCursor = "second";
+                    return page;
+                };
+                var legacy = call();
+                ow.test.assert(Object.keys(legacy), [field], "Legacy pagination gained modern metadata");
+                ow.test.assert(legacy[field].length, 2, "Legacy pagination changed");
+            });
+        });
+    };
+
+    exports.testMCPListUnsuccessfulPages = function() {
+        withListClient(function(client, fns) {
+            ["tools", "prompts"].forEach(function(field) {
+                var call = () => field == "tools" ? client.listTools() : client.listPrompts();
+                var responses = [
+                    { error: { code: -32603, message: "list failed" }, _meta: { trace: "error" } },
+                    { resultType: "input_required", requests: [{ method: "elicitation/create" }], _meta: { trace: "input" } },
+                    { unexpected: "malformed list" }
+                ];
+                responses.forEach(function(response) {
+                    [0, 1].forEach(function(priorPages) {
+                        var calls = 0;
+                        fns[field + "/list"] = function(params) {
+                            if (calls++ < priorPages) {
+                                var first = { nextCursor: "second" }; first[field] = [{ name: "partial" }]; return first;
+                            }
+                            return response;
+                        };
+                        ow.test.assert(call(), response, "Unsuccessful page became a successful empty/partial list");
+                        ow.test.assert(calls, priorPages + 1, "Client kept dispatching after unsuccessful response");
+                    });
+                });
+            });
+        });
+    };
+
+    exports.testMCPListPageLimit = function() {
+        withListClient(function(client, fns) {
+            ["tools", "prompts"].forEach(function(field) {
+                var calls = 0;
+                fns[field + "/list"] = function(params) {
+                    ow.test.assert(params.cursor, calls == 0 ? __ : String(calls), "Wrong cursor at page limit");
+                    var page = { nextCursor: String(++calls) }; page[field] = [{ name: String(calls) }]; return page;
+                };
+                var result = field == "tools" ? client.listTools() : client.listPrompts();
+                ow.test.assert(calls, 1000, "Client exceeded its existing page limit");
+                ow.test.assert(result[field].length, 1000, "Page limit lost collected items");
+                ow.test.assert(result.nextCursor, "1000", "Page limit silently discarded continuation");
+            });
+        });
+    };
+
+
+    exports.testMCPAuthenticatedModernPagination = function() {
+        withDualEraMCPServer(function(ctx) {
+            var seen = [];
+            ctx.fns["tools/list"] = function(params) {
+                seen.push(params);
+                return isDef(params.cursor) ? { tools: [{ name: "second" }] } : { tools: [{ name: "first" }], nextCursor: "second" };
+            };
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url, protocolVersion: "auto", auth: { type: "bearer", token: "fixture-token" } });
+            try {
+                client.initialize();
+                ctx.requests.length = 0;
+                var result = client.listTools();
+                ow.test.assert(result.tools.map(v => v.name), ["first", "second"], "Authenticated pagination lost items");
+                ow.test.assert(result.resultType, "complete", "Authenticated pagination lost modern metadata");
+                ow.test.assert(ctx.requests.length, 2, "Unexpected number of list HTTP requests");
+                ctx.requests.forEach(req => ow.test.assert(req.header.authorization, "Bearer fixture-token", "Page bypassed authenticated transport"));
+                seen.forEach(params => {
+                    ow.test.assert(params._meta["io.modelcontextprotocol/protocolVersion"], "2026-07-28", "Page lost negotiated protocol");
+                    ow.test.assert(isMap(params._meta["io.modelcontextprotocol/clientCapabilities"]), true, "Page lost client capabilities");
+                });
+            } finally {
+                client.destroy();
+            }
+        });
+    };
+
+
+    exports.testJSONRPCStdioConcurrentExec = function() {
+        var py = $sh("python3 -c \"print(1)\"").get(0)
+        if (py.exitcode != 0) return
+
+        var script = io.createTempFile("jsonrpc-echo", ".py")
+        io.writeFileString(script, [
+            "import sys, json, time",
+            "for line in sys.stdin:",
+            "    line = line.strip()",
+            "    if not line: continue",
+            "    m = json.loads(line)",
+            "    if 'id' not in m: continue",
+            "    time.sleep(0.05)",
+            "    sys.stdout.write(json.dumps({'jsonrpc': '2.0', 'id': m['id'], 'result': {'v': m['params'].get('v')}}) + '\\n')",
+            "    sys.stdout.flush()"
+        ].join("\n"))
+
+        var c = $jsonrpc({ cmd: "python3 -u " + script, timeout: 15000 })
+        try {
+            var n = 8, res = []
+            $doWait($doAll(range(n, 0).map(i => $do(() => { res[i] = c.exec("echo", { v: i }) }))))
+            for (var i = 0; i < n; i++) {
+                ow.test.assert(isMap(res[i]) ? res[i].v : res[i], i, "Concurrent stdio exec " + i + " got the wrong response")
+            }
+            // a notification followed by a request must not reuse the same id
+            c.exec("notify", { v: -1 }, true)
+            ow.test.assert(c.exec("echo", { v: 42 }).v, 42, "Request after a notification got the wrong response")
+        } finally {
+            c.destroy()
+        }
+    };
+
+    exports.testOAuthRejectsInsecureEndpointsAndIssuerMismatch = function() {
+        ow.loadServer();
+        var mk = function(extra) {
+            return ow.server.httpd.oauth2(merge({ authURL: "http://auth.example.com/authorize", tokenURL: "http://auth.example.com/token",
+                clientId: "c", redirectURI: "http://127.0.0.1:12345/cb", tokenStore: false, interactive: false }, extra || {}));
+        };
+        var err;
+        try { mk().getAuthStatus(); } catch(e) { err = String(e); }
+        ow.test.assert(isDef(err) && err.indexOf("HTTPS") >= 0, true, "Remote plain-HTTP OAuth endpoints should be rejected: " + err);
+        err = __;
+        try { mk({ allowHTTP: true }).getAuthStatus(); } catch(e) { err = String(e); }
+        ow.test.assert(isUnDef(err) || err.indexOf("HTTPS") < 0, true, "allowHTTP should allow plain-HTTP OAuth endpoints: " + err);
+
+        withOAuthMCPServer(function(ctx) {
+            var client = $mcp({
+                type: "remote",
+                url: ctx.resource,
+                auth: {
+                    type: "oauth2",
+                    grantType: "client_credentials",
+                    clientId: "client-a",
+                    clientSecret: "secret-a",
+                    authorizationServer: "http://127.0.0.1:" + ctx.port + "/other",
+                    authorizationServerMetadataURL: "http://127.0.0.1:" + ctx.port + "/.well-known/oauth-authorization-server/as"
+                }
+            });
+            var ierr;
+            try { client.initialize(); } catch(e) { ierr = String(e); } finally { client.destroy(); }
+            ow.test.assert(isDef(ierr) && ierr.indexOf("issuer") >= 0, true, "Mismatched OAuth metadata issuer should be rejected: " + ierr);
+            ow.test.assert(ctx.state.tokenRequests.length, 0, "No token request should be sent to an unverified issuer");
+        });
+    };
+
+    exports.testMCPAutoClientLegacyOnlyDiscoverError = function() {
+        ow.loadServer();
+        var port = findRandomOpenPort(), methods = [];
+        var hs = ow.server.httpd.start(port, "127.0.0.1");
+        ow.server.httpd.route(hs, {
+            "/mcp": function(req) {
+                var body = (isDef(req.files) && isDef(req.files.postData)) ? req.files.postData : req.data;
+                var rpc = jsonParse(body);
+                methods.push(rpc.method);
+                if (isUnDef(rpc.id) || isNull(rpc.id)) return ow.server.httpd.reply("", 204, "text/plain", {});
+                if (rpc.method == "server/discover") return ow.server.httpd.reply({ jsonrpc: "2.0", id: rpc.id,
+                    error: { code: -32022, message: "Unsupported protocol version", data: { supported: ["2024-11-05", "2025-06-18"] } } }, 200, "application/json", {});
+                var result = {};
+                if (rpc.method == "initialize") result = { protocolVersion: "2025-06-18", capabilities: {}, serverInfo: { name: "Legacy", version: "1" } };
+                if (rpc.method == "tools/list") result = { tools: [ { name: "ping", description: "p", inputSchema: { type: "object", properties: {} } } ] };
+                return ow.server.httpd.reply({ jsonrpc: "2.0", id: rpc.id, result: result }, 200, "application/json", {});
+            }
+        });
+        try {
+            var client = $mcp({ type: "remote", strict: false, url: "http://127.0.0.1:" + port + "/mcp", protocolVersion: "auto" });
+            try {
+                client.initialize({ name: "TestClient", version: "9.9.9" });
+                ow.test.assert(client.getClientInfo().era, "legacy", "A server listing only legacy versions must use the legacy era");
+                ow.test.assert(methods.indexOf("initialize") >= 0, true, "Legacy fallback must perform the initialize handshake");
+                ow.test.assert(client.listTools().tools[0].name, "ping", "Legacy fallback should list tools");
+            } finally {
+                client.destroy();
+            }
+        } finally {
+            ow.server.httpd.stop(hs);
         }
     };
 })();

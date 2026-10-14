@@ -4,7 +4,7 @@
 
 ## Overview
 
-OpenAF is a comprehensive JavaScript framework that extends the Mozilla Rhino JavaScript interpreter with powerful helper functions, wrappers, and utilities for Java environments. This reference guide covers the core extensions and helper libraries provided by OpenAF.
+OpenAF is a comprehensive JavaScript framework that extends the Mozilla Rhino JavaScript interpreter with powerful helper functions, wrappers, and utilities for Java environments. This reference guide covers the core extensions and helper libraries provided by OpenAF. See [Additional OpenAF `$` Functions](./openaf-dollar-functions.md) for helpers not covered here, including caching, synchronization, argument conversion, JSON-RPC, and output.
 
 ## Table of Contents
 
@@ -647,10 +647,10 @@ print(result.result); // 16
 
 // Execute with persistent map
 var pythonMap = { counter: 0, data: [] };
-ow.python.execPM(`
-counter += 1
-data.append("item_" + str(counter))
-total = len(data)
+pythonMap = ow.python.execPM(`
+__pm["counter"] += 1
+__pm["data"].append("item_" + str(__pm["counter"]))
+__pm["total"] = len(__pm["data"])
 `, pythonMap);
 
 print(pythonMap.counter); // 1
@@ -713,6 +713,8 @@ var parsedQuery = nLinqParse(query);
 
 ### Schema Validation
 
+See [JSON Schema validation](json-schema.md) for the `ow.obj.schema*` API, defaults that modify data, draft selection, references, and Ajv v8 migration. For boolean validation, use `ow.loadObj(); ow.obj.schemaCompile(schema)(data)`.
+
 ```javascript
 // JSON Schema validation
 var schema = {
@@ -727,7 +729,7 @@ var schema = {
 
 var user = { name: "John", age: 25, email: "john@example.com" };
 
-// Validate using $$
+// Returns true on success; throws on invalid data
 var isValid = $$(user).isSchema(schema);
 
 // Validate using _$ with error throwing

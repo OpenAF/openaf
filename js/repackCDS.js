@@ -31,7 +31,8 @@ exports.create = function() {
   var marker = "__OPENAF_CDS_VM__";
   var probe = "print('" + marker + "' + JSON.stringify({ home: String(java.lang.System.getProperty('java.home')), args: af.fromJavaArray(java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toArray()) }))";
   var env = { OAF_FLAGS: "{}" };
-  var run = (cmd, extraEnv) => $sh(cmd).envs(merge(clone(env), extraEnv || {}), true).timeout(120000).get(0);
+  // Overrides must win over the current environment ($sh.envs(map, true) would let existing variables win)
+  var run = (cmd, extraEnv) => $sh(cmd).envs(merge(getEnvs(), merge(clone(env), extraEnv || {}))).timeout(120000).get(0);
   var output = r => String(r.stdout || "") + "\n" + String(r.stderr || "");
   var vm, javaCmd;
 

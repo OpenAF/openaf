@@ -285,6 +285,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testPForEachTimeout
 
+   - name: OpenAF::Test pForEach No Default Timeout
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPForEachNoDefaultTimeout
+
    - name: OpenAF::Test GetSet
      from: OpenAF::Init
      to  : oJob Test
@@ -304,6 +309,11 @@ jobs:
      from: OpenAF::Init
      to  : oJob Test
      exec: args.func = args.tests.testQueue
+
+   - name: OpenAF::Test pForEach Queue Timeout
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPForEachQueueTimeout;
 
 todo:
    # Generic Tests
@@ -359,6 +369,8 @@ todo:
    - OpenAF::Test Path
    - OpenAF::Test pForEach
    - OpenAF::Test pForEach Timeout
+   - OpenAF::Test pForEach No Default Timeout
    - OpenAF::Test GetSet
    - OpenAF::Test Lock
    - OpenAF::Test FLock
+   - OpenAF::Test pForEach Queue Timeout

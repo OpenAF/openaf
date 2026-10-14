@@ -1,0 +1,16 @@
+# Optional integration: install Badgen first with `opack install Badgen`.
+ojob:
+  logToConsole: false
+  catch: |
+    printErr("package: " + exception);
+    exit(1);
+jobs:
+- name: Badge
+  exec: |
+    if (isUnDef(getOPackPath("Badgen"))) throw "Install the dependency first: opack install Badgen";
+    var badges = require("badgen.js");
+    var svg = badges.badgen({ label: "build", status: "passing", color: "green" });
+    if (!isString(svg) || svg.indexOf("<svg") < 0) throw "Expected SVG output";
+    print(svg);
+todo:
+- Badge

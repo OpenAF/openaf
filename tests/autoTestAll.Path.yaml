@@ -1,0 +1,35 @@
+include:
+  - oJobTest.yaml
+jobs:
+  - name: Path::Init
+    exec: args.tests = require("autoTestAll.Path.js");
+  - name: Path::Reference
+    from: Path::Init
+    to: oJob Test
+    exec: args.func = args.tests.testPathReference;
+  - name: Path::Java differential
+    from: Path::Init
+    to: oJob Test
+    deps: [Path::Reference]
+    exec: args.func = args.tests.testPathJavaDifferential;
+  - name: Path::Cache isolation
+    from: Path::Init
+    to: oJob Test
+    deps: [Path::Java differential]
+    exec: args.func = args.tests.testPathCacheIsolation;
+  - name: Path::Parallel
+    from: Path::Init
+    to: oJob Test
+    deps: [Path::Cache isolation]
+    exec: args.func = args.tests.testPathParallel;
+  - name: Path::Wrapper
+    from: Path::Init
+    to: oJob Test
+    deps: [Path::Parallel]
+    exec: args.func = args.tests.testPathWrapper;
+todo:
+  - Path::Reference
+  - Path::Java differential
+  - Path::Cache isolation
+  - Path::Parallel
+  - Path::Wrapper

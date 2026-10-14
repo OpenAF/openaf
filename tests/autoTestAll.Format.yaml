@@ -4,6 +4,16 @@ include:
    - oJobTest.yaml
 
 jobs:
+   - name: Format::Pause navigation
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPauseNavigation;
+
+   - name: Format::Print tree without console
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPrintTreeWithoutConsole;
+
    # Format tests
    # --------------
    - name: Format::Init
@@ -111,6 +121,34 @@ jobs:
      deps:
        - Format::Load Format
      exec: args.func = args.tests.testPrintTableHeaderLeftAlignment;
+
+   - name: Format::PrintTable borderless
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTableBorderless;
+
+   - name: Format::PrintTable borderless wrapping
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTableBorderlessWrapping;
+
+   - name: Format::$output borderless
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testOutputBorderless;
+
+   - name: Format::PrintTable borderless colors
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTableBorderlessColors;
 
    - name: Format::Markdown wrap
      from: Format::Init
@@ -322,7 +360,24 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testCheckVersionSpec
 
+   - name: Format::Ansi clip and pad
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAnsiClipPad;
+
+   - name: Format::Tree table arrays heterogeneous
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTreeTableArraysHeterogeneous;
+
+   - name: Format::Default table format
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDefaultTableFormat;
+
 todo:
+   - Format::Pause navigation
+   - Format::Print tree without console
    # Format tests
    # ------------
    
@@ -339,6 +394,10 @@ todo:
    - Format::PrintTable emoji alignment
    - Format::PrintTable subdivision flag alignment
    - Format::PrintTable header alignment
+   - Format::PrintTable borderless
+   - Format::PrintTable borderless wrapping
+   - Format::$output borderless
+   - Format::PrintTable borderless colors
    - Format::Markdown wrap
    - Format::$output Markdown
    - Format::String pad
@@ -365,3 +424,6 @@ todo:
    - Format::Escape/Unescape HTML4
    - Format::SLON
    - Format::TimeAbbreviation
+   - Format::Ansi clip and pad
+   - Format::Default table format
+   - Format::Tree table arrays heterogeneous

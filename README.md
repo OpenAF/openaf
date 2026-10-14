@@ -99,6 +99,9 @@ Just delete the original empty folder where you executed the install command.
 
 * [Documentation index](docs/index.md)
 * [Getting started](docs/getting-started.md)
+* [Write a script and turn it into an oJob](docs/authoring.md)
+* [Authoring recipes](docs/authoring-recipes.md)
+* [Test your scripts and oJobs](docs/authoring-testing.md)
 * [CLI reference](docs/cli.md)
 * [OpenAF overview](docs/openaf.md)
 * [Advanced OpenAF features](docs/openaf-advanced.md)

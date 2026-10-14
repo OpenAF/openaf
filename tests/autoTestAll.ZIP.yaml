@@ -20,9 +20,15 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testZIPStream;
 
+   - name: ZIP::Read ownership and missing entries
+     from: ZIP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testZIPReadOwnership;
+
 todo:
    # ZIP tests
    # ------------
    - ZIP::Init
    - ZIP::ZIP basic functionality
-   - ZIP::ZIP streaming functionality 
+   - ZIP::ZIP streaming functionality
+   - ZIP::Read ownership and missing entries

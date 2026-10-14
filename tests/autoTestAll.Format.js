@@ -1,6 +1,88 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    exports.testPauseNavigation = function() {
+        ow.loadFormat();
+        function run(keys, count, fail) {
+            var pages = [], percentages = [], settings = [], reads = 0;
+            var terminal = { getHeight: () => 5, getWidth: () => 80,
+                settings: { get: () => "original", set: value => settings.push(value) } };
+            var MockConsole = function() {
+                this.getConsoleReader = () => ({ getTerminal: () => terminal });
+                this.readChar = function() {
+                    if (fail || reads >= keys.length) throw new Error("input exhausted");
+                    return keys.charAt(reads++);
+                };
+            };
+            var pager = new Function("Console", "plugin", "print", "printnl", "tprintnl",
+                "return (" + ow.format.string.pauseString.toString() + ")")(
+                MockConsole, () => {}, text => pages.push(text), () => {},
+                (msg, values) => percentages.push(values.percentage));
+            var lines = []; for (var i = 0; i < count; i++) lines.push(String(i));
+            var error = false;
+            try { pager(lines.join("\n")); } catch (e) { error = true; }
+            ow.test.assert(error, !!fail, "Unexpected pager error");
+            ow.test.assert(settings[settings.length - 1], "original", "Terminal restored");
+            ow.test.assert(reads, keys.length, "Whole key sequences consumed");
+            return { starts: pages.map(text => Number(text.split("\n")[0])), percentages: percentages, pages: pages };
+        }
+        var esc = "\x1b[";
+        ow.test.assert(run(esc+"6~"+esc+"5~"+esc+"C"+esc+"Dq", 13).starts,
+            [0,4,0,4,0], "Page keys and arrow aliases");
+        ow.test.assert(run(esc+"6;2~"+esc+"5;2~"+esc+"6;2~"+esc+"Dq", 13).starts,
+            [0,9,0,9,5], "Modified keys and navigation from bottom");
+        ow.test.assert(run(esc+"1;2C"+esc+"1;2D"+esc+"1;2C"+esc+"Dq", 13).starts,
+            [0,9,0,9,5], "Shift arrows jump to bottom and top");
+        ow.test.assert(run(esc+"B"+esc+"6~"+esc+"5~"+esc+"A"+esc+"Aq", 13).starts,
+            [0,1,5,1,0,0], "Line keys and exact previous page boundary");
+        ["4~", "8~", "F"].forEach(key => {
+            var result = run(esc+key+" ", 13);
+            ow.test.assert(result.starts, [0,9], "End goes to final full page");
+            ow.test.assert(result.percentages, [30,100], "Bottom shows 100 percent");
+        });
+        ["1~", "7~", "H"].forEach(key => {
+            ow.test.assert(run(esc+"6~"+esc+key+"Q", 13).starts, [0,4,0], "Home goes to top");
+        });
+        ["6~", "C"].forEach(key => {
+            ow.test.assert(run(esc+"6;2~"+esc+key, 13).starts, [0,9], "Forward at bottom exits");
+        });
+        ow.test.assert(run("    ", 13).starts, [0,4,8,9], "Ordinary paging exits at bottom");
+        ow.test.assert(run("", 4).pages, ["0\n1\n2\n3"], "Short output needs no input");
+        run("", 13, true);
+    };
+
+    exports.testPrintTreeWithoutConsole = function() {
+        var previousCon = __con;
+        try {
+            __con = __;
+            [false, true].forEach(function(noansi) {
+                var options = { noansi: noansi, color: false };
+                var data = [{ "COUNT(*)": 194835 }];
+                var expected = printTree(data, 80, options);
+                ow.test.assert(printTree(data, __, options), expected, "Tree lost a value without a console width");
+                __con = { getTerminal: function() { return { getWidth: function() { return 0; } }; } };
+                ow.test.assert(printTree(data, __, options), expected, "Tree lost a value with a zero terminal width");
+                __con = __;
+                ow.test.assert(printTree(data, 40, options).indexOf("194835") >= 0, true, "Tree lost a value with an explicit width");
+            });
+        } finally {
+            __con = previousCon;
+        }
+    };
+
+    exports.testAnsiClipPad = function() {
+        ow.loadFormat();
+        var S = ow.format.string;
+        ow.test.assert(S.ansiClip("hello", 10), "hello", "No clip when it fits");
+        ow.test.assert(S.ansiClip("hello world", 6), "hello\u2026", "Plain clip");
+        var c = S.ansiClip("\x1b[31mhello world\x1b[0m", 6);
+        ow.test.assert(visibleLength(c), 6, "Clipped ANSI width");
+        ow.test.assert(c.indexOf("\x1b[31m") == 0 && c.slice(-4), "\x1b[0m", "ANSI preserved and reset");
+        ow.test.assert(visibleLength(S.ansiClip("\ud83d\udcc1\ud83d\udcc1\ud83d\udcc1", 5)) <= 5, true, "Wide emoji clip");
+        ow.test.assert(visibleLength(S.ansiPad("\x1b[32mab\x1b[0m", 5)), 5, "ANSI pad");
+        ow.test.assert(S.ansiPad("abcdef", 3), "abcdef", "Pad never truncates");
+    };
+
     exports.testLoadFormat = function() {
         ow.loadFormat();
     };
@@ -121,6 +203,10 @@
         ow.test.assert(visibleLength("⚽️"), 2, "Problem with explicit emoji-presentation symbol visible width.");
         ow.test.assert(af.visibleLength("⚽️"), 2, "Problem with af.visibleLength explicit emoji-presentation symbol visible width.");
         ow.test.assert(visibleLength("⚽︎"), 1, "Problem with text-presentation symbol visible width.");
+        ow.test.assert(visibleLength("\u2934"), 1, "Problem with text-default arrow visible width.");
+        ow.test.assert(af.visibleLength("\u2934"), 1, "Problem with af.visibleLength text-default arrow visible width.");
+        ow.test.assert(visibleLength("\ud83c\udc04"), 2, "Problem with mahjong tile emoji visible width.");
+        ow.test.assert(af.visibleLength("\ud83c\udc04"), 2, "Problem with af.visibleLength mahjong tile emoji visible width.");
         ow.test.assert(af.visibleLength("⚽︎"), 1, "Problem with af.visibleLength text-presentation symbol visible width.");
 
         // Opt-out (per-call param or __flags.VISIBLELENGTH_WIDE_EMOJI = false): matches plain
@@ -191,6 +277,168 @@
         ow.test.assert(visibleLength(lines[0].split("│")[0]), visibleLength(lines[2].split("│")[0]), "Problem with printTable header first separator alignment.");
         ow.test.assert(visibleLength(lines[0].substring(0, lines[0].lastIndexOf("│"))), visibleLength(lines[2].substring(0, lines[2].lastIndexOf("│"))), "Problem with printTable header second separator alignment.");
         ow.test.assert(visibleLength(lines[1].split("┼")[0]), visibleLength(lines[2].split("│")[0]), "Problem with printTable separator alignment.");
+    };
+
+    exports.testPrintTableBorderless = function() {
+        var rows = [{ A: "one", B: "1" }, { A: "two", B: "2" }];
+        var plain = printTable(rows, __, false, false, "borderless", __, true, false, false);
+        ow.test.assert(plain, "A    B\n━━━  ━\none  1\ntwo  2\n", "Borderless headings and column gaps");
+        ow.test.assert(printTable(rows, __, false, false, "borderless", __, true, true, false),
+            "A    B\n━━━  ━\none  1\n───  ─\ntwo  2\n", "Separators only between records without a width limit");
+        ow.test.assert(printTable([], 40, true, false, "borderless"), "", "Empty borderless table");
+        ow.test.assert(printTable([rows[0]], __, true, false, "borderless", __, true, true, true),
+            "A    B\n━━━  ━\none  1\n[#1 row]", "Single record has no row separator");
+        ["plain", "utf"].forEach(function(theme) {
+            var rendered = printTable(rows, __, false, false, theme, __, true, false, false).replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+            var join = theme == "utf" ? "│" : "|";
+            var rule = theme == "utf" ? "───┼─" : "---+-";
+            ow.test.assert(rendered, "A  " + join + "B\n" + rule + "\none" + join + "1\ntwo" + join + "2\n", "Legacy " + theme + " table");
+        });
+    };
+
+    exports.testPrintTableBorderlessWrapping = function() {
+        var rows = [
+            { Provider: "Gemini", "llmoptions example": "(type: gemini, model: YOUR_GEMINI_MODEL, key: YOUR_GEMINI_API_KEY)", "Request options": "strategy: structured" },
+            { Provider: "Ollama", "llmoptions example": "(type: ollama, url: 'http://localhost:11434', model: YOUR_DECISION_MODEL)", "Request options": "strategy: native, requireProbabilities: true" }
+        ];
+        var rendered = printTable(rows, 110, true, false, "borderless", __, true, true, true);
+        var lines = rendered.split("\n");
+        ow.test.assert(lines.length > 6, true, "Provider records wrap onto continuation lines");
+        ow.test.assert(lines[1].split("  ").every(function(s) { return /^━+$/.test(s); }), true, "Separate heavy header rules");
+        ow.test.assert(lines.filter(function(s) { return s.indexOf("─") >= 0; }).length, 1, "One rule between wrapped provider records");
+        ow.test.assert(/[│┼|+]/.test(rendered), false, "No renderer-added borders or junctions");
+        ow.test.assert(rendered.indexOf("YOUR_GEMINI_API_KEY") >= 0 && rendered.indexOf("YOUR_DECISION_MODEL") >= 0 && rendered.indexOf("requireProbabilities: true") >= 0,
+            true, "Wrapped provider content retained");
+        ow.test.assert(lines[lines.length - 1], "[#2 rows]", "Count logical records");
+        var noRules = printTable(rows, 110, false, false, "borderless", __, true, false, false);
+        ow.test.assert(noRules.indexOf("─"), -1, "Wrapped separators disabled");
+        var explicit = printTable([{ A: "first\nsecond\nthird", B: "⚽" }, { A: "short", B: "🇵🇹" }], __, false, false, "borderless", __, true, true, false);
+        var explicitLines = explicit.trim().split("\n");
+        ow.test.assert(explicitLines.length, 7, "Each record uses its own height, including explicit newlines");
+        ow.test.assert(explicitLines[5], "──────  ──", "Rule follows all continuation lines");
+        explicitLines.slice(0, -1).forEach(function(line) {
+            ow.test.assert(visibleLength(line), visibleLength(explicitLines[0]), "Unicode visible column alignment");
+        });
+    };
+
+    exports.testTreeTableArraysHeterogeneous = function() {
+        var oldFlag = __ansiColorFlag, oldConsole = __conConsole, oldAnsi = __conAnsi;
+        try {
+            __ansiColorFlag = true;
+            __conConsole = true;
+            __conAnsi = true;
+            ansiColor("RESET", "", true);
+            var out = printTreeOrS({ x: [ { a: 1 }, { b: 2 } ], z: [ 1, { c: 3 } ] }, 80, { noansi: true, tableArrays: true });
+            ow.test.assert(out.indexOf("b") >= 0 && out.indexOf("2") >= 0, true, "Heterogeneous map rows lost a field: " + out);
+            ow.test.assert(out.indexOf("c") >= 0 && out.indexOf("3") >= 0, true, "Mixed scalar/map rows lost a map: " + out);
+            ow.test.assert(out.indexOf("undefined") < 0, true, "Heterogeneous rows rendered undefined cells: " + out);
+
+            var tbl = printTreeOrS({ x: [ { a: 1, b: 2 }, { b: 3, a: 4 } ] }, 80, { noansi: true, tableArrays: true });
+            ow.test.assert(tbl.indexOf("─") >= 0 || tbl.indexOf("-") >= 0, true, "Homogeneous rows should still render as a table: " + tbl);
+            ow.test.assert(tbl.indexOf("\x1b") < 0 && tbl.indexOf("[m") < 0, true, "noansi table leaked ANSI resets: " + tbl);
+            var rows = [{ a: "long wrapped value", b: 1 }, { a: "second wrapped value", b: 2 }];
+            var plain = printTable(rows, 18, false, false, "utf", __, true, true, false);
+            ow.test.assert(plain.indexOf("\x1b"), -1, "Plain wrapped row separators must not emit ANSI");
+            var tree = printTreeOrS({ x: rows }, 24, { noansi: true, tableArrays: true });
+            ow.test.assert(tree.indexOf("\x1b"), -1, "Plain wrapped tree tables must not emit ANSI");
+            ow.test.assert(printTreeOrS({ a: 1 }, 80, { noansi: true }).indexOf("\x1b"), -1, "Plain root tree must not append a reset");
+        } finally {
+            __ansiColorFlag = oldFlag;
+            __conConsole = oldConsole;
+            __conAnsi = oldAnsi;
+        }
+    };
+
+    exports.testDefaultTableFormat = function() {
+        var oldFormat = global.__format, oldTable = __colorFormat.table.format;
+        var oldAnsi = __conAnsi, oldCon = __con, oldFlag = __ansiColorFlag, oldConsole = __conConsole;
+        try {
+            global.__format = __;
+            __conAnsi = false;
+            __con = __;
+            var rows = [{ A: "one" }, { A: "two" }];
+            ["table", "stable", "ctable", "btable", "bstable"].forEach(function(format) {
+                __colorFormat.table.format = format;
+                ow.test.assert($output(rows, {}, __, true), $output(rows, { __format: format }, __, true), "Default " + format);
+            });
+            __colorFormat.table.format = "btable";
+            global.__format = "json";
+            ow.test.assert($output(rows, {}, __, true), stringify(rows, __, ""), "Global overrides preference");
+            ow.test.assert($output(rows, { __format: "json" }, __, true), stringify(rows, __, ""), "Explicit format overrides preference");
+            global.__format = __;
+            ow.test.assert(__defaultTableFormat(), "btable", "Valid preference retained");
+            __colorFormat.table.format = "invalid";
+            ow.test.assert(__defaultTableFormat(), __, "Unsupported preference ignored");
+        } finally {
+            global.__format = oldFormat;
+            __colorFormat.table.format = oldTable;
+            __conAnsi = oldAnsi;
+            __con = oldCon;
+            __ansiColorFlag = oldFlag;
+            __conConsole = oldConsole;
+        }
+    };
+
+    exports.testOutputBorderless = function() {
+        var oldAnsi = __conAnsi, oldCon = __con, oldFormat = global.__format;
+        try {
+            __conAnsi = false;
+            __con = __;
+            var rows = [{ A: "one", B: "1" }, { A: "two", B: "2" }];
+            var base = $output(rows, { __format: "btable" }, __, true);
+            ow.test.assert(base, "A    B\n━━━  ━\none  1\ntwo  2\n[#2 rows]", "Unicode without ANSI and no default row rules");
+            ow.test.assert($o(rows, { __FORMAT: "BTABLE", __WIDTH: "40", __ROWSEP: "true" }, __, true),
+                "A    B\n━━━  ━\none  1\n───  ─\ntwo  2\n[#2 rows]", "Output alias and uppercase options");
+            ow.test.assert($output(rows, { __format: "btable", __WIDTH: 0, __width: "40", __ROWSEP: true, __rowsep: "false" }, __, true), base, "Lowercase option precedence");
+            global.__format = "btable";
+            ow.test.assert($output(rows, {}, __, true), base, "Global format selection");
+            ow.test.assert($output(rows[0], { __format: "btable" }, __, true).indexOf("[#1 row]") >= 0, true, "Map promoted to one record");
+            ow.test.assert($output([], { __format: "btable" }, __, true), "", "Empty array output");
+            ow.test.assert($output({}, { __format: "btable" }, __, true), "", "Empty map output");
+            ow.test.assert($output({ nested: rows }, { __format: "btable", __path: "nested" }, __, true), base, "Path transform before rendering");
+            [0, -1, 1.5, "bad", "", " ", "1.5", true, {}, [], null, Infinity, NaN].forEach(function(width) {
+                var error;
+                try { $output(rows, { __format: "btable", __width: width }, __, true); } catch(e) { error = String(e); }
+                ow.test.assert(isDef(error) && error.indexOf("positive integer") >= 0, true, "Invalid width rejected: " + width);
+            });
+            __con = { getTerminal: function() { return { getWidth: function() { return 40; } }; } };
+            ow.test.assert($output(rows, { __format: "btable" }, __, true), base, "Available terminal width");
+            ow.test.assert($output(rows, { __format: "table", __width: 0 }, __, true).indexOf("|" ) >= 0, true, "btable options scoped to btable");
+        } finally {
+            __conAnsi = oldAnsi;
+            __con = oldCon;
+            global.__format = oldFormat;
+        }
+    };
+
+    exports.testPrintTableBorderlessColors = function() {
+        var oldAnsi = __ansiColorFlag, oldConsole = __conConsole, oldBand = __colorFormat.table.bandRow;
+        try {
+            __ansiColorFlag = true;
+            __conConsole = true;
+            __colorFormat.table.bandRow = "BG_BLUE";
+            var rows = [{ A: "first\ncontinuation", B: "1" }, { A: "second\ncontinued", B: "2" }, { A: "third", B: "3" }];
+            var colored = printTable(rows, __, false, true, "borderless", __, true, true, true);
+            var lines = colored.split("\n");
+            var plain = colored.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+            ow.test.assert(plain, printTable(rows, __, false, false, "borderless", __, true, true, false), "ANSI does not affect layout");
+            var hasBand = function(line) { return /\033\[(?:[0-9]+;)*44(?:;[0-9]+)*m/.test(line); };
+            ow.test.assert(hasBand(lines[2]), false, "First record unbanded");
+            ow.test.assert(hasBand(lines[3]), false, "First continuation unbanded");
+            ow.test.assert(hasBand(lines[5]) && hasBand(lines[6]), true, "Second record and continuation share banding");
+            ow.test.assert(hasBand(lines[7]), false, "Rule unbanded");
+            ow.test.assert(hasBand(lines[8]), false, "Third record unbanded");
+            var input = [{ A: ansiColor("RED", "⚽ alpha beta gamma"), B: "x" }, { A: "short", B: "y" }];
+            var wrapped = printTable(input, 18, false, true, "borderless", __, true, true, false).replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+            ow.test.assert(wrapped.indexOf("alpha") >= 0 && wrapped.indexOf("gamma") >= 0, true, "ANSI input wraps without losing content");
+            wrapped.trim().split("\n").slice(0, -1).forEach(function(line) {
+                ow.test.assert(visibleLength(line) <= 18, true, "Wrapped ANSI input visible width");
+            });
+        } finally {
+            __ansiColorFlag = oldAnsi;
+            __conConsole = oldConsole;
+            __colorFormat.table.bandRow = oldBand;
+        }
     };
 
     exports.testWithMDWrap = function() {
@@ -303,7 +551,9 @@
         ow.test.assert(structured.indexOf("| name | score |") >= 0, true, "Problem with structured Markdown array table.")
         ow.test.assert(structured.indexOf("- one") >= 0, true, "Problem with structured Markdown list.")
         ow.test.assert(structured.indexOf("# text\n\n```\nfirst line\nsecond line\n```") >= 0, true, "Problem with structured Markdown string code block.")
-        ow.test.assert(structured.indexOf("| title | Example |") >= 0 && structured.indexOf("- one") >= 0, true, "Problem with structured Markdown table or list strings.")
+        ow.test.assert(structured.indexOf("# title\n\n```\nExample\n```") >= 0, true, "Problem with a scalar string in a mixed Markdown object.")
+        var flatMap = $output({ title: "Example", active: true }, { __format: "md" }, __, true)
+        ow.test.assert(flatMap.indexOf("| title | Example |") >= 0, true, "Problem with a flat Markdown map table.")
 
         var markdown = $output("# Heading\n\nParagraph", { __format: "md" }, __, true)
         ow.test.assert(markdown.indexOf("```") < 0, true, "Problem with raw Markdown string rendering.")
@@ -636,6 +886,7 @@
         var target = "(s: abc, num: -1.23456, bol: true, subMap: (x: 1, y: -1), subArr: [1 | 2 | 3], dt: 2020-01-01/12:34:56.000, subArr2: [(n: 1, b: true, s: abc, p: (x: 1, y: -1)) | (n: 2, b: false, s: 'xyz \\'a\\'', a: [4 | 5 | 6]) | (n: 3, b: false, s: axZ xyz)])";
 
         ow.test.assert(ow.format.toSLON(orig), target, "Problem with toSLON.");
+        ow.test.assert(af.fromSLON(ow.format.toSLON({ p: "C:\\temp\\x" })).p, "C:\\temp\\x", "Problem with toSLON backslash round trip.");
 
         var slon = "(a: 1, b: abc, c: 123aBc, d: 1.1, e: 1.2.3, f: [ 'ab:12' | '12:ab' ], g: [ ( x: 1 ) | ( y: abc , z :  ab  cd  ) ])"
         var json = {"a":1,"b":"abc","c":"123aBc","d":1.1,"e":"1.2.3","f":["ab:12","12:ab"],"g":[{"x":1},{"y":"abc","z":"ab  cd"}]}

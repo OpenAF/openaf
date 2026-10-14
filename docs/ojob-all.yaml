@@ -137,6 +137,9 @@ ojob:
     #  # my cmd-language code to output the args variable created in pre to a json string representation for parsing
     #withFile: ".cmdlang"      # If a command needs a file with a specific extension
 
+  # Structured adapters may opt into protocol: json-file-v1 with executable, extension,
+  # optional scriptArgs/versionArgs and pre/pos wrappers using OJOB_ARGS_FILE/OJOB_RESULT_FILE.
+
   ## --- DEBUG ---
 
   debug      : true   # Boolean to determine if ow.debug should be applied to the code of javascript OpenAF jobs[].exec
@@ -300,9 +303,13 @@ jobs:
   type      : simple  # either simple, jobs, shutdown, subscribe and periodic (see more in typeArgs)
   typeArgs  :
     noTemplateArgs: true # Boolean to indicate that any "{{ }}" handlebars entry on args should not be processed before the actual processing starts (defaults to the inverse of ojob.templateArgs)
-    noTemplate    : false # Boolean to indicate if the "exec" contents should or not be parsed as a template with the current execution args (helpfull for shell or ssh langs)
+    noTemplate    : false # Java defaults to true. Boolean to indicate if the "exec" contents should or not be parsed as a template with the current execution args (helpfull for shell or ssh langs)
     shellPrefix   : myprefix # When "lang: shell" or "lang: ssh" it will prefix all stdout lines immediatelly (if value equals an args property the property value will be used instead)
     pwd           : '/tmp' # If defined will change the current working directory to the provided path (doesn't apply to langs openaf, js, ssh and python)
+    langExecutable: # Optional executable path/name for structured local runners
+    langExecutableArgs: [] # Extra runtime arguments (argv array)
+    langTimeout: # Positive compilation/execution timeout in milliseconds; default unlimited
+    langArgs: {} # goImports, javaImports, javaClasspath (arrays)
     langFn  : # The same as ojob.langs.langFn
     returnFn: # The same as ojob.langs.returnFn
     returnRE: # The same as ojob.langs.returnRE
@@ -367,8 +374,8 @@ jobs:
 
   ## --- CODE EXECUTION ---
 
-  lang       : my-language  # built-in: winssh, ssh, js, oaf, python (requires python), shell, sh, powershell (requires powershell), go (requires go), ruby (requires ruby), perl (requires perl))
-  file       : fileWithCode.cmdlang  # see "code:"
+  lang       : my-language  # built-in: winssh, ssh, js, javascript, oaf, python (requires python), shell, sh, powershell (requires powershell), go (requires go), ruby (requires ruby), perl (requires perl), node, swift, java (requires JDK 21+))
+  file       : fileWithCode.cmdlang  # filesystem-only body; execFile/typeArgs.file can use "code:"
   exec       : |
     // A piece of code on the specified language (defaults to javascript OpenAF)
     // Using "args" variable and "job" variable
@@ -377,12 +384,13 @@ jobs:
   execFile   : # equivalent to typeArgs.file
   
 # === CODE SEPARATION ===
-# Map used to separate javascript OpenAF code from the "jobs:" section. 
+# Map used to separate executable source (JavaScript or another lang) from "jobs:".
 # Each map entry corresponds to a javascript libray (via the require function) filename which each job, on "jobs:" section, can include using the
 # "jobs[].typeArgs.execRequire" or the "jobs[].execFile" or "jobs[].typeArgs.file" options. For execRequire the contents should include a "exports.nameOfJob" function
 # that will be called with the job's execution args; for execFile the contents should be a direct replacement for jobs[].exec.
-# If the filename entry exists in the "code:" it will be prefered from the local filesystem version.
-# If the entry does not end with ".js" it will be used to replace any jobs[].typeArgs.file for jobs[].type != 'jobs'.
+# execFile/typeArgs.file prefer an embedded entry over the filesystem; jobs[].file is filesystem-only.
+# Entries can be job bodies; matching JavaScript modules also enter the require cache.
+# Export/import local source with -exportcode / -importcode; see docs/ojob.md.
 code:
   codeFileS.sh: |
     echo Hello World!

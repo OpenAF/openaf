@@ -20,6 +20,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testIOJSON;
  
+   - name: IO::IO Test JSON array stream
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testJSONArray;
+
    - name: IO::IO Test Stream JSON
      from: IO::Init
      to  : oJob Test
@@ -65,7 +70,20 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testTAR;
 
+   - name: IO::JSON metadata traversal
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJSONMetadata;
+
+   - name: IO::JSON extraction
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testJSONExtraction;
+
 todo:
+   - IO::JSON extraction
+   - IO::JSON metadata traversal
+   - IO::IO Test JSON array stream
    # IO tests
    # --------
    - IO::IO Test JSON

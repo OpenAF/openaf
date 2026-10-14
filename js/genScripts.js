@@ -160,27 +160,16 @@ function generateWinPyBat() {
   var s;
 
   s = "@echo off\n\n";
-  s = s + "setlocal EnableExtensions\n"
+  s = s + "setlocal EnableExtensions DisableDelayedExpansion\n"
   s = s + "set thispath=%~dp0\n"
   s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
-  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
-  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
+  s = s + "set \"JAVA_HOME=" + javaHome + "\"\n";
+  s = s + "set \"OAF_DIR=" + classPath + "\"\n";
   s = s + "\n";
   s = s + "chcp 65001 > NUL\n";
-  s = s + "set OAF_PY_SCRIPT=%~1\n";
-  s = s + "if not \"%~1\"==\"\" shift\n";
-  s = s + "set /a OAF_PY_ARGC=0\n";
-  s = s + ":oaf_py_argloop\n";
-  s = s + "if \"%~1\"==\"\" goto oaf_py_argsdone\n";
-  s = s + "set \"OAF_PY_ARG_%OAF_PY_ARGC%=%~1\"\n";
-  s = s + "set /a OAF_PY_ARGC+=1\n";
-  s = s + "shift\n";
-  s = s + "goto oaf_py_argloop\n";
-  s = s + ":oaf_py_argsdone\n";
-  s = s + "\n";
-  //s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --py -e \"%OAF_PY_SCRIPT%\"";
-  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --py -e \"%OAF_PY_SCRIPT%\"\n";
+  s += "\"%JAVA_HOME%\\bin\\java\" %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar \"%OAF_DIR%\" --py %*\n";
+  s += "exit /b %ERRORLEVEL%\n";
   return s;
 }
 
@@ -254,26 +243,15 @@ function generateUnixPyScript() {
 
   s = "#!" + shLocation + "\n";
   s += "CDIR=`pwd`\n"
-  s += "cd `dirname $0`\n"
+  s += "cd \"$(dirname \"$0\")\"\n"
   s += "DIR=`pwd`\n"
   s += "cd \"$CDIR\"\n"
   s += genUnixSttyRestore()
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
-  s += "SCRIPT=$1\n";
-  s += "if [ $# -gt 0 ]; then\n"
-  s += "  shift\n"
-  s += "fi\n";
-  s += "\n";
-  s += "i=0\n";
-  s += "for a in \"$@\"; do\n";
-  s += "  export OAF_PY_ARG_$i=\"$a\"\n";
-  s += "  i=$((i+1))\n";
-  s += "done\n";
-  s += "export OAF_PY_ARGC=$i\n";
-  s += "\n";
-  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar $OAF_DIR --py -e \"$SCRIPT\"\n";
+  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar \"$OAF_DIR\" --py \"$@\"\n";
+  s += "exit $?\n";
   return s;
 }
 
@@ -318,7 +296,9 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "DIR=`pwd`\n"
   s += "cd \"$CDIR\"\n"
   s += genUnixSttyRestore()
-  if (isCon) s += "if stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
+  // isCon == "notty": only when stdin isn't the terminal (e.g. oafp reading typed input needs canonical mode for Ctrl-D/echo)
+  if (isCon == "notty") s += "if [ ! -t 0 ] && stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
+  else if (isCon) s += "if stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
@@ -456,8 +436,8 @@ var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, u
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixPyScript = generateUnixPyScript()
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
-  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"", __, __, true)
-  unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"", __, __, true)
+  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"", __, __, "notty")
+  unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"", __, __, "notty")
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 //}
 

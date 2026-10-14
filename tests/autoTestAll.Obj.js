@@ -72,6 +72,56 @@
         ow.test.assert(res500.responseCode, 500, "Problem with obtaining and parsing the HTTP 500 code");
     };
 
+    exports.testObjectEdgeCases = function() {
+        ow.loadObj();
+        [null, undefined, 0, false, "value"].forEach(value => {
+            var input = { a: value };
+            ow.test.assert(ow.obj.getPath(input, "a.b"), undefined, "Cannot traverse a scalar or absent parent");
+            ow.test.assert(ow.obj.getPath(input, "a"), value, "Terminal values are preserved");
+        });
+        ow.test.assert(ow.obj.getPath({ a: [] }, "a[2].b"), undefined, "Missing array elements do not throw");
+        var mapped = mapArray([{ a: null }, { a: { b: 2 } }], "a.b");
+        ow.test.assert(mapped.length, 2, "mapArray keeps missing entries");
+        ow.test.assert(isUnDef(mapped[0]), true, "mapArray tolerates missing parents");
+        ow.test.assert(mapped[1], 2, "mapArray keeps available values");
+
+        var rows = [-2, -1.5, -1, 0, 1.2, 1.5, 1.8, 2, 10].map(n => ({ details: { n: n } }));
+        var cases = [
+            [">=1.5", [1.5, 1.8, 2, 10]], [">1.5", [1.8, 2, 10]],
+            ["<=-1.5", [-2, -1.5]], ["<-1.5", [-2]],
+            [">=+1.5e0", [1.5, 1.8, 2, 10]], ["<.5", [-2, -1.5, -1, 0]],
+            [">=2", [2, 10]]
+        ];
+        [1, 2].forEach(threads => cases.forEach(test => {
+            var result = ow.obj.searchArray(rows, { "details.n": test[0] }, true, false, threads);
+            ow.test.assert(result.map(r => r.details.n).sort((a, b) => a - b), test[1], "Numeric comparison " + test[0]);
+        }));
+        var mixed = [{ n: "10" }, { n: "2" }, { n: null }, {}, { n: false }, { n: "" }, { n: " " }, { n: "bad" }];
+        ow.test.assert(ow.obj.searchArray(mixed, { n: ">2" }, true, false, 1), [{ n: "10" }], "Numeric strings compare numerically");
+        ow.test.assert(ow.obj.searchArray(mixed.slice(2), { n: "<=0" }, true, false, 1), [], "Missing and nonnumeric values are not zero");
+        ow.test.assert(ow.obj.searchArray([{ n: ">=1.5" }], { n: ">=1.5" }, false, false, 1), [{ n: ">=1.5" }], "Literal mode is unchanged");
+        ow.test.assert(ow.obj.searchArray([{ n: ">1x" }, { n: 2 }], { n: ">1x" }, true, false, 1), [{ n: ">1x" }], "Partial numeric patterns remain regexes");
+        ow.test.assert(ow.obj.searchArray([{ n: "HELLO" }], { n: "^hello$" }, true, true, 1), [{ n: "HELLO" }], "Case-insensitive regexes are unchanged");
+        ow.test.assert(searchArray([{ n: "HELLO" }, { n: "other" }], { n: "^hello$" }, true, true, 1), [{ n: "HELLO" }], "Global searchArray forwards every option");
+
+        var data = [{ id: 1, detail: { tags: ["a", "b"] } }, { id: 2 }];
+        ["_", ".", "|", "[", "$&", "::", ""].forEach(separator => {
+            var column = "detail" + separator + "tags";
+            var expected = [{ id: 1 }, { id: 1 }, { id: 2 }];
+            expected[0][column] = "a"; expected[1][column] = "b"; expected[2][column] = "n/a";
+            ow.test.assert(ow.obj.flatten(data, separator, "n/a"), expected, "Nested scalar arrays and literal separator " + separator);
+        });
+        ow.test.assert(data, [{ id: 1, detail: { tags: ["a", "b"] } }, { id: 2 }], "Flatten preserves its input");
+        var previous = global._trav, hadTraversal = Object.prototype.hasOwnProperty.call(global, "_trav");
+        try {
+            global._trav = "caller-owned";
+            ow.obj.flatten([{ id: 1 }]);
+            ow.test.assert(global._trav, "caller-owned", "Flatten does not overwrite global helpers");
+        } finally {
+            if (hadTraversal) global._trav = previous; else delete global._trav;
+        }
+    };
+
     exports.testRESTClosesOwnedClientAfterFailure = function() {
         var originalFactory = ow.obj.rest.connectionFactory;
         var closeCount = 0;
@@ -156,9 +206,9 @@
         var ar = [ {a:1}, {a:2}, {a:3}];
         var res = ow.obj.fromArray2OrderedObj(ar);
 
-        ow.test.assert(res["0"], 1, "Problem with first map element on array to ordered object");
-        ow.test.assert(res["2"], 3, "Problem with last map element on array to ordered object");
-        ow.test.assert(res["1"], 2, "Problem with middle map element on array to ordered object");
+        ow.test.assert(res["0"], { a: 1 }, "Problem with first map element on array to ordered object");
+        ow.test.assert(res["2"], { a: 3 }, "Problem with last map element on array to ordered object");
+        ow.test.assert(res["1"], { a: 2 }, "Problem with middle map element on array to ordered object");
     };
 
     exports.testOrdObj2Array = function() {
@@ -167,16 +217,16 @@
         var ar = { "1": { a:1}, "2": {a:2}, "3": {a:3}}
         var res = ow.obj.fromOrderedObj2Array(ar);
 
-        ow.test.assert(res[0], 1, "Problem with first map element on array to ordered object");
-        ow.test.assert(res[2], 3, "Problem with last map element on array to ordered object");
-        ow.test.assert(res[1], 2, "Problem with middle map element on array to ordered object");
+        ow.test.assert(res[0], { a: 1 }, "Problem with first map element on array to ordered object");
+        ow.test.assert(res[2], { a: 3 }, "Problem with last map element on array to ordered object");
+        ow.test.assert(res[1], { a: 2 }, "Problem with middle map element on array to ordered object");
 
         ar = { "row_2": { a:3}, "row_1": {a:2}, "row_0": {a:1}};
         res = ow.obj.fromOrderedObj2Array(ar, (a,b) => { return Number(a.replace(/row_/,"")) - Number(b.replace(/row_/,"")) });
 
-        ow.test.assert(res[0], 1, "Problem with first map element on array to ordered object with function");
-        ow.test.assert(res[2], 3, "Problem with last map element on array to ordered object with function");
-        ow.test.assert(res[1], 2, "Problem with middle map element on array to ordered object with function");
+        ow.test.assert(res[0], { a: 1 }, "Problem with first map element on array to ordered object with function");
+        ow.test.assert(res[2], { a: 3 }, "Problem with last map element on array to ordered object with function");
+        ow.test.assert(res[1], { a: 2 }, "Problem with middle map element on array to ordered object with function");
     };    
 
     exports.testSyncArray = function() {

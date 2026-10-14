@@ -77,6 +77,8 @@ Save a definition as `hello.yaml` and run `ojob hello.yaml name=World`. Argument
 | `ojob hello.yaml -deps` | Show dependency and composition paths. |
 | `ojob hello.yaml -compile` | Expand includes and print YAML. This does not compile JavaScript to native code. |
 | `ojob hello.yaml -tojson` | Expand includes and print JSON. |
+| `ojob hello.yaml -exportcode dir=hello-code` | Export local embedded source and inline job bodies with a manifest. |
+| `ojob hello.yaml -importcode dir=hello-code output=updated.yaml` | Import edited source into a new definition. |
 | `ojob hello.yaml -which` | Show local/oPack lookup result or an explicit URL. |
 | `ojob -global` | List definitions in `OJOB_LOCALPATH`. |
 | `ojob -shortcuts` | List registered shortcut mappings. |
@@ -701,7 +703,7 @@ jobs:
 - name: "PowerShell Job"
   lang: powershell
   exec: | #powershell
-    $_args.psResult = "success"
+    $_args | Add-Member -NotePropertyName psResult -NotePropertyValue "success" -Force
 
 # Alternative Python execution
 - name: "Python File Job"
@@ -728,7 +730,50 @@ jobs:
     args.nodeResult = "success"
 ```
 
-Without `lang`, jobs run as OpenAF JavaScript (`oaf`, `js`, or `javascript`). For JSON-based external runners, reserve stdout for the returned argument map; extra diagnostic output can prevent parsing. `sh` executes commands line by line through `$sh`; `shell` executes a script and can map a final `# return name, otherName` declaration back into args.
+Without `lang`, jobs run as **OpenAF JavaScript** (`oaf`, `js`, or `javascript`), with OpenAF APIs in the current JVM. `lang: node` runs **Node.js** in a separate process: it has Node APIs and JSON arguments, not OpenAF globals. There is no TypeScript adapter.
+
+Node, Go, Ruby, Perl, Swift, PowerShell, and Java exchange `args` through UTF-8 JSON files. stdout and stderr are logs and no longer interfere with results. A successful job must produce a JSON object; the generated wrapper does this automatically. Results merge using the existing OpenAF `merge` behavior (including array concatenation). Failed jobs never merge their result. JSON cannot represent arbitrary runtime objects or exact integers beyond JavaScript's safe range.
+
+```yaml
+jobs:
+- name: Java example
+  lang: java
+  typeArgs:
+    langTimeout: 30000
+    langArgs:
+      javaImports: [java.time.Instant]
+      javaClasspath: []
+  exec: |
+    System.out.println("Java is running");
+    args.put("javaResult", Instant.now().toString());
+```
+
+Java uses a JDK 21+ source launcher, defaulting to the current Java installation, and Gson from the OpenAF distribution. `exec` (or `file`) is a Java method body with `Map<String,Object> args`. JSON numbers are `Long` or `Double`; use `Number` when reading them. Imports omit the final semicolon; classpath entries are paths, not a platform-separated string. No dependencies are downloaded. Java source is literal by default; set `noTemplate: false` to opt into source templating. Other existing language defaults remain unchanged.
+
+For these local structured runners:
+
+| Option | Meaning |
+| --- | --- |
+| `typeArgs.langExecutable` | Executable name or path, overriding the adapter default; e.g. `pwsh` instead of `powershell`. |
+| `typeArgs.langExecutableArgs` | Array of extra arguments before the script arguments. |
+| `typeArgs.langTimeout` | Positive milliseconds covering compilation and execution; absent means unlimited. Separate from job-level `timeout`. |
+| `typeArgs.pwd` | Child working directory. Paths and executable arguments containing spaces are supported. |
+| `typeArgs.shellPrefix` | Prefix buffered stdout/stderr log lines after execution. |
+| `typeArgs.noTemplate` | Keep source literal when true. Pass data through `args` rather than interpolating it into code. |
+
+Temporary input, source, and result files are removed on success, failure, and timeout. Timeouts terminate the direct process and tracked descendants. OS restrictions can prevent descendant enumeration, and deliberately detached children are not a containment guarantee. The process helper reports `descendantTracking` so callers can distinguish that limitation.
+
+`ow.oJob.getLanguages()` lists registered languages, prerequisites, and supported process options. `getLanguages(true)` additionally runs local probes with a five-second limit; it does not install software. `available: null` means the adapter has no local probe. Python retains `OAF_PYTHON` and its existing bridge configuration; new process options are rejected for Python, shell/SSH, and legacy adapters that do not advertise support.
+
+**Migration:** built-in structured runners now require the generated result file; printing JSON alone or exiting before the wrapper finishes no longer returns arguments. stdout is always logging. Arguments are no longer copied into environment variables for these runners; use their existing `args` variable (`$_args` in PowerShell, `$args` in Perl). Source runs from a temporary file; Node's `require` resolves from the child working directory. Python retains its existing bridge. `sh`, `shell`, SSH and Kubernetes retain their current conventions, including shell `# return` support.
+
+### Custom language adapters
+
+Existing `ojob.langs` entries using `shell`, `pre`, `pos`, `withFile`, `returnRE`, `returnFn`, or `langFn` retain their contract, including overrides of built-in names. To use file-based argument exchange, explicitly register `protocol: json-file-v1` with an `executable`, `extension`, optional `scriptArgs`/`versionArgs`, and `pre`/`pos` wrappers. The wrapper reads `OJOB_ARGS_FILE` and writes a JSON object to `OJOB_RESULT_FILE`. `pre` receives template variables `argsFile`, `resultFile`, and `langArgs`; `pos` is literal source. Paths are also available through the environment, avoiding source quoting issues.
+
+For adapters implementing their own protocol, `ow.oJob.runLanguageProcess(argv, {pwd, env, timeout})` returns `{stdout, stderr, exitcode, timedOut, descendantTracking}` with concurrent UTF-8 output capture. `env` overlays the inherited environment; stdin is closed. Set `processOptions: true` only when the adapter implements the documented process options. Register cleanup with `ow.oJob.registerLanguageCleanup(name, fn)`; it runs after oJob workers stop.
+
+The optional Rust oPack retains complete Rust programs, environment arguments, and JSON stdout results, with compilation caching and bounded execution. Prolog and Kubernetes remain optional adapters with their existing interfaces.
 
 ### Job Execution Control
 
@@ -859,9 +904,23 @@ jobs:
 
 ## Code Separation
 
-`execFile` (or `typeArgs.file`) reads the job body from a file. `execRequire` (or `typeArgs.execRequire`) calls the module export whose name **exactly matches the job name**, passing `args`. `ojob.execRequire` supplies a common module for jobs without inline bodies. Mutate `args` inside the exported function.
+Use a module when you want to test the same JavaScript independently and package it inside an oJob. Use a raw body when it needs the job execution context.
 
-The `code` map embeds source by filename. Embedded modules enter the `require` cache; other embedded code can be resolved by `typeArgs.file`. For example:
+| Source | Behavior |
+| --- | --- |
+| `jobs[].exec` | Inline source in the selected `lang`, defaulting to OpenAF JavaScript. |
+| `execFile` / `typeArgs.file` | Uses the matching top-level `code` entry first, otherwise reads a filesystem file. |
+| `execRequire` / `typeArgs.execRequire` | Calls the module export whose name exactly matches the job name, passing `args`. Mutate `args` inside that function. |
+| `ojob.execRequire` | Default module for eligible JavaScript jobs with empty inline bodies. |
+| `typeArgs.execJs` / `typeArgs.execPy` | Reads a filesystem body and selects OpenAF JavaScript / Python. |
+| `jobs[].file` | Reads a filesystem body directly, overriding earlier source selection; it does not resolve embedded `code`. |
+| YAML anchors / aliases | Reuses YAML values, including `exec` strings, inside one document. |
+
+Avoid combining source selectors. In the loader, `execJs` is applied before the empty-body `execRequire` fallback, then `execPy`, then `typeArgs.file` (including `execFile`), then `jobs[].file`. An inline body suppresses the module fallback. `type: jobs` uses file options for nested oJob definitions instead of executable bodies.
+
+Filesystem body paths use the process working directory; `require` also searches installed oPack paths. Embedded keys are matched literally. Extracting a file does not make it override an embedded copy. Run a standalone test from the export directory, then re-import before testing the packaged workflow. Start a fresh process to avoid cached source from an earlier load.
+
+The `code` map embeds source by filename. JavaScript entries are retained as bodies and, when the existing module heuristic matches, registered in the `require` cache. An IIFE around exports is the established module form:
 
 ```yaml
 todo:
@@ -875,16 +934,48 @@ jobs:
   execRequire: handlers.js
 
 code:
-  handlers.js: |
+  handlers.js: |-
     (function() {
       exports.Normalize = function(args) {
         args.text = args.text.toUpperCase();
-        print(args.text);
       };
     })();
 ```
 
-Avoid an inline `exec` when using `execRequire`: the module call is generated only when the inline body is empty. A JSON data file is not an executable job body; read it with `io.readFileJSON` or `ojob file get`.
+For a raw body, use `execFile: normalize.js` and put the body itself under `code["normalize.js"]`. For other languages, retain `lang`, for example `lang: python` with `execFile: normalize.py`. Extracted bodies may rely on `args`, `job`, `id`, composition, or language adapters; provide that context in a test harness. The command exports source, without generating execution wrappers.
+
+### Export, test, and import source
+
+The local source operations support `.yaml`, `.yml`, and `.json`. They parse one document without executing jobs, evaluating tagged code, loading modules, fetching URLs, or expanding `include` / `jobsInclude`. Process included definitions separately. Encrypted definitions and executable YAML tags are unsupported.
+
+```sh
+# Export code entries and inline jobs[].exec bodies.
+ojob workflow.yaml -exportcode dir=workflow-code
+
+# Export one inline body to a chosen file.
+ojob workflow.yaml -exportcode job=Transform file=transform.js
+
+# Select another string property using a JSON pointer.
+ojob workflow.yaml -exportcode path=/code/handlers.js dir=handlers-code
+
+# Import into a new definition; omit output to write the definition to stdout.
+ojob workflow.yaml -importcode dir=workflow-code output=workflow.updated.yaml
+
+# Explicitly replace the original definition.
+ojob workflow.yaml -importcode dir=workflow-code inplace=true
+```
+
+Source operations accept one operation flag and only their documented options; do not combine them with `-compile`, `-f`, or execution options.
+
+The default export/import directory is `<definition-stem>-code`; specify `dir` to use another location. Export writes `.ojob-code.json` alongside the source files. It records the canonical input path, property pointers, job identities, and source hashes. Keep it with the exported files. Import checks those mappings against the original input; unrelated edits are allowed, but conflicting source edits or renamed/reordered jobs are rejected. An unchanged export/import returns the original definition text. Re-importing the same edits is allowed.
+
+`code` filenames are retained. Inline bodies use `jobs/<index>-<sanitized-name>.<extension>`. JavaScript uses `.js`, Python `.py`, shell `.sh`, and other known languages their usual extension; custom languages use `.txt`. Set `extension=ext` on export to choose an extension for generated filenames. Explicit `file` requires one selected string; when `dir` is omitted, the file's parent becomes the export directory. JSON pointers escape `/` as `~1` and `~` as `~0`; for example `/code/scripts~1task.sh`.
+
+Existing files are refused unless `force=true` is set. This permits file replacement, but does not bypass definition-source conflicts. Import with `output` keeps the input format. Output files are replaced using an atomic move after all mappings and destinations are checked. A multi-file export is not a filesystem transaction.
+
+Import replaces only selected scalar ranges. It preserves surrounding YAML text, comments, and untouched properties; changed block scalars use literal style with explicit indentation. Quoted/flow scalars use quoted strings; source containing carriage returns or control characters also uses quoted strings. JSON formatting outside changed strings is retained. Editing an alias directly, or changing an anchor in a way that modifies unselected properties, fails rather than silently rewriting shared values. Use separate scalar values when independent editing is required.
+
+See [the standalone module workflow](./authoring-testing.md#test-an-embedded-module-from-a-file) for complete runnable commands. A JSON data file is not an executable job body; read it with `io.readFileJSON` or `ojob file get`.
 
 ## State and Scheduling
 

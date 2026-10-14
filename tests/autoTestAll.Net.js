@@ -7,21 +7,26 @@
 
     exports.testGetDoHWithCustomServer = function() {
         ow.loadServer();
+        ow.loadNet();
 
         var port = findRandomOpenPort();
-        var request = {};
+        var request = {}, question;
         var hs = ow.server.httpd.start(port, "127.0.0.1");
         ow.server.httpd.route(hs, {
             "/dns-query": function(req) {
                 request = req;
-                var answer = new Packages.org.xbill.DNS.Message();
+                var query = new Packages.org.xbill.DNS.Message(java.util.Base64.getUrlDecoder().decode(String(req.params.dns)));
+                question = query.getQuestion();
+                var answer = new Packages.org.xbill.DNS.Message(query.getHeader().getID());
+                answer.getHeader().setFlag(Packages.org.xbill.DNS.Flags.QR);
+                answer.addRecord(question, Packages.org.xbill.DNS.Section.QUESTION);
                 answer.addRecord(new Packages.org.xbill.DNS.ARecord(
                     Packages.org.xbill.DNS.Name.fromString("example.test."),
                     Packages.org.xbill.DNS.DClass.IN,
                     60,
                     java.net.InetAddress.getByName("192.0.2.1")
                 ), Packages.org.xbill.DNS.Section.ANSWER);
-                return ow.server.httpd.replyBytes(answer.toWire(), "application/dns-message", 200, {});
+                return ow.server.httpd.reply(answer.toWire(), 200, "application/dns-message", {});
             }
         });
 
@@ -30,6 +35,9 @@
             ow.test.assert(answer, [{ name: "example.test.", type: 1, TTL: 60, data: "192.0.2.1" }], "Problem using a custom DNS over HTTPS server.");
             ow.test.assert(isString(request.params.dns), true, "Problem passing the DNS query to a custom DNS over HTTPS server.");
             ow.test.assert(request.header.accept, "application/dns-message", "Problem requesting the DNS wire response from a custom DNS over HTTPS server.");
+            ow.test.assert(String(question.getName()), "example.test.", "Wrong DNS question name");
+            ow.test.assert(question.getType(), Packages.org.xbill.DNS.Type.A, "Wrong DNS question type");
+            ow.test.assert(question.getDClass(), Packages.org.xbill.DNS.DClass.IN, "Wrong DNS question class");
         } finally {
             ow.server.httpd.stop(hs);
         }

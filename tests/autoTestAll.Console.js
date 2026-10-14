@@ -62,3 +62,80 @@ exports.testLauncherSettings = function() {
   ow.test.assert(source.indexOf("--enable-native-access=ALL-UNNAMED") >= 0, true, "Java 24 native-access flag missing.");
   ow.test.assert(source.indexOf("chcp 65001") >= 0, true, "Windows UTF-8 setup missing.");
 };
+
+exports.testInjectedPrompts = function() {
+  var eq = (a,b,msg) => ow.test.assert(a,b,msg), output = [], answers = ["wrong","2"], chars = ["z","\n"];
+  var console = {
+    readLinePrompt:function() {return answers.shift();},
+    readChar:function() {return chars.shift();},
+    getConsoleReader:function() {return {getTerminal:function() {return {getWidth:function() {return 100;}};}};}
+  };
+  var ui = {console:console,ansi:false,write:function(s) {output.push(s);}};
+  eq(askChoose("Pick",["one","two"],5,undefined,ui),1,"Numbered choice validation");
+  eq(output.length > 0,true,"Injected writer receives numbered menu");
+  ui.ansi = true;output=[];
+  eq(askChoose("Pick",["one","two"],5,undefined,ui),0,"No-match search retains valid choice");
+  eq(output.join("").indexOf("\x1B[?25h") >= 0,true,"Restore cursor");
+  eq(askChoose("Empty",[],5,undefined,ui),undefined,"Empty choices cancel safely");
+  answers=[null];ui.ansi=false;
+  eq(askChoose("EOF",["one"],5,undefined,ui),undefined,"EOF cancels");
+  chars=["\x03"];ui.ansi=true;
+  eq(askChoose("Cancel",["one"],5,undefined,ui),undefined,"Ctrl-C cancels menu");
+};
+
+exports.testPromptFamily = function() {
+  var answers = ["bad", "2,1,2", "", null, "value", "secret"], output = [];
+  var ui = {ansi:false, write:function(s) {output.push(s);}, console:{
+    readLinePrompt:function() {return answers.shift();}, readChar:function() {return "Y";}
+  }};
+  ow.test.assert(askChooseMultiple("Pick", ["one","two"], __, __, ui), ["one","two"], "Validate and deduplicate numbered selections");
+  ow.test.assert(askChooseMultiple("None", ["one"], __, __, ui), [], "Blank selects none");
+  ow.test.assert(askChooseMultiple("EOF", ["one"], __, __, ui), __, "EOF cancels multiple selection");
+  ow.test.assert(askDef(__, "Value", false, false, ui), "value", "Default prompt uses injected console");
+  ow.test.assert(af.decrypt(askStruct([{name:"password",type:"secret"}], ui)[0].answer), "secret", "Structured secrets use injected console");
+  ow.test.assert(askStruct([{name:"confirm",type:"char",options:"YN"}], ui)[0].answer, "Y", "Structured char uses injected console");
+  ow.test.assert(output.indexOf("confirm: ") >= 0, true, "Char prompt uses injected writer");
+  var chars = ["z", " ", "\n"];
+  ui.ansi = true;
+  ui.console.readChar = function() {return chars.shift();};
+  ui.console.getConsoleReader = function() {return {getTerminal:function() {return {getWidth:function() {return 100;}};}};};
+  ow.test.assert(askChooseMultiple("Filter", ["one","two"], 0, __, ui), ["one"], "No-match filter keeps valid selection");
+  chars = ["\x03"];
+  ow.test.assert(askChooseMultiple("Cancel", ["one"], __, __, ui), __, "Ctrl-C cancels multiple selection");
+  ui.console.readChar = function() {throw "read failed";};
+  output = [];
+  var failed = false;
+  try {askChooseMultiple("Failure", ["one"], __, __, ui);} catch(e) {failed = true;}
+  ow.test.assert(failed, true, "Read error propagates");
+  ow.test.assert(output[output.length - 1], "\x1B[?25h", "Read error restores cursor");
+  ui.ansi = false;
+  ow.loadOJob();
+  answers = ["two", "2", "1,2"];
+  var result = ow.oJob.askOnHelp({expects:[{name:"text"},{name:"option",options:["one","two"]},{name:"multi",moptions:["one","two"]}]}, ui);
+  ow.test.assert(result, {text:"two",option:"two",multi:"one,two"}, "oJob routes all prompts through UI");
+};
+
+exports.testAskKey = function() {
+  var keys = codes => { var q = codes.slice(); return { read: t => q.length ? q.shift() : -2 }; };
+  var one = codes => askKey(keys(codes));
+  var seq = s => s.split("").map(c => c.charCodeAt(0));
+  ow.test.assert(one(seq("\x1b[A")), "up", "CSI up");
+  ow.test.assert(one(seq("\x1bOB")), "down", "SS3 down");
+  ow.test.assert(one(seq("\x1b[C")), "right", "CSI right");
+  ow.test.assert(one(seq("\x1b[1;5D")), "left", "Modified left");
+  ow.test.assert(one(seq("\x1b[H")), "home", "Home");
+  ow.test.assert(one(seq("\x1b[4~")), "end", "End (tilde)");
+  ow.test.assert(one(seq("\x1b[5~")), "pgup", "PgUp");
+  ow.test.assert(one(seq("\x1b[6~")), "pgdn", "PgDn");
+  ow.test.assert(one(seq("\x1b[3~")), "delete", "Delete");
+  ow.test.assert(one(seq("\x1b[Z")), "shift-tab", "Shift-Tab");
+  ow.test.assert(one([27]), "esc", "Lone ESC");
+  ow.test.assert(one(seq("\x1bx")), "alt-x", "Alt key");
+  ow.test.assert(one([13]), "enter", "Enter");
+  ow.test.assert(one([127]), "backspace", "Backspace");
+  ow.test.assert(one([3]), "ctrl-c", "Ctrl-C");
+  ow.test.assert(one([97]), "a", "Printable");
+  ow.test.assert(one([0xD83D, 0xDE00]), "\uD83D\uDE00", "Surrogate pair");
+  ow.test.assert(one([-2]), __, "Timeout");
+  ow.test.assert(one([-1]), "eof", "EOF");
+};

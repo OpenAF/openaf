@@ -1,0 +1,23 @@
+ojob:
+  daemon: true
+  logToConsole: false
+  timeInterval: 100
+  daemonFunc: |
+    return Number($get("authoring.ticks")) >= 2;
+jobs:
+- name: Tick
+  type: periodic
+  typeArgs:
+    cron: "* * * * * *"
+    waitForFinish: true
+  exec: |
+    var count = Number($get("authoring.ticks") || 0) + 1;
+    $set("authoring.ticks", count);
+    print("tick: " + count);
+- name: Cleanup
+  type: shutdown
+  exec: |
+    print("cleanup: ok");
+todo:
+- Cleanup
+- Tick

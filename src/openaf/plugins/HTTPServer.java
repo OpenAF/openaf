@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.lang.String;
 import com.sun.net.httpserver.HttpExchange;
@@ -76,6 +77,7 @@ public class HTTPServer extends ScriptableObject {
 	// Java implementation fields  
 	protected HttpServer javaHttpServer;
 	protected HttpsServer javaHttpsServer;
+    private ExecutorService javaExecutor;
 	protected String impl;
 	protected boolean isSecure = false;
 	protected Map<String, HttpHandler> javaHandlers = new ConcurrentHashMap<>();
@@ -426,17 +428,21 @@ public class HTTPServer extends ScriptableObject {
 				sslContext.init(kmf.getKeyManagers(), null, null);
 				javaHttpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
 				
-				javaHttpsServer.setExecutor(Executors.newCachedThreadPool());
+				javaExecutor = Executors.newCachedThreadPool();
+				javaHttpsServer.setExecutor(javaExecutor);
 				javaHttpsServer.start();
 				isSecure = true;
 				
 			} catch (Exception e) {
+                javaHttpsServer.stop(0);
+                if (javaExecutor != null) javaExecutor.shutdownNow();
 				throw new IOException("Failed to configure HTTPS", e);
 			}
 		} else {
 			// HTTP server
 			javaHttpServer = HttpServer.create(address, 0);
-			javaHttpServer.setExecutor(Executors.newCachedThreadPool());
+			javaExecutor = Executors.newCachedThreadPool();
+			javaHttpServer.setExecutor(javaExecutor);
 			javaHttpServer.start();
 			isSecure = false;
 		}
@@ -556,12 +562,13 @@ public class HTTPServer extends ScriptableObject {
 	@JSFunction
 	public void stop() {
 		if (USE_JAVA_HTTP_SERVER) {
-			if (javaHttpServer != null) {
-				javaHttpServer.stop(0);
-			}
-			if (javaHttpsServer != null) {
-				javaHttpsServer.stop(0);
-			}
+            try {
+                if (javaHttpServer != null) javaHttpServer.stop(0);
+                if (javaHttpsServer != null) javaHttpsServer.stop(0);
+            } finally {
+                // HttpServer.stop does not release its caller-supplied executor.
+                if (javaExecutor != null) javaExecutor.shutdownNow();
+            }
 		} else {
 			if (USE_NWU2) {
 				if (httpd2 != null) {

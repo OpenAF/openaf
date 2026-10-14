@@ -766,8 +766,9 @@ OpenWrap.sec.prototype.SBucket.prototype.getNewObj = function(sBucket, aLockSecr
        try {
           margs = $fnDef4Help(v._obj);
        } catch(e) {
-          margs = $fnDef4Help(v._obj + "." + v._obj);
+          margs = [];
        }
+       if (margs.length == 0) margs = $fnDef4Help(v._obj + "." + v._obj);
        margs.map(a => {
           var vv = (isDef(v._args[a]) ? v._args[a] : defaultArgs[a]);
           if (isUnDef(vv)) {

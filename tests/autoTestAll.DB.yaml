@@ -19,9 +19,21 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testDBTypeConversion;     
 
+   - name: DB::Prepared statement binds and cache
+     from: DB::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDBPreparedStatements;
+
+   - name: DB::Statement error cleanup
+     from: DB::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDBStatementCleanup;
+
 todo:
    # DB tests
    # ------------
    - DB::Init
    - DB::Simple DB in memory
    - DB::DB type conversion to JS
+   - DB::Prepared statement binds and cache
+   - DB::Statement error cleanup

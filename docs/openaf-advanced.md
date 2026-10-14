@@ -296,6 +296,52 @@ log("TTY=" + caps.isTTY + ", color=" + caps.colorMode + ", unicode=" + caps.unic
 
 Renderers automatically degrade for non-TTY, low-color and non-Unicode environments, so prefer the semantic palette instead of hard-coded ANSI sequences.
 
+### Customizing colors with `__colorFormat`
+
+`__colorFormat` is the global map holding the ANSI colors/styles used by `colorify`, `cprint*`, `printTable`, `printTree`, the `ask*` prompts and markdown rendering (`ow.format.withMD`). Each value is a comma-separated list of `ansiColor` attributes (e.g. `"BOLD,CYAN"`).
+
+| Entry | Purpose |
+|-------|---------|
+| `key`, `number`, `string`, `boolean`, `date`, `default` | Colors per data type (maps, trees, tables) |
+| `askPre`, `askQuestion`, `askChoose`, `askChooseFilter`, `askPos` | Colors for `ask`, `askChoose` and `askChooseMultiple` |
+| `askChooseChars` | Characters for choose prompts (`chooseMultipleSelected`, `chooseMultipleUnselected`, `chooseUp`, `chooseDown`, `chooseLine`) |
+| `table` | `{ lines, value, title, bandRow, format }`; `format` (`table`, `stable`, `ctable`, `btable`, `bstable`) is the default table renderer for `$output` when no global/explicit format is set |
+| `tree` | `{ lines }` color of tree connectors |
+| `md` | Markdown theme: `codeBlock`, `codeInline`, `heads` (`h1`–`h4`), `line`, `link`, `bullets`, `list`, `strike`, `note` (missing entries get defaults on first use) |
+
+```javascript
+__colorFormat.string = "GREEN";
+__colorFormat.table.title = "BOLD,UNDERLINE";
+__colorFormat.md.heads.h1 = "CYAN,BOLD";
+cprint({ name: "openaf", ok: true, n: 1 });
+```
+
+### Side-line themes (`ow.format.withSideLineThemes`)
+
+`ow.format.withSideLine(text, width, lineColor, textColor, theme, extra)` wraps text with a side line or box; `ow.format.withSideLineThemes()` returns the available themes by name (also used by `__colorFormat.md.*.theme`).
+
+A theme is a map of characters: `ltop`, `tmiddle`, `rtop` (top border), `lmiddle`, `rmiddle` (sides), `lbottom`, `bmiddle`, `rbottom` (bottom border) and `tab` (tab replacement, default 3 spaces). Borders are only drawn when the corner characters are defined.
+
+| Family | Themes |
+|--------|--------|
+| Plain sides | `simpleOneSpace`, `simpleLine`, `doubleOneSpace`, `doubleLine`, `doubleLineBothSides` |
+| Sides with tips | `simpleLineWithTips`, `simpleLineWithTopTip`, `simpleLineWithBottomTip`, `simpleLineWithCTips`, `simpleLineWithCTopTip`, `simpleLineWithCBottomTip`, `simpleLineWithRTips`, `simpleLineWithRTopTip`, `simpleLineWithRBottomTip`, `doubleLineWithRTips` |
+| Closed boxes | `closedOneSpace`, `closedRect`, `closedDoubleRect`, `closedCurvedRect` |
+| Open boxes | `openTopRect`, `openBottomRect`, `openRect`, `openTopCurvedRect`, `openBottomCurvedRect`, `openCurvedRect`, `openCurvedSpace`, `blockCurvedSpace` |
+
+```javascript
+ow.loadFormat();
+var t = ow.format.withSideLineThemes();
+print(ow.format.withSideLine("Hello\nworld", 40, "YELLOW", __, t.closedCurvedRect, { header: " note ", headerAlign: "center" }));
+```
+
+For closed themes, `extra` accepts `header`, `footer`, `headerAlign` and `footerAlign` (`left`, `center`, `right`). Add your own themes (names that clash with built-in ones keep the built-in definition) by setting `__flags.sideLineCustomThemes` before calling `withSideLineThemes()`:
+
+```javascript
+__flags.sideLineCustomThemes = { arrow: { lmiddle: ">" } };
+print(ow.format.withSideLine("custom", __, "GREEN", __, ow.format.withSideLineThemes().arrow));
+```
+
 ### Dashboard composition
 
 ```javascript

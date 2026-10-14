@@ -165,8 +165,12 @@ OpenWrap.metrics.prototype.__m = {
         if (isMap(_hspF)) {
             var o = ow.java.parseHSPerf(_hspF.path)
 
+            if (!isMap(o)) return __
+            var sun = o.sun || {}, gc = sun.gc || {}, rt = sun.rt || {}
+            var vm = (((o.java || {}).property || {}).java || {}).vm || {}
+            var generations = gc.generation || [], collectors = gc.collector || []
             var gcGens = []
-            $from(o.sun.gc.generation).select(gen => {
+            $from(generations).select(gen => {
               gcGens.push({
                 gen  : gen.name,
                 used : gen.__totalUsed,
@@ -176,7 +180,7 @@ OpenWrap.metrics.prototype.__m = {
             })
 
             var gcCols = []
-            gcCols = o.sun.gc.collector.map(r => {
+            gcCols = collectors.filter(isMap).map(r => {
                 return {
                   name : r.name,
                   count: r.invocations,
@@ -192,8 +196,8 @@ OpenWrap.metrics.prototype.__m = {
             })
 
             var gcSpaces = []
-            $from(o.sun.gc.generation).select(gen => {
-                $from(gen.space).select(space => {
+            $from(generations).select(gen => {
+                $from(gen.space || []).select(space => {
                   gcSpaces.push({
                     gen  : gen.name,
                     space: space.name,
@@ -205,38 +209,38 @@ OpenWrap.metrics.prototype.__m = {
             })
 
             var mem = { max: 0, total: 0, used: 0, free: 0 }
-            $from(o.sun.gc.generation).select(gen => {
-              $from(gen.space).select(space => {
+            $from(generations).select(gen => {
+              $from(gen.space || []).select(space => {
                 mem.max   = (mem.max < Number(space.maxCapacity)) ? Number(space.maxCapacity) : mem.max
                 mem.used  = mem.used + Number(space.used)
-                mem.total = isNumber(space.capacity) ? mem.total + Number(space.capacity) : mem.total
+                mem.total = isDef(space.capacity) && isFinite(Number(space.capacity)) ? mem.total + Number(space.capacity) : mem.total
               })
             })
 
             return {
                 java: {
-                    cmd: o.sun.rt.javaCommand,
-                    started: o.sun.rt.__createVmBeginDate.toISOString(),
-                    jvmName: o.java.property.java.vm.name,
-                    jvmVersion: o.java.property.java.vm.version,
-                    jvmVendor: o.java.property.java.vm.vendor,
-                    gcCause: o.sun.gc.cause,
-                    gcLastCause: o.sun.gc.lastCause,
-                    appTime: ow.loadFormat().round(o.sun.rt.__percAppTime, 2),
-                    vmStart: o.sun.rt.__createVmBeginDate
+                    cmd: rt.javaCommand,
+                    started: isDate(rt.__createVmBeginDate) ? rt.__createVmBeginDate.toISOString() : __,
+                    jvmName: vm.name,
+                    jvmVersion: vm.version,
+                    jvmVendor: vm.vendor,
+                    gcCause: gc.cause,
+                    gcLastCause: gc.lastCause,
+                    appTime: isNumber(rt.__percAppTime) ? ow.loadFormat().round(rt.__percAppTime, 2) : __,
+                    vmStart: rt.__createVmBeginDate
                 },
                 gcGens: gcGens,
                 gcCollections: gcCols,
                 gcSpaces: gcSpaces,
                 memory: {
-                    max: mem.max,
-                    total: mem.total,
-                    used: mem.used,
-                    free: mem.total - mem.used,
-                    metaMax: (isMap(o.sun.gc.metaspace) ? o.sun.gc.metaspace.maxCapacity : __),
-                    metaTotal: (isMap(o.sun.gc.metaspace) ? o.sun.gc.metaspace.capacity : __),
-                    metaUsed: (isMap(o.sun.gc.metaspace) ? o.sun.gc.metaspace.used : __),
-                    metaFree: (isMap(o.sun.gc.metaspace) ? o.sun.gc.metaspace.capacity - o.sun.gc.metaspace.used : __)
+                    max: gcSpaces.length ? mem.max : __,
+                    total: gcSpaces.length ? mem.total : __,
+                    used: gcSpaces.length ? mem.used : __,
+                    free: gcSpaces.length ? mem.total - mem.used : __,
+                    metaMax: (isMap(gc.metaspace) ? gc.metaspace.maxCapacity : __),
+                    metaTotal: (isMap(gc.metaspace) ? gc.metaspace.capacity : __),
+                    metaUsed: (isMap(gc.metaspace) ? gc.metaspace.used : __),
+                    metaFree: (isMap(gc.metaspace) ? gc.metaspace.capacity - gc.metaspace.used : __)
                 }
             }
         } else {

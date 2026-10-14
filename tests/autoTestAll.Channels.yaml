@@ -157,7 +157,25 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testShiftError;
 
+   - name: Channels::Concurrent lifecycle
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testConcurrentLifecycle;
+
+   - name: Channels::Lifecycle idempotency
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLifecycleIdempotency;
+
+   - name: Channels::Lifecycle failure and reentry
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLifecycleFailureAndReentry;
+
 todo:
+   - Channels::Concurrent lifecycle
+   - Channels::Lifecycle idempotency
+   - Channels::Lifecycle failure and reentry
    - Channels::Proxy bulk delete
    - Channels::Proxy queue
    - Channels::Shift error propagation

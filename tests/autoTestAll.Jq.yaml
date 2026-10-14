@@ -1,0 +1,41 @@
+include:
+  - oJobTest.yaml
+jobs:
+  - name: Jq::Init
+    exec: args.tests = require("autoTestAll.Jq.js");
+  - name: Jq::Corpus
+    from: Jq::Init
+    to: oJob Test
+    exec: args.func = args.tests.testJqCorpus;
+  - name: Jq::API
+    from: Jq::Init
+    to: oJob Test
+    deps: [Jq::Corpus]
+    exec: args.func = args.tests.testJqAPI;
+  - name: Jq::Errors
+    from: Jq::Init
+    to: oJob Test
+    deps: [Jq::API]
+    exec: args.func = args.tests.testJqErrors;
+  - name: Jq::Known differences
+    from: Jq::Init
+    to: oJob Test
+    deps: [Jq::Errors]
+    exec: args.func = args.tests.testJqKnownDifferences;
+  - name: Jq::Cache
+    from: Jq::Init
+    to: oJob Test
+    deps: [Jq::Known differences]
+    exec: args.func = args.tests.testJqCache;
+  - name: Jq::Parallel
+    from: Jq::Init
+    to: oJob Test
+    deps: [Jq::Cache]
+    exec: args.func = args.tests.testJqParallel;
+todo:
+  - Jq::Corpus
+  - Jq::API
+  - Jq::Errors
+  - Jq::Known differences
+  - Jq::Cache
+  - Jq::Parallel

@@ -325,7 +325,7 @@ OpenWrap.java.prototype.maven.prototype.processMavenFile = function(aDirectory, 
         arts.artifacts.forEach((arts) => {
             var version, hasVersion = false;
 
-            if (isDef(arts.version) && arts != "latest") {
+            if (isDef(arts.version) && arts.version != "latest") {
                 version = arts.version;
                 hasVersion = true;
             } else {
@@ -399,15 +399,16 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersionsSpecific = function(art
     var filename = templify(aFilenameTemplate, {
         version: version
     });
-    var filenameT = templify(aFilenameTemplate, {
-        version: ".*"
-    });    
+    var filenameT = "^" + aFilenameTemplate.split(/\{\{\{?\s*version\s*\}\}\}?/)
+        .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join(".*") + "$";
 
     if (isUnDef(aFunction)) {
         aFunction = function() { return true; };
     }
 
     $from(io.listFiles(aOutputDir).files)
+    .equals("isFile", true)
     .notEquals("filename", filename)
     .match("filename", filenameT)
     .select((r) => {
@@ -785,7 +786,7 @@ OpenWrap.java.prototype.JMX.prototype.getObjects = function(aObj) {
         })
         if (isDef(type)) {
             if (isDef(name)) {
-                res[type] = {}
+                if (isUnDef(res[type])) res[type] = {}
                 try {
                     res[type][name] = this.getObject(obj)
                 } catch(e) {
@@ -907,7 +908,7 @@ OpenWrap.java.prototype.IMAP = function(aServer, aUser, aPassword, isSSL, aPort,
 OpenWrap.java.prototype.IMAP.prototype.__getFolder = function(aFolder) {
     aFolder = _$(aFolder, "folder").isString().default("Inbox");
 
-    if (isDef(this.folders[aFolder])) {
+    if (isDef(this.folders[aFolder]) && this.folders[aFolder].isOpen()) {
         return this.folders[aFolder];
     } else {
         this.folders[aFolder] = this.store.getFolder(aFolder);
@@ -928,7 +929,10 @@ OpenWrap.java.prototype.IMAP.prototype.__getFolder = function(aFolder) {
  */
 OpenWrap.java.prototype.IMAP.prototype.close = function(aFolder) {
     var _c = (aF) => {
-        if (isDef(this.folders[aF])) this.folders[aF].close();
+        if (isDef(this.folders[aF])) {
+            if (this.folders[aF].isOpen()) this.folders[aF].close();
+            delete this.folders[aF];
+        }
     };
 
     if (isDef(aFolder)) {
@@ -952,9 +956,10 @@ OpenWrap.java.prototype.IMAP.prototype.getMessages = function(aFolder, aNumber) 
 
     var res = [];
     var end = Number(this.getMessageCount(aFolder));
-    var start = end - aNumber;
+    aNumber = Math.max(0, Math.floor(aNumber));
+    var start = Math.max(1, end - aNumber + 1);
 
-    for(var ii = end -1; ii >= start; ii--) {
+    for(var ii = end; ii >= start; ii--) {
         res.push(this.getMessage(aFolder, ii));
     }
     return res;
@@ -972,37 +977,40 @@ OpenWrap.java.prototype.IMAP.prototype.getSortedMessages = function(aFolder, aTy
     aNumber = _$(aNumber, "number").isNumber().default(5);
     aType   = _$(aType, "type").isString().default("from");
     aTerm   = _$(aTerm, "term").isString().default("");
+    aNumber = Math.max(0, Math.floor(aNumber));
+    if (aNumber == 0) return [];
+    var searchTerm = null;
 
     switch(aType.toUpperCase()) {
     case "FROM": 
         aType = Packages.com.sun.mail.imap.SortTerm.FROM;
-        aTerm = new javax.mail.search.FromStringTerm(aTerm);
+        searchTerm = new javax.mail.search.FromStringTerm(aTerm);
         break;
     case "ARRIVAL": aType = Packages.com.sun.mail.imap.SortTerm.ARRIVAL; break;
     case "CC": 
         aType = Packages.com.sun.mail.imap.SortTerm.CC; 
-        aTerm = new javax.mail.search.RecipientTerm(aTerm);
+        searchTerm = new javax.mail.search.RecipientStringTerm(javax.mail.Message.RecipientType.CC, aTerm);
         break;
     case "DATE": aType = Packages.com.sun.mail.imap.SortTerm.DATE; break;
     case "REVERSE": aType = Packages.com.sun.mail.imap.SortTerm.REVERSE; break;
     case "SIZE": aType = Packages.com.sun.mail.imap.SortTerm.SIZE; break;
     case "SUBJECT": 
         aType = Packages.com.sun.mail.imap.SortTerm.SUBJECT; 
-        aTerm = new javax.mail.search.SubjectTerm(aTerm);
+        searchTerm = new javax.mail.search.SubjectTerm(aTerm);
         break;
     case "TO": 
         aType = Packages.com.sun.mail.imap.SortTerm.TO; 
-        aTerm = new javax.mail.search.RecipientTerm(aTerm);
+        searchTerm = new javax.mail.search.RecipientStringTerm(javax.mail.Message.RecipientType.TO, aTerm);
         break;
+    default: throw "Unsupported IMAP sort type: " + aType;
     }
 
     var fold = this.__getFolder(aFolder);
-    var msgs = fold.getSortedMessages([aType], aTerm);
+    var msgs = fold.getSortedMessages([aType], searchTerm);
 
-    var res = [], cc = 0;
-    for(var ii in msgs) {
+    var res = [];
+    for(var ii = 0; ii < msgs.length && ii < aNumber; ii++) {
         res.push(this.__translateMsg(msgs[ii]));
-        if (cc > aNumber) break; else cc++;
     }
   
     return res;
@@ -1073,6 +1081,7 @@ OpenWrap.java.prototype.IMAP.prototype.getMessage = function(aFolder, aNum) {
 OpenWrap.java.prototype.IMAP.prototype.__translateMsg = function(res) {
     var msg = {};
     if (isDef(res)) {
+        var content = res.getContent();
         msg = {
             num: res.getMessageNumber(),
             from: af.fromJavaArray(res.getFrom()),
@@ -1083,7 +1092,7 @@ OpenWrap.java.prototype.IMAP.prototype.__translateMsg = function(res) {
             sentDate: res.getSentDate(),
             encoding: res.getEncoding(),
             size: res.getSizeLong(),
-            bodyParts: res.getContent().getCount(),
+            bodyParts: content instanceof javax.mail.Multipart ? Number(content.getCount()) : 0,
             object: res
         };
     }
@@ -2231,7 +2240,11 @@ OpenWrap.java.prototype.getClassVersion = function(aClassBytes) {
 
     if (isString(aClassBytes)) aClassBytes = io.readFileBytes(aClassBytes);
 
-    switch(aClassBytes[7]) {
+    if (isUnDef(aClassBytes) || aClassBytes.length < 8 ||
+        (aClassBytes[0] & 255) != 202 || (aClassBytes[1] & 255) != 254 ||
+        (aClassBytes[2] & 255) != 186 || (aClassBytes[3] & 255) != 190) return __;
+    var major = ((aClassBytes[6] & 255) << 8) | (aClassBytes[7] & 255);
+    switch(major) {
     case 45: ver = "1.1"; break;
     case 46: ver = "1.2"; break;
     case 47: ver = "1.3"; break;
@@ -2246,6 +2259,7 @@ OpenWrap.java.prototype.getClassVersion = function(aClassBytes) {
     case 56: ver = "12"; break;
     case 57: ver = "13"; break;
     case 58: ver = "14"; break;
+    default: if (major >= 59) ver = String(major - 44);
     }
 
     return ver;
@@ -2341,92 +2355,103 @@ OpenWrap.java.prototype.getLocalJavaPIDs = function(aUserID, aTmpDir) {
 
 /**
  * <odoc>
- * <key>ow.java.parseHSPerf(aByteArrayOrFile, retFlat) : Map</key>
+ * <key>ow.java.parseHSPerf(aByteArrayOrFile, retFlat, options) : Map</key>
  * Given aByteArray or a file path for a java (hotspot jvm) hsperf file (using ow.java.getLocalJavaPIDs or similar) will return the java performance information parsed into a map.
- * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent value plus additional calculations with the prefix "__"
+ * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent exact string value. Nested output includes available derived calculations with the prefix "__".
+ * Supports HotSpot perfdata 2.0 (Java 8+), with long scalars and UTF-8 strings. options.metadata=true returns {values, header, entries}; entries use original counter names.
+ * options.strict=true throws descriptive parse errors, including unsupported counter types/shapes; otherwise unsupported counters are skipped and invalid or inaccessible buffers return 4. File and argument errors throw.
+ * Header overflow reports counters that could not be stored. Derived timer values use the reported frequency; application time is an estimate.
  * </odoc>
  */
-OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
+OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat, options) {
     if (isString(aByteArray)) aByteArray = io.readFileBytesRO(aByteArray)
-
     if (!isByteArray(aByteArray)) throw "aByteArray argument provided not a java byte array"
-    retFlat    = _$(retFlat, "retFlat").isBoolean().default(false)
-
-    var buffer = aByteArray, pos
-
-    var readName = function(aNameLen) {
-        var sb = ""
-        while(aNameLen-- > 0) {
-            var ch = buffer[pos++] & 0xff
-            if (ch != 0) sb += String.fromCharCode(ch)
+    retFlat = _$(retFlat, "retFlat").isBoolean().default(false)
+    options = _$(options, "options").isMap().default({})
+    var metadata = _$(options.metadata, "options.metadata").isBoolean().default(false)
+    var strict = _$(options.strict, "options.strict").isBoolean().default(false)
+    var res = {}, entries = {}, header
+    var fail = function(field, offset) { throw new Error("Invalid HSPerf " + field + " at offset " + offset) }
+    var buffer = java.nio.ByteBuffer.wrap(aByteArray)
+    var size = aByteArray.length
+    var intAt = function(offset) { return Number(buffer.getInt(offset)) }
+    // BigInteger.toString avoids Rhino unboxing a Java long through a JS Number.
+    var longAt = function(offset) {
+        var bytes = java.util.Arrays.copyOfRange(aByteArray, offset, offset + 8)
+        if (header.byteOrder == 1) {
+            for (var i = 0; i < 4; i++) { var t = bytes[i]; bytes[i] = bytes[7-i]; bytes[7-i] = t }
         }
-        return sb
+        return String(new java.math.BigInteger(bytes).toString())
     }
-
-    var readInt = function() {
-        var v = Number(java.math.BigInteger([ buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++] ].reverse()).intValue())
-        return (v < 0 ? Math.pow(2,32) + v : v)
+    var stringAt = function(offset, end, field) {
+        var stop = offset
+        while (stop < end && aByteArray[stop] != 0) stop++
+        if (stop == end) fail(field + " terminator", offset)
+        return String(new java.lang.String(aByteArray, offset, stop - offset, java.nio.charset.StandardCharsets.UTF_8))
     }
-
-    var readLong = function() {
-        var v = Number(java.math.BigInteger([ buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++] ].reverse()).longValue())
-        return (v < 0 ? Math.pow(2,32) + v : v)
-    }
-
-    var res = {}
     try {
-        pos = 0
-        var value = readInt()
-        if (value != 0xc0c0feca) return 4
-
-        readInt()
-        var length = readInt()
-        if (length > buffer.length) return 4
-
-        readInt()
-        readInt()
-        readInt()
-        readInt()
-
-        var count = readInt()
-        while(count-- > 0) {
-            var start = pos
-            var len = readInt()
-
-            if (start + len > length) return 4
-
-            var nameStart = readInt()
-            if (nameStart + len > length) return 4
-
-            var slen = readInt()
-            var kind = readInt()
-
-            var valStart = readInt()
-            if (valStart + len > length || valStart < nameStart) return 4
-
-            pos = start + nameStart
-            var nameLen = valStart - nameStart
-
-            var propName = readName(nameLen)
-            var s = ""
-            var type = kind & 0xff
-            switch(type) {
-            case 0x4a: s += readLong()   ; break
-            case 66  : s = readName(slen); break
-            default  : s = "0"
+        if (size < 32) fail("header length", 0)
+        if (intAt(0) != -889274176) fail("magic", 0)
+        header = { magic: "0xcafec0c0", byteOrder: aByteArray[4] & 255,
+            majorVersion: aByteArray[5] & 255, minorVersion: aByteArray[6] & 255,
+            accessible: aByteArray[7] & 255, bufferSize: size }
+        if (header.byteOrder > 1) fail("byte order", 4)
+        if (header.majorVersion != 2 || header.minorVersion != 0) fail("version", 5)
+        if (header.accessible != 1) fail("accessibility", 7)
+        buffer.order(header.byteOrder == 1 ? java.nio.ByteOrder.LITTLE_ENDIAN : java.nio.ByteOrder.BIG_ENDIAN)
+        header.used = intAt(8)
+        header.overflow = intAt(12)
+        header.modificationTimeStamp = longAt(16)
+        header.entryOffset = intAt(24)
+        header.numEntries = intAt(28)
+        if (header.used < 32 || header.used > size) fail("used", 8)
+        if (header.overflow < 0) fail("overflow", 12)
+        if (header.entryOffset < 32 || header.entryOffset > header.used || header.entryOffset % 4) fail("entry offset", 24)
+        if (header.numEntries < 0 || header.numEntries > (header.used - header.entryOffset) / 20) fail("entry count", 28)
+        var start = header.entryOffset
+        for (var n = 0; n < header.numEntries; n++) {
+            if (start % 4 || start + 20 > header.used) fail("entry header", start)
+            var len = intAt(start), nameOffset = intAt(start+4), vectorLength = intAt(start+8)
+            var type = aByteArray[start+12] & 255, flags = aByteArray[start+13] & 255
+            var units = aByteArray[start+14] & 255, variability = aByteArray[start+15] & 255
+            var dataOffset = intAt(start+16)
+            if (len < 20 || len % 4 || len > header.used - start) fail("entry length", start)
+            if (nameOffset < 20 || nameOffset >= len) fail("name offset", start+4)
+            if (dataOffset <= nameOffset || dataOffset >= len) fail("data offset", start+16)
+            if (vectorLength < 0) fail("vector length", start+8)
+            if (units < 1 || units > 6 || variability < 1 || variability > 3) fail("units or variability", start+14)
+            var name = stringAt(start+nameOffset, start+dataOffset, "name")
+            var value
+            if (type == 74 && vectorLength == 0) {
+                if (dataOffset + 8 > len || (start + dataOffset) % 8) fail("long payload", start+dataOffset)
+                value = longAt(start+dataOffset)
+            } else if (type == 66 && vectorLength > 0 && units == 5) {
+                if (vectorLength > len-dataOffset) fail("string payload", start+dataOffset)
+                value = stringAt(start+dataOffset, start+dataOffset+vectorLength, "string")
+            } else if (strict) {
+                fail("type or vector shape", start+12)
+            } else {
+                // Unknown counter types/shapes (e.g. from newer JVMs) are skipped instead of failing the whole buffer
+                start += len
+                continue
             }
-            res[propName] = s
-
-            pos = start + len
+            Object.defineProperty(res, name, { value: value, enumerable: true, configurable: true, writable: true })
+            if (metadata) Object.defineProperty(entries, name, { enumerable: true, value: {
+                type: String.fromCharCode(type), flags: flags, units: units, variability: variability,
+                vectorLength: vectorLength, entryLength: len, entryOffset: start,
+                nameOffset: nameOffset, dataOffset: dataOffset
+            } })
+            start += len
         }
     } catch(e) {
-        throw e
+        if (strict) throw e
+        return 4
     }
 
     if (!retFlat) {
         var res2 = {}
         Object.keys(res).forEach(k => {
-            nk = k.replace(/\.self$/, "_self")
+            var nk = k.replace(/\.self$/, "_self")
             nk = nk.replace(/(\.)0*(\d+)(\.)?/g, "[$2]$3")
     
             if (nk.indexOf("[") > 0) {
@@ -2443,33 +2468,54 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
             $$(res2).set(nk, res[k])
         })
 
-        res2.sun.rt.__createVmBeginDate = new Date(Number(res2.sun.rt.createVmBeginTime))
-        res2.sun.rt.__createVmEndDate   = new Date(Number(res2.sun.rt.createVmEndTime))
-        res2.sun.rt.__vmInitDoneDate    = new Date(Number(res2.sun.rt.vmInitDoneTime))
-        res2.sun.rt.__totalRunningTime  = isDef(res2.sun.os) ? (isDef(res2.sun.os.hrt.ticks) ? Number(res2.sun.os.hrt.ticks) / 1000000 : now() - res2.sun.rt.__createVmBeginDate) : __
-
-        var accTime = 0
-        for(var i in res2.sun.gc.collector) {
-            if (res2.sun.gc.collector[i].lastEntryTime > 0) {
-                res2.sun.gc.collector[i].__lastEntryDate = new Date(Number(res2.sun.rt.createVmBeginTime) + Number(res2.sun.gc.collector[i].lastEntryTime/1000000))
-                res2.sun.gc.collector[i].__lastExitDate  = new Date(Number(res2.sun.rt.createVmBeginTime) + Number(res2.sun.gc.collector[i].lastExitTime/1000000))
-                res2.sun.gc.collector[i].__lastExecTime  = res2.sun.gc.collector[i].__lastExitDate.getTime() - res2.sun.gc.collector[i].__lastEntryDate.getTime()
-                res2.sun.gc.collector[i].__avgExecTime   = (res2.sun.gc.collector[i].time/1000000) / res2.sun.gc.collector[i].invocations
-
-                accTime += res2.sun.gc.collector[i].time/1000000
-            }
+        var sun = res2.sun || {}, rt = sun.rt, gc = sun.gc
+        var hrt = (sun.os || {}).hrt || {}
+        var valid = v => isDef(v) && isFinite(Number(v))
+        var scale = valid(hrt.frequency) && Number(hrt.frequency) > 0 ? 1000 / Number(hrt.frequency) : __
+        if (isMap(rt)) {
+            ["createVmBegin", "createVmEnd", "vmInitDone"].forEach(key => {
+                if (valid(rt[key + "Time"]) && Number(rt[key + "Time"]) > 0) {
+                    var date = new Date(Number(rt[key + "Time"]))
+                    if (isFinite(date.getTime())) rt["__" + key + "Date"] = date
+                }
+            })
+            if (isDef(scale) && valid(hrt.ticks)) rt.__totalRunningTime = Number(hrt.ticks) * scale
+            else if (isDate(rt.__createVmBeginDate)) rt.__totalRunningTime = now() - rt.__createVmBeginDate.getTime()
         }
-        for(var i in res2.sun.gc.generation) {
-            res2.sun.gc.generation[i].__totalUsed = $from(res2.sun.gc.generation[i].space).sum("used")
+        var accTime = 0, hasTime = false
+        if (isMap(gc)) {
+            Object.keys(gc.collector || {}).forEach(key => {
+                var c = gc.collector[key]
+                if (!isMap(c) || isUnDef(scale)) return
+                if (valid(c.time)) {
+                    accTime += Number(c.time) * scale
+                    hasTime = true
+                    if (valid(c.invocations) && Number(c.invocations) > 0) c.__avgExecTime = Number(c.time) * scale / Number(c.invocations)
+                }
+                if (valid(c.lastEntryTime) && Number(c.lastEntryTime) > 0 && rt && isDate(rt.__createVmBeginDate)) {
+                    c.__lastEntryDate = new Date(rt.__createVmBeginDate.getTime() + Number(c.lastEntryTime) * scale)
+                    if (valid(c.lastExitTime) && Number(c.lastExitTime) >= Number(c.lastEntryTime)) {
+                        c.__lastExitDate = new Date(rt.__createVmBeginDate.getTime() + Number(c.lastExitTime) * scale)
+                        c.__lastExecTime = (Number(c.lastExitTime) - Number(c.lastEntryTime)) * scale
+                    }
+                }
+            })
+            Object.keys(gc.generation || {}).forEach(key => {
+                var gen = gc.generation[key], used = 0, found = false
+                Object.keys(gen.space || {}).forEach(k => {
+                    if (valid(gen.space[k].used)) { used += Number(gen.space[k].used); found = true }
+                })
+                if (found) gen.__totalUsed = used
+            })
+            if (hasTime) gc.__collectorsAccTimeMs = accTime
         }
-
-        res2.sun.rt.__percAppTime         = 100 - ((accTime / res2.sun.rt.__totalRunningTime) * 100)
-        res2.sun.gc.__collectorsAccTimeMs = accTime
-
-        return res2
-    } else {
-        return res
+        // An estimate: collector times can overlap for concurrent collectors.
+        if (hasTime && rt && valid(rt.__totalRunningTime) && rt.__totalRunningTime > 0)
+            rt.__percAppTime = 100 - accTime / rt.__totalRunningTime * 100
+        res = res2
     }
+    return metadata ? { values: res, header: header, entries: entries } : res
+
 }
 
 /**
@@ -2485,7 +2531,7 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
 OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
     aList = _$(aList, "list").isArray().default(__)
 
-    if (!isNull(java.lang.System.getProperty("javax.net.ssl.trustStorePassword")))
+    if (isUnDef(aPassword) && !isNull(java.lang.System.getProperty("javax.net.ssl.trustStorePassword")))
         aPassword = String(java.lang.System.getProperty("javax.net.ssl.trustStorePassword"));
 
     aPassword = _$(aPassword, "password").isString().default("changeit");
@@ -2507,55 +2553,70 @@ OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
 
     var tmf = javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
     var ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
-    ks.load(new java.io.FileInputStream(new java.io.File(file)), (new java.lang.String("changeit")).toCharArray());
+    var trustStream = new java.io.FileInputStream(new java.io.File(file));
+    try {
+        ks.load(trustStream, (new java.lang.String(aPassword)).toCharArray());
+    } finally {
+        trustStream.close();
+    }
     tmf.init(ks);
     var tmf0 = tmf.getTrustManagers()[0];
     var ctx = javax.net.ssl.SSLContext.getInstance("SSL");
 
-    ctx.init(null, [new JavaAdapter(javax.net.ssl.X509TrustManager, {
-        __noError: false,
+    var trustManager = new JavaAdapter(javax.net.ssl.X509TrustManager, {
         checkClientTrusted: function(certs, authType) {
             //print("check client trusted");
             tmf0.checkClientTrusted(certs, authType);
         },
         checkServerTrusted: function(certs, authType) {
-            //print("check server trusted certs: " + certs.length + " authType: " + authType);
-            if (isUnDef(aList)) {
-                this.__noError = true
-            } else {
-                var checks = new Set()
-                for(var i = 0; i < certs.length; i++) {
-                    checks.add(certs[i].getSubjectDN().getCommonName())
-                    let _ar = (af.fromJavaArray(certs[i].getSubjectAlternativeNames().toArray()).map(af.fromJavaArray))
-                    _ar.forEach(r => checks.add(r[1]))
-             
-                    checks.forEach(r => {
-                        //print("Checking: " + r)
-                        for(var ii = 0; ii < aList.length; ii++) {
-                            if (String(r).endsWith(aList[ii])) {
-                                this.__noError = true
-                            }
+            var ignore = isUnDef(aList);
+            if (!ignore && certs.length > 0) {
+                var checks = [], hasDNS = false;
+                var sans = certs[0].getSubjectAlternativeNames();
+                if (sans != null) {
+                    af.fromJavaArray(sans.toArray()).forEach(san => {
+                        var type = Number(san.get(0));
+                        if (type == 2 || type == 7) {
+                            checks.push({ name: String(san.get(1)).toLowerCase(), dns: type == 2 });
+                            if (type == 2) hasDNS = true;
                         }
-                    })
+                    });
                 }
+                if (!hasDNS) {
+                    var dn = new javax.naming.ldap.LdapName(String(certs[0].getSubjectX500Principal().getName()));
+                    af.fromJavaArray(dn.getRdns().toArray()).forEach(rdn => {
+                        if (String(rdn.getType()).toLowerCase() == "cn")
+                            checks.push({ name: String(rdn.getValue()).toLowerCase(), dns: true });
+                    });
+                }
+                ignore = checks.some(check => aList.some(domain => {
+                    domain = String(domain).toLowerCase().replace(/\.$/, "");
+                    var name = check.name.replace(/\.$/, "");
+                    // a leading dot (e.g. ".corp.local") keeps its previous meaning: any subdomain of it
+                    var subOnly = domain.startsWith(".");
+                    domain = domain.replace(/^\.+/, "");
+                    return domain.length > 0 && ((!subOnly && name == domain) ||
+                        (check.dns && name.endsWith("." + domain)));
+                }));
             }
 
             try {
                 tmf0.checkServerTrusted(certs, authType);
             } catch(e) {
-                if (!this.__noError) throw e;
+                if (!ignore) throw e;
             }
         },
         getAcceptedIssuers: function() {
             //print("accept issuer");
             return tmf0.getAcceptedIssuers();
         }
-      })], new java.security.SecureRandom());
+      });
+    ctx.init(null, [trustManager], new java.security.SecureRandom());
       
     javax.net.ssl.SSLContext.setDefault(ctx);
     javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(ctx.getSocketFactory());
     global.__httpSSLSocketFactory = ctx.getSocketFactory()
-    global.__httpX509TrustManager = tmf0
+    global.__httpX509TrustManager = trustManager
 };
 
 OpenWrap.java.prototype.memComm = function(aFile, aSize) {
@@ -2632,9 +2693,9 @@ OpenWrap.java.prototype.jsonMemComm.prototype.send = function(aObj) {
     _$(aObj, "obj").isObject().$_();
     var t;
     
-    this.idx.rewind();
     this.idx.lock();
     try {
+        this.idx.rewind();
         var index = jsonParse(this.idx.receive(), true);
 
         var s = stringify(aObj, __, "");
@@ -2642,44 +2703,48 @@ OpenWrap.java.prototype.jsonMemComm.prototype.send = function(aObj) {
         var n = t + ".mem";
         index[t] = n;
         var tmp = new ow.java.memComm(this.dir + "/" + n, s.length * 4);
-        tmp.send(s);
+        try {
+            tmp.send(s);
+        } finally {
+            tmp.close();
+        }
     
         this.idx.rewind();
         this.idx.send(stringify(index, __, ""));
+    } finally {
         this.idx.unlock();
-    } catch(e) {
-        this.idx.unlock();
-        throw e;
     }
 
     return t;
 };
 
 OpenWrap.java.prototype.jsonMemComm.prototype.receive = function() {
-    var received = false; obj = [];
+    var received = false, obj = [];
     do {
         try {
             this.idx.lock();
             this.idx.rewind();
             var entries = jsonParse(this.idx.receive(), true);
-            Object.keys(entries).map(r => {
-                var tmp = new ow.java.memComm(this.dir + "/" + entries[r], io.fileInfo(this.dir + "/" + entries[r]).size);
-                obj.push({
-                    t: r,
-                    o: jsonParse(tmp.receive(), true)
-                });
+            Object.keys(entries).forEach(r => {
+                var file = this.dir + "/" + entries[r];
+                var tmp = new ow.java.memComm(file, io.fileInfo(file).size);
+                try {
+                    obj.push({
+                        t: r,
+                        o: jsonParse(tmp.receive(), true)
+                    });
+                } finally {
+                    tmp.close();
+                }
                 received = true;
-                tmp.close();
-                io.rm(entries[r]);
+                io.rm(file);
                 delete entries[r];
 
                 this.idx.rewind();
                 this.idx.send(stringify(entries, __, ""));
             });
+        } finally {
             this.idx.unlock();
-        } catch(e) {
-            this.idx.unlock();
-            throw e;
         }
         if (!received) sleep(150, true);
     } while(!received);

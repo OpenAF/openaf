@@ -19,8 +19,24 @@ jobs:
   from: Console::Init
   to: oJob Test
   exec: args.func = args.tests.testLauncherSettings;
+- name: Console::injected prompts
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testInjectedPrompts;
+
+- name: Console::prompt family
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testPromptFamily;
+
 todo:
+- Console::prompt family
+- Console::injected prompts
 - Console::legacy history
 - Console::completion callback
 - Console::facade
 - Console::launcher settings
+- name: Console::askKey
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testAskKey;
