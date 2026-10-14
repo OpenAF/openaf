@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "browserify": "17.0.1",
-    "@babel/core": "7.28.5",
+    "@babel/core": "7.29.7",
     "@babel/preset-env": "7.28.5",
     "terser": "5.44.1"
   }
