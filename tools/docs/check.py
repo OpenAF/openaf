@@ -9,6 +9,11 @@ import subprocess
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
+# Produced by autoTestAll.yaml and the badge steps in build-and-test.yml,
+# after the documentation check runs on a fresh checkout.
+GENERATED_LINK_TARGETS = frozenset({
+    "tests/asserts.svg", "tests/results.svg", "tests/autoTestAll.md",
+})
 
 
 def source_inventory():
@@ -60,7 +65,8 @@ def main():
             if parsed.scheme or parsed.netloc or not parsed.path:
                 continue
             dest = path.parent / unquote(parsed.path)
-            if not dest.exists():
+            generated = any(dest.resolve() == (ROOT / name).resolve() for name in GENERATED_LINK_TARGETS)
+            if not dest.exists() and not generated:
                 errors.append("%s: missing link %s" % (path.relative_to(ROOT), target))
     for copy in manifest["copies"]:
         blocks = re.findall(r"```" + re.escape(copy["language"]) + r"\n(.*?)```", (ROOT / copy["document"]).read_text(), re.S)
