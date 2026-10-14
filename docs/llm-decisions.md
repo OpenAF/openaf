@@ -82,10 +82,11 @@ One strategy handles the entire request. A failed request never triggers a strat
 | OpenAI structured | `transport`, `temperature`, `maxOutputTokens` | Transport is `responses` or `chat`; chosen before HTTP; temperature is 0–2; token limit is a positive integer |
 | OpenAI native | `safetyIdentifier` | Optional string of at most 128 characters; maps to `safety_identifier` |
 | OpenRouter native (`type: "openai"`) | None | Rejects all provider options; see the OpenRouter configuration below |
+| Microsoft Foundry native (`type: "openai"`) | None | Rejects all provider options and images |
 
 OpenAI structured execution defaults to `responses`; configuration `decisionTransport` can select `chat`. This setting is separate from `mode`. It never consults or updates conversational Responses fallback state. Configured Azure/Foundry/gateway URL and authentication routing remain in effect; actual structured-output availability is unknown until exercised. `noResponseFormat: true` disables eligibility for structured decisions.
 
-Native OpenAI uses `POST /v1/decisions` on the official `https://api.openai.com` base (optionally ending in `/v1`), with `mode: "openai"` and API version `v1`. The verified model is `gpt-6-luna`; `auto` selects native for that model and structured for other models. Explicit `strategy: "structured"` remains available. Unsupported models reject explicit native requests before HTTP; the model is never substituted. Azure and Foundry retain structured-only eligibility. Third-party gateways retain structured-only eligibility unless explicitly configured with `decisionApi: "openrouter"` as described below. Account availability remains unknown until execution.
+Native OpenAI uses `POST /v1/decisions` on the official `https://api.openai.com` base (optionally ending in `/v1`), with `mode: "openai"` and API version `v1`. The verified model is `gpt-6-luna`; `auto` selects native for that model and structured for other models. Explicit `strategy: "structured"` remains available. Unsupported models reject explicit native requests before HTTP; the model is never substituted. Azure and Foundry retain structured-only eligibility unless Foundry explicitly selects `decisionApi: "microsoft"` as described below. Third-party gateways retain structured-only eligibility unless explicitly configured with `decisionApi: "openrouter"` as described below. Account availability remains unknown until execution.
 
 Native requests reject `transport`, `temperature`, and `maxOutputTokens`; structured requests reject `safetyIdentifier`. Configuration `decisionTransport` applies only to structured execution. `noResponseFormat` disables structured eligibility but leaves eligible native requests available.
 
@@ -223,7 +224,7 @@ The script skips without the opt-in flag, fails without caller-supplied model/co
 
 ## OpenRouter native decisions through the OpenAI adapter
 
-Set `decisionApi: "openrouter"` explicitly to use the [OpenRouter Decisions API](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request). The default is `"openai"`; other selectors are rejected. OpenRouter requires `mode: "openai"` and cannot be combined with Azure or Foundry modes.
+Set `decisionApi: "openrouter"` explicitly to use the [OpenRouter Decisions API](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request). The default is `"openai"`; `"microsoft"` selects the Foundry contract described below. Other selectors are rejected. OpenRouter requires `mode: "openai"` and cannot be combined with Azure or Foundry modes.
 
 ```javascript
 var llm = $llm({
@@ -247,3 +248,45 @@ Native requests contain only `{model, state, questions}`. Text, object, and arra
 Results retain contract version 1 and `provider: "openai"`. `rawDecide()` preserves the provider envelope; statistics retain zero token counts and raw usage/cost. Failures are typed and never trigger automatic retries or fallback.
 
 For an opt-in live smoke, supply the example configuration as `OAF_MODEL` and run `OPENAF_DECISIONS_LIVE=1 java -jar openaf.jar -f tests/ai-decisions-live.js`. The script uses native decisions and requires probabilities when `decisionApi` is `openrouter`. Fixture success is separate from live model/account verification.
+
+## Microsoft-Decision-1 native decisions through Foundry
+
+Set `decisionApi: "microsoft"` with `type: "openai"`, `mode: "foundry"` (or `"azure-foundry"`) and API version `v1`. Deploy Microsoft-Decision-1 first and put **your deployment name** in `model`; it need not match the catalog model name. See [Microsoft's deployment and API guide](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+
+```javascript
+var llm = $llm({
+  type: "openai",
+  mode: "foundry",
+  decisionApi: "microsoft",
+  url: "https://RESOURCE.services.ai.azure.com",
+  key: "YOUR-FOUNDRY-API-KEY",
+  model: "YOUR-DEPLOYMENT-NAME"
+});
+var result = llm.decide("The API returns 500 on every call.", {
+  team: {
+    type: "choice", instructions: "Which team should handle this ticket?",
+    criteria: { billing: "Charges and refunds", engineering: "Bugs and outages" }
+  }
+}, { requireProbabilities: true });
+```
+
+The resource-root URL becomes `POST /providers/microsoft/v1/systemone`. A URL already ending in that complete path is also accepted, with trailing slashes removed. Other base paths (including `/models`, `/openai/v1`, and project endpoints) require an explicit absolute HTTP(S) `decisionUrl`; routes are never guessed. Native routing does not add `/openai/v1` or an `api-version` query parameter.
+
+Foundry defaults to `api-key` authentication. For Microsoft Entra ID, pass a caller-acquired access token as `key` and set `authType: "bearer"`; acquire the token for `https://cognitiveservices.azure.com/.default`. Token acquisition and renewal remain the caller's responsibility. Existing encrypted-key handling, custom headers, and timeout apply to both authentication styles.
+
+```javascript
+var entraLlm = $llm({
+  type: "openai", mode: "foundry", decisionApi: "microsoft",
+  url: "https://RESOURCE.services.ai.azure.com",
+  model: "YOUR-DEPLOYMENT-NAME",
+  authType: "bearer", key: getEnv("AZURE_ENTRA_TOKEN")
+});
+```
+
+Requests contain only `{model, state, questions}`; state remains text or JSON, and public `boolean` becomes `noul` with optional criteria preserved. Per-call `options.model` selects a different deployment. Images and all native `providerOptions` fail before HTTP. Conversational history, tools, and generation parameters are excluded.
+
+`auto` selects native decisions with this selector. Capabilities report choice/boolean/score, probabilities with four-decimal validation tolerance, text/JSON input, and unknown deployment availability. Returned probabilities are preserved without renormalization; boolean uses `P(true) >= 0.5`, score `level` is the first modal index, and `expectedScore` retains the weighted score. The response's underlying model name can differ from the requested deployment name. `rawDecide`, `decideWithStats`, and zero-valued token usage retain their existing contracts. No automatic retry or structured fallback occurs on failure.
+
+Explicit `strategy: "structured"` still uses the configured Foundry generation transport, subject to that deployment's support. For both generation and decisions, use a resource-root `url` and, if needed, a separate native `decisionUrl`. Foundry configurations without `decisionApi: "microsoft"` retain their existing behavior.
+
+For an opt-in live smoke, supply this configuration through `OAF_MODEL` and run `OPENAF_DECISIONS_LIVE=1 java -jar openaf.jar -f tests/ai-decisions-live.js`. The script selects native and requires probabilities. Synthetic fixtures do not establish live Foundry access or inference quality.

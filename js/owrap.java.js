@@ -2359,7 +2359,7 @@ OpenWrap.java.prototype.getLocalJavaPIDs = function(aUserID, aTmpDir) {
  * Given aByteArray or a file path for a java (hotspot jvm) hsperf file (using ow.java.getLocalJavaPIDs or similar) will return the java performance information parsed into a map.
  * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent exact string value. Nested output includes available derived calculations with the prefix "__".
  * Supports HotSpot perfdata 2.0 (Java 8+), with long scalars and UTF-8 strings. options.metadata=true returns {values, header, entries}; entries use original counter names.
- * options.strict=true throws descriptive parse errors; otherwise invalid, inaccessible or unsupported buffers return 4. File and argument errors throw.
+ * options.strict=true throws descriptive parse errors, including unsupported counter types/shapes; otherwise unsupported counters are skipped and invalid or inaccessible buffers return 4. File and argument errors throw.
  * Header overflow reports counters that could not be stored. Derived timer values use the reported frequency; application time is an estimate.
  * </odoc>
  */

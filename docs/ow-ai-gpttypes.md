@@ -29,6 +29,8 @@ The `openai` provider can target OpenAI, Azure OpenAI, and Azure AI Foundry mode
 | `foundry` with `apiVersion: "v1"` | `api-key: <key>` | `{url}/openai/v1/chat/completions` |
 | `foundry` with a dated `apiVersion` | `api-key: <key>` | `{url}/chat/completions?api-version={apiVersion}` when `url` ends with `/models`; otherwise `{url}/models/chat/completions?api-version={apiVersion}` |
 
+Native decision calls additionally accept `decisionApi: "openai"` (default), `"openrouter"`, or `"microsoft"`, and an optional absolute HTTP(S) `decisionUrl`. Microsoft requires Foundry mode, API version `v1`, and an explicit deployment name in `model`. It calls `{resource-root}/providers/microsoft/v1/systemone` using the existing authentication and timeout settings; bearer tokens are supported through `authType: "bearer"`. See [Microsoft native decisions](llm-decisions.md#microsoft-decision-1-native-decisions-through-foundry) for examples, URL rules, and supported inputs.
+
 Aliases are also accepted: `azure-v1`, `azure-legacy`, and `azure-foundry`.
 
 Common options:

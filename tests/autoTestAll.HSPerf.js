@@ -55,7 +55,16 @@
             eq(threw, true, 'strict error at ' + offset);
         };
         [[0,0], [4,2], [5,3], [6,1], [7,0], [8,10000,true], [24,33,true], [28,100,true],
-         [32,0,true], [36,200,true], [40,-1,true], [44,73], [46,0], [48,127,true]].forEach(x => bad(x[0],x[1],x[2]));
+         [32,0,true], [36,200,true], [40,-1,true], [46,0], [48,127,true]].forEach(x => bad(x[0],x[1],x[2]));
+        // Forward-compatible counters are skipped by default; strict mode still rejects them.
+        [73, 90].forEach(type => {
+            var mixed = fixture([{name:'test.unsupported',value:'7'}, {name:'test.known',value:'42'}]);
+            mixed[44] = type;
+            eq(ow.java.parseHSPerf(mixed,true), {'test.known':'42'}, 'skip unsupported type ' + type);
+            var threw = false;
+            try { ow.java.parseHSPerf(mixed,true,{strict:true}); } catch(e) { threw = String(e).indexOf('offset 44') >= 0; }
+            eq(threw,true,'strict unsupported type ' + type);
+        });
         eq(ow.java.parseHSPerf(java.util.Arrays.copyOf(base, 12),true),4,'short header');
         eq(ow.java.parseHSPerf(java.util.Arrays.copyOf(base, 120),true),4,'short payload');
         var over = java.util.Arrays.copyOf(base, base.length);

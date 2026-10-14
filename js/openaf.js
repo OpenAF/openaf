@@ -1100,7 +1100,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				Math.max(max, visibleLength(String(row[col]))), visibleLength(col)), 1 + sepSize * (wrapCols.length - 1));
 		}
 		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, wrapWidth, sepSize,
-			!borderless && useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true, borderless);
+			!borderless && useRowSep ? s => useAnsi ? ansiColor("FAINT", "-".repeat(s)) : "-".repeat(s) : __, true, borderless);
 		anArrayOfEntries = _t.lines;
 		anArrayOfIdxs = _t.idx;
 	}
@@ -1496,7 +1496,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			out = ("undefined" !== typeof out[out.length - 1] && out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
 		}
 		
-		var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
+		var _res = out.join("\n") + (!isSub && !aOptions.noansi && __conConsole ? __ansiColorCache["RESET"] : "")
 		return _res
 	}
 	var res = _pt(_aM, _aWidth, _aOptions, _aPrefix, _isSub)

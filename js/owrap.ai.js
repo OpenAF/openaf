@@ -387,6 +387,7 @@ OpenWrap.ai.prototype.__gpttypes = {
         create: (aOptions) => {
             ow.loadObj()
             aOptions = _$(aOptions, "aOptions").isMap().$_()
+            if (aOptions.decisionApi == "microsoft" && !ow.ai.__decision.text(aOptions.model)) ow.ai.__decision.invalid();
             aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(15 * 60000)
@@ -406,7 +407,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
             var _decisionApi = isUnDef(aOptions.decisionApi) ? "openai" : aOptions.decisionApi;
             var _decisionUrl;
-            if (["openai", "openrouter"].indexOf(_decisionApi) < 0) ow.ai.__decision.invalid();
+            if (["openai", "openrouter", "microsoft"].indexOf(_decisionApi) < 0) ow.ai.__decision.invalid();
             if (isDef(aOptions.decisionUrl) && (typeof aOptions.decisionUrl != "string" || !/^https?:\/\/[^\s/?#]+(?:[/?][^\s#]*)?$/.test(aOptions.decisionUrl))) ow.ai.__decision.invalid();
             if (_decisionApi == "openrouter") {
                 if (aOptions.mode != "openai") ow.ai.__decision.invalid();
@@ -415,6 +416,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                 if (isUnDef(_decisionUrl)) {
                     if (!/^https?:\/\/[^\s?#]+\/v1$/.test(base)) ow.ai.__decision.invalid();
                     _decisionUrl = base.replace(/\/v1$/, "/alpha/decisions");
+                }
+            }
+            if (_decisionApi == "microsoft") {
+                if (["foundry", "azure-foundry"].indexOf(aOptions.mode) < 0 || aOptions.apiVersion != "v1") ow.ai.__decision.invalid();
+                var base = aOptions.url.replace(/\/+$/, "");
+                _decisionUrl = aOptions.decisionUrl;
+                if (isUnDef(_decisionUrl)) {
+                    if (/^https?:\/\/[^\s/?#]+$/.test(base)) _decisionUrl = base + "/providers/microsoft/v1/systemone";
+                    else if (/^https?:\/\/[^\s/?#]+\/providers\/microsoft\/v1\/systemone$/.test(base)) _decisionUrl = base;
+                    else ow.ai.__decision.invalid();
                 }
             }
 
@@ -772,9 +783,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 resetDecisionStats: () => _resetStats(),
                 getCapabilities: model => {
-                    if (_decisionApi == "openrouter") {
+                    if (_decisionApi == "openrouter" || _decisionApi == "microsoft") {
                         var caps = ow.ai.__decision.capabilities(true, !aOptions.noResponseFormat, "verified", "unknown");
-                        caps.native.probabilityDecimals = 2;
+                        caps.native.probabilityDecimals = _decisionApi == "openrouter" ? 2 : 4;
                         return caps;
                     }
                     var official = aOptions.mode == "openai" && aOptions.apiVersion == "v1" && /^https:\/\/api\.openai\.com(?:\/v1)?\/?$/.test(aOptions.url);
@@ -785,7 +796,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 _decisionRequest: (uri, body) => ow.ai.__decision.http(_buildURL(uri), body, _headers("application/json"), _timeout, "openai", _debugCh),
                 rawDecide: request => {
                     var d = ow.ai.__decision, po = request.providerOptions;
-                    if (_decisionApi == "openrouter") {
+                    if (_decisionApi == "openrouter" || _decisionApi == "microsoft") {
                         if (isDef(request.images) || Object.keys(po).length) d.invalid();
                         var questions = d.copy(request.questions);
                         Object.keys(questions).forEach(k => { if (questions[k].type == "boolean") questions[k].type = "noul"; });
@@ -808,7 +819,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var raw = d.execution(() => _r._decisionRequest(_route("decisions", request.model), body), "openai");
                     return { raw: raw, stats: _captureStats(raw, body) };
                 },
-                normalizeDecisionResponse: (raw, request) => _decisionApi == "openrouter" ? ow.ai.__decision.namedAnswers(raw, request, 2) : ow.ai.__decision.openaiAnswers(raw, request),
+                normalizeDecisionResponse: (raw, request) => _decisionApi == "openai" ? ow.ai.__decision.openaiAnswers(raw, request) : ow.ai.__decision.namedAnswers(raw, request, _decisionApi == "openrouter" ? 2 : 4),
                 rawStructuredPrompt: request => {
                     var d = ow.ai.__decision, po = request.providerOptions;
                     if (d.has(po, "safetyIdentifier")) d.invalid();
@@ -3911,6 +3922,8 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
  * - apiVersion: API version/path segment for OpenAI-compatible routes (defaults to "v1"). In Azure legacy mode this becomes the api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version.\
  * - mode: transport mode. Supported values are "openai" (default), "azure-openai-v1", "azure-openai-legacy" and "foundry". Aliases: "azure-v1", "azure-legacy" and "azure-foundry".\
  * - deployment: deployment name for "azure-openai-legacy" mode. If omitted, the selected model name is used.\
+ * - decisionApi: native decision contract ("openai" default, "openrouter", or "microsoft"). Microsoft requires Foundry mode, API v1 and an explicit model deployment name.\
+ * - decisionUrl: optional absolute HTTP(S) native decision endpoint override.\
  * - authType: authentication header style. Supported values are "bearer" (OpenAI default), "api-key" (Azure/Foundry default) and "none".\
  * \
  * Examples:\
@@ -4760,6 +4773,8 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * - promptCaching: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false)\
  * \
  * For type "openai", options can also include:\
+ * - decisionApi: native decision contract ("openai" default, "openrouter", or "microsoft"). Microsoft requires mode "foundry" or "azure-foundry", API v1 and an explicit deployment name in model.\
+ * - decisionUrl: optional absolute HTTP(S) native decision endpoint override.\
  * - mode: transport mode ("openai", "azure-openai-v1", "azure-openai-legacy" or "foundry").\
  * - apiVersion: OpenAI-compatible API version path segment, or Azure legacy api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version. Defaults to "v1".\
  * - deployment: Azure OpenAI legacy deployment name; defaults to model when omitted.\

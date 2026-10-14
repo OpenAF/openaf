@@ -46,3 +46,14 @@ Verified **7 October 2026** against the [Decisions guide](https://developers.ope
 - Usage: input_tokens/output_tokens/total_tokens and token details use existing OpenAI parsing; zero counts and full usage are preserved. Statistics are captured before answer validation.
 - Provenance: openaiNativeFixture() and dedicated native tests use synthetic reference-shaped envelopes. Tests cover the HTTP boundary, authentication and URL routing without contacting OpenAI.
 - Live status: not established by fixtures. The opt-in smoke script selects native for caller-configured OpenAI gpt-6-luna and requires probabilities. Account/model access is not inferred from documented adapter support.
+
+
+## Microsoft Foundry native decisions
+
+Verified **14 October 2026** against the [Microsoft Learn deployment/API guide](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision) and [Microsoft Community Hub decision example](https://techcommunity.microsoft.com/blog/educatordeveloperblog/not-every-decision-needs-an-llm-getting-started-with-microsoft-decision-1/4563468).
+
+- Profile: explicit `type: "openai"`, `decisionApi: "microsoft"`, Foundry mode (including `azure-foundry`), API v1. Native endpoint is `POST {resource-root}/providers/microsoft/v1/systemone`; an absolute `decisionUrl` can override it. API-key and caller-supplied Entra bearer-token authentication reuse the existing transport.
+- Request: model is the caller's deployment name; text/JSON state; named choice/noul/score questions. Public boolean maps to noul. Images and native provider options are rejected; no tools, history, or generation settings are sent.
+- Response: named answers and underlying model identifier, which may differ from the deployment name. Choice returns the selected key and probabilities; noul returns P(true); score returns per-level probabilities, legend, weighted score, and confidence. Shared named-answer validation uses four-decimal tolerance, preserving probabilities and confidence. The Microsoft example's score distribution 0.0004/0.0124/0.9872 yields 1.9868, with separate confidence 0.9808.
+- Statistics reuse execution-scoped OpenAI usage parsing, retaining zero values and raw usage. Account/deployment availability remains unknown. No retry or HTTP strategy fallback.
+- Provenance: `microsoftFixture()` and registered Microsoft tests in `tests/autoTestAll.AIDecisions.js` are synthetic contract fixtures. They cover mapping, response validation, HTTP routing/authentication, isolation, and compatibility. The opt-in live smoke selects native for this selector; live inference has not been established by fixtures.

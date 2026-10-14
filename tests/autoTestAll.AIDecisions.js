@@ -311,6 +311,130 @@
       ow.test.assert(records[2].url, "https://proxy/decide", "Explicit proxy URL");
     } finally { ow.obj.http = original; }
   };
+  // Synthetic Microsoft System One envelope; not a live Foundry inference.
+  // Sources: Microsoft Learn Decision-1 guide and Microsoft Community Hub example.
+  var microsoftFixture = function() {
+    var fixture = nativeFixture();
+    fixture.model = "microsoft-decision-1";
+    fixture.answers.priority.probabilities = { "0": 0.0004, "1": 0.0124, "2": 0.9872 };
+    fixture.answers.priority.score = 1.9868;
+    fixture.answers.priority.confidence = 0.9808;
+    return fixture;
+  };
+  exports.testDecisionMicrosoft = function() {
+    ow.loadAI();
+    var config = { mode: "foundry", decisionApi: "microsoft", url: "https://resource.services.ai.azure.com", model: "custom-deployment", params: { tools: ["ignored"] } };
+    var g = make("openai", config), calls = [], fixture = microsoftFixture();
+    g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: copy(body) }); return copy(fixture); };
+    g.withInstructions("private history").withContext({ private: true }, "private context");
+    var conversation = JSON.stringify(g.getGPT().model.conversation), caps = g.getCapabilities();
+    ow.test.assert(caps.native.implemented, true, "Microsoft native implemented");
+    ow.test.assert(caps.native.contract, "verified", "Documented Microsoft contract");
+    ow.test.assert(caps.native.availability, "unknown", "Deployment availability unknown");
+    ow.test.assert(caps.native.probabilityDecimals, 4, "Microsoft precision");
+    ow.test.assert(caps.inputTypes, ["text", "json"], "Microsoft text and JSON inputs");
+    var q = copy(questions); q.urgent.criteria = { "false": "No", "true": "Yes" };
+    ["text", { ticket: "data" }, ["data"]].forEach(state => {
+      var r = g.decideWithStats(state, q, { requireProbabilities: true, model: "override-deployment" });
+      var c = calls[calls.length - 1];
+      ow.test.assert(c.uri, config.url + "/providers/microsoft/v1/systemone", "Microsoft endpoint");
+      ow.test.assert(c.body.model, "override-deployment", "Deployment override sent unchanged");
+      ow.test.assert(c.body.state, state, "Preserve JSON state");
+      ow.test.assert(c.body.questions.urgent, merge(q.urgent, { type: "noul" }), "Boolean criteria preserved");
+      ow.test.assert(Object.keys(c.body).sort(), ["model", "questions", "state"], "Dedicated Microsoft request");
+      ow.test.assert(r.response.model, fixture.model, "Underlying model differs from deployment");
+      ow.test.assert(r.response.strategy, "native", "Auto selects Microsoft native");
+      ow.test.assert(r.response.answers.priority.level, 2, "Modal score level");
+      ow.test.assert(r.response.answers.priority.expectedScore, 1.9868, "Weighted score");
+      ow.test.assert(r.response.answers.priority.providerConfidence, 0.9808, "Independent confidence");
+      ow.test.assert(r.response.answers.priority.probabilities, [0.0004, 0.0124, 0.9872], "Exact probabilities retained");
+      ow.test.assert(r.stats.tokens.completion, 0, "Zero tokens preserved");
+      ow.test.assert(isUnDef(r.stats.tokens.total), true, "Unreported total remains absent");
+    });
+    ow.test.assert(g.rawDecide("state", q).raw, fixture, "Raw response unchanged");
+    ow.test.assert(calls[calls.length - 1].body.model, "custom-deployment", "Configured deployment used");
+    ow.test.assert(JSON.stringify(g.getGPT().model.conversation), conversation, "Decision isolation");
+    [0, 0.5, 1].forEach(p => {
+      fixture.answers.urgent.noul = p;
+      var r = g.decide("state", q, { strategy: "native" });
+      ow.test.assert(r.answers.urgent.probabilityTrue, p, "Boolean probability preserved");
+      ow.test.assert(r.answers.urgent.value, p >= 0.5, "Boolean threshold");
+    });
+    fixture = microsoftFixture();
+    fixture.answers.priority.probabilities = { "0": 0.3333, "1": 0.3333, "2": 0.3333 };
+    fixture.answers.priority.score = 0.9999;
+    ow.test.assert(g.decide("state", q).answers.priority.level, 0, "First modal index wins ties");
+    [f => { delete f.answers.route; }, f => { f.answers.extra = {}; }, f => { f.answers.urgent.type = "boolean"; },
+      f => { f.answers.urgent.noul = 2; }, f => { f.answers.route.probabilities.billing = 0.5; },
+      f => { f.answers.priority.legend["0"] = "wrong"; }, f => { f.answers.priority.score = 0; },
+      f => { f.answers.priority.confidence = -1; }, f => { f.model = ""; }].forEach(change => {
+      fixture = microsoftFixture(); change(fixture);
+      expectError(() => g.decide("state", q), "LLM_DECISION_INVALID_RESPONSE");
+    });
+    ow.test.assert(g.getLastStats().tokens.prompt, 17, "Response usage retained after validation failure");
+    var before = calls.length;
+    ["transport", "temperature", "maxOutputTokens", "safetyIdentifier"].forEach(k => {
+      var po = {}; po[k] = k == "transport" ? "chat" : k == "safetyIdentifier" ? "user" : 1;
+      expectError(() => g.decide("state", q, { providerOptions: po }), "LLM_DECISION_INVALID_REQUEST");
+    });
+    expectError(() => g.decide("state", q, { images: ["data:image/png;base64,YQ=="] }), "LLM_DECISION_INVALID_REQUEST");
+    ow.test.assert(calls.length, before, "Unsupported options rejected before HTTP");
+    ow.test.assert(isUnDef(g.getLastStats()), true, "Preflight clears previous stats");
+    g.getGPT().model._decisionRequest = function(uri, body) {
+      calls.push({ uri: uri }); return openaiFixture('{"route":"billing","urgent":false,"priority":0}');
+    };
+    ow.test.assert(g.decide("state", q, { strategy: "structured" }).strategy, "structured", "Explicit structured retained");
+    ow.test.assert(calls[calls.length - 1].uri, "openai/v1/responses", "Existing Foundry structured route");
+    [{ mode: "openai" }, { mode: "azure-openai-v1" }, { apiVersion: "2024-05-01-preview" },
+      { url: "https://resource/openai/v1" }, { url: "https://resource/models" }, { url: "https://resource/api/projects/p" },
+      { url: "https://resource?x=1" }, { decisionUrl: "/relative" }, { model: "" }, { model: "   " }].forEach(opts => {
+      expectError(() => make("openai", merge(config, opts)).getCapabilities(), "LLM_DECISION_INVALID_REQUEST");
+    });
+    var missing = merge(config, { key: "fixture-key" }); delete missing.model;
+    expectError(() => $llm(merge({ type: "openai" }, missing)).getCapabilities(), "LLM_DECISION_INVALID_REQUEST");
+    [() => $gpt(merge({ type: "openai", key: "fixture-key" }, config)), () => new ow.ai.gpt("openai", merge({ key: "fixture-key" }, config))].forEach(factory => {
+      ow.test.assert(factory().getCapabilities().native.implemented, true, "Public facade support");
+    });
+    delete config.decisionApi;
+    ow.test.assert(make("openai", config).getCapabilities().native.implemented, false, "Foundry default remains structured only");
+  };
+  exports.testDecisionMicrosoftHTTP = function() {
+    ow.loadAI();
+    var original = ow.obj.http, records = [], fixture = microsoftFixture(), status = 200, payload = JSON.stringify(fixture);
+    var builder = { retryOnConnectionFailure: function(v) { ow.test.assert(v, false, "No retries"); return this; }, build: function() { return this; }, newBuilder: function() { return this; } };
+    var config = { decisionApi: "microsoft", mode: "foundry", model: "deployment", url: "https://resource.services.ai.azure.com" };
+    try {
+      ow.obj.http = function() {
+        this.client = builder; this.setThrowExceptions = function() {}; this.close = function() {};
+        this.exec = function(url, method, body, headers) { records.push({ url: url, method: method, body: JSON.parse(body), headers: headers }); return { responseCode: status, response: payload }; };
+      };
+      [config.url, config.url + "///", config.url + "/providers/microsoft/v1/systemone/"].forEach(url => {
+        make("openai", merge(config, { url: url, headers: { "X-Fixture": "yes" } })).decide("state", questions);
+        var r = records[records.length - 1];
+        ow.test.assert(r.url, config.url + "/providers/microsoft/v1/systemone", "Exact HTTP endpoint");
+        ow.test.assert(r.method, "POST", "Microsoft POST");
+        ow.test.assert("" + r.headers["api-key"], "fixture-key", "Default API key");
+        ow.test.assert(isUnDef(r.headers.Authorization), true, "No extra bearer header");
+        ow.test.assert(r.headers["X-Fixture"], "yes", "Custom headers");
+        ow.test.assert(r.body.model, "deployment", "HTTP deployment name");
+      });
+      make("openai", merge(config, { mode: "azure-foundry", authType: "bearer" })).decide("state", questions);
+      ow.test.assert(records[3].headers.Authorization, "Bearer fixture-key", "Entra token authentication");
+      ow.test.assert(isUnDef(records[3].headers["api-key"]), true, "Bearer replaces API key");
+      make("openai", merge(config, { url: "https://proxy/custom", decisionUrl: "https://proxy/decide" })).decide("state", questions);
+      ow.test.assert(records[4].url, "https://proxy/decide", "Explicit endpoint override");
+      var g = make("openai", config);
+      [401, 403, 404, 422, 429, 500].forEach(code => {
+        status = code; payload = '{"error":{"message":"SECRET"}}';
+        var before = records.length, e = expectError(() => g.decide("SECRET", questions), "LLM_DECISION_PROVIDER_ERROR");
+        ow.test.assert(e.status, code, "HTTP status retained");
+        ow.test.assert(String(e).indexOf("SECRET"), -1, "Provider errors sanitized");
+        ow.test.assert(records.length, before + 1, "No fallback or retry");
+      });
+      status = 200; payload = "invalid SECRET";
+      expectError(() => g.rawDecide("state", questions), "LLM_DECISION_INVALID_RESPONSE");
+    } finally { ow.obj.http = original; }
+  };
   exports.testDecisionOpenAIStructured = function() {
     ow.loadAI();
     var g = make("openai"), calls = [];

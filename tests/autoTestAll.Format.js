@@ -322,14 +322,31 @@
     };
 
     exports.testTreeTableArraysHeterogeneous = function() {
-        var out = printTreeOrS({ x: [ { a: 1 }, { b: 2 } ], z: [ 1, { c: 3 } ] }, 80, { noansi: true, tableArrays: true });
-        ow.test.assert(out.indexOf("b") >= 0 && out.indexOf("2") >= 0, true, "Heterogeneous map rows lost a field: " + out);
-        ow.test.assert(out.indexOf("c") >= 0 && out.indexOf("3") >= 0, true, "Mixed scalar/map rows lost a map: " + out);
-        ow.test.assert(out.indexOf("undefined") < 0, true, "Heterogeneous rows rendered undefined cells: " + out);
+        var oldFlag = __ansiColorFlag, oldConsole = __conConsole, oldAnsi = __conAnsi;
+        try {
+            __ansiColorFlag = true;
+            __conConsole = true;
+            __conAnsi = true;
+            ansiColor("RESET", "", true);
+            var out = printTreeOrS({ x: [ { a: 1 }, { b: 2 } ], z: [ 1, { c: 3 } ] }, 80, { noansi: true, tableArrays: true });
+            ow.test.assert(out.indexOf("b") >= 0 && out.indexOf("2") >= 0, true, "Heterogeneous map rows lost a field: " + out);
+            ow.test.assert(out.indexOf("c") >= 0 && out.indexOf("3") >= 0, true, "Mixed scalar/map rows lost a map: " + out);
+            ow.test.assert(out.indexOf("undefined") < 0, true, "Heterogeneous rows rendered undefined cells: " + out);
 
-        var tbl = printTreeOrS({ x: [ { a: 1, b: 2 }, { b: 3, a: 4 } ] }, 80, { noansi: true, tableArrays: true });
-        ow.test.assert(tbl.indexOf("─") >= 0 || tbl.indexOf("-") >= 0, true, "Homogeneous rows should still render as a table: " + tbl);
-        ow.test.assert(tbl.indexOf("\x1b") < 0 && tbl.indexOf("[m") < 0, true, "noansi table leaked ANSI resets: " + tbl);
+            var tbl = printTreeOrS({ x: [ { a: 1, b: 2 }, { b: 3, a: 4 } ] }, 80, { noansi: true, tableArrays: true });
+            ow.test.assert(tbl.indexOf("─") >= 0 || tbl.indexOf("-") >= 0, true, "Homogeneous rows should still render as a table: " + tbl);
+            ow.test.assert(tbl.indexOf("\x1b") < 0 && tbl.indexOf("[m") < 0, true, "noansi table leaked ANSI resets: " + tbl);
+            var rows = [{ a: "long wrapped value", b: 1 }, { a: "second wrapped value", b: 2 }];
+            var plain = printTable(rows, 18, false, false, "utf", __, true, true, false);
+            ow.test.assert(plain.indexOf("\x1b"), -1, "Plain wrapped row separators must not emit ANSI");
+            var tree = printTreeOrS({ x: rows }, 24, { noansi: true, tableArrays: true });
+            ow.test.assert(tree.indexOf("\x1b"), -1, "Plain wrapped tree tables must not emit ANSI");
+            ow.test.assert(printTreeOrS({ a: 1 }, 80, { noansi: true }).indexOf("\x1b"), -1, "Plain root tree must not append a reset");
+        } finally {
+            __ansiColorFlag = oldFlag;
+            __conConsole = oldConsole;
+            __conAnsi = oldAnsi;
+        }
     };
 
     exports.testDefaultTableFormat = function() {
