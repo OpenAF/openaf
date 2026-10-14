@@ -28,6 +28,10 @@ jobs:
   from: Console::Init
   to: oJob Test
   exec: args.func = args.tests.testPromptFamily;
+- name: Console::askKey
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testAskKey;
 
 todo:
 - Console::prompt family
@@ -36,7 +40,4 @@ todo:
 - Console::completion callback
 - Console::facade
 - Console::launcher settings
-- name: Console::askKey
-  from: Console::Init
-  to: oJob Test
-  exec: args.func = args.tests.testAskKey;
+- Console::askKey
