@@ -50,5 +50,5 @@ To test the project, you can use the following command:
 
 ```bash
 cd tests
-java -jar ../openaf.jar --ojob -e autoTestAll.yaml
+java --enable-native-access=ALL-UNNAMED -jar ../openaf.jar --ojob -e autoTestAll.yaml
 ```
