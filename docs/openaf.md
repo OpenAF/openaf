@@ -347,6 +347,19 @@ print(ow.ch.utils.graph.path("g", "a.md", "b.md")); // ["doc:a.md", "doc:b.md"]
 
 See [channel-graph.md](./channel-graph.md) for options, key formats and limits.
 
+#### Time Series Channels
+
+The `timeseries` channel type stores numeric points identified by a metric, labels and a timestamp, in memory with an optional append-only NDJSON file or on top of another channel type (`store`). It supports retention (age and count) and stored rollups, and `ow.ch.utils.timeseries` provides `range`, `latest`, `series`, `labels`, `stats`, a collector for `ow.metrics`, a channel subscriber and OpenMetrics import/export.
+
+```javascript
+$ch("m").create(true, "timeseries", { file: "metrics.ndjson", retention: "7d", rollups: [ { step: "1h" } ] });
+$ch("m").set({ metric: "cpu", labels: { host: "a" }, ts: 1000 }, { v: 0.4 });
+$ch("m").set({ metric: "cpu", labels: { host: "a" }, ts: 2000 }, { v: 0.6 });
+sprint(ow.ch.utils.timeseries.range("m", { metric: "cpu" }, { step: "1s", fn: "avg" })); // [ { ts: 1000, metric: "cpu", host: "a", v: 0.4 }, { ts: 2000, metric: "cpu", host: "a", v: 0.6 } ]
+```
+
+See [channel-timeseries.md](./channel-timeseries.md) for options, retention, rollups, the `store` mode and the integrations.
+
 ---
 
 ## nLinq - Query Processing

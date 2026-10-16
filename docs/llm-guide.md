@@ -395,7 +395,13 @@ ow.ch.new("myChannel", "mem");          // In-memory
 ow.ch.new("persistent", "mvs", {        // Persistent
   file: "data.db"
 });
+ow.ch.new("sharded", "mvs", {           // Persistent, keys hashed across 4 files
+  multifile: true, path: "data", files: 4
+});
 ow.ch.new("distributed", "big");        // Peer-to-peer
+ow.ch.new("metrics", "timeseries", {     // Labelled numeric series (see docs/channel-timeseries.md)
+  file: "metrics.ndjson", retention: "7d"
+});
 
 // Operations
 ow.ch.set("myChannel", "key1", {data: "value"});
@@ -403,6 +409,8 @@ var value = ow.ch.get("myChannel", "key1");
 var all = ow.ch.getAll("myChannel");
 ow.ch.destroy("myChannel");
 ```
+
+Time series: `$ch("m").set({ metric: "cpu", labels: { host: "a" }, ts: 1000 }, { v: 0.4 })` records a point (the key is metric + labels + `ts`, the value a number `v`), and `ow.ch.utils.timeseries.range("m", { metric: "cpu" }, { step: "5m", fn: "avg" })` returns flat rows `{ ts, metric, ...labels, v }`. `unset` without `ts` drops the series; `shift`/`pop` remove points. See [channel-timeseries.md](./channel-timeseries.md).
 
 #### ow.ai - Artificial Intelligence
 

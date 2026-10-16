@@ -2289,6 +2289,779 @@ OpenWrap.ch.prototype.__types = {
 			this.__changed(c)
 		}
 	},
+	// Time series implementation
+	//
+	/**
+	 * <odoc format="markdown">
+	 * <key>ow.ch.types.timeseries</key>
+	 * <![CDATA[
+	 * Channel over labelled numeric time series (metric + labels + timestamp), kept in memory with an optional append-only NDJSON file,
+	 * or delegated to other channels (e.g. `mvs`) with `store`. Supports retention (age and/or count) and stored rollups (RRD-like).
+	 *
+	 * Creation options:
+	 *
+	 * | Option | Type | Default | Description |
+	 * | --- | --- | --- | --- |
+	 * | `file` | String | | Path to an NDJSON log file. Without `file` (and `store`) the channel only lives in memory |
+	 * | `readOnly` | Boolean | `false` | Reject changes and never write the file |
+	 * | `create` | Boolean | `true` | If `false` the file (or store) must already exist |
+	 * | `autosave` | String | `"always"` | `"always"` appends on every change, `"debounced"` appends at most every `saveDebounceMs`, `"off"` only on `save`/destroy |
+	 * | `saveDebounceMs` | Number | `5000` | Minimum ms between appends when `autosave` is `"debounced"` |
+	 * | `lock` | String | | Path to a dummy file used as a filesystem lock while loading and writing |
+	 * | `compactRatio` | Number | `0.5` | The file is rewritten (compacted) when more than this ratio of its lines is dead (overwritten, deleted or expired) |
+	 * | `store` | Map | | `{ type, options, compress, bulk }`: keep the data in chunks stored on channels of that type (e.g. `mvs`); can't be combined with `file` |
+	 * | `chunk` | String/Number | `"1h"` | Time span of each stored chunk (only used with `store`) |
+	 * | `retention` | String/Number | | How long to keep raw points (e.g. `"7d"`), relative to the newest point of each series (see `retentionRef`). Same as `raw.keep` |
+	 * | `maxPoints` | Number | | Maximum raw points per series. Same as `raw.maxPoints` |
+	 * | `raw` | Map | | `{ keep, maxPoints }` for the raw points |
+	 * | `rollups` | Array | | `[ { step: "1m", keep: "1d" }, { step: "1h", keep: "30d" } ]`: aggregated buckets kept per series (`count`, `sum`, `min`, `max`, `first`, `last`) |
+	 * | `retentionRef` | String | `"series"` | `"series"` measures `keep` back from the newest point of the series, `"now"` from the current time |
+	 * | `housekeepEveryMs` | Number | `0` | Minimum ms between retention runs triggered by writes (`0` = on every write) |
+	 *
+	 * Keys and values:
+	 *
+	 * - **Key**: `{ metric, labels, ts }`. `labels` is a map (values are stored as strings); `ts` is epoch ms, a Date or an ISO string (defaults to now on `set`).
+	 * - **Value**: `{ v }` where `v` is a number.
+	 * - `get` without `ts` returns the latest point; the value returned is always `{ metric, labels, ts, v }`.
+	 * - `unset` with `ts` removes a point; without `ts` it drops the whole series (points and rollups).
+	 * - `getKeys`/`getAll` accept a selector map `{ metric, labels, from, to }`; `pop`/`shift` return the key of the newest/oldest point.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * $ch("m").create(true, "timeseries", { file: "cpu.ndjson", retention: "7d" });
+	 * $ch("m").set({ metric: "cpu", labels: { host: "a" }, ts: 1000 }, { v: 0.4 });
+	 * $ch("m").set({ metric: "cpu", labels: { host: "a" }, ts: 2000 }, { v: 0.6 });
+	 * ow.ch.utils.timeseries.range("m", { metric: "cpu" }, { step: "1s", fn: "avg" });
+	 * ```
+	 *
+	 * Retention deletes made by the channel itself do not notify channel subscribers. Use `ow.ch.utils.timeseries` to query.
+	 * ]]>
+	 * </odoc>
+	 */
+	timeseries: {
+		__channels: Object.create(null),
+		__c: function(aName) {
+			var c = this.__channels[aName]
+			if (isUnDef(c)) throw "timeseries channel '" + aName + "' not found"
+			return c
+		},
+		__l: (m) => (isString(m.lock) ? $flock(m.lock).lock() : __),
+		__ul: (m) => (isString(m.lock) ? $flock(m.lock).unlock() : __),
+		__rw: function(c) {
+			if (c.opts.readOnly) throw "timeseries channel is read-only"
+		},
+		// ---- value helpers
+		__ts: function(t) {
+			if (isUnDef(t) || t === null) return now()
+			var r
+			if (isNumber(t)) r = t
+			else if (isDate(t)) r = t.getTime()
+			else if (isString(t)) r = /^\s*-?\d+(\.\d+)?\s*$/.test(t) ? Number(t) : (new Date(t)).getTime()
+			if (!isNumber(r) || isNaN(r) || !isFinite(r)) throw "timeseries: invalid timestamp '" + t + "'"
+			return Math.floor(r)
+		},
+		__dur: function(d, what) {
+			if (isUnDef(d) || d === null) return __
+			var r = isString(d) ? ow.loadFormat().fromTimeAbbreviation(d) : d
+			if (!isNumber(r) || isNaN(r) || !(r > 0)) throw "timeseries: invalid duration for " + what + " (" + d + ")"
+			return r
+		},
+		__val: function(v) {
+			if (isMap(v)) v = v.v
+			if (isString(v) && v.trim().length > 0) v = Number(v)
+			if (!isNumber(v) || isNaN(v) || !isFinite(v)) throw "timeseries value 'v' must be a finite number"
+			return v
+		},
+		__labels: function(l) {
+			if (isUnDef(l) || l === null) return {}
+			if (!isMap(l)) throw "timeseries labels must be a map"
+			var r = {}
+			Object.keys(l).sort().forEach(k => { if (isDef(l[k]) && l[k] !== null) r[k] = String(l[k]) })
+			return r
+		},
+		__sid: function(metric, labels) {
+			return stringify([ metric, labels ], __, "")
+		},
+		// validates a key; ts is only normalized when present
+		__key: function(k) {
+			if (!isMap(k) || !isString(k.metric) || k.metric.length == 0) throw "timeseries key must have a 'metric' and optionally 'labels' and 'ts'"
+			var labels = this.__labels(k.labels)
+			return { id: this.__sid(k.metric, labels), metric: k.metric, labels: labels, ts: isDef(k.ts) ? this.__ts(k.ts) : __ }
+		},
+		__pt: function(m, t, v) {
+			return { metric: m.metric, labels: clone(m.labels), ts: t, v: v }
+		},
+		// selector matching: String/Number, Array (any), RegExp or Function
+		__m: function(want, have) {
+			if (isUnDef(want)) return true
+			if (isArray(want)) return want.some(w => this.__m(w, have))
+			if (Object.prototype.toString.call(want) == "[object RegExp]") return isDef(have) && want.test(String(have))
+			if (isFunction(want)) return want(have) === true
+			return isDef(have) && String(want) === String(have)
+		},
+		__match: function(m, sel) {
+			if (!this.__m(sel.metric, m.metric)) return false
+			if (isMap(sel.labels)) {
+				for (var k in sel.labels) if (!this.__m(sel.labels[k], m.labels[k])) return false
+			}
+			return true
+		},
+		__select: function(c, sel) {
+			var self = this
+			sel = isMap(sel) ? sel : {}
+			return c.st.ids().filter(id => self.__match(c.st.meta(id), sel)).sort()
+		},
+		// ---- sorted array helpers over { ts: [], v: [] }
+		__lb: function(a, x) { var lo = 0, hi = a.length; while (lo < hi) { var m = (lo + hi) >>> 1; if (a[m] < x) lo = m + 1; else hi = m } return lo },
+		__ub: function(a, x) { var lo = 0, hi = a.length; while (lo < hi) { var m = (lo + hi) >>> 1; if (a[m] <= x) lo = m + 1; else hi = m } return lo },
+		// upserts into o; returns how many entries were added (not replaced)
+		__put: function(o, ts, v) {
+			var added = 0
+			for (var i = 0; i < ts.length; i++) {
+				var t = ts[i], n = o.ts.length
+				if (n == 0 || t > o.ts[n - 1]) {
+					o.ts.push(t); o.v.push(v[i]); added++
+				} else {
+					var p = this.__lb(o.ts, t)
+					if (o.ts[p] === t) o.v[p] = v[i]
+					else { o.ts.splice(p, 0, t); o.v.splice(p, 0, v[i]); added++ }
+				}
+			}
+			return added
+		},
+		__rm: function(o, ts) {
+			var removed = 0
+			for (var i = 0; i < ts.length; i++) {
+				var p = this.__lb(o.ts, ts[i])
+				if (o.ts[p] === ts[i]) { o.ts.splice(p, 1); o.v.splice(p, 1); removed++ }
+			}
+			return removed
+		},
+		// ---- aggregates (rollup buckets)
+		__a0: function(t, v) { return { count: 1, sum: v, min: v, max: v, first: v, last: v, ft: t, lt: t } },
+		__am: function(a, b) {
+			if (isUnDef(a)) return b
+			if (isUnDef(b)) return a
+			return {
+				count: a.count + b.count, sum: a.sum + b.sum, min: Math.min(a.min, b.min), max: Math.max(a.max, b.max),
+				first: b.ft < a.ft ? b.first : a.first, ft: Math.min(a.ft, b.ft),
+				last : b.lt >= a.lt ? b.last : a.last, lt: Math.max(a.lt, b.lt)
+			}
+		},
+		__ae: function(a) { return [ a.count, a.sum, a.min, a.max, a.first, a.last, a.ft, a.lt ] },
+		__ad: function(a) { return { count: a[0], sum: a[1], min: a[2], max: a[3], first: a[4], last: a[5], ft: a[6], lt: a[7] } },
+		// ---- storage backends: every access goes through c.st
+		// memory
+		__memStore: function(c) {
+			var self = this, S = {}
+			var T = (id, k) => { var s = S[id]; if (isUnDef(s.t[k])) s.t[k] = { ts: [], v: [] }; return s.t[k] }
+			return {
+				bulk      : false,
+				ids       : () => Object.keys(S),
+				has       : id => isDef(S[id]),
+				meta      : id => isDef(S[id]) ? S[id].meta : __,
+				putMeta   : m => { if (isUnDef(S[m.id])) S[m.id] = { meta: m, t: {} } },
+				read      : (id, k, from, to) => {
+					var o = T(id, k), a = self.__lb(o.ts, from), b = self.__ub(o.ts, to)
+					return { ts: o.ts.slice(a, b), v: o.v.slice(a, b) }
+				},
+				upsert    : (id, k, ts, v) => self.__put(T(id, k), ts, v),
+				del       : (id, k, ts) => self.__rm(T(id, k), ts),
+				trimBefore: (id, k, cut) => {
+					var o = T(id, k), p = self.__lb(o.ts, cut)
+					if (p > 0) { o.ts.splice(0, p); o.v.splice(0, p) }
+					return p
+				},
+				trimCount : (id, k, max) => {
+					var o = T(id, k), n = o.ts.length - max
+					if (n > 0) { o.ts.splice(0, n); o.v.splice(0, n) }
+					return Math.max(n, 0)
+				},
+				bounds    : (id, k) => { var o = T(id, k), n = o.ts.length; return n == 0 ? __ : { first: o.ts[0], last: o.ts[n - 1], count: n } },
+				drop      : id => { delete S[id] },
+				rawCount  : () => Object.keys(S).reduce((a, id) => a + (isDef(S[id].t.raw) ? S[id].t.raw.ts.length : 0), 0),
+				liveCount : () => Object.keys(S).reduce((a, id) => a + 1 + Object.keys(S[id].t).reduce((b, k) => b + S[id].t[k].ts.length, 0), 0),
+				close     : () => {}
+			}
+		},
+		// channel: series index + one chunk channel per tier, delegated to other channels (e.g. mvs)
+		__chStore: function(c, aName) {
+			var self = this, spec = c.opts.store, pre = "timeseries::" + aName + "::", n = {}, made = []
+			var close = () => made.forEach(x => { try { $ch(x).destroy() } catch(e) {} })
+			try {
+				;[ "series" ].concat(c.tiers.map(t => t.key)).forEach(p => {
+					n[p] = pre + p
+					var o = isFunction(spec.options) ? spec.options(p) : merge(isMap(spec.options) ? clone(spec.options) : {}, { map: pre + p })
+					$ch(n[p]).create(spec.compress === true, spec.type, o)
+					made.push(n[p])
+				})
+			} catch(e) { close(); throw e }
+			var bulk = spec.bulk === true || (spec.bulk !== false && spec.type == "mvs")
+			var cs = k => c.tierBy[k].chunk
+			var bk = (k, t) => Math.floor(t / cs(k)) * cs(k)
+			var rec = id => $ch(n.series).get({ s: id })
+			var tinfo = (r, k) => { if (isUnDef(r.t[k])) r.t[k] = { first: __, last: __, count: 0, chunks: [] }; return r.t[k] }
+			var chunk = (id, k, b) => $ch(n[k]).get({ s: id, b: b })
+			var wr = (k, list) => {
+				if (list.length == 0) return
+				if (bulk && list.length > 1) $ch(n[k]).setAll([ "s", "b" ], list)
+				else list.forEach(x => $ch(n[k]).set({ s: x.s, b: x.b }, x))
+			}
+			var refresh = (id, r, k) => {
+				var info = tinfo(r, k)
+				info.chunks.sort((a, b) => a - b)
+				if (info.chunks.length == 0 || info.count <= 0) { info.first = __; info.last = __; info.count = 0; info.chunks = []; return }
+				var f = chunk(id, k, info.chunks[0]), l = info.chunks.length == 1 ? f : chunk(id, k, info.chunks[info.chunks.length - 1])
+				info.first = f.ts[0]
+				info.last = l.ts[l.ts.length - 1]
+			}
+			var save = r => $ch(n.series).set({ s: r.s }, r)
+			// groups ts (+ optional v) by chunk start
+			var group = (k, ts, v) => {
+				var g = {}, order = []
+				ts.forEach((t, i) => {
+					var b = bk(k, t)
+					if (isUnDef(g[b])) { g[b] = { ts: [], v: [] }; order.push(b) }
+					g[b].ts.push(t); if (isDef(v)) g[b].v.push(v[i])
+				})
+				return { g: g, order: order }
+			}
+			return {
+				names     : n,
+				bulk      : bulk,
+				ids       : () => $ch(n.series).getKeys().map(k => k.s),
+				has       : id => isMap(rec(id)),
+				meta      : id => { var r = rec(id); return isMap(r) ? { id: id, metric: r.metric, labels: r.labels } : __ },
+				putMeta   : m => { if (!isMap(rec(m.id))) save({ s: m.id, metric: m.metric, labels: m.labels, t: {} }) },
+				read      : (id, k, from, to) => {
+					var r = rec(id), res = { ts: [], v: [] }
+					if (!isMap(r) || isUnDef(r.t[k])) return res
+					r.t[k].chunks.forEach(b => {
+						if (b > to || b + cs(k) - 1 < from) return
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) return
+						var a = self.__lb(ch.ts, from), z = self.__ub(ch.ts, to)
+						res.ts = res.ts.concat(ch.ts.slice(a, z)); res.v = res.v.concat(ch.v.slice(a, z))
+					})
+					return res
+				},
+				upsert    : (id, k, ts, v) => {
+					var r = rec(id), info = tinfo(r, k), gr = group(k, ts, v), added = 0, out = []
+					gr.order.forEach(b => {
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) { ch = { s: id, b: b, ts: [], v: [] }; if (info.chunks.indexOf(b) < 0) info.chunks.push(b) }
+						added += self.__put(ch, gr.g[b].ts, gr.g[b].v)
+						out.push(ch)
+					})
+					wr(k, out)
+					info.count += added
+					refresh(id, r, k)
+					save(r)
+					return added
+				},
+				del       : (id, k, ts) => {
+					var r = rec(id)
+					if (!isMap(r) || isUnDef(r.t[k])) return 0
+					var info = r.t[k], gr = group(k, ts), removed = 0, out = []
+					gr.order.forEach(b => {
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) return
+						removed += self.__rm(ch, gr.g[b].ts)
+						if (ch.ts.length == 0) { $ch(n[k]).unset({ s: id, b: b }); info.chunks = info.chunks.filter(x => x !== b) } else out.push(ch)
+					})
+					wr(k, out)
+					info.count -= removed
+					refresh(id, r, k)
+					save(r)
+					return removed
+				},
+				trimBefore: (id, k, cut) => {
+					var r = rec(id)
+					if (!isMap(r) || isUnDef(r.t[k]) || isUnDef(r.t[k].first) || r.t[k].first >= cut) return 0
+					var info = r.t[k], removed = 0, keep = []
+					info.chunks.sort((a, b) => a - b).forEach(b => {
+						if (b > cut) { keep.push(b); return }
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) return
+						var p = self.__lb(ch.ts, cut)
+						removed += p
+						if (p >= ch.ts.length) { $ch(n[k]).unset({ s: id, b: b }); return }
+						if (p > 0) { ch.ts.splice(0, p); ch.v.splice(0, p); $ch(n[k]).set({ s: id, b: b }, ch) }
+						keep.push(b)
+					})
+					info.chunks = keep
+					info.count -= removed
+					refresh(id, r, k)
+					save(r)
+					return removed
+				},
+				trimCount : (id, k, max) => {
+					var r = rec(id)
+					if (!isMap(r) || isUnDef(r.t[k]) || r.t[k].count <= max) return 0
+					var info = r.t[k], left = info.count - max, removed = 0, keep = []
+					info.chunks.sort((a, b) => a - b).forEach(b => {
+						if (left <= 0) { keep.push(b); return }
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) return
+						var p = Math.min(left, ch.ts.length)
+						left -= p; removed += p
+						if (p >= ch.ts.length) { $ch(n[k]).unset({ s: id, b: b }); return }
+						ch.ts.splice(0, p); ch.v.splice(0, p); $ch(n[k]).set({ s: id, b: b }, ch)
+						keep.push(b)
+					})
+					info.chunks = keep
+					info.count -= removed
+					refresh(id, r, k)
+					save(r)
+					return removed
+				},
+				bounds    : (id, k) => {
+					var r = rec(id)
+					if (!isMap(r) || isUnDef(r.t[k]) || r.t[k].count <= 0) return __
+					return { first: r.t[k].first, last: r.t[k].last, count: r.t[k].count }
+				},
+				drop      : id => {
+					var r = rec(id)
+					if (!isMap(r)) return
+					Object.keys(r.t).forEach(k => r.t[k].chunks.forEach(b => $ch(n[k]).unset({ s: id, b: b })))
+					$ch(n.series).unset({ s: id })
+				},
+				rawCount  : () => $ch(n.series).getAll().reduce((a, r) => a + (isDef(r.t.raw) ? r.t.raw.count : 0), 0),
+				liveCount : () => 0,
+				close     : close
+			}
+		},
+		// ---- engine
+		// reference timestamp used by retention for a series
+		__ref: function(c, id, aNow) {
+			if (isDef(aNow)) return aNow
+			if (c.opts.retentionRef == "now") return now()
+			var b = c.st.bounds(id, "raw")
+			return isDef(b) ? b.last : __
+		},
+		__retain: function(c, id, aNow) {
+			var ref = this.__ref(c, id, aNow), removed = 0
+			if (isUnDef(ref)) return 0
+			c.tiers.forEach(t => {
+				if (isDef(t.keep)) removed += c.st.trimBefore(id, t.key, ref - t.keep - (t.step > 0 ? t.step - 1 : 0))
+				if (isDef(t.maxPoints)) removed += c.st.trimCount(id, t.key, t.maxPoints)
+			})
+			return removed
+		},
+		__hk: function(c, id) {
+			if (!c.hasRetention) return
+			var ids = [ id ]
+			if (c.opts.housekeepEveryMs > 0) {
+				c.touched[id] = true
+				if (now() - c.lastHK < c.opts.housekeepEveryMs) return
+				ids = Object.keys(c.touched); c.touched = {}; c.lastHK = now()
+			}
+			for (var i = 0; i < ids.length; i++) if (c.st.has(ids[i])) this.__retain(c, ids[i])
+		},
+		__lg: function(c, o) {
+			if (isDef(c.buf)) c.buf.push(stringify(o, __, ""))
+		},
+		// is the raw data of the bucket starting at b intact (no raw trimming configured or nothing older than b was lost)?
+		__intact: function(c, id, b) {
+			if (!c.rawTrims) return true
+			var bd = c.st.bounds(id, "raw")
+			return isDef(bd) && bd.first <= b
+		},
+		__rebuild: function(c, id, t, b) {
+			var r = c.st.read(id, "raw", b, b + t.step - 1), agg
+			for (var i = 0; i < r.ts.length; i++) agg = this.__am(agg, this.__a0(r.ts[i], r.v[i]))
+			return agg
+		},
+		// updates the rollup tiers after raw points ts/vs were written (old holds the previous values of overwritten points)
+		__roll: function(c, id, ts, vs, old) {
+			var self = this
+			c.tiers.forEach(t => {
+				if (t.step <= 0) return
+				var ref = self.__ref(c, id), cut = (isDef(t.keep) && isDef(ref)) ? ref - t.keep : __
+				var bl = {}, order = []
+				ts.forEach((x, i) => {
+					var b = Math.floor(x / t.step) * t.step
+					if (isDef(cut) && b + t.step <= cut) return
+					if (isUnDef(bl[b])) { bl[b] = []; order.push(b) }
+					bl[b].push(i)
+				})
+				var ub = [], uv = []
+				order.forEach(b => {
+					var cur = c.st.read(id, t.key, b, b), agg = cur.ts.length > 0 ? cur.v[0] : __
+					var over = bl[b].some(i => isDef(old[ts[i]]))
+					if (over && self.__intact(c, id, b)) {
+						agg = self.__rebuild(c, id, t, b)
+					} else {
+						bl[b].forEach(i => {
+							var x = ts[i], v = vs[i]
+							if (isDef(old[x]) && isDef(agg)) {
+								agg = { count: agg.count, sum: agg.sum - old[x] + v, min: Math.min(agg.min, v), max: Math.max(agg.max, v),
+								        first: agg.ft === x ? v : agg.first, ft: agg.ft, last: agg.lt === x ? v : agg.last, lt: agg.lt }
+							} else {
+								agg = self.__am(agg, self.__a0(x, v))
+							}
+						})
+					}
+					if (isDef(agg)) { ub.push(b); uv.push(agg); self.__lg(c, { o: "r", s: id, k: t.key, t: b, a: self.__ae(agg) }) }
+				})
+				if (ub.length > 0) c.st.upsert(id, t.key, ub, uv)
+			})
+		},
+		// fixes rollup buckets after raw points were removed
+		__fix: function(c, id, ts) {
+			var self = this
+			c.tiers.forEach(t => {
+				if (t.step <= 0) return
+				var seen = {}
+				ts.forEach(x => {
+					var b = Math.floor(x / t.step) * t.step
+					if (seen[b] || !self.__intact(c, id, b)) return
+					seen[b] = true
+					var agg = self.__rebuild(c, id, t, b)
+					if (isDef(agg)) {
+						c.st.upsert(id, t.key, [ b ], [ agg ]); self.__lg(c, { o: "r", s: id, k: t.key, t: b, a: self.__ae(agg) })
+					} else {
+						c.st.del(id, t.key, [ b ]); self.__lg(c, { o: "d", s: id, k: t.key, t: b })
+					}
+				})
+			})
+		},
+		// writes points [ { t, v } ] of one series
+		__write: function(c, m, pts) {
+			var st = c.st, id = m.id
+			if (!st.has(id)) {
+				st.putMeta({ id: id, metric: m.metric, labels: m.labels })
+				this.__lg(c, { o: "s", s: id, m: m.metric, l: m.labels })
+			}
+			var map = {}
+			pts.forEach(p => { map[p.t] = p.v })
+			var ts = Object.keys(map).map(Number).sort((a, b) => a - b), vs = ts.map(t => map[t])
+			if (ts.length == 0) return
+			var old = {}
+			if (c.tiers.length > 1) {
+				var ex = st.read(id, "raw", ts[0], ts[ts.length - 1])
+				ex.ts.forEach((t, i) => { old[t] = ex.v[i] })
+			}
+			st.upsert(id, "raw", ts, vs)
+			for (var i = 0; i < ts.length; i++) this.__lg(c, { o: "p", s: id, t: ts[i], v: vs[i] })
+			if (c.tiers.length > 1) this.__roll(c, id, ts, vs, old)
+			this.__hk(c, id)
+		},
+		__changed: function(c) {
+			if (isUnDef(c.opts.file)) return
+			c.dirty = true
+			if (c.opts.autosave === "always" || (c.opts.autosave === "debounced" && now() - c.lastSave >= c.opts.saveDebounceMs)) this.__flush(c)
+		},
+		__flush: function(c) {
+			var o = c.opts
+			if (o.readOnly) return false
+			if (isUnDef(o.file)) return true
+			if (c.buf.length > 0) {
+				this.__l(o)
+				try {
+					var dir = new java.io.File(o.file).getAbsoluteFile().getParentFile()
+					if (isDef(dir) && !dir.exists()) dir.mkdirs()
+					io.writeFileString(o.file, (c.needNL ? "\n" : "") + c.buf.join("\n") + "\n", __, true)
+					c.needNL = false
+					c.lines += c.buf.length
+					c.buf = []
+				} finally {
+					this.__ul(o)
+				}
+			}
+			c.dirty = false
+			c.lastSave = now()
+			if (c.lines - c.lastCompact >= 1000) this.__compactIf(c)
+			return true
+		},
+		__compactIf: function(c) {
+			var live = c.st.liveCount()
+			if (c.lines > 0 && (c.lines - live) / c.lines > c.opts.compactRatio) this.__compact(c); else c.lastCompact = c.lines
+		},
+		// rewrites the file with the live state only
+		__compact: function(c) {
+			var o = c.opts, self = this
+			if (o.readOnly || isUnDef(o.file)) return false
+			var lines = []
+			c.st.ids().sort().forEach(id => {
+				var m = c.st.meta(id)
+				lines.push(stringify({ o: "s", s: id, m: m.metric, l: m.labels }, __, ""))
+				c.tiers.forEach(t => {
+					var r = c.st.read(id, t.key, -Infinity, Infinity)
+					for (var i = 0; i < r.ts.length; i++)
+						lines.push(t.step > 0 ? stringify({ o: "r", s: id, k: t.key, t: r.ts[i], a: self.__ae(r.v[i]) }, __, "") : stringify({ o: "p", s: id, t: r.ts[i], v: r.v[i] }, __, ""))
+				})
+			})
+			this.__l(o)
+			try {
+				var dir = new java.io.File(o.file).getAbsoluteFile().getParentFile()
+				if (isDef(dir) && !dir.exists()) dir.mkdirs()
+				var tmp = o.file + "." + java.util.UUID.randomUUID() + ".tmp"
+				try {
+					io.writeFileString(tmp, lines.length > 0 ? lines.join("\n") + "\n" : "")
+					java.nio.file.Files.move(new java.io.File(tmp).toPath(), new java.io.File(o.file).toPath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+				} finally {
+					java.nio.file.Files.deleteIfExists(new java.io.File(tmp).toPath())
+				}
+			} finally {
+				this.__ul(o)
+			}
+			c.buf = []
+			c.needNL = false
+			c.lines = lines.length
+			c.lastCompact = c.lines
+			c.dirty = false
+			c.lastSave = now()
+			return true
+		},
+		__load: function(c) {
+			var o = c.opts, st = c.st
+			this.__l(o)
+			try {
+				if (!io.fileExists(o.file)) {
+					if (o.create === false) throw "timeseries file '" + o.file + "' not found"
+					return
+				}
+				var txt = io.readFileString(o.file)
+				c.needNL = txt.length > 0 && txt.charAt(txt.length - 1) != "\n"
+				var self = this
+				txt.split("\n").forEach(line => {
+					if (line.length == 0) return
+					c.lines++
+					var r
+					try { r = JSON.parse(line) } catch(e) { c.bad++; return }
+					if (!isMap(r)) { c.bad++; return }
+					var k = isString(r.k) ? r.k : "raw"
+					switch(r.o) {
+					case "s": st.putMeta({ id: r.s, metric: r.m, labels: isMap(r.l) ? r.l : {} }); break
+					case "p": if (st.has(r.s)) st.upsert(r.s, "raw", [ r.t ], [ r.v ]); break
+					case "r": if (st.has(r.s) && isDef(c.tierBy[k])) st.upsert(r.s, k, [ r.t ], [ self.__ad(r.a) ]); break
+					case "d": if (st.has(r.s) && isDef(c.tierBy[k])) st.del(r.s, k, [ r.t ]); break
+					case "x": st.drop(r.s); break
+					default: c.bad++
+					}
+				})
+			} finally {
+				this.__ul(o)
+			}
+		},
+		// applies retention to every series
+		__housekeep: function(c, aNow) {
+			var self = this, removed = 0
+			if (!c.hasRetention) return 0
+			c.st.ids().forEach(id => { removed += self.__retain(c, id, aNow) })
+			return removed
+		},
+		// rebuilds every rollup tier of every series from the raw points
+		__rebuildAll: function(c) {
+			var self = this
+			c.st.ids().forEach(id => {
+				c.tiers.forEach(t => {
+					if (t.step <= 0) return
+					c.st.trimBefore(id, t.key, Infinity)
+				})
+				var r = c.st.read(id, "raw", -Infinity, Infinity)
+				c.tiers.forEach(t => {
+					if (t.step <= 0) return
+					var map = {}, bs = []
+					r.ts.forEach((x, i) => {
+						var b = Math.floor(x / t.step) * t.step
+						if (isUnDef(map[b])) bs.push(b)
+						map[b] = self.__am(map[b], self.__a0(x, r.v[i]))
+					})
+					if (bs.length > 0) c.st.upsert(id, t.key, bs, bs.map(b => map[b]))
+				})
+			})
+			this.__housekeep(c)
+		},
+		// public helpers used by ow.ch.utils.timeseries
+		__save: function(aName) { var c = this.__c(aName); return this.__flush(c) },
+		create       : function(aName, shouldCompress, options) {
+			options = _$(options, "options").isMap().default({})
+			var o = {
+				file            : _$(options.file, "options.file").isString().default(__),
+				store           : isDef(options.store) ? _$(options.store, "options.store").isMap().$_() : __,
+				readOnly        : _$(options.readOnly, "options.readOnly").isBoolean().default(false),
+				create          : _$(options.create, "options.create").isBoolean().default(true),
+				autosave        : String(_$(options.autosave, "options.autosave").isString().default("always")).toLowerCase(),
+				saveDebounceMs  : _$(options.saveDebounceMs, "options.saveDebounceMs").isNumber().default(5000),
+				lock            : options.lock,
+				compactRatio    : _$(options.compactRatio, "options.compactRatio").isNumber().default(0.5),
+				retentionRef    : String(_$(options.retentionRef, "options.retentionRef").isString().default("series")).toLowerCase(),
+				housekeepEveryMs: _$(options.housekeepEveryMs, "options.housekeepEveryMs").isNumber().default(0)
+			}
+			if ([ "always", "debounced", "off" ].indexOf(o.autosave) < 0) throw "options.autosave must be 'always', 'debounced' or 'off'"
+			if ([ "series", "now" ].indexOf(o.retentionRef) < 0) throw "options.retentionRef must be 'series' or 'now'"
+			if (isDef(o.store)) {
+				_$(o.store.type, "options.store.type").isString().$_()
+				if (isDef(o.file)) throw "options.file and options.store can't be used together"
+			}
+			var chunk = this.__dur(options.chunk, "options.chunk") || 3600000
+			var raw = _$(options.raw, "options.raw").isMap().default({})
+			var tiers = [ {
+				key: "raw", step: 0, chunk: chunk,
+				keep: this.__dur(isDef(raw.keep) ? raw.keep : options.retention, "raw.keep"),
+				maxPoints: isDef(raw.maxPoints) ? raw.maxPoints : options.maxPoints
+			} ]
+			if (isDef(tiers[0].maxPoints) && (!isNumber(tiers[0].maxPoints) || tiers[0].maxPoints < 1)) throw "options.maxPoints must be a number >= 1"
+			var rolls = _$(options.rollups, "options.rollups").isArray().default([])
+			var steps = {}
+			rolls.map(r => {
+				_$(r, "options.rollups[]").isMap().$_()
+				var step = this.__dur(r.step, "rollup step")
+				if (isUnDef(step)) throw "each rollup needs a step"
+				if (isDef(steps[step])) throw "duplicated rollup step " + step
+				steps[step] = true
+				return { key: "r" + step, step: step, chunk: Math.max(chunk, step * 60), keep: this.__dur(r.keep, "rollup keep") }
+			}).sort((a, b) => a.step - b.step).forEach(t => tiers.push(t))
+			var c = {
+				mx: new java.util.concurrent.locks.ReentrantLock(), opts: o, name: aName, tiers: tiers, tierBy: {}, buf: isDef(o.file) ? [] : __, lines: 0, bad: 0, lastCompact: 0,
+				lastHK: 0, touched: {}, lastSave: 0, dirty: false, needNL: false
+			}
+			tiers.forEach(t => { c.tierBy[t.key] = t })
+			c.hasRetention = tiers.some(t => isDef(t.keep) || isDef(t.maxPoints))
+			c.rawTrims = isDef(tiers[0].keep) || isDef(tiers[0].maxPoints)
+			if (isDef(o.store)) {
+				c.st = this.__chStore(c, aName)
+				if (o.create === false && c.st.ids().length == 0) { c.st.close(); throw "timeseries store for '" + aName + "' not found" }
+			} else {
+				c.st = this.__memStore(c)
+				if (isDef(o.file)) this.__load(c)
+			}
+			this.__channels[aName] = c
+			if (!o.readOnly) this.__housekeep(c)
+		},
+		destroy      : function(aName) {
+			var c = this.__channels[aName]
+			if (isUnDef(c)) return
+			try {
+				if (!c.opts.readOnly && isDef(c.opts.file)) {
+					this.__flush(c)
+					this.__compactIf(c)
+				}
+			} finally { delete this.__channels[aName]; c.st.close() }
+		},
+		size         : function(aName) {
+			return this.__c(aName).st.rawCount()
+		},
+		forEach      : function(aName, aFunction) {
+			var ks = this.getKeys(aName)
+			for (var i = 0; i < ks.length; i++) {
+				try { aFunction(ks[i], this.get(aName, ks[i])) } catch(e) {}
+			}
+		},
+		// full: optional selector { metric, labels, from, to }
+		__points: function(c, full, withV) {
+			var self = this, sel = isMap(full) ? full : {}, res = []
+			var from = isDef(sel.from) ? this.__ts(sel.from) : -Infinity, to = isDef(sel.to) ? this.__ts(sel.to) : Infinity
+			this.__select(c, sel).forEach(id => {
+				var m = c.st.meta(id), r = c.st.read(id, "raw", from, to)
+				for (var i = 0; i < r.ts.length; i++)
+					res.push(withV ? self.__pt(m, r.ts[i], r.v[i]) : { metric: m.metric, labels: clone(m.labels), ts: r.ts[i] })
+			})
+			return res
+		},
+		getAll       : function(aName, full) {
+			return this.__points(this.__c(aName), full, true)
+		},
+		getKeys      : function(aName, full) {
+			return this.__points(this.__c(aName), full, false)
+		},
+		getSortedKeys: function(aName, full) {
+			var self = this
+			return this.getKeys(aName, full).sort((a, b) => a.ts != b.ts ? a.ts - b.ts : (self.__sid(a.metric, a.labels) < self.__sid(b.metric, b.labels) ? -1 : 1))
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res = this.get(aName, aK)
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp)
+			}
+			return __
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			var k = this.__key(aK)
+			var t = isDef(k.ts) ? k.ts : (isMap(aV) && isDef(aV.ts) ? this.__ts(aV.ts) : now())
+			this.__write(c, k, [ { t: t, v: this.__val(aV) } ])
+			this.__changed(c)
+			return aK
+		},
+		// aKs are the key fields in each value (defaults to metric, labels, ts)
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			var c = this.__c(aName)
+			this.__rw(c)
+			if (!isArray(aKs) || aKs.length == 0) aKs = [ "metric", "labels", "ts" ]
+			var groups = {}, order = []
+			for (var i = 0; i < aVs.length; i++) {
+				var k = this.__key(ow.obj.filterKeys(aKs, aVs[i]))
+				var t = isDef(k.ts) ? k.ts : (isDef(aVs[i].ts) ? this.__ts(aVs[i].ts) : now())
+				if (isUnDef(groups[k.id])) { groups[k.id] = { k: k, pts: [] }; order.push(k.id) }
+				groups[k.id].pts.push({ t: t, v: this.__val(aVs[i]) })
+			}
+			order.forEach(id => this.__write(c, groups[id].k, groups[id].pts))
+			this.__changed(c)
+		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			if (!isArray(aKs) || aKs.length == 0) aKs = [ "metric", "labels", "ts" ]
+			for (var i = 0; i < aVs.length; i++) {
+				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aTimestamp)
+			}
+		},
+		get          : function(aName, aK) {
+			var c = this.__c(aName)
+			if (!isMap(aK) || !isString(aK.metric)) return __
+			var k = this.__key(aK)
+			if (!c.st.has(k.id)) return __
+			var t = k.ts
+			if (isUnDef(t)) {
+				var b = c.st.bounds(k.id, "raw")
+				if (isUnDef(b)) return __
+				t = b.last
+			}
+			var r = c.st.read(k.id, "raw", t, t)
+			return r.ts.length > 0 ? this.__pt(k, t, r.v[0]) : __
+		},
+		pop          : function(aName) {
+			var c = this.__c(aName), best
+			c.st.ids().sort().forEach(id => {
+				var b = c.st.bounds(id, "raw")
+				if (isDef(b) && (isUnDef(best) || b.last > best.t)) best = { id: id, t: b.last }
+			})
+			if (isUnDef(best)) return __
+			var m = c.st.meta(best.id)
+			return { metric: m.metric, labels: clone(m.labels), ts: best.t }
+		},
+		shift        : function(aName) {
+			var c = this.__c(aName), best
+			c.st.ids().sort().forEach(id => {
+				var b = c.st.bounds(id, "raw")
+				if (isDef(b) && (isUnDef(best) || b.first < best.t)) best = { id: id, t: b.first }
+			})
+			if (isUnDef(best)) return __
+			var m = c.st.meta(best.id)
+			return { metric: m.metric, labels: clone(m.labels), ts: best.t }
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			if (!isMap(aK) || !isString(aK.metric)) return
+			var k = this.__key(aK)
+			if (!c.st.has(k.id)) return
+			if (isDef(k.ts)) {
+				if (c.st.del(k.id, "raw", [ k.ts ]) == 0) return
+				this.__lg(c, { o: "d", s: k.id, t: k.ts })
+				this.__fix(c, k.id, [ k.ts ])
+			} else {
+				c.st.drop(k.id)
+				this.__lg(c, { o: "x", s: k.id })
+			}
+			this.__changed(c)
+		}
+	},
 	// Remote channel implementation
 	//
 	/**
@@ -3025,46 +3798,121 @@ OpenWrap.ch.prototype.__types = {
 	 *    - compact (Boolean) Upon channel create/destroy it will try to run a compact operation over the file to save space.\
 	 *    - map (String/Function) The map name (defaults to 'default'). If defined as a function it will receive the key as argument if possible (only for get/set/unset/setall)
 	 * for sharding proposes.\
+	 *    - multifile (Boolean) If true keys will be spread (by key hash) across several MVStore files on "path" (defaults to false) (*)\
+	 *    - path (String) The folder where to keep the MVStore files (required if multifile is true)\
+	 *    - files (Number) The number of MVStore files to use if multifile is true (defaults to 4 or to the number already in use on "path")\
 	 * \
 	 * The map will be created if it doesn't exist. Operations getKeys/getAll can be paginated with the extra map argument containing start and end\
+	 * \
+	 * (*) - With multifile the files are named mvs-NN.db and a mvs-multifile.json manifest records the number of files (to change it use ow.ch.utils.mvs.reshard).
+	 * All other options apply to each file. getKeys/getAll (including start/end pagination) and pop/shift go through the files in order (no global key ordering).\
+	 * Each file can be handled individually with ow.ch.utils.mvs.\
 	 * </odoc>
 	 */
 	mvs: {
+		__open: function(absFile, shouldCompress) {
+			if (isUnDef(this.__f[absFile])) {
+				var s = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled();
+				if (absFile != "memory") s = s.fileName(absFile);
+				if (shouldCompress) s = s.compress();
+				this.__f[absFile] = s.open();
+			}
+			if (absFile != "memory") this.__f[absFile].setReuseSpace(true);
+			return this.__f[absFile];
+		},
+		// Shard file names for a multifile path (mvs-00.db, mvs-01.db, ...)
+		__fnames: function(aPath, aN) {
+			var width = Math.max(2, String(aN - 1).length);
+			var res = [];
+			for(var i = 0; i < aN; i++) {
+				var n = String(i);
+				while(n.length < width) n = "0" + n;
+				res.push(aPath + "/mvs-" + n + ".db");
+			}
+			return res;
+		},
+		// Shard index for an already canonical (untrimmed) key string
+		__hidx: function(aCanonicalKey, aN) {
+			if (aN <= 1) return 0;
+			return Number(java.lang.Math.floorMod(new java.lang.String(aCanonicalKey).hashCode(), aN));
+		},
+		__idx: function(aName, aKey) {
+			// Always hash the untrimmed canonical key so internalTrim can't move keys between files
+			return this.__hidx(stringify(sortMapKeys(aKey), __, ""), this.__o[aName].files);
+		},
+		__st: function(aName, aKey) {
+			return this.__ss[aName][this.__idx(aName, aKey)];
+		},
+		__k: function(aName, aKey) {
+			return stringify(sortMapKeys(aKey), __, this.__o[aName].stry);
+		},
+		__page: function(aName, full, fn) {
+			var res = [];
+			full = _$(full, "full").isMap().default({});
+
+			var mapName = this.__m[aName](full);
+			var maps = this.__ss[aName].map(s => s.openMap(mapName));
+
+			if (isDef(full.start) || isDef(full.end)) {
+				var start = _$(full.start, "full.start").isNumber().default(0);
+				var limit = _$(full.end, "full.end").isNumber().default(Infinity);
+
+				var offset = 0;
+				for(var m = 0; m < maps.length && offset < limit; m++) {
+					var size = Number(maps[m].sizeAsLong());
+					for(var i = Math.max(start - offset, 0); i < size && offset + i < limit; i++) {
+						res.push(fn(maps[m], maps[m].getKey(i)));
+					}
+					offset += size;
+				}
+			} else {
+				maps.forEach(map => {
+					af.fromJavaArray(map.keyList()).forEach(k => res.push(fn(map, k)));
+				});
+			}
+
+			return res;
+		},
 		create       : function(aName, shouldCompress, options) {
 			if (isUnDef(options)) options = {};
 			if (isUnDef(options.file)) options.file = undefined;
 
 			if (isUnDef(this.__s)) this.__s = {};
+			if (isUnDef(this.__ss)) this.__ss = {};
 			if (isUnDef(this.__f)) this.__f = {};
 			if (isUnDef(this.__m)) this.__m = {};
 			if (isUnDef(this.__o)) this.__o = {};
 
 			var shut = _$(options.closeOnShutdown).isBoolean().default(true);
+			options.multifile = _$(options.multifile, "options.multifile").isBoolean().default(false);
 
-			var existing = false, absFile;
-			if (isDef(options.file)) {
-				absFile = String((new java.io.File(options.file)).getAbsoluteFile());
+			var absFiles = [];
+			if (options.multifile) {
+				_$(options.path, "options.path").isString().$_();
+				var absPath = String((new java.io.File(options.path)).getAbsoluteFile());
+				io.mkdir(absPath);
+
+				var manifestFile = absPath + "/mvs-multifile.json";
+				var manifest = io.fileExists(manifestFile) ? io.readFileJSON(manifestFile) : __;
+				if (isMap(manifest) && isNumber(manifest.files)) {
+					if (isDef(options.files) && options.files != manifest.files) throw "mvs multifile: options.files (" + options.files + ") doesn't match the " + manifest.files + " files already in use on " + absPath;
+					options.files = manifest.files;
+				} else {
+					options.files = _$(options.files, "options.files").isNumber().default(4);
+					if (options.files < 1 || options.files != Math.floor(options.files)) throw "mvs multifile: options.files needs to be an integer >= 1";
+					io.writeFileJSON(manifestFile, { files: options.files, hash: "javaStringHashCode", version: 1 }, "");
+				}
+
+				absFiles = this.__fnames(absPath, options.files);
 			} else {
-				absFile = "memory";
+				options.files = 1;
+				absFiles.push(isDef(options.file) ? String((new java.io.File(options.file)).getAbsoluteFile()) : "memory");
 			}
-			options.absFile = absFile;
-			
-			if (isUnDef(this.__f[absFile])) {
-				this.__s[aName] = Packages.org.h2.mvstore.MVStore.Builder();
-				this.__s[aName] = this.__s[aName].autoCommitDisabled();
+			options.absFile  = absFiles[0];
+			options.absFiles = absFiles;
 
-				if (absFile != "memory") this.__s[aName] = this.__s[aName].fileName(absFile);
-				if (shouldCompress) this.__s[aName] = this.__s[aName].compress();
-				this.__s[aName] = this.__s[aName].open();
-
-				this.__f[absFile] = this.__s[aName];
-			} else {
-				existing = true;
-				this.__s[aName] = this.__f[absFile];
-			}
-
-			//this.__s[aName].setVersionsToKeep(2);
-			if (isDef(options.file)) this.__s[aName].setReuseSpace(true)
+			this.__ss[aName] = absFiles.map(f => this.__open(f, shouldCompress));
+			this.__s[aName]  = this.__ss[aName][0];
 
 			if (isUnDef(options.map)) {
 				options.map = function() { return "default"; };
@@ -3076,8 +3924,8 @@ OpenWrap.ch.prototype.__types = {
 
 			this.__m[aName] = options.map;
 
-			if (isDef(options.file) && isDef(options.compact) && options.compact) {
-				this.__s[aName].compactFile(2500)
+			if ((isDef(options.file) || options.multifile) && isDef(options.compact) && options.compact) {
+				this.__ss[aName].forEach(s => s.compactFile(2500));
 			}
 
 			this.__o[aName] = options;
@@ -3089,28 +3937,26 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		destroy      : function(aName) {
-			if (isDef(this.__o[aName].absFile) && isDef(this.__o[aName].compact) && this.__o[aName].compact) {
-				this.__s[aName].compactFile(2500)
-			}			
+			var o = this.__o[aName], sts = this.__ss[aName];
 
-			var found = false;
-			for(var i in this.__s) {
-				if (i != aName && 
-					this.__s[i] == this.__f[this.__o[aName].absFile]) 
-				   found = true;
-			}
+			o.absFiles.forEach((f, i) => {
+				if (f != "memory" && isDef(o.compact) && o.compact) sts[i].compactFile(2500);
 
-			if (!found) {
-				this.__s[aName].close();
-				delete this.__f[this.__o[aName].absFile];
-			}
+				var found = Object.keys(this.__o).some(n => n != aName && this.__o[n].absFiles.indexOf(f) >= 0);
+				if (!found) {
+					sts[i].close();
+					delete this.__f[f];
+				}
+			});
 
 			delete this.__s[aName];
+			delete this.__ss[aName];
 			delete this.__o[aName];
 		},
 		size         : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
-			return map.sizeAsLong();
+			var mapName = this.__m[aName](), size = 0;
+			this.__ss[aName].forEach(s => size += Number(s.openMap(mapName).sizeAsLong()));
+			return size;
 		},
 		forEach      : function(aName, aFunction, x) {
 			var aKs = this.getKeys(aName, x);
@@ -3120,44 +3966,10 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getKeys      : function(aName, full) {
-			var res = [];
-			full = _$(full, "full").isMap().default({});
-
-			var map = this.__s[aName].openMap(this.__m[aName](full));
-
-			if (isDef(full.start) || isDef(full.end)) {
-				var start = _$(full.start, "full.start").isNumber().default(0);
-				var max = this.size(aName);
-				var limit = _$(full.end, "full.end").isNumber().default(max);
-	
-				for(var i = start; i < limit && i < max; i++) {
-					res.push(jsonParse(map.getKey(i), true));
-				}
-			} else {
-				res = af.fromJavaArray(map.keyList()).map(r => jsonParse(r, true))
-			}
-
-			return res;
+			return this.__page(aName, full, (map, k) => jsonParse(k, true));
 		},
 		getAll      : function(aName, full) {
-			var res = [];
-			full = _$(full, "full").isMap().default({});
-
-			var map = this.__s[aName].openMap(this.__m[aName](full));
-
-			if (isDef(full.start) || isDef(full.end)) {
-				var start = _$(full.start, "full.start").isNumber().default(0);
-				var max = this.size(aName);
-				var limit = _$(full.end, "full.end").isNumber().default(max);
-	
-				for(var i = start; i < limit && i < max; i++) {
-					res.push(jsonParse(map.get(map.getKey(i)), true));
-				}
-			} else {
-				res = af.fromJavaArray(map.keyList()).map(k => jsonParse(map.get(k), true))
-			}
-
-			return res;
+			return this.__page(aName, full, (map, k) => jsonParse(map.get(k), true));
 		},
 		getSortedKeys: function(aName, full) {
 			return this.getKeys(aName, full);
@@ -3168,57 +3980,74 @@ OpenWrap.ch.prototype.__types = {
 			if ($stream([res]).anyMatch(aMatch)) {
 				return this.set(aName, aK, aV, aTimestamp);
 			}
-			return undefined;		
+			return undefined;
 		},
 		set          : function(aName, ak, av, aTimestamp) {
-			var map = this.__s[aName].openMap(this.__m[aName](ak));
+			var s = this.__st(aName, ak);
+			var map = s.openMap(this.__m[aName](ak));
 
-			map.put(stringify(sortMapKeys(ak), __, this.__o[aName].stry), stringify(av, __, this.__o[aName].stry));
-			this.__s[aName].commit();
+			map.put(this.__k(aName, ak), stringify(av, __, this.__o[aName].stry));
+			s.commit();
 			return ak;
 		},
 		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			ow.loadObj();
+			var touched = {};
 			for(var iii in anArrayOfMapData) {
 				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
 				var av = anArrayOfMapData[iii];
-				var map = this.__s[aName].openMap(this.__m[aName](ak));
-				map.put(stringify(sortMapKeys(ak), __, this.__o[aName].stry), stringify(av, __, this.__o[aName].stry));
+				var idx = this.__idx(aName, ak);
+				var map = this.__ss[aName][idx].openMap(this.__m[aName](ak));
+				map.put(this.__k(aName, ak), stringify(av, __, this.__o[aName].stry));
+				touched[idx] = true;
 			}
-			this.__s[aName].sync();
-			this.__s[aName].commit();
+			Object.keys(touched).forEach(i => {
+				this.__ss[aName][i].sync();
+				this.__ss[aName][i].commit();
+			});
 		},
 		unsetAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			ow.loadObj();
+			var touched = {};
 			for(var iii in anArrayOfMapData) {
 				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
-				//var av = anArrayOfMapData[iii];
-				var map = this.__s[aName].openMap(this.__m[aName](ak));
-				map.remove(stringify(sortMapKeys(ak), __, this.__o[aName].stry));
+				var idx = this.__idx(aName, ak);
+				var map = this.__ss[aName][idx].openMap(this.__m[aName](ak));
+				map.remove(this.__k(aName, ak));
+				touched[idx] = true;
 			}
-			this.__s[aName].sync();
-			this.__s[aName].commit();
+			Object.keys(touched).forEach(i => {
+				this.__ss[aName][i].sync();
+				this.__ss[aName][i].commit();
+			});
 		},
 		get          : function(aName, aKey) {
-			var map = this.__s[aName].openMap(this.__m[aName](aKey));
+			var map = this.__st(aName, aKey).openMap(this.__m[aName](aKey));
 
-			var r = map.get(stringify(sortMapKeys(aKey), __, this.__o[aName].stry));
+			var r = map.get(this.__k(aName, aKey));
 			if (r == null || isUnDef(r)) return __; else return jsonParse(r, true);
 		},
+		// pop/shift return the key; ow.ch.pop/shift then get and unset it
 		pop          : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
-			var aKey = map.lastKey();
-			return jsonParse(map.remove(aKey), true);	
+			var mapName = this.__m[aName](), sts = this.__ss[aName];
+			for(var i = sts.length - 1; i >= 0; i--) {
+				var map = sts[i].openMap(mapName);
+				if (map.sizeAsLong() > 0) return jsonParse(map.lastKey(), true);
+			}
+			return __;
 		},
 		shift        : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
-			var aKey = map.firstKey();
-			return jsonParse(map.remove(aKey), true);
+			var mapName = this.__m[aName](), sts = this.__ss[aName];
+			for(var i = 0; i < sts.length; i++) {
+				var map = sts[i].openMap(mapName);
+				if (map.sizeAsLong() > 0) return jsonParse(map.firstKey(), true);
+			}
+			return __;
 		},
 		unset        : function(aName, aKey) {
-			var map = this.__s[aName].openMap(this.__m[aName](aKey));
+			var map = this.__st(aName, aKey).openMap(this.__m[aName](aKey));
 
-			return jsonParse(map.remove(stringify(sortMapKeys(aKey), __, this.__o[aName].stry)), true);
+			return jsonParse(map.remove(this.__k(aName, aKey)), true);
 		}
 	},
 	/**
@@ -5301,6 +6130,86 @@ OpenWrap.ch.prototype.utils = {
 			}
 
 			return true;			
+		},
+
+		/**
+		 * <odoc>
+		 * <key>ow.ch.utils.mvs.reshard(aPath, aNewFiles, shouldCompress) : Number</key>
+		 * Changes the number of files of an "mvs" channel created with multifile = true on aPath to aNewFiles, redistributing
+		 * all the entries of all the maps. Returns the number of entries moved. The channel(s) using aPath need to be destroyed first.
+		 * The new files are built on a temporary folder inside aPath and only replace the current ones (and the mvs-multifile.json manifest) after
+		 * all the entries are copied and counted. Use shouldCompress = true if the channel was created with it.
+		 * </odoc>
+		 */
+		reshard: function(aPath, aNewFiles, shouldCompress) {
+			_$(aPath, "aPath").isString().$_();
+			_$(aNewFiles, "aNewFiles").isNumber().$_();
+			if (aNewFiles < 1 || aNewFiles != Math.floor(aNewFiles)) throw "aNewFiles needs to be an integer >= 1";
+
+			var t = ow.ch.__types.mvs;
+			var absPath = String((new java.io.File(aPath)).getAbsoluteFile());
+			var manifestFile = absPath + "/mvs-multifile.json";
+			var manifest = io.fileExists(manifestFile) ? io.readFileJSON(manifestFile) : __;
+			if (!isMap(manifest) || !isNumber(manifest.files)) throw "No mvs multifile manifest found on " + absPath;
+
+			var oldFiles = t.__fnames(absPath, manifest.files);
+			var inUse = isMap(t.__o) && Object.keys(t.__o).some(n => t.__o[n].absFiles.some(f => oldFiles.indexOf(f) >= 0));
+			if (inUse) throw "Channels using " + absPath + " need to be destroyed before resharding";
+			if (manifest.files == aNewFiles) return 0;
+
+			var tmpPath = absPath + "/.reshard-tmp";
+			if (io.fileExists(tmpPath)) io.rm(tmpPath);
+			io.mkdir(tmpPath);
+
+			var newFiles = t.__fnames(tmpPath, aNewFiles);
+			var sources = [], targets = [], moved = 0, expected = 0;
+			var open = (f, comp) => {
+				var b = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled().fileName(f);
+				if (comp) b = b.compress();
+				return b.open();
+			};
+
+			try {
+				sources = oldFiles.map(f => open(f, shouldCompress));
+				targets = newFiles.map(f => open(f, shouldCompress));
+
+				sources.forEach(src => {
+					af.fromJavaArray(src.getMapNames().toArray()).forEach(mapName => {
+						mapName = String(mapName);
+						var smap = src.openMap(mapName);
+						af.fromJavaArray(smap.keyList()).forEach(k => {
+							// Same placement rule as the channel: hash of the untrimmed canonical key
+							var idx = t.__hidx(stringify(sortMapKeys(jsonParse(String(k), true)), __, ""), aNewFiles);
+							targets[idx].openMap(mapName).put(k, smap.get(k));
+							moved++;
+						});
+						expected += Number(smap.sizeAsLong());
+					});
+				});
+
+				var total = 0;
+				targets.forEach(tgt => {
+					tgt.commit();
+					af.fromJavaArray(tgt.getMapNames().toArray()).forEach(mapName => total += Number(tgt.openMap(String(mapName)).sizeAsLong()));
+				});
+				if (total != expected) throw "reshard failed: expected " + expected + " entries but copied " + total;
+			} catch(e) {
+				targets.forEach(tgt => { try { tgt.close() } catch(ee) {} });
+				sources.forEach(src => { try { src.close() } catch(ee) {} });
+				io.rm(tmpPath);
+				throw e;
+			}
+
+			targets.forEach(tgt => tgt.close());
+			sources.forEach(src => src.close());
+
+			// Swap: remove the old files, move the new ones and finally update the manifest
+			oldFiles.forEach(f => { if (io.fileExists(f)) io.rm(f); });
+			t.__fnames(absPath, aNewFiles).forEach((f, i) => io.mv(newFiles[i], f));
+			io.writeFileJSON(manifestFile, { files: aNewFiles, hash: "javaStringHashCode", version: 1 }, "");
+			io.rm(tmpPath);
+
+			return moved;
 		}
 	}
 };
@@ -5416,6 +6325,357 @@ OpenWrap.ch.prototype.utils.graph = {
 		return ow.ch.__types.graph.__save(aName)
 	}
 };
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.ch.utils.timeseries</key>
+ * <![CDATA[
+ * Helpers to query and feed channels of type `timeseries`. Every function takes the channel name first. A `selector` is a map
+ * `{ metric, labels }` where `metric` and each label value can be a String, an Array (any of), a RegExp or a Function.
+ *
+ * | Function | Returns | Description |
+ * | --- | --- | --- |
+ * | `series(aName, aSelector)` | Array | `{ metric, labels }` of the matching series |
+ * | `labels(aName, aMetric)` | Map | Label names with their sorted values for a metric (or all metrics) |
+ * | `latest(aName, aSelector)` | Array | Newest point of each matching series as flat rows |
+ * | `range(aName, aSelector, aOptions)` | Array | Flat rows `{ ts, metric, ...labels, v }`. Options: `from`, `to`, `step` (ms or "1m"), `fn` (`avg`, `min`, `max`, `sum`, `count`, `first`, `last`, `rate`, `increase`; default `avg`), `fill` (`none`, `null`, `zero`, `prev`), `tier` (`raw` or a rollup step to force one) |
+ * | `drop(aName, aSelector)` | Number | Removes the matching series, returns how many |
+ * | `stats(aName)` | Map | Series and point counts, per metric and per tier |
+ * | `housekeep(aName, aOptions)` | Number | Applies retention now (`{ now }` to measure from a given time); returns the removed entries |
+ * | `rebuildRollups(aName)` | | Recomputes every rollup from the raw points |
+ * | `compact(aName)` | Boolean | Rewrites the NDJSON file with the live data only |
+ * | `save(aName)` | Boolean | Flushes pending changes now |
+ * | `collect(aEvery, aName, aSource, aOptions)` | Map | Periodically records metrics (default `ow.metrics.getAll()`); returns `{ once, stop }` |
+ * | `getTimeSeriesSubscriber(aTargetCh, aOptions)` | Function | Channel subscriber that records changes of another channel as points |
+ * | `toOpenMetrics(aName, aSelector, aOptions)` | String | OpenMetrics text of the latest points (or all points with `from`/`to`) |
+ * | `fromOpenMetrics(aName, aText, aOptions)` | Number | Records OpenMetrics text as points; returns how many |
+ *
+ * With `step`, points are grouped in buckets aligned to the epoch and the row `ts` is the start of the bucket. When rollups exist, the finest
+ * tier that reaches back to `from` and divides `step` is used. `rate` and `increase` treat a decrease in value as a counter reset (on rollup tiers they are approximate).
+ *
+ * Example:
+ *
+ * ```javascript
+ * ow.ch.utils.timeseries.range("m", { metric: "cpu", labels: { host: /^web/ } }, { from: "2026-01-01", step: "5m", fn: "max" });
+ * ```
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.ch.prototype.utils.timeseries = {
+	__t: () => ow.ch.__types.timeseries,
+	__FNS: [ "avg", "min", "max", "sum", "count", "first", "last", "rate", "increase" ],
+	// finest tier that reaches back to 'from' and whose buckets divide 'step'
+	__pick: function(c, id, from, step, force) {
+		var tt = this.__t()
+		if (isDef(force)) {
+			if (String(force) == "raw") return c.tiers[0]
+			var s = tt.__dur(force, "tier"), f = c.tiers.filter(t => t.step == s)
+			if (f.length == 0) throw "timeseries: tier '" + force + "' not found"
+			return f[0]
+		}
+		if (isUnDef(step)) return c.tiers[0]
+		var cand = c.tiers.filter(t => t.step == 0 || (t.step <= step && step % t.step == 0)), best, bestFirst
+		cand.forEach(t => {
+			var b = c.st.bounds(id, t.key)
+			if (isUnDef(b)) return
+			if (isUnDef(best) || b.first <= bestFirst - t.step) { best = t; bestFirst = b.first }
+		})
+		if (isUnDef(best)) return c.tiers[0]
+		for (var i = 0; i < cand.length; i++) {
+			var bd = c.st.bounds(id, cand[i].key)
+			if (isUnDef(bd)) continue
+			if (cand[i] === best || bd.first <= from) return cand[i]
+		}
+		return best
+	},
+	__row: function(m, t, v) {
+		var r = { ts: t, metric: m.metric }
+		Object.keys(m.labels).forEach(k => { r[(k == "ts" || k == "metric" || k == "v") ? "_" + k : k] = m.labels[k] })
+		r.v = v
+		return r
+	},
+	series: function(aName, aSelector) {
+		var tt = this.__t(), c = tt.__c(aName)
+		return tt.__select(c, aSelector).map(id => { var m = c.st.meta(id); return { metric: m.metric, labels: clone(m.labels) } })
+	},
+	labels: function(aName, aMetric) {
+		var res = {}
+		this.series(aName, isDef(aMetric) ? { metric: aMetric } : {}).forEach(s => {
+			Object.keys(s.labels).forEach(k => {
+				if (isUnDef(res[k])) res[k] = []
+				if (res[k].indexOf(s.labels[k]) < 0) res[k].push(s.labels[k])
+			})
+		})
+		Object.keys(res).forEach(k => res[k].sort())
+		return res
+	},
+	latest: function(aName, aSelector) {
+		var tt = this.__t(), c = tt.__c(aName), res = []
+		tt.__select(c, aSelector).forEach(id => {
+			var b = c.st.bounds(id, "raw")
+			if (isUnDef(b)) return
+			var m = c.st.meta(id), r = c.st.read(id, "raw", b.last, b.last)
+			res.push(this.__row(m, b.last, r.v[0]))
+		})
+		return res
+	},
+	range: function(aName, aSelector, aOptions) {
+		var tt = this.__t(), c = tt.__c(aName), self = this
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var from = isDef(aOptions.from) ? tt.__ts(aOptions.from) : -Infinity, to = isDef(aOptions.to) ? tt.__ts(aOptions.to) : Infinity
+		var step = tt.__dur(aOptions.step, "step"), fn = String(isDef(aOptions.fn) ? aOptions.fn : "avg"), fill = String(isDef(aOptions.fill) ? aOptions.fill : "none")
+		if (this.__FNS.indexOf(fn) < 0) throw "timeseries: unknown fn '" + fn + "' (use " + this.__FNS.join(", ") + ")"
+		if ([ "none", "null", "zero", "prev" ].indexOf(fill) < 0) throw "timeseries: unknown fill '" + fill + "'"
+		var res = []
+		tt.__select(c, aSelector).forEach(id => {
+			var m = c.st.meta(id), tier = self.__pick(c, id, from, step, aOptions.tier)
+			var s = step
+			if (isUnDef(s) && tier.step > 0) s = tier.step
+			var rd = c.st.read(id, tier.key, tier.step > 0 ? from - tier.step + 1 : from, to)
+			if (tier.step > 0 && isDef(from) && isFinite(from)) {
+				// drop rollup buckets that end before 'from'
+				var keep = rd.ts.map((b, i) => b + tier.step > from)
+				rd = { ts: rd.ts.filter((b, i) => keep[i]), v: rd.v.filter((b, i) => keep[i]) }
+			}
+			// no step on the raw tier: the points as they are
+			if (isUnDef(s)) {
+				rd.ts.forEach((t, i) => res.push(self.__row(m, t, rd.v[i])))
+				return
+			}
+			var rows = {}, order = [], bucket = t => Math.floor(t / s) * s
+			if (fn == "rate" || fn == "increase") {
+				var prevLast
+				rd.ts.forEach((t, i) => {
+					var inc = 0, b = bucket(t)
+					if (tier.step == 0) {
+						var v = rd.v[i]
+						if (isDef(prevLast)) inc = v >= prevLast ? v - prevLast : v
+						prevLast = v
+					} else {
+						var a = rd.v[i]
+						inc = a.last >= a.first ? a.last - a.first : a.last
+						if (isDef(prevLast)) inc += a.first >= prevLast ? a.first - prevLast : a.first
+						prevLast = a.last
+					}
+					if (isUnDef(rows[b])) { rows[b] = 0; order.push(b) }
+					rows[b] += inc
+				})
+				order.forEach(b => { rows[b] = fn == "rate" ? rows[b] / (s / 1000) : rows[b] })
+			} else {
+				rd.ts.forEach((t, i) => {
+					var b = bucket(t), a = tier.step == 0 ? tt.__a0(t, rd.v[i]) : rd.v[i]
+					if (isUnDef(rows[b])) order.push(b)
+					rows[b] = tt.__am(rows[b], a)
+				})
+				order.forEach(b => {
+					var a = rows[b]
+					rows[b] = fn == "avg" ? a.sum / a.count : a[fn]
+				})
+			}
+			order.sort((a, b) => a - b)
+			var out = order.map(b => ({ b: b, v: rows[b] }))
+			if (fill != "none" && out.length > 0) {
+				var f0 = isFinite(from) ? bucket(from) : out[0].b, f1 = isFinite(to) ? bucket(to) : out[out.length - 1].b
+				if ((f1 - f0) / s > 1000000) throw "timeseries: too many buckets to fill"
+				var byB = {}, last
+				out.forEach(o => { byB[o.b] = o.v })
+				out = []
+				for (var b = f0; b <= f1; b += s) {
+					if (isDef(byB[b])) { last = byB[b]; out.push({ b: b, v: last }) }
+					else out.push({ b: b, v: fill == "null" ? null : (fill == "zero" ? 0 : (isDef(last) ? last : null)) })
+				}
+			}
+			out.forEach(o => res.push(self.__row(m, o.b, o.v)))
+		})
+		return res
+	},
+	drop: function(aName, aSelector) {
+		var tt = this.__t(), c = tt.__c(aName)
+		tt.__rw(c)
+		var ids = tt.__select(c, aSelector)
+		ids.forEach(id => { c.st.drop(id); tt.__lg(c, { o: "x", s: id }) })
+		if (ids.length > 0) tt.__changed(c)
+		return ids.length
+	},
+	stats: function(aName) {
+		var tt = this.__t(), c = tt.__c(aName), res = { series: 0, points: 0, metrics: {}, tiers: {} }
+		c.tiers.forEach(t => { res.tiers[t.key] = { step: t.step, entries: 0 } })
+		c.st.ids().forEach(id => {
+			var m = c.st.meta(id)
+			res.series++
+			if (isUnDef(res.metrics[m.metric])) res.metrics[m.metric] = { series: 0, points: 0, first: __, last: __ }
+			var ms = res.metrics[m.metric]
+			ms.series++
+			c.tiers.forEach(t => {
+				var b = c.st.bounds(id, t.key)
+				if (isUnDef(b)) return
+				res.tiers[t.key].entries += b.count
+				if (t.step == 0) {
+					res.points += b.count; ms.points += b.count
+					ms.first = isUnDef(ms.first) ? b.first : Math.min(ms.first, b.first)
+					ms.last = isUnDef(ms.last) ? b.last : Math.max(ms.last, b.last)
+				}
+			})
+		})
+		return res
+	},
+	housekeep: function(aName, aOptions) {
+		var tt = this.__t(), c = tt.__c(aName)
+		aOptions = _$(aOptions, "options").isMap().default({})
+		tt.__rw(c)
+		var n = tt.__housekeep(c, isDef(aOptions.now) ? tt.__ts(aOptions.now) : __)
+		if (isDef(c.opts.file)) { tt.__flush(c); tt.__compactIf(c) }
+		return n
+	},
+	rebuildRollups: function(aName) {
+		var tt = this.__t(), c = tt.__c(aName)
+		tt.__rw(c)
+		tt.__rebuildAll(c)
+		if (isDef(c.opts.file)) tt.__compact(c)
+	},
+	compact: function(aName) {
+		var tt = this.__t()
+		return tt.__compact(tt.__c(aName))
+	},
+	save: function(aName) {
+		return this.__t().__save(aName)
+	},
+	// flattens a map of metrics into [ { metric, labels, v } ]; nested maps extend the metric name, arrays add an 'idx' label
+	__flat: function(aObj, aPrefix, aLabels, aOut) {
+		var self = this
+		if (isNumber(aObj) && isFinite(aObj)) aOut.push({ metric: aPrefix, labels: aLabels, v: aObj })
+		else if (isBoolean(aObj)) aOut.push({ metric: aPrefix, labels: aLabels, v: aObj ? 1 : 0 })
+		else if (isArray(aObj)) aObj.forEach((o, i) => self.__flat(o, aPrefix, merge(aLabels, { idx: String(i) }), aOut))
+		else if (isMap(aObj)) Object.keys(aObj).forEach(k => { var n = k.replace(/^_+/, ""); self.__flat(aObj[k], isDef(aPrefix) && aPrefix.length > 0 ? aPrefix + "_" + n : n, aLabels, aOut) })
+		return aOut
+	},
+	__sane: s => String(s).replace(/[^a-zA-Z0-9_:]/g, "_").replace(/^(\d)/, "_$1"),
+	collect: function(aEvery, aName, aSource, aOptions) {
+		var self = this, tt = this.__t()
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var labels = tt.__labels(aOptions.labels), prefix = isString(aOptions.prefix) ? aOptions.prefix : ""
+		tt.__c(aName)
+		var once = function() {
+			var raw = isFunction(aSource) ? aSource() : (isArray(aSource) ? ow.loadMetrics().getSome(aSource) : ow.loadMetrics().getAll())
+			var pts = []
+			if (isArray(raw) && raw.length > 0 && isString(raw[0].metric)) {
+				pts = raw.map(r => ({ metric: r.metric, labels: merge(labels, tt.__labels(r.labels)), v: r.v, ts: r.ts }))
+			} else {
+				pts = self.__flat(raw, "", labels, [])
+			}
+			var t = now()
+			pts = pts.filter(p => isString(p.metric) && p.metric.length > 0).map(p => ({ metric: self.__sane(prefix + p.metric), labels: p.labels, ts: isDef(p.ts) ? p.ts : t, v: p.v }))
+			if (pts.length > 0) $ch(aName).setAll([ "metric", "labels", "ts" ], pts)
+			return pts.length
+		}
+		var __f = function() {
+			if ($ch().list().indexOf(aName) < 0) { res.stop(); return }
+			try { once() } catch(e) { if (isFunction(aOptions.onError)) aOptions.onError(e); else logErr("timeseries collect: " + e) }
+		}
+		var res
+		if (isString(aEvery)) {
+			ow.loadServer()
+			var sch = new ow.server.scheduler()
+			sch.addEntry(aEvery, __f)
+			res = { once: once, stop: () => sch.stop() }
+		} else if (isNumber(aEvery)) {
+			var th = new Threads()
+			th.addScheduleThreadWithFixedDelay(__f, aEvery)
+			res = { once: once, stop: () => th.stop() }
+		} else {
+			res = { once: once, stop: () => {} }
+		}
+		return res
+	},
+	// records changes of a channel into aTargetCh. aOptions: metric (String|Function(key, value)), labels (Array of field names | Function), values (Array of field names; one metric per field named metric_field) or value (field name | Function), ts (field name | Function)
+	getTimeSeriesSubscriber: function(aTargetCh, aOptions) {
+		var self = this
+		ow.loadObj()
+		_$(aTargetCh, "aTargetCh").isString().$_()
+		aOptions = _$(aOptions, "options").isMap().$_()
+		if (isUnDef(aOptions.metric)) throw "options.metric is required"
+		var ops = isArray(aOptions.ops) ? aOptions.ops : [ "set", "setall" ]
+		var rec = function(k, v, out) {
+			var all = merge(isMap(k) ? k : {}, isMap(v) ? v : {})
+			var metric = isFunction(aOptions.metric) ? aOptions.metric(k, v) : aOptions.metric
+			var lbs = {}
+			if (isFunction(aOptions.labels)) lbs = aOptions.labels(k, v)
+			else if (isArray(aOptions.labels)) aOptions.labels.forEach(f => { if (isDef(all[f])) lbs[f] = all[f] })
+			var t = isFunction(aOptions.ts) ? aOptions.ts(k, v) : (isString(aOptions.ts) ? all[aOptions.ts] : __)
+			var add = (m, x) => { if (isNumber(x) && isFinite(x)) out.push({ metric: self.__sane(m), labels: lbs, ts: t, v: x }) }
+			if (isArray(aOptions.values)) aOptions.values.forEach(f => add(metric + "_" + f, all[f]))
+			else add(metric, isFunction(aOptions.value) ? aOptions.value(k, v) : (isString(aOptions.value) ? all[aOptions.value] : all.v))
+		}
+		return function(aC, aO, aK, aV) {
+			if (ops.indexOf(aO) < 0 || aC == aTargetCh) return
+			var out = []
+			if (aO == "set") rec(aK, aV, out)
+			else if (aO == "setall") { for (var i in aV) rec(ow.obj.filterKeys(isArray(aK) ? aK : [], aV[i]), aV[i], out) }
+			if (out.length > 0) $ch(aTargetCh).setAll([ "metric", "labels", "ts" ], out)
+		}
+	},
+	toOpenMetrics: function(aName, aSelector, aOptions) {
+		var tt = this.__t(), c = tt.__c(aName), self = this
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var unit = aOptions.tsUnit == "ms" ? 1 : 1000, help = _$(aOptions.help, "options.help").isMap().default({})
+		var all = isDef(aOptions.from) || isDef(aOptions.to)
+		var from = isDef(aOptions.from) ? tt.__ts(aOptions.from) : -Infinity, to = isDef(aOptions.to) ? tt.__ts(aOptions.to) : Infinity
+		var esc = s => String(s).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n")
+		var lines = [], seen = {}
+		tt.__select(c, aSelector).forEach(id => {
+			var m = c.st.meta(id), name = self.__sane(m.metric), ls = Object.keys(m.labels).map(k => self.__sane(k) + "=\"" + esc(m.labels[k]) + "\"").join(",")
+			var r
+			if (all) r = c.st.read(id, "raw", from, to)
+			else { var b = c.st.bounds(id, "raw"); if (isUnDef(b)) return; r = c.st.read(id, "raw", b.last, b.last) }
+			if (!seen[name] && isMap(help[m.metric])) {
+				seen[name] = true
+				if (isDef(help[m.metric].help)) lines.push("# HELP " + name + " " + help[m.metric].help)
+				if (isDef(help[m.metric].type)) lines.push("# TYPE " + name + " " + help[m.metric].type)
+			}
+			for (var i = 0; i < r.ts.length; i++)
+				lines.push(name + (ls.length > 0 ? "{" + ls + "}" : "") + " " + r.v[i] + (aOptions.timestamps === false ? "" : " " + (r.ts[i] / unit)))
+		})
+		return lines.join("\n") + (lines.length > 0 ? "\n" : "")
+	},
+	fromOpenMetrics: function(aName, aText, aOptions) {
+		var tt = this.__t(), c = tt.__c(aName), self = this
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var unit = aOptions.tsUnit == "ms" ? 1 : 1000, extra = tt.__labels(aOptions.labels)
+		var re = /^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:\{(.*)\})?\s+(\S+)(?:\s+(\S+))?\s*$/
+		var pts = []
+		String(aText).split("\n").forEach(line => {
+			line = line.trim()
+			if (line.length == 0 || line.charAt(0) == "#") return
+			var mm = line.match(re)
+			if (!isArray(mm)) return
+			var v = Number(mm[3])
+			if (!isFinite(v)) return
+			var lbs = {}, lre = /([a-zA-Z_][a-zA-Z0-9_]*)="((?:[^"\\]|\\.)*)"/g, x
+			while ((x = lre.exec(mm[2] || "")) !== null) lbs[x[1]] = x[2].replace(/\\n/g, "\n").replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
+			var t = isDef(mm[4]) && isFinite(Number(mm[4])) ? Math.round(Number(mm[4]) * unit) : (isDef(aOptions.ts) ? tt.__ts(aOptions.ts) : now())
+			pts.push({ metric: mm[1], labels: merge(lbs, extra), ts: t, v: v })
+		})
+		if (pts.length > 0) $ch(aName).setAll([ "metric", "labels", "ts" ], pts)
+		return pts.length
+	}
+};
+
+// Serializes the access to each timeseries channel: collectors and subscribers write from other threads while queries read the same arrays
+;(function() {
+	var wrap = function(o, names) {
+		names.forEach(function(n) {
+			var orig = o[n]
+			o[n] = function(aName) {
+				var c = ow.ch.__types.timeseries.__channels[aName]
+				if (isUnDef(c)) return orig.apply(this, arguments)
+				c.mx.lock()
+				try { return orig.apply(this, arguments) } finally { c.mx.unlock() }
+			}
+		})
+	}
+	wrap(OpenWrap.ch.prototype.__types.timeseries, [ "destroy", "size", "forEach", "getAll", "getKeys", "getSortedKeys", "getSet", "set", "setAll", "unset", "unsetAll", "get", "pop", "shift" ])
+	wrap(OpenWrap.ch.prototype.utils.timeseries, [ "series", "labels", "latest", "range", "drop", "stats", "housekeep", "rebuildRollups", "compact", "save", "toOpenMetrics" ])
+})();
 
 OpenWrap.ch.prototype.comms = {
 	__counter: {},

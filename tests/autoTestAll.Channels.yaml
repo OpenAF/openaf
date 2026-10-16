@@ -120,7 +120,37 @@ jobs:
    - name: Channels::Test MVS Utils
      from: Channels::Init
      to  : oJob Test
-     exec: args.func = args.tests.testMVSUtils; 
+     exec: args.func = args.tests.testMVSUtils;
+
+   - name: Channels::MVS multifile basic
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifile;
+
+   - name: Channels::MVS multifile manifest mismatch
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifileManifestMismatch;
+
+   - name: Channels::MVS multifile pagination
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifilePagination;
+
+   - name: Channels::MVS multifile sharing
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifileSharing;
+
+   - name: Channels::MVS multifile reshard
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifileReshard;
+
+   - name: Channels::MVS shift and pop
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSShiftPop;
 
    - name: Channels::Graph channel
      from: Channels::Init
@@ -131,6 +161,26 @@ jobs:
      from: Channels::Init
      to  : oJob Test
      exec: args.func = args.tests.testGraphChannelStore;
+
+   - name: Channels::TimeSeries channel
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesChannel;
+
+   - name: Channels::TimeSeries channel store
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesChannelStore;
+
+   - name: Channels::TimeSeries integrations
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesIntegrations;
+
+   - name: Channels::TimeSeries concurrency
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesConcurrency;
 
    - name: Channels::Test channel (all)
      from: Channels::Init
@@ -198,6 +248,12 @@ todo:
    - Channels::Remote channel access auditing
    - Channels::Subscribers test
    - Channels::Test MVS Utils
+   - Channels::MVS multifile basic
+   - Channels::MVS multifile manifest mismatch
+   - Channels::MVS multifile pagination
+   - Channels::MVS multifile sharing
+   - Channels::MVS multifile reshard
+   - Channels::MVS shift and pop
    - Channels::Keep history util
    
    # Big
@@ -220,6 +276,12 @@ todo:
    # Graph
    - Channels::Graph channel
    - Channels::Graph channel store
+
+   # TimeSeries
+   - Channels::TimeSeries channel
+   - Channels::TimeSeries channel store
+   - Channels::TimeSeries integrations
+   - Channels::TimeSeries concurrency
 
    # Ignite
    #- name: Channels::Creating a channel
