@@ -194,6 +194,9 @@ $ch("events").set({ id: 1 }, { id: 1, room: "kitchen", t: 21.5, when: 1000 });
 
 ### OpenMetrics (Prometheus text)
 
+This exporter emits legacy Prometheus text. The strict OpenMetrics mode of
+`ow.server.telemetry.passive` and `ow.metrics.fromObj2OpenMetrics` does not apply here.
+
 `toOpenMetrics(aName, aSelector, aOptions)` returns the latest point of each series (or every point between `from` and `to`) as text: `name{label="value"} value timestamp`. Metric and label names are sanitized, label values escaped. Options: `help` (`{ metric: { help, type } }` for `# HELP`/`# TYPE` lines), `timestamps: false`, `tsUnit` (`"s"` default, `"ms"`). `fromOpenMetrics(aName, aText, aOptions)` records such text as points (options: `labels` added to all, `ts` default timestamp, `tsUnit`) and returns how many.
 
 ```javascript

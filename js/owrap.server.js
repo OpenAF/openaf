@@ -2301,17 +2301,20 @@ OpenWrap.server.prototype.a2a.prototype.send = function(aId, aMessage, aOptions,
 OpenWrap.server.prototype.telemetry = { 
 	/**
 	 * <odoc>
-	 * <key>ow.server.telemetry.passive(aHTTPdOrPort, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp)</key>
+	 * <key>ow.server.telemetry.passive(aHTTPdOrPort, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp, openMetricsStrict)</key>
 	 * Setup a HTTPd server on aHTTPdOrPort (defaults to 7777) on the aURI (defaults to /healthz) to 
 	 * serve ow.metrics.getAll. If the parameter "s" is present the value will be split by commas and used
 	 * for ow.metrics.getSome.
-	 * Optionally if useOpenMetrics = true the default of aURI becomes /metrics and the output becomes open metrics (prometheus) using openMetricsPrefix (defaults to "metrics") and
+	 * Optionally if useOpenMetrics = true the default of aURI becomes /metrics and the output becomes open metrics (prometheus) using openMetricsPrefix (defaults to "metric") and
 	 * uses the openMetricsHelp where each key is a open metric entry associated with map with text (description text), help (help text) and type (metrics type).
+	 * OpenMetrics responses default to strict OpenMetrics 1.0 text (unknown, gauge and counter scalar families), with the versioned
+	 * content type and EOF marker. Set openMetricsStrict to false for the legacy Prometheus text output.
 	 * </odoc>
 	 */
-    passive: function(aHs, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp) {
+    passive: function(aHs, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp, openMetricsStrict) {
 		aHs  = _$(aHs, "server").default("7777");
 		useOpenMetrics = _$(useOpenMetrics, "useOpenMetrics").default(false);
+		openMetricsStrict = _$(openMetricsStrict, "openMetricsStrict").isBoolean().default(true);
 		aURI = _$(aURI, "uri").isString().default((useOpenMetrics ? "/metrics" : "/healthz"));
 
 		if (isNumber(aHs)) aHs = ow.server.httpd.start(aHs);
@@ -2319,26 +2322,20 @@ OpenWrap.server.prototype.telemetry = {
 
 		var r = {};
 		r[aURI] = (r, aH) => {
+			var params = r.params || {};
 			var om = useOpenMetrics
-			if (isDef(r.params.f) && r.params.f == "json") om = false
-			if (isDef(r.params.f) && r.params.f == "om")   om = true
+			if (params.f == "json") om = false
+			if (params.f == "om")   om = true
 			
 			try {
-				if (isDef(r.params) && isDef(r.params.s)) {
-					if (om) {
-						return aHs.replyOKText(ow.metrics.fromObj2OpenMetrics(ow.metrics.getSome(r.params.s.split(",")), openMetricsPrefix, now(), openMetricsHelp));
-					} else {
-						return ow.server.httpd.reply(ow.metrics.getSome(r.params.s.split(",")));
-					}
-				} else {
-					if (om) {
-						return aHs.replyOKText(ow.metrics.fromObj2OpenMetrics(ow.metrics.getAll(), openMetricsPrefix, now(), openMetricsHelp));
-					} else {
-						return ow.server.httpd.reply(ow.metrics.getAll());
-					}
-				}
+				var metrics = isDef(params.s) ? ow.metrics.getSome(params.s.split(",")) : ow.metrics.getAll();
+				if (!om) return ow.server.httpd.reply(metrics);
+				var text = ow.metrics.fromObj2OpenMetrics(metrics, openMetricsPrefix, openMetricsStrict ? __ : now(), openMetricsHelp, __, openMetricsStrict);
+				return aHs.reply(text, openMetricsStrict ?
+					"application/openmetrics-text; version=1.0.0; charset=utf-8" : "text/plain; version=0.0.4; charset=utf-8", 200, {});
 			} catch(e) {
 				sprintErr(e);
+				return ow.server.httpd.reply("Unable to collect metrics\n", 500, "text/plain; charset=utf-8");
 			}
 		};
 		ow.server.httpd.route(aHs, ow.server.httpd.mapWithExistingRoutes(aHs, r));

@@ -2,6 +2,16 @@ include:
 - oJobTest.yaml
 
 jobs:
+- name: Metrics::Strict output
+  from: Metrics::Init
+  to: oJob Test
+  exec: args.func = args.tests.testOpenMetricsStrict;
+
+- name: Metrics::HTTP endpoint
+  from: Metrics::Init
+  to: oJob Test
+  exec: args.func = args.tests.testOpenMetricsEndpoint;
+
 - name: Metrics::Init
   exec: args.tests = require("autoTestAll.Metrics.js");
 
@@ -21,6 +31,8 @@ jobs:
   exec: args.func = args.tests.testOpenMetricsInvalidLabels;
 
 todo:
+- Metrics::Strict output
+- Metrics::HTTP endpoint
 - Metrics::Quoted labels
 - Metrics::Compatibility
 - Metrics::Invalid labels
