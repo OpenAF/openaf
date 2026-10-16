@@ -333,6 +333,20 @@ ow.ch.new("sharedData", "big");
 ow.ch.set("sharedData", "someKey", "someValue");
 ```
 
+#### Graph Channels
+
+The `graph` channel type operates on a knowledge graph stored in a Mini-A style `graph.json` file (nodes and edges as keys) and `ow.ch.utils.graph` provides `neighbors`, `path`, `traverse`, `find` and `stats`.
+
+```javascript
+$ch("g").create(true, "graph", { file: "graph.json" });
+$ch("g").set({ id: "doc:a.md" }, { type: "document", props: { title: "A" } });
+$ch("g").set({ id: "doc:b.md" }, { type: "document", props: { title: "B" } });
+$ch("g").set({ from: "doc:a.md", to: "doc:b.md", type: "LINKS_TO" }, {});
+print(ow.ch.utils.graph.path("g", "a.md", "b.md")); // ["doc:a.md", "doc:b.md"]
+```
+
+See [channel-graph.md](./channel-graph.md) for options, key formats and limits.
+
 ---
 
 ## nLinq - Query Processing

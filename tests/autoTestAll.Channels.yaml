@@ -122,6 +122,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testMVSUtils; 
 
+   - name: Channels::Graph channel
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGraphChannel;
+
    - name: Channels::Test channel (all)
      from: Channels::Init
      to  : oJob Test
@@ -206,6 +211,9 @@ todo:
    - Channels::Test channel (cache)
 
    - Channels::Test channel (all)
+
+   # Graph
+   - Channels::Graph channel
 
    # Ignite
    #- name: Channels::Creating a channel

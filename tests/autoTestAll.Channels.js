@@ -386,6 +386,73 @@
         $ch(this.chType + "HK").destroy();
     };
  
+    exports.testGraphChannel = function() {
+        var dir = String(java.nio.file.Files.createTempDirectory("openaf-graph-"));
+        var file = dir + "/graph.json";
+        var name = "graph-test-" + genUUID();
+        var g = ow.ch.utils.graph;
+        try {
+            // Seed with a mini-a style file holding an extra section that must survive saves
+            io.writeFileJSON(file, { version: 2, nodes: { "doc:a.md": { id: "doc:a.md", type: "document", props: { title: "A" } } }, edges: [], communities: [ { id: 1 } ] });
+            $ch(name).create(false, "graph", { file: file });
+            $ch(name).set({ id: "doc:b.md" }, { type: "document", props: { title: "B" } });
+            $ch(name).set({ id: "concept:x" }, { type: "concept" });
+            $ch(name).set({ id: "concept:island" }, { type: "concept" });
+            $ch(name).set({ from: "doc:a.md", to: "doc:b.md", type: "LINKS_TO", provenance: "extracted" }, { props: { page: "a.md" } });
+            $ch(name).set({ from: "doc:b.md", to: "concept:x", type: "MENTIONS" }, {});
+            $ch(name).set({ from: "doc:b.md", to: "concept:x", type: "MENTIONS" }, {});
+            ow.test.assert($ch(name).size(), 6, "Problem with graph size (edge dedupe)");
+            ow.test.assert($ch(name).get({ id: "doc:b.md" }).props.title, "B", "Problem getting a graph node");
+            ow.test.assert($ch(name).get({ from: "doc:a.md", to: "doc:b.md", type: "LINKS_TO", provenance: "EXTRACTED", page: "a.md" }).provenance, "EXTRACTED", "Problem getting a graph edge");
+
+            var failed = false;
+            try { $ch(name).set({ from: "doc:a.md", to: "doc:none", type: "T" }, {}); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "Graph edge to a missing node must fail");
+
+            ow.test.assert(g.path(name, "a.md", "concept:x"), [ "doc:a.md", "doc:b.md", "concept:x" ], "Problem with graph path");
+            ow.test.assert(g.path(name, "a.md", "concept:island"), [], "Graph path to a disconnected node must be empty");
+            ow.test.assert(g.path(name, "a.md", "concept:x", { maxDepth: 1 }), [], "Graph path must respect maxDepth");
+            ow.test.assert(g.neighbors(name, "b.md", { direction: "out" }).length, 1, "Problem with graph neighbors (out)");
+            ow.test.assert(g.neighbors(name, "b.md").length, 2, "Problem with graph neighbors (both)");
+            ow.test.assert(g.degree(name, "b.md", { type: "MENTIONS" }), 1, "Problem with graph degree");
+            ow.test.assert(g.traverse(name, "a.md", { depth: 1 }).nodes.length, 2, "Problem with graph traverse depth 1");
+            ow.test.assert(g.traverse(name, "a.md", { depth: 2 }).nodes.length, 3, "Problem with graph traverse depth 2");
+            ow.test.assert(g.find(name, { type: "concept" }).length, 2, "Problem with graph find by type");
+            ow.test.assert(g.stats(name).edges, 2, "Problem with graph stats");
+
+            // Persistence, preserved sections and reload
+            var saved = io.readFileJSON(file);
+            ow.test.assert(saved.communities, [ { id: 1 } ], "Graph channel must preserve unknown sections");
+            $ch(name).destroy();
+            $ch(name).create(false, "graph", { file: file });
+            ow.test.assert($ch(name).size(), 6, "Problem reloading a graph");
+
+            // Cascade delete
+            $ch(name).unset({ id: "doc:b.md" });
+            ow.test.assert($ch(name).size(), 3, "Unsetting a graph node must remove its edges");
+            $ch(name).destroy();
+
+            // Read-only
+            $ch(name).create(false, "graph", { file: file, readOnly: true });
+            failed = false;
+            try { $ch(name).set({ id: "z" }, {}); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "Read-only graph must reject changes");
+            ow.test.assert($ch(name).size(), 3, "Read-only graph must keep its content");
+            $ch(name).destroy();
+
+            // Debounced autosave flushes on destroy
+            $ch(name).create(false, "graph", { file: file, autosave: "debounced", saveDebounceMs: 3600000 });
+            $ch(name).set({ id: "doc:late" }, { type: "document" });
+            $ch(name).set({ id: "doc:later" }, { type: "document" });
+            ow.test.assert(isDef(io.readFileJSON(file).nodes["doc:later"]), false, "Debounced graph must not save immediately");
+            $ch(name).destroy();
+            ow.test.assert(isDef(io.readFileJSON(file).nodes["doc:later"]), true, "Debounced graph must save on destroy");
+        } finally {
+            $ch(name).destroy();
+            io.rm(dir);
+        }
+    };
+
     exports.testAll = function() {
         $ch("allA").destroy();
         $ch("allB").destroy();

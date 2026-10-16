@@ -1848,6 +1848,306 @@ OpenWrap.ch.prototype.__types = {
 			}
 		}
 	},	
+	// Graph implementation
+	//
+	/**
+	 * <odoc format="markdown">
+	 * <key>ow.ch.types.graph</key>
+	 * <![CDATA[
+	 * Channel over a knowledge graph stored in a single JSON file, using the Mini-A wiki graph format:
+	 * `{ version, nodes: { id: { id, type, props } }, edges: [ { from, to, type, provenance, props } ], ... }`.
+	 *
+	 * Creation options:
+	 *
+	 * | Option | Type | Default | Description |
+	 * | --- | --- | --- | --- |
+	 * | `file` | String | _required_ | Path to the graph JSON file |
+	 * | `readOnly` | Boolean | `false` | Reject changes and never write the file |
+	 * | `create` | Boolean | `true` | If `false` the file must already exist; otherwise an empty graph is started |
+	 * | `autosave` | String | `"always"` | `"always"`, `"debounced"` or `"off"`; pending changes are always flushed on destroy |
+	 * | `saveDebounceMs` | Number | `5000` | Minimum ms between saves when `autosave` is `"debounced"` |
+	 * | `lock` | String | | Path to a dummy file used as a filesystem lock while loading/saving |
+	 *
+	 * Keys and values:
+	 *
+	 * - **Node**: key `{ id }` (e.g. `{ id: "doc:readme.md" }`), value `{ id, type, props }`.
+	 * - **Edge**: key `{ from, to, type, provenance, page, section }`, value `{ from, to, type, provenance, props }`.
+	 *   `provenance` is `EXTRACTED`, `INFERRED` or `AMBIGUOUS` (default); `page` and `section` map to `props.page` and `props.section`.
+	 * - Setting an edge requires both nodes to exist; unsetting a node also removes its edges.
+	 * - File sections not handled by the channel (e.g. `communities`, `summaries`) are preserved on save.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * $ch("g").create(true, "graph", { file: "graph.json" });
+	 * $ch("g").set({ id: "doc:a.md" }, { type: "document", props: { title: "A" } });
+	 * $ch("g").set({ id: "doc:b.md" }, { type: "document", props: { title: "B" } });
+	 * $ch("g").set({ from: "doc:a.md", to: "doc:b.md", type: "LINKS_TO" }, {});
+	 * ow.ch.utils.graph.path("g", "a.md", "b.md"); // [ "doc:a.md", "doc:b.md" ]
+	 * ```
+	 *
+	 * Use `ow.ch.utils.graph` to navigate the graph. The whole file is rewritten on save, so avoid several writers over the same file.
+	 * ]]>
+	 * </odoc>
+	 */
+	graph: {
+		__channels: Object.create(null),
+		__prov: [ "EXTRACTED", "INFERRED", "AMBIGUOUS" ],
+		__nprov: function(p) {
+			p = isString(p) ? p.toUpperCase().trim() : "AMBIGUOUS"
+			return this.__prov.indexOf(p) >= 0 ? p : "AMBIGUOUS"
+		},
+		__ekey: function(f, t, ty, pr, pg, sc) {
+			return stringify([ f, t, ty, this.__nprov(pr), isString(pg) ? pg : "", isString(sc) ? sc : "" ], __, "")
+		},
+		__isEdge: function(k) { return isMap(k) && isDef(k.from) && isDef(k.to) },
+		__isNode: function(k) { return isMap(k) && isDef(k.id) && isUnDef(k.from) && isUnDef(k.to) },
+		__edgeKeyOf: function(e) {
+			var p = isMap(e.props) ? e.props : {}
+			return this.__ekey(e.from, e.to, e.type, e.provenance, p.page, p.section)
+		},
+		__keyOfEdge: function(e) {
+			var p = isMap(e.props) ? e.props : {}
+			return { from: e.from, to: e.to, type: e.type, provenance: this.__nprov(e.provenance), page: isString(p.page) ? p.page : "", section: isString(p.section) ? p.section : "" }
+		},
+		__c: function(aName) {
+			var c = this.__channels[aName]
+			if (isUnDef(c)) throw "graph channel '" + aName + "' not found"
+			return c
+		},
+		__l: (m) => (isString(m.lock) ? $flock(m.lock).lock() : __),
+		__ul: (m) => (isString(m.lock) ? $flock(m.lock).unlock() : __),
+		__empty: function() {
+			return { version: 2, created_at: new Date().toISOString(), nodes: {}, edges: [], summaries: { pages: {}, communities: {} }, semantic_cache: {}, communities: [], surprise: [] }
+		},
+		// (re)build the edge index and adjacency from the state
+		__index: function(c) {
+			var s = c.state, self = this
+			if (!isMap(s.nodes)) s.nodes = {}
+			c.eidx = {}
+			c.adj = {}
+			var edges = []
+			;(isArray(s.edges) ? s.edges : []).forEach(function(e) {
+				if (!isMap(e) || e._deleted === true) return
+				e.provenance = self.__nprov(e.provenance)
+				if (!isMap(e.props)) e.props = {}
+				var k = self.__edgeKeyOf(e)
+				if (isDef(c.eidx[k])) return
+				c.eidx[k] = e
+				edges.push(e)
+				if (isUnDef(c.adj[e.from])) c.adj[e.from] = []
+				if (isUnDef(c.adj[e.to])) c.adj[e.to] = []
+				c.adj[e.from].push(e)
+				if (e.to !== e.from) c.adj[e.to].push(e)
+			})
+			s.edges = edges
+		},
+		__load: function(c) {
+			var o = c.opts
+			this.__l(o)
+			try {
+				if (io.fileExists(o.file)) {
+					var r = io.readFileJSON(o.file)
+					if (!isMap(r)) throw "graph file '" + o.file + "' doesn't contain a valid graph"
+					c.state = merge(this.__empty(), r)
+				} else {
+					if (o.create === false) throw "graph file '" + o.file + "' not found"
+					c.state = this.__empty()
+				}
+			} finally {
+				this.__ul(o)
+			}
+			this.__index(c)
+			c.dirty = false
+			c.lastSave = 0
+		},
+		__flush: function(c) {
+			var o = c.opts
+			if (o.readOnly) return false
+			this.__l(o)
+			try {
+				var dir = new java.io.File(o.file).getAbsoluteFile().getParentFile()
+				if (isDef(dir) && !dir.exists()) dir.mkdirs()
+				var tmp = o.file + "." + java.util.UUID.randomUUID() + ".tmp"
+				try {
+					io.writeFileString(tmp, stringify(c.state, __, ""))
+					java.nio.file.Files.move(new java.io.File(tmp).toPath(), new java.io.File(o.file).toPath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+				} finally {
+					java.nio.file.Files.deleteIfExists(new java.io.File(tmp).toPath())
+				}
+			} finally {
+				this.__ul(o)
+			}
+			c.dirty = false
+			c.lastSave = now()
+			return true
+		},
+		__changed: function(c) {
+			c.dirty = true
+			if (c.opts.autosave === "always") {
+				this.__flush(c)
+			} else if (c.opts.autosave === "debounced" && now() - c.lastSave >= c.opts.saveDebounceMs) {
+				this.__flush(c)
+			}
+		},
+		__rw: function(c) {
+			if (c.opts.readOnly) throw "graph channel is read-only"
+		},
+		__nodeVal: function(n) { return { id: n.id, type: n.type, props: isMap(n.props) ? clone(n.props) : {} } },
+		__edgeVal: function(e) { return { from: e.from, to: e.to, type: e.type, provenance: e.provenance, props: isMap(e.props) ? clone(e.props) : {} } },
+		__delEdge: function(c, e) {
+			var k = this.__edgeKeyOf(e)
+			delete c.eidx[k]
+			c.state.edges = c.state.edges.filter(x => x !== e)
+			;[ e.from, e.to ].forEach(id => { if (isArray(c.adj[id])) c.adj[id] = c.adj[id].filter(x => x !== e) })
+		},
+		// public helpers used by ow.ch.utils.graph
+		__nodes: function(aName) { return this.__c(aName).state.nodes },
+		__edgesOf: function(aName, id) { return (this.__c(aName).adj[id] || []) },
+		__edges: function(aName) { return this.__c(aName).state.edges },
+		__state: function(aName) { return this.__c(aName).state },
+		__save: function(aName) { return this.__flush(this.__c(aName)) },
+		create       : function(aName, shouldCompress, options) {
+			options = _$(options, "options").isMap().default({})
+			var o = {
+				file          : _$(options.file, "options.file").isString().$_(),
+				readOnly      : _$(options.readOnly, "options.readOnly").isBoolean().default(false),
+				create        : _$(options.create, "options.create").isBoolean().default(true),
+				autosave      : String(_$(options.autosave, "options.autosave").isString().default("always")).toLowerCase(),
+				saveDebounceMs: _$(options.saveDebounceMs, "options.saveDebounceMs").isNumber().default(5000),
+				lock          : options.lock
+			}
+			if (["always", "debounced", "off"].indexOf(o.autosave) < 0) throw "options.autosave must be 'always', 'debounced' or 'off'"
+			var c = { opts: o }
+			this.__load(c)
+			this.__channels[aName] = c
+		},
+		destroy      : function(aName) {
+			var c = this.__channels[aName]
+			if (isUnDef(c)) return
+			try { if (c.dirty && !c.opts.readOnly) this.__flush(c) } finally { delete this.__channels[aName] }
+		},
+		size         : function(aName) {
+			var c = this.__c(aName)
+			return Object.keys(c.state.nodes).length + c.state.edges.length
+		},
+		forEach      : function(aName, aFunction) {
+			var ks = this.getKeys(aName)
+			for (var i = 0; i < ks.length; i++) {
+				try { aFunction(ks[i], this.get(aName, ks[i])) } catch(e) {}
+			}
+		},
+		getAll       : function(aName, full) {
+			var c = this.__c(aName), self = this
+			return Object.keys(c.state.nodes).map(id => self.__nodeVal(c.state.nodes[id])).concat(c.state.edges.map(e => self.__edgeVal(e)))
+		},
+		getKeys      : function(aName, full) {
+			var c = this.__c(aName), self = this
+			return Object.keys(c.state.nodes).map(id => ({ id: id })).concat(c.state.edges.map(e => self.__keyOfEdge(e)))
+		},
+		getSortedKeys: function(aName, full) {
+			var c = this.__c(aName), self = this
+			var ns = Object.keys(c.state.nodes).sort().map(id => ({ id: id }))
+			var es = c.state.edges.map(e => self.__keyOfEdge(e)).sort((a, b) => stringify([a.from, a.to, a.type, a.provenance, a.page, a.section], __, "") < stringify([b.from, b.to, b.type, b.provenance, b.page, b.section], __, "") ? -1 : 1)
+			return ns.concat(es)
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res = this.get(aName, aK)
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp)
+			}
+			return __
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			aV = isMap(aV) ? aV : {}
+			if (this.__isEdge(aK)) {
+				var from = String(aK.from), to = String(aK.to)
+				var type = isString(aK.type) ? aK.type : aV.type
+				if (!isString(type) || type.length == 0) throw "graph edge requires a type"
+				if (!isMap(c.state.nodes[from]) || !isMap(c.state.nodes[to])) throw "graph edge requires existing nodes (" + from + " -> " + to + ")"
+				var props = isMap(aV.props) ? clone(aV.props) : {}
+				if (isString(aK.page) && aK.page.length > 0) props.page = aK.page
+				if (isString(aK.section) && aK.section.length > 0) props.section = aK.section
+				var prov = this.__nprov(isDef(aK.provenance) ? aK.provenance : aV.provenance)
+				var e = { from: from, to: to, type: type, provenance: prov, props: props }
+				var k = this.__edgeKeyOf(e)
+				var old = c.eidx[k]
+				if (isDef(old)) {
+					old.props = props
+				} else {
+					c.eidx[k] = e
+					c.state.edges.push(e)
+					if (isUnDef(c.adj[from])) c.adj[from] = []
+					if (isUnDef(c.adj[to])) c.adj[to] = []
+					c.adj[from].push(e)
+					if (to !== from) c.adj[to].push(e)
+				}
+			} else if (this.__isNode(aK)) {
+				var id = String(aK.id)
+				if (id.length == 0) throw "graph node requires a non empty id"
+				var n = c.state.nodes[id]
+				var ntype = isString(aV.type) && aV.type.length > 0 ? aV.type : (isMap(n) ? n.type : "concept")
+				c.state.nodes[id] = { id: id, type: ntype, props: isMap(aV.props) ? clone(aV.props) : {} }
+			} else {
+				throw "graph key must have 'id' (node) or 'from' and 'to' (edge)"
+			}
+			this.__changed(c)
+			return aK
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			for(var i = 0; i < aVs.length; i++) {
+				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp)
+			}
+		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			for(var i = 0; i < aVs.length; i++) {
+				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aTimestamp)
+			}
+		},
+		get          : function(aName, aK) {
+			var c = this.__c(aName)
+			if (this.__isEdge(aK)) {
+				var e = c.eidx[this.__ekey(String(aK.from), String(aK.to), aK.type, aK.provenance, aK.page, aK.section)]
+				return isDef(e) ? this.__edgeVal(e) : __
+			}
+			if (this.__isNode(aK)) {
+				var n = c.state.nodes[String(aK.id)]
+				return isMap(n) ? this.__nodeVal(n) : __
+			}
+			return __
+		},
+		pop          : function(aName) {
+			var elems = this.getSortedKeys(aName)
+			return elems[elems.length - 1]
+		},
+		shift        : function(aName) {
+			var elems = this.getSortedKeys(aName)
+			return elems[0]
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			if (this.__isEdge(aK)) {
+				var e = c.eidx[this.__ekey(String(aK.from), String(aK.to), aK.type, aK.provenance, aK.page, aK.section)]
+				if (isUnDef(e)) return
+				this.__delEdge(c, e)
+			} else if (this.__isNode(aK)) {
+				var id = String(aK.id)
+				if (!isMap(c.state.nodes[id])) return
+				var self = this
+				;(c.adj[id] || []).slice().forEach(e => self.__delEdge(c, e))
+				delete c.adj[id]
+				delete c.state.nodes[id]
+			} else {
+				return
+			}
+			this.__changed(c)
+		}
+	},
 	// Remote channel implementation
 	//
 	/**
@@ -4861,6 +5161,119 @@ OpenWrap.ch.prototype.utils = {
 
 			return true;			
 		}
+	}
+};
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.ch.utils.graph</key>
+ * <![CDATA[
+ * Helpers to navigate and query a channel of type `graph` (see `ow.ch.types.graph`). Node ids without a `:` are treated as `doc:` ids.
+ *
+ * | Function | Returns | Description |
+ * | --- | --- | --- |
+ * | `neighbors(aName, anId, aOptions)` | Array | Edges connected to a node. Options: `direction` (`"out"`, `"in"` or `"both"`), `type`, `provenance` (String or Array) |
+ * | `degree(aName, anId, aOptions)` | Number | Number of edges connected to a node (same options as `neighbors`) |
+ * | `path(aName, aFromId, aToId, aOptions)` | Array | Shortest path (BFS, ignoring direction) as node ids, `[]` if none. Options: `maxDepth`, `type` |
+ * | `traverse(aName, anId, aOptions)` | Map | `{ nodes, edges }` sub-graph reachable from a node. Options: `depth` (default 1), `direction`, `type`, `provenance` |
+ * | `find(aName, aOptions)` | Array | Nodes matching `type` and/or `text` (case insensitive match on id and props) |
+ * | `stats(aName)` | Map | Node and edge counts plus counts by node type, edge type and provenance |
+ * | `save(aName)` | Boolean | Flushes pending changes to the file (`false` if read-only) |
+ *
+ * Example:
+ *
+ * ```javascript
+ * ow.ch.utils.graph.neighbors("g", "a.md", { direction: "out", type: "LINKS_TO" });
+ * ow.ch.utils.graph.traverse("g", "a.md", { depth: 2 }); // { nodes: [...], edges: [...] }
+ * ```
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.ch.prototype.utils.graph = {
+	__id: function(id) {
+		id = String(id)
+		return id.indexOf(":") > 0 ? id : "doc:" + id
+	},
+	__arr: function(v) { return isUnDef(v) ? __ : (isArray(v) ? v : [ v ]) },
+	__edges: function(aName, id, o) {
+		o = _$(o, "options").isMap().default({})
+		var dir = isString(o.direction) ? o.direction : "both", types = this.__arr(o.type), provs = this.__arr(o.provenance)
+		if (isDef(provs)) provs = provs.map(p => String(p).toUpperCase())
+		return ow.ch.__types.graph.__edgesOf(aName, id).filter(e =>
+			(dir == "both" || (dir == "out" && e.from === id) || (dir == "in" && e.to === id)) &&
+			(isUnDef(types) || types.indexOf(e.type) >= 0) &&
+			(isUnDef(provs) || provs.indexOf(e.provenance) >= 0)
+		)
+	},
+	neighbors: function(aName, anId, aOptions) {
+		var id = this.__id(anId)
+		return this.__edges(aName, id, aOptions).map(e => ow.ch.__types.graph.__edgeVal(e))
+	},
+	degree: function(aName, anId, aOptions) {
+		return this.__edges(aName, this.__id(anId), aOptions).length
+	},
+	path: function(aName, aFromId, aToId, aOptions) {
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var a = this.__id(aFromId), b = this.__id(aToId), nodes = ow.ch.__types.graph.__nodes(aName)
+		if (!isMap(nodes[a]) || !isMap(nodes[b])) return []
+		var maxDepth = isNumber(aOptions.maxDepth) ? aOptions.maxDepth : __
+		var q = [ a ], depth = {}, prev = {}
+		depth[a] = 0
+		for (var qi = 0; qi < q.length && q[qi] !== b; qi++) {
+			var cur = q[qi]
+			if (isDef(maxDepth) && depth[cur] >= maxDepth) continue
+			var es = this.__edges(aName, cur, { type: aOptions.type })
+			for (var i = 0; i < es.length; i++) {
+				var nx = es[i].from === cur ? es[i].to : es[i].from
+				if (isDef(depth[nx])) continue
+				depth[nx] = depth[cur] + 1
+				prev[nx] = cur
+				q.push(nx)
+			}
+		}
+		if (isUnDef(depth[b])) return []
+		var res = [ b ], p = b
+		while (p !== a) { p = prev[p]; res.unshift(p) }
+		return res
+	},
+	traverse: function(aName, anId, aOptions) {
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var id = this.__id(anId), nodes = ow.ch.__types.graph.__nodes(aName), maxDepth = isNumber(aOptions.depth) ? aOptions.depth : 1
+		if (!isMap(nodes[id])) return { nodes: [], edges: [] }
+		var depth = {}, seenE = {}, resE = [], q = [ id ]
+		depth[id] = 0
+		for (var qi = 0; qi < q.length; qi++) {
+			var cur = q[qi]
+			if (depth[cur] >= maxDepth) continue
+			var es = this.__edges(aName, cur, aOptions)
+			for (var i = 0; i < es.length; i++) {
+				var e = es[i], k = ow.ch.__types.graph.__edgeKeyOf(e)
+				if (!seenE[k]) { seenE[k] = true; resE.push(ow.ch.__types.graph.__edgeVal(e)) }
+				var nx = e.from === cur ? e.to : e.from
+				if (isDef(depth[nx])) continue
+				depth[nx] = depth[cur] + 1
+				q.push(nx)
+			}
+		}
+		return { nodes: q.map(n => ow.ch.__types.graph.__nodeVal(nodes[n])), edges: resE }
+	},
+	find: function(aName, aOptions) {
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var types = this.__arr(aOptions.type), text = isString(aOptions.text) ? aOptions.text.toLowerCase() : __
+		var nodes = ow.ch.__types.graph.__nodes(aName)
+		return Object.keys(nodes).filter(id => {
+			var n = nodes[id]
+			return (isUnDef(types) || types.indexOf(n.type) >= 0) && (isUnDef(text) || (id + " " + stringify(n.props, __, "")).toLowerCase().indexOf(text) >= 0)
+		}).map(id => ow.ch.__types.graph.__nodeVal(nodes[id]))
+	},
+	stats: function(aName) {
+		var st = ow.ch.__types.graph.__state(aName), r = { nodes: Object.keys(st.nodes).length, edges: st.edges.length, nodeTypes: {}, edgeTypes: {}, provenance: {} }
+		Object.keys(st.nodes).forEach(id => { var t = st.nodes[id].type; r.nodeTypes[t] = (r.nodeTypes[t] || 0) + 1 })
+		st.edges.forEach(e => { r.edgeTypes[e.type] = (r.edgeTypes[e.type] || 0) + 1; r.provenance[e.provenance] = (r.provenance[e.provenance] || 0) + 1 })
+		return r
+	},
+	save: function(aName) {
+		return ow.ch.__types.graph.__save(aName)
 	}
 };
 
