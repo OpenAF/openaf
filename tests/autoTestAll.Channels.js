@@ -1093,6 +1093,77 @@
         }
     };
 
+    exports.testTimeSeriesPushPrometheus = function() {
+        var u = ow.ch.utils.timeseries;
+        var name = "ts-push-" + genUUID();
+        ow.loadServer();
+        var port = findRandomOpenPort(), status = 200, got = [];
+        var hs = ow.server.httpd.start(port, "127.0.0.1");
+        ow.server.httpd.route(hs, {}, function(req) {
+            var body = (isDef(req.files) && isDef(req.files.postData)) ? req.files.postData : req.data;
+            var hk = Object.keys(req.header || {}).filter(k => k.toLowerCase() == "content-type");
+            got.push({ method: req.method, uri: String(req.originalURI || req.uri), type: hk.length > 0 ? String(req.header[hk[0]]) : "", body: String(body) });
+            return ow.server.httpd.reply(status == 200 ? "" : { error: "rejected" }, status, "text/plain", {});
+        });
+        var base = "http://127.0.0.1:" + port;
+        try {
+            $ch(name).create(true, "timeseries", {});
+            $ch(name).set({ metric: "cpu", labels: { host: "a" }, ts: 1000 }, { v: 0.4 });
+            $ch(name).set({ metric: "cpu", labels: { host: "a" }, ts: 2000 }, { v: 0.6 });
+            $ch(name).set({ metric: "cpu", labels: { host: "b" }, ts: 2000 }, { v: 0.1 });
+            $ch(name).set({ metric: "mem", labels: { host: "a" }, ts: 2000 }, { v: 7 });
+
+            // one POST per grouping key, latest value only, no timestamps
+            ow.test.assert(u.pushPrometheus(name, base, "demo", { metric: "cpu" }, { groupBy: [ "host" ] }), 2, "Problem with the pushed series count");
+            ow.test.assert(got.map(g => g.method), [ "POST", "POST" ], "The default push mode must be POST");
+            ow.test.assert(got.map(g => g.uri), [ "/metrics/job/demo/host/a", "/metrics/job/demo/host/b" ], "Problem with the push gateway paths");
+            ow.test.assert(got[0].type.indexOf("text/plain") == 0, true, "The push must be sent as text");
+            ow.test.assert(/^cpu\{host="a"\} 0\.6$/m.test(got[0].body), true, "The push must carry the latest value of the series");
+            ow.test.assert(/ 2000$|\s2\s*$/m.test(got[0].body), false, "The push must not carry timestamps");
+            ow.test.assert(got[0].body.indexOf("mem") < 0, true, "A push must only carry the selected metric");
+
+            // put replaces the whole grouping key
+            got = [];
+            u.pushPrometheus(name, base + "/", "demo", { metric: "cpu" }, { groupBy: [ "host" ], mode: "put" });
+            ow.test.assert(got.map(g => g.method), [ "PUT", "PUT" ], "The put mode must use PUT");
+            ow.test.assert(got.map(g => g.uri), [ "/metrics/job/demo/host/a", "/metrics/job/demo/host/b" ], "A trailing slash on the gateway URL must not change the paths");
+
+            // a job with spaces is encoded; no groupBy means one request
+            got = [];
+            u.pushPrometheus(name, base, "my job", { metric: "mem" });
+            ow.test.assert(got.map(g => g.uri), [ "/metrics/job/my%20job" ], "Problem encoding the job");
+
+            // label values with "/" or empty are base64 encoded (label@base64)
+            $ch(name).set({ metric: "disk", labels: { host: "x/y" }, ts: 2000 }, { v: 1 });
+            $ch(name).set({ metric: "disk", labels: { host: "" }, ts: 2000 }, { v: 2 });
+            got = [];
+            u.pushPrometheus(name, base, "demo", { metric: "disk" }, { groupBy: [ "host" ] });
+            ow.test.assert(got.map(g => g.uri), [ "/metrics/job/demo/host@base64/=", "/metrics/job/demo/host@base64/eC95" ], "Problem encoding label values with @base64");
+            ow.test.assert(got[0].body.indexOf("disk{host=\"\"} 2") >= 0, true, "An empty label value must be pushed");
+
+            // nothing to push, and errors
+            got = [];
+            ow.test.assert(u.pushPrometheus(name, base, "demo", { metric: "none" }, { groupBy: [ "host" ] }), 0, "Pushing nothing must push zero series");
+            ow.test.assert(got.length, 0, "Pushing nothing must not send requests");
+            var failed = false;
+            try { u.pushPrometheus(name, base, "a/b", { metric: "mem" }); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "A job with '/' must fail");
+            failed = false;
+            try { u.pushPrometheus(name, base, "demo", { metric: "cpu" }, { groupBy: [ "zone" ] }); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "A series without a groupBy label must fail");
+            failed = false;
+            try { u.pushPrometheus(name, base, "demo", { metric: "cpu" }, { mode: "delete" }); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "An unknown mode must fail");
+            status = 400;
+            failed = false;
+            try { u.pushPrometheus(name, base, "demo", { metric: "mem" }); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "A rejected push (HTTP 400) must fail");
+        } finally {
+            try { ow.server.httpd.stop(hs); } catch(e) {}
+            try { $ch(name).destroy(); } catch(e) {}
+        }
+    };
+
     exports.testAll = function() {
         $ch("allA").destroy();
         $ch("allB").destroy();

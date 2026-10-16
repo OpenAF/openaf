@@ -199,10 +199,25 @@ $ch("events").set({ id: 1 }, { id: 1, room: "kitchen", t: 21.5, when: 1000 });
 ```javascript
 var txt = ow.ch.utils.timeseries.toOpenMetrics("m", { metric: /^cpu/ });
 // cpu{host="a"} 0.6 2
-// POST txt to a Prometheus push gateway:
-$rest().post("http://pushgw:9091/metrics/job/demo", txt);
 $ch("copy").create(true, "timeseries", {});
 ow.ch.utils.timeseries.fromOpenMetrics("copy", txt);
+```
+
+### Push to a Prometheus push gateway
+
+`pushPrometheus(aName, aPushGwUrl, aJob, aSelector, aOptions)` sends the latest point of each matching series to a [Pushgateway](https://github.com/prometheus/pushgateway) under the job `aJob`. Series are grouped by the values of `groupBy` labels: each distinct combination is one request to `<gateway>/metrics/job/<job>/<label>/<value>`. Options:
+
+| Option | Description |
+| --- | --- |
+| `groupBy` | Array of label names that form the grouping key (default none: one request for the job) |
+| `mode` | `"post"` (default): replaces only the metrics in the push. `"put"`: replaces every metric of the grouping key |
+| `help` | `{ metric: { help, type } }`, as in `toOpenMetrics` |
+
+Pushgateway doesn't accept timestamps, so the push sends only the latest value of each series. Label values that are empty or contain `/` are sent base64 encoded (`label@base64`), and an HTTP error from the gateway throws. The function returns the number of series pushed (`0`, with no request, if nothing matches).
+
+```javascript
+ow.ch.utils.timeseries.pushPrometheus("m", "http://pushgw:9091", "demo", { metric: "cpu" }, { groupBy: [ "host" ] });
+// POST http://pushgw:9091/metrics/job/demo/host/a  (body: cpu{host="a"} 0.6)
 ```
 
 ## More use cases
@@ -211,7 +226,7 @@ ow.ch.utils.timeseries.fromOpenMetrics("copy", txt);
 - **Job durations and SLOs**: record one point per run (`{ metric: "job_seconds", labels: { job: "etl" } }`) and ask `range(..., { step: "1d", fn: "max" })`.
 - **Counters**: store the raw counter and use `rate`/`increase`, resets are handled.
 - **Sensor and IoT feeds**: a channel subscriber on the receiving channel keeps a bounded history with `maxPoints`.
-- **Export**: `range` rows feed `oafp` (`out=ctable`, `out=csv`, `out=md`...); `toOpenMetrics` feeds Prometheus tooling.
+- **Export**: `range` rows feed `oafp` (`out=ctable`, `out=csv`, `out=md`...); `toOpenMetrics` and `pushPrometheus` feed Prometheus tooling.
 
 ## Limits
 

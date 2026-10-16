@@ -182,6 +182,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testTimeSeriesConcurrency;
 
+   - name: Channels::TimeSeries push Prometheus
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesPushPrometheus;
+
    - name: Channels::Test channel (all)
      from: Channels::Init
      to  : oJob Test
@@ -282,6 +287,7 @@ todo:
    - Channels::TimeSeries channel store
    - Channels::TimeSeries integrations
    - Channels::TimeSeries concurrency
+   - Channels::TimeSeries push Prometheus
 
    # Ignite
    #- name: Channels::Creating a channel

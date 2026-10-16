@@ -6349,6 +6349,7 @@ OpenWrap.ch.prototype.utils.graph = {
  * | `getTimeSeriesSubscriber(aTargetCh, aOptions)` | Function | Channel subscriber that records changes of another channel as points |
  * | `toOpenMetrics(aName, aSelector, aOptions)` | String | OpenMetrics text of the latest points (or all points with `from`/`to`) |
  * | `fromOpenMetrics(aName, aText, aOptions)` | Number | Records OpenMetrics text as points; returns how many |
+ * | `pushPrometheus(aName, aPushGwUrl, aJob, aSelector, aOptions)` | Number | Pushes the latest point of each series to a Prometheus push gateway (one request per `groupBy` value); returns how many series were pushed |
  *
  * With `step`, points are grouped in buckets aligned to the epoch and the row `ts` is the start of the bucket. When rollups exist, the finest
  * tier that reaches back to `from` and divides `step` is used. `rate` and `increase` treat a decrease in value as a counter reset (on rollup tiers they are approximate).
@@ -6657,6 +6658,56 @@ OpenWrap.ch.prototype.utils.timeseries = {
 		})
 		if (pts.length > 0) $ch(aName).setAll([ "metric", "labels", "ts" ], pts)
 		return pts.length
+	},
+	/**
+	 * Pushes the latest point of each series matching aSelector to a Prometheus push gateway (aPushGwUrl) under the job aJob.
+	 * Series are grouped by the values of the aOptions.groupBy labels: each distinct combination is one request to
+	 * <gateway>/metrics/job/<job>/<label>/<value>... Options: mode ("post", default: replaces only the metrics pushed; or "put":
+	 * replaces every metric of the grouping key), help (as in toOpenMetrics). Timestamps are not sent (the gateway rejects them).
+	 * Label values that are empty or contain "/" are sent base64 encoded (label@base64). Returns the number of series pushed.
+	 */
+	pushPrometheus: function(aName, aPushGwUrl, aJob, aSelector, aOptions) {
+		var self = this
+		aOptions = _$(aOptions, "options").isMap().default({})
+		_$(aPushGwUrl, "aPushGwUrl").isString().$_()
+		_$(aJob, "aJob").isString().$_()
+		if (aJob.length == 0 || aJob.indexOf("/") >= 0) throw "timeseries pushPrometheus: job must not be empty or contain '/'"
+		var groupBy = _$(aOptions.groupBy, "options.groupBy").isArray().default([])
+		var mode = String(_$(aOptions.mode, "options.mode").isString().default("post")).toLowerCase()
+		if ([ "post", "put" ].indexOf(mode) < 0) throw "timeseries pushPrometheus: options.mode must be 'post' or 'put'"
+		var sel = isMap(aSelector) ? aSelector : {}, base = aPushGwUrl.replace(/\/+$/, "") + "/metrics/job/" + encodeURIComponent(aJob)
+
+		// one group (and one request) per distinct combination of the groupBy values
+		var groups = {}, order = [], count = 0
+		this.series(aName, sel).forEach(s => {
+			var key = {}
+			groupBy.forEach(l => {
+				if (isUnDef(s.labels[l])) throw "timeseries pushPrometheus: series " + s.metric + " has no label '" + l + "' (groupBy)"
+				key[l] = s.labels[l]
+			})
+			var id = stringify(key, __, "")
+			if (isUnDef(groups[id])) { groups[id] = key; order.push(id) }
+			count++
+		})
+
+		var encLabel = l => encodeURIComponent(self.__sane(l))
+		var encValue = (l, v) => {
+			if (v.length == 0 || v.indexOf("/") >= 0) {
+				var b = String(java.util.Base64.getUrlEncoder().encodeToString(java.lang.String.valueOf(v).getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+				return { name: self.__sane(l) + "@base64", value: b.length == 0 ? "=" : b }
+			}
+			return { name: encLabel(l), value: encodeURIComponent(v) }
+		}
+
+		order.forEach(id => {
+			var key = groups[id], path = "", gsel = { metric: sel.metric, labels: merge(isMap(sel.labels) ? sel.labels : {}, key) }
+			groupBy.forEach(l => { var e = encValue(l, key[l]); path += "/" + e.name + "/" + e.value })
+			var text = this.toOpenMetrics(aName, gsel, { timestamps: false, help: aOptions.help })
+			if (text.length == 0) return
+			var req = $rest({ requestHeaders: { "Content-Type": "text/plain; version=0.0.4" }, throwExceptions: true })
+			if (mode == "put") req.put(base + path, text); else req.post(base + path, text)
+		})
+		return count
 	}
 };
 
