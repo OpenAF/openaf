@@ -31,8 +31,46 @@ $ch("g").create(true, "graph", { file: "graph.json" });
 | `autosave` | String | `"always"` | `"always"` saves on every change, `"debounced"` saves at most every `saveDebounceMs`, `"off"` only saves on `save`/destroy |
 | `saveDebounceMs` | Number | `5000` | Minimum interval between saves when `autosave` is `"debounced"` |
 | `lock` | String | | Path to a dummy file used as a filesystem lock while loading and saving |
+| `store` | Map | | Delegate nodes, edges and the remaining sections to another channel type instead of keeping them in memory (see [Keep the graph out of memory](#keep-the-graph-out-of-memory)). Can't be combined with `file` |
 
 Saves write a temporary file and atomically move it over `file`. Destroying the channel flushes pending changes (unless read-only). A missing file with `create: false`, or a file that is not a JSON map, makes `create` throw.
+
+## Keep the graph out of memory
+
+By default the whole graph lives in memory and `file` is rewritten on every save. With `store` the graph is kept in other OpenAF channels (nodes, edges, adjacency and the remaining sections, one channel each, named `graph::<name>::<part>`), so the memory used is bounded by that channel's own caching instead of by the graph size. Memory stays the default.
+
+```javascript
+$ch("g").create(true, "graph", { store: { type: "mvs", options: { file: "graph.db", compact: true } } });
+```
+
+| `store` field | Type | Description |
+| --- | --- | --- |
+| `type` | String | Channel type used for every part (e.g. `mvs`) |
+| `options` | Map or Function | Options for the underlying channels. A Map gets a distinct `map` name per part added (so one `mvs` file holds them all); a Function receives the part name (`nodes`, `edges`, `adj`, `meta`) and returns that part's options |
+| `compress` | Boolean | Passed as `shouldCompress` when creating the underlying channels |
+| `bulk` | Boolean | Use the underlying channel's `setAll` for `setAll` batches (defaults to `true` for `mvs`, `false` otherwise) |
+
+With a store, `file`, `autosave`, `saveDebounceMs` and `lock` don't apply: every change goes straight to the store channel. `create: false` throws if the store is empty, and `readOnly` works as usual. Destroying the graph channel destroys the underlying ones. The `ow.ch.utils.graph` helpers work unchanged.
+
+### When does it make sense?
+
+Measured with `mvs` (80,000 nodes with small props and 80,000 edges, JDK 21; indicative numbers):
+
+| | In memory (JSON file) | `mvs` store |
+| --- | --- | --- |
+| Open an existing graph | ~2.2 s | ~0.05 s |
+| Heap after open + 2,000 `neighbors`, 200 `get`, one `path` | ~154 MB | ~12 MB |
+| Writing 160,000 entries one `set` at a time | ~2.9 s | ~75 s (~25x slower) |
+| Writing 160,000 entries in one `setAll` | ~1.4 s | ~6 s (~4x slower) |
+| Point reads (`get`, `neighbors`) | baseline | ~3x slower |
+| Whole-graph scans (`stats`, `find`) | baseline | ~10-50x slower |
+
+Use a store when the graph is large relative to the heap, is mostly read, or you can't afford to load it at start-up. Stay in memory for small graphs (a few thousand nodes), write-heavy loads or frequent `stats`/`find`. Notes:
+
+- Load in batches: `setAll` writes a whole batch to the store at once (one `mvs` commit, and each node's adjacency written once), about 12x faster than the same entries with `set`. It follows the same rules as sequential `set` calls (an edge needs its nodes to exist earlier in the batch or already stored). Batching is on for `mvs`; set `store.bulk` to `true` or `false` to force it for other types that implement `setAll` properly.
+- `mvs` commits on every change and reuses space lazily, so a long write session can bloat the file badly (7 GB for the load above). Set `compact: true` in the `mvs` options so it is compacted when the channel is destroyed (61 MB for the same graph).
+- `getKeys`, `getAll`, `find` and `stats` still materialize node ids and edges in memory while they run; avoid them on very large graphs.
+- Unlike the JSON file, a store is not in the Mini-A `graph.json` format.
 
 ## Keys and values
 

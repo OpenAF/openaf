@@ -453,6 +453,97 @@
         }
     };
 
+    exports.testGraphChannelStore = function() {
+        var dir = String(java.nio.file.Files.createTempDirectory("openaf-graph-store-"));
+        var file = dir + "/graph.db";
+        var name = "graph-store-test-" + genUUID();
+        var g = ow.ch.utils.graph;
+        var opts = { store: { type: "mvs", options: { file: file } } };
+        try {
+            $ch(name).create(true, "graph", opts);
+            $ch(name).set({ id: "doc:a.md" }, { type: "document", props: { title: "A" } });
+            $ch(name).set({ id: "doc:b.md" }, { type: "document", props: { title: "B" } });
+            $ch(name).set({ id: "concept:x" }, { type: "concept" });
+            $ch(name).set({ id: "concept:island" }, { type: "concept" });
+            $ch(name).set({ from: "doc:a.md", to: "doc:b.md", type: "LINKS_TO", provenance: "extracted" }, { props: { page: "a.md" } });
+            $ch(name).set({ from: "doc:b.md", to: "concept:x", type: "MENTIONS" }, {});
+            $ch(name).set({ from: "doc:b.md", to: "concept:x", type: "MENTIONS" }, { props: { w: 2 } });
+            ow.test.assert($ch(name).size(), 6, "Problem with graph store size (edge dedupe)");
+            ow.test.assert($ch(name).get({ from: "doc:b.md", to: "concept:x", type: "MENTIONS" }).props.w, 2, "Problem updating a graph store edge");
+            ow.test.assert($ch(name).get({ id: "doc:b.md" }).props.title, "B", "Problem getting a graph store node");
+
+            var failed = false;
+            try { $ch(name).set({ from: "doc:a.md", to: "doc:none", type: "T" }, {}); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "Graph store edge to a missing node must fail");
+
+            ow.test.assert(g.path(name, "a.md", "concept:x"), [ "doc:a.md", "doc:b.md", "concept:x" ], "Problem with graph store path");
+            ow.test.assert(g.path(name, "a.md", "concept:island"), [], "Graph store path to a disconnected node must be empty");
+            ow.test.assert(g.neighbors(name, "b.md").length, 2, "Problem with graph store neighbors");
+            ow.test.assert(g.degree(name, "b.md", { direction: "out" }), 1, "Problem with graph store degree");
+            ow.test.assert(g.traverse(name, "a.md", { depth: 2 }).nodes.length, 3, "Problem with graph store traverse");
+            ow.test.assert(g.find(name, { type: "concept" }).length, 2, "Problem with graph store find");
+            ow.test.assert(g.stats(name).edges, 2, "Problem with graph store stats");
+            ow.test.assert(g.stats(name).nodeTypes.concept, 2, "Problem with graph store stats (node types)");
+
+            // Persistence through the store channel
+            $ch(name).destroy();
+            $ch(name).create(false, "graph", opts);
+            ow.test.assert($ch(name).size(), 6, "Problem reloading a graph from its store");
+            ow.test.assert(g.path(name, "a.md", "concept:x").length, 3, "Problem navigating a reloaded graph store");
+
+            // Cascade delete
+            $ch(name).unset({ id: "doc:b.md" });
+            ow.test.assert($ch(name).size(), 3, "Unsetting a graph store node must remove its edges");
+            ow.test.assert(g.neighbors(name, "concept:x").length, 0, "Unsetting a graph store node must clean the adjacency");
+            $ch(name).destroy();
+
+            // Read-only + missing store
+            $ch(name).create(false, "graph", { store: opts.store, readOnly: true });
+            failed = false;
+            try { $ch(name).set({ id: "z" }, {}); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "Read-only graph store must reject changes");
+            ow.test.assert($ch(name).size(), 3, "Read-only graph store must keep its content");
+            $ch(name).destroy();
+            // Batch writes (single commit on mvs) must behave like sequential sets
+            var bn = name + "-bulk";
+            [ true, false ].forEach(function(bulk) {
+                var bfile = dir + "/bulk-" + bulk + ".db";
+                var bopts = { store: { type: "mvs", bulk: bulk, options: { file: bfile } } };
+                $ch(bn).create(true, "graph", bopts);
+                var ks = [ "id", "from", "to", "type", "provenance" ];
+                $ch(bn).setAll(ks, [
+                    { id: "doc:a", type: "document" }, { id: "doc:b", type: "document" }, { id: "doc:c" },
+                    { from: "doc:a", to: "doc:b", type: "LINKS_TO", provenance: "EXTRACTED", props: { w: 1 } },
+                    { from: "doc:a", to: "doc:b", type: "LINKS_TO", provenance: "EXTRACTED", props: { w: 2 } },
+                    { from: "doc:b", to: "doc:c", type: "LINKS_TO" },
+                    { from: "doc:c", to: "doc:c", type: "SELF" }
+                ]);
+                ow.test.assert($ch(bn).size(), 6, "Problem with graph store batch size (bulk=" + bulk + ")");
+                ow.test.assert($ch(bn).get({ from: "doc:a", to: "doc:b", type: "LINKS_TO", provenance: "EXTRACTED" }).props.w, 2, "Batch edge duplicates must keep the last (bulk=" + bulk + ")");
+                ow.test.assert(g.degree(bn, "doc:b"), 2, "Problem with graph store batch adjacency (bulk=" + bulk + ")");
+                ow.test.assert(g.degree(bn, "doc:c"), 2, "Problem with graph store batch adjacency, self edge (bulk=" + bulk + ")");
+                ow.test.assert(g.path(bn, "doc:a", "doc:c"), [ "doc:a", "doc:b", "doc:c" ], "Problem with graph store batch path (bulk=" + bulk + ")");
+                var bfailed = false;
+                try { $ch(bn).setAll([ "from", "to", "type" ], [ { from: "doc:a", to: "doc:zzz", type: "T" } ]); } catch(e) { bfailed = true; }
+                ow.test.assert(bfailed, true, "Batch edge to a missing node must fail (bulk=" + bulk + ")");
+                // a second batch extends the existing adjacency
+                $ch(bn).setAll([ "id", "from", "to", "type" ], [ { id: "doc:d" }, { from: "doc:a", to: "doc:d", type: "LINKS_TO" } ]);
+                ow.test.assert(g.degree(bn, "doc:a"), 2, "Second batch must extend the adjacency (bulk=" + bulk + ")");
+                $ch(bn).destroy();
+                $ch(bn).create(true, "graph", bopts);
+                ow.test.assert($ch(bn).size(), 8, "Problem reloading a batch written graph store (bulk=" + bulk + ")");
+                $ch(bn).destroy();
+            });
+
+            failed = false;
+            try { $ch(name).create(false, "graph", { create: false, store: { type: "mvs", options: { file: dir + "/none.db" } } }); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "Missing graph store with create=false must fail");
+        } finally {
+            $ch(name).destroy();
+            io.rm(dir);
+        }
+    };
+
     exports.testAll = function() {
         $ch("allA").destroy();
         $ch("allB").destroy();

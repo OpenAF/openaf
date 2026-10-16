@@ -1867,6 +1867,7 @@ OpenWrap.ch.prototype.__types = {
 	 * | `autosave` | String | `"always"` | `"always"`, `"debounced"` or `"off"`; pending changes are always flushed on destroy |
 	 * | `saveDebounceMs` | Number | `5000` | Minimum ms between saves when `autosave` is `"debounced"` |
 	 * | `lock` | String | | Path to a dummy file used as a filesystem lock while loading/saving |
+	 * | `store` | Map | | `{ type, options, compress, bulk }`: keep nodes, edges and other sections in channels of that type (e.g. `mvs`) instead of memory; can't be combined with `file` |
 	 *
 	 * Keys and values:
 	 *
@@ -1944,6 +1945,8 @@ OpenWrap.ch.prototype.__types = {
 		},
 		__load: function(c) {
 			var o = c.opts
+			if (isDef(o.store)) return this.__loadStore(c)
+			c.st = this.__memStore(c)
 			this.__l(o)
 			try {
 				if (io.fileExists(o.file)) {
@@ -1964,6 +1967,7 @@ OpenWrap.ch.prototype.__types = {
 		__flush: function(c) {
 			var o = c.opts
 			if (o.readOnly) return false
+			if (isDef(o.store)) return true
 			this.__l(o)
 			try {
 				var dir = new java.io.File(o.file).getAbsoluteFile().getParentFile()
@@ -1983,6 +1987,7 @@ OpenWrap.ch.prototype.__types = {
 			return true
 		},
 		__changed: function(c) {
+			if (isDef(c.opts.store)) return
 			c.dirty = true
 			if (c.opts.autosave === "always") {
 				this.__flush(c)
@@ -1995,22 +2000,156 @@ OpenWrap.ch.prototype.__types = {
 		},
 		__nodeVal: function(n) { return { id: n.id, type: n.type, props: isMap(n.props) ? clone(n.props) : {} } },
 		__edgeVal: function(e) { return { from: e.from, to: e.to, type: e.type, provenance: e.provenance, props: isMap(e.props) ? clone(e.props) : {} } },
-		__delEdge: function(c, e) {
-			var k = this.__edgeKeyOf(e)
-			delete c.eidx[k]
-			c.state.edges = c.state.edges.filter(x => x !== e)
-			;[ e.from, e.to ].forEach(id => { if (isArray(c.adj[id])) c.adj[id] = c.adj[id].filter(x => x !== e) })
+		// Storage backends: every access to nodes and edges goes through c.st
+		// memory: everything held in c.state (+ edge index and adjacency)
+		__memStore: function(c) {
+			var self = this
+			var delEdge = function(e) {
+				delete c.eidx[self.__edgeKeyOf(e)]
+				c.state.edges = c.state.edges.filter(x => x !== e)
+				;[ e.from, e.to ].forEach(id => { if (isArray(c.adj[id])) c.adj[id] = c.adj[id].filter(x => x !== e) })
+			}
+			return {
+				getNode  : id => c.state.nodes[id],
+				putNode  : n => { c.state.nodes[n.id] = n },
+				nodeIds  : () => Object.keys(c.state.nodes),
+				nodeCount: () => Object.keys(c.state.nodes).length,
+				getEdge  : k => c.eidx[k],
+				putEdge  : e => {
+					var k = self.__edgeKeyOf(e), old = c.eidx[k]
+					if (isDef(old)) { old.props = e.props; return }
+					c.eidx[k] = e
+					c.state.edges.push(e)
+					if (isUnDef(c.adj[e.from])) c.adj[e.from] = []
+					if (isUnDef(c.adj[e.to])) c.adj[e.to] = []
+					c.adj[e.from].push(e)
+					if (e.to !== e.from) c.adj[e.to].push(e)
+				},
+				bulk     : false,
+				delEdge  : delEdge,
+				edgesOf  : id => (c.adj[id] || []),
+				edges    : () => c.state.edges,
+				edgeCount: () => c.state.edges.length,
+				delNode  : id => {
+					(c.adj[id] || []).slice().forEach(delEdge)
+					delete c.adj[id]
+					delete c.state.nodes[id]
+				},
+				close    : () => {}
+			}
+		},
+		// channel: nodes, edges, adjacency and the remaining sections are delegated to other channels (e.g. mvs)
+		__chStore: function(c, aName) {
+			var self = this, spec = c.opts.store, pre = "graph::" + aName + "::", n = {}
+			var parts = [ "nodes", "edges", "adj", "meta" ], made = []
+			var close = () => made.forEach(x => { try { $ch(x).destroy() } catch(e) {} })
+			try {
+				parts.forEach(p => {
+					n[p] = pre + p
+					var o = isFunction(spec.options) ? spec.options(p) : merge(isMap(spec.options) ? clone(spec.options) : {}, { map: pre + p })
+					$ch(n[p]).create(spec.compress === true, spec.type, o)
+					made.push(n[p])
+				})
+			} catch(e) { close(); throw e }
+			var edgesOf = id => {
+				var a = $ch(n.adj).get({ id: id })
+				return isMap(a) ? a.ks.map(k => $ch(n.edges).get({ k: k })).filter(isMap) : []
+			}
+			var addAdj = (id, k) => {
+				var a = $ch(n.adj).get({ id: id })
+				a = isMap(a) ? a : { id: id, ks: [] }
+				a.ks.push(k)
+				$ch(n.adj).set({ id: id }, a)
+			}
+			var delAdj = (id, k) => {
+				var a = $ch(n.adj).get({ id: id })
+				if (!isMap(a)) return
+				a.ks = a.ks.filter(x => x !== k)
+				if (a.ks.length == 0) $ch(n.adj).unset({ id: id }); else $ch(n.adj).set({ id: id }, a)
+			}
+			var delEdge = e => {
+				var k = self.__edgeKeyOf(e)
+				$ch(n.edges).unset({ k: k })
+				delAdj(e.from, k)
+				if (e.to !== e.from) delAdj(e.to, k)
+			}
+			return {
+				names    : n,
+				getNode  : id => $ch(n.nodes).get({ id: id }),
+				putNode  : nd => { $ch(n.nodes).set({ id: nd.id }, nd) },
+				nodeIds  : () => $ch(n.nodes).getKeys().map(k => k.id),
+				nodeCount: () => $ch(n.nodes).size(),
+				getEdge  : k => $ch(n.edges).get({ k: k }),
+				bulk     : spec.bulk === true || (spec.bulk !== false && spec.type == "mvs"),
+				putBatch : (nodes, edges) => {
+					if (nodes.length > 0) $ch(n.nodes).setAll([ "id" ], nodes)
+					var uniq = {}, adds = {}, ids = []
+					edges.forEach(e => { uniq[self.__edgeKeyOf(e)] = e })
+					var vals = Object.keys(uniq).map(k => {
+						var e = uniq[k]
+						if (!isMap($ch(n.edges).get({ k: k }))) {
+							;(e.to !== e.from ? [ e.from, e.to ] : [ e.from ]).forEach(id => {
+								if (isUnDef(adds[id])) { adds[id] = []; ids.push(id) }
+								adds[id].push(k)
+							})
+						}
+						return merge(e, { k: k })
+					})
+					if (vals.length > 0) $ch(n.edges).setAll([ "k" ], vals)
+					var recs = ids.map(id => {
+						var a = $ch(n.adj).get({ id: id })
+						return { id: id, ks: (isMap(a) ? a.ks : []).concat(adds[id]) }
+					})
+					if (recs.length > 0) $ch(n.adj).setAll([ "id" ], recs)
+				},
+				putEdge  : e => {
+					var k = self.__edgeKeyOf(e), old = $ch(n.edges).get({ k: k })
+					$ch(n.edges).set({ k: k }, merge(e, { k: k }))
+					if (!isMap(old)) {
+						addAdj(e.from, k)
+						if (e.to !== e.from) addAdj(e.to, k)
+					}
+				},
+				delEdge  : delEdge,
+				edgesOf  : edgesOf,
+				edges    : () => $ch(n.edges).getAll(),
+				edgeCount: () => $ch(n.edges).size(),
+				delNode  : id => {
+					edgesOf(id).forEach(delEdge)
+					$ch(n.adj).unset({ id: id })
+					$ch(n.nodes).unset({ id: id })
+				},
+				close    : close
+			}
+		},
+		__loadStore: function(c) {
+			var o = c.opts, st = this.__chStore(c, c.name)
+			c.st = st
+			try {
+				var meta = $ch(st.names.meta).get({ k: "meta" })
+				if (!isMap(meta)) {
+					if (o.create === false) throw "graph store for '" + c.name + "' not found"
+					meta = { k: "meta", state: this.__empty() }
+					delete meta.state.nodes
+					delete meta.state.edges
+					if (!o.readOnly) $ch(st.names.meta).set({ k: "meta" }, meta)
+				}
+				c.state = meta.state
+			} catch(e) { st.close(); throw e }
+			c.dirty = false
+			c.lastSave = 0
 		},
 		// public helpers used by ow.ch.utils.graph
-		__nodes: function(aName) { return this.__c(aName).state.nodes },
-		__edgesOf: function(aName, id) { return (this.__c(aName).adj[id] || []) },
-		__edges: function(aName) { return this.__c(aName).state.edges },
-		__state: function(aName) { return this.__c(aName).state },
+		__getNode: function(aName, id) { return this.__c(aName).st.getNode(id) },
+		__nodeIds: function(aName) { return this.__c(aName).st.nodeIds() },
+		__edgesOf: function(aName, id) { return this.__c(aName).st.edgesOf(id) },
+		__edges: function(aName) { return this.__c(aName).st.edges() },
 		__save: function(aName) { return this.__flush(this.__c(aName)) },
 		create       : function(aName, shouldCompress, options) {
 			options = _$(options, "options").isMap().default({})
 			var o = {
-				file          : _$(options.file, "options.file").isString().$_(),
+				file          : isDef(options.store) ? options.file : _$(options.file, "options.file").isString().$_(),
+				store         : isDef(options.store) ? _$(options.store, "options.store").isMap().$_() : __,
 				readOnly      : _$(options.readOnly, "options.readOnly").isBoolean().default(false),
 				create        : _$(options.create, "options.create").isBoolean().default(true),
 				autosave      : String(_$(options.autosave, "options.autosave").isString().default("always")).toLowerCase(),
@@ -2018,18 +2157,22 @@ OpenWrap.ch.prototype.__types = {
 				lock          : options.lock
 			}
 			if (["always", "debounced", "off"].indexOf(o.autosave) < 0) throw "options.autosave must be 'always', 'debounced' or 'off'"
-			var c = { opts: o }
+			if (isDef(o.store)) {
+				_$(o.store.type, "options.store.type").isString().$_()
+				if (isDef(o.file)) throw "options.file and options.store can't be used together"
+			}
+			var c = { opts: o, name: aName }
 			this.__load(c)
 			this.__channels[aName] = c
 		},
 		destroy      : function(aName) {
 			var c = this.__channels[aName]
 			if (isUnDef(c)) return
-			try { if (c.dirty && !c.opts.readOnly) this.__flush(c) } finally { delete this.__channels[aName] }
+			try { if (c.dirty && !c.opts.readOnly) this.__flush(c) } finally { delete this.__channels[aName]; c.st.close() }
 		},
 		size         : function(aName) {
 			var c = this.__c(aName)
-			return Object.keys(c.state.nodes).length + c.state.edges.length
+			return c.st.nodeCount() + c.st.edgeCount()
 		},
 		forEach      : function(aName, aFunction) {
 			var ks = this.getKeys(aName)
@@ -2039,16 +2182,16 @@ OpenWrap.ch.prototype.__types = {
 		},
 		getAll       : function(aName, full) {
 			var c = this.__c(aName), self = this
-			return Object.keys(c.state.nodes).map(id => self.__nodeVal(c.state.nodes[id])).concat(c.state.edges.map(e => self.__edgeVal(e)))
+			return c.st.nodeIds().map(id => self.__nodeVal(c.st.getNode(id))).concat(c.st.edges().map(e => self.__edgeVal(e)))
 		},
 		getKeys      : function(aName, full) {
 			var c = this.__c(aName), self = this
-			return Object.keys(c.state.nodes).map(id => ({ id: id })).concat(c.state.edges.map(e => self.__keyOfEdge(e)))
+			return c.st.nodeIds().map(id => ({ id: id })).concat(c.st.edges().map(e => self.__keyOfEdge(e)))
 		},
 		getSortedKeys: function(aName, full) {
 			var c = this.__c(aName), self = this
-			var ns = Object.keys(c.state.nodes).sort().map(id => ({ id: id }))
-			var es = c.state.edges.map(e => self.__keyOfEdge(e)).sort((a, b) => stringify([a.from, a.to, a.type, a.provenance, a.page, a.section], __, "") < stringify([b.from, b.to, b.type, b.provenance, b.page, b.section], __, "") ? -1 : 1)
+			var ns = c.st.nodeIds().sort().map(id => ({ id: id }))
+			var es = c.st.edges().map(e => self.__keyOfEdge(e)).sort((a, b) => stringify([a.from, a.to, a.type, a.provenance, a.page, a.section], __, "") < stringify([b.from, b.to, b.type, b.provenance, b.page, b.section], __, "") ? -1 : 1)
 			return ns.concat(es)
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
@@ -2058,49 +2201,50 @@ OpenWrap.ch.prototype.__types = {
 			}
 			return __
 		},
-		set          : function(aName, aK, aV, aTimestamp) {
-			var c = this.__c(aName)
-			this.__rw(c)
+		// validates a key/value and returns { node } or { edge }; pend (optional) holds nodes of the same batch not yet stored
+		__prep       : function(c, aK, aV, pend) {
 			aV = isMap(aV) ? aV : {}
+			var getN = id => (isDef(pend) && isMap(pend[id])) ? pend[id] : c.st.getNode(id)
 			if (this.__isEdge(aK)) {
 				var from = String(aK.from), to = String(aK.to)
 				var type = isString(aK.type) ? aK.type : aV.type
 				if (!isString(type) || type.length == 0) throw "graph edge requires a type"
-				if (!isMap(c.state.nodes[from]) || !isMap(c.state.nodes[to])) throw "graph edge requires existing nodes (" + from + " -> " + to + ")"
+				if (!isMap(getN(from)) || !isMap(getN(to))) throw "graph edge requires existing nodes (" + from + " -> " + to + ")"
 				var props = isMap(aV.props) ? clone(aV.props) : {}
 				if (isString(aK.page) && aK.page.length > 0) props.page = aK.page
 				if (isString(aK.section) && aK.section.length > 0) props.section = aK.section
 				var prov = this.__nprov(isDef(aK.provenance) ? aK.provenance : aV.provenance)
-				var e = { from: from, to: to, type: type, provenance: prov, props: props }
-				var k = this.__edgeKeyOf(e)
-				var old = c.eidx[k]
-				if (isDef(old)) {
-					old.props = props
-				} else {
-					c.eidx[k] = e
-					c.state.edges.push(e)
-					if (isUnDef(c.adj[from])) c.adj[from] = []
-					if (isUnDef(c.adj[to])) c.adj[to] = []
-					c.adj[from].push(e)
-					if (to !== from) c.adj[to].push(e)
-				}
+				return { edge: { from: from, to: to, type: type, provenance: prov, props: props } }
 			} else if (this.__isNode(aK)) {
 				var id = String(aK.id)
 				if (id.length == 0) throw "graph node requires a non empty id"
-				var n = c.state.nodes[id]
+				var n = getN(id)
 				var ntype = isString(aV.type) && aV.type.length > 0 ? aV.type : (isMap(n) ? n.type : "concept")
-				c.state.nodes[id] = { id: id, type: ntype, props: isMap(aV.props) ? clone(aV.props) : {} }
-			} else {
-				throw "graph key must have 'id' (node) or 'from' and 'to' (edge)"
+				return { node: { id: id, type: ntype, props: isMap(aV.props) ? clone(aV.props) : {} } }
 			}
+			throw "graph key must have 'id' (node) or 'from' and 'to' (edge)"
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			var r = this.__prep(c, aK, aV)
+			if (isDef(r.edge)) c.st.putEdge(r.edge); else c.st.putNode(r.node)
 			this.__changed(c)
 			return aK
 		},
+		// one change notification (and, with a bulk capable store, one write) for the whole batch
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
 			ow.loadObj()
+			var c = this.__c(aName)
+			this.__rw(c)
+			var pend = {}, nodes = [], edges = []
 			for(var i = 0; i < aVs.length; i++) {
-				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp)
+				var r = this.__prep(c, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], pend)
+				if (isDef(r.node)) { pend[r.node.id] = r.node; nodes.push(r.node) } else edges.push(r.edge)
+				if (!c.st.bulk) { if (isDef(r.node)) c.st.putNode(r.node); else c.st.putEdge(r.edge) }
 			}
+			if (c.st.bulk) c.st.putBatch(nodes, edges)
+			this.__changed(c)
 		},
 		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
 			ow.loadObj()
@@ -2111,11 +2255,11 @@ OpenWrap.ch.prototype.__types = {
 		get          : function(aName, aK) {
 			var c = this.__c(aName)
 			if (this.__isEdge(aK)) {
-				var e = c.eidx[this.__ekey(String(aK.from), String(aK.to), aK.type, aK.provenance, aK.page, aK.section)]
-				return isDef(e) ? this.__edgeVal(e) : __
+				var e = c.st.getEdge(this.__ekey(String(aK.from), String(aK.to), aK.type, aK.provenance, aK.page, aK.section))
+				return isMap(e) ? this.__edgeVal(e) : __
 			}
 			if (this.__isNode(aK)) {
-				var n = c.state.nodes[String(aK.id)]
+				var n = c.st.getNode(String(aK.id))
 				return isMap(n) ? this.__nodeVal(n) : __
 			}
 			return __
@@ -2132,16 +2276,13 @@ OpenWrap.ch.prototype.__types = {
 			var c = this.__c(aName)
 			this.__rw(c)
 			if (this.__isEdge(aK)) {
-				var e = c.eidx[this.__ekey(String(aK.from), String(aK.to), aK.type, aK.provenance, aK.page, aK.section)]
-				if (isUnDef(e)) return
-				this.__delEdge(c, e)
+				var e = c.st.getEdge(this.__ekey(String(aK.from), String(aK.to), aK.type, aK.provenance, aK.page, aK.section))
+				if (!isMap(e)) return
+				c.st.delEdge(e)
 			} else if (this.__isNode(aK)) {
 				var id = String(aK.id)
-				if (!isMap(c.state.nodes[id])) return
-				var self = this
-				;(c.adj[id] || []).slice().forEach(e => self.__delEdge(c, e))
-				delete c.adj[id]
-				delete c.state.nodes[id]
+				if (!isMap(c.st.getNode(id))) return
+				c.st.delNode(id)
 			} else {
 				return
 			}
@@ -5214,8 +5355,8 @@ OpenWrap.ch.prototype.utils.graph = {
 	},
 	path: function(aName, aFromId, aToId, aOptions) {
 		aOptions = _$(aOptions, "options").isMap().default({})
-		var a = this.__id(aFromId), b = this.__id(aToId), nodes = ow.ch.__types.graph.__nodes(aName)
-		if (!isMap(nodes[a]) || !isMap(nodes[b])) return []
+		var a = this.__id(aFromId), b = this.__id(aToId), gt = ow.ch.__types.graph
+		if (!isMap(gt.__getNode(aName, a)) || !isMap(gt.__getNode(aName, b))) return []
 		var maxDepth = isNumber(aOptions.maxDepth) ? aOptions.maxDepth : __
 		var q = [ a ], depth = {}, prev = {}
 		depth[a] = 0
@@ -5238,8 +5379,8 @@ OpenWrap.ch.prototype.utils.graph = {
 	},
 	traverse: function(aName, anId, aOptions) {
 		aOptions = _$(aOptions, "options").isMap().default({})
-		var id = this.__id(anId), nodes = ow.ch.__types.graph.__nodes(aName), maxDepth = isNumber(aOptions.depth) ? aOptions.depth : 1
-		if (!isMap(nodes[id])) return { nodes: [], edges: [] }
+		var id = this.__id(anId), gt = ow.ch.__types.graph, maxDepth = isNumber(aOptions.depth) ? aOptions.depth : 1
+		if (!isMap(gt.__getNode(aName, id))) return { nodes: [], edges: [] }
 		var depth = {}, seenE = {}, resE = [], q = [ id ]
 		depth[id] = 0
 		for (var qi = 0; qi < q.length; qi++) {
@@ -5255,21 +5396,20 @@ OpenWrap.ch.prototype.utils.graph = {
 				q.push(nx)
 			}
 		}
-		return { nodes: q.map(n => ow.ch.__types.graph.__nodeVal(nodes[n])), edges: resE }
+		return { nodes: q.map(n => gt.__nodeVal(gt.__getNode(aName, n))), edges: resE }
 	},
 	find: function(aName, aOptions) {
 		aOptions = _$(aOptions, "options").isMap().default({})
 		var types = this.__arr(aOptions.type), text = isString(aOptions.text) ? aOptions.text.toLowerCase() : __
-		var nodes = ow.ch.__types.graph.__nodes(aName)
-		return Object.keys(nodes).filter(id => {
-			var n = nodes[id]
-			return (isUnDef(types) || types.indexOf(n.type) >= 0) && (isUnDef(text) || (id + " " + stringify(n.props, __, "")).toLowerCase().indexOf(text) >= 0)
-		}).map(id => ow.ch.__types.graph.__nodeVal(nodes[id]))
+		var gt = ow.ch.__types.graph
+		return gt.__nodeIds(aName).map(id => gt.__getNode(aName, id)).filter(n => 
+			(isUnDef(types) || types.indexOf(n.type) >= 0) && (isUnDef(text) || (n.id + " " + stringify(n.props, __, "")).toLowerCase().indexOf(text) >= 0)
+		).map(n => gt.__nodeVal(n))
 	},
 	stats: function(aName) {
-		var st = ow.ch.__types.graph.__state(aName), r = { nodes: Object.keys(st.nodes).length, edges: st.edges.length, nodeTypes: {}, edgeTypes: {}, provenance: {} }
-		Object.keys(st.nodes).forEach(id => { var t = st.nodes[id].type; r.nodeTypes[t] = (r.nodeTypes[t] || 0) + 1 })
-		st.edges.forEach(e => { r.edgeTypes[e.type] = (r.edgeTypes[e.type] || 0) + 1; r.provenance[e.provenance] = (r.provenance[e.provenance] || 0) + 1 })
+		var gt = ow.ch.__types.graph, ids = gt.__nodeIds(aName), es = gt.__edges(aName), r = { nodes: ids.length, edges: es.length, nodeTypes: {}, edgeTypes: {}, provenance: {} }
+		ids.forEach(id => { var t = gt.__getNode(aName, id).type; r.nodeTypes[t] = (r.nodeTypes[t] || 0) + 1 })
+		es.forEach(e => { r.edgeTypes[e.type] = (r.edgeTypes[e.type] || 0) + 1; r.provenance[e.provenance] = (r.provenance[e.provenance] || 0) + 1 })
 		return r
 	},
 	save: function(aName) {

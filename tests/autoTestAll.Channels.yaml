@@ -127,6 +127,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testGraphChannel;
 
+   - name: Channels::Graph channel store
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGraphChannelStore;
+
    - name: Channels::Test channel (all)
      from: Channels::Init
      to  : oJob Test
@@ -214,6 +219,7 @@ todo:
 
    # Graph
    - Channels::Graph channel
+   - Channels::Graph channel store
 
    # Ignite
    #- name: Channels::Creating a channel
