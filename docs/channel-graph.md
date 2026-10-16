@@ -128,6 +128,95 @@ io.rm(root);
 
 Edges created without a `provenance` are counted as `AMBIGUOUS`; add `provenance: "EXTRACTED"` to the edge key when the relation is known for certain, as it is for containment here.
 
+## More use cases
+
+The graph does not have to come from Mini-A: any set of things and relations fits. The snippets below assume the helpers `N` and `E` and the shortcut `G`:
+
+```javascript
+$ch("g").create(true, "graph", { file: "infra.json" });
+var G = ow.ch.utils.graph;
+var N = (id, type, props) => $ch("g").set({ id: id }, { type: type, props: props || {} });
+var E = (from, to, type, prov) => $ch("g").set({ from: from, to: to, type: type, provenance: prov || "EXTRACTED" }, {});
+```
+
+### Service dependencies and impact analysis
+
+Model services and datastores with `DEPENDS_ON` edges, then ask what breaks when something goes down. Following edges backwards (`direction: "in"`) from a node lists everything that depends on it, directly or not.
+
+```javascript
+N("svc:web", "service"); N("svc:api", "service"); N("svc:auth", "service");
+N("svc:queue", "service"); N("svc:db", "database");
+E("svc:web", "svc:api", "DEPENDS_ON");   E("svc:api", "svc:auth", "DEPENDS_ON");
+E("svc:api", "svc:db", "DEPENDS_ON");    E("svc:auth", "svc:db", "DEPENDS_ON");
+E("svc:queue", "svc:db", "DEPENDS_ON");
+
+// Blast radius if the database fails (includes the database itself)
+G.traverse("g", "svc:db", { depth: 5, direction: "in", type: "DEPENDS_ON" }).nodes.map(n => n.id);
+// [ "svc:db", "svc:api", "svc:auth", "svc:queue", "svc:web" ]
+
+// Most critical component: how many services depend directly on it
+G.degree("g", "svc:db", { direction: "in" });                 // 3
+
+// Entry points: services nothing else depends on
+G.find("g", { type: "service" }).filter(n => G.degree("g", n.id, { direction: "in" }) == 0).map(n => n.id);
+// [ "svc:web", "svc:queue" ]
+
+// How does the web tier reach the database?
+G.path("g", "svc:web", "svc:db");                              // [ "svc:web", "svc:api", "svc:db" ]
+```
+
+Rebuild the graph from your CMDB, Kubernetes manifests or Terraform state on a schedule, and keep the file in version control to diff the architecture between releases.
+
+### Review uncertain relations
+
+`provenance` records how sure you are about a relation. Edges created without it are `AMBIGUOUS`, and heuristics (naming conventions, log correlation, an LLM) can mark theirs `INFERRED`. Use that to build a review queue and promote the edges a person confirms. Provenance is part of the edge identity, so promoting means unsetting the old edge and setting a new one.
+
+```javascript
+N("person:ana", "person");
+$ch("g").set({ from: "person:ana", to: "svc:api", type: "OWNS" }, {});          // AMBIGUOUS
+
+// Review queue: everything that is not certain
+G.neighbors("g", "person:ana", { provenance: ["INFERRED", "AMBIGUOUS"] });
+
+// Promote after confirmation
+$ch("g").getKeys().filter(k => k.from).forEach(k => {
+  var e = $ch("g").get(k);
+  if (e.provenance == "AMBIGUOUS") {
+    $ch("g").unset(k);
+    $ch("g").set({ from: e.from, to: e.to, type: e.type, provenance: "EXTRACTED" }, { props: e.props });
+  }
+});
+G.stats("g").provenance;                                       // only EXTRACTED edges left
+```
+
+### Ownership and "who do I ask?"
+
+Add people, teams and topics as nodes with `OWNS`, `MEMBER_OF` or `KNOWS` edges. `path` finds the shortest chain between any two nodes, which turns into an escalation route or an explanation of why two things are related. `find` with `text` searches ids and properties, so it works as a quick lookup.
+
+```javascript
+G.find("g", { type: "person", text: "ana" });                  // who is Ana?
+G.neighbors("g", "svc:api", { direction: "in", type: "OWNS" }).map(e => e.from);   // owners of the API
+G.path("g", "person:ana", "svc:db");                           // how is Ana connected to the database?
+```
+
+### Export for visualization
+
+Edge keys carry everything needed to draw the graph, so exporting to Mermaid (or Graphviz, or `oafp`) is a few lines.
+
+```javascript
+var lines = [ "graph LR" ];
+$ch("g").getKeys().filter(k => k.from).forEach(k =>
+  lines.push("  " + k.from.replace(/\W/g, "_") + " -->|" + k.type + "| " + k.to.replace(/\W/g, "_")));
+io.writeFileString("infra.mmd", lines.join("\n"));
+```
+
+### Other ideas
+
+- **Document and code maps**: `IMPORTS` or `LINKS_TO` edges between files, to find orphans (`degree` of 0) or circular references.
+- **Data lineage**: `PRODUCES`/`CONSUMES` edges between jobs and datasets; `traverse` with `direction: "out"` shows everything downstream of a changed table.
+- **Incident and runbook index**: link alerts, services and runbooks, then `neighbors` of an alert gives the runbook to follow.
+- **Shared, read-only reference data**: ship a curated `graph.json` with an application and open it with `readOnly: true`.
+
 ## Working with Mini-A
 
 The format is the one Mini-A saves in `<graphDir>/graph.json` (default `./.mini-a-wiki-graph`), so you can inspect or edit a graph produced by Mini-A without loading its code:
