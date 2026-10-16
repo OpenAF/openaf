@@ -451,10 +451,23 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
     // Turn into a map of entries
     var dr = {};
     var d = lines.filter(line => !line.startsWith("#") && line.length > 0).map(line => {
-        var res = line.match(/^([^\{]+?)({[^\}]+})? ([^ ]+?)( [^ ]+?)?$/);
+        // Braces and separators inside quoted values are label contents.
+        var res = line.match(/^([^\{\s]+)(?:\{((?:[^"{}]|"(?:[^"\\]|\\.)*")*)\})? ([^ ]+?)( [^ ]+?)?$/);
+        if (isNull(res)) throw new Error("Invalid OpenMetrics sample: " + line);
+        var labels = {}, rest = res[2] || "";
+        while (rest.trim().length > 0) {
+            var label = rest.match(/^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"((?:[^"\\]|\\[\\"n])*)"\s*(,|$)/);
+            if (isNull(label)) throw new Error("Invalid OpenMetrics labels: " + line);
+            // Decode once so a literal backslash followed by n stays literal.
+            var value = label[2].replace(/\\([\\"n])/g, function(match, escaped) {
+                return escaped == "n" ? "\n" : escaped;
+            });
+            Object.defineProperty(labels, label[1], { value: value, enumerable: true, writable: true, configurable: true });
+            rest = rest.substring(label[0].length);
+        }
         var data = {
             metric: res[1],
-            labels: (isNull(res[2]) ? {} : jsonParse(res[2].replace(/([^=,\{\}]+)=([^=,\{\}]+)/g, "\"$1\":$2"), true)),
+            labels: labels,
             value: Number(res[3]),
             timestamp: (isNumber(res[4]) ? Number(res[4]) : __)
         }

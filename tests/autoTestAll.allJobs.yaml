@@ -37,3 +37,4 @@ include:
 # - autoTestAll.SNMP.yaml   // Test servers don't work
 
 - autoTestAll.Instrumentation.yaml
+- autoTestAll.Metrics.yaml
