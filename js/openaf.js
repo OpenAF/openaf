@@ -7416,6 +7416,20 @@ OpenWrap.prototype.loadOBook = function() { loadCompiledLib("owrap_oBook_js"); i
  */
 OpenWrap.prototype.loadJava = function() { loadCompiledLib("owrap_java_js"); if (isUnDef(ow.java)) { ow.java = new OpenWrap.java(); /*pods.declare("ow.java", ow.java);*/ }; return ow.java; };
 
+/**
+ * <odoc>
+ * <key>ow.loadDesktop(aOptions) : ow.desktop</key>
+ * Loads the optional provider-independent HTML desktop facade. JavaFX support is supplied
+ * by the plugin-DesktopJavaFX oPack. Toolkit initialization is deferred until the first operation.
+ * </odoc>
+ */
+OpenWrap.prototype.loadDesktop = function(options) {
+  loadCompiledLib("owrap_desktop_js");
+  if (isUnDef(ow.desktop)) ow.desktop = new OpenWrap.desktop(options);
+  else if (isDef(options)) ow.desktop.__configure(options);
+  return ow.desktop;
+};
+
 var ow = new OpenWrap()
 
 /**

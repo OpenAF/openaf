@@ -1,0 +1,56 @@
+include:
+- oJobTest.yaml
+jobs:
+- name: Desktop::Init
+  exec: args.tests = require("autoTestAll.Desktop.js");
+- name: Desktop::Lazy loading and registration
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testLazyAndRegistration;
+- name: Desktop::Provider selection and failure
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testSelectionAndFailure;
+- name: Desktop::Window lifetime and ordering
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testWindowsAndOrdering;
+- name: Desktop::Validation and JSON
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testValidationAndSerialization;
+- name: Desktop::Callbacks and shutdown
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testCallbacksAndShutdown;
+- name: Desktop::Restricted messaging and assets
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testMessagingAndAssets;
+- name: Desktop::Process contract
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testProcessContract;
+- name: Desktop::WebSocket security
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testWebSocketSecurity;
+- name: Desktop::Handshake and frame limits
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testHandshakeAndFrameLimits;
+- name: Desktop::Rooted files
+  from: Desktop::Init
+  to: oJob Test
+  exec: args.func = args.tests.testRootedFiles;
+todo:
+- Desktop::Lazy loading and registration
+- Desktop::Provider selection and failure
+- Desktop::Window lifetime and ordering
+- Desktop::Validation and JSON
+- Desktop::Callbacks and shutdown
+- Desktop::Restricted messaging and assets
+- Desktop::Process contract
+- Desktop::WebSocket security
+- Desktop::Handshake and frame limits
+- Desktop::Rooted files
