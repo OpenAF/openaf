@@ -380,9 +380,11 @@ var getSerialize = function(fn, decycle) {
 
 var __bfprintFlag = true;
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>print(aStr)</key>
- * Prints the aStr to the stdout (with a new line on the end) (example: print("hello world!"))
+ * <![CDATA[
+ * Prints the `aStr` to the stdout (with a new line on the end) (example: `print("hello world!")`)
+ * ]]>
  * </odoc>
  */
 const print = function(str) {
@@ -442,9 +444,11 @@ const bfprintErr = function(str, codePage) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>sprint(aStr)</key>
- * "Stringifies" and prints the aStr to the stdout (with a new line on the end) (example: sprint("hello world!"))
+ * <![CDATA[
+ * "Stringifies" and prints the `aStr` to the stdout (with a new line on the end) (example: `sprint("hello world!")`)
+ * ]]>
  * </odoc>
  */
 const sprint = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return print(stringify(str, undefined, delim)); }
@@ -458,16 +462,20 @@ const sprint = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); r
 const lprint = function(str, c) { return print(c ? af.toCSLON(str) : af.toSLON(str)) }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>bprint(aStr)</key>
- * "Beautifies" and prints the aStr to the stdout (with a new line on the end) (example: bprint("hello world!"))
+ * <![CDATA[
+ * "Beautifies" and prints the `aStr` to the stdout (with a new line on the end) (example: `bprint("hello world!")`)
+ * ]]>
  * </odoc>
  */
 const bprint = function(str) { return print(beautifier(str)); }
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>cprint(aStr)</key>
- * "Stringifies" in ANSI color and prints the aStr to the stdout (with a new line on the end) (example: cprint("hello world!"))
+ * <![CDATA[
+ * "Stringifies" in ANSI color and prints the `aStr` to the stdout (with a new line on the end) (example: `cprint("hello world!")`)
+ * ]]>
  * </odoc>
  */
 const cprint = function(str, delim) { ansiStart(); print(colorify(str)); ansiStop(); }
@@ -481,9 +489,11 @@ const cprint = function(str, delim) { ansiStart(); print(colorify(str)); ansiSto
 const yprint = function(str, multidoc, sanitize, shouldColor) { return print(af.toYAML(str, multidoc, sanitize, shouldColor)); }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>printnl(aStr)</key>
- * Prints the aStr to the stdout (without adding a new line on the end) (example: printnl("hello world!"))
+ * <![CDATA[
+ * Prints the `aStr` to the stdout (without adding a new line on the end) (example: `printnl("hello world!")`)
+ * ]]>
  * </odoc>
  */
 const printnl = function(str) {
@@ -496,9 +506,11 @@ const printnl = function(str) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>sprintnl(aStr)</key>
- * "Stringifies" and prints the aStr to the stdout (without adding a new line on the end) (example: sprintnl("hello world!"))
+ * <![CDATA[
+ * "Stringifies" and prints the `aStr` to the stdout (without adding a new line on the end) (example: `sprintnl("hello world!")`)
+ * ]]>
  * </odoc>
  */
 const sprintnl = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printnl(stringify(str, undefined, delim)); }
@@ -510,31 +522,39 @@ const sprintnl = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim);
  */
 const lprintnl = function(str, c) { return printnl(c ? af.toCSLON(str) : af.toSLON(str)) }
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>bprintnl(aStr)</key>
- * "Beautifies" and prints the aStr to the stdout (without adding a new line on the end) (example: bprintnl("hello world!"))
+ * <![CDATA[
+ * "Beautifies" and prints the `aStr` to the stdout (without adding a new line on the end) (example: `bprintnl("hello world!")`)
+ * ]]>
  * </odoc>
  */
 const bprintnl = function(str) { return printnl(beautifier(str)); }
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>cprintnl(aStr)</key>
- * "Stringifies" in ANSI color and prints the aStr to the stdout (with a new line on the end) (example: cprintnl("hello world!"))
+ * <![CDATA[
+ * "Stringifies" in ANSI color and prints the `aStr` to the stdout (with a new line on the end) (example: `cprintnl("hello world!")`)
+ * ]]>
  * </odoc>
  */
 const cprintnl = function(str, delim) { ansiStart(); printnl(colorify(str)); ansiStop(); }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>tprintln(aTemplateString, someData)</key>
- * Using Handlebars and the functionality provided in ow.template, will use the aTemplateString as a Handlebars template
- * and print, withouth a new line, the parsed output. Optionally you can provide someData as data for the Handlebars template 
- * otherwise the current scope will be used.\
- * \
- * Example:\
- * \
- * var someText = "Hello World!";\
+ * <![CDATA[
+ * Using Handlebars and the functionality provided in `ow.template`, will use the `aTemplateString` as a Handlebars template
+ * and print, without a new line, the parsed output. Optionally you can provide `someData` as data for the Handlebars template
+ * otherwise the current scope will be used.
+ *
+ * Example:
+ *
+ * ```javascript
+ * var someText = "Hello World!";
  * tprintln("Hi, {{someText}}"); // Hi, Hello World!
+ * ```
+ * ]]>
  * </odoc>
  */
 const tprintnl = function(aTemplateString, someData) {
@@ -543,16 +563,20 @@ const tprintnl = function(aTemplateString, someData) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>tprint(aTemplateString, someData)</key>
- * Using Handlebars and the functionality provided in ow.template, will use the aTemplateString as a Handlebars template
- * and print the parsed output. Optionally you can provide someData as data for the Handlebars template 
- * otherwise the current scope will be used.\
- * \
- * Example:\
- * \
- * var someText = "Hello World!";\
+ * <![CDATA[
+ * Using Handlebars and the functionality provided in `ow.template`, will use the `aTemplateString` as a Handlebars template
+ * and print the parsed output. Optionally you can provide `someData` as data for the Handlebars template
+ * otherwise the current scope will be used.
+ *
+ * Example:
+ *
+ * ```javascript
+ * var someText = "Hello World!";
  * tprint("Hi, {{someText}}"); // Hi, Hello World!
+ * ```
+ * ]]>
  * </odoc>
  */
 const tprint = function(aTemplateString, someData) {
@@ -560,9 +584,11 @@ const tprint = function(aTemplateString, someData) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>printErr(aStr)</key>
- * Prints the aStr to the stderr (with a new line on the end) (example: printErr("Hupps!! A problem!"))
+ * <![CDATA[
+ * Prints the `aStr` to the stderr (with a new line on the end) (example: `printErr("Hupps!! A problem!")`)
+ * ]]>
  * </odoc>
  */
 const printErr = function(str) {
@@ -575,9 +601,11 @@ const printErr = function(str) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>sprintErr(aStr)</key>
- * "Stringifies" and prints the aStr to the stderr (with a new line on the end) (example: sprintErr("Hupps!! A problem!"))
+ * <![CDATA[
+ * "Stringifies" and prints the `aStr` to the stderr (with a new line on the end) (example: `sprintErr("Hupps!! A problem!")`)
+ * ]]>
  * </odoc>
  */
 const sprintErr = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printErr(stringify(str, undefined, delim)); }
@@ -590,16 +618,20 @@ const sprintErr = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim)
 const lprintErr = function(str, c) { return printErr(c ? af.toCSLON(str) : af.toSLON(str)) }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>bprintErr(aStr)</key>
- * "Beautifies" and prints the aStr to the stderr (with a new line on the end) (example: bprintErr("Hupps!! A problem!"))
+ * <![CDATA[
+ * "Beautifies" and prints the `aStr` to the stderr (with a new line on the end) (example: `bprintErr("Hupps!! A problem!")`)
+ * ]]>
  * </odoc>
  */
 const bprintErr = function(str) { return printErr(beautifier(str)); }
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>cprintErr(aStr)</key>
- * "Stringifies" in ANSI color and prints the aStr to the stderr (with a new line on the end) (example: cprintErr("Hupps!! A problem!"))
+ * <![CDATA[
+ * "Stringifies" in ANSI color and prints the `aStr` to the stderr (with a new line on the end) (example: `cprintErr("Hupps!! A problem!")`)
+ * ]]>
  * </odoc>
  */
 const cprintErr = function(str) { ansiStart(); printErr(colorify(str)); ansiStop(); }
@@ -613,9 +645,11 @@ const cprintErr = function(str) { ansiStart(); printErr(colorify(str)); ansiStop
 const yprintErr = function(str, multidoc) { return printErr(af.toYAML(str, multidoc)); }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>printErrnl(aStr)</key>
- * Prints the aStr to the stderr (without adding a new line on the end) (example: printErrnl("Hupps!! A problem!"))
+ * <![CDATA[
+ * Prints the `aStr` to the stderr (without adding a new line on the end) (example: `printErrnl("Hupps!! A problem!")`)
+ * ]]>
  * </odoc>
  */
 const printErrnl = function(str) {
@@ -628,9 +662,11 @@ const printErrnl = function(str) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>sprintErrnl(aStr)</key>
- * "Stringifies" and prints the aStr to the stderr (without adding a new line on the end) (example: sprintErrnl("Hupps!! A problem!"))
+ * <![CDATA[
+ * "Stringifies" and prints the `aStr` to the stderr (without adding a new line on the end) (example: `sprintErrnl("Hupps!! A problem!")`)
+ * ]]>
  * </odoc>
  */
 const sprintErrnl = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printErrnl(stringify(str, undefined, delim)); }
@@ -643,32 +679,40 @@ const sprintErrnl = function(str, delim) { delim = (isUnDef(delim) ? "  " : deli
 const lprintErrnl = function(str, c) { return printErrnl(c ? af.toCSLON(str) : af.toSLON(str)) }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>bprintErrnl(aStr)</key>
- * "Beautifies" and prints the aStr to the stderr (without adding a new line on the end) (example: bprintErrnl("Hupps!! A problem!"))
+ * <![CDATA[
+ * "Beautifies" and prints the `aStr` to the stderr (without adding a new line on the end) (example: `bprintErrnl("Hupps!! A problem!")`)
+ * ]]>
  * </odoc>
  */
 const bprintErrnl = function(str) { return printErrnl(beautifier(str)); }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>cprintErrnl(aStr)</key>
- * "Stringifies" in ANSI color and prints the aStr to the stderr (with a new line on the end) (example: cprintErrnl("Hupps!! A problem!"))
+ * <![CDATA[
+ * "Stringifies" in ANSI color and prints the `aStr` to the stderr (with a new line on the end) (example: `cprintErrnl("Hupps!! A problem!")`)
+ * ]]>
  * </odoc>
  */
 const cprintErrnl = function(str, delim) { ansiStart(); printErrnl(colorify(str)); ansiStop(); }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>tprintErrnl(aTemplateString, someData)</key>
- * Using Handlebars and the functionality provided in ow.template, will use the aTemplateString as a Handlebars template
- * and print, to the stderr without new line, the parsed output. Optionally you can provide someData as data for the Handlebars template 
- * otherwise the current scope will be used.\
- * \
- * Example:\
- * \
- * var someText = "Hello World!";\
+ * <![CDATA[
+ * Using Handlebars and the functionality provided in `ow.template`, will use the `aTemplateString` as a Handlebars template
+ * and print, to the stderr without new line, the parsed output. Optionally you can provide `someData` as data for the Handlebars template
+ * otherwise the current scope will be used.
+ *
+ * Example:
+ *
+ * ```javascript
+ * var someText = "Hello World!";
  * tprintErrnl("Hi, {{someText}}"); // Hi, Hello World!
+ * ```
+ * ]]>
  * </odoc>
  */
 const tprintErrnl = function(aTemplateString, someData) {
@@ -677,16 +721,20 @@ const tprintErrnl = function(aTemplateString, someData) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>tprintErr(aTemplateString, someData)</key>
- * Using Handlebars and the functionality provided in ow.template, will use the aTemplateString as a Handlebars template
- * and print, to the stderr, the parsed output. Optionally you can provide someData as data for the Handlebars template 
- * otherwise the current scope will be used.\
- * \
- * Example:\
- * \
- * var someText = "Hello World!";\
+ * <![CDATA[
+ * Using Handlebars and the functionality provided in `ow.template`, will use the `aTemplateString` as a Handlebars template
+ * and print, to the stderr, the parsed output. Optionally you can provide `someData` as data for the Handlebars template
+ * otherwise the current scope will be used.
+ *
+ * Example:
+ *
+ * ```javascript
+ * var someText = "Hello World!";
  * tprintErr("Hi, {{someText}}"); // Hi, Hello World!
+ * ```
+ * ]]>
  * </odoc>
  */
 const tprintErr = function(aTemplateString, someData) {
@@ -694,22 +742,23 @@ const tprintErr = function(aTemplateString, someData) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>printChart(aFormatString, hSize, vSize, aMax, aMin, dColor) : String</key>
- * Produces a line chart given aFormatString, a hSize (horizontal max size), a vSize (vertical max size), aMax (the axis max value) and aMin 
- * (the axis min value). The aFormatString should be composed of "&lt;dataset&gt; &lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
- * \
- *    The dataset should be an unique name (data can be cleaned with ow.format.string.dataClean);\
- *    The units can be: int, dec1, dec2, dec3, dec4, dec, bytes and si;\
- *    Each function should return the corresponding current value (optionally it can be a number directly);\
- *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
- *    Optionally each legend, if used, will be included in a bottom legend;\
- * \
- *    If function "-min" it will overwrite the aMin\
- *    If function "-max" it will overwrite the aMax\
- *    If function "-hsize" it will overwrite the hSize\
- *    If function "-vsize" it will overwrite the vSize\
- * \
+ * <![CDATA[
+ * Produces a line chart given `aFormatString`, a `hSize` (horizontal max size), a `vSize` (vertical max size), `aMax` (the axis max value) and `aMin`
+ * (the axis min value). The `aFormatString` should be composed of `<dataset> <units> [<function[:color][:legend]> ...]`:
+ *
+ * - The dataset should be an unique name (data can be cleaned with `ow.format.string.dataClean`);
+ * - The units can be: int, dec1, dec2, dec3, dec4, dec, bytes and si;
+ * - Each function should return the corresponding current value (optionally it can be a number directly);
+ * - Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');
+ * - Optionally each legend, if used, will be included in a bottom legend;
+ *
+ * - If function "-min" it will overwrite the `aMin`
+ * - If function "-max" it will overwrite the `aMax`
+ * - If function "-hsize" it will overwrite the `hSize`
+ * - If function "-vsize" it will overwrite the `vSize`
+ * ]]>
  * </odoc>
  */
 const printChart = function(as, hSize, vSize, aMax, aMin, options) {
@@ -816,32 +865,36 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>printChartArray(anArray, aType, hSize, vSize, aMax, aMin, options) : String</key>
- * Produces and returns a one-shot terminal line chart directly from anArray, without calling functions or keeping a named
+ * <![CDATA[
+ * Produces and returns a one-shot terminal line chart directly from `anArray`, without calling functions or keeping a named
  * dataset between calls. Use an array of numbers for one series or an array of arrays of numbers for multiple series. Series
- * can have different lengths. aType controls the y-axis label format and can be: int, dec1, dec2, dec3, dec4, dec, bytes or si.
- * hSize and vSize set the chart width and height; when omitted in a console they default to the terminal width and terminal
- * height minus 5 respectively. aMax and aMin optionally fix the y-axis bounds; omitted bounds are calculated from the values.\
- * \
- * options is passed to ow.format.string.lineChart and can include:\
- * \
- *    colors  (array)   ANSI color specification for each series. Colors are assigned by series order and repeat if fewer colors are provided;\
- *    label   (boolean) Include y-axis labels (default true);\
- *    dColor  (string)  ANSI color specification for the labels, axes and other default chart elements;\
- *    offset  (number)  Horizontal offset reserved for the y-axis (default 2);\
- *    padding (string)  String prepended to each chart line (default "");\
- *    symbols (array)   Ten characters replacing the default line drawing symbols;\
- * \
+ * can have different lengths. `aType` controls the y-axis label format and can be: int, dec1, dec2, dec3, dec4, dec, bytes or si.
+ * `hSize` and `vSize` set the chart width and height; when omitted in a console they default to the terminal width and terminal
+ * height minus 5 respectively. `aMax` and `aMin` optionally fix the y-axis bounds; omitted bounds are calculated from the values.
+ *
+ * `options` is passed to `ow.format.string.lineChart` and can include:
+ *
+ * - `colors` (array) ANSI color specification for each series. Colors are assigned by series order and repeat if fewer colors are provided;
+ * - `label` (boolean) Include y-axis labels (default true);
+ * - `dColor` (string) ANSI color specification for the labels, axes and other default chart elements;
+ * - `offset` (number) Horizontal offset reserved for the y-axis (default 2);
+ * - `padding` (string) String prepended to each chart line (default "");
+ * - `symbols` (array) Ten characters replacing the default line drawing symbols;
+ *
  * Each color accepts the same values and comma-separated combinations as ansiColor (check 'help ansiColor'), including
  * named foreground/background colors (for example GREEN, FG_CYAN or BG_BLUE), attributes (for example BOLD,GREEN),
  * 256-color forms such as FG(208) or BG(236), and true-color forms such as RGB(80,160,255), FG_RGB(80,160,255) or
- * BG_RGB(20,20,20). ANSI colors are shown when terminal color support is enabled.\
- * \
- * Examples:\
- * \
- *    print(printChartArray([1, 4, 2, 5, 3], "int", 40, 10, 5, 0, { colors: ["GREEN"] }));\
- *    print(printChartArray([[1, 2, 3], [3, 2, 1]], "dec1", 40, 10, __, __, { colors: ["BOLD,CYAN", "FG(208)"] }));
+ * BG_RGB(20,20,20). ANSI colors are shown when terminal color support is enabled.
+ *
+ * Examples:
+ *
+ * ```javascript
+ * print(printChartArray([1, 4, 2, 5, 3], "int", 40, 10, 5, 0, { colors: ["GREEN"] }));
+ * print(printChartArray([[1, 2, 3], [3, 2, 1]], "dec1", 40, 10, __, __, { colors: ["BOLD,CYAN", "FG(208)"] }));
+ * ```
+ * ]]>
  * </odoc>
  */
 const printChartArray = function(anArray, aType, hSize, vSize, aMax, aMin, options) {
@@ -888,16 +941,17 @@ const printChartArray = function(anArray, aType, hSize, vSize, aMax, aMin, optio
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>printBars(aFormatString, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) : String</key>
- * Produces horizontal bars given aFormatString, a hSize (horizontal max size), aMax (the axis max value) and aMin 
- * (the axis min value). The aFormatString should be composed of "&lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
- * \
- *    The units can be: int, dec1, dec2, dec3, dec, bytes and si;\
- *    Each function should return the corresponding current value (optionally it can be a number directly);\
- *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
- *    Optionally each legend, if used, will be included in a bottom legend;\
- * \
+ * <![CDATA[
+ * Produces horizontal bars given `aFormatString`, a `hSize` (horizontal max size), `aMax` (the axis max value) and `aMin`
+ * (the axis min value). The `aFormatString` should be composed of `<units> [<function[:color][:legend]> ...]`:
+ *
+ * - The units can be: int, dec1, dec2, dec3, dec, bytes and si;
+ * - Each function should return the corresponding current value (optionally it can be a number directly);
+ * - Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');
+ * - Optionally each legend, if used, will be included in a bottom legend;
+ * ]]>
  * </odoc>
  */
 const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
@@ -1908,18 +1962,19 @@ const __ansiColorPrep = function(aAnsi) {
 	//return new Function("s", "return \"" + o.replace("RRR", "\"+s+\"") + "\"")
 }
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ansiColor(aAnsi, aString, force, noCache, noReset) : String</key>
- * Returns the ANSI codes together with aString, if determined that the current terminal can handle ANSI codes (overridden
- * by force = true), with the attributes defined in aAnsi. Please use with ansiStart() and ansiStop().
- * The optional noReset boolean flag will remove ansi reset as part of the string returned.
- * The attributes separated by commas can be:\
- * \
- * BLACK; RED; GREEN; YELLOW; BLUE; MAGENTA; CYAN; WHITE;\
- * FG_BLACK; FG_RED; FG_GREEN; FG_YELLOW; FG_BLUE; FG_MAGENTA; FG_CYAN; FG_WHITE;\
- * BG_BLACK; BG_RED; BG_GREEN; BG_YELLOW; BG_BLUE; BG_MAGENTA; BG_CYAN; BG_WHITE;\
- * BOLD; FAINT; INTENSITY_BOLD; INTENSITY_FAINT; ITALIC; UNDERLINE; BLINK_SLOW; BLINK_FAST; BLINK_OFF; NEGATIVE_ON; NEGATIVE_OFF; CONCEAL_ON; CONCEAL_OFF; UNDERLINE_DOUBLE; UNDERLINE_OFF;\
- * \
+ * <![CDATA[
+ * Returns the ANSI codes together with `aString`, if determined that the current terminal can handle ANSI codes (overridden
+ * by `force` = true), with the attributes defined in `aAnsi`. Please use with ansiStart() and ansiStop().
+ * The optional `noReset` boolean flag will remove ansi reset as part of the string returned.
+ * The attributes separated by commas can be:
+ *
+ * - `BLACK`, `RED`, `GREEN`, `YELLOW`, `BLUE`, `MAGENTA`, `CYAN`, `WHITE`
+ * - `FG_BLACK`, `FG_RED`, `FG_GREEN`, `FG_YELLOW`, `FG_BLUE`, `FG_MAGENTA`, `FG_CYAN`, `FG_WHITE`
+ * - `BG_BLACK`, `BG_RED`, `BG_GREEN`, `BG_YELLOW`, `BG_BLUE`, `BG_MAGENTA`, `BG_CYAN`, `BG_WHITE`
+ * - `BOLD`, `FAINT`, `INTENSITY_BOLD`, `INTENSITY_FAINT`, `ITALIC`, `UNDERLINE`, `BLINK_SLOW`, `BLINK_FAST`, `BLINK_OFF`, `NEGATIVE_ON`, `NEGATIVE_OFF`, `CONCEAL_ON`, `CONCEAL_OFF`, `UNDERLINE_DOUBLE`, `UNDERLINE_OFF`
+ * ]]>
  * </odoc>
  */
 const ansiColor = function(aAnsi, aString, force, noCache, noReset) {
@@ -2135,24 +2190,28 @@ const stringify = function(aobj, replacer, space) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>__colorFormat</key>
+ * <![CDATA[
  * Global map with the ANSI color/style settings used when printing colored output (colorify, cprint*, printTable/printTree,
  * ask/askChoose/askChooseMultiple prompts and markdown rendering). Each color value is a comma-separated list of ansiColor
- * attributes (e.g. "BOLD,CYAN", "FG(12)", "RESET"). Entries can be changed at runtime to customize the theme:\
- * \
- *   - key, number, string, boolean, date, default: colors used by colorify and tree/table values per data type.\
- *   - askPre, askQuestion, askChoose, askChooseFilter, askPos: colors used by ask, askChoose and askChooseMultiple.\
- *   - askChooseChars: characters used in choose prompts (chooseMultipleSelected, chooseMultipleUnselected, chooseUp, chooseDown, chooseLine).\
- *   - table: { lines, value, title, bandRow, format } colors for table output; the optional "format" (table, stable, ctable, btable or bstable)\
- *     selects the default table renderer for $output when no global or explicit format is set.\
- *   - tree: { lines } color for tree connecting lines (other tree options are merged with __flags.TREE).\
- *   - md: colors used by ow.format.withMD: codeBlock {line, text, theme}, codeInline {text, surround}, heads {h1..h4}, line, link {text, url},\
- *     bullets, list, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.\
- * \
- * Example:\
- * \
- *   __colorFormat.string = "GREEN"; __colorFormat.table.title = "BOLD,UNDERLINE"; __colorFormat.md.heads.h1 = "CYAN,BOLD"\
+ * attributes (e.g. "BOLD,CYAN", "FG(12)", "RESET"). Entries can be changed at runtime to customize the theme:
+ *
+ * - key, number, string, boolean, date, default: colors used by colorify and tree/table values per data type.
+ * - askPre, askQuestion, askChoose, askChooseFilter, askPos: colors used by ask, askChoose and askChooseMultiple.
+ * - `askChooseChars`: characters used in choose prompts (chooseMultipleSelected, chooseMultipleUnselected, chooseUp, chooseDown, chooseLine).
+ * - `table`: { lines, value, title, bandRow, format } colors for table output; the optional "format" (table, stable, ctable, btable or bstable)
+ *   selects the default table renderer for `$output` when no global or explicit format is set.
+ * - `tree`: { lines } color for tree connecting lines (other tree options are merged with `__flags.TREE`).
+ * - `md`: colors used by `ow.format.withMD`: codeBlock {line, text, theme}, codeInline {text, surround}, heads {h1..h4}, line, link {text, url},
+ *   bullets, list, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.
+ *
+ * Example:
+ *
+ * ```javascript
+ * __colorFormat.string = "GREEN"; __colorFormat.table.title = "BOLD,UNDERLINE"; __colorFormat.md.heads.h1 = "CYAN,BOLD"
+ * ```
+ * ]]>
  * </odoc>
  */
 var __colorFormat = {
@@ -2387,16 +2446,20 @@ const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>templify(aTemplateString, someData) : String</key>
- * Using Handlebars and the functionality provided in ow.template, will use the aTemplateString as a Handlebars template
- * and return the parsed output. Optionally you can provide someData as data for the Handlebars template 
- * otherwise the current scope will be used.\
- * \
- * Example:\
- * \
- * var someText = "Hello World!";\
+ * <![CDATA[
+ * Using Handlebars and the functionality provided in `ow.template`, will use the `aTemplateString` as a Handlebars template
+ * and return the parsed output. Optionally you can provide `someData` as data for the Handlebars template
+ * otherwise the current scope will be used.
+ *
+ * Example:
+ *
+ * ```javascript
+ * var someText = "Hello World!";
  * var retText = templify("Hi, {{someText}}"); // Hi, Hello World!
+ * ```
+ * ]]>
  * </odoc>
  */
 const templify = function(aTemplateString, someData) {
@@ -2507,21 +2570,22 @@ function logFlush(aTimeout) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>setLog(aMap)</key>
- * Sets the current log output settings:\
- * \
- * - off        (boolean) Turns off output to stdout/stderr\
- * - offInfo    (boolean) Turns off output of INFO\
- * - offError   (boolean) Turns off output of ERROR\
- * - offWarn    (boolean) Turns off output of WARN\
- * - dateFormat (string)  ow.format.fromDate format for date\
- * - dateTZ     (string)  Time zone to use with ow.format.fromDate\
- * - separator  (string)  String to use as separator\
- * - async      (boolean) Run in async mode\
- * - profile    (boolean) Gathers memory and system load stats\
- * - format     (string)  Sets the format to output logs (e.g. json, slon, human)\
- * \
+ * <![CDATA[
+ * Sets the current log output settings:
+ *
+ * - `off` (boolean) Turns off output to stdout/stderr
+ * - `offInfo` (boolean) Turns off output of INFO
+ * - `offError` (boolean) Turns off output of ERROR
+ * - `offWarn` (boolean) Turns off output of WARN
+ * - `dateFormat` (string) `ow.format.fromDate` format for date
+ * - `dateTZ` (string) Time zone to use with `ow.format.fromDate`
+ * - `separator` (string) String to use as separator
+ * - `async` (boolean) Run in async mode
+ * - `profile` (boolean) Gathers memory and system load stats
+ * - `format` (string) Sets the format to output logs (e.g. json, slon, human)
+ * ]]>
  * </odoc>
  */
 const setLog = function(aMap) {
@@ -3207,10 +3271,12 @@ const bcrypt = function(aText, aVerifyHash, hashingRounds) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>splitBySeparator(aString, aSeparator) : Array</key>
- * Will split aString using the provided aSeparator. If the aSeparator is escaped (for example if ';' is the aSeparator and 
- * aString 'abc\\;def;123" only the second ';' will be considered.
+ * <![CDATA[
+ * Splits `aString` using `aSeparator`. Escaped separators are ignored. For example, if `aSeparator` is `;` and
+ * `aString` is `abc\\;def;123`, only the second `;` is treated as a separator.
+ * ]]>
  * </odoc>
  */
 const splitBySeparator = function(aString, aSep) {
@@ -3272,16 +3338,17 @@ const splitBySepWithEnc = function(text, separator, enclosures, includeEnclosure
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>splitKVBySeparator(aString, aOptions) : Map</key>
- * Given aString with multiple key/value entries will return a map with the same. Optionally you can provide aOptions:\
- * \
- *    sep  - the key/value entries separator (defaults to " ")\
- *    ksep - the key separator from a value (defaults to "=")\
- *    esc  - the escape character (defaults to "\\")\
- *    qto  - the quote character (defaults to "\"")\
- *    nul  - the null representation (defaults to null)\
- * \
+ * <![CDATA[
+ * Given `aString` with multiple key/value entries will return a map with the same. Optionally you can provide `aOptions`:
+ *
+ * - `sep`: the key/value entries separator (defaults to " ")
+ * - `ksep`: the key separator from a value (defaults to "=")
+ * - `esc`: the escape character (defaults to `"\\"`)
+ * - `qto`: the quote character (defaults to `"\""`)
+ * - `nul`: the null representation (defaults to null)
+ * ]]>
  * </odoc>
  */
 const splitKVBySeparator = function(aString, aOptions) {
@@ -3478,10 +3545,12 @@ const OPACKCENTRALJSON = "packages.json";
 var __opackParams;
 var __opackOpenAF;
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>oPack(aParameters)</key>
- * Tries to execute oPack with aParameters string. These string is equivalent to the opack command-line commands.
- * aParameters = "help" will, for example, print all the help information. 
+ * <![CDATA[
+ * Tries to execute oPack with `aParameters` string. These string is equivalent to the opack command-line commands.
+ * `aParameters` = "help" will, for example, print all the help information.
+ * ]]>
  * </odoc> 
  */
 const oPack = function(aCmd) { 
@@ -5207,21 +5276,27 @@ var $from = function(a) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$jq(input, expression, options) : Object</key>
+ * <![CDATA[
  * Evaluates jq syntax (jq 1.6 mode, jackson-jq 1.6.5) against one JSON value.
- * expression defaults to ".". Zero outputs return undefined, one returns the value,
- * and multiple outputs return an array. options.all=true always returns an array of outputs.
- * options.vars binds JSON values by variable name without the leading $. Examples:\
- *   $jq({ a: 2 }, ".a"); // 2\
- *   $jq([1, 2], ".[]", { all: true }); // [1, 2]\
- *   $jq([1, 3], "map(select(. > $min))", { vars: { min: 2 } }); // [3]\
+ * `expression` defaults to ".". Zero outputs return undefined, one returns the value,
+ * and multiple outputs return an array. `options`.all=true always returns an array of outputs.
+ * `options`.vars binds JSON values by variable name without the leading $. Examples:
+ *
+ * ```javascript
+ * $jq({ a: 2 }, ".a"); // 2
+ * $jq([1, 2], ".[]", { all: true }); // [1, 2]
+ * $jq([1, 3], "map(select(. > $min))", { vars: { min: 2 } }); // [3]
+ * ```
+ *
  * Accepts plain objects, dense arrays, strings, finite numbers, booleans and null.
  * Rejects unsupported values and cycles with their location. Does not mutate inputs.
  * Results are detached JavaScript values; numbers have JavaScript precision.
- * __flags.JQ_CACHE_SIZE controls compiled query caching (256 entries; 0 clears/disables).
- * Filesystem imports, CLI input streams and OpenAF callbacks are unavailable.
+ * `__flags.JQ_CACHE_SIZE` controls compiled query caching (256 entries; 0 clears/disables).
+ * Filesystem imports, CLI `input` streams and OpenAF callbacks are unavailable.
  * See docs/jq.md for compatibility, value boundaries and error behavior.
+ * ]]>
  * </odoc>
  */
 const $jq = function(input, expression, options) {
@@ -5229,67 +5304,95 @@ const $jq = function(input, expression, options) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$path(obj, path, customFunctions) : Object</key>
+ * <![CDATA[
  * Shortcut for the JMESPath library for easy query and access to arrays/objects. To see all the available options
- * please refer to http://jmespath.org. Uses the Java engine by default; set __flags.ALTERNATIVES.path=false
- * to use the Javascript engine. __flags.PATH_CACHE_SIZE controls the Java syntax cache (256 entries by default; 0 disables).
- * Optional you can provide a map of customFunctions. Examples:\
- * \
- * [Slicing]: \
- *   $path(arr, "[0:5]"); $path(arr, "[5:10]"); $path(arr, "[:5]"); $path(arr, "[::2]"); $path(arr, "[::-1]");\
- * \
- * [Projections]: \
- *   $path(arr, "a[*].first"); $path(arr, "a.*.b"); $path(arr, "[]");\
- * \
- * [Filters]: \
- *   $path(arr, "a[?b=='xyz'].c"); $path(arr, "a[?b>`1`].x");\
- * \
- * [MultiSelect]: \
- *   $path(arr, "a[].[x, y]"); $path(arr, "a[].{ x: x, y: y }");\
- * \
- * [Pipe]: \
- *   $path(arr, "a[*].b | [0]"); \
- * \
- * [Functions]: \
- *   abs(x), avg(x), contains(x, y), ceil(x), floor(x), join(x, arr), keys(obj), length(x), map(expr, arr), max(x), max_by(x, y), merge(a, b), min(a), min_by(a, b), not_null(a), reverse(arr), sort(arr), sort_by(a, y), starts_with(a, b), ends_with(a, b), sum(a), to_array(a), to_string(a), to_number(a), type(a), values(a)\
- *   $path(arr, "a[?contains(@, 'b') == `true`]")\
- * \
- * [OpenAF custom functions]: \
- *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_datef(x, format) from_datef(x, format), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end),\
+ * please refer to http://jmespath.org. Uses the Java engine by default; set `__flags.ALTERNATIVES.path`=false
+ * to use the Javascript engine. `__flags.PATH_CACHE_SIZE` controls the Java syntax cache (256 entries by default; 0 disables).
+ * Optional you can provide a map of `customFunctions`. Examples:
+ *
+ * **Slicing:**
+ *
+ * ```javascript
+ * $path(arr, "[0:5]"); $path(arr, "[5:10]"); $path(arr, "[:5]"); $path(arr, "[::2]"); $path(arr, "[::-1]");
+ * ```
+ *
+ * **Projections:**
+ *
+ * ```javascript
+ * $path(arr, "a[*].first"); $path(arr, "a.*.b"); $path(arr, "[]");
+ * ```
+ *
+ * **Filters:**
+ *
+ * ```javascript
+ * $path(arr, "a[?b=='xyz'].c"); $path(arr, "a[?b>`1`].x");
+ * ```
+ *
+ * **MultiSelect:**
+ *
+ * ```javascript
+ * $path(arr, "a[].[x, y]"); $path(arr, "a[].{ x: x, y: y }");
+ * ```
+ *
+ * **Pipe:**
+ *
+ * ```javascript
+ * $path(arr, "a[*].b | [0]");
+ * ```
+ *
+ * **Functions:**
+ *
+ * ```text
+ * abs(x), avg(x), contains(x, y), ceil(x), floor(x), join(x, arr), keys(obj), length(x), map(expr, arr), max(x), max_by(x, y), merge(a, b), min(a), min_by(a, b), not_null(a), reverse(arr), sort(arr), sort_by(a, y), starts_with(a, b), ends_with(a, b), sum(a), to_array(a), to_string(a), to_number(a), type(a), values(a)
+ * $path(arr, "a[?contains(@, 'b') == `true`]")
+ * ```
+ *
+ * **OpenAF custom functions:**
+ *
+ * ```text
+ *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_datef(x, format) from_datef(x, format), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end),
  *  template(a, 'template'), t(a, 'template'), templateF(x, 'template'), tF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags'), amerge(x, y), to_slon(x), from_slon(x), to_json(x), from_json(x, str), to_yaml(x, isMultiDoc), from_yaml(x), trim(x), nvl(x, v), to_toml(x), from_toml(x)
- * add(x, y), sub(x, y), mul(x, y), div(x, y), mod(x, y)\
- * split(x, sep), split_re(x, sepRE), split_sep(x, sepRE, encls), date_diff(d, unit, nullValue)\
- * insert(obj, 'field', value), now(negativeTimeDiff)\
- * get(nameOrPath), set(obj, path), setp(obj, path, name)\
- * range(count), ranges(count, start, step)\
- * inc(name), dec(name), getc(name), unset(obj, name)\
- * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)\
- * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
- * semver(version, operation, argument)\
- * progress(value, max, min, size, indicator, space),\
- * to_csv(array, options), from_csv(str, options)\
- * ch(name, op, arg1, arg2), chq(name, op, max, value), path(obj, jmespath), opath(jmespath)\
- * to_ms(date), timeagoAbbr(x)\
- * env(str), envs(regex)\
- * oafp(json/slon), oafpd(obj, json/slon)\
- * if(cond, then, else)\
- * assign(obj, path, value), assignp(objPathStr, path, value)\
- * random(min, max), srandom(min, max)\
- * at(arrayIndex)\
- * to_numSpace(num, space), from_numSpace(num, space)\
- * to_kyaml(obj), from_kyaml(str)\
- * to_toon(obj), from_toon(str)\
- * to_base64(str), from_base64(str)\
- * to_xml(obj), from_xml(str)\
- * 
- * Functions only active if flag PATH_SAFE is false:\
- *   ojob(name, argsJSSLON)\
- *   sh(command, stdin), sh_json(command, stdin), sh_jsslon(command, stdin), sh_yaml(command, stdin)\
- * \
- * Custom functions:\
- *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
- * \
+ * add(x, y), sub(x, y), mul(x, y), div(x, y), mod(x, y)
+ * split(x, sep), split_re(x, sepRE), split_sep(x, sepRE, encls), date_diff(d, unit, nullValue)
+ * insert(obj, 'field', value), now(negativeTimeDiff)
+ * get(nameOrPath), set(obj, path), setp(obj, path, name)
+ * range(count), ranges(count, start, step)
+ * inc(name), dec(name), getc(name), unset(obj, name)
+ * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)
+ * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)
+ * semver(version, operation, argument)
+ * progress(value, max, min, size, indicator, space),
+ * to_csv(array, options), from_csv(str, options)
+ * ch(name, op, arg1, arg2), chq(name, op, max, value), path(obj, jmespath), opath(jmespath)
+ * to_ms(date), timeagoAbbr(x)
+ * env(str), envs(regex)
+ * oafp(json/slon), oafpd(obj, json/slon)
+ * if(cond, then, else)
+ * assign(obj, path, value), assignp(objPathStr, path, value)
+ * random(min, max), srandom(min, max)
+ * at(arrayIndex)
+ * to_numSpace(num, space), from_numSpace(num, space)
+ * to_kyaml(obj), from_kyaml(str)
+ * to_toon(obj), from_toon(str)
+ * to_base64(str), from_base64(str)
+ * to_xml(obj), from_xml(str)
+ * ```
+ *
+ * Functions only active if flag PATH_SAFE is false:
+ *
+ * ```text
+ * ojob(name, argsJSSLON)
+ * sh(command, stdin), sh_json(command, stdin), sh_jsslon(command, stdin), sh_yaml(command, stdin)
+ * ```
+ *
+ * Custom functions:
+ *
+ * ```javascript
+ * $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });
+ * ```
+ * ]]>
  * </odoc>
  */
 const $path = function(aObj, aPath, customFunctions) {
@@ -6358,24 +6461,28 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>parallel4Array(anArray, aFunction, numThreads, aControlMap, options) : Object</key>
- * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFunction(aValue)
- * will be executed for each value in sequence. An array with all the aFunction results will be returned. If no numThreads is 
- * provided, the number of threads will be automatically determined. Optionally you can provide a empty map as aControlMap
- * that it will be filled with aControlMap.__threads with the threads object, the aControlMap.__numThreads for the number of
- * threads in use and a thread __uuid list. Example:\
- * \
- * var count = 0;\
- * var ctrl = {};\
- * var res = parallel4Array(thingsToProcess,\
- *    function(aValue) {\
- *       ctrl.__threads.sync(function() { count++; }) // Sync access to a shared variable\
- *       return processValue(aValue);\
- *    },\
- *    undefined,\
- *    ctrl\
- * );\
+ * <![CDATA[
+ * Given `anArray`, divides it in subsets for processing in a specific number of threads. In each thread `aFunction(aValue)`
+ * will be executed for each value in sequence. An array with all the `aFunction` results will be returned. If no `numThreads` is
+ * provided, the number of threads will be automatically determined. Optionally you can provide a empty map as `aControlMap`
+ * that it will be filled with `aControlMap.__threads` with the threads object, the `aControlMap.__numThreads` for the number of
+ * threads in use and a thread `__uuid` list. Example:
+ *
+ * ```javascript
+ * var count = 0;
+ * var ctrl = {};
+ * var res = parallel4Array(thingsToProcess,
+ *    function(aValue) {
+ *       ctrl.__threads.sync(function() { count++; }) // Sync access to a shared variable
+ *       return processValue(aValue);
+ *    },
+ *    undefined,
+ *    ctrl
+ * );
+ * ```
+ * ]]>
  * </odoc>
  */
 var __gpuDelegateLoading = false
@@ -6417,29 +6524,33 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads, op
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>pForEach(anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) : Array</key>
- * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
- * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
- * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true the
- * sequential execution will be forced. aTimeoutMs, if provided, overrides __flags.PFOREACH.wait_timeout_ms as the overall
+ * <![CDATA[
+ * Given `anArray`, divides it in subsets for processing in a specific number of threads. In each thread `aFn(aValue, index)`
+ * will be executed for each value in sequence. The results of each `aFn` will be returned in the same order as the original
+ * array. If an error occurs during the execution of `aFn`, `aErrFn` will be called with the error. If `aUseSeq` is true the
+ * sequential execution will be forced. `aTimeoutMs`, if provided, overrides `__flags.PFOREACH.wait_timeout_ms` as the overall
  * deadline, in milliseconds, from parallel dispatch through queue-pressure and completion waits. If neither is a positive
  * number (the default) pForEach waits for all partitions to complete.
  * Sequential callbacks remain synchronous and are not interrupted by this deadline. On timeout the still-pending partitions
- * (and their pool worker threads) are cancelled, aErrFn is called with a "pForEach: N of M partitions timed out"
+ * (and their pool worker threads) are cancelled, `aErrFn` is called with a "pForEach: N of M partitions timed out"
  * diagnostic and whatever results were collected so far are returned (missing entries come back as arrays of __, so the
- * returned array keeps the same length and order as anArray).\
- * \
- * Example:\
- * \
- * var res = pForEach(thingsToProcess,\
- *   function(aValue, index) {\
- *     return processValue(aValue)\
- *   },\
- *   function(e) {\
- *     printErr(e)\
+ * returned array keeps the same length and order as `anArray`).
+ *
+ * Example:
+ *
+ * ```javascript
+ * var res = pForEach(thingsToProcess,
+ *   function(aValue, index) {
+ *     return processValue(aValue)
+ *   },
+ *   function(e) {
+ *     printErr(e)
  *   }
- * )\
+ * )
+ * ```
+ * ]]>
  * </odoc>
  */
 // options: useGPU:false bypasses installed opack delegation; execution:"sequential"/"parallel"
@@ -7430,23 +7541,42 @@ OpenWrap.prototype.loadDesktop = function(options) {
   return ow.desktop;
 };
 
+/**
+ * <odoc>
+ * <key>ow.loadScreen(aOptions) : ow.screen</key>
+ * Loads the OpenWrap Screen TUI and terminal styling/layout library.
+ * Provides full UTF-8/Unicode measurement, 16/256/truecolor ANSI and hex/RGB styling,
+ * bold/italic/underline/faint/strikethrough/reverse attributes, left/center/right alignment,
+ * spacing, box-drawing panels, and interactive terminal views (integrating with ow.desktop TUI).
+ * </odoc>
+ */
+OpenWrap.prototype.loadScreen = function(options) {
+  loadCompiledLib("owrap_screen_js");
+  if (isUnDef(ow.screen)) ow.screen = new OpenWrap.screen(options);
+  else if (isDef(options)) ow.screen.configure(options);
+  return ow.screen;
+};
+
 var ow = new OpenWrap()
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>loadHandlebars()</key>
- * Loads the Handlebars javascript library into scope. Example:\
- * \
- * loadHandlebards();\
- * var source = "&lt;m&gt;{{#each lines}}\t&lt;s name=\"{{key}}\"&gt;{{value}}&lt;/s&gt;\n{{/each}}\n&lt;/m&gt;";\
- * var data = { "lines": [ { "name": "n1", "value": "v1" }, { "name": "n2", "value": "v2" } ] };\
- * var template = Handlebars.compile(source);\
- * print(template(data));\
- * data.lines.push({"name": "n3", "value": "v3"});\
- * print(template(data));\
- * \
- * See more documentation in: http://handlebarsjs.com/\
- * \
+ * <![CDATA[
+ * Loads the Handlebars javascript library into scope. Example:
+ *
+ * ```javascript
+ * loadHandlebars();
+ * var source = "<m>{{#each lines}}\t<s name=\"{{key}}\">{{value}}</s>\n{{/each}}\n</m>";
+ * var data = { "lines": [ { "name": "n1", "value": "v1" }, { "name": "n2", "value": "v2" } ] };
+ * var template = Handlebars.compile(source);
+ * print(template(data));
+ * data.lines.push({"name": "n3", "value": "v3"});
+ * print(template(data));
+ * ```
+ *
+ * See more documentation in: http://handlebarsjs.com/
+ * ]]>
  * </odoc>
  */
 const loadHandlebars = function() {
@@ -7455,11 +7585,13 @@ const loadHandlebars = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>loadUnderscore()</key>
- * Loads the Underscore javascript library into scope (using the loadash alternative).\
- * \
+ * <![CDATA[
+ * Loads the Underscore javascript library into scope (using the Lodash alternative).
+ *
  * See more in: http://underscorejs.org and https://lodash.com/docs
+ * ]]>
  * </odoc>
  */
 const loadUnderscore = function() {
@@ -7474,11 +7606,13 @@ const loadUnderscore = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>loadFuse()</key>
- * Loads the FuseJS javascript library into scope.\
- * \
+ * <![CDATA[
+ * Loads the FuseJS javascript library into scope.
+ *
  * See more in: http://fusejs.io/
+ * ]]>
  * </odoc>
  */
 const loadFuse = function() {
@@ -7511,11 +7645,13 @@ const loadAjv = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>loadLodash()</key>
- * Loads the loadash javascript library.\
- * \
+ * <![CDATA[
+ * Loads the Lodash javascript library.
+ *
  * See more in https://lodash.com/docs
+ * ]]>
  * </odoc>
  */
 const loadLodash = function() {
@@ -8363,15 +8499,18 @@ const getFromZip = function(aZipFile, aResource, isBy, encoding, notInMemory) {
 // }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>newJavaArray(aJavaClass, aSize) : JavaArrayClass</key>
- * Creates a new Java Array object for the aJavaClass type for a provided aSize.\
- * \
- * Examples:\
- * \
- * newJavaArray(java.lang.String, 5);\
- * newJavaArray(java.lang.Integer.TYPE, 2);\
- * \
+ * <![CDATA[
+ * Creates a new Java Array object for the `aJavaClass` type for a provided `aSize`.
+ *
+ * Examples:
+ *
+ * ```javascript
+ * newJavaArray(java.lang.String, 5);
+ * newJavaArray(java.lang.Integer.TYPE, 2);
+ * ```
+ * ]]>
  * </odoc>
  */
 const newJavaArray = function(aJavaClass, aSize) {
@@ -8431,15 +8570,18 @@ const threadBox = function(aFunction, aTimeout, aStopFunction) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$tb(aFunction) : Result</key>
- * Shorcut for a "thread-box" to execute aFunction. The "thread" will timeout with the provided execution timeout (in ms)
- * or stop whenever the stopWhen function returns true (called continuously or after each timeout). Examples:\
- * \
- *    $tb().timeout(5000).exec(aFunc);  // Executes aFunc to a maximum of 5 seconds. Afterwards the aFunc is stopped.\
- *    $tb(aFunc).timeout(5000).exec();  // Sames as previous, aFunc can be provided before or on exec.\
- *    $tb().timeout(500).stopWhen(aStopFunc).exec(); // Stops when aStopFunc is true.\
- * 
+ * <![CDATA[
+ * Shortcut for a "thread-box" to execute `aFunction`. The "thread" will timeout with the provided execution timeout (in ms)
+ * or stop whenever the stopWhen function returns true (called continuously or after each timeout). Examples:
+ *
+ * ```javascript
+ * $tb().timeout(5000).exec(aFunc);  // Executes aFunc to a maximum of 5 seconds. Afterwards the aFunc is stopped.
+ * $tb(aFunc).timeout(5000).exec();  // Sames as previous, aFunc can be provided before or on exec.
+ * $tb().timeout(500).stopWhen(aStopFunc).exec(); // Stops when aStopFunc is true.
+ * ```
+ * ]]>
  * </odoc>
  */
 const $tb = function(aFunction) {
@@ -9057,56 +9199,61 @@ const $rest = function(ops) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$jsonrpc(aOptions) : Map</key>
+ * <![CDATA[
  * Creates a JSON-RPC 2.0 client that can communicate with JSON-RPC servers over HTTP/HTTPS
- * or with local processes using stdio. The aOptions parameter is a map with the following
- * possible keys:\
- * \
- * - type (string): Connection type, either "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses (default: "stdio") or "dummy"\
- * - url (string): Required for remote servers - the endpoint URL\
- * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
- * - cmd (string|map|array): Required for stdio type - the command to execute or the map/array accepted by $sh\
- * - pwd (string): For stdio type - the working directory to use when executing cmd (default: the JSONRPC.cmd.defaultDir flag, if set)\
- * - envs (map): For stdio type - a map of environment variables to use when executing cmd. Note: by default these are merged over the current process environment (so secrets in the parent environment are inherited); set envsOnly to true to use only this map\
- * - envsOnly (boolean): For stdio type - when true the child process environment will be exactly the envs map instead of merging it with the current environment (default: false)\
- * - options (map): Additional options passed to $rest for remote connections\
- * - sse (boolean): When true, remote/http requests expect Server-Sent Events responses with JSON-RPC payloads in `data:` events\
- * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
- * - shared (boolean): Share connections between identical configurations (default: false)\
- * \
- * The returned client object provides these methods:\
- * \
- * - type(aType): Set the connection type\
- * - url(aURL): Set the URL and switch to remote type\
- * - sh(aCommand): Set the command and switch to stdio type\
- * - pwd(aPath): Set the working directory to use for stdio execution\
- * - envs(aMap): Set the environment variables map to use for stdio execution (merged with the current environment unless envsOnly is true)\
- * - exec(aMethod, aParams, aNotification): Execute a JSON-RPC method\
- * - destroy(): Stop the client and cleanup resources\
- * \
- * The exec method parameters:\
- * - aMethod (string): The JSON-RPC method name to call\
- * - aParams (map): Parameters object to send with the method call\
- * - aNotification (boolean): If true, sends a notification (no response expected)\
- * \
- * For method calls (aNotification=false), exec returns the result directly.\
- * For notifications (aNotification=true), exec returns undefined.\
- * \
- * Examples:\
- * \
- * // Remote JSON-RPC server\
- * var client = $jsonrpc({type: "remote", url: "http://api.example.com/rpc", debug: true});\
- * var result = client.exec("getUserInfo", {userId: 123});\
- * log("User info:", result);\
- * \
- * // Send notification (no response)\
- * client.exec("logEvent", {event: "user_login", userId: 123}, true);\
- * \
- * // Local process via stdio\
- * var localClient = $jsonrpc({cmd: "python3 my_rpc_server.py"});\
- * var data = localClient.exec("processData", {input: [1, 2, 3]});\
- * localClient.destroy();\
+ * or with local processes using stdio. The `aOptions` parameter is a map with the following
+ * possible keys:
+ *
+ * - `type` (string) : Connection type, either "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses (default: "stdio") or "dummy"
+ * - `url` (string) : Required for remote servers - the endpoint URL
+ * - `timeout` (number) : Timeout in milliseconds for operations (default: 60000)
+ * - `cmd` (string|map|array) : Required for stdio type - the command to execute or the map/array accepted by `$sh`
+ * - `pwd` (string) : For stdio type - the working directory to use when executing cmd (default: the JSONRPC.cmd.defaultDir flag, if set)
+ * - `envs` (map) : For stdio type - a map of environment variables to use when executing cmd. Note: by default these are merged over the current process environment (so secrets in the parent environment are inherited); set envsOnly to true to use only this map
+ * - `envsOnly` (boolean) : For stdio type - when true the child process environment will be exactly the envs map instead of merging it with the current environment (default: false)
+ * - `options` (map) : Additional options passed to `$rest` for remote connections
+ * - `sse` (boolean) : When true, remote/http requests expect Server-Sent Events responses with JSON-RPC payloads in `data:` events
+ * - `debug` (boolean) : Enable debug output showing JSON-RPC messages (default: false)
+ * - `shared` (boolean) : Share connections between identical configurations (default: false)
+ *
+ * The returned client object provides these methods:
+ *
+ * - `type(aType)`: Set the connection type
+ * - `url(aURL)`: Set the URL and switch to remote type
+ * - `sh(aCommand)`: Set the command and switch to stdio type
+ * - `pwd(aPath)`: Set the working directory to use for stdio execution
+ * - `envs(aMap)`: Set the environment variables map to use for stdio execution (merged with the current environment unless envsOnly is true)
+ * - `exec(aMethod, aParams, aNotification)`: Execute a JSON-RPC method
+ * - `destroy()`: Stop the client and cleanup resources
+ *
+ * The exec method parameters:
+ *
+ * - `aMethod` (string) : The JSON-RPC method name to call
+ * - `aParams` (map) : Parameters object to send with the method call
+ * - `aNotification` (boolean) : If true, sends a notification (no response expected)
+ *
+ * For method calls (`aNotification`=false), exec returns the result directly.
+ * For notifications (`aNotification`=true), exec returns undefined.
+ *
+ * Examples:
+ *
+ * ```javascript
+ * // Remote JSON-RPC server
+ * var client = $jsonrpc({type: "remote", url: "http://api.example.com/rpc", debug: true});
+ * var result = client.exec("getUserInfo", {userId: 123});
+ * log("User info:", result);
+ *
+ * // Send notification (no response)
+ * client.exec("logEvent", {event: "user_login", userId: 123}, true);
+ *
+ * // Local process via stdio
+ * var localClient = $jsonrpc({cmd: "python3 my_rpc_server.py"});
+ * var data = localClient.exec("processData", {input: [1, 2, 3]});
+ * localClient.destroy();
+ * ```
+ * ]]>
  * </odoc>
  */
 const $jsonrpc = function (aOptions) {
@@ -9705,169 +9852,175 @@ const $jsonrpc = function (aOptions) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$mcp(aOptions) : Map</key>
+ * <![CDATA[
  * Creates a Model Context Protocol (MCP) client that can communicate with LLM MCP servers
  * using JSON-RPC over stdio, remote connections, dummy mode, or oJob-based servers. This client speaks the legacy,
  * initialize-handshake-based MCP protocol eras by default (protocolVersion "2024-11-05" or "2025-06-18", selectable
- * via aOptions.protocolVersion, default "2025-06-18") and provides access to tools, prompts, and other MCP
+ * via `aOptions.protocolVersion`, default "2025-06-18") and provides access to tools, prompts, and other MCP
  * capabilities. It can optionally opt into the modern, stateless 2026-07-28+ protocol era by setting
- * aOptions.protocolVersion to "auto": this probes the server (server/discover on stdio, a modern request inspected
+ * `aOptions.protocolVersion` to "auto": this probes the server (server/discover on stdio, a modern request inspected
  * for a recognized error on HTTP) and negotiates the modern era when the server supports it, falling back to the
  * legacy initialize handshake otherwise -- existing callers that don't set "auto" are completely unaffected.
- * \
- * The aOptions parameter is a map with the following possible keys:\
- * \
- * - type (string): Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
- * - url (string): Required for remote servers - the MCP server endpoint URL\
- * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
- * - cmd (string|array): Required for stdio type - the command to launch the MCP server (an array is executed directly, without going through a shell)\
- * - pwd (string): For stdio type - the working directory to use when launching the MCP server\
- * - envs (map): For stdio type - a map of environment variables to use when launching the MCP server. Note: by default these are merged over the current process environment (so secrets in the parent environment are inherited); set envsOnly to true to use only this map\
- * - envsOnly (boolean): For stdio type - when true the MCP server environment will be exactly the envs map instead of merging it with the current environment (default: false)\
- * - options (map): Additional options:\
- *   - For remote/stdio: passed to underlying JSON-RPC client\
- *   - For dummy: { fns: map of function implementations, fnsMeta: map of function metadata }\
- *   - For ojob: { job: path to oJob file, args: arguments map, init: init entry/entries to run, fns: map of additional functions, fnsMeta: map of additional function metadata }\
- * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
- * - shared (boolean): Enable shared JSON-RPC connections when possible (default: false)\
- * - sse (boolean): When true, remote/http MCP requests expect Server-Sent Events responses carrying JSON-RPC payloads\
- * - strict (boolean): Enable strict MCP protocol compliance (default: true)\
- * - clientInfo (map): Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})\
- * - blacklist (array): Optional array of MCP tool names to hide from listTools() and block in callTool()\
- * - preFn (function): Function called before each tool execution with (toolName, toolArguments)\
- * - posFn (function): Function called after each tool execution with (toolName, toolArguments, result)\
- * - auth (map): Optional authentication options for remote/http type:\
- *   - type (string): "bearer" (static token) or "oauth2" (automatic token retrieval/refresh)\
- *   - token (string): Bearer token when type is "bearer"\
- *   - tokenType (string): Authorization scheme prefix (default: "Bearer")\
- *   - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow\
- *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata (the metadata issuer must match and discovered endpoints must use HTTPS unless they are loopback addresses or allowHTTP is true)\
- *   - interactive (boolean): false prohibits browser login and code prompts; omitted preserves existing behavior\
- *   - callback (boolean): opt-in loopback login through ow.server.httpd.oauth2 at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000\
- *   - tokenStore (map): opt-in {type: "sec", profile: "default"}; optional repo (default mcp-oauth2), bucket, key, file, lockSecret, mainSecret, lockTimeoutMs (60000). Or a synchronous custom load/save/clear/withLock store.\
- *   - sendResource (boolean): false omits the OAuth resource parameter; default true\
- *   - disableOpenBrowser (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)\
- * - authenticate() / getAuthStatus() / clearAuth(): authenticate, inspect non-secret status, or clear local tokens\
- * \
- * Type-specific details:\
- * \
- * "dummy" type: Creates a local testing MCP server without external processes.\
- * - Use options.fns to define tool implementations as functions\
- * - Use options.fnsMeta to define tool metadata (description, input schema)\
- * - Useful for development and testing without running actual MCP servers\
- * \
- * "ojob" type: Creates an MCP server based on oJob jobs as tools.\
- * - options.job (required): Path to the oJob file containing job definitions\
- * - options.args: Arguments to pass to the oJob\
- * - options.init: Init entry name(s) to execute on startup (string or array)\
- * - Jobs with fnsMeta property become MCP tools automatically\
- * - Job names become tool names (except "tools/list", "tools/call", "initialize", "notifications/initialized")\
- * - Combines oJob's job execution with MCP protocol\
- * \
- * The returned client object provides these methods:\
- * \
- * - type(aType): Set the connection type\
- * - url(aURL): Set the URL and switch to remote type\
- * - sh(aCommand): Set the command and switch to stdio type\
- * - initialize(clientInfo): Initialize the MCP connection and exchange capabilities\
- * - listTools(): Get list of available tools from the MCP server\
- * - callTool(toolName, toolArguments, toolOptions): Execute a specific tool with given arguments and optional per-call options\
- * - listPrompts(): Get list of available prompts from the MCP server\
- * - getPrompt(promptName, promptArguments): Get a specific prompt with given arguments\
- * - toGptTools(aGptInstance, aToolNames): Add MCP tools to a $gpt instance\
- * - exec(method, params): Low-level method to execute any MCP/JSON-RPC method\
- * - destroy(): Stop the client and cleanup resources\
- * \
- * Important: The initialize() method must be called before using listTools, callTool,\
- * listPrompts, or getPrompt methods. All methods return results synchronously (not promises).\
- * \
- * Examples:\
- * \
- * // Connect to local MCP server via stdio\
- * var client = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
- * client.initialize();\
- * var tools = client.listTools();\
- * log("Available tools:", tools.tools.map(t => t.name));\
- * \
- * var result = client.callTool("read_file", {path: "/tmp/example.txt"});\
- * log("File content:", result.content);\
- * \
- * // Connect to remote MCP server\
- * var remoteClient = $mcp({\
- *   type: "remote",\
- *   url: "http://localhost:8080/mcp",\
- *   clientInfo: {name: "MyApp", version: "2.0.0"}\
- * });\
- * remoteClient.initialize();\
- * // Optional per-call HTTP options (only used for remote/http MCP clients)\
- * var result2 = remoteClient.callTool("read_file", {path: "/tmp/example.txt"}, { requestHeaders: { Authorization: "Bearer ..." } });\
- * var prompts = remoteClient.listPrompts();\
- * \
- * // Remote MCP server with OAuth2 client credentials\
- * var oauthClient = $mcp({\
- *   type: "remote",\
- *   url: "https://example.com/mcp",\
- *   auth: {\
- *     type: "oauth2",\
- *     tokenURL: "https://example.com/oauth/token",\
- *     clientId: "my-client",\
- *     clientSecret: "my-secret",\
- *     scope: "mcp:read mcp:write"\
- *   }\
- * });\
- * oauthClient.initialize();\
- * \
- * // OAuth2 authorization_code flow (opens browser by default)\
- * var oauthCodeClient = $mcp({\
- *   type: "remote",\
- *   url: "https://example.com/mcp",\
- *   auth: {\
- *     type: "oauth2",\
- *     grantType: "authorization_code",\
- *     authURL: "https://example.com/oauth/authorize",\
- *     tokenURL: "https://example.com/oauth/token",\
- *     redirectURI: "http://localhost/callback",\
- *     clientId: "my-client",\
- *     clientSecret: "my-secret",\
- *     disableOpenBrowser: false\
- *   }\
- * });\
- * \
- * // Dummy mode for testing\
- * var dummyClient = $mcp({\
- *   type: "dummy",\
- *   options: {\
- *     fns: {\
- *       "test_tool": (params) => ({ result: "test" })\
- *     },\
- *     fnsMeta: {\
- *       "test_tool": {\
- *         description: "A test tool",\
- *         inputSchema: { type: "object", properties: {} }\
- *       }\
- *     }\
- *   }\
- * });\
- * dummyClient.initialize();\
- * dummyClient.callTool("test_tool", {});\
- * \
- * // oJob-based MCP server\
- * var ojobClient = $mcp({\
- *   type: "ojob",\
- *   options: {\
- *     job: "mytools.yaml",\
- *     args: { env: "prod" },\
- *     init: "setup"\
- *   }\
- * });\
- * ojobClient.initialize();\
- * var jobTools = ojobClient.listTools();\
- * \
- * client.destroy();\
- * remoteClient.destroy();\
- * dummyClient.destroy();\
- * ojobClient.destroy();\
+ *
+ * The `aOptions` parameter is a map with the following possible keys:
+ *
+ * - `type` (string) : Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")
+ * - `url` (string) : Required for remote servers - the MCP server endpoint URL
+ * - `timeout` (number) : Timeout in milliseconds for operations (default: 60000)
+ * - `cmd` (string|array) : Required for stdio type - the command to launch the MCP server (an array is executed directly, without going through a shell)
+ * - `pwd` (string) : For stdio type - the working directory to use when launching the MCP server
+ * - `envs` (map) : For stdio type - a map of environment variables to use when launching the MCP server. Note: by default these are merged over the current process environment (so secrets in the parent environment are inherited); set envsOnly to true to use only this map
+ * - `envsOnly` (boolean) : For stdio type - when true the MCP server environment will be exactly the envs map instead of merging it with the current environment (default: false)
+ * - `options` (map) : Additional options:
+ *   - For remote/stdio: passed to underlying JSON-RPC client
+ * - For dummy: { fns: map of function implementations, fnsMeta: map of function metadata }
+ *   - For ojob: { job: path to oJob file, args: arguments map, init: init entry/entries to run, fns: map of additional functions, fnsMeta: map of additional function metadata }
+ * - `debug` (boolean) : Enable debug output showing JSON-RPC messages (default: false)
+ * - `shared` (boolean) : Enable shared JSON-RPC connections when possible (default: false)
+ * - `sse` (boolean) : When true, remote/http MCP requests expect Server-Sent Events responses carrying JSON-RPC payloads
+ * - `strict` (boolean) : Enable strict MCP protocol compliance (default: true)
+ * - `clientInfo` (map) : Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})
+ * - `blacklist` (array) : Optional array of MCP tool names to hide from listTools() and block in callTool()
+ * - `preFn` (function) : Function called before each tool execution with (toolName, toolArguments)
+ * - `posFn` (function) : Function called after each tool execution with (toolName, toolArguments, result)
+ * - `auth` (map) : Optional authentication options for remote/http type:
+ *   - `type` (string): "bearer" (static token) or "oauth2" (automatic token retrieval/refresh)
+ * - `token` (string): Bearer token when type is "bearer"
+ *   - `tokenType` (string): Authorization scheme prefix (default: "Bearer")
+ * - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow
+ *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata (the metadata issuer must match and discovered endpoints must use HTTPS unless they are loopback addresses or allowHTTP is true)
+ * - `interactive` (boolean): false prohibits browser login and code prompts; omitted preserves existing behavior
+ *   - `callback` (boolean): opt-in loopback login through `ow.server.httpd.oauth2` at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000
+ * - `tokenStore` (map): opt-in {type: "sec", profile: "default"}; optional repo (default mcp-oauth2), bucket, key, file, lockSecret, mainSecret, lockTimeoutMs (60000). Or a synchronous custom load/save/clear/withLock store.
+ *   - `sendResource` (boolean): false omits the OAuth resource parameter; default true
+ * - `disableOpenBrowser` (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)
+ * - authenticate() / getAuthStatus() / clearAuth(): authenticate, inspect non-secret status, or clear local tokens
+ *
+ * Type-specific details:
+ *
+ * "dummy" type: Creates a local testing MCP server without external processes.
+ *
+ * - Use options.fns to define tool implementations as functions
+ * - Use options.fnsMeta to define tool metadata (description, input schema)
+ * - Useful for development and testing without running actual MCP servers
+ *
+ * "ojob" type: Creates an MCP server based on oJob jobs as tools.
+ *
+ * - `options.job` (required) : Path to the oJob file containing job definitions
+ * - `options.args`: Arguments to pass to the oJob
+ * - `options.init`: Init entry name(s) to execute on startup (string or array)
+ * - Jobs with fnsMeta property become MCP tools automatically
+ * - Job names become tool names (except "tools/list", "tools/call", "initialize", "notifications/initialized")
+ * - Combines oJob's job execution with MCP protocol
+ *
+ * The returned client object provides these methods:
+ *
+ * - `type(aType)`: Set the connection type
+ * - `url(aURL)`: Set the URL and switch to remote type
+ * - `sh(aCommand)`: Set the command and switch to stdio type
+ * - `initialize(clientInfo)`: Initialize the MCP connection and exchange capabilities
+ * - `listTools()`: Get list of available tools from the MCP server
+ * - `callTool(toolName, toolArguments, toolOptions)`: Execute a specific tool with given arguments and optional per-call options
+ * - `listPrompts()`: Get list of available prompts from the MCP server
+ * - `getPrompt(promptName, promptArguments)`: Get a specific prompt with given arguments
+ * - `toGptTools(aGptInstance, aToolNames)`: Add MCP tools to a `$gpt` instance
+ * - `exec(method, params)`: Low-level method to execute any MCP/JSON-RPC method
+ * - `destroy()`: Stop the client and cleanup resources
+ *
+ * Important: The initialize() method must be called before using listTools, callTool,
+ * listPrompts, or getPrompt methods. All methods return results synchronously (not promises).
+ *
+ * Examples:
+ *
+ * ```javascript
+ * // Connect to local MCP server via stdio
+ * var client = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});
+ * client.initialize();
+ * var tools = client.listTools();
+ * log("Available tools:", tools.tools.map(t => t.name));
+ *
+ * var result = client.callTool("read_file", {path: "/tmp/example.txt"});
+ * log("File content:", result.content);
+ *
+ * // Connect to remote MCP server
+ * var remoteClient = $mcp({
+ *   type: "remote",
+ *   url: "http://localhost:8080/mcp",
+ *   clientInfo: {name: "MyApp", version: "2.0.0"}
+ * });
+ * remoteClient.initialize();
+ * // Optional per-call HTTP options (only used for remote/http MCP clients)
+ * var result2 = remoteClient.callTool("read_file", {path: "/tmp/example.txt"}, { requestHeaders: { Authorization: "Bearer ..." } });
+ * var prompts = remoteClient.listPrompts();
+ *
+ * // Remote MCP server with OAuth2 client credentials
+ * var oauthClient = $mcp({
+ *   type: "remote",
+ *   url: "https://example.com/mcp",
+ *   auth: {
+ *     type: "oauth2",
+ *     tokenURL: "https://example.com/oauth/token",
+ *     clientId: "my-client",
+ *     clientSecret: "my-secret",
+ *     scope: "mcp:read mcp:write"
+ *   }
+ * });
+ * oauthClient.initialize();
+ *
+ * // OAuth2 authorization_code flow (opens browser by default)
+ * var oauthCodeClient = $mcp({
+ *   type: "remote",
+ *   url: "https://example.com/mcp",
+ *   auth: {
+ *     type: "oauth2",
+ *     grantType: "authorization_code",
+ *     authURL: "https://example.com/oauth/authorize",
+ *     tokenURL: "https://example.com/oauth/token",
+ *     redirectURI: "http://localhost/callback",
+ *     clientId: "my-client",
+ *     clientSecret: "my-secret",
+ *     disableOpenBrowser: false
+ *   }
+ * });
+ *
+ * // Dummy mode for testing
+ * var dummyClient = $mcp({
+ *   type: "dummy",
+ *   options: {
+ *     fns: {
+ *       "test_tool": (params) => ({ result: "test" })
+ *     },
+ *     fnsMeta: {
+ *       "test_tool": {
+ *         description: "A test tool",
+ *         inputSchema: { type: "object", properties: {} }
+ *       }
+ *     }
+ *   }
+ * });
+ * dummyClient.initialize();
+ * dummyClient.callTool("test_tool", {});
+ *
+ * // oJob-based MCP server
+ * var ojobClient = $mcp({
+ *   type: "ojob",
+ *   options: {
+ *     job: "mytools.yaml",
+ *     args: { env: "prod" },
+ *     init: "setup"
+ *   }
+ * });
+ * ojobClient.initialize();
+ * var jobTools = ojobClient.listTools();
+ *
+ * client.destroy();
+ * remoteClient.destroy();
+ * dummyClient.destroy();
+ * ojobClient.destroy();
+ * ```
+ * ]]>
  * </odoc>
  */
 const $mcp = function(aOptions) {
@@ -10811,18 +10964,22 @@ const $mcp = function(aOptions) {
 			})
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$mcp.listAgents() : Map</key>
-		 * Lists all available A2A agents from the MCP server.\
-		 * Returns a map with an 'agents' array containing agent metadata (id, name, title, version, tags, capabilities).\
-			return _buildSyntheticInitializeResult(aOptions.options)
-		 * \
-		 * Example:\
-		 * \
-		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});\
-		 * client.initialize();\
-		 * var agents = client.listAgents();\
+		 * <![CDATA[
+		 * Lists all available A2A agents from the MCP server.
+		 * Returns a map with an 'agents' array containing agent metadata (id, name, title, version, tags, capabilities).
+		 * return _buildSyntheticInitializeResult(`aOptions.options`)
+		 *
+		 * Example:
+		 *
+		 * ```javascript
+		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});
+		 * client.initialize();
+		 * var agents = client.listAgents();
 		 * print(agents.agents);
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		listAgents: () => {
@@ -10832,19 +10989,23 @@ const $mcp = function(aOptions) {
 			return _execWithAuth("agents/list", {})
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$mcp.getAgent(agentId) : Map</key>
-		 * Retrieves metadata for a specific A2A agent by ID.\
-		 * Returns the agent's metadata map (id, name, title, version, tags, capabilities).\
-		 * Throws an error if the agent is not found.\
-		 * Must call initialize() first.\
-		 * \
-		 * Example:\
-		 * \
-		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});\
-		 * client.initialize();\
-		 * var agent = client.getAgent("weather-agent");\
+		 * <![CDATA[
+		 * Retrieves metadata for a specific A2A agent by ID.
+		 * Returns the agent's metadata map (id, name, title, version, tags, capabilities).
+		 * Throws an error if the agent is not found.
+		 * Must call initialize() first.
+		 *
+		 * Example:
+		 *
+		 * ```javascript
+		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});
+		 * client.initialize();
+		 * var agent = client.getAgent("weather-agent");
 		 * print(agent);
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		getAgent: (agentId) => {
@@ -10855,25 +11016,29 @@ const $mcp = function(aOptions) {
 			return _execWithAuth("agents/get", { id: agentId })
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$mcp.sendToAgent(agentId, message, options) : Map</key>
-		 * Sends a message to the specified A2A agent and returns the response.\
-		 * \
-		 * agentId: String identifier of the target agent\
-		 * message: String or Map containing the message content\
-		 * options: Optional map with request options\
-		 * \
-		 * Returns MCP-style response: { content: [{type: "text", text: "..."}], isError: false }\
-		 * \
-		 * Supports preFn and posFn hooks if configured in the MCP client options.\
-		 * Must call initialize() first.\
-		 * \
-		 * Example:\
-		 * \
-		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});\
-		 * client.initialize();\
-		 * var response = client.sendToAgent("echo-agent", "Hello World");\
+		 * <![CDATA[
+		 * Sends a `message` to the specified A2A agent and returns the response.
+		 *
+		 * - `agentId`: String identifier of the target agent
+		 * - `message`: String or Map containing the `message` content
+		 * - `options`: Optional map with request `options`
+		 *
+		 * Returns MCP-style response: `{ content: [{type: "text", text: "..."}], isError: false }`
+		 *
+		 * Supports preFn and posFn hooks if configured in the MCP client `options`.
+		 * Must call initialize() first.
+		 *
+		 * Example:
+		 *
+		 * ```javascript
+		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});
+		 * client.initialize();
+		 * var response = client.sendToAgent("echo-agent", "Hello World");
 		 * print(response.content[0].text);
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		sendToAgent: (agentId, message, options) => {
@@ -10902,22 +11067,26 @@ const $mcp = function(aOptions) {
 			return result
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$mcp.toGptTools(aGptInstance, aToolNames) : $mcp</key>
-		 * Automatically adds this MCP client's tools to a $gpt instance using the $gpt.withTool method.
-		 * The aGptInstance should be an initialized $gpt object. If aToolNames is provided (array of strings),
+		 * <![CDATA[
+		 * Automatically adds this MCP client's tools to a `$gpt` instance using the `$gpt.withTool` method.
+		 * The `aGptInstance` should be an initialized `$gpt` object. If `aToolNames` is provided (array of strings),
 		 * only those specific tools will be added. Otherwise, all available tools are added.
 		 * Each MCP tool will be converted to a GPT-compatible tool using the MCP tool's JSON schema.
-		 * \
-		 * Example:\
-		 * \
-		 * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
-		 * mcpClient.initialize();\
-		 * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
-		 * mcpClient.toGptTools(gpt); // Adds all MCP tools to GPT\
-		 * // or mcpClient.toGptTools(gpt, ["read_file", "write_file"]); // Adds only specific tools\
-		 * \
-		 * var response = gpt.prompt("Read the file /tmp/example.txt");\
+		 *
+		 * Example:
+		 *
+		 * ```javascript
+		 * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});
+		 * mcpClient.initialize();
+		 * var gpt = $gpt({type: "openai", options: {key: "your-key"}});
+		 * mcpClient.toGptTools(gpt); // Adds all MCP tools to GPT
+		 * // or mcpClient.toGptTools(gpt, ["read_file", "write_file"]); // Adds only specific tools
+		 *
+		 * var response = gpt.prompt("Read the file /tmp/example.txt");
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		toGptTools: (aGptInstance, aToolNames) => {
@@ -10989,27 +11158,30 @@ const $mcp = function(aOptions) {
 }
  
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$fetch(aURL, aOptions) : oPromise</key>
- * Tries to fetch aURL using the provided aOptions (a map with the following possible keys: method, body, headers, requestHeaders, downloadResume,
+ * <![CDATA[
+ * Tries to fetch `aURL` using the provided `aOptions` (a map with the following possible keys: method, body, headers, requestHeaders, downloadResume,
  * connectionTimeout, uriQuery, urlEncode, login, pass, httpClient and retry). The method will return a promise that will resolve to a response object
- * with the following methods: body, bodyUsed, headers, ok, status, json, bytes, blob and text. Example:\
- * \
- * var response = $fetch("https://httpbin.org/post", { method: "POST", body: { a: 1, b: 2 }, headers: { "Content-Type": "application/json" } });\
- * response.then(function(aResponse) { print(aResponse.status); });\
- * \
- * The response object will have the following methods:\
- * \
- * - body() : returns a Java InputStream with the response body\
- * - bodyUsed : returns true if the body was already read\
- * - headers : returns a map with the response headers\
- * - ok : returns true if the response status is between 200 and 299\
- * - status : returns the response status\
- * - json() : returns the response body as a JSON object\
- * - bytes() : returns the response body as a byte array\
- * - blob() : returns the response body as a byte array\
- * - text() : returns the response body as a string\
- * \
+ * with the following methods: body, bodyUsed, headers, ok, status, json, bytes, blob and text. Example:
+ *
+ * ```javascript
+ * var response = $fetch("https://httpbin.org/post", { method: "POST", body: { a: 1, b: 2 }, headers: { "Content-Type": "application/json" } });
+ * response.then(function(aResponse) { print(aResponse.status); });
+ * ```
+ *
+ * The response object will have the following methods:
+ *
+ * - `body()`: returns a Java InputStream with the response body
+ * - `bodyUsed`: returns true if the body was already read
+ * - `headers`: returns a map with the response headers
+ * - `ok`: returns true if the response status is between 200 and 299
+ * - `status`: returns the response status
+ * - `json()`: returns the response body as a JSON object
+ * - `bytes()`: returns the response body as a byte array
+ * - `blob()`: returns the response body as a byte array
+ * - `text()`: returns the response body as a string
+ * ]]>
  * </odoc>
  */
 const $fetch = function(aURL, aOptions) {
@@ -11168,25 +11340,29 @@ __$f = {
 	//locale: java.util.Locale.US
 }
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$f(aString, arg1, arg2, ...) : String</key>
- * Formats aString with arg1, arg2 and any other arguments provided using java.util.Formatter. The format is composed
+ * <![CDATA[
+ * Formats `aString` with `arg1`, `arg2` and any other arguments provided using java.util.Formatter. The format is composed
  * of "%[argument_index$][flags][width][.precision]conversion". Do note that javascript numbers are converted to java.lang.Float. If you
- * need it to convert to Integer, Long, Double, Float and BigDecimal please use $ft. The javascript Date type will be converted to java Calendar.
- * So possible values:\
- * \
- *    argument_index: number\
- *    flags         : '-' (left-justified); '#'; '+' (include sign); ' ' (leading space); '0' (zero-padded); ',' (separators); '(' (enclose negative values)\
- *    conversion    : b/B (boolean), h/H (hash), s/S (string), "-" (left justify), c/C (character)\
- * \
- * Examples:\
- * \
- *    $f("Time %tT", new Date())\
- *    $f("Date: %1$tm %1te, %1tY %1$tT", new Date())\
- * \
- *    $f("%.2f", 1.9)\
- *    $f("%10.2f", 1.9)\
- * \
+ * need it to convert to Integer, Long, Double, Float and BigDecimal please use `$ft`. The javascript Date type will be converted to java Calendar.
+ * So possible values:
+ *
+ * argument_index: number
+ *
+ * - `flags`: '-' (left-justified); '#'; '+' (include sign); ' ' (leading space); '0' (zero-padded); ',' (separators); '(' (enclose negative values)
+ * - `conversion`: b/B (boolean), h/H (hash), s/S (string), "-" (left justify), c/C (character)
+ *
+ * Examples:
+ *
+ * ```javascript
+ * $f("Time %tT", new Date())
+ * $f("Date: %1$tm %1te, %1tY %1$tT", new Date())
+ *
+ * $f("%.2f", 1.9)
+ * $f("%10.2f", 1.9)
+ * ```
+ * ]]>
  * </odoc>
  */
 const $f = function() {
@@ -11284,17 +11460,20 @@ const $bottleneck = function(aName, aFn) {
 	};
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>$bottleneck.exec(args) : Object</key>
-	 * Creates a bottleneck aName to execute aFunction with the provided args. Returns what the function returns:\
-	 * \
-	 * $bottleneck("myFunc", (a, b) => { ... return result; })\
-	 * .maxExec(3)\
-	 * .maxWait(5000)\
-	 * .exec(2, 4);\
-	 * \
-	 * $bottleneck("myFunc").exec(2, 2);\
-	 * \
+	 * <![CDATA[
+	 * Creates a bottleneck `aName` to execute `aFunction` with the provided `args`. Returns what the function returns:
+	 *
+	 * ```javascript
+	 * $bottleneck("myFunc", (a, b) => { ... return result; })
+	 * .maxExec(3)
+	 * .maxWait(5000)
+	 * .exec(2, 4);
+	 *
+	 * $bottleneck("myFunc").exec(2, 2);
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	__b.prototype.exec = function(args) {
@@ -11428,19 +11607,22 @@ const $cache = function(aName) {
 		return this
 	}
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>$cache.get(aKey) : Object</key>
-	 * Shortcut to use a cache channel. Returns an object that can be used like this:\
-	 * \
-	 * $cache("numbers")\
-	 * .ttl(30000)\
-	 * .fn((aKey) => { ... return result; })\
-	 * .create()\
-	 * \
-	 * $cache("numbers").get(myKey);\
-	 * \
-	 * $cache("numbers").destroy();\
-	 * \
+	 * <![CDATA[
+	 * Shortcut to use a cache channel. Returns an object that can be used like this:
+	 *
+	 * ```javascript
+	 * $cache("numbers")
+	 * .ttl(30000)
+	 * .fn((aKey) => { ... return result; })
+	 * .create()
+	 *
+	 * $cache("numbers").get(myKey);
+	 *
+	 * $cache("numbers").destroy();
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	__c.prototype.get    = function(aK) {
@@ -11512,18 +11694,22 @@ const $cache = function(aName) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$sync() : Object</key>
- * Returns an object with a 'run(aFn)' function that will execute the provided aFn in a synchronized way.
- * The run function will lock the execution until the aFn is finished. This is useful to
- * ensure that only one thread is executing the aFn at a time.\
- * \
- * Example:\
- * \
- * var s = $sync()\
- * s.run(() => {\
- *     // Your code here, only one thread will execute this at a time\
+ * <![CDATA[
+ * Returns an object with a 'run(`aFn`)' function that will execute the provided `aFn` in a synchronized way.
+ * The run function will lock the execution until the `aFn` is finished. This is useful to
+ * ensure that only one thread is executing the `aFn` at a time.
+ *
+ * Example:
+ *
+ * ```javascript
+ * var s = $sync()
+ * s.run(() => {
+ *     // Your code here, only one thread will execute this at a time
  * })
+ * ```
+ * ]]>
  * </odoc>
  */
 function $sync() {
@@ -11544,21 +11730,24 @@ function $sync() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$queue(anArray) : Object</key>
- * Returns an object with the following methods:\
- * - add(aItem) : adds aItem to the queue and returns true if successful\
- * - remove(aItem) : removes aItem from the queue and returns true if successful\
- * - addAll(aItems) : adds all aItems to the queue and returns true if successful\
- * - has(aItem) : returns true if aItem is in the queue\
- * - isEmpty() : returns true if the queue is empty\
- * - size() : returns the size of the queue\
- * - toArray() : returns the queue as an array\
- * - peek() : returns the first item in the queue without removing it\
- * - poll() : returns the first item in the queue and removes it\
- * 
- * The queue is implemented using a java.util.concurrent.ConcurrentLinkedQueue, which is thread-safe and allows concurrent access.\
- * If anArray is provided, it will be added to the queue using addAll.
+ * <![CDATA[
+ * Returns an object with the following methods:
+ *
+ * - `add(aItem)`: adds `aItem` to the queue and returns true if successful
+ * - `remove(aItem)`: removes `aItem` from the queue and returns true if successful
+ * - `addAll(aItems)`: adds all `aItems` to the queue and returns true if successful
+ * - `has(aItem)`: returns true if `aItem` is in the queue
+ * - `isEmpty()`: returns true if the queue is empty
+ * - `size()`: returns the size of the queue
+ * - `toArray()`: returns the queue as an array
+ * - `peek()`: returns the first item in the queue without removing it
+ * - `poll()`: returns the first item in the queue and removes it
+ *
+ * The queue is implemented using a java.util.concurrent.ConcurrentLinkedQueue, which is thread-safe and allows concurrent access.
+ * If `anArray` is provided, it will be added to the queue using addAll.
+ * ]]>
  * </odoc>
  */
 const $queue = function(anArray) {
@@ -11603,18 +11792,21 @@ if (isUnDef(alert)) alert = function(msg) {
 
 var __timeout = {};
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>setTimeout(aFunction, aPeriod)</key>
- * Tries to execute aFunction after aPeriod milliseconds. Note: this function will block the
- * main thread, so use it with caution. If you need to execute aFunction in a different thread and avoid blocking the main thread, please use setInterval with a clearInterval after the first execution.
- * \
- * Example:\
- * \
- * setTimeout(() => { print("Hello after 2 seconds"); }, 2000);\
- * \
- * // or using setInterval to avoid blocking the main thread\
- * var id = setInterval(() => { print("Hello after 2 seconds"); clearInterval(id); }, 2000);\
- * \
+ * <![CDATA[
+ * Tries to execute `aFunction` after `aPeriod` milliseconds. Note: this function will block the
+ * main thread, so use it with caution. If you need to execute `aFunction` in a different thread and avoid blocking the main thread, please use setInterval with a clearInterval after the first execution.
+ *
+ * Example:
+ *
+ * ```javascript
+ * setTimeout(() => { print("Hello after 2 seconds"); }, 2000);
+ *
+ * // or using setInterval to avoid blocking the main thread
+ * var id = setInterval(() => { print("Hello after 2 seconds"); clearInterval(id); }, 2000);
+ * ```
+ * ]]>
  * </odoc>
  */
 const setTimeout = function(aFunction, aPeriod) {
@@ -11877,18 +12069,21 @@ const loadTOON = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>loadOAFP()</key>
- * Loads the OpenAF processor that can be used with the function oafp. Example:\
- * \
- * # Thread unsafe example\
- * oafp({ data: "(abc: 123, xyz: 456)", out: "pm" })\
- * sprint(__pm._map)\
- * \
- * # Thread safe example\
- * oafp({ data: "(abc: 123, xyz: 456)", out: "key", __key: "myresult" })\
- * sprint($get("myresult"))\
- * \
+ * <![CDATA[
+ * Loads the OpenAF processor that can be used with the function oafp. Example:
+ *
+ * ```javascript
+ * // Thread unsafe example
+ * oafp({ data: "(abc: 123, xyz: 456)", out: "pm" })
+ * sprint(__pm._map)
+ *
+ * // Thread safe example
+ * oafp({ data: "(abc: 123, xyz: 456)", out: "key", __key: "myresult" })
+ * sprint($get("myresult"))
+ * ```
+ * ]]>
  * </odoc>
  */
 const loadOAFP = function() {
@@ -11964,15 +12159,19 @@ const newFn = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>af.runFromExternalClass(aClassName, aPath)</key>
- * Tries to "execute" aClassName from a previously compiled OpenAF script, with af.compileToClasses, on aPath.\
- * \
- * Example:\
- *    af.compileToClasses("MyClass", "var myOpen = 'AF Class'", ".");\
- *    af.runFromExternalClass("MyClass", ".");\
- *    myOpen; // AF Class\
- * \
+ * <![CDATA[
+ * Tries to "execute" `aClassName` from a previously compiled OpenAF script, with `af.compileToClasses`, on `aPath`.
+ *
+ * Example:
+ *
+ * ```javascript
+ * af.compileToClasses("MyClass", "var myOpen = 'AF Class'", ".");
+ * af.runFromExternalClass("MyClass", ".");
+ * myOpen; // AF Class
+ * ```
+ * ]]>
  * </odoc>
  */
 AF.prototype.runFromExternalClass = function(aClass, aPath) {
@@ -12398,13 +12597,16 @@ IO.prototype.writeFileTOML = function(aFile, aObj) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>io.unzip(zipFile, targetDir, logFn, logErrFn)</key>
- * Tries to unzip a zipFile into targetDir. Optionally you can provide a logFn and logErrFn to log the progress.
- * The logFn will receive the following object:\
- * \
- *   { type: "file" | "dir", source: [zip entry], target: [targetPath] }\
- * \
+ * <![CDATA[
+ * Tries to unzip a `zipFile` into `targetDir`. Optionally you can provide a `logFn` and `logErrFn` to log the progress.
+ * The `logFn` will receive the following object:
+ *
+ * ```javascript
+ * { type: "file" | "dir", source: [zip entry], target: [targetPath] }
+ * ```
+ * ]]>
  * </odoc>
  */
 IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
@@ -12455,13 +12657,16 @@ IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>io.zip(targetDir, zipFile, logFn, logErrFn)</key>
- * Tries to zip a targetDir into a zipFile. Optionally you can provide a logFn and logErrFn to log the progress.
- * The logFn will receive the following object:\
- * \
- *   { type: "file" | "dir", source: [io.listFile entry], target: [targetPath] }\
- * \
+ * <![CDATA[
+ * Tries to zip a `targetDir` into a `zipFile`. Optionally you can provide a `logFn` and `logErrFn` to log the progress.
+ * The `logFn` will receive the following object:
+ *
+ * ```javascript
+ * { type: "file" | "dir", source: [io.listFile entry], target: [targetPath] }
+ * ```
+ * ]]>
  * </odoc>
  */
 IO.prototype.zip = function(targetDir, zipFile, logFn, logErrFn) {
@@ -12840,13 +13045,15 @@ const $llm = function(aModel) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$sql(aObject, aSQL, aMethod) : Array</key>
- * Given an aObject (map or array) will try to execute aSQL (SQL expression) and return the corresponding results.
- * Optionally you can provide aMethod to be used (e.g. "auto" (default) or "nlinq" or "h2"). "nlinq" it's the fastest but doesn't
- * support aggregations or multi-field combinations; "h2" is the more complete but will require a lot more resources, it's slower.\
- * \
+ * <![CDATA[
+ * Given an `aObject` (map or array) will try to execute `aSQL` (SQL expression) and return the corresponding results.
+ * Optionally you can provide `aMethod` to be used (e.g. "auto" (default) or "nlinq" or "h2"). "nlinq" it's the fastest but doesn't
+ * support aggregations or multi-field combinations; "h2" is the more complete but will require a lot more resources, it's slower.
+ *
  * NOTE: In "h2" you can use the table _TMP for your queries.
+ * ]]>
  * </odoc>
  */
 const $sql = function(aObj, aSQL, aMethod) {
@@ -13581,18 +13788,21 @@ IO.prototype.readJSONArray = function(source, callback, encoding, raw) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>io.readStreamJSON(aJSONFile, aValFunc) : Map</key>
- * Reads a JSON file (aJSONFile) without loading all structures to memory (usefull to handling large JSON files).
- * The aValFunc receives a single string argument with the current JSON path being processed (for example $.log.entries[123].request),
- * where "$" is the root of the JSON document. When aValFunc returns true the current JSON structure is recorded in memory.
- * If aValFunc is not defined it will return true for all paths. Returns the JSON structure recorded in memory.\
- * \
- * Example:\
- * \
- *    var amap = io.readStreamJSON("someFile.har",\
- *                                 path => (/^\$\.log\.entries\[\d+\]\.request/).test(path))\
- * \
+ * <![CDATA[
+ * Reads a JSON file (`aJSONFile`) without loading all structures to memory (useful to handling large JSON files).
+ * The `aValFunc` receives a single string argument with the current JSON path being processed (for example $.log.entries[123].request),
+ * where "$" is the root of the JSON document. When `aValFunc` returns true the current JSON structure is recorded in memory.
+ * If `aValFunc` is not defined it will return true for all paths. Returns the JSON structure recorded in memory.
+ *
+ * Example:
+ *
+ * ```javascript
+ * var amap = io.readStreamJSON("someFile.har",
+ *                              path => (/^\$\.log\.entries\[\d+\]\.request/).test(path))
+ * ```
+ * ]]>
  * </odoc>
  */
 IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
@@ -13807,14 +14017,16 @@ const askConsole = () => {
 
 /**
  * <odoc>
- * <key>askKey(aUI, aTimeoutMs) : String</key>
+ * <key>askKey(aUI, aTimeoutMs, aOptions) : String|Map</key>
  * Reads a single key from aUI (a map returned by askConsole or compatible, providing read(aTimeoutMs) that returns a character code,
  * -2 on timeout and -1 on end of input) and returns a normalized name: "up", "down", "left", "right", "home", "end", "pgup", "pgdn",
  * "delete", "insert", "enter", "tab", "shift-tab", "backspace", "esc", "eof", "ctrl-&lt;letter&gt;", "alt-&lt;char&gt;" or the printable character itself.
+ * With aOptions.mouse true, also returns { type: "mouse", button, x, y, release } for SGR mouse reports (1-based cells).
+ * Mouse reports are otherwise consumed without returning a key.
  * Returns undefined if aTimeoutMs expires without input. A lone ESC is told apart from escape sequences with a short timeout.
  * </odoc>
  */
-const askKey = (aUI, aTimeoutMs) => {
+const askKey = (aUI, aTimeoutMs, aOptions) => {
   _$(aUI, "aUI").isMap().$_()
   _$(aUI.read, "aUI.read").isFunction().$_()
   var rd = t => Number(aUI.read(t))
@@ -13826,12 +14038,20 @@ const askKey = (aUI, aTimeoutMs) => {
     if (n < 0) return "esc"
     if (n != 91 && n != 79) return "alt-" + String.fromCharCode(n)
     var param = "", f
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < 32; i++) {
       f = rd(50)
       if (f < 0) return "esc"
       if (f >= 64 && f <= 126) break
       param += String.fromCharCode(f)
     }
+    if (n == 91 && param.charAt(0) == "<") {
+      var mouse = /^<(\d{1,5});(\d{1,5});(\d{1,5})$/.exec(param)
+      if (mouse && (f == 77 || f == 109) && aOptions && aOptions.mouse && Number(mouse[2]) > 0 && Number(mouse[3]) > 0)
+        return { type: "mouse", button: Number(mouse[1]), x: Number(mouse[2]), y: Number(mouse[3]), release: f == 109 }
+      return __
+    }
+    // Consume legacy X10 reports too, so coordinates cannot become input text.
+    if (n == 91 && f == 77 && param == "") { rd(50); rd(50); rd(50); return __ }
     var p = param.split(";")[0]
     switch(String.fromCharCode(f)) {
     case "A": return "up"
@@ -13880,20 +14100,23 @@ IO.prototype.isBinaryFile = function(aFile, confirmLimit) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>io.onDirEvent(aPath, aFn, aFnErr) : Promise</key>
- * Given aPath of a directory will return a promise ($do) that, for every create, modify or delete event that happens on aPath it will call aFn with two parameters: kind and filename. 
+ * <![CDATA[
+ * Given `aPath` of a directory will return a promise (`$do`) that, for every create, modify or delete event that happens on `aPath` it will call `aFn` with two parameters: kind and filename.
  * The 'kind' string can be one of four events: ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW (meaning events were lost or discarded). The 'filename' represents the filename affected.
- * Optionally aFnErr function can be provided to handle any errors and, in case aPath no longer exists, aFnErr will be called with the string "ENTRY_NA". Example:\
- * \
- * var p = io.onDirEvent("myDir", (kind, filename) => {\
- *    log("Event '" + kind + "' on '" + filename + "'");\
- * }, e => {\
- *    if (isString(e) &amp;&amp; e == "ENTRY_NA") logWarn("myDir no longer exists."); else logErr(e);\
- * });\
- * \
- * $doWait(p);\
- * \
+ * Optionally `aFnErr` function can be provided to handle any errors and, in case `aPath` no longer exists, `aFnErr` will be called with the string "ENTRY_NA". Example:
+ *
+ * ```javascript
+ * var p = io.onDirEvent("myDir", (kind, filename) => {
+ *    log("Event '" + kind + "' on '" + filename + "'");
+ * }, e => {
+ *    if (isString(e) && e == "ENTRY_NA") logWarn("myDir no longer exists."); else logErr(e);
+ * });
+ *
+ * $doWait(p);
+ * ```
+ * ]]>
  * </odoc>
  */
 IO.prototype.onDirEvent = function(aPath, aFn, aFnErr) {
@@ -14024,12 +14247,15 @@ const $fnDef4Help = (aFnName) => {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$m2a(aDef, aMap) : Array</key>
- * Tries to convert aMap into an array using the aDef array of keys for the values order in the output array. Example:\
- * \
- * $m2a(['c', 'b', 'a'], { a: 1, b: 2, c: 3 })    // [ 3, 2, 1 ]\
- * \
+ * <![CDATA[
+ * Tries to convert `aMap` into an array using the `aDef` array of keys for the values order in the output array. Example:
+ *
+ * ```javascript
+ * $m2a(['c', 'b', 'a'], { a: 1, b: 2, c: 3 })    // [ 3, 2, 1 ]
+ * ```
+ * ]]>
  * </odoc>
  */
 const $m2a = (aDef, aMap) => {
@@ -14078,25 +14304,28 @@ const sortMapKeys = (aMap, moreLevels) => {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$a4m(anArray, aKey, dontRemove) : Array</key>
- * Tries to create a map of maps from the provided anArrays. Optionally if aKey is provided
+ * <![CDATA[
+ * Tries to create a map of maps from the provided `anArrays`. Optionally if `aKey` is provided
  * it will be used to create the map keys (otherwise will fallback to "row[number]"). And can also
- * optionally indicate by dontRemove = true that aKey shouldn't be removed from each map.
- * \
- * var a = [\
- *   { "abc": "123", "xpt": "000", "key": "A1" },\
- *   { "abc": "456", "xpt": "001", "key": "A2" },\
- *   { "abc": "789", "xpt": "002", "key": "A3" }\
- * ]\
- * \
- * $a4m(a, "key");\
- * // {\
- * //   "A1": { "abc": "123", "xpt": "000" },\
- * //   "A2": { "abc": "456", "xpt": "001" },\
- * //   "A3": { "abc": "789", "xpt": "002" }\
- * // }\
- * \
+ * optionally indicate by `dontRemove` = true that `aKey` shouldn't be removed from each map.
+ *
+ * ```javascript
+ * var a = [
+ *   { "abc": "123", "xpt": "000", "key": "A1" },
+ *   { "abc": "456", "xpt": "001", "key": "A2" },
+ *   { "abc": "789", "xpt": "002", "key": "A3" }
+ * ]
+ *
+ * $a4m(a, "key");
+ * // {
+ * //   "A1": { "abc": "123", "xpt": "000" },
+ * //   "A2": { "abc": "456", "xpt": "001" },
+ * //   "A3": { "abc": "789", "xpt": "002" }
+ * // }
+ * ```
+ * ]]>
  * </odoc>
  */
 const $a4m = (anArray, aKey, dontRemove) => {
@@ -14105,24 +14334,27 @@ const $a4m = (anArray, aKey, dontRemove) => {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$m4a(aMap, aKey) : Array</key>
- * Tries to create an array of maps from the provided aMap map of maps. Optionally if aKey is provided
- * it will be added to each array map with the map key. Example:\
- * \
- * var a = {\
- *    "A1": { "abc": "123", "xpt": "000" },\
- *    "A2": { "abc": "456", "xpt": "001" },\
- *    "A3": { "abc": "789", "xpt": "002" }\
- * }\
- * \
- * $m4a(a, "key");\
- * // [\
- * //  { "key": "A1", "abc": "123", "xpt": "000" },\
- * //  { "key": "A2", "abc": "456", "xpt": "001" },\
- * //  { "key": "A3", "abc": "789", "xpt": "002" }\
- * // ]\
- * \
+ * <![CDATA[
+ * Tries to create an array of maps from the provided `aMap` map of maps. Optionally if `aKey` is provided
+ * it will be added to each array map with the map key. Example:
+ *
+ * ```javascript
+ * var a = {
+ *    "A1": { "abc": "123", "xpt": "000" },
+ *    "A2": { "abc": "456", "xpt": "001" },
+ *    "A3": { "abc": "789", "xpt": "002" }
+ * }
+ *
+ * $m4a(a, "key");
+ * // [
+ * //  { "key": "A1", "abc": "123", "xpt": "000" },
+ * //  { "key": "A2", "abc": "456", "xpt": "001" },
+ * //  { "key": "A3", "abc": "789", "xpt": "002" }
+ * // ]
+ * ```
+ * ]]>
  * </odoc>
  */
 const $m4a = (aMap, aKey) => {
@@ -14131,12 +14363,15 @@ const $m4a = (aMap, aKey) => {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$a2m(aDef, aArray) : Array</key>
- * Tries to convert aArray into a map using the aDef array of keys for the map keys' value assignment in the output map. Example:\
- * \
- * $a2m(['a', 'b', 'c'], [1, 2, 3])    // { a: 1, b: 2, c: 3 }\
- * \
+ * <![CDATA[
+ * Tries to convert `aArray` into a map using the `aDef` array of keys for the map keys' value assignment in the output map. Example:
+ *
+ * ```javascript
+ * $a2m(['a', 'b', 'c'], [1, 2, 3])    // { a: 1, b: 2, c: 3 }
+ * ```
+ * ]]>
  * </odoc>
  */
 const $a2m = (aDef, aArray) => {
@@ -14151,15 +14386,18 @@ const $a2m = (aDef, aArray) => {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$fnM2A(aFn, aInstance, aDefinitionArray, aMap) : Object</key>
- * Tries to execute aFn, with aInstance if it's a function of an instance, using aMap of arguments that translate to aFn list of
- * arguments. Returns whatever the function executed returns. Example:\
- * \
- * plugin("HTTP");\
- * var h = new HTTP();\
- * $fnM2A(h.get, h, $fnDef4Help("HTTP.get"), { aUrl: "https://openaf.io/build", isBytes: false, returnStream: false });\
- * \
+ * <![CDATA[
+ * Tries to execute `aFn`, with `aInstance` if it's a function of an instance, using `aMap` of arguments that translate to `aFn` list of
+ * arguments. Returns whatever the function executed returns. Example:
+ *
+ * ```javascript
+ * plugin("HTTP");
+ * var h = new HTTP();
+ * $fnM2A(h.get, h, $fnDef4Help("HTTP.get"), { aUrl: "https://openaf.io/build", isBytes: false, returnStream: false });
+ * ```
+ * ]]>
  * </odoc>
  */
 const $fnM2A = (aFn, aInst, aDef, aMap) => {
@@ -14170,14 +14408,17 @@ const $fnM2A = (aFn, aInst, aDef, aMap) => {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$fnM(aFnName, aMap) : Object</key>
- * Calls aFnName function trying to determine the name of the arguments from OpenAF's help or accessible source code (throws an exception
- * if it can't determine the arguments) and then builds the arguments used to call aFnName using the values of keys in aMap. Example:\
- * \
- * plugin("HTTP"); var h = new HTTP();\
- * $fnM("h.get", { aUrl: "https://openaf.io/release" });\
- * \
+ * <![CDATA[
+ * Calls `aFnName` function trying to determine the name of the arguments from OpenAF's help or accessible source code (throws an exception
+ * if it can't determine the arguments) and then builds the arguments used to call `aFnName` using the values of keys in `aMap`. Example:
+ *
+ * ```javascript
+ * plugin("HTTP"); var h = new HTTP();
+ * $fnM("h.get", { aUrl: "https://openaf.io/release" });
+ * ```
+ * ]]>
  * </odoc>
  */
 const $fnM = (aFnName, aMap) => {
@@ -14571,27 +14812,31 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>askStruct(anArrayOfQuestions, aUI) : Array</key>
- * Given anArrayOfQuestions with a structure like:\
- * \
- * [\
- *  { name: "question1", prompt: "Question 1", type: "question" },\
- *  { name: "question2", prompt: "Question 2", type: "secret" },\
- *  { name: "question3", prompt: "Question 3", type: "char", options: "YN" },\
- *  { name: "question4", prompt: "Question 4", type: "choose", options: ["Option 1", "Option 2", "Option 3"], output: "index" },\
- *  { name: "question5", prompt: "Question 5", type: "multiple", options: ["Option 1", "Option 2", "Option 3"], max: 2 }\
- * ]\
- * \
- * Will prompt the user for each question and return an array with the answers.\
- * \
- * The type can be:\
- * \
- * - "question" (default)\
- * - "secret"\
- * - "char" (requires options)\
- * - "choose" (requires options)\
+ * <![CDATA[
+ * Given `anArrayOfQuestions` with a structure like:
+ *
+ * ```javascript
+ * [
+ *  { name: "question1", prompt: "Question 1", type: "question" },
+ *  { name: "question2", prompt: "Question 2", type: "secret" },
+ *  { name: "question3", prompt: "Question 3", type: "char", options: "YN" },
+ *  { name: "question4", prompt: "Question 4", type: "choose", options: ["Option 1", "Option 2", "Option 3"], output: "index" },
+ *  { name: "question5", prompt: "Question 5", type: "multiple", options: ["Option 1", "Option 2", "Option 3"], max: 2 }
+ * ]
+ * ```
+ *
+ * Will prompt the user for each question and return an array with the answers.
+ *
+ * The type can be:
+ *
+ * - "question" (default)
+ * - "secret"
+ * - "char" (requires options)
+ * - "choose" (requires options)
  * - "multiple" (requires options)
+ * ]]>
  * </odoc>
  */
 const askStruct = (ar, aUI) => {
@@ -14628,46 +14873,48 @@ const askStruct = (ar, aUI) => {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$channels(aChannel)</key>
- * Please check more details with the help from ow.ch. The available methods are:\
- * \
- * Channel basics:\
- * \
- * - create(shouldCompress, aType, options)\
- * - list()\
- * - destroy()\
- * - size()\
- * - subscribe(aFunction, onlyFromNow, anId)\
- * - unsubscribe(aId)\
- * - forEach(aFunction)\
- * - getAll(fullInfo)\
- * - getKeys(fullInfo)\
- * - getSortedKeys(fullInfo)\
- * - set(aKey, aValue, aForcedTimestamp)\
- * - setAll(keysArray, valuesArray, aForcedTimestamp)\
- * - unsetAll(keysArray, valuesArray, aForcedTimestamp)\
- * - get(aKey)\
- * - getSet(aMatch, aKey, aValue, aForcedTimestamp)\
- * - unset(aKey, aForcedTimestamp)\
- * - push(aKey, aValue)\
- * - pop(aKey)\
- * - shift(aKey)\
- * - stopJobs()\
- * - waitForJobs(aTimeout)\
- * - getName()\
- * \
- * Channel basic persistence:\
- * \
- * - storeAdd(aFilename, anArrayOfKeys, shouldCompress, runSubscribersForAll)\
- * - storeRestore(aFilename, anArrayOfKeys)\
- * \
- * Inter-channel HTTP REST:\
- * \
- * - expose(aLocalPortOrServer, aPath, aLogin, aPassword)\
- * - peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount)\
- * - unpeer(aRemoteURL)\
- * - createRemote(aURL, aTimeout, aLogin, aPass)
+ * <![CDATA[
+ * Please check more details with the help from `ow.ch`. The available methods are:
+ *
+ * Channel basics:
+ *
+ * - `create(shouldCompress, aType, options)`
+ * - `list()`
+ * - `destroy()`
+ * - `size()`
+ * - `subscribe(aFunction, onlyFromNow, anId)`
+ * - `unsubscribe(aId)`
+ * - `forEach(aFunction)`
+ * - `getAll(fullInfo)`
+ * - `getKeys(fullInfo)`
+ * - `getSortedKeys(fullInfo)`
+ * - `set(aKey, aValue, aForcedTimestamp)`
+ * - `setAll(keysArray, valuesArray, aForcedTimestamp)`
+ * - `unsetAll(keysArray, valuesArray, aForcedTimestamp)`
+ * - `get(aKey)`
+ * - `getSet(aMatch, aKey, aValue, aForcedTimestamp)`
+ * - `unset(aKey, aForcedTimestamp)`
+ * - `push(aKey, aValue)`
+ * - `pop(aKey)`
+ * - `shift(aKey)`
+ * - `stopJobs()`
+ * - `waitForJobs(aTimeout)`
+ * - `getName()`
+ *
+ * Channel basic persistence:
+ *
+ * - `storeAdd(aFilename, anArrayOfKeys, shouldCompress, runSubscribersForAll)`
+ * - `storeRestore(aFilename, anArrayOfKeys)`
+ *
+ * Inter-channel HTTP REST:
+ *
+ * - `expose(aLocalPortOrServer, aPath, aLogin, aPassword)`
+ * - `peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount)`
+ * - `unpeer(aRemoteURL)`
+ * - `createRemote(aURL, aTimeout, aLogin, aPass)`
+ * ]]>
  * </odoc>
  */
 const $channels = function(a) {
@@ -14741,45 +14988,47 @@ const $channels = function(a) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$ch(aChannel)</key>
- * Please check more details with the help from ow.ch. The available methods are:\
- * \
- * Channel basics:\
- * \
- * - create(shouldCompress, aType, options)\
- * - list()\
- * - destroy()\
- * - size()\
- * - subscribe(aFunction, onlyFromNow, anId)\
- * - unsubscribe(aId)\
- * - forEach(aFunction)\
- * - getAll()\
- * - getKeys(fullInfo)\
- * - getSortedKeys(fullInfo)\
- * - set(aKey, aValue, aForcedTimestamp)\
- * - setAll(keysArray, valuesArray, aForcedTimestamp)\
- * - get(aKey)\
- * - getSet(aMatch, aKey, aValue, aForcedTimestamp)\
- * - unset(aKey, aForcedTimestamp)\
- * - push(aKey, aValue)\
- * - pop(aKey)\
- * - shift(aKey)\
- * - stopJobs()\
- * - waitForJobs(aTimeout)\
- * - getName()\
- * \
- * Channel basic persistence:\
- * \
- * - storeAdd(aFilename, anArrayOfKeys, shouldCompress)\
- * - storeRestore(aFilename, anArrayOfKeys)\
- * \
- * Inter-channel HTTP REST:\
- * \
- * - expose(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc)\
- * - peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc)\
- * - unpeer(aRemoteURL)\
- * - createRemote(aURL, aTimeout)
+ * <![CDATA[
+ * Please check more details with the help from `ow.ch`. The available methods are:
+ *
+ * Channel basics:
+ *
+ * - `create(shouldCompress, aType, options)`
+ * - `list()`
+ * - `destroy()`
+ * - `size()`
+ * - `subscribe(aFunction, onlyFromNow, anId)`
+ * - `unsubscribe(aId)`
+ * - `forEach(aFunction)`
+ * - `getAll()`
+ * - `getKeys(fullInfo)`
+ * - `getSortedKeys(fullInfo)`
+ * - `set(aKey, aValue, aForcedTimestamp)`
+ * - `setAll(keysArray, valuesArray, aForcedTimestamp)`
+ * - `get(aKey)`
+ * - `getSet(aMatch, aKey, aValue, aForcedTimestamp)`
+ * - `unset(aKey, aForcedTimestamp)`
+ * - `push(aKey, aValue)`
+ * - `pop(aKey)`
+ * - `shift(aKey)`
+ * - `stopJobs()`
+ * - `waitForJobs(aTimeout)`
+ * - `getName()`
+ *
+ * Channel basic persistence:
+ *
+ * - `storeAdd(aFilename, anArrayOfKeys, shouldCompress)`
+ * - `storeRestore(aFilename, anArrayOfKeys)`
+ *
+ * Inter-channel HTTP REST:
+ *
+ * - `expose(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc)`
+ * - `peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc)`
+ * - `unpeer(aRemoteURL)`
+ * - `createRemote(aURL, aTimeout)`
+ * ]]>
  * </odoc>
  */
 const $ch = $channels;
@@ -15441,32 +15690,33 @@ const includeOPack = function(aOPackName, aMinVersion) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$atomic(aInitValue, aType) : Object</key>
- * Creates an atomic object of aType (defaults to long) to be get/set atomically on a multithreading script initialized with aInitValue.
- * aType can be "int", "long" and "boolean". Each with different methods:\
- * \
- *    int.dec          - Decrement an integer\
- *    int.inc          - Increment an integer\
- *    int.get          - Get the current integer\
- *    int.getSet(n)    - Get and Set the current integer\
- *    int.getAdd(n)    - Get and Add to the current integer\
- *    int.setIf(t, n)  - Set the current integer to n if current value is t\
- *    int.set          - Set the current integer\
- * \
- *    long.dec         - Decrement an long\
- *    long.inc         - Increment an long\
- *    long.get         - Get the current long\
- *    long.getSet(n)   - Get and Set the current long\
- *    long.getAdd(n)   - Get and Add to the current long\
- *    long.setIf(t, n) - Set the current long to n if current value is t\
- *    long.set         - Set the current long\
- * \
- *    boolean.get         - Get the current boolean\
- *    boolean.set         - Set the current boolean\
- *    boolean.getSet      - Get and Set the current boolean\
- *    boolean.setIf(t, n) - Set the current boolean to n if current value is t\
- * \
+ * <![CDATA[
+ * Creates an atomic object of `aType` (defaults to long) to be get/set atomically on a multithreading script initialized with `aInitValue`.
+ * `aType` can be "int", "long" and "boolean". Each with different methods:
+ *
+ * - `int.dec`: Decrement an integer
+ * - `int.inc`: Increment an integer
+ * - `int.get`: Get the current integer
+ * - `int.getSet(n)`: Get and Set the current integer
+ * - `int.getAdd(n)`: Get and Add to the current integer
+ * - `int.setIf(t, n)`: Set the current integer to n if current value is t
+ * - `int.set`: Set the current integer
+ *
+ * - `long.dec`: Decrement an long
+ * - `long.inc`: Increment an long
+ * - `long.get`: Get the current long
+ * - `long.getSet(n)`: Get and Set the current long
+ * - `long.getAdd(n)`: Get and Add to the current long
+ * - `long.setIf(t, n)`: Set the current long to n if current value is t
+ * - `long.set`: Set the current long
+ *
+ * - `boolean.get`: Get the current boolean
+ * - `boolean.set`: Set the current boolean
+ * - `boolean.getSet`: Get and Set the current boolean
+ * - `boolean.setIf(t, n)`: Set the current boolean to n if current value is t
+ * ]]>
  * </odoc>
  */
  const $atomic = function(aInit, aType) {
@@ -15581,12 +15831,15 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 	var r = {
 		getObject: () => __flock[aLockFile].f,
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$flock.lock()</key>
-		 * Given aLockFile will use the file to filesystem lock until unlock is called.\
-		 * \
-		 *    $flock(aLockFile).lock()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockFile` will use the file to filesystem lock until unlock is called.
+		 *
+		 * ```javascript
+		 * $flock(aLockFile).lock()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 				getMainObject: () => __flock[aLockFile],
@@ -15601,12 +15854,15 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 			}
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$flock.unlock()</key>
-		 * Given aLockFile will unlock freeing any previous calls to lock.\
-		 * \
-		 *    $flock(aLockFile).unlock()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockFile` will unlock freeing any previous calls to lock.
+		 *
+		 * ```javascript
+		 * $flock(aLockFile).unlock()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		unlock: () => {
@@ -15622,12 +15878,15 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 						}
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$flock.isLocalLocked() : Boolean</key>
-		 * Given aLockFile will return true if locked in the current OpenAF instance otherwise false (see also isLocked).\
-		 * \
-		 *    $flock(aLockFile).isLocalLocked()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockFile` will return true if locked in the current OpenAF instance otherwise false (see also isLocked).
+		 *
+		 * ```javascript
+		 * $flock(aLockFile).isLocalLocked()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		isLocalLocked: () => {
@@ -15638,24 +15897,30 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 			}
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$flock.isLocked() : Boolean</key>
-		 * Given aLockFile will return true if locked in the current OpenAF instance or on the filesystem (by using $flock.tryLock) otherwise false (see also isLocalLocked).\
-		 * \
-		 *    $flock(aLockFile).isLocked()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockFile` will return true if locked in the current OpenAF instance or on the filesystem (by using `$flock.tryLock`) otherwise false (see also isLocalLocked).
+		 *
+		 * ```javascript
+		 * $flock(aLockFile).isLocked()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		isLocked: () => {
 			return !r.tryLock(() => {});
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$flock.destroy()</key>
-		 * Given aLockFile will destroy the provided lock entry.\
-		 * \
-		 *    $flock(aLockFile).destroy()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockFile` will destroy the provided lock entry.
+		 *
+		 * ```javascript
+		 * $flock(aLockFile).destroy()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		destroy: () => {
@@ -15672,13 +15937,16 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 			$lock("__flock::" + aLockFile).destroy();
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$flock.tryLock(aFunction) : Boolean</key>
-		 * Given aLockFile only execute aFunction if it's unlocked. If it
-		 * executed aFunction it will return true otherwise false.\
-		 * \
-		 *    $flock(aLockFile).tryLock(() => { ... })\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockFile` only execute `aFunction` if it's unlocked. If it
+		 * executed `aFunction` it will return true otherwise false.
+		 *
+		 * ```javascript
+		 * $flock(aLockFile).tryLock(() => { ... })
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		tryLock: f => {
@@ -15713,42 +15981,54 @@ const $lock = function(aName) {
 	return {
 		getObject: () => __lock[aName],
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$lock.lock()</key>
-		 * Given aLockName will lock until unlock is called.\
-		 * \
-		 *    $lock(aLockName).lock()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockName` will lock until unlock is called.
+		 *
+		 * ```javascript
+		 * $lock(aLockName).lock()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		lock     : () => __lock[aName].lockInterruptibly(),
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$lock.unlock()</key>
-		 * Given aLockName will unlock freeing any previous calls to lock.\
-		 * \
-		 *    $lock(aLockName).unlock()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockName` will unlock freeing any previous calls to lock.
+		 *
+		 * ```javascript
+		 * $lock(aLockName).unlock()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		unlock   : () => __lock[aName].unlock(),
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$lock.isLocked() : Boolean</key>
-		 * Given aLockName will return true if locked otherwise false.\
-		 * \
-		 *    $lock(aLockName).isLocked()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockName` will return true if locked otherwise false.
+		 *
+		 * ```javascript
+		 * $lock(aLockName).isLocked()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		isLocked : () => __lock[aName].isLocked(),
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$lock.destroy()</key>
-		 * Given aLockName will destroy the provided lock entry.\
-		 * \
-		 *    $lock(aLockName).destroy()\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockName` will destroy the provided lock entry.
+		 *
+		 * ```javascript
+		 * $lock(aLockName).destroy()
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		destroy  : () => {
@@ -15757,13 +16037,16 @@ const $lock = function(aName) {
 			}, __lock);
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$lock.tryLock(aFunction, aTimeoutMS) : Boolean</key>
-		 * Given aLockName only execute aFunction when it's able to lock or after aTimeoutMS. If it
-		 * executed aFunction it will return true otherwise false.\
-		 * \
-		 *    $lock(aLockName).tryLock(() => { ... })\
-		 * \
+		 * <![CDATA[
+		 * Given `aLockName` only execute `aFunction` when it's able to lock or after `aTimeoutMS`. If it
+		 * executed `aFunction` it will return true otherwise false.
+		 *
+		 * ```javascript
+		 * $lock(aLockName).tryLock(() => { ... })
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		tryLock  : (f, t) => {
@@ -16891,15 +17174,20 @@ const $ftp = function(aMap) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$csv(aMap) : $csv</key>
- * Provides a shortcut to access CSV functionality. Optionally you can provide options through aMap.\
- * \
- * Examples:\
- *   $csv().fromInArray(anArray)\
- *   $csv().fromInFile("test.csv").toOutArray()\
- *   $csv().fromInFile("test.csv").toOutFn(m => print( af.toSLON(m) ))\
- *   $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray()
+ * <![CDATA[
+ * Provides a shortcut to access CSV functionality. Optionally you can provide options through `aMap`.
+ *
+ * Examples:
+ *
+ * ```javascript
+ * $csv().fromInArray(anArray)
+ * $csv().fromInFile("test.csv").toOutArray()
+ * $csv().fromInFile("test.csv").toOutFn(m => print( af.toSLON(m) ))
+ * $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray()
+ * ```
+ * ]]>
  * </odoc>
  */
 const $csv = function(aMap) {

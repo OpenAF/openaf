@@ -1113,83 +1113,87 @@ OpenWrap.oJob.prototype.__resolveOPackFile = function(aFile) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.oJob.loadFile(aFile, args, aId)</key>
- * Loads the configuration from a YAML or JSON aFile and loads all configuration.\
- * Optionally you can provide aId to segment these specific jobs.\
- * \
- * Example of YAML:\
- * # Name your includes\
- * #\
- * include:\
- *   - hello.js   # Some nice hello function\
- * \
- * # Define the jobs\
- * jobs:\
- *    # Start processing\
- *    - name        : Start processing\
- *      exec        : >\
- *         log("init");\
- *         //sprint(ow.oJob.getJobsCh().getAll());\
- * \
- * # Stop processing\
- *    - name        : Stop processing\
- *      type        : shutdown\
- *      exec        : >\
- *         log("done");\
- *         sprint(ow.oJob.getLogCh().getAll());\
- * \
- * # Hello world after start processing\
- *    - name	      : Hello world\
- *      deps          : \
- *         - Start processing\
- *      exec 	      : >\
- *         sprint(args);  \
- *         hello("nuno");\
- * \
- * # Bye world\
- *    - name        : Bye\
- *      deps        :\
- *         - Hello world\
- *         - Say the time\
- *      exec        :\
- *         print("bye, nice to meet you.");\
- * \
- * # Say the time regularly\
- *    - name        : Say the time\
- *      type        : periodic\
- *      typeArgs    :\
- *         timeInterval   : 1000\
- *         waitForFinish  : true\
- *         cron           : "*\/5 * * * * *"\
- *      exec        : >\
- *         print(new Date());\
- * \
- * # List what to do \
- * todo:\
- *    - Start processing\
- *    - Say the time\
- *    - Hello world\
- *    - Bye\
- *    - Stop processing\
- * \
- * # This will be a daemon\
- * ojob:\
- *    daemon: false\
- *    unique:\
- *       pidFile     : helloworld.pid\
- *       killPrevious: true\
- *    channels:\
- *       expose     : true\
- *       port       : 17878\
- *       permissions: r\
- *       #list       :\
- *       #  - oJob::log\
- *       #auth       :\
- *       #  - login: ojob\
- *       #    pass : ojob\
- *       #    permissions: r\
- * \
+ * <![CDATA[
+ * Loads the configuration from a YAML or JSON `aFile` and loads all configuration.
+ * Optionally you can provide `aId` to segment these specific jobs.
+ *
+ * Example of YAML:
+ *
+ * ```yaml
+ * # Name your includes
+ * #
+ * include:
+ *   - hello.js   # Some nice hello function
+ *
+ * # Define the jobs
+ * jobs:
+ *    # Start processing
+ *    - name        : Start processing
+ *      exec        : >
+ *         log("init");
+ *         //sprint(ow.oJob.getJobsCh().getAll());
+ *
+ * # Stop processing
+ *    - name        : Stop processing
+ *      type        : shutdown
+ *      exec        : >
+ *         log("done");
+ *         sprint(ow.oJob.getLogCh().getAll());
+ *
+ * # Hello world after start processing
+ *    - name	      : Hello world
+ *      deps          :
+ *         - Start processing
+ *      exec 	      : >
+ *         sprint(args);
+ *         hello("nuno");
+ *
+ * # Bye world
+ *    - name        : Bye
+ *      deps        :
+ *         - Hello world
+ *         - Say the time
+ *      exec        :
+ *         print("bye, nice to meet you.");
+ *
+ * # Say the time regularly
+ *    - name        : Say the time
+ *      type        : periodic
+ *      typeArgs    :
+ *         timeInterval   : 1000
+ *         waitForFinish  : true
+ *         cron           : "*\/5 * * * * *"
+ *      exec        : >
+ *         print(new Date());
+ *
+ * # List what to do
+ * todo:
+ *    - Start processing
+ *    - Say the time
+ *    - Hello world
+ *    - Bye
+ *    - Stop processing
+ *
+ * # This will be a daemon
+ * ojob:
+ *    daemon: false
+ *    unique:
+ *       pidFile     : helloworld.pid
+ *       killPrevious: true
+ *    channels:
+ *       expose     : true
+ *       port       : 17878
+ *       permissions: r
+ *       #list       :
+ *       #  - oJob::log
+ *       #auth       :
+ *       #  - login: ojob
+ *       #    pass : ojob
+ *       #    permissions: r
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptionsMap, dontLoadTodos) {
@@ -1495,17 +1499,19 @@ OpenWrap.oJob.prototype.add2Todo = function(aTodo, aId) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>oJob.__addLog(aOperation, aJobName, aJobExecId, args, anErrorMessage, aId, aTypeArgs) : String</key>
- * Adds a new log entry to the channel oJob::log for the aJobName provided for the following operations:\
- * \
- * - start (start of a job)\
- * - success (successfully end of a job)\
- * - error (erroneous end of a job)\
- * - depsfail (job not started do to failed dependencies)\
- * \
- * Optionally, for the operation error, you can provide also anErrorMessage.\
- * Returns the current aJobExecId (or the created one for the operation start).
+ * <![CDATA[
+ * Adds a new log entry to the channel oJob::log for the `aJobName` provided for the following operations:
+ *
+ * - `start` (start of a job)
+ * - `success` (successfully end of a job)
+ * - `error` (erroneous end of a job)
+ * - `depsfail` (job not started do to failed dependencies)
+ *
+ * Optionally, for the operation error, you can provide also `anErrorMessage`.
+ * Returns the current `aJobExecId` (or the created one for the operation start).
+ * ]]>
  * </odoc>
  */
 OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anException, aId, aTypeArgs) {

@@ -42,6 +42,10 @@ jobs:
      to: oJob Test
      exec: args.func = require("autoTestAll.oDoc.js").testWebAppend;
 
+   - name: oDoc::MarkdownSourceEntries
+     to: oJob Test
+     exec: args.func = require("autoTestAll.oDoc.js").testMarkdownSourceEntries;
+
    - name: oDoc::WebFallback
      to: oJob Test
      exec: args.func = require("autoTestAll.oDoc.js").testWebFallback;
@@ -70,6 +74,7 @@ todo:
    - oDoc::StoragePaths
    - oDoc::Offline
    - oDoc::Generator
+   - oDoc::MarkdownSourceEntries
    - oDoc::WebAppend
    - oDoc::WebFallback
    - oDoc::SearchHelp

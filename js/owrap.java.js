@@ -161,14 +161,18 @@ OpenWrap.java.prototype.maven.prototype.getLatestVersion = function(aURI) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.java.maven.getLicenseByVersion(artifactId, aFilenameTemplate, aVersion, aOutputDir)</key>
- * Given the artifactId (prefixed with the group id using ".") will try to update a LICENSES.txt on the provided aOutputDir based
- * on aFilenameTemplate (where version will translate to the latest version).\
- * \
- * Example:\
- *    getLicenseByVersion("com.google.code.gson.gson", "gson-{{version}}.jar", "1.2.3", ".")\
- * \
+ * <![CDATA[
+ * Given the `artifactId` (prefixed with the group id using ".") will try to update a LICENSES.txt on the provided `aOutputDir` based
+ * on `aFilenameTemplate` (where version will translate to the latest version).
+ *
+ * Example:
+ *
+ * ```javascript
+ * getLicenseByVersion("com.google.code.gson.gson", "gson-{{version}}.jar", "1.2.3", ".")
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.java.prototype.maven.prototype.getLicenseByVersion = function(artifactId, aFilenameTemplate, aVersion, aOutputDir) {
@@ -205,14 +209,18 @@ OpenWrap.java.prototype.maven.prototype.getLicenseByVersion = function(artifactI
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.java.maven.getFileVersion(artifactId, aFilenameTemplate, aVersion, aOutputDir)</key>
- * Given the artifactId (prefixed with the group id using ".") will try to download the specific version of the aFilenameTemplate (where
- * version will translate to the latest version) on the provided aOutputDir.\
- * \
- * Example:\
- *    getFile("com.google.code.gson.gson", "gson-{{version}}.jar", "1.2.3", ".")\
- * \
+ * <![CDATA[
+ * Given the `artifactId` (prefixed with the group id using ".") will try to download the specific version of the `aFilenameTemplate` (where
+ * version will translate to the latest version) on the provided `aOutputDir`.
+ *
+ * Example:
+ *
+ * ```javascript
+ * getFile("com.google.code.gson.gson", "gson-{{version}}.jar", "1.2.3", ".")
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.java.prototype.maven.prototype.getFileVersion = function(artifactId, aFilenameTemplate, aVersion, aOutputDir) {
@@ -356,14 +364,18 @@ OpenWrap.java.prototype.maven.prototype.processMavenFile = function(aDirectory, 
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.java.maven.getFile(artifactId, aFilenameTemplate, aOutputDir)</key>
- * Given the artifactId (prefixed with the group id using ".") will try to download the latest version of the aFilenameTemplate (where
- * version will translate to the latest version) on the provided aOutputDir.\
- * \
- * Example:\
- *    getFile("com.google.code.gson.gson", "gson-{{version}}.jar", ".")\
- * \
+ * <![CDATA[
+ * Given the `artifactId` (prefixed with the group id using ".") will try to download the latest version of the `aFilenameTemplate` (where
+ * version will translate to the latest version) on the provided `aOutputDir`.
+ *
+ * Example:
+ *
+ * ```javascript
+ * getFile("com.google.code.gson.gson", "gson-{{version}}.jar", ".")
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.java.prototype.maven.prototype.getFile = function(artifactId, aFilenameTemplate, aOutputDir) {
@@ -2029,21 +2041,25 @@ OpenWrap.java.prototype.getLibraryPath = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.java.ini() : Object</key>
- * Returns an object to handle Windows INI / Java properties kind of files. Available methods are:\
- * \
- *   load(content)   - Given a INI/properties file content converts to an internal format\
- *   loadFile(aFile) - Loads a file with load()\
- *   get()           - Returns a map of the internal format representation\
- *   put(aMap)       - Read aMap into the internal format representation (arrays not fully supported)\
- *   save()          - Returns a INI/properties string\
- *   saveFile(aFile) - Saves a file using save()\
- * \
- * Examples:\
- * \
- *   ow.java.ini().loadFile("/etc/os-release").get()\
- *   ow.java.ini().put(myMap).save()
+ * <![CDATA[
+ * Returns an object to handle Windows INI / Java properties kind of files. Available methods are:
+ *
+ * - `load(content)`: Given a INI/properties file content converts to an internal format
+ * - `loadFile(aFile)`: Loads a file with load()
+ * - `get()`: Returns a map of the internal format representation
+ * - `put(aMap)`: Read `aMap` into the internal format representation (arrays not fully supported)
+ * - `save()`: Returns a INI/properties string
+ * - `saveFile(aFile)`: Saves a file using save()
+ *
+ * Examples:
+ *
+ * ```javascript
+ * ow.java.ini().loadFile("/etc/os-release").get()
+ * ow.java.ini().put(myMap).save()
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.java.prototype.ini = function() {

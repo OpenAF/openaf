@@ -101,6 +101,36 @@
       ow.test.assert(XML.ignoreWhitespace, whitespace, "Parser errors must restore XML settings");
     });
   };
+  exports.testMarkdownSourceEntries = function() {
+    loadHelp();
+    var docs = new ODocsGen({
+      scope: "../js/openaf.js",
+      format: "../js/owrap.format.js",
+      ojob: "../js/owrap.oJob.js",
+      io: "../src/openaf/core/IO.java",
+      xml: "../src/openaf/plugins/XML.java"
+    }).getODoc();
+    var cases = [
+      ["scope", "print", ['`print("hello world!")`']],
+      ["scope", "printChartArray", ["\n\n", "- `colors` (array)", "```javascript\nprint(printChartArray("]],
+      ["scope", "$path", ['"a[?b>`1`].x"', "```text"]],
+      ["scope", "io.onDirEvent", ['isString(e) && e == "ENTRY_NA"']],
+      ["format", "ow.format.toDate", ["- `M`: Month in year", "- `m`: Minute in hour"]],
+      ["ojob", "ow.oJob.loadFile", ["```yaml\n# Name your includes", "include:\n  - hello.js", 'cron           : "*\\/5 * * * * *"']],
+      ["io", "io.readFileStream", ["```javascript\nvar stream", "   printnl(buffer);", "stream.close();\n```"]],
+      ["xml", "XML.x", ["i < nodes.getLength()", "<test>\n   <test1", "\\\\machine\\share\\test1"]]
+    ];
+    cases.forEach(function(test) {
+      var entry = docs[test[0]][test[1]];
+      ow.test.assert(entry.format, "markdown", test[1] + " must opt in to Markdown");
+      test[2].forEach(function(fragment) {
+        ow.test.assert(entry.t.indexOf(fragment) >= 0, true, test[1] + " must preserve " + fragment);
+      });
+      ow.test.assert((entry.t.match(/^```.*$/mg) || []).length % 2, 0, test[1] + " must have balanced code fences");
+    });
+    ow.test.assert(isUnDef(docs.scope.getVersion.format), true, "Simple prose must remain plain text");
+    ow.test.assert(isUnDef(docs.format["ow.format.fromUnixDate"].format), true, "Wrapped prose alone must not opt in");
+  };
   exports.testWebAppend = function() {
     loadHelp();
     temporary(function(path) {

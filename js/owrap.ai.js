@@ -10,19 +10,20 @@ OpenWrap.ai = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.regression() : Regression</key>
- * Returns a Regression with the following functions:\
- * \
- *    linear(data, options) : Map\
- *    power(data, options) : Map\
- *    exponential(data, options) : Map\
- *    logarithmic(data, options) : Map\
- *    polynomial(data, options) : Map\
- * \
- *    data - an array of arrays of x, y values ([[0,1],[1,3],[2,5]])\
- *    options - map to determine the order and precision ({ order: 2, precision: 5})\
- * \
+ * <![CDATA[
+ * Returns a Regression with the following functions:
+ *
+ * - `linear(data, options)`: Map
+ * - `power(data, options)`: Map
+ * - `exponential(data, options)`: Map
+ * - `logarithmic(data, options)`: Map
+ * - `polynomial(data, options)`: Map
+ *
+ * - `data`: an array of arrays of x, y values ([[0,1],[1,3],[2,5]])
+ * - `options`: map to determine the order and precision ({ order: 2, precision: 5})
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.regression = function() {
@@ -30,17 +31,19 @@ OpenWrap.ai.prototype.regression = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.valuesArray(entriesspan) : Map</key>
- * Creates a valuesArray object with the following functions:\
- * \
- *   getValues()     : Array\
- *   push(value)     : void\
- *   deviation()     : Number\
- *   variance()      : Number\
- *   movingAverage() : Number\
- * \
- * entriesspan - number of entries to keep
+ * <![CDATA[
+ * Creates a valuesArray object with the following functions:
+ *
+ * - `getValues()`: Array
+ * - `push(value)`: void
+ * - `deviation()`: Number
+ * - `variance()`: Number
+ * - `movingAverage()`: Number
+ *
+ * - `entriesspan`: number of entries to keep
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
@@ -3779,34 +3782,39 @@ OpenWrap.ai.prototype.__gpttypes = {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.agent(aOptions) : Map</key>
- * Creates a GPT-backed agent suitable for A2A (Agent-to-Agent) messaging.\
- * Returns a map with 'meta' (agent metadata) and 'handler' (message handler function) ready for registration with ow.server.a2a.registerAgent().\
- * \
- * aOptions should contain:\
- *   - id (string, required): Unique agent identifier\
- *   - name (string): Display name (defaults to id)\
- *   - title (string): Human-readable title (defaults to id)\
- *   - version (string): Version string (defaults to "1.0.0")\
- *   - tags (array): Array of categorization tags\
- *   - capabilities (map): Map of agent capabilities (defaults to {messaging: true})\
- *   - gpt (required): Either a $gpt instance or a config map for $gpt (e.g., {type: "openai", options: {key: "..."}})\
- *   - systemPrompt (string): System message to guide the agent's behavior\
- *   - tools (array): Array of tool names or definitions to add to the GPT instance\
- * \
- * Example:\
- * \
- * var weatherAgent = ow.ai.agent({\
- *   id: "weather-agent",\
- *   name: "Weather Agent",\
- *   gpt: {type: "openai", options: {key: "sk-..."}},\
- *   systemPrompt: "You provide weather information concisely.",\
- *   capabilities: {messaging: true, weatherData: true}\
- * });\
- * \
- * global.__a2a__ = new ow.server.a2a();\
+ * <![CDATA[
+ * Creates a GPT-backed agent suitable for A2A (Agent-to-Agent) messaging.
+ * Returns a map with 'meta' (agent metadata) and 'handler' (message handler function) ready for registration with `ow.server.a2a.registerAgent()`.
+ *
+ * `aOptions` should contain:
+ *
+ * - `id` (string, required) : Unique agent identifier
+ * - `name` (string) : Display name (defaults to id)
+ * - `title` (string) : Human-readable title (defaults to id)
+ * - `version` (string) : Version string (defaults to "1.0.0")
+ * - `tags` (array) : Array of categorization tags
+ * - `capabilities` (map) : Map of agent capabilities (defaults to {messaging: true})
+ * - `gpt` (required) : Either a `$gpt` instance or a config map for `$gpt` (e.g., {type: "openai", options: {key: "..."}})
+ * - `systemPrompt` (string) : System message to guide the agent's behavior
+ * - `tools` (array) : Array of tool names or definitions to add to the GPT instance
+ *
+ * Example:
+ *
+ * ```javascript
+ * var weatherAgent = ow.ai.agent({
+ *   id: "weather-agent",
+ *   name: "Weather Agent",
+ *   gpt: {type: "openai", options: {key: "sk-..."}},
+ *   systemPrompt: "You provide weather information concisely.",
+ *   capabilities: {messaging: true, weatherData: true}
+ * });
+ *
+ * global.__a2a__ = new ow.server.a2a();
  * global.__a2a__.registerAgent(weatherAgent.meta, weatherAgent.handler);
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.agent = function(aOptions) {
@@ -3902,38 +3910,43 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.gpt(aType, aOptions) : ow.ai.gpt</key>
- * Creates a GPT AI model of aType (e.g. "openai", "gemini", "ollama" or "anthropic") with aOptions.\
- * \
- * Common aOptions properties include:\
- * - key: provider API key when required.\
- * - model: default model name or deployment name.\
- * - url: provider base URL. For OpenAI defaults to "https://api.openai.com".\
- * - temperature: default model temperature.\
- * - timeout: request timeout in milliseconds (defaults to 15 minutes).\
- * - headers: extra request headers. These override generated headers with the same names.\
- * - params: extra request body parameters merged into prompt, image and embedding calls.\
- * - noSystem: when true, system messages are converted to developer messages where supported (defaults to true).\
- * - noResponseFormat: when true, disables OpenAI-compatible JSON response_format injection.\
- * - promptCaching: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false).\
- * \
- * OpenAI-compatible transport options:\
- * - apiVersion: API version/path segment for OpenAI-compatible routes (defaults to "v1"). In Azure legacy mode this becomes the api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version.\
- * - mode: transport mode. Supported values are "openai" (default), "azure-openai-v1", "azure-openai-legacy" and "foundry". Aliases: "azure-v1", "azure-legacy" and "azure-foundry".\
- * - deployment: deployment name for "azure-openai-legacy" mode. If omitted, the selected model name is used.\
- * - decisionApi: native decision contract ("openai" default, "openrouter", or "microsoft"). Microsoft requires Foundry mode, API v1 and an explicit model deployment name.\
- * - decisionUrl: optional absolute HTTP(S) native decision endpoint override.\
- * - authType: authentication header style. Supported values are "bearer" (OpenAI default), "api-key" (Azure/Foundry default) and "none".\
- * \
- * Examples:\
- * - OpenAI: new ow.ai.gpt("openai", { key: "sk-...", url: "https://api.openai.com/v1", model: "gpt-4o-mini" })\
- * - Azure OpenAI v1: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-v1", model: "DEPLOYMENT" })\
- * - Azure OpenAI legacy: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-legacy", deployment: "DEPLOYMENT", apiVersion: "2024-10-21" })\
- * - Azure AI Foundry v1: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" })\
- * - Azure AI Foundry dated API: new ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" })\
- * \
- * Usage stats note: `getLastStats()` now includes OpenAI cached prompt tokens (`tokens.cached`) when reported by compatible models.\
+ * <![CDATA[
+ * Creates a GPT AI model of `aType` (e.g. "openai", "gemini", "ollama" or "anthropic") with `aOptions`.
+ *
+ * Common `aOptions` properties include:
+ *
+ * - `key`: provider API key when required.
+ * - `model`: default model name or deployment name.
+ * - `url`: provider base URL. For OpenAI defaults to "https://api.openai.com".
+ * - `temperature`: default model temperature.
+ * - `timeout`: request timeout in milliseconds (defaults to 15 minutes).
+ * - `headers`: extra request headers. These override generated headers with the same names.
+ * - `params`: extra request body parameters merged into prompt, image and embedding calls.
+ * - `noSystem`: when true, system messages are converted to developer messages where supported (defaults to true).
+ * - `noResponseFormat`: when true, disables OpenAI-compatible JSON response_format injection.
+ * - `promptCaching`: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false).
+ *
+ * OpenAI-compatible transport options:
+ *
+ * - `apiVersion`: API version/path segment for OpenAI-compatible routes (defaults to "v1"). In Azure legacy mode this becomes the api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version.
+ * - `mode`: transport mode. Supported values are "openai" (default), "azure-openai-v1", "azure-openai-legacy" and "foundry". Aliases: "azure-v1", "azure-legacy" and "azure-foundry".
+ * - `deployment`: deployment name for "azure-openai-legacy" mode. If omitted, the selected model name is used.
+ * - `decisionApi`: native decision contract ("openai" default, "openrouter", or "microsoft"). Microsoft requires Foundry mode, API v1 and an explicit model deployment name.
+ * - `decisionUrl`: optional absolute HTTP(S) native decision endpoint override.
+ * - `authType`: authentication header style. Supported values are "bearer" (OpenAI default), "api-key" (Azure/Foundry default) and "none".
+ *
+ * Examples:
+ *
+ * - `OpenAI`: new `ow.ai.gpt("openai", { key: "sk-...", url: "https://api.openai.com/v1", model: "gpt-4o-mini" })`
+ * - Azure OpenAI v1: new `ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-v1", model: "DEPLOYMENT" })`
+ * - Azure OpenAI legacy: new `ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-legacy", deployment: "DEPLOYMENT", apiVersion: "2024-10-21" })`
+ * - Azure AI Foundry v1: new `ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" })`
+ * - Azure AI Foundry dated API: new `ow.ai.gpt("openai", { key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" })`
+ *
+ * Usage stats note: `getLastStats()` now includes OpenAI cached prompt tokens (`tokens.cached`) when reported by compatible models.
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
@@ -4756,41 +4769,46 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>$gpt(aModel) : $gpt</key>
- * Creates a GPT AI model from aModel (e.g. type "openai", "gemini", "ollama" or "anthropic").\
- * \
- * aModel can be a map with the following properties:\
- * - type: the type of the model (e.g. "openai", "ollama", "anthropic")\
- * - options: a map with the options for the model (e.g. { key: "your-api-key", model: "gpt-3.5-turbo", temperature: 0.7, url: "https://api.openai.com/" })\
- * - conversation: an array of messages to start the conversation (e.g. [{ role: "system", content: "You are a helpful assistant." }, { role: "user", content: "Hello!" }])\
- * - tools: a map with the tools to use in the conversation (e.g. { "tool1": { type: "function", function: { name: "tool1", description: "A tool that does something", parameters: { type: "object", properties: { param1: { type: "string" } } } }, fn: function(args) { return args.param1; } } })\
- * - timeout: the timeout for the requests in milliseconds (defaults to 15 minutes)\
- * - noSystem: if true, it will not output the system messages (defaults to true)\
- * - instructions: a string or an array of strings with the instructions for the model (e.g. "json", "boolean", "sql", "js", "path")\
- * - headers: a map with the headers to use in the requests (e.g. { "Content-Type": "application/json" })\
- * - params: a map with the parameters to use in the requests (e.g. { "max_tokens": 1000, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 })\
- * - promptCaching: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false)\
- * \
- * For type "openai", options can also include:\
- * - decisionApi: native decision contract ("openai" default, "openrouter", or "microsoft"). Microsoft requires mode "foundry" or "azure-foundry", API v1 and an explicit deployment name in model.\
- * - decisionUrl: optional absolute HTTP(S) native decision endpoint override.\
- * - mode: transport mode ("openai", "azure-openai-v1", "azure-openai-legacy" or "foundry").\
- * - apiVersion: OpenAI-compatible API version path segment, or Azure legacy api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version. Defaults to "v1".\
- * - deployment: Azure OpenAI legacy deployment name; defaults to model when omitted.\
- * - authType: generated authentication header style ("bearer", "api-key" or "none"). Defaults to "bearer" for OpenAI mode and "api-key" for Azure/Foundry modes.\
- * \
- * OpenAI-compatible examples:\
- * - { type: "openai", key: "sk-...", url: "https://api.openai.com/v1", model: "gpt-4o-mini" }\
- * - { type: "openai", key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-v1", model: "DEPLOYMENT" }\
- * - { type: "openai", key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-legacy", deployment: "DEPLOYMENT", apiVersion: "2024-10-21" }\
- * - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" }\
- * - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" }\
- * \
- * If aModel is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
- * \
+ * <![CDATA[
+ * Creates a GPT AI model from `aModel` (e.g. type "openai", "gemini", "ollama" or "anthropic").
+ *
+ * `aModel` can be a map with the following properties:
+ *
+ * - `type`: the type of the model (e.g. "openai", "ollama", "anthropic")
+ * - `options`: a map with the options for the model (e.g. { key: "your-api-key", model: "gpt-3.5-turbo", temperature: 0.7, url: "https://api.openai.com/" })
+ * - `conversation`: an array of messages to start the conversation (e.g. [{ role: "system", content: "You are a helpful assistant." }, { role: "user", content: "Hello!" }])
+ * - `tools`: a map with the tools to use in the conversation (e.g. { "tool1": { type: "function", function: { name: "tool1", description: "A tool that does something", parameters: { type: "object", properties: { param1: { type: "string" } } } }, fn: function(args) { return args.param1; } } })
+ * - `timeout`: the timeout for the requests in milliseconds (defaults to 15 minutes)
+ * - `noSystem`: if true, it will not output the system messages (defaults to true)
+ * - `instructions`: a string or an array of strings with the instructions for the model (e.g. "json", "boolean", "sql", "js", "path")
+ * - `headers`: a map with the headers to use in the requests (e.g. { "Content-Type": "application/json" })
+ * - `params`: a map with the parameters to use in the requests (e.g. { "max_tokens": 1000, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 })
+ * - `promptCaching`: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false)
+ *
+ * For type "openai", options can also include:
+ *
+ * - `decisionApi`: native decision contract ("openai" default, "openrouter", or "microsoft"). Microsoft requires mode "foundry" or "azure-foundry", API v1 and an explicit deployment name in model.
+ * - `decisionUrl`: optional absolute HTTP(S) native decision endpoint override.
+ * - `mode`: transport mode ("openai", "azure-openai-v1", "azure-openai-legacy" or "foundry").
+ * - `apiVersion`: OpenAI-compatible API version path segment, or Azure legacy api-version query parameter. In Foundry mode, "v1" uses the /openai/v1 path; dated versions use the /models route with api-version. Defaults to "v1".
+ * - `deployment`: Azure OpenAI legacy deployment name; defaults to model when omitted.
+ * - `authType`: generated authentication header style ("bearer", "api-key" or "none"). Defaults to "bearer" for OpenAI mode and "api-key" for Azure/Foundry modes.
+ *
+ * OpenAI-compatible examples:
+ *
+ * - { type: "openai", key: "sk-...", url: "https://api.openai.com/v1", model: "gpt-4o-mini" }
+ * - { type: "openai", key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-v1", model: "DEPLOYMENT" }
+ * - { type: "openai", key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-legacy", deployment: "DEPLOYMENT", apiVersion: "2024-10-21" }
+ * - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" }
+ * - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" }
+ *
+ * If `aModel` is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
+ *
  * The returned object also exposes helper methods to inspect vendor usage information: `getLastStats`/`lastStats` (map with the latest statistics), `promptWithStats`,
  * `promptJSONWithStats` and `rawPromptWithStats` (returning `{ response, stats }`). OpenAI compatible models can expose cached prompt tokens via `stats.tokens.cached`.
+ * ]]>
  * </odoc>
  */
 global.$gpt = function(aModel) {
@@ -5095,21 +5113,25 @@ global.$gpt = function(aModel) {
             return _r
         },
         /**
-         * <odoc>
+         * <odoc format="markdown">
          * <key>$gpt.withMcpTools(aMcpClient, aToolNames) : ow.ai.gpt</key>
-         * Automatically adds MCP tools from an MCP client to the current GPT instance. The aMcpClient should be an initialized $mcp client.
-         * If aToolNames is provided (array of strings), only those specific tools will be added. Otherwise, all available tools are added.
+         * <![CDATA[
+         * Automatically adds MCP tools from an MCP client to the current GPT instance. The `aMcpClient` should be an initialized `$mcp` client.
+         * If `aToolNames` is provided (array of strings), only those specific tools will be added. Otherwise, all available tools are added.
          * Each MCP tool will be converted to a GPT-compatible tool using the MCP tool's JSON schema.
-         * \
-         * Example:\
-         * \
-         * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
-         * mcpClient.initialize();\
-         * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
-         * gpt.withMcpTools(mcpClient); // Adds all MCP tools\
-         * // or gpt.withMcpTools(mcpClient, ["read_file", "write_file"]); // Adds only specific tools\
-         * \
-         * var response = gpt.prompt("Read the file /tmp/example.txt");\
+         *
+         * Example:
+         *
+         * ```javascript
+         * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});
+         * mcpClient.initialize();
+         * var gpt = $gpt({type: "openai", options: {key: "your-key"}});
+         * gpt.withMcpTools(mcpClient); // Adds all MCP tools
+         * // or gpt.withMcpTools(mcpClient, ["read_file", "write_file"]); // Adds only specific tools
+         *
+         * var response = gpt.prompt("Read the file /tmp/example.txt");
+         * ```
+         * ]]>
          * </odoc>
          */
         withMcpTools: (aMcpClient, aToolNames) => {
@@ -5159,22 +5181,26 @@ global.$gpt = function(aModel) {
             return _r
         },
         /**
-         * <odoc>
+         * <odoc format="markdown">
          * <key>$gpt.withA2aAgents(aA2aClient, aAgentIds) : ow.ai.gpt</key>
-         * Automatically adds A2A agents from an MCP/A2A client to the current GPT instance as tools.\
-         * The aA2aClient should be an initialized $mcp client that supports agents/* methods.\
-         * If aAgentIds is provided (array of strings), only those specific agents will be added. Otherwise, all available agents are added.\
-         * Each A2A agent becomes a GPT tool where the tool call sends a message to the agent and returns its response.\
-         * \
-         * Example:\
-         * \
-         * var a2aClient = $mcp({type: "remote", url: "http://localhost:8080/a2a"});\
-         * a2aClient.initialize();\
-         * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
-         * gpt.withA2aAgents(a2aClient); // Adds all A2A agents as tools\
-         * // or gpt.withA2aAgents(a2aClient, ["weather-agent", "translator-agent"]); // Adds only specific agents\
-         * \
-         * var response = gpt.prompt("What's the weather in Lisbon?"); // GPT can call the weather-agent\
+         * <![CDATA[
+         * Automatically adds A2A agents from an MCP/A2A client to the current GPT instance as tools.
+         * The `aA2aClient` should be an initialized `$mcp` client that supports agents/* methods.
+         * If `aAgentIds` is provided (array of strings), only those specific agents will be added. Otherwise, all available agents are added.
+         * Each A2A agent becomes a GPT tool where the tool call sends a message to the agent and returns its response.
+         *
+         * Example:
+         *
+         * ```javascript
+         * var a2aClient = $mcp({type: "remote", url: "http://localhost:8080/a2a"});
+         * a2aClient.initialize();
+         * var gpt = $gpt({type: "openai", options: {key: "your-key"}});
+         * gpt.withA2aAgents(a2aClient); // Adds all A2A agents as tools
+         * // or gpt.withA2aAgents(a2aClient, ["weather-agent", "translator-agent"]); // Adds only specific agents
+         *
+         * var response = gpt.prompt("What's the weather in Lisbon?"); // GPT can call the weather-agent
+         * ```
+         * ]]>
          * </odoc>
          */
         withA2aAgents: (aA2aClient, aAgentIds) => {
@@ -5402,75 +5428,93 @@ OpenWrap.ai.prototype.network = function(args) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.neuralnetwork(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-neuralnetwork
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-neuralnetwork)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.rnntimestep(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.lstmtimestep(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.grutimestep(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.rnn(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.lstm(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.gru(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.feedfoward(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#neural-network-types
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#neural-network-types)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.recurrent(args) : ow.ai.network</key>
- * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
- * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#neural-network-types
- * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * <![CDATA[
+ * - [Examples](https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples)
+ * - [Data format](https://github.com/BrainJS/brain.js?tab=readme-ov-file#neural-network-types)
+ * - [Train](https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options)
+ * ]]>
  * </odoc>
  */
 
@@ -5510,11 +5554,13 @@ OpenWrap.ai.prototype.network.prototype.perceptron = function(args) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.lstm(args) : ow.ai.network</key>
+ * <![CDATA[
  * LSTM (Long short-term memory) are well-suited to learn from experience to classify, process and predict time series when
  * there are very long time lags of unknown size between important events. There is a minimum of 3 layers (input, memory block (input, memory cell, forget gate, output gate), output).
- * args = [2, 6, 1] means 2 input, 6 memory blocks, 1 output; args = [2, 4, 4, 4, 1] means 2 input neurons, 3 memory blocks and 1 output.
+ * `args = [2, 6, 1]` means 2 input, 6 memory blocks, 1 output; `args = [2, 4, 4, 4, 1]` means 2 input neurons, 3 memory blocks and 1 output.
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.lstm = function(args) {
@@ -5551,13 +5597,17 @@ OpenWrap.ai.prototype.network.prototype.hopfield = function(args) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.network.train(trainingData, trainArgs)</key>
- * Trains the current network with the trainingData provided. trainingData should be an array of maps. Each 
- * map entry should have a input and output keys. Each input and output entries should be an array for the 
- * entry values and output values normalized to a decimal number between 0 and 1. Example:\
- * [{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}]\.
- * \
+ * <![CDATA[
+ * Trains the current network with the `trainingData` provided. `trainingData` should be an array of maps. Each
+ * map entry should have a input and output keys. Each input and output entries should be an array for the
+ * entry values and output values normalized to a decimal number between 0 and 1. Example:
+ *
+ * ```javascript
+ * [{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}]
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.train = function(trainingData, trainArgs) {
@@ -5838,30 +5888,33 @@ OpenWrap.ai.prototype.normalize = {
     },
 
     /**
-     * <odoc>
+     * <odoc format="markdown">
      * <key>ow.ai.normalize.withSchema(aSimpleMapOfData, aMapSchema, convertBools) : Array</key>
-     * Tries to normalize and return aSimpleMapOfData normalized according with aMapSchema provided. Each element of aMapSchema
-     * should be a map describing how to normalize aSimpleMapOfData. Example:\
-     * \
-     * var ar = [\
-     *    {name:'workout', duration:'120', enjoy: true, time:1455063275, tags:['gym', 'weights'], crucial: false },\
-     *    {name:'lunch', duration:'45', enjoy: false, time:1455063275, tags:['salad', 'wine'], crucial: true },\
-     *    {name:'sleep', duration:'420', enjoy: true, time:1455063275, tags:['bed', 'romance'], crucial: true}\
-     * ];\
-     * \
-     * var sar = {\
-     *    name    : { col: 0, oneOf: [ 'workout', 'lunch', 'sleep' ] },\
-     *    duration: { col: 1, min: 0, max: 1000 },\
-     *    enjoy   : { col: 2 },\
-     *    tags    : { col: 3, anyOf: [ 'gym', 'weights', 'salad', 'wine', 'bed', 'romance' ] },\
-     *    crucial : { col: 4, scaleOf: [\
-     *      { val: true,  weight: 0.85 },\
-     *      { val: false, weight: 0.15 }\
-     *    ]},\
-     * };\
-     * \
-     * $from(ar).sort("time").select((r) => { return normalize(r, sar); });\
-     * \
+     * <![CDATA[
+     * Tries to normalize and return `aSimpleMapOfData` normalized according with `aMapSchema` provided. Each element of `aMapSchema`
+     * should be a map describing how to normalize `aSimpleMapOfData`. Example:
+     *
+     * ```javascript
+     * var ar = [
+     *    {name:'workout', duration:'120', enjoy: true, time:1455063275, tags:['gym', 'weights'], crucial: false },
+     *    {name:'lunch', duration:'45', enjoy: false, time:1455063275, tags:['salad', 'wine'], crucial: true },
+     *    {name:'sleep', duration:'420', enjoy: true, time:1455063275, tags:['bed', 'romance'], crucial: true}
+     * ];
+     *
+     * var sar = {
+     *    name    : { col: 0, oneOf: [ 'workout', 'lunch', 'sleep' ] },
+     *    duration: { col: 1, min: 0, max: 1000 },
+     *    enjoy   : { col: 2 },
+     *    tags    : { col: 3, anyOf: [ 'gym', 'weights', 'salad', 'wine', 'bed', 'romance' ] },
+     *    crucial : { col: 4, scaleOf: [
+     *      { val: true,  weight: 0.85 },
+     *      { val: false, weight: 0.15 }
+     *    ]},
+     * };
+     *
+     * $from(ar).sort("time").select((r) => { return normalize(r, sar); });
+     * ```
+     * ]]>
      * </odoc>
      */
     withSchema: function(aAR, sAR, convertBools) {
@@ -5989,29 +6042,34 @@ OpenWrap.ai.prototype.normalize = {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.decisionTree(aMap) : Object</key>
- * Provides a wrapper to access the existing decision tree algorithms included:\
- * \
- * ID3:\
- *   type              'id3'\
- *   trainingSet       (array of maps)   The training data\
- *   categoryAttr      (key name)        The map key to build the decision tree on\
- *   ignoredAttributes (array of keys)   The list of keys to be ignored in each map\
- * \
- * RandomForest:\
- *   type              'randomforest'\
- *   trainingSet       (array of maps)   The training data\
- *   categoryAttr      (key name)        The map key to build the decision tree on\
- *   ignoredAttributes (array of keys)   The list of keys to be ignored in each map\
- *   treesNumber       (number)          The number of decision trees to use\
- * \
- * C45:\
- *   type              'c45'\
- *   data              (array of arrays) The training data\
- *   features          (arrays of keys)  The keys name by order of each array data value\
- *   featureTypes      (arrays of types) Categorization of each attribute between 'category' and 'number'\
- *   target            (key)             The target key name (the last of each array data value)
+ * <![CDATA[
+ * Provides a wrapper to access the existing decision tree algorithms included:
+ *
+ * ID3:
+ *
+ * - `type`: `'id3'`
+ * - `trainingSet` (array of maps) The training data
+ * - `categoryAttr` (key name) The map key to build the decision tree on
+ * - `ignoredAttributes` (array of keys) The list of keys to be ignored in each map
+ *
+ * RandomForest:
+ *
+ * - `type`: `'randomforest'`
+ * - `trainingSet` (array of maps) The training data
+ * - `categoryAttr` (key name) The map key to build the decision tree on
+ * - `ignoredAttributes` (array of keys) The list of keys to be ignored in each map
+ * - `treesNumber` (number) The number of decision trees to use
+ *
+ * C45:
+ *
+ * - `type`: `'c45'`
+ * - `data` (array of arrays) The training data
+ * - `features` (arrays of keys) The keys name by order of each array data value
+ * - `featureTypes` (arrays of types) Categorization of each attribute between 'category' and 'number'
+ * - `target` (key) The target key name (the last of each array data value)
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.decisionTree = function(args) {
@@ -6833,16 +6891,17 @@ OpenWrap.ai.prototype.decisionTree.C45.prototype = {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.cluster(args) : Object</key>
- * Wraps access to clustering of data. The result will be an object with a classify method that will 
- * return the clustering result given the provided data. Args expects different arguments depending on type of 
- * clustering:\
- * \
- *    args.type                (String) "kmeans" (default)\
- *    args.numberOfClusters    (Number) number of clusters to use (default to 5)\
- *    classify(normalizedData) (Map)    returns a map of centroids and cluster assignments\
- * \
+ * <![CDATA[
+ * Wraps access to clustering of data. The result will be an object with a classify method that will
+ * return the clustering result given the provided data. Args expects different arguments depending on type of
+ * clustering:
+ *
+ * - `args.type` (String) "kmeans" (default)
+ * - `args.numberOfClusters` (Number) number of clusters to use (default to 5)
+ * - `classify(normalizedData)` (Map) returns a map of centroids and cluster assignments
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.cluster = function(args) {

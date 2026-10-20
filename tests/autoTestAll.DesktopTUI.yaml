@@ -27,10 +27,20 @@ jobs:
   from: DesktopTUI::Init
   to: oJob Test
   exec: args.func = args.tests.testEventSecurityAndHTML;
+- name: DesktopTUI::Screen styling align and UTF8
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testScreenStylingAlignAndUTF8;
+- name: DesktopTUI::Mouse
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testMouse;
 todo:
+- DesktopTUI::Mouse
 - DesktopTUI::View validation
 - DesktopTUI::Native views and updates
 - DesktopTUI::Controls and messages
 - DesktopTUI::Tabs resize and escapes
 - DesktopTUI::Ownership and failure
 - DesktopTUI::Event security and graphical rendering
+- DesktopTUI::Screen styling align and UTF8

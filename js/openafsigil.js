@@ -32,16 +32,19 @@ const $$ = function(aObj) {
             return result
         },
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$$.get(aPath) : Object</key>
-		 * Given aObject it will try to parse the aPath and retrive the corresponding object under that path. Example:\
-		 * \
-		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
-		 * \
-		 * print($$(a).get("b.c")); // 2\
-		 * sprint($$(a).get("b.d")); // [0, 1]\
-		 * print($$(a).get("b.d[0]")); // 0\
-		 * \
+		 * <![CDATA[
+		 * Given `aObject` it will try to parse the `aPath` and retrieve the corresponding object under that path. Example:
+		 *
+		 * ```javascript
+		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };
+		 *
+		 * print($$(a).get("b.c")); // 2
+		 * sprint($$(a).get("b.d")); // [0, 1]
+		 * print($$(a).get("b.d[0]")); // 0
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
 		get: (aPath) => {
@@ -62,16 +65,19 @@ const $$ = function(aObj) {
             return aObj;
 		},
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$$.getI(aPath) : Object</key>
-		 * Given aObject it will try to parse the aPath (in a case-insensitive way) and retrive the corresponding object under that path. Example:\
-		 * \
-		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
-		 * \
-		 * print($$(a).getI("b.C")); // 2\
-		 * sprint($$(a).getI("B.d")); // [0, 1]\
-		 * print($$(a).getI("B.D[0]")); // 0\
-		 * \
+		 * <![CDATA[
+		 * Given `aObject` it will try to parse the `aPath` (in a case-insensitive way) and retrieve the corresponding object under that path. Example:
+		 *
+		 * ```javascript
+		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };
+		 *
+		 * print($$(a).getI("b.C")); // 2
+		 * sprint($$(a).getI("B.d")); // [0, 1]
+		 * print($$(a).getI("B.D[0]")); // 0
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */
         getI: aPath => {
@@ -104,14 +110,17 @@ const $$ = function(aObj) {
             return aObj
         },
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$$.set(aPath, aNewValue) : Object</key>
-		 * Given aObject it will try to parse the aPath and set the corresponding object under that path to aNewValue. Example:\
-		 * \
-		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
-		 * \
-		 * sprint($$(a).set("b.c", 123)); // { a : 1, b : { c: 123, d: [0, 1] } }\
-		 * \
+		 * <![CDATA[
+		 * Given `aObject` it will try to parse the `aPath` and set the corresponding object under that path to `aNewValue`. Example:
+		 *
+		 * ```javascript
+		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };
+		 *
+		 * sprint($$(a).set("b.c", 123)); // { a : 1, b : { c: 123, d: [0, 1] } }
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */		
         set: (aPath, aValue) => {
@@ -142,14 +151,17 @@ const $$ = function(aObj) {
             return orig;
         },
 		/**
-		 * <odoc>
+		 * <odoc format="markdown">
 		 * <key>$$.unset(aPath) : Object</key>
-		 * Given aObject it will try to parse the aPath and unset the corresponding object under that path. Example:\
-		 * \
-		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
-		 * \
-		 * sprint($$(a).set("b.c")); // { a : 1, b : { d: [0, 1] } }\
-		 * \
+		 * <![CDATA[
+		 * Given `aObject` it will try to parse the `aPath` and unset the corresponding object under that path. Example:
+		 *
+		 * ```javascript
+		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };
+		 *
+		 * sprint($$(a).set("b.c")); // { a : 1, b : { d: [0, 1] } }
+		 * ```
+		 * ]]>
 		 * </odoc>
 		 */		
         unset: aPath => {
@@ -214,15 +226,17 @@ const _$ = function(aValue, aPrefixMessage) {
     const __r = {
         // Defaults
         /**
-         * <odoc>
+         * <odoc format="markdown">
          * <key>_$(aObject, anErrorMessagePrefix)</key>
-         * Shortcut to facilitate argument pre-validation and promote defensive programming.\
-         * \
-         * .default(aNewObject) : aObject\
-         * Checks if aObject is defined and returns aObject. If it's not defined it will return aNewObject (the default value).\
-         * \
-         * $_(aMessage) : aObject\
-         * Throws an exception with aMessage if aObject is not defined otherwise returns aObject.
+         * <![CDATA[
+         * Shortcut to facilitate argument pre-validation and promote defensive programming.
+         *
+         * - `.default(aNewObject)`: `aObject`
+         *   Checks if `aObject` is defined and returns `aObject`. If it's not defined it will return `aNewObject` (the default value).
+         *
+         * - `$_(aMessage)`: `aObject`
+         *   Throws an exception with `aMessage` if `aObject` is not defined otherwise returns `aObject`.
+         * ]]>
          * </odoc>
          */
         default : (aVal) => {

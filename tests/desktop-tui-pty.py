@@ -55,6 +55,8 @@ def run(script, exchanges, expected, piped_input=None, resize=False):
         for text in expected:
             assert text.encode() in output, (text, output[-5000:])
         assert b"\x1b[?1049h" in output and b"\x1b[?1049l" in output, "Alternate screen not restored"
+        assert b"\x1b[?1000h\x1b[?1006h" in output, "Mouse reporting not enabled"
+        assert b"\x1b[?1000l\x1b[?1006l" in output, "Mouse reporting not restored"
         after = termios.tcgetattr(fd)
         mask = termios.ECHO | termios.ICANON | termios.ISIG | termios.IEXTEN
         assert before[3] & mask == after[3] & mask, "Terminal attributes leaked"
@@ -98,6 +100,20 @@ var input=new java.io.BufferedReader(new java.io.InputStreamReader(java.lang.Sys
 print("PIPE:"+input.readLine());
 ''', [("Pipe-safe terminal", b"\x03")], ["PIPE:preserved-input"], piped_input=b"preserved-input\n")
 print("PASS redirected stdin remains untouched and terminal escapes are sanitized")
+
+run('''
+ow.loadDesktop({provider:"tui"});
+var w=ow.desktop.window({title:"Mouse",view:{items:[
+{id:"name",type:"input",label:"Name",value:""},
+{id:"mode",type:"select",label:"Mode",options:["one","two"],value:"one"},
+{id:"go",type:"button",label:"Go"}]}});
+w.on("message",function(e){if(e.message.type!="action")return;
+var v=e.message.payload.values;
+if(v.name!="Mouse"||v.mode!="two")throw new Error("Incorrect mouse form values");
+w.close();});
+w.show();ow.desktop.wait(12000);print("MOUSE-OK");
+''', [("[ Go ]", b"\x1b[<0;3;2MMouse\x1b[<0;4;3M\x1b[<0;3;4M\x1b[<0;3;4m")], ["MOUSE-OK"])
+print("PASS real terminal mouse focus, select, button and reporting restoration")
 
 # A detached subprocess must fail availability without touching stdin or hanging.
 script = """

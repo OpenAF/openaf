@@ -189,15 +189,31 @@ JavaFX (and future HTML providers). TUI uses the same event contract directly,
 without HTTP, JavaFX, a helper process, or extra libraries.
 
 The deliberately small version 1 view is `{version:1, items:[...]}`; version may
-be omitted. Items require a unique identifier (`[A-Za-z][A-Za-z0-9_-]*`, up to 64
+be omitted. View-level layout and styling options include `title`, `subtitle`,
+`align` (`"left"`, `"center"`, `"right"`), `spacing` (0–8 blank lines between items),
+`padding`, `margin`, `border` (`true`, `"rounded"`, `"single"`, `"double"`, `"heavy"`, `"ascii"`, `"none"`),
+`borderStyle`, `theme` (`"default"`, `"ocean"`, `"light"`, `"monochrome"`, or a custom theme map),
+and `style`.
+
+Items require a unique identifier (`[A-Za-z][A-Za-z0-9_-]*`, up to 64
 characters; reserved prototype identifiers are rejected) and one of:
 
 | Type | Fields | Behavior |
 | --- | --- | --- |
-| `text` | `text` | Plain text, including newlines; no HTML/ANSI execution |
+| `text` | `text`, optional `title` | Plain text, including newlines; no HTML/ANSI execution |
 | `button` | `label` | Emits `action` when activated |
-| `input` | `label`, `value` (default empty) | Single-line text; emits `change` on commit |
+| `input` | `label`, `value` (default empty), optional `placeholder` | Single-line text; emits `change` on commit |
 | `select` | `label`, `options`, `value` (default first option) | String choices; emits `change` when selected |
+| `divider` | optional `label`, `char` | Horizontal rule / section divider |
+| `spacer` | optional `lines` (1–32, default 1) | Vertical spacing lines |
+| `progress` | `value`, optional `label`, `min`, `max`, `showPercent` | Read-only progress bar |
+
+Each item also accepts optional layout and styling properties: `align` (`"left"`, `"center"`, `"right"`),
+`style`, `labelStyle`, `focusStyle` (strings such as `"BOLD,ITALIC,UNDERLINE,FG(39)"` or maps with
+`fg`, `bg`, `bold`, `italic`, `underline`, `doubleUnderline`, `dim`/`faint`, `strikethrough`, `reverse`/`invert`, `blink`, `hidden`,
+supporting named colors, 256-color indices `0..255`, `#rgb`/`#rrggbb` hex, and `rgb(r,g,b)` truecolor),
+`padding`, `margin`, `spacing`, `width`, `border`, `borderStyle`, and `disabled`.
+For standalone terminal styling, UTF-8 alignment, and box drawing, use `ow.loadScreen()` (`ow.screen`).
 
 Views contain at most 128 items and 64 KiB of UTF-8 JSON. Text is limited to 8192
 characters, labels and select options to 256, input values to 4096. Select options
@@ -244,6 +260,16 @@ current rows and columns and detects size changes. Supported keys:
 - Page Up/Page Down: scroll long content.
 - Ctrl-N/Ctrl-P: select the next/previous window tab.
 - Ctrl-W: close the active window; Ctrl-C: close all desktop windows.
+
+Mouse support is enabled automatically in terminals that support xterm SGR mouse
+reports. Click buttons to activate them, input fields to focus them, and selects
+to advance their value (click the `<` indicator to go back). Click a window tab
+to switch windows; use the wheel over the content to scroll. Disabled controls,
+static text, and blank spacing do not respond to clicks. Input editing continues
+with the keyboard after focus; clicking does not reposition the text cursor.
+Hold the terminal's mouse override modifier (commonly Shift) to select/copy text,
+or disable reporting with `providerOptions: { tui: { mouse: false } }`.
+Mouse reporting is disabled when the desktop restores the terminal.
 
 Ctrl-C is handled as terminal input and never calls `exit()` or cancels unrelated
 OpenAF work. With redirected/closed terminal input, EOF closes desktop windows.
