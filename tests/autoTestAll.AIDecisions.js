@@ -596,8 +596,23 @@
     var q = copy(questions); q.priority.criteria = Array(27).fill("level");
     expectError(function() { g.decide("state", q); }, "LLM_DECISION_INVALID_REQUEST");
     ow.test.assert(count, 2, "UTF-8 limit and criteria rejected before HTTP");
-    var cloud = make("ollama", { model: "nimble:cloud" });
-    expectError(function() { cloud.decide("state", questions); }, "LLM_DECISION_UNSUPPORTED");
+    var cloud = make("ollama", { model: "clef:cloud" }), cloudCalls = 0, cloudModel = "clef";
+    cloud.getGPT().model._decisionRequest = function(uri, data) {
+      cloudCalls++;
+      ow.test.assert(uri, "/v1/systemone", "Cloud uses the native decision endpoint");
+      ow.test.assert(data.model, "clef:cloud", "Preserve the caller's cloud model");
+      var result = nativeFixture(); result.model = cloudModel; return result;
+    };
+    ow.test.assert(cloud.getGPT().getCapabilities().native.availability, "unknown", "Cloud availability is checked by the provider");
+    var decision = cloud.decideWithStats("state", questions, { requireProbabilities: true });
+    ow.test.assert(decision.response.model, "clef", "Preserve the resolved cloud model");
+    ow.test.assert(decision.response.answers.route.value, "billing", "Normalize cloud answers");
+    ow.test.assert(decision.stats.tokens.prompt, 17, "Preserve cloud usage");
+    cloudModel = "clef:cloud";
+    ow.test.assert(cloud.decide("state", questions).model, "clef:cloud", "Exact cloud model also accepted");
+    cloudModel = "wrong-model";
+    expectError(function() { cloud.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE");
+    ow.test.assert(cloudCalls, 3, "Cloud decisions execute once without retries");
   };
   exports.testDecisionImages = function() {
     ow.loadAI();

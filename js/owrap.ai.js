@@ -269,7 +269,9 @@ OpenWrap.ai.prototype.__decision = {
         return p;
     },
     ollamaAnswers: function(raw, request) {
-        if (!this.map(raw) || raw.model !== request.model) this.badResponse();
+        // Cloud responses identify the underlying model without the routing suffix.
+        if (!this.map(raw) || (raw.model !== request.model &&
+            !(/:cloud$/.test(request.model) && raw.model === request.model.replace(/:cloud$/, "")))) this.badResponse();
         return this.namedAnswers(raw, request);
     },
     namedAnswers: function(raw, request, decimals) {
@@ -2499,7 +2501,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 resetDecisionStats: () => _resetStats(),
                 getCapabilities: model => {
-                    var caps = ow.ai.__decision.capabilities(true, false, "verified", /:cloud$/.test(model || _model) ? "incompatible" : "unknown");
+                    var caps = ow.ai.__decision.capabilities(true, false, "verified", "unknown");
                     caps.inputTypes.push("image");
                     return caps;
                 },
