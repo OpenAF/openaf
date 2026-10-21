@@ -211,7 +211,7 @@
         ow.test.assert(record.headers.Authorization.indexOf("Bearer "), 0, "Bearer authentication retained");
       });
       var g = make("openai", { model: "gpt-6-luna" });
-      [401, 404, 429, 500].forEach(code => { status = code; payload = '{"error":{"message":"SECRET"}}'; var e = expectError(() => g.decide("SECRET", questions), "LLM_DECISION_PROVIDER_ERROR"); ow.test.assert(e.status, code, "HTTP status retained"); ow.test.assert(String(e).indexOf("SECRET"), -1, "Errors sanitized"); });
+      [401, 404, 429, 500].forEach(code => { status = code; payload = '{"error":{"message":"Model unavailable"},"request":"SECRET"}'; var e = expectError(() => g.decide("SECRET", questions), "LLM_DECISION_PROVIDER_ERROR"); ow.test.assert(e.status, code, "HTTP status retained"); ow.test.assert(String(e).indexOf("SECRET"), -1, "Unrelated response fields excluded"); ow.test.assert(e.providerMessage, "Model unavailable", "Provider error retained"); ow.test.assert(String(e).indexOf("HTTP " + code) >= 0, true, "HTTP status visible"); });
       status = 200; payload = "malformed SECRET";
       expectError(() => g.rawDecide("state", questions), "LLM_DECISION_INVALID_RESPONSE");
       ow.test.assert(records.length, 9, "No strategy fallback or additional inference");
@@ -425,7 +425,7 @@
       ow.test.assert(records[4].url, "https://proxy/decide", "Explicit endpoint override");
       var g = make("openai", config);
       [401, 403, 404, 422, 429, 500].forEach(code => {
-        status = code; payload = '{"error":{"message":"SECRET"}}';
+        status = code; payload = '{"error":{"message":"Model unavailable"},"request":"SECRET"}';
         var before = records.length, e = expectError(() => g.decide("SECRET", questions), "LLM_DECISION_PROVIDER_ERROR");
         ow.test.assert(e.status, code, "HTTP status retained");
         ow.test.assert(String(e).indexOf("SECRET"), -1, "Provider errors sanitized");
@@ -471,10 +471,14 @@
     ow.test.assert(count, 1, "Raw does not make another inference");
     expectError(function() { g.rawDecide("state", questions, { requireProbabilities: true }); }, "LLM_DECISION_INVALID_RESPONSE");
     ow.test.assert(count, 2, "Required probabilities validated on actual raw response");
-    g.getGPT().model._decisionRequest = function() { count++; return { error: "SECRET STATE", status: 429 }; };
+    g.getGPT().model._decisionRequest = function() { count++; return { error: "Model not found", status: 429, request: "SECRET STATE" }; };
     var e = expectError(function() { g.rawDecide("state", questions); }, "LLM_DECISION_PROVIDER_ERROR");
     ow.test.assert(e.status, 429, "Keep sanitized status");
-    ow.test.assert(String(e).indexOf("SECRET") < 0, true, "Do not echo provider body");
+    ow.test.assert(String(e).indexOf("SECRET") < 0, true, "Do not echo unrelated provider fields");
+    ow.test.assert(e.providerMessage, "Model not found", "Ollama error retained");
+    ow.test.assert(String(e).indexOf("Model not found") >= 0, true, "Provider error visible");
+    ow.test.assert(ow.ai.__decision.providerMessage({ error: { message: "First\nSecond\u001b" } }), "First Second ", "Control characters removed");
+    ow.test.assert(isUnDef(ow.ai.__decision.providerMessage("not JSON SECRET")), true, "Arbitrary response bodies excluded");
     ow.test.assert(isUnDef(g.getLastStats()), true, "Provider failure clears stale stats");
     ow.test.assert(count, 3, "No downgrade/retry");
   };

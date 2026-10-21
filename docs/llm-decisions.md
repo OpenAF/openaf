@@ -196,7 +196,7 @@ The legacy Schema profile additionally rejects null types, nonstring enums, and 
 
 ## Errors and troubleshooting
 
-Errors are Error objects with stable `code`, sanitized `provider`, and numeric HTTP `status` when available. Ordinary errors omit provider bodies, state, URLs containing credentials, and authentication headers.
+Errors are Error objects with stable `code`, sanitized `provider`, and numeric HTTP `status` when available. Provider failures include the provider's `error` string or `error.message` in the exception message and `providerMessage`, plus HTTP status in the message when available. Provider messages have control characters removed and are limited to 2048 characters. Other response fields, non-JSON bodies, and transport exception details are omitted. Provider-authored messages may include details from the request.
 
 | Code | Meaning |
 | --- | --- |

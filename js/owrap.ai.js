@@ -95,8 +95,21 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
 OpenWrap.ai.prototype.__decision = {
     has: (o, k) => Object.prototype.hasOwnProperty.call(o, k),
     put: (o, k, v) => Object.defineProperty(o, k, { value: v, enumerable: true, configurable: true, writable: true }),
-    error: function(code, provider, status) {
-        var e = new Error(code + (provider ? " (" + provider + ")" : ""));
+    providerMessage: function(raw) {
+        if (typeof raw == "string") {
+            try { raw = JSON.parse(raw); } catch(ignore) { return; }
+        }
+        if (!this.map(raw) || !this.has(raw, "error")) return;
+        var detail = raw.error;
+        if (this.map(detail)) detail = detail.message;
+        if (typeof detail == "string") return detail.replace(/[\x00-\x1f\x7f-\x9f]/g, " ").slice(0, 2048);
+    },
+    error: function(code, provider, status, detail) {
+        var message = code + (provider ? " (" + provider + ")" : "");
+        if (typeof status == "number" && isFinite(status)) message += " [HTTP " + status + "]";
+        if (detail) message += ": " + detail;
+        var e = new Error(message);
+        if (detail) e.providerMessage = detail;
         e.code = code;
         if (provider) e.provider = provider;
         if (typeof status == "number" && isFinite(status)) e.status = status;
@@ -360,7 +373,7 @@ OpenWrap.ai.prototype.__decision = {
             h.client = h.client.newBuilder().retryOnConnectionFailure(false).build();
             h.setThrowExceptions(false);
             var result = h.exec(url, "POST", JSON.stringify(body), merge({ "Content-Type": "application/json", Accept: "application/json" }, headers), false, timeout, false, { timeout: timeout });
-            if (!result || result.responseCode < 200 || result.responseCode >= 300) throw this.error("LLM_DECISION_PROVIDER_ERROR", provider, result && result.responseCode);
+            if (!result || result.responseCode < 200 || result.responseCode >= 300) throw this.error("LLM_DECISION_PROVIDER_ERROR", provider, result && result.responseCode, this.providerMessage(result && result.response));
             if (isDef(debugCh)) $ch(debugCh).set({ _t: nowNano(), _f: "decision" }, { provider: provider, event: "response", status: result.responseCode });
             return this.parse(String(result.response));
         } catch(e) {
@@ -374,7 +387,7 @@ OpenWrap.ai.prototype.__decision = {
             if (e && /^LLM_DECISION_/.test(e.code || "")) throw e;
             throw this.error("LLM_DECISION_PROVIDER_ERROR", provider);
         }
-        if (this.map(raw) && this.has(raw, "error")) throw this.error("LLM_DECISION_PROVIDER_ERROR", provider, typeof raw.status == "number" ? raw.status : __);
+        if (this.map(raw) && this.has(raw, "error")) throw this.error("LLM_DECISION_PROVIDER_ERROR", provider, typeof raw.status == "number" ? raw.status : __, this.providerMessage(raw));
         return raw;
     },
     capabilities: function(native, structured, nativeContract, availability) {
