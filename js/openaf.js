@@ -5366,6 +5366,7 @@ const $jq = function(input, expression, options) {
  * progress(value, max, min, size, indicator, space),
  * to_csv(array, options), from_csv(str, options)
  * ch(name, op, arg1, arg2), chq(name, op, max, value), path(obj, jmespath), opath(jmespath)
+ * sql(obj, query), from(obj, queryStringOrMap), jq(obj, query)
  * to_ms(date), timeagoAbbr(x)
  * env(str), envs(regex)
  * oafp(json/slon), oafpd(obj, json/slon)
@@ -5392,6 +5393,15 @@ const $jq = function(input, expression, options) {
  * ```javascript
  * $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });
  * ```
+ *
+ * Query helpers use `$sql` with its default method, `$from(...).query(...)` (parsing strings
+ * with `af.fromNLinq`), and `$jq` with its default output behavior. Examples:
+ *
+ * ```javascript
+ * $path(data, "sql(items, 'select name where price > 10')");
+ * $path(data, "from(items, 'greater(price, 10)')");
+ * $path(data, "jq(items, 'map(select(.price > 10))')");
+ * ```
  * ]]>
  * </odoc>
  */
@@ -5403,6 +5413,18 @@ const $path = function(aObj, aPath, customFunctions) {
 	customFunctions = _$(customFunctions, "customFunctions").isMap().default({})
 	customFunctions = merge(__flags.PATH_CFN, customFunctions)
 	customFunctions = merge({
+		sql: {
+			_func: ar => $sql(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array, jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
+		},
+		from: {
+			_func: ar => $from(ar[0]).query(isString(ar[1]) ? af.fromNLinq(ar[1]) : ar[1]),
+			_signature: [ { types: [ jmespath.types.array, jmespath.types.object ] }, { types: [ jmespath.types.string, jmespath.types.object ] } ]
+		},
+		jq: {
+			_func: ar => $jq(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
 		count_by: {
 			_func: ar => $from(ar[0]).countBy(ar[1]),
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
