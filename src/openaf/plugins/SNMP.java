@@ -81,19 +81,20 @@ public class SNMP extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>SNMP.SNMP(anAddress, aCommunity, aTimeout, retries, version, securityMap)</key>
-	 * Tries to establish a SNMP connection to the given address (anAddress in the form of udp:x.x.x.x/port) of a specific community (aCommunity (e.g public))
-	 * with a provided timeout (aTimeout) and number of retries. You can also specify the version (2 or 3). For version 3
-	 * you can also provide a securityMap with the following entries:\
-	 * \
-	 *    securityName   (String)\
-	 *    authProtocol   (String) HMAC128SHA224, HMAC192SHA256, HMAC256SHA384, HMAC384SHA512, MD5, SHA\
-	 *    privProtocol   (String) 3DES, AES128, AES192, AES256, DES\
-	 *    authPassphrase (String)\
-	 *    privPassphrase (String)\
-	 *    engineId       (String) (in hex format only)\
-	 * \
+	 * <![CDATA[
+	 * Tries to establish a SNMP connection to the given address (`anAddress` in the form of udp:x.x.x.x/port) of a specific community (`aCommunity` (e.g public))
+	 * with a provided timeout (`aTimeout`) and number of `retries`. You can also specify the `version` (2 or 3). For `version` 3
+	 * you can also provide a `securityMap` with the following entries:
+	 *
+	 * - `securityName` (String)
+	 * - `authProtocol` (String) HMAC128SHA224, HMAC192SHA256, HMAC256SHA384, HMAC384SHA512, MD5, SHA
+	 * - `privProtocol` (String) 3DES, AES128, AES192, AES256, DES
+	 * - `authPassphrase` (String)
+	 * - `privPassphrase` (String)
+	 * - `engineId` (String) (in hex format only)
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSConstructor

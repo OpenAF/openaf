@@ -1,6 +1,6 @@
 ---
 name: openaf-owrap
-description: Implement OpenAF JavaScript using OpenWrap ow.* libraries, including formatting, objects, networking, channels, servers, templates, Java interop, metrics, secrets, testing, and AI. Use when selecting or calling owrap functions from scripts or oJob jobs.
+description: Implement OpenAF JavaScript using OpenWrap ow.* libraries, including formatting, objects, networking, channels (including time-series and graph channels), servers, templates, Java interop, metrics, secrets, terminal screens, desktop views, testing, and AI. Use when selecting or calling owrap functions from scripts or oJob jobs.
 ---
 
 # OpenWrap APIs
@@ -22,18 +22,21 @@ Start with the [OpenAF reference](https://github.com/openaf/openaf/blob/master/d
 | Dates, units, strings, terminal formatting | `ow.loadFormat()` | [`ow.format`](https://github.com/openaf/openaf/blob/master/js/owrap.format.js) |
 | Object utilities, REST facilities | `ow.loadObj()` | [`ow.obj`](https://github.com/openaf/openaf/blob/master/js/owrap.obj.js) |
 | Network utilities | `ow.loadNet()` | [`ow.net`](https://github.com/openaf/openaf/blob/master/js/owrap.net.js) |
-| Channel backends and subscriptions | `ow.loadCh()` | [`ow.ch`](https://github.com/openaf/openaf/blob/master/js/owrap.ch.js) |
+| Channel backends and subscriptions; `timeseries` and `graph` channel types with `ow.ch.utils.timeseries` / `ow.ch.utils.graph` | `ow.loadCh()` | [`ow.ch`](https://github.com/openaf/openaf/blob/master/js/owrap.ch.js) |
 | HTTP services, scheduling | `ow.loadServer()` | [`ow.server`](https://github.com/openaf/openaf/blob/master/js/owrap.server.js) |
 | Templates and helpers | `ow.loadTemplate()` | [`ow.template`](https://github.com/openaf/openaf/blob/master/js/owrap.template.js) |
 | Java utilities | `ow.loadJava()` | [`ow.java`](https://github.com/openaf/openaf/blob/master/js/owrap.java.js) |
 | Metrics | `ow.loadMetrics()` | [`ow.metrics`](https://github.com/openaf/openaf/blob/master/js/owrap.metrics.js) |
 | Secret facilities | `ow.loadSec()` | [`ow.sec`](https://github.com/openaf/openaf/blob/master/js/owrap.sec.js) |
+| Terminal styling, Unicode-aware alignment, box panels, interactive terminal views | `ow.loadScreen(options)` | [`ow.screen`](https://github.com/openaf/openaf/blob/master/js/owrap.screen.js) |
+| Desktop HTML windows (JavaFX via the `plugin-DesktopJavaFX` oPack) or built-in `tui` terminal views | `ow.loadDesktop(options)` | [`ow.desktop`](https://github.com/openaf/openaf/blob/master/js/owrap.desktop.js) |
+| Debug-instrumented script loading (`loadDebug`/`requireDebug`) | `ow.loadDebug()` | [`ow.debug`](https://github.com/openaf/openaf/blob/master/js/owrap.debug.js) |
 | Assertions and test reporting | `ow.loadTest()` | [`ow.test`](https://github.com/openaf/openaf/blob/master/js/owrap.test.js) |
 | AI helpers | `ow.loadAI()` | [`ow.ai`](https://github.com/openaf/openaf/blob/master/js/owrap.ai.js) |
 | Python interoperability | `ow.loadPython()` | [`ow.python`](https://github.com/openaf/openaf/blob/master/js/owrap.python.js) |
 | oJob engine | `ow.loadOJob()` | [`ow.oJob`](https://github.com/openaf/openaf/blob/master/js/owrap.oJob.js) |
 
-Loader capitalization matters (`loadAI`, `loadOJob`). Some global helpers load wrappers internally, but reusable examples should make their direct `ow.*` dependencies clear. Do not assume every API is a constructor or every operation returns a promise.
+Loader capitalization matters (`loadAI`, `loadOJob`). `ow.loadDesktop()` only loads a provider-neutral facade: it starts no toolkit or listener, and graphical windows need the provider oPack installed explicitly. Some global helpers load wrappers internally, but reusable examples should make their direct `ow.*` dependencies clear. Do not assume every API is a constructor or every operation returns a promise.
 
 ## Extend with public oPacks
 
@@ -68,6 +71,8 @@ Read only the guide relevant to the operation:
 - [JSON Schema](https://github.com/openaf/openaf/blob/master/docs/json-schema.md): drafts, reusable validators, defaults, and errors.
 - [LLM integration](https://github.com/openaf/openaf/blob/master/docs/llm-guide.md) and [decisions](https://github.com/openaf/openaf/blob/master/docs/llm-decisions.md): conversational versus stateless operations and provider capabilities.
 - [OAuth](https://github.com/openaf/openaf/blob/master/docs/mcp-oauth.md): `ow.server.httpd.oauth2`, callback lifecycle, and token persistence.
+- [Time-series channels](https://github.com/openaf/openaf/blob/master/docs/channel-timeseries.md) and [graph channels](https://github.com/openaf/openaf/blob/master/docs/channel-graph.md): file/store persistence, retention, rollups, metrics recording, and graph navigation.
+- [Desktop and terminal views](https://github.com/openaf/openaf/blob/master/docs/desktop.md): providers, window events, the `tui` provider, and cleanup.
 - [Instrumentation](https://github.com/openaf/openaf/blob/master/docs/instrumentation.md): load with `ow.loadInstrumentation()` and inspect `ow.instrumentation` contracts.
 - [Python](https://github.com/openaf/openaf/blob/master/docs/python.md): execution modes, environment requirements, and cleanup.
 

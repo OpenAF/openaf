@@ -308,53 +308,60 @@ public class HTTPServer extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout, aImpl)</key>
+	 * <![CDATA[
 	 * Creates a HTTP server instance on the provided port and optionally on the identified local interface.
-	 * If the port provided is 0 or negative a random port will be assigned. To determine what this port is 
+	 * If the port provided is 0 or negative a random port will be assigned. To determine what this port is
 	 * you can use the function HTTPServer.getPort().
-	 * If aImpl = "java" is provided the Java built-in HttpServer implementation will be used.
-	 * If keyStorePath is defined, the corresponding SSL Key Store will be used (connections will be https) with
-	 * the provided keyStorePassword. Do note that the keyStorePath should be included in the OpenAF classpath.
-	 * The logFunction, if defined, will be called by the server whenever there is any logging to be performed 
-	 * by the HTTPServer. This function will receive 3 arguments. Example:\
-	 * \
-	 * plugin("HTTPServer");\
-	 * var s = new HTTPd(8091, void 0, void 0, void 0, function(aType, aMsg, anException) {\
-	 *    if(aType.toString() != "DEBUG" &amp;&amp; anException.getMessage() != "Broken pipe")\
-	 *       logErr("Type: " + aType + " | Message: " + aMsg + anException.printStackTrace());\
-	 * });\
+	 * If `aImpl` = "java" is provided the Java built-in HttpServer implementation will be used.
+	 * If `keyStorePath` is defined, the corresponding SSL Key Store will be used (connections will be https) with
+	 * the provided `keyStorePassword`. Do note that the `keyStorePath` should be included in the OpenAF classpath.
+	 * The `logFunction`, if defined, will be called by the server whenever there is any logging to be performed
+	 * by the HTTPServer. This function will receive 3 arguments. Example:
+	 *
+	 * ```javascript
+	 * plugin("HTTPServer");
+	 * var s = new HTTPd(8091, void 0, void 0, void 0, function(aType, aMsg, anException) {
+	 *    if(aType.toString() != "DEBUG" && anException.getMessage() != "Broken pipe")
+	 *       logErr("Type: " + aType + " | Message: " + aMsg + anException.printStackTrace());
+	 * });
 	 * s.addEcho("/echo");
-	 * s.add("/stuff", function(req) {\
-	 *    print(beautifier(req));\
-	 *    return s.replyOKText("Stuff!!");\
-	 * };\
-	 * s.setDefault("/stuff");\
-	 * \ 
-	 * To generate a SSL key store you can use Java's keytool:\
-	 * \
-	 * keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks -storepass password -validity 360 -keysize 2048 -ext SAN=DNS:localhost,IP:127.0.0.1  -validity 9999\
-	 * \
-	 * And then add keystore.jks to the openaf.jar and have keyStorePath = "/keystore.jks".\
-	 * \
-	 * To support websockets you need to build IWebSock object and provide a timeout. For example:\
-	 * \
-	 * plugin("HTTPServer");\
-	 * var webSock = new Packages.com.nwu2.httpd.IWebSock({\
-	 *    // onOpen callback\
-	 *    oOpen: _ws => { log("Connection open") },\
-	 *    // onClose callback\
-	 *    oClose: (_ws, aCode, aReason, hasInitByRemote) => { log("Connection close: " + String(aReason)) },\
-	 *    // onMessage callback\
-	 *    oMessage: (_ws, aMessage) => { _ws.send(aMessage.getTextPayload()); },\
-	 *    // onPong callback\
-	 *    oPong: (_ws, aPong) => { },\
-	 *    // onException callback\
-	 *    oException: (_ws, anException) => { logErr(String(anException)); }\
-	 * });\
-	 * var s = new HTTPd(8091, "127.0.0.1", void 0, void 0, void 0, webSock, 30000); // 30 seconds timeout\
-	 * s.addWS("/websocket");  // makes it available at ws://127.0.0.1:8091/websocket\
-	 * \
+	 * s.add("/stuff", function(req) {
+	 *    print(beautifier(req));
+	 *    return s.replyOKText("Stuff!!");
+	 * });
+	 * s.setDefault("/stuff");
+	 * ```
+	 *
+	 * To generate a SSL key store you can use Java's keytool:
+	 *
+	 * ```sh
+	 * keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks -storepass password -validity 360 -keysize 2048 -ext SAN=DNS:localhost,IP:127.0.0.1  -validity 9999
+	 * ```
+	 *
+	 * And then add keystore.jks to the openaf.jar and have `keyStorePath` = "/keystore.jks".
+	 *
+	 * To support websockets you need to build IWebSock object and provide a timeout. For example:
+	 *
+	 * ```javascript
+	 * plugin("HTTPServer");
+	 * var webSock = new Packages.com.nwu2.httpd.IWebSock({
+	 *    // onOpen callback
+	 *    oOpen: _ws => { log("Connection open") },
+	 *    // onClose callback
+	 *    oClose: (_ws, aCode, aReason, hasInitByRemote) => { log("Connection close: " + String(aReason)) },
+	 *    // onMessage callback
+	 *    oMessage: (_ws, aMessage) => { _ws.send(aMessage.getTextPayload()); },
+	 *    // onPong callback
+	 *    oPong: (_ws, aPong) => { },
+	 *    // onException callback
+	 *    oException: (_ws, anException) => { logErr(String(anException)); }
+	 * });
+	 * var s = new HTTPd(8091, "127.0.0.1", void 0, void 0, void 0, webSock, 30000); // 30 seconds timeout
+	 * s.addWS("/websocket");  // makes it available at ws://127.0.0.1:8091/websocket
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSConstructor
@@ -744,14 +751,17 @@ public class HTTPServer extends ScriptableObject {
 	
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>HTTPd.add(aURI, aFunction)</key>
-	 * Adds a custom responder to the provided URI. Any call to the URI will trigger a call to 
-	 * the provided function. The function will receive the request as an argument. For example:\
-	 * \
-	 *   var hs = new HTTPd(1234);\
-	 *   hs.add("/example", function(req) { hs.replyOKText(beautifier(req)); }
-	 * \
+	 * <![CDATA[
+	 * Adds a custom responder to the provided URI. Any call to the URI will trigger a call to
+	 * the provided function. The function will receive the request as an argument. For example:
+	 *
+	 * ```javascript
+	 * var hs = new HTTPd(1234);
+	 * hs.add("/example", function(req) { return hs.replyOKText(beautifier(req)); });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -792,14 +802,17 @@ public class HTTPServer extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>HTTPd.setDefault(aURI)</key>
-	 * Sets the default URI to redirect all requests that don't have a responder associated. For example:\
-	 * \
-	 *   var hs = new HTTPd(1234);\
-	 *   hs.addEcho("/echo");\
-	 *   hs.setDefault("/echo");\
-	 * \
+	 * <![CDATA[
+	 * Sets the default URI to redirect all requests that don't have a responder associated. For example:
+	 *
+	 * ```javascript
+	 * var hs = new HTTPd(1234);
+	 * hs.addEcho("/echo");
+	 * hs.setDefault("/echo");
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -952,32 +965,35 @@ public class HTTPServer extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>HTTPd.addXDTServer(aURI, aAuthFunction, aOpsBrokerFunction)</key>
-	 * Adds a WeDo XDT server responder to the provided URI with authentication provided by the aAuthFunction
-	 * and operations provided by the aOpsBrokerFunction. For example:\
-	 * \
-	 *   var hs = new HTTPd(1234);\
-	 *   hs.addXDTServer('/xdt',\
-	 *     function(auth) {\
-	 *        if (auth.getUser() == 'adm' &amp;&amp; auth.getPass() == 'Password1') {\
-	 *           return true;\
-	 *        } else {\
-	 *        	 return false;\
-	 *        }\
-	 *     },\
-	 *     function(sessionId, operation, paramIn, request) {\
-	 *        switch(operation) {\
-	 *           case "HelloWorld":\
-	 *              return {"hello": "world!"};\
-	 *           case "Ping":\
-	 *              return paramIn;\
-	 *           default:\
-	 *              return paramIn;\
-	 *        }\
-	 *     }\
-	 *   );\
-	 * \
+	 * <![CDATA[
+	 * Adds a WeDo XDT server responder to the provided URI with authentication provided by the `aAuthFunction`
+	 * and operations provided by the `aOpsBrokerFunction`. For example:
+	 *
+	 * ```javascript
+	 * var hs = new HTTPd(1234);
+	 * hs.addXDTServer('/xdt',
+	 *   function(auth) {
+	 *      if (auth.getUser() == 'adm' && auth.getPass() == 'Password1') {
+	 *         return true;
+	 *      } else {
+	 *      	 return false;
+	 *      }
+	 *   },
+	 *   function(sessionId, operation, paramIn, request) {
+	 *      switch(operation) {
+	 *         case "HelloWorld":
+	 *            return {"hello": "world!"};
+	 *         case "Ping":
+	 *            return paramIn;
+	 *         default:
+	 *            return paramIn;
+	 *      }
+	 *   }
+	 * );
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 * @throws ClassNotFoundException 
 	 * @throws SecurityException 

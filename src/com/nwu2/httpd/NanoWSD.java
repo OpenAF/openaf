@@ -99,6 +99,14 @@ public abstract class NanoWSD extends NanoHTTPD {
             this.handshakeResponse.addHeader(NanoWSD.HEADER_CONNECTION, NanoWSD.HEADER_CONNECTION_VALUE);
         }
 
+        private int maxMessageSize = Integer.MAX_VALUE;
+
+        /** Optional per-connection limit, checked before frame allocation and fragment assembly. */
+        public void setMaxMessageSize(int bytes) {
+            if (bytes < 1) throw new IllegalArgumentException("Message limit must be positive");
+            this.maxMessageSize = bytes;
+        }
+
         public boolean isOpen() {
             return state == State.OPEN;
         }
@@ -190,6 +198,11 @@ public abstract class NanoWSD extends NanoHTTPD {
         }
 
         private void handleFrameFragment(WebSocketFrame frame) throws IOException {
+            long length = frame.getBinaryPayload().length;
+            for (WebSocketFrame previous : this.continuousFrames) length += previous.getBinaryPayload().length;
+            if (length > this.maxMessageSize || (this.maxMessageSize != Integer.MAX_VALUE && this.continuousFrames.size() >= 256)) {
+                throw new WebSocketException(CloseCode.MessageTooBig, "Message limit exceeded.");
+            }
             if (frame.getOpCode() != OpCode.Continuation) {
                 // First
                 if (this.continuousOpCode != null) {
@@ -247,7 +260,7 @@ public abstract class NanoWSD extends NanoHTTPD {
         private void readWebsocket() {
             try {
                 while (this.state == State.OPEN) {
-                    handleWebsocketFrame(WebSocketFrame.read(this.in));
+                    handleWebsocketFrame(WebSocketFrame.read(this.in, this.maxMessageSize));
                 }
             } catch (CharacterCodingException e) {
                 onException(e);
@@ -434,6 +447,10 @@ public abstract class NanoWSD extends NanoHTTPD {
         }
 
         public static WebSocketFrame read(InputStream in) throws IOException {
+            return read(in, Integer.MAX_VALUE);
+        }
+
+        public static WebSocketFrame read(InputStream in, int maxPayloadSize) throws IOException {
             byte head = (byte) checkedRead(in.read());
             boolean fin = (head & 0x80) != 0;
             OpCode opCode = OpCode.find((byte) (head & 0x0F));
@@ -448,6 +465,9 @@ public abstract class NanoWSD extends NanoHTTPD {
 
             WebSocketFrame frame = new WebSocketFrame(opCode, fin);
             frame.readPayloadInfo(in);
+            if (frame._payloadLength > maxPayloadSize) {
+                throw new WebSocketException(CloseCode.MessageTooBig, "Frame limit exceeded.");
+            }
             frame.readPayload(in);
             if (frame.getOpCode() == OpCode.Close) {
                 return new CloseFrame(frame);
@@ -801,7 +821,7 @@ public abstract class NanoWSD extends NanoHTTPD {
     }
 
     public static String makeAcceptKey(String key) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
         String text = key + NanoWSD.WEBSOCKET_KEY_MAGIC;
         md.update(text.getBytes(), 0, text.length());
         byte[] sha1hash = md.digest();
@@ -852,7 +872,7 @@ public abstract class NanoWSD extends NanoHTTPD {
                 handshakeResponse.addHeader(NanoWSD.HEADER_WEBSOCKET_ACCEPT, makeAcceptKey(headers.get(NanoWSD.HEADER_WEBSOCKET_KEY)));
             } catch (NoSuchAlgorithmException e) {
                 return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT,
-                        "The SHA-256 Algorithm required for websockets is not available on the server.");
+                        "The SHA-1 Algorithm required for websockets is not available on the server.");
             }
 
             if (headers.containsKey(NanoWSD.HEADER_WEBSOCKET_PROTOCOL)) {

@@ -546,10 +546,12 @@ public class AFBase extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.sleep(aTime)</key>
-	 * Suspends the current script execution (if using Threads only the thread executing this function) for a 
-	 * period of aTime in ms. For example aTime = 1000 would result in suspending the execution for 1 second.
+	 * <![CDATA[
+	 * Suspends the current script execution (if using Threads only the thread executing this function) for a
+	 * period of `aTime` in ms. For example `aTime = 1000` would result in suspending the execution for 1 second.
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -561,21 +563,24 @@ public class AFBase extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding, dontWait, envsMap, exitCallback) : String/Map</key>
-	 * Tries to execute commandArguments (either a String or an array of strings) in the operating system. Optionally
-	 * aStdIn can be provided, aTimeout can be defined for the execution and if shouldInheritIO is true the stdout, stderr and stdin
-	 * will be inherit from OpenAF. If shouldInheritIO is not defined or false it will return the stdout of the command execution.
-	 * It's possible also to provide a different working aDirectory.
-	 * If envsMap (a map of strings) is defined the environment variables will be replaced by envsMap.
-	 * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly. In alternative 
-	 * if returnMap = true a map will be returned with stdout, stderr and exitcode.
-	 * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. 
-	 * An exitCallback can also be provided that will receive the process as parameter and should return "force" to forcefully terminate the process or "destroy" to gracefully terminate it.
-	 * If defined the stdout and stderr won't be available for the returnMap if true. Example:\
-	 * \
-	 * sh("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });\
-	 * \
+	 * <![CDATA[
+	 * Tries to execute `commandArguments` (either a String or an array of strings) in the operating system. Optionally
+	 * `aStdIn` can be provided, `aTimeout` can be defined for the execution and if `shouldInheritIO` is true the stdout, stderr and stdin
+	 * will be inherit from OpenAF. If `shouldInheritIO` is not defined or false it will return the stdout of the command execution.
+	 * It's possible also to provide a different working `aDirectory`.
+	 * If `envsMap` (a map of strings) is defined the environment variables will be replaced by `envsMap`.
+	 * The variables `__exitcode` and `__stderr` can be checked for the command exit code and the stderr output correspondingly. In alternative
+	 * if `returnMap` = true a map will be returned with stdout, stderr and exitcode.
+	 * A `callbackFunc` can be provided, if `shouldInheritIO` is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream.
+	 * An `exitCallback` can also be provided that will receive the process as parameter and should return "force" to forcefully terminate the process or "destroy" to gracefully terminate it.
+	 * If defined the stdout and stderr won't be available for the `returnMap` if true. Example:
+	 *
+	 * ```javascript
+	 * sh("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -1207,12 +1212,14 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.externalAddClasspath(aURL)</key>
-	 * Tries to add aURL to the current classpath. Don't forget that directories must end with a '/', for 
-	 * example: file:/my/own/dir/\
-	 * \
-	 * Note: This might not work for some JVMs.  
+	 * <![CDATA[
+	 * Tries to add `aURL` to the current classpath. Don't forget that directories must end with a '/', for
+	 * example: `file:/my/own/dir/`
+	 *
+	 * Note: This might not work for some JVMs.
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -1238,12 +1245,14 @@ public class AFBase extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.load(aFilename)</key>
-	 * Loads an OpenAF script/file aFilename. The variable __loadedfrom will always be set to the aFilename value a
-	 * after each execution. The aFilename can be composed not only by a filename but also with a zip/opack
-	 * file where it resides (for example: "aZipFile.zip::aScriptInsideTheZip.js"). The variable __loadedfromzip would hold, 
-	 * in this case, the zip file from which the script was executed.  
+	 * <![CDATA[
+	 * Loads an OpenAF script/file `aFilename`. The variable `__loadedfrom` will always be set to the `aFilename` value
+	 * after each execution. The `aFilename` can be composed not only by a filename but also with a zip/opack
+	 * file where it resides (for example: `"aZipFile.zip::aScriptInsideTheZip.js"`). The variable `__loadedfromzip` would hold,
+	 * in this case, the zip file from which the script was executed.
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -1384,13 +1393,16 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.compileToClasses(aClassfile, aScriptString, aPath)</key>
-	 * Given aClassfile name, aScriptString and, optionally, a filesystem aPath it will generate Java bytecode
-	 * as result of compiling the aScriptString into a filesystem aClassfile (on the provided aPath). Example:\
-	 * \
-	 * af.compileToClasses("SomeClass", "print('hello world!');", "/some/path")\
-	 * \
+	 * <![CDATA[
+	 * Given `aClassfile` name, `aScriptString` and, optionally, a filesystem `aPath` it will generate Java bytecode
+	 * as result of compiling the `aScriptString` into a filesystem `aClassfile` (on the provided `aPath`). Example:
+	 *
+	 * ```javascript
+	 * af.compileToClasses("SomeClass", "print('hello world!');", "/some/path")
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -1417,17 +1429,20 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.compileToJar(aClassfile, aScriptString, aJarFile)</key>
-	 * Given aClassfile name and aScriptString it will generate Java bytecode as a result of compiling
-	 * aScriptString, writing every generated class as a single entry into aJarFile instead of one loose
-	 * .class file per class (see af.compileToClasses). aJarFile is written to a temporary file next to
+	 * <![CDATA[
+	 * Given `aClassfile` name and `aScriptString` it will generate Java bytecode as a result of compiling
+	 * `aScriptString`, writing every generated class as a single entry into `aJarFile` instead of one loose
+	 * .class file per class (see `af.compileToClasses`). `aJarFile` is written to a temporary file next to
 	 * it and then moved into place, so a failed compile never leaves a partial/corrupt jar behind; the
-	 * class can then be loaded with af.externalClass/af.runFromExternalClass pointed at aJarFile
-	 * directly (a URLClassLoader treats a jar file URL the same as a directory URL). Example:\
-	 * \
-	 * af.compileToJar("SomeClass", "print('hello world!');", "/some/path/SomeClass.jar")\
-	 * \
+	 * class can then be loaded with `af.externalClass`/`af.runFromExternalClass` pointed at `aJarFile`
+	 * directly (a URLClassLoader treats a jar file URL the same as a directory URL). Example:
+	 *
+	 * ```javascript
+	 * af.compileToJar("SomeClass", "print('hello world!');", "/some/path/SomeClass.jar")
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -1457,14 +1472,17 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.runFromClass(aCompiledJavascriptClass) : Object</key>
-	 * Runs aCompiledJavascriptClass returning it's output. Example:\
-	 * \
-	 * af.compileToClasses("SomeClass", "print('hello world!');", "/some/path");\
-	 * var aScriptClass = af.externalClass(["file://some/path/"], "SomeClass");\
-	 * af.runFromClass(aScriptClass.newInstance());\
-	 * \
+	 * <![CDATA[
+	 * Runs `aCompiledJavascriptClass` returning it's output. Example:
+	 *
+	 * ```javascript
+	 * af.compileToClasses("SomeClass", "print('hello world!');", "/some/path");
+	 * var aScriptClass = af.externalClass(["file://some/path/"], "SomeClass");
+	 * af.runFromClass(aScriptClass.newInstance());
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -2174,10 +2192,12 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.fromBytes2OutputStream(anArrayOfBytes) : Stream</key>
-	 * Converts anArrayOfBytes into a ByteArrayOutputStream. After using this stream you can, for example, use
-	 * .toString and toByteArray methods from the resulting stream.
+	 * <![CDATA[
+	 * Converts `anArrayOfBytes` into a ByteArrayOutputStream. After using this stream you can, for example, use
+	 * `toString` and `toByteArray` methods from the resulting stream.
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -2193,10 +2213,12 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.fromString2OutputStream(aString, encoding) : Stream</key>
-	 * Converts aString into a ByteArrayOutputStream. After using this stream you can, for example, use
-	 * .toString and toByteArray methods from the resulting stream.
+	 * <![CDATA[
+	 * Converts `aString` into a ByteArrayOutputStream. After using this stream you can, for example, use
+	 * `toString` and `toByteArray` methods from the resulting stream.
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -2250,10 +2272,12 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>af.newOutputStream() : Stream</key>
+	 * <![CDATA[
 	 * Creates a new ByteArrayOutputStream. After using this stream you can, for example, use
-	 * .toString and toByteArray methods from the resulting stream.
+	 * `toString` and `toByteArray` methods from the resulting stream.
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction

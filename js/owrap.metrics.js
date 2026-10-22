@@ -451,10 +451,23 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
     // Turn into a map of entries
     var dr = {};
     var d = lines.filter(line => !line.startsWith("#") && line.length > 0).map(line => {
-        var res = line.match(/^([^\{]+?)({[^\}]+})? ([^ ]+?)( [^ ]+?)?$/);
+        // Braces and separators inside quoted values are label contents.
+        var res = line.match(/^([^\{\s]+)(?:\{((?:[^"{}]|"(?:[^"\\]|\\.)*")*)\})? ([^ ]+?)( [^ ]+?)?$/);
+        if (isNull(res)) throw new Error("Invalid OpenMetrics sample: " + line);
+        var labels = {}, rest = res[2] || "";
+        while (rest.trim().length > 0) {
+            var label = rest.match(/^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"((?:[^"\\]|\\[\\"n])*)"\s*(,|$)/);
+            if (isNull(label)) throw new Error("Invalid OpenMetrics labels: " + line);
+            // Decode once so a literal backslash followed by n stays literal.
+            var value = label[2].replace(/\\([\\"n])/g, function(match, escaped) {
+                return escaped == "n" ? "\n" : escaped;
+            });
+            Object.defineProperty(labels, label[1], { value: value, enumerable: true, writable: true, configurable: true });
+            rest = rest.substring(label[0].length);
+        }
         var data = {
             metric: res[1],
-            labels: (isNull(res[2]) ? {} : jsonParse(res[2].replace(/([^=,\{\}]+)=([^=,\{\}]+)/g, "\"$1\":$2"), true)),
+            labels: labels,
             value: Number(res[3]),
             timestamp: (isNumber(res[4]) ? Number(res[4]) : __)
         }
@@ -506,13 +519,17 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
 
 /**
  * <odoc>
- * <key>ow.metrics.fromObj2OpenMetrics(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap) : String</key>
+ * <key>ow.metrics.fromObj2OpenMetrics(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap, aStrict) : String</key>
  * Given aObj will return a string of open metric (prometheus) metric strings. Optionally you can provide a prefix (defaults to "metric") 
  * and/or aTimestamp (a number in seconds or a label field, that will be used for all aObj values) and aConvMap composed of a key with a map of possible values and corresponding
  * translation to numbers. Note: prefixes should not start with a digit.
+ * Set aStrict to true for OpenMetrics 1.0 text with grouped metadata and a final EOF marker. Strict mode supports
+ * unknown (default), gauge and counter scalar families, rejects name/series collisions and unsupported types,
+ * uses a prefix_id array label, and requires timestamps in epoch seconds (or a date label field).
  * </odoc>
  */
-OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap) {
+OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap, aStrict) {
+    if (aStrict === true) return this._fromObj2OpenMetricsStrict(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap);
     let handled = false
     aPrefix = _$(aPrefix, "prefix").isString().default("metric")
     const _reInitTxt = new RegExp("[^a-zA-Z0-9]", "g")
@@ -670,3 +687,87 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
     return ar.filter(l=>l.length > 0).join("\n").trim() + "\n"
 }
 
+// Generic object metrics have scalar values; structured families require a separate data model.
+OpenWrap.metrics.prototype._fromObj2OpenMetricsStrict = function(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap) {
+    var fail = message => { throw new Error("Invalid strict OpenMetrics: " + message); };
+    var sane = name => {
+        name = String(name).replace(/[^a-zA-Z0-9_]/g, "_");
+        return /^[a-zA-Z]/.test(name) ? name : "metric_" + name;
+    };
+    var esc = value => {
+        value = String(value);
+        if (value.indexOf("\r") >= 0) fail("carriage return in text");
+        return value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/"/g, '\\"');
+    };
+    var number = value => value === Infinity ? "+Inf" : value === -Infinity ? "-Inf" : String(value);
+    var numeric = value => typeof value == "number" || isNumber(value);
+    var prefix = sane(_$(aPrefix, "prefix").isString().default("metric"));
+    var families = Object.create(null), names = Object.create(null);
+    aHelpMap = _$(aHelpMap, "aHelpMap").isMap().default({});
+    aConvMap = _$(aConvMap, "aConvMap").isMap().default({});
+    var useDate = isDef(aTimestamp) && !numeric(aTimestamp);
+    if (useDate && !isString(aTimestamp)) fail("timestamp must be epoch seconds or a date label field");
+    if (numeric(aTimestamp) && !isFinite(aTimestamp)) fail("timestamp must be finite");
+
+    var emit = (value, name, labels, timestamp, source) => {
+        var meta = Object.prototype.hasOwnProperty.call(aHelpMap, name) ? aHelpMap[name] : {};
+        meta = isMap(meta) ? meta : {};
+        var type = _$(meta.type).isString().default("unknown");
+        if (["unknown", "gauge", "counter"].indexOf(type) < 0) fail("unsupported scalar type " + type + " for " + name);
+        var family = type == "counter" ? name.replace(/_total$/, "") : name;
+        var sample = type == "counter" ? family + "_total" : name;
+        if (type == "counter" && (isNaN(value) || value < 0)) fail("counter must be non-negative: " + name);
+        if (isDef(names[sample]) && names[sample] != source) fail("metric name collision: " + sample);
+        names[sample] = source;
+        if (isDef(families[family]) && families[family].source != source) fail("family name collision: " + family);
+        if (isUnDef(families[family])) {
+            var lines = ["# TYPE " + family + " " + type];
+            if (isDef(meta.help) || isDef(meta.text)) lines.push("# HELP " + family + " " + esc(isDef(meta.help) ? meta.help : meta.text));
+            families[family] = { source: source, lines: lines, series: Object.create(null) };
+        }
+        var keys = Object.keys(labels).sort();
+        var ls = keys.map(key => key + '="' + esc(labels[key]) + '"').join(",");
+        if (families[family].series[ls]) fail("duplicate series: " + sample);
+        families[family].series[ls] = true;
+        families[family].lines.push(sample + (ls.length ? "{" + ls + "}" : "") + " " + number(value) + (isDef(timestamp) ? " " + timestamp : ""));
+    };
+    var walk = (obj, name, labels, timestamp, source) => {
+        if (isArray(obj)) {
+            obj.forEach((value, index) => {
+                var next = clone(labels), id = prefix + "_id";
+                next[id] = isDef(next[id]) ? next[id] + "." + index : String(index);
+                walk(value, name, next, timestamp, source);
+            });
+        } else if (isMap(obj)) {
+            var next = clone(labels), rawNames = Object.create(null);
+            Object.keys(obj).forEach(key => {
+                var value = obj[key];
+                if (useDate && key == aTimestamp && isDef(value)) {
+                    timestamp = new Date(String(value)).getTime() / 1000;
+                    if (!isFinite(timestamp)) fail("invalid date label: " + key);
+                } else if (isDef(value) && !numeric(value) && !isBoolean(value) && !isArray(value) && !isMap(value)) {
+                    var label = sane(key);
+                    if (isDef(rawNames[label]) && rawNames[label] != key) fail("label name collision: " + label);
+                    if (label == prefix + "_id") fail("reserved array label: " + label);
+                    rawNames[label] = key;
+                    next[label] = String(value);
+                }
+            });
+            Object.keys(obj).forEach(key => {
+                if (useDate && key == aTimestamp) return;
+                var value = obj[key], child = name + "_" + String(key).replace(/[^a-zA-Z0-9_]/g, "_");
+                var conversion = isMap(aConvMap[key]) ? aConvMap[key] : aConvMap[child];
+                if (isString(value) && isMap(conversion) && isNumber(conversion[value])) value = conversion[value];
+                walk(value, child, next, timestamp, source + "/" + JSON.stringify(key));
+            });
+        } else if (numeric(obj) || isBoolean(obj)) {
+            emit(isBoolean(obj) ? (obj ? 1 : 0) : Number(obj), name, labels, timestamp, source);
+        }
+    };
+    walk(aObj, prefix, {}, useDate ? __ : aTimestamp, "");
+    Object.keys(families).forEach(name => {
+        if (families[name].lines[0] == "# TYPE " + name + " counter" && isDef(families[name + "_created"]))
+            fail("counter suffix collision: " + name + "_created");
+    });
+    return Object.keys(families).map(name => families[name].lines.join("\n") + "\n").concat(["# EOF\n"]).join("");
+};

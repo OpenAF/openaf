@@ -15,7 +15,7 @@ Read only the linked documentation needed for the task. Links target the moving 
 
 ## Confirm the execution model
 
-Consult the [oJob reference](https://github.com/openaf/openaf/blob/master/docs/ojob.md) for structure and the [oJob engine](https://github.com/openaf/openaf/blob/master/js/owrap.oJob.js) for execution semantics. Use [recipes](https://github.com/openaf/openaf/blob/master/docs/ojob-recipes.md) and [tests](https://github.com/openaf/openaf/tree/master/tests) as examples, verifying advanced features against implementation. JavaScript in `exec` runs on OpenAF's Java/Rhino runtime; Node.js modules and browser APIs are not implicit dependencies. Consult the [OpenAF function reference](https://github.com/openaf/openaf/blob/master/docs/openaf.md) for embedded code.
+Consult the [oJob reference](https://github.com/openaf/openaf/blob/master/docs/ojob.md) for structure and the [oJob engine](https://github.com/openaf/openaf/blob/master/js/owrap.oJob.js) for execution semantics. Use the [script-to-oJob tutorial](https://github.com/openaf/openaf/blob/master/docs/authoring.md), [authoring recipes](https://github.com/openaf/openaf/blob/master/docs/authoring-recipes.md), [recipes](https://github.com/openaf/openaf/blob/master/docs/ojob-recipes.md) and [tests](https://github.com/openaf/openaf/tree/master/tests) as examples, verifying advanced features against implementation. JavaScript in `exec` runs on OpenAF's Java/Rhino runtime; Node.js modules and browser APIs are not implicit dependencies. Consult the [OpenAF function reference](https://github.com/openaf/openaf/blob/master/docs/openaf.md) for embedded code.
 
 - `jobs` defines named jobs; `todo` requests their execution. A definition alone does not schedule a job.
 - `help.expects` documents CLI parameters; enforce types/defaults with job `check.in` or `_$` inside `exec`.
@@ -101,3 +101,9 @@ not standalone-file execution: use `execStandalone` explicitly when script filen
 are needed. Check older installed JARs for repaired persistence and exception forwarding. Read the
 [Python guide](https://github.com/openaf/openaf/blob/master/docs/python.md) for API and lifecycle details;
 this guidance does not require another skill.
+
+## Other languages and job source files
+
+Without `lang`, `exec` is OpenAF JavaScript in the current JVM. `lang: node`, `java`, `go`, `ruby`, `perl`, `swift`, and `powershell` run a separate process with no OpenAF globals: `args` is exchanged through UTF-8 JSON files, stdout/stderr are logs only, and a failed job never merges its result. Process options (`typeArgs.langExecutable`, `langExecutableArgs`, `langTimeout`, `pwd`) apply to these runners only. `ow.oJob.getLanguages(true)` probes local prerequisites without installing anything. Read [job languages](https://github.com/openaf/openaf/blob/master/docs/ojob.md#job-languages) before choosing one; older runtimes parsed stdout instead.
+
+To keep job bodies testable as files, use one source selector per job: `execFile`/`typeArgs.file` (prefers a top-level `code` entry), `execRequire` (module export named exactly like the job; requires an empty inline body), or `typeArgs.execJs`/`execPy`. `ojob file.yaml -exportcode dir=file-code` extracts `code` entries and inline bodies with a `.ojob-code.json` manifest; `-importcode dir=file-code output=new.yaml` writes them back, refusing conflicting edits. These commands parse without executing jobs or expanding includes. See [code separation](https://github.com/openaf/openaf/blob/master/docs/ojob.md#code-separation).

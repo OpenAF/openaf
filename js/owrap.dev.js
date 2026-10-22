@@ -126,18 +126,20 @@ OpenWrap.dev.prototype.loadPoolDB = function() {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.dev.loadIgnite(aGridName, aIgnite, secretKey, isClient, aOptions)</key>
- * Initialises an Apache Ignite grid named aGridName and extends oPromise with two extra methods:\
- * \
- *   thenAny(aFunc, aRejFunc, aGridName) - executes aFunc on any single node in the grid\
- *   thenAll(aFunc, aRejFunc, aGridName) - broadcasts aFunc to all nodes in the grid\
- * \
- * Optionally an already-created Ignite instance can be supplied via aIgnite. secretKey and isClient
- * are forwarded to Ignite.start() when creating a new grid instance. Ignite 3 rejects the legacy secretKey;\
- * use aOptions username/password for authenticated clients. aOptions is passed to Ignite.configure().\
- * Each compute node must run OpenAF with plugin-Ignite 3.1. Functions cannot capture local variables.\
+ * <![CDATA[
+ * Initialises an Apache Ignite grid named `aGridName` and extends oPromise with two extra methods:
+ *
+ * - `thenAny(aFunc, aRejFunc, aGridName)`: executes `aFunc` on any single node in the grid
+ * - `thenAll(aFunc, aRejFunc, aGridName)`: broadcasts `aFunc` to all nodes in the grid
+ *
+ * Optionally an already-created Ignite instance can be supplied via `aIgnite`. `secretKey` and `isClient`
+ * are forwarded to Ignite.start() when creating a new grid instance. Ignite 3 rejects the legacy `secretKey`;
+ * use `aOptions` username/password for authenticated clients. `aOptions` is passed to Ignite.configure().
+ * Each compute node must run OpenAF with plugin-Ignite 3.1. Functions cannot capture local variables.
  * Results must be JSON-serializable (or undefined). Repeated calls retain previously loaded grids.
+ * ]]>
  * </odoc>
  */
 OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isClient, aOptions) {
