@@ -56,11 +56,37 @@ public final class Terminal {
             org.jline.terminal.spi.TerminalProvider.load(windows ? "jni" : "exec", TerminalBuilder.class.getClassLoader());
         if (windows) return new Terminal(org.jline.terminal.impl.jni.win.OpenAFWinSysTerminal.open(provider));
         Charset encoding = java.nio.charset.StandardCharsets.UTF_8;
-        // The outer JLine reader supplies timeouts. Avoid ExecPty's extra polling
-        // wrapper, which can rewrite VMIN/VTIME after attributes have been restored.
+        // Keep timed reads cancellable without ExecPty's VMIN/VTIME polling wrapper:
+        // that wrapper can rewrite attributes after the owner restores them.
         org.jline.terminal.spi.Pty pty = new org.jline.terminal.impl.exec.ExecPty(provider, null, "/dev/tty") {
             @Override public java.io.InputStream getSlaveInput() throws IOException {
-                return new java.io.FileInputStream(getName());
+                return new java.io.FilterInputStream(new java.io.FileInputStream(getName())) {
+                    private volatile boolean closed;
+                    @Override public int read() throws IOException {
+                        // A native read on /dev/tty can block close() indefinitely even
+                        // after JLine's outer timeout. Read only when bytes are available.
+                        while (!closed) {
+                            if (in.available() > 0) return in.read();
+                            java.util.concurrent.locks.LockSupport.parkNanos(25_000_000L);
+                            if (Thread.currentThread().isInterrupted())
+                                throw new java.io.InterruptedIOException("Terminal read interrupted");
+                        }
+                        return -1;
+                    }
+                    @Override public int read(byte[] bytes, int off, int len) throws IOException {
+                        java.util.Objects.checkFromIndexSize(off, len, bytes.length);
+                        if (len == 0) return 0;
+                        int first = read();
+                        if (first < 0) return -1;
+                        bytes[off] = (byte) first;
+                        int extra = Math.min(len - 1, in.available());
+                        return extra == 0 ? 1 : 1 + in.read(bytes, off + 1, extra);
+                    }
+                    @Override public void close() throws IOException {
+                        closed = true;
+                        super.close();
+                    }
+                };
             }
         };
         return new Terminal(new org.jline.terminal.impl.PosixSysTerminal(provider, "OpenAF-interactive",

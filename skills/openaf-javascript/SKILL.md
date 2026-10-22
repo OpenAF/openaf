@@ -1,6 +1,6 @@
 ---
 name: openaf-javascript
-description: Create, modify, or debug OpenAF JavaScript scripts using core functions, file IO, validation, nLinq queries, templates, channels, and oPacks. Use for OpenAF .js automation and JavaScript embedded in oJob exec blocks.
+description: Create, modify, or debug OpenAF JavaScript scripts using core functions, file IO, validation, nLinq/JMESPath/jq queries, regular expressions, templates, channels, and oPacks. Use for OpenAF .js automation and JavaScript embedded in oJob exec blocks.
 ---
 
 # OpenAF JavaScript
@@ -37,6 +37,9 @@ Read the candidate's README, `.package.yaml`/`.package.json`, and relevant imple
 - Use `isDef`, `isUnDef`, `isMap`, `isArray`, and the undefined sentinel `__` deliberately. Distinguish missing values from `false`, zero, and empty strings.
 - Prefer `io.readFileJSON`, `io.writeFileJSON`, `io.readFileString`, and `io.writeFileString` to shelling out for file operations. Confirm signatures before using optional encoding or append arguments.
 - Use `$from(rows)` for filtering/projection, `$$` for nested property access, and `templify` for Handlebars templates. Confirm the result shape of query terminals; not every operation returns a chain.
+- For JSON queries, `$path(data, expr)` evaluates JMESPath and `$jq(data, expr, { vars })` evaluates jq 1.6-compatible syntax in the JVM (no `jq` executable). Choose one query language per task; see the [jq guide](https://github.com/openaf/openaf/blob/master/docs/jq.md) for output arity, variables, and errors.
+- `joniRegExp(pattern, options)` compiles a reusable Oniguruma (Ruby-syntax) pattern with `test`, `match`, `matchAll`, `replace`, `replaceAll`, and `split`; see the [Joni guide](https://github.com/openaf/openaf/blob/master/docs/joni.md). Use it when JavaScript `RegExp` lacks needed syntax, not as a default.
+- For large JSON files, `io.extractJSON(file, pathArray, outputStream, options)` copies one value without loading the whole document (returns `false` when absent; the caller closes the stream); `io.scanJSON` traverses/validates. `askConsole()` prompts on the controlling terminal even when stdin/stdout are piped. See [JSON extraction and prompts](https://github.com/openaf/openaf/blob/master/docs/json-extraction-and-prompts.md).
 - Choose `print`/`stringify` for machine-readable output, and keep diagnostic messages separate. Never log whole credential-bearing argument maps.
 - Load wrappers with their actual `ow.load*()` entrypoints. Load oPack libraries with the package's documented `loadLib`/`require`/plugin setup; OpenAF `require` does not imply Node compatibility. State additional oPack dependencies.
 - Close streams, DB connections, and other owned resources in `finally`. For asynchronous work, confirm the OpenAF completion/wait mechanism and avoid exiting before results arrive.

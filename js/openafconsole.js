@@ -585,7 +585,9 @@ function addAlias(aAssignment) {
  */
 function __help(aTerm) {
 	var __ores = "", c = __consoleFormat.helpLine;
-	var __o = (s, nomd) => __ores += (nomd ? s : ow.format.withMD(s))+ "\n";
+	// the help frame uses 3 columns (side line + space + closing side line), so render markdown narrower
+	var __mdWidth = () => (__ansiflag && con.isAnsiSupported()) ? Math.max(1, con.getConsoleReader().getTerminal().getWidth() - 3) : __;
+	var __o = (s, nomd) => __ores += (nomd ? s : ow.format.withMD(s, __, __mdWidth()))+ "\n";
 	if(isUnDef(aTerm) || aTerm.length <= 0) {
 		__o("__help__     Display this help text");
 		__o("__exit__     Exit this console");

@@ -207,6 +207,7 @@ ojob:
     port             : 8080      # Port to expose passive metrics
     uri              : /metrics  # Default URI where metrics will be exposed
     openMetrics      : true      # Boolean flag to indicate if metrics should be exposed in OpenMetrics/Prometheus format or JSON
+    openMetricsStrict: true      # OpenMetrics 1.0 content type and EOF; false selects legacy Prometheus text
     openMetricsPrefix: test      # The OpenMetrics/Prometheus metric prefix
     #openMetricsHelp  :          # Provide specific Prometheus help (see more in ow.server.telemetry.passive)           
     # Collects metrics to an OpenAF channel

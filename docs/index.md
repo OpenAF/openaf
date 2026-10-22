@@ -16,6 +16,8 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 ## Core
 - [openaf.md](./openaf.md) – Core OpenAF runtime helpers & APIs (`$$`, `_$`, `$from`, `$path`, channels, etc.)
 - [openaf-dollar-functions.md](./openaf-dollar-functions.md) – Additional `$` helpers: formatting, caching, synchronization, argument conversion, JSON-RPC, processes, and output
+- [channel-graph.md](./channel-graph.md) – `graph` channel type: operate and navigate a Mini-A knowledge graph (`graph.json`) with `ow.ch.utils.graph`
+- [channel-timeseries.md](./channel-timeseries.md) – `timeseries` channel type: labelled numeric series with retention, rollups, `range` queries, `ow.metrics` collector and OpenMetrics import/export (`ow.ch.utils.timeseries`)
 - [ojob.md](./ojob.md) – Main oJob YAML reference (structure, jobs, built-ins, shortcuts, argument tables)
 - [ojob-all.yaml](./ojob-all.yaml) – Annotated syntax catalog (illustrative options, not a runnable definition)
 - [ojob-examples.md](./ojob-examples.md) – Patterns and source examples from the ojob.io YAML collection
@@ -25,6 +27,7 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - [python.md](./python.md) – Using Python from OpenAF (ow.python, $py/$pyExec, `--py`/`pyoaf` CLI with argv support, `--oafpy`, oJob `lang: python`)
 
 ## Tools & Engines
+- [desktop.md](./desktop.md) – Provider-independent HTML windows, shared terminal views, messaging and lifecycle
 - [joni.md](./joni.md) – Oniguruma regex patterns, structured captures, replacement, and splitting with `joniRegExp`
 - [obook.md](./obook.md) – Interactive Notebooks (`ow.oBook`) and CLI step-by-step tutorials
 - [sigil.md](./sigil.md) – Sigil macro engine (`<sigil:...>`), environment variable, secret, and template interpolation

@@ -393,6 +393,8 @@ try {
 	var helpFiles = {
 		"odoc": OPENAF_BUILD_HOME + "/js/odoc.js",
 		"ow.test": OPENAF_BUILD_HOME + "/js/owrap.test.js",
+		"ow.desktop": OPENAF_BUILD_HOME + "/js/owrap.desktop.js",
+		"ow.screen": OPENAF_BUILD_HOME + "/js/owrap.screen.js",
 		"ow.format": OPENAF_BUILD_HOME + "/js/owrap.format.js",
 		"ow.template": OPENAF_BUILD_HOME + "/js/owrap.template.js",
 		"ow.java": OPENAF_BUILD_HOME + "/js/owrap.java.js",

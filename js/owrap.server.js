@@ -7,35 +7,39 @@ OpenWrap.server = function() {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.checkIn(aPidFile, onAlreadyRunning, onShutdown, anExitCode) : Boolean</key>
- * Will check if a server for the give aPidFile is running or not. Will return false if it's running 
+ * <![CDATA[
+ * Will check if a server for the give `aPidFile` is running or not. Will return false if it's running
  * and server start shouldn't proceed. Will return true if nothing is running and server start should proceed.
- * Optionally you can provide an onShutdown function to execute any code needed upon controlled shutdown
- * of the server and provide an onAlreadyRunning function (that will received the corresponding aPidFile).
- * If the onAlreadyRunning function returns false the process will exit with -1 (or the anExitCode provided),
- * if true will continue processing. The aPidFile parameter can be overridden by setting the OAF_PIDFILE 
+ * Optionally you can provide an `onShutdown` function to execute any code needed upon controlled shutdown
+ * of the server and provide an `onAlreadyRunning` function (that will received the corresponding `aPidFile`).
+ * If the `onAlreadyRunning` function returns false the process will exit with -1 (or the `anExitCode` provided),
+ * if true will continue processing. The `aPidFile` parameter can be overridden by setting the OAF_PIDFILE
  * environment variable.
- * Example:\
- * \
- * var params = processExpr();\
- * ow.server.checkIn("server.pid", function(aPid) {\
- *    log("there is another me " + aPid + " already running... bye!");\
- *    if (isDefined(params.restart)) {\
- *       log("I will kill him!");\
- *       pidKill(ow.server.getPid(aPid), true);\
- *       return true;\
- *    } else {\
- *       log("... I will die now...");\
- *       return false;\
- *    }\
- * }, function() {\
- *    log("I'm going to die....");\
- * });\
- * \
- * ow.server.daemon();\
- * \
- * (available after ow.loadServer())
+ * Example:
+ *
+ * ```javascript
+ * var params = processExpr();
+ * ow.server.checkIn("server.pid", function(aPid) {
+ *    log("there is another me " + aPid + " already running... bye!");
+ *    if (isDefined(params.restart)) {
+ *       log("I will kill him!");
+ *       pidKill(ow.server.getPid(aPid), true);
+ *       return true;
+ *    } else {
+ *       log("... I will die now...");
+ *       return false;
+ *    }
+ * }, function() {
+ *    log("I'm going to die....");
+ * });
+ *
+ * ow.server.daemon();
+ * ```
+ *
+ * (available after `ow.loadServer()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.checkIn = function(aPidFile, onAlreadyRunning, onShutdown, anExitCode) {
@@ -64,22 +68,29 @@ OpenWrap.server.prototype.checkIn = function(aPidFile, onAlreadyRunning, onShutd
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.processArguments(aRouterFunction, aMainSeparator, aSubSeparator) : Array</key>
- * Processes the __expr (-e or opack arguments) value for arguments splitting first by aMainSeparator (if not defined
- * defaults to " ") and then splitting by aSubSeparator (if not defined defaults to "="). Example with 
- * __expr = "opensomething exec count=5=123 some=1\
- * \
- * ow.server.processArguments(function(aParam) { ... });\
- * \
- * Will produce function calls where aParam will have the following values:\
- * \
- * "opensomething"\
- * "exec"\
- * [ "count", "5", "123" ]\
- * [ "some", "1" ]\
- * \
- * (available after ow.loadServer())
+ * <![CDATA[
+ * Processes the `__expr` (-e or opack arguments) value for arguments splitting first by `aMainSeparator` (if not defined
+ * defaults to " ") and then splitting by `aSubSeparator` (if not defined defaults to "="). Example with
+ *
+ * ```javascript
+ * __expr = "opensomething exec count=5=123 some=1";
+ *
+ * ow.server.processArguments(function(aParam) { ... });
+ * ```
+ *
+ * Will produce function calls where `aParam` will have the following values:
+ *
+ * ```text
+ * "opensomething"
+ * "exec"
+ * [ "count", "5", "123" ]
+ * [ "some", "1" ]
+ * ```
+ *
+ * (available after `ow.loadServer()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.processArguments = function(aRouterFunction, aMainSeparator, aSubSeparator) {
@@ -263,26 +274,30 @@ OpenWrap.server.prototype.jmx = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.jmx.serverExec(aParamsArray, aFunction)</key>
-	 * Helper function to be used with JMXServers. Receives aParamsArray passed on the JMX bean operations handling function
-	 * and will call aFunction passing the parameters as arguments and converting the returned result into a JSON string to
-	 * be transmitted to the calling JMX client. Example:\
-	 * \
-	 * plugin("JMX");\
-	 * var jmxs = new JMXServer("com.openaf:type=server");\
-	 * jmxs.start();\
-	 * \
-	 * var c = 0;\
-	 * jmxs.addBean({"count": "long", "increment": "operation", "resetTo": "operation"},\
-	 *   function(key) { if (key == "count") return c; },\
-	 *   function(key, value) { if (key == "count") c = value; },\
-	 *   function(op, params) { switch(op) {\
-	 *      case "increment": return ow.server.jmx.serverExec(params, function() { return ++c; });\
-	 *      case "resetTo"  : return ow.server.jmx.serverExec(params, function(v) { c = v; });\
-	 *      }\
-	 *   }\
-	 * ); 
+	 * <![CDATA[
+	 * Helper function to be used with JMXServers. Receives `aParamsArray` passed on the JMX bean operations handling function
+	 * and will call `aFunction` passing the parameters as arguments and converting the returned result into a JSON string to
+	 * be transmitted to the calling JMX client. Example:
+	 *
+	 * ```javascript
+	 * plugin("JMX");
+	 * var jmxs = new JMXServer("com.openaf:type=server");
+	 * jmxs.start();
+	 *
+	 * var c = 0;
+	 * jmxs.addBean({"count": "long", "increment": "operation", "resetTo": "operation"},
+	 *   function(key) { if (key == "count") return c; },
+	 *   function(key, value) { if (key == "count") c = value; },
+	 *   function(op, params) { switch(op) {
+	 *      case "increment": return ow.server.jmx.serverExec(params, function() { return ++c; });
+	 *      case "resetTo"  : return ow.server.jmx.serverExec(params, function(v) { c = v; });
+	 *      }
+	 *   }
+	 * );
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	serverExec: function(aParams, aFunction) {
@@ -291,14 +306,18 @@ OpenWrap.server.prototype.jmx = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.jmx.call(aJMXObject, objName, aOperation, param1, ...) : value</key>
-	 * Invokes aOperation on the object objName using aJMXObject connected to a server using ow.server.jmx.serverExec. Optionally
-	 * you can provide extra arguments to be passed to the jmx remote operation. Example (based on ow.server.jmx.serverExec):\
-	 * \
-	 * var jmx = ow.loadServer().jmx.localConnect("12345");\
-	 * ow.server.jmx.call(jmx, "com.openaf:type=server", "increment"); // 1\
+	 * <![CDATA[
+	 * Invokes `aOperation` on the object `objName` using `aJMXObject` connected to a server using `ow.server.jmx.serverExec`. Optionally
+	 * you can provide extra arguments to be passed to the jmx remote operation. Example (based on `ow.server.jmx.serverExec`):
+	 *
+	 * ```javascript
+	 * var jmx = ow.loadServer().jmx.localConnect("12345");
+	 * ow.server.jmx.call(jmx, "com.openaf:type=server", "increment"); // 1
 	 * ow.server.jmx.call(jmx, "com.openaf:type=server", "resetTo", 10); // 10
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	call: function(aJMX, objName, aOp) {
@@ -335,19 +354,22 @@ OpenWrap.server.prototype.jmx = {
 // AUTHENTICATION
 //-----------------------------------------------------------------------------------------------------
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.authAppGen(anAppPassword, aUserPassword, a2FAToken, numRounds) : String</key>
- * Generates an application token to be used for server communication given anAppPassword (encrypted or not),
- * an application user password (aUserPassword encrypted or not) and an application a2FAToken. Optionally you
- * can specify the numRounds for the bcrypt function used (if absent, bcrypt won't be used).\
- * \
- * Example:\
- * \
- * ow.loadServer();\
- * $ch("a").createRemote("http://some.server:1234/a", __, (h) => {\
- *    h.login("user", ow.server.authAppGen("...", "...", "..."));\
- * });\
- * \
+ * <![CDATA[
+ * Generates an application token to be used for server communication given `anAppPassword` (encrypted or not),
+ * an application user password (`aUserPassword` encrypted or not) and an application `a2FAToken`. Optionally you
+ * can specify the `numRounds` for the bcrypt function used (if absent, bcrypt won't be used).
+ *
+ * Example:
+ *
+ * ```javascript
+ * ow.loadServer();
+ * $ch("a").createRemote("http://some.server:1234/a", __, (h) => {
+ *    h.login("user", ow.server.authAppGen("...", "...", "..."));
+ * });
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.authAppGen = function(anAppPassword, aUserPassword, a2FAToken, numRounds) {
@@ -382,22 +404,25 @@ OpenWrap.server.prototype.authAppGen = function(anAppPassword, aUserPassword, a2
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.authAppCheck(anAppPassword, aReceivedToken, aUserPassword, a2FAToken, useBCrypt) : boolean</key>
- * Checks the validity of the aReceivedToken given anAppPassword, corresponding aUserPasswork and a2FAToken returning
- * true if it's valid or false otherwise. If useBCrypt = 1 then an extra bcrypt function will be added.\
- * \
- * Example:\
- * \
- * ow.loadServer();\
- * $ch("a").expose(1234, "/a", (u, p) => {\
- *    if (u == "a" &amp;&amp; \
- *        ow.server.authAppCheck("...", p, "...", "...")) \
- *      return true; \
- *    else \
- *      return false;\
- * });\
- * \
+ * <![CDATA[
+ * Checks the validity of the `aReceivedToken` given `anAppPassword`, corresponding `aUserPasswork` and `a2FAToken` returning
+ * true if it's valid or false otherwise. If `useBCrypt` = 1 then an extra bcrypt function will be added.
+ *
+ * Example:
+ *
+ * ```javascript
+ * ow.loadServer();
+ * $ch("a").expose(1234, "/a", (u, p) => {
+ *    if (u == "a" &&
+ *        ow.server.authAppCheck("...", p, "...", "..."))
+ *      return true;
+ *    else
+ *      return false;
+ * });
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.authAppCheck = function(anAppPassword, aTestString, aUserPassword, a2FAToken, useB) {
@@ -661,18 +686,22 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 //-----------------------------------------------------------------------------------------------------
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.ldap(aServer, aUsername, aPassword) : Object</key>
- * Creates a ow.server.ldap object for the given aServer, aUsername and aPassword. Example:\
- * \
- * var ldapAdServer = "ldap://ldap.forumsys.com:389";\
- * var ldapUsername = "cn=read-only-admin,dc=example,dc=com";\
- * var ldapPassword = "password";\
- * \
- * var ldap = new ow.server.ldap(ldapAdServer, ldapUsername, ldapPassword);\
- * var res = ldap.search("dc=example,dc=com", "(uid=*)");\
- * \
- * print(beautifier(res));\
+ * <![CDATA[
+ * Creates a `ow.server.ldap` object for the given `aServer`, `aUsername` and `aPassword`. Example:
+ *
+ * ```javascript
+ * var ldapAdServer = "ldap://ldap.forumsys.com:389";
+ * var ldapUsername = "cn=read-only-admin,dc=example,dc=com";
+ * var ldapPassword = "password";
+ *
+ * var ldap = new ow.server.ldap(ldapAdServer, ldapUsername, ldapPassword);
+ * var res = ldap.search("dc=example,dc=com", "(uid=*)");
+ *
+ * print(beautifier(res));
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.ldap = function(aServer, aUsername, aPassword) {
@@ -803,25 +832,28 @@ OpenWrap.server.prototype.rest = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn, returnHTML) : RequestReply</key>
-	 * Provides a REST compliant HTTPServer request replier given a aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc
-	 * and aRemoveFunc. Each function will receive a map with the provided indexes and data from the request plus the request itself. Optionally you can 
-	 * specify with returnWithParams = true that each function will not return just the data map but a composed map with: data (the actual
-	 * json of data), status (the HTTP code to return) and mimetype.\
-	 * \
-	 * var hs = ow.loadServer().httpd.start(8080);\
-	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 *    "/rest": function(req) { return ow.server.rest.reply("/rest", req,\
-	 *       function(idxs, data, r) { // Create and return a map },\
-	 *       function(idxs, r)       { // Get and return a map },\
-	 *       function(idxs, data, r) { // Set and return a map },\
-	 *       function(idxs, r)       { // Remove and return a map }\
-	 *    )}}, function(req) { return hs.replyOKText("nothing here"); });\
-	 * ow.server.daemon();\
-	 * \ 
-	 * Optionally you can also provide anAuditFn that will be called on every request with the arguments request and reply maps.\
-	 * \
+	 * <![CDATA[
+	 * Provides a REST compliant HTTPServer request replier given a `aBaseURI`, `aRequest`, `aCreateFunc`, `aGetFunc`, `aSetFunc`
+	 * and `aRemoveFunc`. Each function will receive a map with the provided indexes and data from the request plus the request itself. Optionally you can
+	 * specify with `returnWithParams` = true that each function will not return just the data map but a composed map with: data (the actual
+	 * json of data), status (the HTTP code to return) and mimetype.
+	 *
+	 * ```javascript
+	 * var hs = ow.loadServer().httpd.start(8080);
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
+	 *    "/rest": function(req) { return ow.server.rest.reply("/rest", req,
+	 *       function(idxs, data, r) { // Create and return a map },
+	 *       function(idxs, r)       { // Get and return a map },
+	 *       function(idxs, data, r) { // Set and return a map },
+	 *       function(idxs, r)       { // Remove and return a map }
+	 *    )}}, function(req) { return hs.replyOKText("nothing here"); });
+	 * ow.server.daemon();
+	 * ```
+	 *
+	 * Optionally you can also provide `anAuditFn` that will be called on every request with the arguments request and reply maps.
+	 * ]]>
 	 * </odoc>
 	 */
 	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn, returnHTML) {
@@ -924,18 +956,21 @@ OpenWrap.server.prototype.rest = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.rest.replyData(aBaseURI, aRequest, aDataArray) : RequestReply</key>
-	 * Provides a REST JSON compliant HTTPServer request replier given a aBaseURI, aRequest and aDataArray. 
-	 * The data array provided will be manipulated by REST calls.\
-	 * \
-	 * var hs = ow.loadServer().httpd.start(8080);\
-	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 *    "/rest": function(req) { \
-	 *       return ow.server.rest.replyData("/rest", req, myData);\
-	 *    });\
-	 * ow.server.daemon();\
-	 * \ 
+	 * <![CDATA[
+	 * Provides a REST JSON compliant HTTPServer request replier given a `aBaseURI`, `aRequest` and `aDataArray`.
+	 * The data array provided will be manipulated by REST calls.
+	 *
+	 * ```javascript
+	 * var hs = ow.loadServer().httpd.start(8080);
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
+	 *    "/rest": function(req) {
+	 *       return ow.server.rest.replyData("/rest", req, myData);
+	 *    });
+	 * ow.server.daemon();
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	replyData: function(aBaseURI, aReq, aData) {
@@ -1856,22 +1891,24 @@ OpenWrap.server.prototype.mcp = {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.mcpStdio(initData, fnsMeta, fns, lgF, opts)</key>
- * Processes a MCP (Model Context Protocol) request using standard input/output. The initData is a map with initial data to be sent to the client, fnsMeta is an array of function metadata and fns is a map of functions to be executed.
- * The lgF is a function that will be used to log messages. If not provided, it will default to a function that writes logs to a file named "log.ndjson".
- * The initData should contain the server information and capabilities. The fnsMeta should contain metadata about the functions available, such as their names and descriptions. The fns should contain the actual functions that can be called by the client.
- * The function will listen for incoming MCP requests on standard input and respond accordingly.\
- * \
- * opts.rawToolResults (default false) preserves MCP content/structuredContent/isError envelopes returned by tools.\
- * opts is an optional map: { modern: false } (default). When modern is true this also serves the 2026-07-28\
- * stateless/per-request MCP protocol era (per-request _meta protocol version, server/discover, resultType,\
- * ttlMs/cacheScope on list results, UnsupportedProtocolVersionError) side-by-side with the legacy\
- * initialize-handshake era used above, for any request that carries a modern _meta protocol version.\
- * When modern is false (the default) behavior is 100% unchanged from previous releases.\
- * \
- * Example usage:\
- * \
+ * <![CDATA[
+ * Processes a MCP (Model Context Protocol) request using standard input/output. The `initData` is a map with initial data to be sent to the client, `fnsMeta` is an array of function metadata and `fns` is a map of functions to be executed.
+ * The `lgF` is a function that will be used to log messages. If not provided, it will default to a function that writes logs to a file named "log.ndjson".
+ * The `initData` should contain the server information and capabilities. The `fnsMeta` should contain metadata about the functions available, such as their names and descriptions. The `fns` should contain the actual functions that can be called by the client.
+ * The function will listen for incoming MCP requests on standard input and respond accordingly.
+ *
+ * `opts`.rawToolResults (default false) preserves MCP content/structuredContent/isError envelopes returned by tools.
+ * `opts` is an optional map: { modern: false } (default). When modern is true this also serves the 2026-07-28
+ * stateless/per-request MCP protocol era (per-request _meta protocol version, server/discover, resultType,
+ * ttlMs/cacheScope on list results, UnsupportedProtocolVersionError) side-by-side with the legacy
+ * initialize-handshake era used above, for any request that carries a modern _meta protocol version.
+ * When modern is false (the default) behavior is 100% unchanged from previous releases.
+ *
+ * Example usage:
+ *
+ * ```javascript
  *      ow.server.mcpStdio({
  * 			serverInfo: {
  * 				name: "MyServer",
@@ -1887,32 +1924,34 @@ OpenWrap.server.prototype.mcp = {
  * 				}
  * 			}
  * 		}, [{
- *			name: "ping",
- *			description: "Ping the server"
- *		}, {
- *			name: "get_user",
- *			description: "Get user information",
- *			input_schema: {
- *				type: "object",
- *				properties: {
- *					userId: {
- *						type: "string",
- *						description: "The ID of the user to retrieve"
- *					}
- *				},
- *				required: ["userId"]
- *			}
- *		}], {
- *			ping: params => {
- *				return "Pong! Server is running."
- *			},
- *			get_user: params => {
- *				return {
- *					name: "Alice",
- *					userId: params.userId
- *				}
- *			}
- *		})
+ * 		name: "ping",
+ * 		description: "Ping the server"
+ * 	}, {
+ * 		name: "get_user",
+ * 		description: "Get user information",
+ * 		input_schema: {
+ * 			type: "object",
+ * 			properties: {
+ * 				userId: {
+ * 					type: "string",
+ * 					description: "The ID of the user to retrieve"
+ * 				}
+ * 			},
+ * 			required: ["userId"]
+ * 		}
+ * 	}], {
+ * 		ping: params => {
+ * 			return "Pong! Server is running."
+ * 		},
+ * 		get_user: params => {
+ * 			return {
+ * 				name: "Alice",
+ * 				userId: params.userId
+ * 			}
+ * 		}
+ * 	})
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts) {
@@ -2088,27 +2127,34 @@ OpenWrap.server.prototype.a2a = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.a2a.prototype.registerAgent(aMeta, aHandler, aAuthFn, aOptions)</key>
- * Registers an agent with the A2A registry.\
- * \
- * aMeta should be a map with:\
- *   - id (string, required): Unique agent identifier\
- *   - name (string): Display name (defaults to id)\
- *   - title (string): Human-readable title (defaults to id)\
- *   - version (string): Version string (defaults to "1.0.0")\
- *   - tags (array): Array of categorization tags\
- *   - capabilities (map): Map of agent capabilities\
- * \
- * aHandler is a function(message, options, context) that processes messages and returns:\
- *   { content: [{ type: "text", text: "..." }], isError: false }\
- * \
- * aAuthFn is an optional function(context) that returns true/false for authorization.\
- * \
- * aOptions is an optional map with:\
- *   - sizeLimit (number): Maximum message size in bytes\
- *   - timeout (number): Handler timeout in milliseconds\
- *   - rateLimit (number): Requests per minute limit\
+ * <![CDATA[
+ * Registers an agent with the A2A registry.
+ *
+ * `aMeta` should be a map with:
+ *
+ * - `id` (string, required) : Unique agent identifier
+ * - `name` (string) : Display name (defaults to id)
+ * - `title` (string) : Human-readable title (defaults to id)
+ * - `version` (string) : Version string (defaults to "1.0.0")
+ * - `tags` (array) : Array of categorization tags
+ * - `capabilities` (map) : Map of agent capabilities
+ *
+ * `aHandler` is a function(message, options, context) that processes messages and returns:
+ *
+ * ```javascript
+ * { content: [{ type: "text", text: "..." }], isError: false }
+ * ```
+ *
+ * `aAuthFn` is an optional function(context) that returns true/false for authorization.
+ *
+ * `aOptions` is an optional map with:
+ *
+ * - `sizeLimit` (number) : Maximum message size in bytes
+ * - `timeout` (number) : Handler timeout in milliseconds
+ * - `rateLimit` (number) : Requests per minute limit
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.a2a.prototype.registerAgent = function(aMeta, aHandler, aAuthFn, aOptions) {
@@ -2190,16 +2236,18 @@ OpenWrap.server.prototype.a2a.prototype.getAgent = function(aId) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.a2a.prototype.send(aId, aMessage, aOptions, aAuthContext) : Map</key>
- * Sends a message to the specified agent and returns the response.\
- * \
- * aId: Agent identifier\
- * aMessage: String or Map with message content\
- * aOptions: Optional map with request options\
- * aAuthContext: Optional authentication/session context\
- * \
- * Returns MCP-style response: { content: [{ type: "text", text: "..." }], isError: false }
+ * <![CDATA[
+ * Sends a message to the specified agent and returns the response.
+ *
+ * - `aId`: Agent identifier
+ * - `aMessage`: String or Map with message content
+ * - `aOptions`: Optional map with request options
+ * - `aAuthContext`: Optional authentication/session context
+ *
+ * Returns MCP-style response: `{ content: [{ type: "text", text: "..." }], isError: false }`
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.a2a.prototype.send = function(aId, aMessage, aOptions, aAuthContext) {
@@ -2301,17 +2349,20 @@ OpenWrap.server.prototype.a2a.prototype.send = function(aId, aMessage, aOptions,
 OpenWrap.server.prototype.telemetry = { 
 	/**
 	 * <odoc>
-	 * <key>ow.server.telemetry.passive(aHTTPdOrPort, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp)</key>
+	 * <key>ow.server.telemetry.passive(aHTTPdOrPort, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp, openMetricsStrict)</key>
 	 * Setup a HTTPd server on aHTTPdOrPort (defaults to 7777) on the aURI (defaults to /healthz) to 
 	 * serve ow.metrics.getAll. If the parameter "s" is present the value will be split by commas and used
 	 * for ow.metrics.getSome.
-	 * Optionally if useOpenMetrics = true the default of aURI becomes /metrics and the output becomes open metrics (prometheus) using openMetricsPrefix (defaults to "metrics") and
+	 * Optionally if useOpenMetrics = true the default of aURI becomes /metrics and the output becomes open metrics (prometheus) using openMetricsPrefix (defaults to "metric") and
 	 * uses the openMetricsHelp where each key is a open metric entry associated with map with text (description text), help (help text) and type (metrics type).
+	 * OpenMetrics responses default to strict OpenMetrics 1.0 text (unknown, gauge and counter scalar families), with the versioned
+	 * content type and EOF marker. Set openMetricsStrict to false for the legacy Prometheus text output.
 	 * </odoc>
 	 */
-    passive: function(aHs, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp) {
+    passive: function(aHs, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp, openMetricsStrict) {
 		aHs  = _$(aHs, "server").default("7777");
 		useOpenMetrics = _$(useOpenMetrics, "useOpenMetrics").default(false);
+		openMetricsStrict = _$(openMetricsStrict, "openMetricsStrict").isBoolean().default(true);
 		aURI = _$(aURI, "uri").isString().default((useOpenMetrics ? "/metrics" : "/healthz"));
 
 		if (isNumber(aHs)) aHs = ow.server.httpd.start(aHs);
@@ -2319,26 +2370,20 @@ OpenWrap.server.prototype.telemetry = {
 
 		var r = {};
 		r[aURI] = (r, aH) => {
+			var params = r.params || {};
 			var om = useOpenMetrics
-			if (isDef(r.params.f) && r.params.f == "json") om = false
-			if (isDef(r.params.f) && r.params.f == "om")   om = true
+			if (params.f == "json") om = false
+			if (params.f == "om")   om = true
 			
 			try {
-				if (isDef(r.params) && isDef(r.params.s)) {
-					if (om) {
-						return aHs.replyOKText(ow.metrics.fromObj2OpenMetrics(ow.metrics.getSome(r.params.s.split(",")), openMetricsPrefix, now(), openMetricsHelp));
-					} else {
-						return ow.server.httpd.reply(ow.metrics.getSome(r.params.s.split(",")));
-					}
-				} else {
-					if (om) {
-						return aHs.replyOKText(ow.metrics.fromObj2OpenMetrics(ow.metrics.getAll(), openMetricsPrefix, now(), openMetricsHelp));
-					} else {
-						return ow.server.httpd.reply(ow.metrics.getAll());
-					}
-				}
+				var metrics = isDef(params.s) ? ow.metrics.getSome(params.s.split(",")) : ow.metrics.getAll();
+				if (!om) return ow.server.httpd.reply(metrics);
+				var text = ow.metrics.fromObj2OpenMetrics(metrics, openMetricsPrefix, openMetricsStrict ? __ : now(), openMetricsHelp, __, openMetricsStrict);
+				return aHs.reply(text, openMetricsStrict ?
+					"application/openmetrics-text; version=1.0.0; charset=utf-8" : "text/plain; version=0.0.4; charset=utf-8", 200, {});
 			} catch(e) {
 				sprintErr(e);
+				return ow.server.httpd.reply("Unable to collect metrics\n", 500, "text/plain; charset=utf-8");
 			}
 		};
 		ow.server.httpd.route(aHs, ow.server.httpd.mapWithExistingRoutes(aHs, r));
@@ -2420,27 +2465,28 @@ OpenWrap.server.prototype.telemetry = {
 //-----------------------------------------------------------------------------------------------------
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.cluster(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) : Object</key>
- * Creates a new instance of a simple cluster nodes management code. Each cluster node should create it's own instante providing aHost address
- * on which it can be contacted, a corresponding aPort, a nodeTimeout in ms (defaults to 30000), a aNumberOfTries to contact a cluster node (defaults to 3),
- * a aTryTimeout in ms waiting for a reply from another cluster node (defaults to 500ms), a custom cluster list implementation options and a custom map of functions
- * implementing a cluster list retrieval. If no aListImplemnetation is provided it defaults to an internal file based implementation that expects
- * the following options: LOCKTIMEOUT, how much a lock should be honored in ms (e.g. more that 60000ms and it's wierd that the lock it's still there and no other
- * cluster node has been found); CLUSTERFILE, the filepath to the cluster file; CLUSTERFILELOCK, the filepath to the cluster file lock file.\
- * \
- * To provide another custom aListImplementation it should contain the following methods:\
- * \
- *   - clusterLock()                  - locking the access to the cluster nodes list\
- *   - clusterUnLock()                - unlocking the access to the cluster nodes list\
- *   - clusterGetList()               - returns the current cluster nodes list\
- *   - clusterPutList(aList)          - sets a new cluster nodes list (an array with maps containing host, port and date (last contact date))\
- *   - clusterSendMsg(aHost, aMsg)    - sends aMsg to a specific aHost or all (is aHost = "all")\
- *   - clusterSetMsgHandler(aT, aHFn) - sets aHFn function (receives (implementationOptionsMap, aMsg) ) to handle any messages that contain { t: aT }\
- *   - clusterCanLock(aLockName)      - asks all nodes if aLockName can be locked on cluster.locks\
- *   - clusterCanUnLock(aLockName)    - asks all nodes if aLockName can be unlocked on cluster.locks\
- *   - clusterLocks()                 - returns the current cluster node locks implementation (ow.server.locks)\
- * \
+ * <![CDATA[
+ * Creates a new instance of a simple cluster nodes management code. Each cluster node should create its own instance providing `aHost` address
+ * on which it can be contacted, a corresponding `aPort`, a `nodeTimeout` in ms (defaults to 30000), a `aNumberOfTries` to contact a cluster node (defaults to 3),
+ * a `aTryTimeout` in ms waiting for a reply from another cluster node (defaults to 500ms), a custom cluster list implementation options and a custom map of functions
+ * implementing a cluster list retrieval. If no `aListImplementation` is provided it defaults to an internal file based implementation that expects
+ * the following options: LOCKTIMEOUT, how much a lock should be honored in ms (e.g. more that 60000ms and it's unexpected that the lock it's still there and no other
+ * cluster node has been found); CLUSTERFILE, the filepath to the cluster file; CLUSTERFILELOCK, the filepath to the cluster file lock file.
+ *
+ * To provide another custom `aListImplementation` it should contain the following methods:
+ *
+ * - `clusterLock()`: locking the access to the cluster nodes list
+ * - `clusterUnLock()`: unlocking the access to the cluster nodes list
+ * - `clusterGetList()`: returns the current cluster nodes list
+ * - `clusterPutList(aList)`: sets a new cluster nodes list (an array with maps containing host, port and date (last contact date))
+ * - `clusterSendMsg(aHost, aMsg)`: sends `aMsg` to a specific `aHost` or all (is `aHost` = "all")
+ * - `clusterSetMsgHandler(aT, aHFn)`: sets `aHFn` function (receives (implementationOptionsMap, `aMsg`) ) to handle any messages that contain { t: `aT` }
+ * - `clusterCanLock(aLockName)`: asks all nodes if `aLockName` can be locked on cluster.locks
+ * - `clusterCanUnLock(aLockName)`: asks all nodes if `aLockName` can be unlocked on cluster.locks
+ * - `clusterLocks()`: returns the current cluster node locks implementation (`ow.server.locks`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.cluster = function(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) {
@@ -2736,27 +2782,30 @@ OpenWrap.server.prototype.cluster.prototype.checkOut = function() {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.server.clusterChsPeersImpl</key>
- * This ow.servers.cluster implementation will cluster one or more cluster servers keeping the cluster connection details on
- * a cluster channel (defaults to __cluster::[name of cluster]). It's meant to be provided to ow.server.cluster like this:\
- * \
- * var mts = new ow.server.cluster("1.2.3.4", 1234, __, __, __, { name: "testCluster" }, ow.server.clusterChsPeersImpl)\
- * \
- * There are several implementation options:\
- * \
- *    name         (String, mandatory)  The clusters name.\
- *    serverOrPort (Number or HTTPd)    Port or http server object where the cluster node channels will be available.\
- *    protocol     (String)             The transport protocol use to reach other cluster (defaults to http).\
- *    path         (String)             The path where other cluster nodes channel is reachable (defaults to '/__m').\
- *    authFunc     (Function)           Optional authentication function (see mor in ow.ch.server.peer).\
- *    unAuthFunc   (Function)           Optional failed authentication function (see more in ow.ch.server.peer).\
- *    maxTime      (Number)             Optional retry max time (see more in ow.ch.server.peer).\
- *    maxCount     (Number)             Optional max count of retries (see more in ow.ch.server.peer).\
- *    ch           (String)             The cluster local channel (defaults to "__cluster::[name of cluster]").\
- *    chs          (Array)              Array of names of channels or maps with each channel name and path. These channels will be automatically peered and unpeered with other cluster nodes. The path, if not provided, defaults to "/[name of channel]".\
- *    chErrs       (String)             The cluster local errors channel (default is none).\
- * \
+ * <![CDATA[
+ * This `ow.server.cluster` implementation will cluster one or more cluster servers keeping the cluster connection details on
+ * a cluster channel (defaults to `__cluster::[name of cluster]`). It's meant to be provided to `ow.server.cluster` like this:
+ *
+ * ```javascript
+ * var mts = new ow.server.cluster("1.2.3.4", 1234, __, __, __, { name: "testCluster" }, ow.server.clusterChsPeersImpl)
+ * ```
+ *
+ * There are several implementation options:
+ *
+ * - `name` (String, mandatory) The clusters name.
+ * - `serverOrPort` (Number or HTTPd) Port or http server object where the cluster node channels will be available.
+ * - `protocol` (String) The transport protocol use to reach other cluster (defaults to http).
+ * - `path` (String) The path where other cluster nodes channel is reachable (defaults to `'/__m'`).
+ * - `authFunc` (Function) Optional authentication function (see more in `ow.ch.server.peer`).
+ * - `unAuthFunc` (Function) Optional failed authentication function (see more in `ow.ch.server.peer`).
+ * - `maxTime` (Number) Optional retry max time (see more in `ow.ch.server.peer`).
+ * - `maxCount` (Number) Optional max count of retries (see more in `ow.ch.server.peer`).
+ * - `ch` (String) The cluster local channel (defaults to "`__cluster::[name of cluster]`").
+ * - `chs` (Array) Array of names of channels or maps with each channel name and path. These channels will be automatically peered and unpeered with other cluster nodes. The path, if not provided, defaults to "/[name of channel]".
+ * - `chErrs` (String) The cluster local errors channel (default is none).
+ * ]]>
  * </odoc>
  */
 OpenWrap.server.prototype.clusterChsPeersImpl = {
@@ -3612,26 +3661,27 @@ OpenWrap.server.prototype.httpd = {
   },
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout, aImpl) : Object</key>
-	 * Will prepare a HTTP server to be used returning a HTTPServer object. Optionally you can provide 
-	 * aPort where you want the HTTP server to run. Otherwise a free port will be assigned. Optionally you can provide a different
-	 * aImpl (implementation) for the HTTP server. If aHost is provided it will be used as the host to bind the server to.
-	 * If keyStorePath and password are provided the server will be started as a secure HTTPS server. If errorFunction is provided
+	 * <![CDATA[
+	 * Will prepare a HTTP server to be used returning a HTTPServer object. Optionally you can provide
+	 * `aPort` where you want the HTTP server to run. Otherwise a free port will be assigned. Optionally you can provide a different
+	 * `aImpl` (implementation) for the HTTP server. If `aHost` is provided it will be used as the host to bind the server to.
+	 * If `keyStorePath` and `password` are provided the server will be started as a secure HTTPS server. If `errorFunction` is provided
 	 * it will be called whenever an error occurs in the server. This function will receive the error as a parameter.
-	 * If aWebSockets is provided it will be used to handle WebSockets connections. If aTimeout is provided it will be used as
-	 * the timeout for the server to wait for a request before closing the connection.\
-	 * \
-	 * (available after ow.loadServer()).\
-	 * \
-	 * aWebSockets, if used, should be a map with the following functions:\
-	 * \
-	 *    onOpen(_ws)\
-	 *    onClose(_ws, aCode, aReason, hasInitByRemote)\
-	 *    onMessage(_ws, aMessage)\
-	 *    onPong(_ws, aPong)\
-	 *    onException(_ws, anException)\
-	 * \
+	 * If `aWebSockets` is provided it will be used to handle WebSockets connections. If `aTimeout` is provided it will be used as
+	 * the timeout for the server to wait for a request before closing the connection.
+	 *
+	 * (available after `ow.loadServer()`).
+	 *
+	 * `aWebSockets`, if used, should be a map with the following functions:
+	 *
+	 * - `onOpen(_ws)`
+	 * - `onClose(_ws, aCode, aReason, hasInitByRemote)`
+	 * - `onMessage(_ws, aMessage)`
+	 * - `onPong(_ws, aPong)`
+	 * - `onException(_ws, anException)`
+	 * ]]>
 	 * </odoc>
 	 */
 	start: function(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout, aImpl) {
@@ -3753,26 +3803,30 @@ OpenWrap.server.prototype.httpd = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.route(aHTTPd, aMapOfRoutes, aDefaultRoute, aPath, aPreRouteFunc)</key>
-	 * Adds a request router to aHTTPd given aMapOfRoutes. This router will use aPath if defined or /r otherwise.
-	 * Optionally you can also specify aPreRouteFunc that will run before any routing is made.\
-	 * Example:\
-	 * \
-	 * ow.loadServer();\
-	 * var hs = ow.server.httpd.start(17878);\
-	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 * 		"/myapp": function(req, aHs) {\
-	 * 			return aHs.replyOKText("my stuff!!");\
-	 * 		}\
-	 * }),\
-	 * function(req) {\
-	 * 		return hs.replyOKText("nothing here...");\
-	 * });\
-	 * log("READY!");\
-	 * ow.server.daemon();\
-	 * \
-	 * (available after ow.loadServer())
+	 * <![CDATA[
+	 * Adds a request router to `aHTTPd` given `aMapOfRoutes`. This router will use `aPath` if defined or /r otherwise.
+	 * Optionally you can also specify `aPreRouteFunc` that will run before any routing is made.
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.loadServer();
+	 * var hs = ow.server.httpd.start(17878);
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
+	 * 		"/myapp": function(req, aHs) {
+	 * 			return aHs.replyOKText("my stuff!!");
+	 * 		}
+	 * }),
+	 * function(req) {
+	 * 		return hs.replyOKText("nothing here...");
+	 * });
+	 * log("READY!");
+	 * ow.server.daemon();
+	 * ```
+	 *
+	 * (available after `ow.loadServer()`)
+	 * ]]>
 	 * </odoc>
 	 */
 	route: function(aHTTPd, aMapOfRoutes, aDefaultRoute, aPath, aPreRouteFunc) {
@@ -4007,16 +4061,19 @@ OpenWrap.server.prototype.httpd = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.replyFile(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray, mapOfHeaders) : Map</key>
-	 * Provides a helper aHTTPd reply that will enable the download of a file, from aBaseFilePath (a file path or java stream), given aURI part of 
-	 * aBaseURI. Optionally you can also provide a notFoundFunction and an array of file strings (documentRootArraY) to replace as
-	 * documentRoot. Example:\
-	 * \
-	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 *    "/stuff/to/server": r => ow.server.httpd.replyFile(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri)\
-	 * }), r => hs.replyOKText("nothing here...") );\
-	 * \ 
+	 * <![CDATA[
+	 * Provides a helper `aHTTPd` reply that will enable the download of a file, from `aBaseFilePath` (a file path or java stream), given `aURI` part of
+	 * `aBaseURI`. Optionally you can also provide a `notFoundFunction` and an array of file strings (documentRootArraY) to replace as
+	 * documentRoot. Example:
+	 *
+	 * ```javascript
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
+	 *    "/stuff/to/server": r => ow.server.httpd.replyFile(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri)
+	 * }), r => hs.replyOKText("nothing here...") );
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	replyFile: function(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray, mapOfHeaders) {
@@ -4061,22 +4118,25 @@ OpenWrap.server.prototype.httpd = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.replyFileMD(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray, mapOfHeaders, noMaxWidth) : Map</key>
-	 * Provides a helper aHTTPd reply that will enable the parsing markdown file-based sites, from aBaseFilePath (a file path or stream), given aURI part of 
-	 * aBaseURI. Optionally you can also provide a notFoundFunction and an array of file strings (documentRootArraY) to replace as
-	 * documentRoot. Example:\
-	 * \
-	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 *    "/stuff/to/server": function(req) {\
-	 *       return ow.server.httpd.replyFileMD(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri);\
-	 *    }\
-	 * }),\
-	 * function(req) {\
-	 *    return hs.replyOKText("nothing here...");\
-	 * }\
-	 * );\
-	 * \
+	 * <![CDATA[
+	 * Provides a helper `aHTTPd` reply that will enable the parsing markdown file-based sites, from `aBaseFilePath` (a file path or stream), given `aURI` part of
+	 * `aBaseURI`. Optionally you can also provide a `notFoundFunction` and an array of file strings (documentRootArraY) to replace as
+	 * documentRoot. Example:
+	 *
+	 * ```javascript
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
+	 *    "/stuff/to/server": function(req) {
+	 *       return ow.server.httpd.replyFileMD(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri);
+	 *    }
+	 * }),
+	 * function(req) {
+	 *    return hs.replyOKText("nothing here...");
+	 * }
+	 * );
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	replyFileMD: function(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray, mapOfHeaders, noMaxWidth) {
@@ -4129,16 +4189,19 @@ OpenWrap.server.prototype.httpd = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.replyJSMap(aHTTPd, aMapOrArray) : Map</key>
-	 * Provides a helper aHTTPd reply that will parse aMapOrArray into a HTML output. Example:\
-	 * \
-	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 *    "/stuff/to/server": r => ow.server.httpd.replyJSMap(hs, getOPackPaths()\
-	 * }),\
-	 * r => hs.replyOKText("nothing here...")\
-	 * );\
-	 * \
+	 * <![CDATA[
+	 * Provides a helper `aHTTPd` reply that will parse `aMapOrArray` into a HTML output. Example:
+	 *
+	 * ```javascript
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
+	 *    "/stuff/to/server": r => ow.server.httpd.replyJSMap(hs, getOPackPaths()
+	 * }),
+	 * r => hs.replyOKText("nothing here...")
+	 * );
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	replyJSMap: function(aHTTPd, aMapOrArray) {
@@ -4209,17 +4272,18 @@ OpenWrap.server.prototype.httpd = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.replyBrowse(server, request, _options) : Map</key>
-	 * Provides a helper function to reply with a list of files or a file content. The _options map is used to
-	 * provide the following functions:\
-	 * \
-	 *   getList(request, _options)   : Function to get the list of files or directories\
-	 *   getObj(request, _options)    : Function to get the object requested\
-	 *   renderList(list, server, request, _options) : Function to render the list of files\
-	 *   renderObj(obj, server, request, _options)   : Function to render the object requested\
-	 *   renderEmpty(request, _options) : Function to render an empty list\
-	 * 
+	 * <![CDATA[
+	 * Provides a helper function to reply with a list of files or a file content. The `_options` map is used to
+	 * provide the following functions:
+	 *
+	 * - `getList(request, _options)`: Function to get the list of files or directories
+	 * - `getObj(request, _options)`: Function to get the object requested
+	 * - `renderList(list, server, request, _options)`: Function to render the list of files
+	 * - `renderObj(obj, server, request, _options)`: Function to render the object requested
+	 * - `renderEmpty(request, _options)`: Function to render an empty list
+	 * ]]>
 	 * </odoc>
 	 */
 	replyBrowse: function(server, request, _options) {
@@ -4246,24 +4310,28 @@ OpenWrap.server.prototype.httpd = {
 	},
 
 	/**
-     * <odoc>
+     * <odoc format="markdown">
      * <key>ow.server.httpd.replyJSONRPC(server, request, mapOfFunctions, logFn, debugFn, opts) : Map</key>
-     * Implements a JSON-RPC 2.0 endpoint using the provided mapOfFunctions. The request must be a POST with a JSON-RPC body.\
-	 * Optionally you can provide logFn and debugFn functions to log errors and debug information respectively.\
-	 * \
-     * Example usage:\
-     *   ow.server.httpd.route(hs, {\
-     *     "/rpc": (req) => ow.server.httpd.replyJSONRPC(hs, req, { sum: (a, b) => a + b }, logErr, log) \
-     *   })\
-	 * \
-	 * opts is an optional map: { modern: false, listMethods: [...] } (defaults shown). When modern is true,\
-	 * requests carrying a modern (2026-07-28+) per-request _meta protocol version are validated against\
-	 * ow.server.mcp.versions.supported (replying with an UnsupportedProtocolVersionError otherwise), results are\
-	 * wrapped with the required resultType (plus ttlMs/cacheScope for methods listed in opts.listMethods, default\
-	 * ["tools/list","prompts/list","resources/list","resources/templates/list"]), and the negotiated version is\
-	 * echoed back via the MCP-Protocol-Version response header. Legacy requests (the default, and everything when\
-	 * modern is false/omitted) are handled exactly as before -- zero behavior change.\
-	 *
+     * <![CDATA[
+     * Implements a JSON-RPC 2.0 endpoint using the provided `mapOfFunctions`. The `request` must be a POST with a JSON-RPC body.
+     * Optionally you can provide `logFn` and `debugFn` functions to log errors and debug information respectively.
+     *
+     * Example usage:
+     *
+     * ```javascript
+     * ow.server.httpd.route(hs, {
+     *   "/rpc": (req) => ow.server.httpd.replyJSONRPC(hs, req, { sum: (a, b) => a + b }, logErr, log)
+     * })
+     * ```
+     *
+     * `opts` is an optional map: { modern: false, listMethods: [...] } (defaults shown). When modern is true,
+     * requests carrying a modern (2026-07-28+) per-`request` _meta protocol version are validated against
+     * `ow.server.mcp.versions.supported` (replying with an UnsupportedProtocolVersionError otherwise), results are
+     * wrapped with the required resultType (plus ttlMs/cacheScope for methods listed in `opts`.listMethods, default
+     * ["tools/list","prompts/list","resources/list","resources/templates/list"]), and the negotiated version is
+     * echoed back via the MCP-Protocol-Version response header. Legacy requests (the default, and everything when
+     * modern is false/omitted) are handled exactly as before -- zero behavior change.
+     * ]]>
      * </odoc>
      */
     replyJSONRPC: function(server, request, mapOfFunctions, logFn, debugFn, opts) {
@@ -4381,28 +4449,32 @@ OpenWrap.server.prototype.httpd = {
     },
 
 	/**
-     * <odoc>
+     * <odoc format="markdown">
      * <key>ow.server.httpd.replyMCP(server, request, mapOfFunctions, logFn, debugFn, opts) : Map</key>
-     * Implements a Model Context Protocol (MCP) endpoint using the provided mapOfFunctions. The request must be a POST with a MCP body.\
-	 * Optionally you can provide logFn and debugFn functions to log errors and debug information respectively.\
-     * \ 
-     * Example usage:\
-	 *	ow.server.httpd.route(hs, {\
- 	 *    "/mcp": req => ow.server.httpd.replyMCP(hs, req, {\
-	 *		initialize                 : params => ({ serverInfo: { name: "OpenAF", title: "OpenAF test ", version: "1.0.0" }, capabilities: { prompts: { listChanged: true }, tools: { listChanged: true } } }),\
-	 *		"notifications/initialized": params => ({}),\
-	 *		"tools/call"               : () => ({content:[{type:"text",text:"PONG!"}],isError: false}),\
-	 *		"tools/list"               : params => { cprint(params); return { tools: [{name:"ping",description:"pings",title:"ping"}] } },\
-	 *		"prompts/list"             : params => ({})\
-	 *	  }, logErr, log),\
-	 *	  "/echo": req => ow.server.httpd.reply(stringify(req))\
-	 *  })
-	 * \
-	 * opts is an optional map: { modern: false, listMethods: [...] } -- see ow.server.httpd.replyJSONRPC for the\
-	 * meaning of both; the same opt-in 2026-07-28 modern-era handling (version validation, resultType/ttlMs/\
-	 * cacheScope wrapping, MCP-Protocol-Version response header) applies here, with legacy behavior (default)\
-	 * left fully unchanged.\
+     * <![CDATA[
+     * Implements a Model Context Protocol (MCP) endpoint using the provided `mapOfFunctions`. The `request` must be a POST with a MCP body.
+     * Optionally you can provide `logFn` and `debugFn` functions to log errors and debug information respectively.
      *
+     * Example usage:
+     *
+     * ```javascript
+     * ow.server.httpd.route(hs, {
+     *    "/mcp": req => ow.server.httpd.replyMCP(hs, req, {
+     * 	initialize                 : params => ({ serverInfo: { name: "OpenAF", title: "OpenAF test ", version: "1.0.0" }, capabilities: { prompts: { listChanged: true }, tools: { listChanged: true } } }),
+     * 	"notifications/initialized": params => ({}),
+     * 	"tools/call"               : () => ({content:[{type:"text",text:"PONG!"}],isError: false}),
+     * 	"tools/list"               : params => { cprint(params); return { tools: [{name:"ping",description:"pings",title:"ping"}] } },
+     * 	"prompts/list"             : params => ({})
+     *   }, logErr, log),
+     *   "/echo": req => ow.server.httpd.reply(stringify(req))
+     *  })
+     * ```
+     *
+     * `opts` is an optional map: { modern: false, listMethods: [...] } -- see `ow.server.httpd.replyJSONRPC` for the
+     * meaning of both; the same opt-in 2026-07-28 modern-era handling (version validation, resultType/ttlMs/
+     * cacheScope wrapping, MCP-Protocol-Version response header) applies here, with legacy behavior (default)
+     * left fully unchanged.
+     * ]]>
      * </odoc>
      */
     replyMCP: function(server, request, mapOfFunctions, logFn, debugFn, opts) {
@@ -4528,24 +4600,25 @@ OpenWrap.server.prototype.httpd = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.authOAuth(aMapOptions, aHTTPd, aRequest, aFnReply) : Map</key>
-	 * Provides OAuth 2.0 support by intersecting aRequest of aHTTPd to return aFnReply only on correctly authenticated. aMapOptions
-	 * provides the OAuth configurations to follow:\
-	 * \
-	 * aMapOptions:\
-	 * \
-	 *    realm             (optional)  An unique realm name (defaults to 'realm')\
-	 *    cookie            (optional)  The name of the cookie entry to use (defaults to 'OAF_AUTH_SESSION_ID')\
-	 *    baseURL           (mandatory) The web server base url (e.g. https://myserver:8090)\
-	 *    uriLogout         (optional)  The uri to use on the web server to logout (defaults to '/logout')\
-	 *    uriCallBack       (optional)  The uri to use on the web server to callback (defaults to '/cb'). You should configure oauth to allow redirection to base url + callback (e.g. https://myserver:8090/cb)\
-	 *    oauthAuthURL      (mandatory) The OAuth authorization_endpoint\
-	 *    oauthTokenURL     (mandatory) The OAuth token_endpoint\
-	 *    oauthLogoutURL    (mandatory) The OAuth end_session_endpoint\
-	 *    oauthCliendId     (mandatory) The OAuth configured client id\
-	 *    oauthClientSecret (mandatory) The OAuth configured client secret\ 
-	 * \
+	 * <![CDATA[
+	 * Provides OAuth 2.0 support by intersecting `aRequest` of `aHTTPd` to return `aFnReply` only on correctly authenticated. `aMapOptions`
+	 * provides the OAuth configurations to follow:
+	 *
+	 * `aMapOptions`:
+	 *
+	 * - `realm` (optional) An unique realm name (defaults to 'realm')
+	 * - `cookie` (optional) The name of the cookie entry to use (defaults to 'OAF_AUTH_SESSION_ID')
+	 * - `baseURL` (mandatory) The web server base url (e.g. https://myserver:8090)
+	 * - `uriLogout` (optional) The uri to use on the web server to logout (defaults to '/logout')
+	 * - `uriCallBack` (optional) The uri to use on the web server to callback (defaults to '/cb'). You should configure oauth to allow redirection to base url + callback (e.g. https://myserver:8090/cb)
+	 * - `oauthAuthURL` (mandatory) The OAuth authorization_endpoint
+	 * - `oauthTokenURL` (mandatory) The OAuth token_endpoint
+	 * - `oauthLogoutURL` (mandatory) The OAuth end_session_endpoint
+	 * - `oauthCliendId` (mandatory) The OAuth configured client id
+	 * - `oauthClientSecret` (mandatory) The OAuth configured client secret
+	 * ]]>
 	 * </odoc>
 	 */
 	authOAuth: function(aMapOptions, aHTTPd, aReq, aFnReply) {
@@ -4669,35 +4742,38 @@ OpenWrap.server.prototype.httpd = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.authBasic(aRealm, aHTTPd, aReq, aAuthFunc, aReplyFunc, aUnAuthFunc) : Map</key>
-	 * Wraps a httpd reply with basic HTTP authentication for the provided aRealm on the aHTTPd server. The aReq
-	 * request map should be provided along with aAuthFunc (that receives the user and password and should return
-	 * true of false if authentication is successful). If authentication is successful aReplyFunc will be executed
-	 * receiving aHTTPd and aReq. Otherwise an optional aUnAuthFunc will be executed also receiving aHTTPd and aReq.
-	 * Example:\
-	 * \
-	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 *    "/f": function(req) { \
-	 *       return ow.server.httpd.authBasic(\
-	 *          "realm", hs, req,\
-     *          function(user, pass) {\
-     *             if (user == "adm" &amp;&amp; pass == "Password1") return true; else return false;\
-     *          },\
-	 *   	    function(hss, areq) {\
-	 *		       return ow.server.httpd.replyFile(hss, "/some/path", "/f", areq.uri);\
-	 *		    },\
-	 *		    function(hss, ar) {\
-	 *		       return hss.reply("Not authorized.", "text/plain", ow.server.httpd.codes.UNAUTHORIZED);\
-	 *		    }\
-	 *	     );\
-	 *	  }\
-	 * }),\
-	 * function(req) {\
-	 *    return hs.replyOKText("nothing here...");\
-	 * }\
-	 * );\
-	 * \
+	 * <![CDATA[
+	 * Wraps a httpd reply with basic HTTP authentication for the provided `aRealm` on the `aHTTPd` server. The `aReq`
+	 * request map should be provided along with `aAuthFunc` (that receives the user and password and should return
+	 * true of false if authentication is successful). If authentication is successful `aReplyFunc` will be executed
+	 * receiving `aHTTPd` and `aReq`. Otherwise an optional `aUnAuthFunc` will be executed also receiving `aHTTPd` and `aReq`.
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
+	 *    "/f": function(req) {
+	 *       return ow.server.httpd.authBasic(
+	 *          "realm", hs, req,
+	 *          function(user, pass) {
+	 *             if (user == "adm" && pass == "Password1") return true; else return false;
+	 *          },
+	 *   	    function(hss, areq) {
+	 * 	       return ow.server.httpd.replyFile(hss, "/some/path", "/f", areq.uri);
+	 * 	    },
+	 * 	    function(hss, ar) {
+	 * 	       return hss.reply("Not authorized.", "text/plain", ow.server.httpd.codes.UNAUTHORIZED);
+	 * 	    }
+	 *      );
+	 *   }
+	 * }),
+	 * function(req) {
+	 *    return hs.replyOKText("nothing here...");
+	 * }
+	 * );
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	authBasic: function(aRealm, aHTTPd, aReq, aAuthFunc, aReplyFunc, aUnAuthFunc) {
@@ -4833,26 +4909,29 @@ OpenWrap.server.prototype.socket = {
 	__threads: {},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.socket.start(aPort, aFunction, aBackLog, aBindAddr)</key>
-	 * Starts a thread listening on aPort with aBackLog (defaults to a queue of 50 connections in waiting) on aBindAddr (defaults to "0.0.0.0").
-	 * Whenever a connection is established aFunction will be called with the corresponding java.net.Socket and a java.net.ServerSocket. Examples:\
-	 * \
-	 * ow.loadServer();\
-	 * ow.server.socket.start(12345, (clt, srv) => {\
+	 * <![CDATA[
+	 * Starts a thread listening on `aPort` with `aBackLog` (defaults to a queue of 50 connections in waiting) on `aBindAddr` (defaults to "0.0.0.0").
+	 * Whenever a connection is established `aFunction` will be called with the corresponding java.net.Socket and a java.net.ServerSocket. Examples:
+	 *
+	 * ```javascript
+	 * ow.loadServer();
+	 * ow.server.socket.start(12345, (clt, srv) => {
 	 *    log("Connection from " + clt.getInetAddress().getHostAddress());
-	 *    ioStreamReadLines(clt.getInputStream(), stream => {\
-	 *       print(stream);\
-	 *       ioStreamWrite(clt.getOutputStream(), stream);\
-	 *       clt.getOutputStream().flush();\
-	 * 	     clt.shutdownInput();\
-	 *       clt.shutdownOutput();\
-	 *       return true;\
-	 *    });\
-	 *    log("closing...");\
-	 *    clt.close();\
-	 * });\
-	 * \
+	 *    ioStreamReadLines(clt.getInputStream(), stream => {
+	 *       print(stream);
+	 *       ioStreamWrite(clt.getOutputStream(), stream);
+	 *       clt.getOutputStream().flush();
+	 * 	     clt.shutdownInput();
+	 *       clt.shutdownOutput();
+	 *       return true;
+	 *    });
+	 *    log("closing...");
+	 *    clt.close();
+	 * });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	start: (aPort, aFn, aBackLog, aBindAddr) => {
@@ -4993,22 +5072,24 @@ OpenWrap.server.prototype.jwt = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.jwt.sign(aKey, aData) : String</key>
-	 * Signs a JWT using aKey (either a string or java.security.Key) returning the corresponding encoded JWT. To
-	 * add specific claims use aData map where you can add custom headers and/or custom claims or used the standard fields. 
-	 * Expected keys for aData:\
-	 * \
-	 *    audience    (String)\
-	 *    claims      (Map)\
-	 *    expiration  (Date)\
-	 *    headers     (Map)\
-	 *    issuer      (String)\
-	 *    id          (String)\
-	 *    issuedAt    (Date)\
-	 *    issuer      (String)\
-	 *    notBefore   (Date)\
-	 *    subject     (String)
+	 * <![CDATA[
+	 * Signs a JWT using `aKey` (either a string or java.security.Key) returning the corresponding encoded JWT. To
+	 * add specific claims use `aData` map where you can add custom headers and/or custom claims or used the standard fields.
+	 * Expected keys for `aData`:
+	 *
+	 * - `audience` (String)
+	 * - `claims` (Map)
+	 * - `expiration` (Date)
+	 * - `headers` (Map)
+	 * - `issuer` (String)
+	 * - `id` (String)
+	 * - `issuedAt` (Date)
+	 * - `issuer` (String)
+	 * - `notBefore` (Date)
+	 * - `subject` (String)
+	 * ]]>
 	 * </odoc>
 	 */
 	sign: (aKey, aData) => {
@@ -5086,18 +5167,19 @@ OpenWrap.server.prototype.jwt = {
 
 OpenWrap.server.prototype.httpd.browse = {
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.browse.files(aURI, aOptions) : Map</key>
-	 * Provides a simple file browser for the provided aURI. The aOptions map can contain the following keys:\
-	 * \
-	 *   path     (string)   The path to use as root (defaults to ".")\
-	 *   browse   (boolean)  If true the file browser will be shown (defaults to true)\
-	 *   showURI  (boolean)  If true the URI will be shown in the file browser (defaults to false)\
-	 *   sortTab  (boolean)  If true the table will be sorted (defaults to false)\
-	 *   default  (string)   The default file to show (defaults to undefined)\
-	 *   logo  	  (string)   The logo to show in the file browser (defaults to undefined)\
-	 *   footer   (string)   The footer to show in the file browser (defaults to undefined)\
-	 * 
+	 * <![CDATA[
+	 * Provides a simple file browser for the provided `aURI`. The `aOptions` map can contain the following keys:
+	 *
+	 * - `path` (string) The path to use as root (defaults to ".")
+	 * - `browse` (boolean) If true the file browser will be shown (defaults to true)
+	 * - `showURI` (boolean) If true the URI will be shown in the file browser (defaults to false)
+	 * - `sortTab` (boolean) If true the table will be sorted (defaults to false)
+	 * - `default` (string) The default file to show (defaults to undefined)
+	 * - `logo` (string) The logo to show in the file browser (defaults to undefined)
+	 * - `footer` (string) The footer to show in the file browser (defaults to undefined)
+	 * ]]>
 	 * </odoc>
 	 */
 	files: function(aURI, aOptions) {
@@ -5363,17 +5445,18 @@ OpenWrap.server.prototype.httpd.browse = {
 		}, aOptions)
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.browse.odoc(aURI, aOptions) : Map</key>
-	 * Provides a simple oDoc browser. The aOptions map can contain the following keys:\
-	 * \
-	 *   browse   (boolean)  If true the file browser will be shown (defaults to true)\
-	 *   showURI  (boolean)  If true the URI will be shown in the file browser (defaults to false)\
-	 *   sortTab  (boolean)  If true the table will be sorted (defaults to false)\
-	 *   logo  	  (string)   The logo to show in the file browser (defaults to undefined)\
-	 *   footer   (string)   The footer to show in the file browser (defaults to undefined)\
-	 *   ttl	  (number)   The time to live for the cache (defaults to 5 minutes)\
-	 * 
+	 * <![CDATA[
+	 * Provides a simple oDoc browser. The `aOptions` map can contain the following keys:
+	 *
+	 * - `browse` (boolean) If true the file browser will be shown (defaults to true)
+	 * - `showURI` (boolean) If true the URI will be shown in the file browser (defaults to false)
+	 * - `sortTab` (boolean) If true the table will be sorted (defaults to false)
+	 * - `logo` (string) The logo to show in the file browser (defaults to undefined)
+	 * - `footer` (string) The footer to show in the file browser (defaults to undefined)
+	 * - `ttl` (number) The time to live for the cache (defaults to 5 minutes)
+	 * ]]>
 	 * </odoc>
 	 */
 	odoc: function(aURI, aOptions) {
@@ -5447,17 +5530,18 @@ OpenWrap.server.prototype.httpd.browse = {
 		})
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.server.httpd.browse.opacks(aURI, aOptions) : Map</key>
-	 * Provides a simple oPack browser. The aOptions map can contain the following keys:\
-	 * \
-	 *   browse   (boolean)  If true the file browser will be shown (defaults to true)\
-	 *   showURI  (boolean)  If true the URI will be shown in the file browser (defaults to false)\
-	 *   sortTab  (boolean)  If true the table will be sorted (defaults to false)\
-	 *   logo  	  (string)   The logo to show in the file browser (defaults to undefined)\
-	 *   footer   (string)   The footer to show in the file browser (defaults to undefined)\
-	 *   ttl	  (number)   The time to live for the cache (defaults to 5 minutes)\
-	 * 
+	 * <![CDATA[
+	 * Provides a simple oPack browser. The `aOptions` map can contain the following keys:
+	 *
+	 * - `browse` (boolean) If true the file browser will be shown (defaults to true)
+	 * - `showURI` (boolean) If true the URI will be shown in the file browser (defaults to false)
+	 * - `sortTab` (boolean) If true the table will be sorted (defaults to false)
+	 * - `logo` (string) The logo to show in the file browser (defaults to undefined)
+	 * - `footer` (string) The footer to show in the file browser (defaults to undefined)
+	 * - `ttl` (number) The time to live for the cache (defaults to 5 minutes)
+	 * ]]>
 	 * </odoc>
 	 */
 	opacks: function(aURI, aOptions) {

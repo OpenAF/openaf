@@ -315,6 +315,7 @@ ojob:
     port: 8080
     uri: "/metrics"
     openMetrics: true
+    openMetricsStrict: true # Default; false selects legacy Prometheus text
     openMetricsPrefix: "ojob"
     
     # Active metrics (push to external systems)

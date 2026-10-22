@@ -470,22 +470,25 @@ public class ZIP extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ZIP.generate(aMapOfOptions, dontReload) : anArrayOfBytes</key>
-	 * Will generate a ZIP anArrayOfBytes contents (that can then by saved into a file) given the provided options (a map
-	 * where you can specify the compressionLevel as a number). If dontReload = true then the internal ZIP object contents
-	 * won't be reloaded after generating. Example:\
-	 * \
-	 * plugin("ZIP");\
-	 * var zip = new ZIP();\
-	 * var text = new java.lang.String("Some example test to zip into a zip file");\
-	 * var openaf = io.readFileBytes("c:\\apps\\OpenAF\\openaf.jar");\
-	 * zip.putFile("text.txt", text.getBytes());\
-	 * zip.putFile("openaf.jar", openaf);\
-	 * var newZip = zip.generate({"compressionLevel": 9});\
-	 * var zip = new ZIP(newZip);\
-	 * print(beautifier(zip.list()));\
-	 * \
+	 * <![CDATA[
+	 * Will generate a ZIP `anArrayOfBytes` contents (that can then by saved into a file) given the provided options (a map
+	 * where you can specify the compressionLevel as a number). If `dontReload` = true then the internal ZIP object contents
+	 * won't be reloaded after generating. Example:
+	 *
+	 * ```javascript
+	 * plugin("ZIP");
+	 * var zip = new ZIP();
+	 * var text = new java.lang.String("Some example test to zip into a zip file");
+	 * var openaf = io.readFileBytes("c:\\apps\\OpenAF\\openaf.jar");
+	 * zip.putFile("text.txt", text.getBytes());
+	 * zip.putFile("openaf.jar", openaf);
+	 * var newZip = zip.generate({"compressionLevel": 9});
+	 * var zip = new ZIP(newZip);
+	 * print(beautifier(zip.list()));
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction

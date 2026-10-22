@@ -27,9 +27,15 @@ jobs:
     to: oJob Test
     deps: [Path::Parallel]
     exec: args.func = args.tests.testPathWrapper;
+  - name: Path::Query helpers
+    from: Path::Init
+    to: oJob Test
+    deps: [Path::Wrapper]
+    exec: args.func = args.tests.testPathQueryHelpers;
 todo:
   - Path::Reference
   - Path::Java differential
   - Path::Cache isolation
   - Path::Parallel
   - Path::Wrapper
+  - Path::Query helpers

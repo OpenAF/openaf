@@ -100,11 +100,11 @@ var capabilities = $llm(config).getCapabilities();
 // { implemented, contract, questionTypes, probabilities, availability }
 ```
 
-Capabilities also include `contractVersion`, `inputTypes`, and `streaming`. Contract states are `verified`, `unverified`, or `unsupported`. Availability is usually `unknown`; known incompatible Ollama cloud model tags and OpenAI models other than `gpt-6-luna` report `incompatible` for native execution. Implemented support describes adapter code, not installed models, endpoint presence, account access, or calibrated probabilities. The public capability snapshot describes the configured model; an override is evaluated separately at execution time. Adapters without new hooks retain their existing operations and report unsupported decisions.
+Capabilities also include `contractVersion`, `inputTypes`, and `streaming`. Contract states are `verified`, `unverified`, or `unsupported`. Availability is usually `unknown`; OpenAI models other than `gpt-6-luna` report `incompatible` for native execution. Ollama cloud models are checked by the provider; a `:cloud` routing suffix may be absent from the returned model name. Implemented support describes adapter code, not installed models, endpoint presence, account access, or calibrated probabilities. The public capability snapshot describes the configured model; an override is evaluated separately at execution time. Adapters without new hooks retain their existing operations and report unsupported decisions.
 
 | Provider | Native decisions | Structured decisions | Runtime availability |
 | --- | --- | --- | --- |
-| Ollama | Implemented; verified System One contract | Unsupported | Requires caller-supplied compatible local model/runner |
+| Ollama | Implemented; verified System One contract | Unsupported | Requires a compatible local model/runner or cloud decision model (for example `clef:cloud`, through a signed-in Ollama v0.40.5+ server) |
 | Gemini | Unsupported | Implemented; GenerateContent | Model/endpoint/account availability unknown |
 | OpenAI | Implemented; verified Decisions contract for official endpoints and `gpt-6-luna` | Implemented; Responses or explicit Chat | Account availability unknown; other models incompatible with native |
 | Other existing adapters | Unsupported without optional hooks | Unsupported without optional hooks | Existing operations unchanged |
@@ -196,7 +196,7 @@ The legacy Schema profile additionally rejects null types, nonstring enums, and 
 
 ## Errors and troubleshooting
 
-Errors are Error objects with stable `code`, sanitized `provider`, and numeric HTTP `status` when available. Ordinary errors omit provider bodies, state, URLs containing credentials, and authentication headers.
+Errors are Error objects with stable `code`, sanitized `provider`, and numeric HTTP `status` when available. Provider failures include the provider's `error` string or `error.message` in the exception message and `providerMessage`, plus HTTP status in the message when available. Provider messages have control characters removed and are limited to 2048 characters. Other response fields, non-JSON bodies, and transport exception details are omitted. Provider-authored messages may include details from the request.
 
 | Code | Meaning |
 | --- | --- |

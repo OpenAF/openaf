@@ -15,10 +15,12 @@ if (typeof __owFormatLiveSessions === "undefined") var __owFormatLiveSessions = 
 OpenWrap.format.prototype.string = {
 	// from: https://dmitripavlutin.com/what-every-javascript-developer-should-know-about-unicode/
 	/** 
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.string.unicode(aCodeNumber) : String</key>
-	 * Given a unicode aCodeNumber (8 or 16 bits) will convert to the necessary sequence of 8 bit.
-	 * For example: ow.format.string.unicode(0x1F37A)
+	 * <![CDATA[
+	 * Given a unicode `aCodeNumber` (8 or 16 bits) will convert to the necessary sequence of 8 bit.
+	 * For example: `ow.format.string.unicode(0x1F37A)`.
+	 * ]]>
 	 * </odoc>
 	 **/
     unicode: code => {
@@ -190,19 +192,22 @@ OpenWrap.format.prototype.string = {
 		return aLine
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc, useIndex, perRowHeight) : Array</key>
-	 * Given anArray of maps will return an array suitable to use with printTable for a maxTableSize, a separator length
-	 * (sepLen (which defaults to 1)) and an optional line separator function (sepFunc that receives the max length of a 
-	 * column). Word-wrap is achieved by creating new map array entries whenever the calculated max size of each line 
-	 * with sepLen is achieved. The boolean flag useIndex changes the result to a map with lines and idx (array of the positions
-	 * on the lines array that are a new anArray entry). If perRowHeight is true, each record uses its own wrapped height and column sizes are measured per physical line.
-	 * Example of usage:\
-	 * \
-	 *   __initializeCon()\
-     *   var maxS = __con.getTerminal().getWidth()\
-	 *   print(printTable(ow.format.string.wordWrapArray(io.listFiles("js").files, maxS, 1, s => ansiColor("FAINT", repeat(s, "-"))), maxS))\
-	 * 
+	 * <![CDATA[
+	 * Given `anArray` of maps will return an array suitable to use with printTable for a `maxTableSize`, a separator length
+	 * (`sepLen` (which defaults to 1)) and an optional line separator function (`sepFunc` that receives the max length of a
+	 * column). Word-wrap is achieved by creating new map array entries whenever the calculated max size of each line
+	 * with `sepLen` is achieved. The boolean flag `useIndex` changes the result to a map with lines and idx (array of the positions
+	 * on the lines array that are a new `anArray` entry). If `perRowHeight` is true, each record uses its own wrapped height and column sizes are measured per physical line.
+	 * Example of usage:
+	 *
+	 * ```javascript
+	 * __initializeCon()
+	 * var maxS = __con.getTerminal().getWidth()
+	 * print(printTable(ow.format.string.wordWrapArray(io.listFiles("js").files, maxS, 1, s => ansiColor("FAINT", repeat(s, "-"))), maxS))
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc, useIndex, perRowHeight) => {
@@ -353,17 +358,22 @@ OpenWrap.format.prototype.string = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.string.closest(aString, anArrayOfStrings, aThreshold) : aString</key>
-	 * Given anArrayOfStrings will try to find the closest string on that array for the provided aString.
-	 * If aThreshold is not provided a default value of 3 will be used.
-	 * See ow.format.string.bestPrefix if you want to be based on the prefix.\
-	 * Example:\
-	 * var anArrayOfStrings = [ "/user", "/use", "/username", "/u" ];\
-	 * ow.format.string.closest("/user/1", anArrayOfStrings); // Returns /user\
-	 * ow.format.string.closest("/u1", anArrayOfStrings); // Returns /u\
-	 * ow.format.string.closest("/userna", anArrayOfStrings); // Returns /user\
+	 * <![CDATA[
+	 * Given `anArrayOfStrings` will try to find the closest string on that array for the provided `aString`.
+	 * If `aThreshold` is not provided a default value of 3 will be used.
+	 * See `ow.format.string.bestPrefix` if you want to be based on the prefix.
+	 * Example:
+	 *
+	 * ```javascript
+	 * var anArrayOfStrings = [ "/user", "/use", "/username", "/u" ];
+	 * ow.format.string.closest("/user/1", anArrayOfStrings); // Returns /user
+	 * ow.format.string.closest("/u1", anArrayOfStrings); // Returns /u
+	 * ow.format.string.closest("/userna", anArrayOfStrings); // Returns /user
 	 * ow.format.string.closest("/usernam", anArrayOfStrings); // Returns /username
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 *
 	 * from https://github.com/ianstormtaylor/closest-match
@@ -448,16 +458,20 @@ OpenWrap.format.prototype.string = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.string.bestPrefix(aString, anArrayOfStrings) : aString</key>
-	 * Given anArrayOfStrings will try to find the best prefix string on that array for the provided aString.
-	 * See ow.format.string.closest if you don't want to be based on the prefix.\
-	 * Example:\
-	 * var anArrayOfStrings = [ "/user", "/use", "/username", "/u" ];\
-	 * ow.format.string.bestPrefix("/user/1", anArrayOfStrings); // Returns /user\
-	 * ow.format.string.bestPrefix("/u1", anArrayOfStrings); // Returns /u\
-	 * ow.format.string.bestPrefix("/userna", anArrayOfStrings); // Returns /user\
-	 * \
+	 * <![CDATA[
+	 * Given `anArrayOfStrings` will try to find the best prefix string on that array for the provided `aString`.
+	 * See `ow.format.string.closest` if you don't want to be based on the prefix.
+	 * Example:
+	 *
+	 * ```javascript
+	 * var anArrayOfStrings = [ "/user", "/use", "/username", "/u" ];
+	 * ow.format.string.bestPrefix("/user/1", anArrayOfStrings); // Returns /user
+	 * ow.format.string.bestPrefix("/u1", anArrayOfStrings); // Returns /u
+	 * ow.format.string.bestPrefix("/userna", anArrayOfStrings); // Returns /user
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	bestPrefix: function(aString, aList) {
@@ -519,15 +533,17 @@ OpenWrap.format.prototype.string = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.string.lsHash(aStringA, aStringB, dontCareDiffSize) : String</key>
-	 * Generates a locality sensitive hash for aStringA. If aStringB is provided it will compute the 
-	 * hash difference between aStringA and aStringB returning a number (if 0 means the strings are almost
+	 * <![CDATA[
+	 * Generates a locality sensitive hash for `aStringA`. If `aStringB` is provided it will compute the
+	 * hash difference between `aStringA` and `aStringB` returning a number (if 0 means the strings are almost
 	 * identical; if 200 or higher means the strings are very different). Optionally you can indicate that the
-	 * difference should care about differences in size dontCareDiffSize = true. This is based on https://github.com/trendmicro/tlsh/blob/master/js_ext.\
-	 * \
-	 * Note: A aStringA and aStringB should be, at least, 512 characters long and have enough randomness to 
+	 * difference should care about differences in size `dontCareDiffSize` = true. This is based on https://github.com/trendmicro/tlsh/blob/master/js_ext.
+	 *
+	 * Note: A `aStringA` and `aStringB` should be, at least, 512 characters long and have enough randomness to
 	 * generate a proper hash.
+	 * ]]>
 	 * </odoc>
 	 */
 	lsHash: function(aStringA, aStringB, dontCareDiffSize) {
@@ -566,23 +582,25 @@ OpenWrap.format.prototype.string = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.string.lineChart(aSeries, aOptions) : String</key>
-	 * Given an array of values (1 series) or an array of arrays of values (multiple series) will plot a line chart in 
-	 * ascii, with the provided aOptions, a return the corresponding string. Available options:\
-	 * \
-	 *   min     (number)   The minimum value to use in the chart\
-	 *   max     (number)   The maximum value to use in the chart\
-	 *   height  (number)   The line chart lines height to use\
-	 *   width   (number)   The maxium width of the line chart\
-	 *   colors  (array)    Array of color names to use for each series\
-	 *   label   (boolean)  Boolean value to indicate if y labels should be included (default true)\
-	 *   format  (function) Custom functions that receives a value and returns a formatted string for labels\
-	 *   dColor  (string)   The default color to use\
-	 *   offset  (number)   The offset to assume (default 2)\
-	 *   padding (string)   The chart padding string (default "")\
-	 *   fixed   (number)   If no custom format function is provided will be the fixed decimals to use (default 2)\
-	 *   symbols (array)    An array of 10 characters to replace the default symbols\
+	 * <![CDATA[
+	 * Given an array of values (1 series) or an array of arrays of values (multiple series) will plot a line chart in
+	 * ascii, with the provided `aOptions`, a return the corresponding string. Available options:
+	 *
+	 * - `min` (number) The minimum value to use in the chart
+	 * - `max` (number) The maximum value to use in the chart
+	 * - `height` (number) The line chart lines height to use
+	 * - `width` (number) The maximum width of the line chart
+	 * - `colors` (array) Array of color names to use for each series
+	 * - `label` (boolean) Boolean value to indicate if y labels should be included (default true)
+	 * - `format` (function) Custom functions that receives a value and returns a formatted string for labels
+	 * - `dColor` (string) The default color to use
+	 * - `offset` (number) The offset to assume (default 2)
+	 * - `padding` (string) The chart padding string (default "")
+	 * - `fixed` (number) If no custom format function is provided will be the fixed decimals to use (default 2)
+	 * - `symbols` (array) An array of 10 characters to replace the default symbols
+	 * ]]>
 	 * </odoc>
 	 */
     lineChart: (aSeries, aCfg) => {
@@ -1049,20 +1067,23 @@ OpenWrap.format.prototype.string = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.string.progress(aNumericValue, aMax, aMin, aSize, aIndicator, aSpace) : String</key>
-	 * Outputs an in-line progress bar given aNumericValue, aMax value, aMin value, the aSize of the bar and the aIndicator
-	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to the current screen width (or 5 if 
-	 * if can be determined), aIndicator defaults to "#" 
-	 * and aSpace defaults to " ". If aSize is a negative value and it's possible to determine the current screen width it will
-	 * subtract to the screen width. Example:\
-	 * \
-	 * loadLodash(); ow.loadFormat();\
-	 * var arr = [-30, -25, -10, 0, 3, 5], max = _.max(arr), min = _.min(arr);\
-	 * for(let i in arr) {\
-	 *    print(ow.format.string.progress(arr[i], max, min, 5, '-'));\
-	 * }\
-	 * \
+	 * <![CDATA[
+	 * Outputs an in-line progress bar given `aNumericValue`, `aMax` value, `aMin` value, the `aSize` of the bar and the `aIndicator`
+	 * to use. If not provided, `aMax` defaults to `aValue`, `aMin` defaults to 0, `aSize` defaults to the current screen width (or 5 if
+	 * if can be determined), `aIndicator` defaults to "#"
+	 * and `aSpace` defaults to " ". If `aSize` is a negative value and it's possible to determine the current screen width it will
+	 * subtract to the screen width. Example:
+	 *
+	 * ```javascript
+	 * loadLodash(); ow.loadFormat();
+	 * var arr = [-30, -25, -10, 0, 3, 5], max = _.max(arr), min = _.min(arr);
+	 * for(let i in arr) {
+	 *    print(ow.format.string.progress(arr[i], max, min, 5, '-'));
+	 * }
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator, aSpace, aHead) {
@@ -1251,40 +1272,42 @@ OpenWrap.format.prototype.string = {
 		}
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.string.grid(aMatrix, aX, aY, aBgPattern, shouldReturn) : String</key>
-	 * Renders a live terminal grid composed of cells defined by aMatrix (an array of rows, each row an array of cell maps).
-	 * aX sets the height per row in lines (defaults to terminal height / number of rows), aY sets the total width in characters
-	 * (defaults to terminal width). aBgPattern is the background fill character (defaults to " "). If shouldReturn = true the
-	 * result is returned as a string instead of printed with cursor-up (for live-update loops).\
-	 * \
-	 * Each cell is a map with the following fields:\
-	 * \
-	 *   obj    : the data to render (type-dependent, see below)\
-	 *   type   : rendering type — map, tree, table, chart, area, bar, func, sparkline, histogram, heatmap, bullet, scatter, boxplot, timeline, statusMatrix, progress, md or text (default: tree for maps/arrays, text otherwise)\
-	 *   title  : optional column heading rendered as "> title ────" above the cell content\
-	 *   xspan  : number of columns this cell spans horizontally (default: 1)\
-	 *   yspan  : number of rows this cell spans vertically (default: 1)\
-	 * \
-	 * Per-type 'obj' format and extra options:\
-	 * \
-	 *   text/md    : obj is a string; md renders markdown\
-	 *   map        : obj is a map rendered with printMap\
-	 *   tree/table : obj is a map or array rendered with ow.format\
-	 *   chart/area : obj is a printChart format string\
-	 *   bar        : obj is a printBars format string (e.g. "int 42:red:label"); delegates to printBars and supports max, min, indicator, space\
-	 *   func       : obj is a JS function body string receiving mx (height) and my (width), must return a string\
-	 *   sparkline  : obj is a number array or multi-series array (see ow.format.printSparkline)\
-	 *   histogram  : obj is a number array (see ow.format.printHistogram)\
-	 *   heatmap    : obj is a number matrix or { values, xLabels, yLabels } (see ow.format.printHeatmap)\
-	 *   bullet     : obj is a map or array of maps with { value, target, min, max, ranges, label }; supports target, ranges, label, unit, showValue and valueFormat in options (see ow.format.printBullet)\
-	 *   scatter    : obj is an array of [x,y] or { x, y, symbol, color } points (see ow.format.printScatter)\
-	 *   boxplot    : obj is a number array or array of { values, label } series (see ow.format.printBoxplot)\
-	 *   timeline   : obj is an array of { label, start, end, color, status } events (see ow.format.printTimeline)\
-	 *   statusMatrix : obj is a matrix or { values, xLabels, yLabels } of status values (see ow.format.printStatusMatrix)\
-	 *   progress   : obj is a number or { value, max, min } map\
-	 * \
-	 * Each cell delegates rendering to ow.format.printDashboard.\
+	 * <![CDATA[
+	 * Renders a live terminal grid composed of cells defined by `aMatrix` (an array of rows, each row an array of cell maps).
+	 * `aX` sets the height per row in lines (defaults to terminal height / number of rows), `aY` sets the total width in characters
+	 * (defaults to terminal width). `aBgPattern` is the background fill character (defaults to " "). If `shouldReturn` = true the
+	 * result is returned as a string instead of printed with cursor-up (for live-update loops).
+	 *
+	 * Each cell is a map with the following fields:
+	 *
+	 * - `obj`: the data to render (type-dependent, see below)
+	 * - `type`: rendering type — map, tree, table, chart, area, bar, func, sparkline, histogram, heatmap, bullet, scatter, boxplot, timeline, statusMatrix, progress, md or text (default: tree for maps/arrays, text otherwise)
+	 * - `title`: optional column heading rendered as "> title ────" above the cell content
+	 * - `xspan`: number of columns this cell spans horizontally (default: 1)
+	 * - `yspan`: number of rows this cell spans vertically (default: 1)
+	 *
+	 * Per-type 'obj' format and extra options:
+	 *
+	 * - `text/md`: obj is a string; md renders markdown
+	 * - `map`: obj is a map rendered with printMap
+	 * - `tree/table`: obj is a map or array rendered with `ow.format`
+	 * - `chart/area`: obj is a printChart format string
+	 * - `bar`: obj is a printBars format string (e.g. "int 42:red:label"); delegates to printBars and supports max, min, indicator, space
+	 * - `func`: obj is a JS function body string receiving mx (height) and my (width), must return a string
+	 * - `sparkline`: obj is a number array or multi-series array (see `ow.format.printSparkline`)
+	 * - `histogram`: obj is a number array (see `ow.format.printHistogram`)
+	 * - `heatmap`: obj is a number matrix or { values, xLabels, yLabels } (see `ow.format.printHeatmap`)
+	 * - `bullet`: obj is a map or array of maps with { value, target, min, max, ranges, label }; supports target, ranges, label, unit, showValue and valueFormat in options (see `ow.format.printBullet`)
+	 * - `scatter`: obj is an array of [x,y] or { x, y, symbol, color } points (see `ow.format.printScatter`)
+	 * - `boxplot`: obj is a number array or array of { values, label } series (see `ow.format.printBoxplot`)
+	 * - `timeline`: obj is an array of { label, start, end, color, status } events (see `ow.format.printTimeline`)
+	 * - `statusMatrix`: obj is a matrix or { values, xLabels, yLabels } of status values (see `ow.format.printStatusMatrix`)
+	 * - `progress`: obj is a number or { value, max, min } map
+	 *
+	 * Each cell delegates rendering to `ow.format.printDashboard`.
+	 * ]]>
 	 * </odoc>
 	 */
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
@@ -2410,20 +2433,22 @@ function __printTimeHeatmap(values, aOptions) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.printHeatmap(values, aOptions) : String</key>
- * Returns a compact terminal heatmap for a numeric matrix, a map containing { values, xLabels, yLabels }, or
+ * <![CDATA[
+ * Returns a compact terminal heatmap for a numeric matrix, a map containing { `values`, xLabels, yLabels }, or
  * (for a time-bucketed view) a plain map keyed by date ("YYYY-MM-DD"), time ("HH:mm") or date-time
- * ("YYYY-MM-DDTHH:mm") strings mapping to numeric values, e.g. { "2026-01-15": 3, "2026-01-16": 0 }.
- * \
- * Time-bucketed aOptions: xAxis/yAxis (one of "year", "month", "week", "weekday", "day", "hour"; yAxis may
+ * ("YYYY-MM-DDTHH:mm") strings mapping to numeric `values`, e.g. { "2026-01-15": 3, "2026-01-16": 0 }.
+ *
+ * Time-bucketed `aOptions`: xAxis/yAxis (one of "year", "month", "week", "weekday", "day", "hour"; yAxis may
  * be "none" to force a single row; defaults to xAxis:"week",yAxis:"weekday" for date/date-time keys - a
  * GitHub-style contribution calendar - or xAxis:"hour",yAxis:"none" for time-only keys; pass e.g.
  * xAxis:"hour",yAxis:"weekday" on date-time keys for a punch-card view), weekStart (0=Sunday, default),
- * from/to (bound the visible range), aggregate ("sum" default, "avg", "max" or "count", for multiple values
+ * from/to (bound the visible range), aggregate ("sum" default, "avg", "max" or "count", for multiple `values`
  * landing in the same bucket), legend (default false, renders "Less (shades) More"), empty (glyph for
  * buckets with no data, default "·"), dayLabels (which weekday rows/columns get a text label, default
  * ["Mon","Wed","Fri"]), width, height, palette.
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.printHeatmap = function(values, aOptions) {
@@ -2946,27 +2971,29 @@ OpenWrap.format.prototype.printStatusMatrix = function(values, aOptions) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.printDashboard(widgets, aOptions) : String</key>
- * Returns a multi-widget dashboard string. widgets is an array (or 2D array for explicit grid rows) of widget maps
+ * <![CDATA[
+ * Returns a multi-widget dashboard string. `widgets` is an array (or 2D array for explicit grid rows) of widget maps
  * with fields: type, data, title, span (proportional column width, default 1), options. Supported types: table, tree,
- * chart, sparkline, histogram, heatmap, bullet, scatter, boxplot, timeline, statusMatrix, progress, text, md, map, area, bar, func.\
- * \
- * Per-widget notes:\
- * \
- *   chart      : data is a printChart format string\
- *   area       : data is consumed by ow.format.string.chart\
- *   bar        : data is a printBars format string; options can include max, min, indicator, space\
- *   bullet     : data is consumed by ow.format.printBullet; options can include min, max, target, ranges, label, unit, showValue, valueFormat\
- *   sparkline  : data is consumed by ow.format.printSparkline\
- *   histogram  : data is consumed by ow.format.printHistogram\
- *   heatmap    : data is consumed by ow.format.printHeatmap (numeric matrix, or a date/time/date-time keyed map for a time-bucketed view)\
- *   scatter    : data is consumed by ow.format.printScatter\
- *   boxplot    : data is consumed by ow.format.printBoxplot\
- *   timeline   : data is consumed by ow.format.printTimeline\
- *   statusMatrix : data is consumed by ow.format.printStatusMatrix\
- * \
- * aOptions: width, height, columns (auto if 0), border (default true), borderColor, borderStyle, palette.
+ * chart, sparkline, histogram, heatmap, bullet, scatter, boxplot, timeline, statusMatrix, progress, text, md, map, area, bar, func.
+ *
+ * Per-widget notes:
+ *
+ * - `chart`: data is a printChart format string
+ * - `area`: data is consumed by `ow.format.string.chart`
+ * - `bar`: data is a printBars format string; options can include max, min, indicator, space
+ * - `bullet`: data is consumed by `ow.format.printBullet`; options can include min, max, target, ranges, label, unit, showValue, valueFormat
+ * - `sparkline`: data is consumed by `ow.format.printSparkline`
+ * - `histogram`: data is consumed by `ow.format.printHistogram`
+ * - `heatmap`: data is consumed by `ow.format.printHeatmap` (numeric matrix, or a date/time/date-time keyed map for a time-bucketed view)
+ * - `scatter`: data is consumed by `ow.format.printScatter`
+ * - `boxplot`: data is consumed by `ow.format.printBoxplot`
+ * - `timeline`: data is consumed by `ow.format.printTimeline`
+ * - `statusMatrix`: data is consumed by `ow.format.printStatusMatrix`
+ *
+ * `aOptions`: width, height, columns (auto if 0), border (default true), borderColor, borderStyle, palette.
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.printDashboard = function(widgets, aOptions) {
@@ -3219,24 +3246,27 @@ OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSepara
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.streamHandle(aHandle, inHandle, errHandle, outHandle, bufferSize) : Function</key>
- * Returns a function to help automated interaction with a running process. The function aHandle receives: aType (in/err); aTxt, 
- * inHandle (function), errHandle (function) and an outHandle (function). Optionally you can provide an alternative inHandle function to print
- * stdout text, an errHandle function to print stderr text, an outHandle function to send text to stdin and/or a non default bufferSize.\
- * \
- * Example:\
- * \
- * var res = $sh("myProcess.sh --something")\
- *           .cb(expect((aType, aTxt, inHandle, errHandle, outHandle) => {\
- *              if (aType == "in") {\
- *                 inHandle(aTxt)\
- *                 if (/ name\?/.test(aTxt))                return outHandle("Scott\n")\
- *	               if (aTxt.indexOf("Anything else?") >= 0) return outHandle("nope!\n")\
- *              }\
- *           }))\
- *           .get(0)\
- * \
+ * <![CDATA[
+ * Returns a function to help automated interaction with a running process. The function `aHandle` receives: `aType` (in/err); `aTxt`,
+ * `inHandle` (function), `errHandle` (function) and an `outHandle` (function). Optionally you can provide an alternative `inHandle` function to print
+ * stdout text, an `errHandle` function to print stderr text, an `outHandle` function to send text to stdin and/or a non default `bufferSize`.
+ *
+ * Example:
+ *
+ * ```javascript
+ * var res = $sh("myProcess.sh --something")
+ *           .cb(expect((aType, aTxt, inHandle, errHandle, outHandle) => {
+ *              if (aType == "in") {
+ *                 inHandle(aTxt)
+ *                 if (/ name\?/.test(aTxt))                return outHandle("Scott\n")
+ *                if (aTxt.indexOf("Anything else?") >= 0) return outHandle("nope!\n")
+ *              }
+ *           }))
+ *           .get(0)
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.streamHandle = function(aHandle, inHandle, errHandle, outHandle, bufferSize) {
@@ -3671,20 +3701,21 @@ OpenWrap.format.prototype.fromTimeAbbreviation = function(aStr) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.toSLON(aObj, cTheme) : String</key>
- * Stringifies aObj into a Single Line Object Notation using a default scheme for human readability or a 
- * custom cTheme map composed of:\
- * \
- *    startMap "("\
- *    sepMap   ", "\
- *    endMap   ")"\
- *    sepKV    ": "\
- *    startArr "["\
- *    sepArr   " | "\
- *    endArr   "]"\
- *    strQuote "'"\
- * \
+ * <![CDATA[
+ * Stringifies `aObj` into a Single Line Object Notation using a default scheme for human readability or a
+ * custom `cTheme` map composed of:
+ *
+ * - `startMap`: `"("`
+ * - `sepMap`: `", "`
+ * - `endMap`: `")"`
+ * - `sepKV`: `": "`
+ * - `startArr`: `"["`
+ * - `sepArr`: `" | "`
+ * - `endArr`: `"]"`
+ * - `strQuote`: `"'"`
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
@@ -3867,35 +3898,37 @@ OpenWrap.format.prototype.timeago = function(date, isAbv) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.toDate(aStringDate, aFormat, aTimeZone) : Date</key>
- * Will convert aStringDate into a javascript Date given aFormat:\
- * \
- *   G - Era descriptor (AD)\
- *   y - Year (1996; 96)\
- *   Y - Week year (2009; 09)\
- *   M - Month in year (July; Jul; 07)\
- *   w - Week in year (27)\
- *   W - Week in month (2)\
- *   D - Day in year (189)\
- *   d - Day in month (10)\
- *   F - Day of week in month (2)\
- *   E - Day name in week (Tuesday; Tue)\
- *   u - Day number of week (1 = Monday, ..., 7 = Sunday) (1)\
- *   a - Am/pm number (PM)\
- *   H - Hour in day (0-23)\
- *   k - Hour in day (1-24)\
- *   K - Hour in am/pm (0-11)\
- *   h - Hour in am/pm (1-12)\
- *   m - Minute in hour (30)\
- *   s - Second in minute (55)\
- *   S - Millisecond (978)\
- *   z - Time zone (Pacific Standard Time; PST; GMT-08:00)\
- *   Z - Time zone (-0800)\
- *   X - Time zone (-08; -0800; -08:00)\
- * \
- * Optionally you can also provide the original aTimeZone (like 'America/New_York', 'Europe/London', 'UTC', ...)\
- * (available after ow.loadFormat())
+ * <![CDATA[
+ * Will convert `aStringDate` into a javascript Date given `aFormat`:
+ *
+ * - `G`: Era descriptor (AD)
+ * - `y`: Year (1996; 96)
+ * - `Y`: Week year (2009; 09)
+ * - `M`: Month in year (July; Jul; 07)
+ * - `w`: Week in year (27)
+ * - `W`: Week in month (2)
+ * - `D`: Day in year (189)
+ * - `d`: Day in month (10)
+ * - `F`: Day of week in month (2)
+ * - `E`: Day name in week (Tuesday; Tue)
+ * - `u`: Day number of week (1 = Monday, ..., 7 = Sunday) (1)
+ * - `a`: Am/pm number (PM)
+ * - `H`: Hour in day (0-23)
+ * - `k`: Hour in day (1-24)
+ * - `K`: Hour in am/pm (0-11)
+ * - `h`: Hour in am/pm (1-12)
+ * - `m`: Minute in hour (30)
+ * - `s`: Second in minute (55)
+ * - `S`: Millisecond (978)
+ * - `z`: Time zone (Pacific Standard Time; PST; GMT-08:00)
+ * - `Z`: Time zone (-0800)
+ * - `X`: Time zone (-08; -0800; -08:00)
+ *
+ * Optionally you can also provide the original `aTimeZone` (like 'America/New_York', 'Europe/London', 'UTC', ...)
+ * (available after `ow.loadFormat()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.toDate = function(aStringDate, aFormat, aTimeZone) {
@@ -3905,11 +3938,13 @@ OpenWrap.format.prototype.toDate = function(aStringDate, aFormat, aTimeZone) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.toWedoDate(aStringDate, aFormat) : Map</key>
- * Shortcut for using ow.format.toDate but converting the output into a wedo date.
- *  \
- * (available after ow.loadFormat())
+ * <![CDATA[
+ * Shortcut for using `ow.format.toDate` but converting the output into a wedo date.
+ *
+ * (available after `ow.loadFormat()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.toWedoDate = function(aStringDate, aFormat) {
@@ -3935,36 +3970,38 @@ OpenWrap.format.prototype.getActualTime = function(useAlternative) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.fromDate(aDate, aFormat, aTimeZone) : String</key>
- * Will convert a javascript aDate into a String representation given aFormat:\
- * \
- *   G - Era descriptor (AD)\
- *   y - Year (1996; 96)\
- *   Y - Week year (2009; 09)\
- *   M - Month in year (July; Jul; 07)\
- *   w - Week in year (27)\
- *   W - Week in month (2)\
- *   D - Day in year (189)\
- *   d - Day in month (10)\
- *   F - Day of week in month (2)\
- *   E - Day name in week (Tuesday; Tue)\
- *   u - Day number of week (1 = Monday, ..., 7 = Sunday) (1)\
- *   a - Am/pm number (PM)\
- *   H - Hour in day (0-23)\
- *   k - Hour in day (1-24)\
- *   K - Hour in am/pm (0-11)\
- *   h - Hour in am/pm (1-12)\
- *   m - Minute in hour (30)\
- *   s - Second in minute (55)\
- *   S - Millisecond (978)\
- *   z - Time zone (Pacific Standard Time; PST; GMT-08:00)\
- *   Z - Time zone (-0800)\
- *   X - Time zone (-08; -0800; -08:00)\
- * \
- * Optionally you can also provide aTimeZone (like 'America/New_York', 'Europe/London', 'UTC', ...)\
- * \
- * (available after ow.loadFormat())
+ * <![CDATA[
+ * Will convert a javascript `aDate` into a String representation given `aFormat`:
+ *
+ * - `G`: Era descriptor (AD)
+ * - `y`: Year (1996; 96)
+ * - `Y`: Week year (2009; 09)
+ * - `M`: Month in year (July; Jul; 07)
+ * - `w`: Week in year (27)
+ * - `W`: Week in month (2)
+ * - `D`: Day in year (189)
+ * - `d`: Day in month (10)
+ * - `F`: Day of week in month (2)
+ * - `E`: Day name in week (Tuesday; Tue)
+ * - `u`: Day number of week (1 = Monday, ..., 7 = Sunday) (1)
+ * - `a`: Am/pm number (PM)
+ * - `H`: Hour in day (0-23)
+ * - `k`: Hour in day (1-24)
+ * - `K`: Hour in am/pm (0-11)
+ * - `h`: Hour in am/pm (1-12)
+ * - `m`: Minute in hour (30)
+ * - `s`: Second in minute (55)
+ * - `S`: Millisecond (978)
+ * - `z`: Time zone (Pacific Standard Time; PST; GMT-08:00)
+ * - `Z`: Time zone (-0800)
+ * - `X`: Time zone (-08; -0800; -08:00)
+ *
+ * Optionally you can also provide `aTimeZone` (like 'America/New_York', 'Europe/London', 'UTC', ...)
+ *
+ * (available after `ow.loadFormat()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.fromDate = function(aDate, aFormat, aTimeZone) {
@@ -3978,11 +4015,13 @@ OpenWrap.format.prototype.fromDate = function(aDate, aFormat, aTimeZone) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.fromWedoDate(aWedoDate, aFormat) : String</key>
- * Shortcut for ow.format.fromDate but using a wedo date. See ow.format.fromDate for more help. 
- * \
- * (available after ow.loadFormat())
+ * <![CDATA[
+ * Shortcut for `ow.format.fromDate` but using a wedo date. See `ow.format.fromDate` for more help.
+ *
+ * (available after `ow.loadFormat()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.fromWedoDate = function(aWedoDate, aFormat) {
@@ -4043,11 +4082,13 @@ OpenWrap.format.prototype.fromWeDoDateToDate = function(aWedoDate) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.isWedoDate(aWedoDate) : boolean</key>
- * Determines if the aWedoDate object is a wedo date type (returns true if yes, false otherwise).
- *  \
- * (available after ow.loadFormat())
+ * <![CDATA[
+ * Determines if the `aWedoDate` object is a wedo date type (returns true if yes, false otherwise).
+ *
+ * (available after `ow.loadFormat()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.isWedoDate = function(aWedoDate) {
@@ -4752,30 +4793,31 @@ OpenWrap.format.prototype.dateDiff = {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.sqlFormat(aSQL, aMap) : String</key>
- * Will format aSQL using the sql-formatter library. Optionally you can provide aMap with the following options:\
- * \
- *   - indent: the indentation string (defaults to "  ")\
- *   - uppercase: if true will uppercase the SQL (defaults to false)\
- *   - linesBetweenQueries: number of lines between queries (defaults to 1)\
- *   - maxColumnLength: maximum column length (defaults to 50)\
- *   - skipWhitespaceNearBlockParentheses: if true will whitespace near block parentheses (defaults to false)\
- *   - language: the SQL language dialect (defaults to "StandardSql")\
- * \
- * The language can be one of the following:\
- * \
- *   - Db2\
- *   - MariaDb\
- *   - MySql\
- *   - N1ql\
- *   - PlSql\
- *   - PostgreSql\
- *   - Redshift\
- *   - SparkSql\
- *   - StandardSql\
- *   - TSql\
- * \
+ * <![CDATA[
+ * Will format `aSQL` using the sql-formatter library. Optionally you can provide `aMap` with the following options:
+ *
+ * - `indent`: the indentation string (defaults to "  ")
+ * - `uppercase`: if true will uppercase the SQL (defaults to false)
+ * - `linesBetweenQueries`: number of lines between queries (defaults to 1)
+ * - `maxColumnLength`: maximum column length (defaults to 50)
+ * - `skipWhitespaceNearBlockParentheses`: if true will whitespace near block parentheses (defaults to false)
+ * - `language`: the SQL language dialect (defaults to "StandardSql")
+ *
+ * The language can be one of the following:
+ *
+ * - `Db2`
+ * - `MariaDb`
+ * - `MySql`
+ * - `N1ql`
+ * - `PlSql`
+ * - `PostgreSql`
+ * - `Redshift`
+ * - `SparkSql`
+ * - `StandardSql`
+ * - `TSql`
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.sqlFormat = function(aSQL, aMap) {
@@ -4797,23 +4839,27 @@ OpenWrap.format.prototype.sqlFormat = function(aSQL, aMap) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.elapsedTime4ms(aMs, aFormat) : String</key>
- * Given aMs (milleseconds) will convert into a string with the corresponding human-readable time and date components
- * up to years. This is usually helpful when comparing dates (see also ow.format.elapsedTime). You can control the output
- * format by adding options to aFormat:\
- * \
- * Example:\
- * \
- * aFormat = {\
- *    full : false, // when true outputs everything even if it's 0 value\
- *    abrev: false, // when true outputs smaller "1h2m3s" instead of "1 hour, 2 minutes and 3 seconds"\
- *    pad  : false, // when true pads values with 0 on the left\
- *    colon: false, // when true outputs just values separated by ":"\
- *    sep  : ", ",  // customizes the values separator, defaults to ", " or "" (in case of abrev = true)\
- *    maxLeft : 7,  // the maximum number of time units to show counting from the left\
- *    maxRight: 7   // the maximum number of time units to show counting from the right\
+ * <![CDATA[
+ * Given `aMs` (milliseconds) will convert into a string with the corresponding human-readable time and date components
+ * up to years. This is usually helpful when comparing dates (see also `ow.format.elapsedTime`). You can control the output
+ * format by adding options to `aFormat`:
+ *
+ * Example:
+ *
+ * ```javascript
+ * aFormat = {
+ *    full : false, // when true outputs everything even if it's 0 value
+ *    abrev: false, // when true outputs smaller "1h2m3s" instead of "1 hour, 2 minutes and 3 seconds"
+ *    pad  : false, // when true pads values with 0 on the left
+ *    colon: false, // when true outputs just values separated by ":"
+ *    sep  : ", ",  // customizes the values separator, defaults to ", " or "" (in case of abrev = true)
+ *    maxLeft : 7,  // the maximum number of time units to show counting from the left
+ *    maxRight: 7   // the maximum number of time units to show counting from the right
  * }
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {
@@ -4874,20 +4920,23 @@ OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.sshProgress(aFn) : Object</key>
+ * <![CDATA[
  * Returns a SSH Java progress monitor callback object to be use with the SSH plugin functions.
- * Expects callback aFn that will be called with state (e.g. begin, count, end) and an Info map.
+ * Expects callback `aFn` that will be called with state (e.g. begin, count, end) and an Info map.
  * The Info map is composed of:
- *    source - the reported source of the transfer\
- *    target - the reported target of the transfer\
- *    op     - the operation being performed (get or put)\
- *    start  - reported unix epoch when the transfer started\
- *    end    - reported unix epoch when the transfer stopped\
- *    count  - the last reported byte count\
- *    speed  - the calculated speed of transfer\
- * \
+ *
+ * - `source`: the reported source of the transfer
+ * - `target`: the reported target of the transfer
+ * - `op`: the operation being performed (get or put)
+ * - `start`: reported unix epoch when the transfer started
+ * - `end`: reported unix epoch when the transfer stopped
+ * - `count`: the last reported byte count
+ * - `speed`: the calculated speed of transfer
+ *
  * If the returned value is false the transfer will be cancelled.
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.sshProgress = function(aFn) {
@@ -5012,21 +5061,24 @@ OpenWrap.format.prototype.logWithWaiting = function(aMainFunc, aPrefixMsg, aComp
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.percProgressReport(aMainFunc, aProgressFunc, aTimeout)</key>
- * Percentage progress report help function over a function on aMainFunc calling aProgressFunc in parallel
+ * <![CDATA[
+ * Percentage progress report help function over a function on `aMainFunc` calling `aProgressFunc` in parallel
  * with a percentage function parameter (receiving target and source numbers). You can also provide an alternative
- * aTimeout between aProgressFunc calls (defaults to 150ms).\
- * \
- * Example:\
- * \
- * ow.format.percProgressReport(() => {\
- *    ioStreamCopy(io.writeFileStream("target.file"), io.readFileStream("source.file"));\
- * }, (percFunc) => {\
- * 	  var perc = percFunc(io.fileInfo("target.file").size, io.fileInfo("source.file").size);\
- *    ...\
- * });\
- * \
+ * `aTimeout` between `aProgressFunc` calls (defaults to 150ms).
+ *
+ * Example:
+ *
+ * ```javascript
+ * ow.format.percProgressReport(() => {
+ *    ioStreamCopy(io.writeFileStream("target.file"), io.readFileStream("source.file"));
+ * }, (percFunc) => {
+ * 	  var perc = percFunc(io.fileInfo("target.file").size, io.fileInfo("source.file").size);
+ *    ...
+ * });
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.percProgressReport = function(aMainFunc, aProgressFunc, timeout) {
@@ -5169,17 +5221,20 @@ OpenWrap.format.prototype.logWarnWithFooter = function(aMessage, aFooter) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace)</key>
- * Prints aMessage (if defined) with a aTemplate (template compiled function or string) as a footer for percentage 
- * progress information with the percentage value aPerc, for a given optional aSize (defaults to 50), an optional 
- * aUnixBlock or aWindowsBlock (depending on the current operating system) and aSpace. Example:\
- * \
- *    ow.loadTemplate();\
- *    var fn = ow.template.execCompiled(ow.template.compile("({{percFormat}}%) progress: |{{progress}}|"));\
- *    ow.format.printWithProgressFooter("processing xyz...", fn, aPerc);\
- *    ow.format.printWithFooter("Done.", "");\
- * 
+ * <![CDATA[
+ * Prints `aMessage` (if defined) with a `aTemplate` (template compiled function or string) as a footer for percentage
+ * progress information with the percentage value `aPerc`, for a given optional `aSize` (defaults to 50), an optional
+ * `aUnixBlock` or `aWindowsBlock` (depending on the current operating system) and `aSpace`. Example:
+ *
+ * ```javascript
+ * ow.loadTemplate();
+ * var fn = ow.template.execCompiled(ow.template.compile("({{percFormat}}%) progress: |{{progress}}|"));
+ * ow.format.printWithProgressFooter("processing xyz...", fn, aPerc);
+ * ow.format.printWithFooter("Done.", "");
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.printWithProgressFooter = function(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, withFunc) {
@@ -5552,21 +5607,25 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.withSideLineThemes() : Map</key>
- * Returns a map of theme name to theme definition for use as the aTheme argument of ow.format.withSideLine (and the "theme" entries of
- * __colorFormat.md). A theme is a map with the optional characters ltop, tmiddle, rtop (top border), lmiddle, rmiddle (left and right sides),
+ * <![CDATA[
+ * Returns a map of theme name to theme definition for use as the `aTheme` argument of `ow.format.withSideLine` (and the "theme" entries of
+ * `__colorFormat.md`). A theme is a map with the optional characters ltop, tmiddle, rtop (top border), lmiddle, rmiddle (left and right sides),
  * lbottom, bmiddle, rbottom (bottom border) and tab (replacement for tab characters, default 3 spaces). The top/bottom border is only drawn when
  * the corner entries are defined. Built-in themes: closedOneSpace, simpleOneSpace, simpleLine, doubleOneSpace, doubleLine, simpleLineWithTips,
  * simpleLineWithBottomTip, simpleLineWithTopTip, simpleLineWithCTips, simpleLineWithCBottomTip, simpleLineWithCTopTip, simpleLineWithRTips,
  * simpleLineWithRTopTip, simpleLineWithRBottomTip, doubleLineWithRTips, doubleLineBothSides, closedRect, closedDoubleRect, closedCurvedRect,
  * openTopRect, openBottomRect, openRect, openTopCurvedRect, openBottomCurvedRect, openCurvedRect, openCurvedSpace and blockCurvedSpace.
- * Custom themes can be added (built-in themes win on name clashes) by setting __flags.sideLineCustomThemes to a map of name to theme before calling it.\
- * \
- * Example:\
- * \
- *   __flags.sideLineCustomThemes = { arrow: { lmiddle: ">" } }\
- *   print(ow.format.withSideLine("hello", __, "GREEN", __, ow.format.withSideLineThemes().arrow))\
+ * Custom themes can be added (built-in themes win on name clashes) by setting `__flags.sideLineCustomThemes` to a map of name to theme before calling it.
+ *
+ * Example:
+ *
+ * ```javascript
+ * __flags.sideLineCustomThemes = { arrow: { lmiddle: ">" } }
+ * print(ow.format.withSideLine("hello", __, "GREEN", __, ow.format.withSideLineThemes().arrow))
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.withSideLineThemes = function() {
@@ -5743,12 +5802,14 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText, aTheme, aExtra) : String</key>
- * Generates a ansi escaped line with a "left side line" to display aString which will be word-wrap given 
- * aSize (default to the current console size). Optionally ansi colors for ansiLine and ansiText can be provided (see ansiColor for possible values)
- * and aTheme (using ow.format.withSideLineThemes, for example). For closed rectangle themes aExtra map can include a header, footer, headerAlign (
+ * <![CDATA[
+ * Generates a ansi escaped line with a "left side line" to display `aString` which will be word-wrap given
+ * `aSize` (default to the current console size). Optionally ansi colors for `ansiLine` and `ansiText` can be provided (see ansiColor for possible values)
+ * and `aTheme` (using `ow.format.withSideLineThemes`, for example). For closed rectangle themes `aExtra` map can include a header, footer, headerAlign (
  * left or right or center) and footerAlign (left or right or center).
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText, aTheme, aExtra) {
@@ -5888,52 +5949,48 @@ OpenWrap.format.prototype.xls = {
 		}
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.xls.getStyle(aXLS, aStyleMap)</key>
-	 * Creates a cell styler object, for the aXLS object (XLS plugin object instance), given the provided aStyleMap.
-	 * The aStyleMap can have the following keys to define a style:\
-	 * \
-	 *   - bold (boolean)\
-	 *   - italic (boolean)\
-	 *   - underline (boolean)\
-	 *   - strikeout (boolean)\
-	 *   - fontPoints (number)\
-	 *   - fontName (string)\
-	 *   - fontColor (string)\
-	 *   - wrapText (boolean)\
-	 *   - shrinkToFit (boolean)\
-	 *   - backgroundColor (string)\
-	 *   - foregroundColor (string)\
-	 *   - borderBottom (string)\
-	 *   - borderLeft (string)\
-	 *   - borderRight (string)\
-	 *   - borderTop (string)\
-	 *   - borderBottom (string)\
-	 *   - borderLeftColor (string)\
-	 *   - borderRightColor (string)\
-	 *   - borderTopColor (string)\
-	 *   - borderBottomColor (string)\
-	 *   - rotation (number)\
-	 *   - indention (number)\
-	 *   - valign ("top", "bottom", "center", "justify")\
-	 *   - align ("center", "centerSelection", "fill", "general", "justify", "left", "right")\
-	 * \
-	 * Color names:\ 
-	 * \
-	 *   aqua,auto,black,blue,blue_grey,bright_green,brown,coral,cornflower_blue,dark_blue,dark_green,dark_red,dark_teal,
-	 * dark_yellow,gold,green,grey25,grey40,grey50,grey80,indigo,lavender,lemon_chiffon,light_blue,light_cornflower_blue,
-	 * light_green,light_orange,light_turquoise,light_yellow,lime,maroon,olive_green,orange,orchid,pale_blue,pink,plum,
-	 * red,rose,royal_blue,sea_green,sky_blue,tan,teal,turquoise,violet,white,yellow\
-	 * \
-	 * Border names:\
-	 * \
-	 *   dash_dot,dash_dot_dot,dashed,dotted,double,hair,medium,medium_dash_dot,medium_dash_dot_dot,medium_dashed,none,
-	 * slanted_dash_dot,thick,thin\
-	 * \
-	 * Fill patterns:\
-	 * \
-	 *   solid_foreground\
-	 * \
+	 * <![CDATA[
+	 * Creates a cell styler object, for the `aXLS` object (XLS plugin object instance), given the provided `aStyleMap`.
+	 * The `aStyleMap` can have the following keys to define a style:
+	 *
+	 * - `bold` (boolean)
+	 * - `italic` (boolean)
+	 * - `underline` (boolean)
+	 * - `strikeout` (boolean)
+	 * - `fontPoints` (number)
+	 * - `fontName` (string)
+	 * - `fontColor` (string)
+	 * - `wrapText` (boolean)
+	 * - `shrinkToFit` (boolean)
+	 * - `backgroundColor` (string)
+	 * - `foregroundColor` (string)
+	 * - `borderBottom` (string)
+	 * - `borderLeft` (string)
+	 * - `borderRight` (string)
+	 * - `borderTop` (string)
+	 * - `borderLeftColor` (string)
+	 * - `borderRightColor` (string)
+	 * - `borderTopColor` (string)
+	 * - `borderBottomColor` (string)
+	 * - `rotation` (number)
+	 * - `indention` (number)
+	 * - `valign` ("top", "bottom", "center", "justify")
+	 * - `align` ("center", "centerSelection", "fill", "general", "justify", "left", "right")
+	 *
+	 * Color names:
+	 *
+	 * `aqua`, `auto`, `black`, `blue`, `blue_grey`, `bright_green`, `brown`, `coral`, `cornflower_blue`, `dark_blue`, `dark_green`, `dark_red`, `dark_teal`, `dark_yellow`, `gold`, `green`, `grey25`, `grey40`, `grey50`, `grey80`, `indigo`, `lavender`, `lemon_chiffon`, `light_blue`, `light_cornflower_blue`, `light_green`, `light_orange`, `light_turquoise`, `light_yellow`, `lime`, `maroon`, `olive_green`, `orange`, `orchid`, `pale_blue`, `pink`, `plum`, `red`, `rose`, `royal_blue`, `sea_green`, `sky_blue`, `tan`, `teal`, `turquoise`, `violet`, `white`, `yellow`
+	 *
+	 * Border names:
+	 *
+	 * `dash_dot`, `dash_dot_dot`, `dashed`, `dotted`, `double`, `hair`, `medium`, `medium_dash_dot`, `medium_dash_dot_dot`, `medium_dashed`, `none`, `slanted_dash_dot`, `thick`, `thin`
+	 *
+	 * Fill patterns:
+	 *
+	 * `solid_foreground`
+	 * ]]>
 	 * </odoc>
 	 */
 	getStyle: function(aXLS, aStyleMap) {
@@ -6007,14 +6064,17 @@ OpenWrap.format.prototype.xls = {
 	},
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.xls.autoFilter(aXLS, aXLSSheet, aRange)</key>
-	 * Applies a auto filter on the provided aXLS and aXLSSheet object (from XLS.getSheet) to aRange.\
-	 * \
-	 * Example:\
-	 * \
-	 *    ow.format.xls.autoFilter(sheet, "A1:D1");\
-	 * \
+	 * <![CDATA[
+	 * Applies a auto filter on the provided `aXLS` and `aXLSSheet` object (from XLS.getSheet) to `aRange`.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.format.xls.autoFilter(sheet, "A1:D1");
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	autoFilter: function(aXLS, aXLSSheet, aRange) {
@@ -6217,22 +6277,23 @@ OpenWrap.format.prototype.cron = {
 	* @api public
 	*/
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.format.cron.parse(aCronExpression) : Map</key>
-	 * Parses aCronExpression and produces a Map with a schedules array and a exceptions array (if any error is found).
-	 * Each schedules array item map has a key with all the number possibilities for the given aCronExpression provided:\
-	 * \
-	 * s - seconds (0-59)\
-	 * m - minutes (0-59)\
-	 * h - hours (0-23)\
-	 * D - month day (1-31)\
-	 * M - month (1-12)\
-	 * d - week day (1-7)\
-	 * \
-	 * Example:\
-	 * \
-	 * ow.format.cron.parse("0 5 * * *"); // 5am\
-	 * \
+	 * <![CDATA[
+	 * Parses `aCronExpression` and produces a Map with a schedules array and a exceptions array (if any error is found).
+	 * Each schedules array item map has a key with all the number possibilities for the given `aCronExpression` provided:
+	 *
+	 * - `s`: seconds (0-59)
+	 * - `m`: minutes (0-59)
+	 * - `h`: hours (0-23)
+	 * - `D`: month day (1-31)
+	 * - `M`: month (1-12)
+	 * - `d`: week day (1-7)
+	 *
+	 * Example:
+	 *
+	 * `ow.format.cron.parse("0 5 * * *")`; // 5am
+	 * ]]>
 	 * </odoc>
 	 */
 	parse: function(expr) {

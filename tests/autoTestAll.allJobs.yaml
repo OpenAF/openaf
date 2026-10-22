@@ -2,6 +2,8 @@
 
 include:
 - oJobTest.yaml
+- autoTestAll.Desktop.yaml
+- autoTestAll.DesktopTUI.yaml
 - autoTestAll.Generic.yaml
 - autoTestAll.Path.yaml
 - autoTestAll.Jq.yaml
@@ -37,3 +39,4 @@ include:
 # - autoTestAll.SNMP.yaml   // Test servers don't work
 
 - autoTestAll.Instrumentation.yaml
+- autoTestAll.Metrics.yaml

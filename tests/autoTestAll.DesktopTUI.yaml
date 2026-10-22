@@ -1,0 +1,46 @@
+include:
+- oJobTest.yaml
+jobs:
+- name: DesktopTUI::Init
+  exec: args.tests = require("autoTestAll.DesktopTUI.js");
+- name: DesktopTUI::View validation
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testViewValidation;
+- name: DesktopTUI::Native views and updates
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testNativeViews;
+- name: DesktopTUI::Controls and messages
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testControlsAndMessages;
+- name: DesktopTUI::Tabs resize and escapes
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testTabsResizeAndEscapes;
+- name: DesktopTUI::Ownership and failure
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testOwnershipAndFailure;
+- name: DesktopTUI::Event security and graphical rendering
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testEventSecurityAndHTML;
+- name: DesktopTUI::Screen styling align and UTF8
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testScreenStylingAlignAndUTF8;
+- name: DesktopTUI::Mouse
+  from: DesktopTUI::Init
+  to: oJob Test
+  exec: args.func = args.tests.testMouse;
+todo:
+- DesktopTUI::Mouse
+- DesktopTUI::View validation
+- DesktopTUI::Native views and updates
+- DesktopTUI::Controls and messages
+- DesktopTUI::Tabs resize and escapes
+- DesktopTUI::Ownership and failure
+- DesktopTUI::Event security and graphical rendering
+- DesktopTUI::Screen styling align and UTF8
