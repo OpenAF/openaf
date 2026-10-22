@@ -135,16 +135,19 @@ public class SSH extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>SSH.exec(aCommand, aStdIn, shouldOutputAlso, pty, outputMap, callbackFunc) : Object</key>
-	 * Executes a command over the SSH connection. You can optionally provide the input and indicate that it shouldOutputAlso 
-	 * (boolean) to stdout and if you want to allocate a pty (boolean). The stderr will be stored in __stderr and also output 
-	 * if shouldOutputAlso = true. If outputMap instead of the stdout string a map with stdout, stderr and exitcode will be returned.
-	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
-	 * be available for the outputMap if true. Example:\
-	 * \
-	 * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });\
-	 * \
+	 * <![CDATA[
+	 * Executes a command over the SSH connection. You can optionally provide the input and indicate that it `shouldOutputAlso`
+	 * (boolean) to stdout and if you want to allocate a `pty` (boolean). The stderr will be stored in `__stderr` and also output
+	 * if `shouldOutputAlso` = true. If `outputMap` instead of the stdout string a map with stdout, stderr and exitcode will be returned.
+	 * A `callbackFunc` can be provided, if `shouldOutputAlso` is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
+	 * be available for the `outputMap` if true. Example:
+	 *
+	 * ```javascript
+	 * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -153,16 +156,19 @@ public class SSH extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>SSH.execSudo(aCommandWithSudo, aUser, aStdIn, shouldOutputAlso, pty, outputMap, callbackFunc) : Object</key>
-	 * Executes a command over the SSH connection using sudo to aUser. You can optionally provide the input and indicate that
-	 * it shouldOutputAlso (boolean) to stdout and if you want to allocate a pty (boolean). The stderr will be stored in 
-	 * __stderr and also output if shouldOutputAlso = true. If outputMap instead of the stdout string a map with stdout, stderr and exitcode will be returned.
-	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
-	 * be available for the outputMap if true. Example:\
-	 * \
-	 * ssh.execSudo("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });\
-	 * \
+	 * <![CDATA[
+	 * Executes a command over the SSH connection using sudo to `aUser`. You can optionally provide the input and indicate that
+	 * it `shouldOutputAlso` (boolean) to stdout and if you want to allocate a `pty` (boolean). The stderr will be stored in
+	 * `__stderr` and also output if `shouldOutputAlso` = true. If `outputMap` instead of the stdout string a map with stdout, stderr and exitcode will be returned.
+	 * A `callbackFunc` can be provided, if `shouldOutputAlso` is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
+	 * be available for the `outputMap` if true. Example:
+	 *
+	 * ```javascript
+	 * ssh.execSudo("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	@JSFunction

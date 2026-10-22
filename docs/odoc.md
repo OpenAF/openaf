@@ -39,6 +39,8 @@ The parser does not create searchable fields for `<category>`, `<author>`, `<ver
 
 ## Opt in to Markdown
 
+Use Markdown when an entry contains more than one paragraph or includes examples. Keep simple, single-paragraph descriptions as plain text. Use blank lines between paragraphs, lists for options, backticks for parameter names and short expressions, and fenced blocks with a language label for standalone examples.
+
 Mark an individual entry with `format="markdown"` or its alias `format="md"`:
 
 ````javascript

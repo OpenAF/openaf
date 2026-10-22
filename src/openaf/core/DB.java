@@ -60,17 +60,19 @@ public class DB {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>DB.db(aDriver, aURL, aLogin, aPassword, aTimeout)</key>
-	 * Creates a new instance of the object DB providing java class aDriver (e.g. oracle.jdbc.OracleDriver)
-	 * that must be included on OpenAF's classpath, a JDBC aURL, aLogin and aPassword. If the aDriver is 
-	 * null or undefined the Oracle driver will be used. Optionally you can provide aTimeout in ms.\
-	 * \
-	 * Examples of JDBC URLs:\
-	 * \
-	 * - Oracle Thin: jdbc:oracle:thin:@{{host}}:{{port}}:{{database}}\
-	 * - PostgreSQL : jdbc:postgresql://{{host}}:{{port}}/{{database}}\
-	 * - H2         : jdbc:h2:{{file}}
+	 * <![CDATA[
+	 * Creates a new instance of the object DB providing java class `aDriver` (e.g. oracle.jdbc.OracleDriver)
+	 * that must be included on OpenAF's classpath, a JDBC `aURL`, `aLogin` and `aPassword`. If the `aDriver` is
+	 * null or undefined the Oracle driver will be used. Optionally you can provide `aTimeout` in ms.
+	 *
+	 * Examples of JDBC URLs:
+	 *
+	 * - Oracle Thin: `jdbc:oracle:thin:@{{host}}:{{port}}:{{database}}`
+	 * - PostgreSQL: `jdbc:postgresql://{{host}}:{{port}}/{{database}}`
+	 * - H2: `jdbc:h2:{{file}}`
+	 * ]]>
 	 * </odoc>
 	 */
 	public void newDB(String driver, String url, String login, String pass, String timeout) throws Exception {
@@ -566,22 +568,25 @@ public class DB {
 	}
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>DB.usArray(aSQL, anArrayOfArrays, aBatchSize, keepStatement) : Number</key>
-	 * Executes, and commits, a batch of a SQL statement on the current DB object instance that can have bind variables that 
-	 * can be specified on an array, for each record, as part of anArrayOfArrays. On success it will return the number of rows 
-	 * affected. In case of error an exception will be thrown. Optionally you can specify to keepStatement (e.g. boolean) to keep
-	 * from closing the prepared statement used for reuse in another usArray call. If you specify to use keepStatement do close this
-	 * query, as soon as possible, using DB.closeStatement(aQuery) (where you provide an exactly equal statement to 
-	 * aQuery) or DB.closeAllStatements. Cached statements remain open until explicitly closed,
-	 * including when later calls use keepStatement=false. Every execution requires a complete set of bind values. You can also specify aBatchSize (default is 1000) to indicate when a commit
-	 * should be performed while executing aSQL for each array of bind variables in anArrayOfArrays.\
-	 * \
-	 * Example:\
-	 * \
-	 * var values = [ [1,2], [2,2], [3,3], [4,5]];\
-	 * db.usArray("INSERT INTO A (c1, c2) VALUES (?, ?)", values, 2);\
-	 * \
+	 * <![CDATA[
+	 * Executes, and commits, a batch of a SQL statement on the current DB object instance that can have bind variables that
+	 * can be specified on an array, for each record, as part of `anArrayOfArrays`. On success it will return the number of rows
+	 * affected. In case of error an exception will be thrown. Optionally you can specify to `keepStatement` (e.g. boolean) to keep
+	 * from closing the prepared statement used for reuse in another usArray call. If you specify to use `keepStatement` do close this
+	 * query, as soon as possible, using DB.closeStatement(`aQuery`) (where you provide an exactly equal statement to
+	 * `aQuery`) or DB.closeAllStatements. Cached statements remain open until explicitly closed,
+	 * including when later calls use `keepStatement`=false. Every execution requires a complete set of bind values. You can also specify `aBatchSize` (default is 1000) to indicate when a commit
+	 * should be performed while executing `aSQL` for each array of bind variables in `anArrayOfArrays`.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * var values = [ [1,2], [2,2], [3,3], [4,5]];
+	 * db.usArray("INSERT INTO A (c1, c2) VALUES (?, ?)", values, 2);
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	public long usArray(String sql, JSEngine.JSList objs, int batchSize, boolean keepStatement) throws SQLException {
@@ -924,16 +929,20 @@ public class DB {
 	}	
 	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>DB.commit()</key>
-         * Commits the current transaction associated with this DB object.
-         * An exception will be thrown if any database error occurs.\
-         * \
-         * Example:\
-         * \
-         * db.u("INSERT INTO A VALUES (1)");\
-         * db.commit();\
-         * </odoc>
+	 * <![CDATA[
+	 * Commits the current transaction associated with this DB object.
+	 * An exception will be thrown if any database error occurs.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * db.u("INSERT INTO A VALUES (1)");
+	 * db.commit();
+	 * ```
+	 * ]]>
+	 * </odoc>
          */
 	public void commit() throws SQLException {
 		if (con != null) {

@@ -28,11 +28,13 @@ OpenWrap.template.prototype.__requireHB = function() {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.template.addHelpers(aPrefix, aObject)</key>
- * Registers all aObject functions as helpers. These helpers identifier will be composed by aPrefix + Name of the each function.
- * \
- * (available after ow.loadTemplate())
+ * <![CDATA[
+ * Registers all `aObject` functions as helpers. These helpers identifier will be composed by `aPrefix` + Name of the each function.
+ *
+ * (available after `ow.loadTemplate()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.template.prototype.addHelpers = function(aPrefix, aObject) {
@@ -61,67 +63,69 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.template.addOpenAFHelpers()</key>
- * Adds custom helpers:\
- * \
- *   - $debug           -- calls sprint for the parameter\
- *   - $stringify       -- stringify the parameter\
- *   - $stringifyInLine -- stringify in the same line the parameter\
- *   - $toYAML          -- returns the YAML version of the parameter\
- *   - $toKYAML         -- returns the KYAML version fo the parameter\
- *   - $toJSON          -- returns the JSON version of the parameter\
- *   - $toTOON          -- returns the TOON version of the parameter\
- *   - $env             -- returns the current environment variable identified by the parameter\
- *   - $escape          -- returns an escaped version of the parameter\
- *   - $acolor          -- returns an ansi color (first argument) escape sequence of the string parameter (second argument)\
- *   - $f               -- uses the $f format function\
- *   - $ft              -- uses the $ft format function\
- *   - $path            -- uses the $path function to query objects\
- *   - $from            -- uses the $from &amp; fromNLinq to query objects\
- *   - $oafp            -- uses the oafp function to parse the provided JSON/SLON string and return the results\
- *   - $toSLON          -- returns the ow.format.toSLON version of an object\
- *   - $get             -- returns the corresponding value for a key on $get\
- *   - $getObj          -- equivalent to $get with the extra parameter for $$.get path\
- *   - $dateDiff        -- returns a number of seconds for a provided date optionally (second argument) with minutes, hours, days, months, weeks or years and (third argument) a default value\
- *   - $switch          -- equivalent to a javascript switch\
- *   - $case            -- to be used with $switch for each case\
- *   - $default         -- to be used with $switch for each case\
- *   - $ptable          -- returns an ansi ascii printTable representation of an object\
- *   - $mdtable         -- returns a markdown table representation of an array object\
- *   - $ptree           -- returns an ansi ascii printTree representation of an object\
- *   - $pchart          -- returns an ansi ascii line chart with an object and a format string: "unit path:color:legend... [-min:0] [-max:100] [-hsize:40] [-vsize:10]"\
- *   - $pbar            -- returns an ansi ascii progress bar with a value and a max value, a min value, a size, an indicator and space char\
- *   - $pbars           -- returns an ansi ascii tree of progress bars with a format string: "unit path:color:legend... [-min:0] [-max:100] [-hsize:40]"\
- *   - $output          -- returns an $output representation of an object (aObj as 1st arg and options in slon as 2nd arg)\
- *   - $cjson           -- returns an ansi ascii colority representation fo an object\
- *   - $cslon           -- returns an ansi ascii colored SLON representation of an object\
- *   - $pmap            -- returns an ansi ascii printMap representation of an object\
- *   - $jsmap           -- returns a HTML representation of an object\
- *   - $t               -- given a template and an object instance, as arguments, will process and return the template\
- *   - $date            -- converts the argument provided to date\
- *   - $isoDate         -- converts the argument provided to an ISO date string\
- *   - $number          -- casts the argument provided to number\
- *   - $boolean         -- casts the argument provided to boolean\
- *   - $string          -- casts the argument provided to string\
- *   - $keys            -- returns an array of keys of the provided map\
- *   - $values          -- returns an array of values of the provided map\
- *   - $__              -- returns a undefined value\
- *   - $alen            -- returns the ansi length of the argument provided\
- *   - $len             -- returns the string length of the argument provided\
- *   - $repeat          -- shortcut to the OpenAF's repeat function\
- *   - $range           -- shortcut to the OpenAF's range function\
- *   - $a2m             -- shortcut to the OpenAF's $a2m function\
- *   - $a4m             -- shortcut to the OpenAF's $a4m function\
- *   - $m2a             -- shortcut to the OpenAF's $m2a function\
- *   - $m4a             -- shortcut to the OpenAF's $m4a function\
- *   - $nvl             -- shortcut to the OpenAF's nvl function\
- *   - $pass            -- returns an empty string\
- *   - $p               -- returns the provided literal\
- *   - $sline           -- shortcut to the OpenAF's format withSideLine\
- *   - $set             -- block set of a provided key\
- *   - $concat          -- concatenates all arguments as a single value\
- *   - $nl              -- returns a new line character
+ * <![CDATA[
+ * Adds custom helpers:
+ *
+ * - `$debug`: calls sprint for the parameter
+ * - `$stringify`: stringify the parameter
+ * - `$stringifyInLine`: stringify in the same line the parameter
+ * - `$toYAML`: returns the YAML version of the parameter
+ * - `$toKYAML`: returns the KYAML version fo the parameter
+ * - `$toJSON`: returns the JSON version of the parameter
+ * - `$toTOON`: returns the TOON version of the parameter
+ * - `$env`: returns the current environment variable identified by the parameter
+ * - `$escape`: returns an escaped version of the parameter
+ * - `$acolor`: returns an ansi color (first argument) escape sequence of the string parameter (second argument)
+ * - `$f`: uses the `$f` format function
+ * - `$ft`: uses the `$ft` format function
+ * - `$path`: uses the `$path` function to query objects
+ * - `$from`: uses the `$from` & fromNLinq to query objects
+ * - `$oafp`: uses the oafp function to parse the provided JSON/SLON string and return the results
+ * - `$toSLON`: returns the `ow.format.toSLON` version of an object
+ * - `$get`: returns the corresponding value for a key on `$get`
+ * - `$getObj`: equivalent to `$get` with the extra parameter for `$$.get` path
+ * - `$dateDiff`: returns a number of seconds for a provided date optionally (second argument) with minutes, hours, days, months, weeks or years and (third argument) a default value
+ * - `$switch`: equivalent to a javascript switch
+ * - `$case`: to be used with `$switch` for each case
+ * - `$default`: to be used with `$switch` for each case
+ * - `$ptable`: returns an ansi ascii printTable representation of an object
+ * - `$mdtable`: returns a markdown table representation of an array object
+ * - `$ptree`: returns an ansi ascii printTree representation of an object
+ * - `$pchart`: returns an ansi ascii line chart with an object and a format string: "unit path:color:legend... [-min:0] [-max:100] [-hsize:40] [-vsize:10]"
+ * - `$pbar`: returns an ansi ascii progress bar with a value and a max value, a min value, a size, an indicator and space char
+ * - `$pbars`: returns an ansi ascii tree of progress bars with a format string: "unit path:color:legend... [-min:0] [-max:100] [-hsize:40]"
+ * - `$output`: returns an `$output` representation of an object (`aObj` as 1st arg and options in slon as 2nd arg)
+ * - `$cjson`: returns an ansi ascii colority representation fo an object
+ * - `$cslon`: returns an ansi ascii colored SLON representation of an object
+ * - `$pmap`: returns an ansi ascii printMap representation of an object
+ * - `$jsmap`: returns a HTML representation of an object
+ * - `$t`: given a template and an object instance, as arguments, will process and return the template
+ * - `$date`: converts the argument provided to date
+ * - `$isoDate`: converts the argument provided to an ISO date string
+ * - `$number`: casts the argument provided to number
+ * - `$boolean`: casts the argument provided to boolean
+ * - `$string`: casts the argument provided to string
+ * - `$keys`: returns an array of keys of the provided map
+ * - `$values`: returns an array of values of the provided map
+ * - `$__`: returns a undefined value
+ * - `$alen`: returns the ansi length of the argument provided
+ * - `$len`: returns the string length of the argument provided
+ * - `$repeat`: shortcut to the OpenAF's repeat function
+ * - `$range`: shortcut to the OpenAF's range function
+ * - `$a2m`: shortcut to the OpenAF's `$a2m` function
+ * - `$a4m`: shortcut to the OpenAF's `$a4m` function
+ * - `$m2a`: shortcut to the OpenAF's `$m2a` function
+ * - `$m4a`: shortcut to the OpenAF's `$m4a` function
+ * - `$nvl`: shortcut to the OpenAF's nvl function
+ * - `$pass`: returns an empty string
+ * - `$p`: returns the provided literal
+ * - `$sline`: shortcut to the OpenAF's format withSideLine
+ * - `$set`: block set of a provided key
+ * - `$concat`: concatenates all arguments as a single value
+ * - `$nl`: returns a new line character
+ * ]]>
  * </odoc>
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
@@ -714,18 +718,21 @@ OpenWrap.template.prototype.saveHBS = function(aFilename, aSource) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.template.saveCompiledHBS(aFilename, aSource, anOptionsMap)</key>
- * Tries to precompile aSource and save the result into aFilename (tip: use the extension hbsc).
- * This can later be loaded again using ow.template.loadCompiledHBS, for example. 
- * Optionally you can provide anOptionsMap for the Handlebars precompiler (see more on the options for Handlebars.precompile).
- * Example:\
- * \
- * var source = "My name is {{myname}}. I'm a\n{{#each role}}\t- {{this}}\n{{/each}}";\
- * ow.template.saveCompiledHBS("myroles.hbsc", source, {\
- *    { "knowHelpers": ["each"], "knowHelpersOnly": true }\
- * };\
- * \
+ * <![CDATA[
+ * Tries to precompile `aSource` and save the result into `aFilename` (tip: use the extension hbsc).
+ * This can later be loaded again using `ow.template.loadCompiledHBS`, for example.
+ * Optionally you can provide `anOptionsMap` for the Handlebars precompiler (see more on the options for Handlebars.precompile).
+ * Example:
+ *
+ * ```javascript
+ * var source = "My name is {{myname}}. I'm a\n{{#each role}}\t- {{this}}\n{{/each}}";
+ * ow.template.saveCompiledHBS("myroles.hbsc", source, {
+ *    "knownHelpers": { each: true }, "knownHelpersOnly": true
+ * });
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.template.prototype.saveCompiledHBS = function(aFilename, aSource, optionsMap) {
@@ -790,18 +797,21 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.template.parseMD2HTML(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark) : String</key>
- * Given aMarkdownString will parse it with showdown (using the github flavor) and return the HTML in a string. If isFull = true
+ * <![CDATA[
+ * Given `aMarkdownString` will parse it with showdown (using the github flavor) and return the HTML in a string. If `isFull` = true
  * it will produce a complete HTML with references for the highlight library+css and github markdown css included internally in OpenAF.
- * If removeMaxWidth = true it will remove the max-width css style. You can provide extraDownOptions to be used with showdown and
- * forceDark to force the dark mode.
- * Example:\
- * \
- * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, { \
- *    "/md": (req) => { return hs.replyOKHTML(ow.template.parseMD2HTML(io.readFileString("README.md"), true)) }\
- * }), (req) => { return hs.replyOKText("nothing here...");})\
- * \
+ * If `removeMaxWidth` = true it will remove the max-width css style. You can provide `extraDownOptions` to be used with showdown and
+ * `forceDark` to force the dark mode.
+ * Example:
+ *
+ * ```javascript
+ * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
+ *    "/md": (req) => { return hs.replyOKHTML(ow.template.parseMD2HTML(io.readFileString("README.md"), true)) }
+ * }), (req) => { return hs.replyOKText("nothing here...");})
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark, aURIPrefix) {

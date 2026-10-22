@@ -23,16 +23,20 @@ OpenWrap.ch.prototype.__types = {
 	// Obj BIG channel implementation
 	//
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.big</key>
-	 * This OpenAF channel implementation stores key/values in a compressed in-memory structure (ow.obj.big) optimized
-	 * for large datasets. It accepts no creation options beyond the inherited shouldCompress parameter.\
-	 * \
-	 * Example:\
-	 * \
-	 *    ow.ch.create("myBig", true, "big");\
-	 * \
-	 * Note: the underlying ow.obj.big storage uses a sorted index so getSortedKeys reflects insertion/modification order.\
+	 * <![CDATA[
+	 * This OpenAF channel implementation stores key/values in a compressed in-memory structure (`ow.obj.big`) optimized
+	 * for large datasets. It accepts no creation options beyond the inherited shouldCompress parameter.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.ch.create("myBig", true, "big");
+	 * ```
+	 *
+	 * Note: the underlying `ow.obj.big` storage uses a sorted index so getSortedKeys reflects insertion/modification order.
+	 * ]]>
 	 * </odoc>
 	 */
 	big: {
@@ -155,15 +159,16 @@ OpenWrap.ch.prototype.__types = {
 	// DB channel implementation
 	//
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.db</key>
-	 * This OpenAF channel implementation wraps access to a db table. The creation options are:\
-	 * \
-	 *    - db   (Database) The database object to access the database table (or a JSON/SLON string with 'url', 'user', 'pass', 'timeout', 'driver').\
-	 *    - from (String)   The name of the database table or object (don't use double quotes).\
-	 *    - keys (Array)    An array of fields keys to use (don't use double quotes).\
-	 *    - cs   (Boolean)  Determines if the database is case sensitive for table and field names (defaults to false).\
-	 * \
+	 * <![CDATA[
+	 * This OpenAF channel implementation wraps access to a db table. The creation options are:
+	 *
+	 * - `db` (Database) The database object to access the database table (or a JSON/SLON string with 'url', 'user', 'pass', 'timeout', 'driver').
+	 * - `from` (String) The name of the database table or object (don't use double quotes).
+	 * - `keys` (Array) An array of fields keys to use (don't use double quotes).
+	 * - `cs` (Boolean) Determines if the database is case sensitive for table and field names (defaults to false).
+	 * ]]>
 	 * </odoc>
 	 */
 	db: {
@@ -487,14 +492,18 @@ OpenWrap.ch.prototype.__types = {
 	// Operations channel implementation
 	// (run operations from a channel)
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
          * <key>ow.ch.types.ops</key>
+         * <![CDATA[
          * This OpenAF channel implementation encapsulates access based on functions. The creation options are a map of
-         * keys where each value is a function.\
-         * \
-         * Example:\
-         * \
-         * ow.ch.create("logic", false, "ops", { hello: name => "hi " + name });\
+         * keys where each value is a function.
+         *
+         * Example:
+         *
+         * ```javascript
+         * ow.ch.create("logic", false, "ops", { hello: name => "hi " + name });
+         * ```
+         * ]]>
          * </odoc>
          */
 	ops: {
@@ -557,22 +566,25 @@ OpenWrap.ch.prototype.__types = {
 	// Cache implementation
 	//
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.cache</key>
-	 * This OpenAF channel implementation provides a caching layer around a function or another channel. The creation options are:\
-	 * \
-	 *    - func       (Function) Function called with the key map when a cache miss occurs; its return value is stored and returned.\
-	 *    - ttl        (Number)   Time-to-live in ms before cached entries expire (defaults to 5000ms).\
-	 *    - size       (Number)   Maximum number of entries to keep in cache; -1 means unlimited (defaults to -1).\
-	 *    - method     (String)   Eviction method: "t" (time-based TTL, default) or "p" (count-based, evicts oldest when size is exceeded).\
-	 *    - default    (Object)   Optional default value to store and return on a cache miss if func is not defined.\
-	 *    - useDefault (Boolean)  If true the default value is returned instead of calling func on a miss.\
-	 *    - ch         (String/Channel) Optional backing storage channel (defaults to an auto-created [name]::__cache simple channel).\
-	 * \
-	 * Example:\
-	 * \
-	 *    ow.ch.create("myCache", false, "cache", { func: k => $rest().get("http://api/data/" + k.id), ttl: 60000 });\
-	 * \
+	 * <![CDATA[
+	 * This OpenAF channel implementation provides a caching layer around a function or another channel. The creation options are:
+	 *
+	 * - `func` (Function) Function called with the key map when a cache miss occurs; its return value is stored and returned.
+	 * - `ttl` (Number) Time-to-live in ms before cached entries expire (defaults to 5000ms).
+	 * - `size` (Number) Maximum number of entries to keep in cache; -1 means unlimited (defaults to -1).
+	 * - `method` (String) Eviction method: "t" (time-based TTL, default) or "p" (count-based, evicts oldest when size is exceeded).
+	 * - `default` (Object) Optional default value to store and return on a cache miss if func is not defined.
+	 * - `useDefault` (Boolean) If true the default value is returned instead of calling func on a miss.
+	 * - `ch` (String/Channel) Optional backing storage channel (defaults to an auto-created [name]::`__cache` simple channel).
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.ch.create("myCache", false, "cache", { func: k => $rest().get("http://api/data/" + k.id), ttl: 60000 });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	cache: {
@@ -784,17 +796,18 @@ OpenWrap.ch.prototype.__types = {
 	// Buffer implementation
 	//
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.buffer</key>
-	 * This OpenAF implementation establishes a buffer to another channel. The creation options are:\
-	 * \
-	 *    - bufferCh       (String)   The channel that will receive data from the buffer channel.\
-	 *    - bufferIdxs     (Array)    An array of keys to use for faster performance (defaults to []).\
-	 *    - bufferByTime   (Number)   How much time before flushing contents from the buffer channel (default 2500ms).\
-	 *    - bufferByNumber (Number)   How many entries before flushing contents from the buffer channel (default 100).\
-	 *    - bufferTmpCh    (String)   The auxiliary temporary buffer storage channel to use (default creates [name]::__bufferStorage).\
-	 *    - bufferFunc     (Function) Optional function that if returns true will trigger the buffer flush to bufferCh.\
-	 * \
+	 * <![CDATA[
+	 * This OpenAF implementation establishes a buffer to another channel. The creation options are:
+	 *
+	 * - `bufferCh` (String) The channel that will receive data from the buffer channel.
+	 * - `bufferIdxs` (Array) An array of keys to use for faster performance (defaults to []).
+	 * - `bufferByTime` (Number) How much time before flushing contents from the buffer channel (default 2500ms).
+	 * - `bufferByNumber` (Number) How many entries before flushing contents from the buffer channel (default 100).
+	 * - `bufferTmpCh` (String) The auxiliary temporary buffer storage channel to use (default creates [name]::`__bufferStorage`).
+	 * - `bufferFunc` (Function) Optional function that if returns true will trigger the buffer flush to bufferCh.
+	 * ]]>
 	 * </odoc>
 	 */
 	buffer: {
@@ -984,16 +997,19 @@ OpenWrap.ch.prototype.__types = {
 	// Dummy implementation
 	//
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.dummy</key>
+	 * <![CDATA[
 	 * This OpenAF channel implementation is a no-op sink: all write operations (set, setAll, unset, unsetAll) are silently
 	 * discarded, all read operations (get, getAll, getKeys, size, forEach) return empty results. Useful for disabling a
-	 * channel without changing calling code. Accepts no creation options.\
-	 * \
-	 * Example:\
-	 * \
-	 *    ow.ch.create("blackhole", false, "dummy");\
-	 * \
+	 * channel without changing calling code. Accepts no creation options.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.ch.create("blackhole", false, "dummy");
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	dummy: {
@@ -1049,16 +1065,17 @@ OpenWrap.ch.prototype.__types = {
 	// Proxy implementation
 	//
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.proxy</key>
-	 * This OpenAF implementation establishes a proxy to another channel. The creation options are:\
-	 * \
-	 *    - chTarget  (String)   The channel that will receive all operations (if proxyFunc doesn't return).\
-	 *    - proxyFunc (Function) Function that receives a map (by reference that can be changed) with: op (operation),
+	 * <![CDATA[
+	 * This OpenAF implementation establishes a proxy to another channel. The creation options are:
+	 *
+	 * - `chTarget` (String) The channel that will receive all operations (if proxyFunc doesn't return).
+	 * - `proxyFunc` (Function) Function that receives a map (by reference that can be changed) with: op (operation),
 	 * name (target channel), function (where applicable), full (where applicable), match (the match of getSet), k (the key(s)),
 	 * v (the value(s)) and timestamp. If this function returns something no operation will be executed on the chTarget and the
-	 * value returned by the function will be the value returned by this channel.\
-	 * \
+	 * value returned by the function will be the value returned by this channel.
+	 * ]]>
 	 * </odoc>
 	 */
 	proxy: {
@@ -1257,17 +1274,20 @@ OpenWrap.ch.prototype.__types = {
 		}
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.simple</key>
-	 * This OpenAF channel implementation is the default in-memory key/value store (used when no type is specified in ow.ch.create).
+	 * <![CDATA[
+	 * This OpenAF channel implementation is the default in-memory key/value store (used when no type is specified in `ow.ch.create`).
 	 * It stores entries in a JavaScript Map keyed by a deterministic JSON serialization of the key map, preserving
-	 * modification-time order for getSortedKeys. Accepts no creation options.\
-	 * \
-	 * Example:\
-	 * \
-	 *    ow.ch.create("myChannel");                    // uses "simple" by default\
-	 *    ow.ch.create("myChannel", false, "simple");   // explicit\
-	 * \
+	 * modification-time order for getSortedKeys. Accepts no creation options.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.ch.create("myChannel");                    // uses "simple" by default
+	 * ow.ch.create("myChannel", false, "simple");   // explicit
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	simple: {
@@ -1353,26 +1373,27 @@ OpenWrap.ch.prototype.__types = {
 	},
 	// File implementation
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.file</key>
-	 * This OpenAF implementation implements a simple channel on a single JSON, YAML or TOON file. The creation options are:\
-	 * \
-	 *    - file      (String)  The filepath to the JSON or YAML file to use (if multifile is false)\
-	 *    - path      (String)  The path to use to store JSON, YAML or TOON objects to use (if multifile is true)\
-	 *    - yaml      (Boolean) Use YAML instead of JSON (defaults to false)\
-	 *    - toon      (Boolean) Use TOON instead of JSON (defaults to false)\
-	 *    - compact   (Boolean) If JSON and compact = true the JSON format will be compacted (defaults to false or shouldCompress option)\
-	 *    - multifile (Boolean) If true instead of keeping values in one file it will be kept in multiple files (*)\
-	 *    - multipart (Boolean) If YAML and multipart = true the YAML file will be multipart\
-	 *    - key       (String)  If a key contains "key" it will be replaced by the "key" value\
-	 *    - multipath (Boolean) Supports string keys with paths (e.g. ow.obj.setPath) (defaults to false)\
-	 *    - lock      (String)  If defined the filepath to a dummy file for filesystem lock while accessing the file\
-	 *    - gzip      (Boolean) If true the output file will be gzip (defaults to false)\
-	 *    - lz4       (Boolean) If true the output file will be lz4 (defaults to false)\
-	 *    - tmp       (Boolean) If true "file" will be temporary and destroyed upon execution/process end\
-	 * \
-	 * (*) - Be aware that althought there is a very small probability of collision between the unique id (sha-512) for filenames it still exists\
-	 * \
+	 * <![CDATA[
+	 * This OpenAF implementation implements a simple channel on a single JSON, YAML or TOON file. The creation options are:
+	 *
+	 * - `file` (String) The filepath to the JSON or YAML file to use (if multifile is false)
+	 * - `path` (String) The path to use to store JSON, YAML or TOON objects to use (if multifile is true)
+	 * - `yaml` (Boolean) Use YAML instead of JSON (defaults to false)
+	 * - `toon` (Boolean) Use TOON instead of JSON (defaults to false)
+	 * - `compact` (Boolean) If JSON and compact = true the JSON format will be compacted (defaults to false or shouldCompress option)
+	 * - `multifile` (Boolean) If true instead of keeping values in one file it will be kept in multiple files (*)
+	 * - `multipart` (Boolean) If YAML and multipart = true the YAML file will be multipart
+	 * - `key` (String) If a key contains "key" it will be replaced by the "key" value
+	 * - `multipath` (Boolean) Supports string keys with paths (e.g. `ow.obj.setPath`) (defaults to false)
+	 * - `lock` (String) If defined the filepath to a dummy file for filesystem lock while accessing the file
+	 * - `gzip` (Boolean) If true the output file will be gzip (defaults to false)
+	 * - `lz4` (Boolean) If true the output file will be lz4 (defaults to false)
+	 * - `tmp` (Boolean) If true "file" will be temporary and destroyed upon execution/process end
+	 *
+	 * (*) - Be aware that although there is a very small probability of collision between the unique id (sha-512) for filenames it still exists
+	 * ]]>
 	 * </odoc>
 	 */
 	//
@@ -1848,29 +1869,1247 @@ OpenWrap.ch.prototype.__types = {
 			}
 		}
 	},	
+	// Graph implementation
+	//
+	/**
+	 * <odoc format="markdown">
+	 * <key>ow.ch.types.graph</key>
+	 * <![CDATA[
+	 * Channel over a knowledge graph stored in a single JSON file, using the Mini-A wiki graph format:
+	 * `{ version, nodes: { id: { id, type, props } }, edges: [ { from, to, type, provenance, props } ], ... }`.
+	 *
+	 * Creation options:
+	 *
+	 * | Option | Type | Default | Description |
+	 * | --- | --- | --- | --- |
+	 * | `file` | String | _required_ | Path to the graph JSON file |
+	 * | `readOnly` | Boolean | `false` | Reject changes and never write the file |
+	 * | `create` | Boolean | `true` | If `false` the file must already exist; otherwise an empty graph is started |
+	 * | `autosave` | String | `"always"` | `"always"`, `"debounced"` or `"off"`; pending changes are always flushed on destroy |
+	 * | `saveDebounceMs` | Number | `5000` | Minimum ms between saves when `autosave` is `"debounced"` |
+	 * | `lock` | String | | Path to a dummy file used as a filesystem lock while loading/saving |
+	 * | `store` | Map | | `{ type, options, compress, bulk }`: keep nodes, edges and other sections in channels of that type (e.g. `mvs`) instead of memory; can't be combined with `file` |
+	 *
+	 * Keys and values:
+	 *
+	 * - **Node**: key `{ id }` (e.g. `{ id: "doc:readme.md" }`), value `{ id, type, props }`.
+	 * - **Edge**: key `{ from, to, type, provenance, page, section }`, value `{ from, to, type, provenance, props }`.
+	 *   `provenance` is `EXTRACTED`, `INFERRED` or `AMBIGUOUS` (default); `page` and `section` map to `props.page` and `props.section`.
+	 * - Setting an edge requires both nodes to exist; unsetting a node also removes its edges.
+	 * - File sections not handled by the channel (e.g. `communities`, `summaries`) are preserved on save.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * $ch("g").create(true, "graph", { file: "graph.json" });
+	 * $ch("g").set({ id: "doc:a.md" }, { type: "document", props: { title: "A" } });
+	 * $ch("g").set({ id: "doc:b.md" }, { type: "document", props: { title: "B" } });
+	 * $ch("g").set({ from: "doc:a.md", to: "doc:b.md", type: "LINKS_TO" }, {});
+	 * ow.ch.utils.graph.path("g", "a.md", "b.md"); // [ "doc:a.md", "doc:b.md" ]
+	 * ```
+	 *
+	 * Use `ow.ch.utils.graph` to navigate the graph. The whole file is rewritten on save, so avoid several writers over the same file.
+	 * ]]>
+	 * </odoc>
+	 */
+	graph: {
+		__channels: Object.create(null),
+		__prov: [ "EXTRACTED", "INFERRED", "AMBIGUOUS" ],
+		__nprov: function(p) {
+			p = isString(p) ? p.toUpperCase().trim() : "AMBIGUOUS"
+			return this.__prov.indexOf(p) >= 0 ? p : "AMBIGUOUS"
+		},
+		__ekey: function(f, t, ty, pr, pg, sc) {
+			return stringify([ f, t, ty, this.__nprov(pr), isString(pg) ? pg : "", isString(sc) ? sc : "" ], __, "")
+		},
+		__isEdge: function(k) { return isMap(k) && isDef(k.from) && isDef(k.to) },
+		__isNode: function(k) { return isMap(k) && isDef(k.id) && isUnDef(k.from) && isUnDef(k.to) },
+		__edgeKeyOf: function(e) {
+			var p = isMap(e.props) ? e.props : {}
+			return this.__ekey(e.from, e.to, e.type, e.provenance, p.page, p.section)
+		},
+		__keyOfEdge: function(e) {
+			var p = isMap(e.props) ? e.props : {}
+			return { from: e.from, to: e.to, type: e.type, provenance: this.__nprov(e.provenance), page: isString(p.page) ? p.page : "", section: isString(p.section) ? p.section : "" }
+		},
+		__c: function(aName) {
+			var c = this.__channels[aName]
+			if (isUnDef(c)) throw "graph channel '" + aName + "' not found"
+			return c
+		},
+		__l: (m) => (isString(m.lock) ? $flock(m.lock).lock() : __),
+		__ul: (m) => (isString(m.lock) ? $flock(m.lock).unlock() : __),
+		__empty: function() {
+			return { version: 2, created_at: new Date().toISOString(), nodes: {}, edges: [], summaries: { pages: {}, communities: {} }, semantic_cache: {}, communities: [], surprise: [] }
+		},
+		// (re)build the edge index and adjacency from the state
+		__index: function(c) {
+			var s = c.state, self = this
+			if (!isMap(s.nodes)) s.nodes = {}
+			c.eidx = {}
+			c.adj = {}
+			var edges = []
+			;(isArray(s.edges) ? s.edges : []).forEach(function(e) {
+				if (!isMap(e) || e._deleted === true) return
+				e.provenance = self.__nprov(e.provenance)
+				if (!isMap(e.props)) e.props = {}
+				var k = self.__edgeKeyOf(e)
+				if (isDef(c.eidx[k])) return
+				c.eidx[k] = e
+				edges.push(e)
+				if (isUnDef(c.adj[e.from])) c.adj[e.from] = []
+				if (isUnDef(c.adj[e.to])) c.adj[e.to] = []
+				c.adj[e.from].push(e)
+				if (e.to !== e.from) c.adj[e.to].push(e)
+			})
+			s.edges = edges
+		},
+		__load: function(c) {
+			var o = c.opts
+			if (isDef(o.store)) return this.__loadStore(c)
+			c.st = this.__memStore(c)
+			this.__l(o)
+			try {
+				if (io.fileExists(o.file)) {
+					var r = io.readFileJSON(o.file)
+					if (!isMap(r)) throw "graph file '" + o.file + "' doesn't contain a valid graph"
+					c.state = merge(this.__empty(), r)
+				} else {
+					if (o.create === false) throw "graph file '" + o.file + "' not found"
+					c.state = this.__empty()
+				}
+			} finally {
+				this.__ul(o)
+			}
+			this.__index(c)
+			c.dirty = false
+			c.lastSave = 0
+		},
+		__flush: function(c) {
+			var o = c.opts
+			if (o.readOnly) return false
+			if (isDef(o.store)) return true
+			this.__l(o)
+			try {
+				var dir = new java.io.File(o.file).getAbsoluteFile().getParentFile()
+				if (isDef(dir) && !dir.exists()) dir.mkdirs()
+				var tmp = o.file + "." + java.util.UUID.randomUUID() + ".tmp"
+				try {
+					io.writeFileString(tmp, stringify(c.state, __, ""))
+					java.nio.file.Files.move(new java.io.File(tmp).toPath(), new java.io.File(o.file).toPath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+				} finally {
+					java.nio.file.Files.deleteIfExists(new java.io.File(tmp).toPath())
+				}
+			} finally {
+				this.__ul(o)
+			}
+			c.dirty = false
+			c.lastSave = now()
+			return true
+		},
+		__changed: function(c) {
+			if (isDef(c.opts.store)) return
+			c.dirty = true
+			if (c.opts.autosave === "always") {
+				this.__flush(c)
+			} else if (c.opts.autosave === "debounced" && now() - c.lastSave >= c.opts.saveDebounceMs) {
+				this.__flush(c)
+			}
+		},
+		__rw: function(c) {
+			if (c.opts.readOnly) throw "graph channel is read-only"
+		},
+		__nodeVal: function(n) { return { id: n.id, type: n.type, props: isMap(n.props) ? clone(n.props) : {} } },
+		__edgeVal: function(e) { return { from: e.from, to: e.to, type: e.type, provenance: e.provenance, props: isMap(e.props) ? clone(e.props) : {} } },
+		// Storage backends: every access to nodes and edges goes through c.st
+		// memory: everything held in c.state (+ edge index and adjacency)
+		__memStore: function(c) {
+			var self = this
+			var delEdge = function(e) {
+				delete c.eidx[self.__edgeKeyOf(e)]
+				c.state.edges = c.state.edges.filter(x => x !== e)
+				;[ e.from, e.to ].forEach(id => { if (isArray(c.adj[id])) c.adj[id] = c.adj[id].filter(x => x !== e) })
+			}
+			return {
+				getNode  : id => c.state.nodes[id],
+				putNode  : n => { c.state.nodes[n.id] = n },
+				nodeIds  : () => Object.keys(c.state.nodes),
+				nodeCount: () => Object.keys(c.state.nodes).length,
+				getEdge  : k => c.eidx[k],
+				putEdge  : e => {
+					var k = self.__edgeKeyOf(e), old = c.eidx[k]
+					if (isDef(old)) { old.props = e.props; return }
+					c.eidx[k] = e
+					c.state.edges.push(e)
+					if (isUnDef(c.adj[e.from])) c.adj[e.from] = []
+					if (isUnDef(c.adj[e.to])) c.adj[e.to] = []
+					c.adj[e.from].push(e)
+					if (e.to !== e.from) c.adj[e.to].push(e)
+				},
+				bulk     : false,
+				delEdge  : delEdge,
+				edgesOf  : id => (c.adj[id] || []),
+				edges    : () => c.state.edges,
+				edgeCount: () => c.state.edges.length,
+				delNode  : id => {
+					(c.adj[id] || []).slice().forEach(delEdge)
+					delete c.adj[id]
+					delete c.state.nodes[id]
+				},
+				close    : () => {}
+			}
+		},
+		// channel: nodes, edges, adjacency and the remaining sections are delegated to other channels (e.g. mvs)
+		__chStore: function(c, aName) {
+			var self = this, spec = c.opts.store, pre = "graph::" + aName + "::", n = {}
+			var parts = [ "nodes", "edges", "adj", "meta" ], made = []
+			var close = () => made.forEach(x => { try { $ch(x).destroy() } catch(e) {} })
+			try {
+				parts.forEach(p => {
+					n[p] = pre + p
+					var o = isFunction(spec.options) ? spec.options(p) : merge(isMap(spec.options) ? clone(spec.options) : {}, { map: pre + p })
+					$ch(n[p]).create(spec.compress === true, spec.type, o)
+					made.push(n[p])
+				})
+			} catch(e) { close(); throw e }
+			var edgesOf = id => {
+				var a = $ch(n.adj).get({ id: id })
+				return isMap(a) ? a.ks.map(k => $ch(n.edges).get({ k: k })).filter(isMap) : []
+			}
+			var addAdj = (id, k) => {
+				var a = $ch(n.adj).get({ id: id })
+				a = isMap(a) ? a : { id: id, ks: [] }
+				a.ks.push(k)
+				$ch(n.adj).set({ id: id }, a)
+			}
+			var delAdj = (id, k) => {
+				var a = $ch(n.adj).get({ id: id })
+				if (!isMap(a)) return
+				a.ks = a.ks.filter(x => x !== k)
+				if (a.ks.length == 0) $ch(n.adj).unset({ id: id }); else $ch(n.adj).set({ id: id }, a)
+			}
+			var delEdge = e => {
+				var k = self.__edgeKeyOf(e)
+				$ch(n.edges).unset({ k: k })
+				delAdj(e.from, k)
+				if (e.to !== e.from) delAdj(e.to, k)
+			}
+			return {
+				names    : n,
+				getNode  : id => $ch(n.nodes).get({ id: id }),
+				putNode  : nd => { $ch(n.nodes).set({ id: nd.id }, nd) },
+				nodeIds  : () => $ch(n.nodes).getKeys().map(k => k.id),
+				nodeCount: () => $ch(n.nodes).size(),
+				getEdge  : k => $ch(n.edges).get({ k: k }),
+				bulk     : spec.bulk === true || (spec.bulk !== false && spec.type == "mvs"),
+				putBatch : (nodes, edges) => {
+					if (nodes.length > 0) $ch(n.nodes).setAll([ "id" ], nodes)
+					var uniq = {}, adds = {}, ids = []
+					edges.forEach(e => { uniq[self.__edgeKeyOf(e)] = e })
+					var vals = Object.keys(uniq).map(k => {
+						var e = uniq[k]
+						if (!isMap($ch(n.edges).get({ k: k }))) {
+							;(e.to !== e.from ? [ e.from, e.to ] : [ e.from ]).forEach(id => {
+								if (isUnDef(adds[id])) { adds[id] = []; ids.push(id) }
+								adds[id].push(k)
+							})
+						}
+						return merge(e, { k: k })
+					})
+					if (vals.length > 0) $ch(n.edges).setAll([ "k" ], vals)
+					var recs = ids.map(id => {
+						var a = $ch(n.adj).get({ id: id })
+						return { id: id, ks: (isMap(a) ? a.ks : []).concat(adds[id]) }
+					})
+					if (recs.length > 0) $ch(n.adj).setAll([ "id" ], recs)
+				},
+				putEdge  : e => {
+					var k = self.__edgeKeyOf(e), old = $ch(n.edges).get({ k: k })
+					$ch(n.edges).set({ k: k }, merge(e, { k: k }))
+					if (!isMap(old)) {
+						addAdj(e.from, k)
+						if (e.to !== e.from) addAdj(e.to, k)
+					}
+				},
+				delEdge  : delEdge,
+				edgesOf  : edgesOf,
+				edges    : () => $ch(n.edges).getAll(),
+				edgeCount: () => $ch(n.edges).size(),
+				delNode  : id => {
+					edgesOf(id).forEach(delEdge)
+					$ch(n.adj).unset({ id: id })
+					$ch(n.nodes).unset({ id: id })
+				},
+				close    : close
+			}
+		},
+		__loadStore: function(c) {
+			var o = c.opts, st = this.__chStore(c, c.name)
+			c.st = st
+			try {
+				var meta = $ch(st.names.meta).get({ k: "meta" })
+				if (!isMap(meta)) {
+					if (o.create === false) throw "graph store for '" + c.name + "' not found"
+					meta = { k: "meta", state: this.__empty() }
+					delete meta.state.nodes
+					delete meta.state.edges
+					if (!o.readOnly) $ch(st.names.meta).set({ k: "meta" }, meta)
+				}
+				c.state = meta.state
+			} catch(e) { st.close(); throw e }
+			c.dirty = false
+			c.lastSave = 0
+		},
+		// public helpers used by ow.ch.utils.graph
+		__getNode: function(aName, id) { return this.__c(aName).st.getNode(id) },
+		__nodeIds: function(aName) { return this.__c(aName).st.nodeIds() },
+		__edgesOf: function(aName, id) { return this.__c(aName).st.edgesOf(id) },
+		__edges: function(aName) { return this.__c(aName).st.edges() },
+		__save: function(aName) { return this.__flush(this.__c(aName)) },
+		create       : function(aName, shouldCompress, options) {
+			options = _$(options, "options").isMap().default({})
+			var o = {
+				file          : isDef(options.store) ? options.file : _$(options.file, "options.file").isString().$_(),
+				store         : isDef(options.store) ? _$(options.store, "options.store").isMap().$_() : __,
+				readOnly      : _$(options.readOnly, "options.readOnly").isBoolean().default(false),
+				create        : _$(options.create, "options.create").isBoolean().default(true),
+				autosave      : String(_$(options.autosave, "options.autosave").isString().default("always")).toLowerCase(),
+				saveDebounceMs: _$(options.saveDebounceMs, "options.saveDebounceMs").isNumber().default(5000),
+				lock          : options.lock
+			}
+			if (["always", "debounced", "off"].indexOf(o.autosave) < 0) throw "options.autosave must be 'always', 'debounced' or 'off'"
+			if (isDef(o.store)) {
+				_$(o.store.type, "options.store.type").isString().$_()
+				if (isDef(o.file)) throw "options.file and options.store can't be used together"
+			}
+			var c = { opts: o, name: aName }
+			this.__load(c)
+			this.__channels[aName] = c
+		},
+		destroy      : function(aName) {
+			var c = this.__channels[aName]
+			if (isUnDef(c)) return
+			try { if (c.dirty && !c.opts.readOnly) this.__flush(c) } finally { delete this.__channels[aName]; c.st.close() }
+		},
+		size         : function(aName) {
+			var c = this.__c(aName)
+			return c.st.nodeCount() + c.st.edgeCount()
+		},
+		forEach      : function(aName, aFunction) {
+			var ks = this.getKeys(aName)
+			for (var i = 0; i < ks.length; i++) {
+				try { aFunction(ks[i], this.get(aName, ks[i])) } catch(e) {}
+			}
+		},
+		getAll       : function(aName, full) {
+			var c = this.__c(aName), self = this
+			return c.st.nodeIds().map(id => self.__nodeVal(c.st.getNode(id))).concat(c.st.edges().map(e => self.__edgeVal(e)))
+		},
+		getKeys      : function(aName, full) {
+			var c = this.__c(aName), self = this
+			return c.st.nodeIds().map(id => ({ id: id })).concat(c.st.edges().map(e => self.__keyOfEdge(e)))
+		},
+		getSortedKeys: function(aName, full) {
+			var c = this.__c(aName), self = this
+			var ns = c.st.nodeIds().sort().map(id => ({ id: id }))
+			var es = c.st.edges().map(e => self.__keyOfEdge(e)).sort((a, b) => stringify([a.from, a.to, a.type, a.provenance, a.page, a.section], __, "") < stringify([b.from, b.to, b.type, b.provenance, b.page, b.section], __, "") ? -1 : 1)
+			return ns.concat(es)
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res = this.get(aName, aK)
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp)
+			}
+			return __
+		},
+		// validates a key/value and returns { node } or { edge }; pend (optional) holds nodes of the same batch not yet stored
+		__prep       : function(c, aK, aV, pend) {
+			aV = isMap(aV) ? aV : {}
+			var getN = id => (isDef(pend) && isMap(pend[id])) ? pend[id] : c.st.getNode(id)
+			if (this.__isEdge(aK)) {
+				var from = String(aK.from), to = String(aK.to)
+				var type = isString(aK.type) ? aK.type : aV.type
+				if (!isString(type) || type.length == 0) throw "graph edge requires a type"
+				if (!isMap(getN(from)) || !isMap(getN(to))) throw "graph edge requires existing nodes (" + from + " -> " + to + ")"
+				var props = isMap(aV.props) ? clone(aV.props) : {}
+				if (isString(aK.page) && aK.page.length > 0) props.page = aK.page
+				if (isString(aK.section) && aK.section.length > 0) props.section = aK.section
+				var prov = this.__nprov(isDef(aK.provenance) ? aK.provenance : aV.provenance)
+				return { edge: { from: from, to: to, type: type, provenance: prov, props: props } }
+			} else if (this.__isNode(aK)) {
+				var id = String(aK.id)
+				if (id.length == 0) throw "graph node requires a non empty id"
+				var n = getN(id)
+				var ntype = isString(aV.type) && aV.type.length > 0 ? aV.type : (isMap(n) ? n.type : "concept")
+				return { node: { id: id, type: ntype, props: isMap(aV.props) ? clone(aV.props) : {} } }
+			}
+			throw "graph key must have 'id' (node) or 'from' and 'to' (edge)"
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			var r = this.__prep(c, aK, aV)
+			if (isDef(r.edge)) c.st.putEdge(r.edge); else c.st.putNode(r.node)
+			this.__changed(c)
+			return aK
+		},
+		// one change notification (and, with a bulk capable store, one write) for the whole batch
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			var c = this.__c(aName)
+			this.__rw(c)
+			var pend = {}, nodes = [], edges = []
+			for(var i = 0; i < aVs.length; i++) {
+				var r = this.__prep(c, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], pend)
+				if (isDef(r.node)) { pend[r.node.id] = r.node; nodes.push(r.node) } else edges.push(r.edge)
+				if (!c.st.bulk) { if (isDef(r.node)) c.st.putNode(r.node); else c.st.putEdge(r.edge) }
+			}
+			if (c.st.bulk) c.st.putBatch(nodes, edges)
+			this.__changed(c)
+		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			for(var i = 0; i < aVs.length; i++) {
+				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aTimestamp)
+			}
+		},
+		get          : function(aName, aK) {
+			var c = this.__c(aName)
+			if (this.__isEdge(aK)) {
+				var e = c.st.getEdge(this.__ekey(String(aK.from), String(aK.to), aK.type, aK.provenance, aK.page, aK.section))
+				return isMap(e) ? this.__edgeVal(e) : __
+			}
+			if (this.__isNode(aK)) {
+				var n = c.st.getNode(String(aK.id))
+				return isMap(n) ? this.__nodeVal(n) : __
+			}
+			return __
+		},
+		pop          : function(aName) {
+			var elems = this.getSortedKeys(aName)
+			return elems[elems.length - 1]
+		},
+		shift        : function(aName) {
+			var elems = this.getSortedKeys(aName)
+			return elems[0]
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			if (this.__isEdge(aK)) {
+				var e = c.st.getEdge(this.__ekey(String(aK.from), String(aK.to), aK.type, aK.provenance, aK.page, aK.section))
+				if (!isMap(e)) return
+				c.st.delEdge(e)
+			} else if (this.__isNode(aK)) {
+				var id = String(aK.id)
+				if (!isMap(c.st.getNode(id))) return
+				c.st.delNode(id)
+			} else {
+				return
+			}
+			this.__changed(c)
+		}
+	},
+	// Time series implementation
+	//
+	/**
+	 * <odoc format="markdown">
+	 * <key>ow.ch.types.timeseries</key>
+	 * <![CDATA[
+	 * Channel over labelled numeric time series (metric + labels + timestamp), kept in memory with an optional append-only NDJSON file,
+	 * or delegated to other channels (e.g. `mvs`) with `store`. Supports retention (age and/or count) and stored rollups (RRD-like).
+	 *
+	 * Creation options:
+	 *
+	 * | Option | Type | Default | Description |
+	 * | --- | --- | --- | --- |
+	 * | `file` | String | | Path to an NDJSON log file. Without `file` (and `store`) the channel only lives in memory |
+	 * | `readOnly` | Boolean | `false` | Reject changes and never write the file |
+	 * | `create` | Boolean | `true` | If `false` the file (or store) must already exist |
+	 * | `autosave` | String | `"always"` | `"always"` appends on every change, `"debounced"` appends at most every `saveDebounceMs`, `"off"` only on `save`/destroy |
+	 * | `saveDebounceMs` | Number | `5000` | Minimum ms between appends when `autosave` is `"debounced"` |
+	 * | `lock` | String | | Path to a dummy file used as a filesystem lock while loading and writing |
+	 * | `compactRatio` | Number | `0.5` | The file is rewritten (compacted) when more than this ratio of its lines is dead (overwritten, deleted or expired) |
+	 * | `store` | Map | | `{ type, options, compress, bulk }`: keep the data in chunks stored on channels of that type (e.g. `mvs`); can't be combined with `file` |
+	 * | `chunk` | String/Number | `"1h"` | Time span of each stored chunk (only used with `store`) |
+	 * | `retention` | String/Number | | How long to keep raw points (e.g. `"7d"`), relative to the newest point of each series (see `retentionRef`). Same as `raw.keep` |
+	 * | `maxPoints` | Number | | Maximum raw points per series. Same as `raw.maxPoints` |
+	 * | `raw` | Map | | `{ keep, maxPoints }` for the raw points |
+	 * | `rollups` | Array | | `[ { step: "1m", keep: "1d" }, { step: "1h", keep: "30d" } ]`: aggregated buckets kept per series (`count`, `sum`, `min`, `max`, `first`, `last`) |
+	 * | `retentionRef` | String | `"series"` | `"series"` measures `keep` back from the newest point of the series, `"now"` from the current time |
+	 * | `housekeepEveryMs` | Number | `0` | Minimum ms between retention runs triggered by writes (`0` = on every write) |
+	 *
+	 * Keys and values:
+	 *
+	 * - **Key**: `{ metric, labels, ts }`. `labels` is a map (values are stored as strings); `ts` is epoch ms, a Date or an ISO string (defaults to now on `set`).
+	 * - **Value**: `{ v }` where `v` is a number.
+	 * - `get` without `ts` returns the latest point; the value returned is always `{ metric, labels, ts, v }`.
+	 * - `unset` with `ts` removes a point; without `ts` it drops the whole series (points and rollups).
+	 * - `getKeys`/`getAll` accept a selector map `{ metric, labels, from, to }`; `pop`/`shift` return the key of the newest/oldest point.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * $ch("m").create(true, "timeseries", { file: "cpu.ndjson", retention: "7d" });
+	 * $ch("m").set({ metric: "cpu", labels: { host: "a" }, ts: 1000 }, { v: 0.4 });
+	 * $ch("m").set({ metric: "cpu", labels: { host: "a" }, ts: 2000 }, { v: 0.6 });
+	 * ow.ch.utils.timeseries.range("m", { metric: "cpu" }, { step: "1s", fn: "avg" });
+	 * ```
+	 *
+	 * Retention deletes made by the channel itself do not notify channel subscribers. Use `ow.ch.utils.timeseries` to query.
+	 * ]]>
+	 * </odoc>
+	 */
+	timeseries: {
+		__channels: Object.create(null),
+		__c: function(aName) {
+			var c = this.__channels[aName]
+			if (isUnDef(c)) throw "timeseries channel '" + aName + "' not found"
+			return c
+		},
+		__l: (m) => (isString(m.lock) ? $flock(m.lock).lock() : __),
+		__ul: (m) => (isString(m.lock) ? $flock(m.lock).unlock() : __),
+		__rw: function(c) {
+			if (c.opts.readOnly) throw "timeseries channel is read-only"
+		},
+		// ---- value helpers
+		__ts: function(t) {
+			if (isUnDef(t) || t === null) return now()
+			var r
+			if (isNumber(t)) r = t
+			else if (isDate(t)) r = t.getTime()
+			else if (isString(t)) r = /^\s*-?\d+(\.\d+)?\s*$/.test(t) ? Number(t) : (new Date(t)).getTime()
+			if (!isNumber(r) || isNaN(r) || !isFinite(r)) throw "timeseries: invalid timestamp '" + t + "'"
+			return Math.floor(r)
+		},
+		__dur: function(d, what) {
+			if (isUnDef(d) || d === null) return __
+			var r = isString(d) ? ow.loadFormat().fromTimeAbbreviation(d) : d
+			if (!isNumber(r) || isNaN(r) || !(r > 0)) throw "timeseries: invalid duration for " + what + " (" + d + ")"
+			return r
+		},
+		__val: function(v) {
+			if (isMap(v)) v = v.v
+			if (isString(v) && v.trim().length > 0) v = Number(v)
+			if (!isNumber(v) || isNaN(v) || !isFinite(v)) throw "timeseries value 'v' must be a finite number"
+			return v
+		},
+		__labels: function(l) {
+			if (isUnDef(l) || l === null) return {}
+			if (!isMap(l)) throw "timeseries labels must be a map"
+			var r = {}
+			Object.keys(l).sort().forEach(k => { if (isDef(l[k]) && l[k] !== null) r[k] = String(l[k]) })
+			return r
+		},
+		__sid: function(metric, labels) {
+			return stringify([ metric, labels ], __, "")
+		},
+		// validates a key; ts is only normalized when present
+		__key: function(k) {
+			if (!isMap(k) || !isString(k.metric) || k.metric.length == 0) throw "timeseries key must have a 'metric' and optionally 'labels' and 'ts'"
+			var labels = this.__labels(k.labels)
+			return { id: this.__sid(k.metric, labels), metric: k.metric, labels: labels, ts: isDef(k.ts) ? this.__ts(k.ts) : __ }
+		},
+		__pt: function(m, t, v) {
+			return { metric: m.metric, labels: clone(m.labels), ts: t, v: v }
+		},
+		// selector matching: String/Number, Array (any), RegExp or Function
+		__m: function(want, have) {
+			if (isUnDef(want)) return true
+			if (isArray(want)) return want.some(w => this.__m(w, have))
+			if (Object.prototype.toString.call(want) == "[object RegExp]") return isDef(have) && want.test(String(have))
+			if (isFunction(want)) return want(have) === true
+			return isDef(have) && String(want) === String(have)
+		},
+		__match: function(m, sel) {
+			if (!this.__m(sel.metric, m.metric)) return false
+			if (isMap(sel.labels)) {
+				for (var k in sel.labels) if (!this.__m(sel.labels[k], m.labels[k])) return false
+			}
+			return true
+		},
+		__select: function(c, sel) {
+			var self = this
+			sel = isMap(sel) ? sel : {}
+			return c.st.ids().filter(id => self.__match(c.st.meta(id), sel)).sort()
+		},
+		// ---- sorted array helpers over { ts: [], v: [] }
+		__lb: function(a, x) { var lo = 0, hi = a.length; while (lo < hi) { var m = (lo + hi) >>> 1; if (a[m] < x) lo = m + 1; else hi = m } return lo },
+		__ub: function(a, x) { var lo = 0, hi = a.length; while (lo < hi) { var m = (lo + hi) >>> 1; if (a[m] <= x) lo = m + 1; else hi = m } return lo },
+		// upserts into o; returns how many entries were added (not replaced)
+		__put: function(o, ts, v) {
+			var added = 0
+			for (var i = 0; i < ts.length; i++) {
+				var t = ts[i], n = o.ts.length
+				if (n == 0 || t > o.ts[n - 1]) {
+					o.ts.push(t); o.v.push(v[i]); added++
+				} else {
+					var p = this.__lb(o.ts, t)
+					if (o.ts[p] === t) o.v[p] = v[i]
+					else { o.ts.splice(p, 0, t); o.v.splice(p, 0, v[i]); added++ }
+				}
+			}
+			return added
+		},
+		__rm: function(o, ts) {
+			var removed = 0
+			for (var i = 0; i < ts.length; i++) {
+				var p = this.__lb(o.ts, ts[i])
+				if (o.ts[p] === ts[i]) { o.ts.splice(p, 1); o.v.splice(p, 1); removed++ }
+			}
+			return removed
+		},
+		// ---- aggregates (rollup buckets)
+		__a0: function(t, v) { return { count: 1, sum: v, min: v, max: v, first: v, last: v, ft: t, lt: t } },
+		__am: function(a, b) {
+			if (isUnDef(a)) return b
+			if (isUnDef(b)) return a
+			return {
+				count: a.count + b.count, sum: a.sum + b.sum, min: Math.min(a.min, b.min), max: Math.max(a.max, b.max),
+				first: b.ft < a.ft ? b.first : a.first, ft: Math.min(a.ft, b.ft),
+				last : b.lt >= a.lt ? b.last : a.last, lt: Math.max(a.lt, b.lt)
+			}
+		},
+		__ae: function(a) { return [ a.count, a.sum, a.min, a.max, a.first, a.last, a.ft, a.lt ] },
+		__ad: function(a) { return { count: a[0], sum: a[1], min: a[2], max: a[3], first: a[4], last: a[5], ft: a[6], lt: a[7] } },
+		// ---- storage backends: every access goes through c.st
+		// memory
+		__memStore: function(c) {
+			var self = this, S = {}
+			var T = (id, k) => { var s = S[id]; if (isUnDef(s.t[k])) s.t[k] = { ts: [], v: [] }; return s.t[k] }
+			return {
+				bulk      : false,
+				ids       : () => Object.keys(S),
+				has       : id => isDef(S[id]),
+				meta      : id => isDef(S[id]) ? S[id].meta : __,
+				putMeta   : m => { if (isUnDef(S[m.id])) S[m.id] = { meta: m, t: {} } },
+				read      : (id, k, from, to) => {
+					var o = T(id, k), a = self.__lb(o.ts, from), b = self.__ub(o.ts, to)
+					return { ts: o.ts.slice(a, b), v: o.v.slice(a, b) }
+				},
+				upsert    : (id, k, ts, v) => self.__put(T(id, k), ts, v),
+				del       : (id, k, ts) => self.__rm(T(id, k), ts),
+				trimBefore: (id, k, cut) => {
+					var o = T(id, k), p = self.__lb(o.ts, cut)
+					if (p > 0) { o.ts.splice(0, p); o.v.splice(0, p) }
+					return p
+				},
+				trimCount : (id, k, max) => {
+					var o = T(id, k), n = o.ts.length - max
+					if (n > 0) { o.ts.splice(0, n); o.v.splice(0, n) }
+					return Math.max(n, 0)
+				},
+				bounds    : (id, k) => { var o = T(id, k), n = o.ts.length; return n == 0 ? __ : { first: o.ts[0], last: o.ts[n - 1], count: n } },
+				drop      : id => { delete S[id] },
+				rawCount  : () => Object.keys(S).reduce((a, id) => a + (isDef(S[id].t.raw) ? S[id].t.raw.ts.length : 0), 0),
+				liveCount : () => Object.keys(S).reduce((a, id) => a + 1 + Object.keys(S[id].t).reduce((b, k) => b + S[id].t[k].ts.length, 0), 0),
+				close     : () => {}
+			}
+		},
+		// channel: series index + one chunk channel per tier, delegated to other channels (e.g. mvs)
+		__chStore: function(c, aName) {
+			var self = this, spec = c.opts.store, pre = "timeseries::" + aName + "::", n = {}, made = []
+			var close = () => made.forEach(x => { try { $ch(x).destroy() } catch(e) {} })
+			try {
+				;[ "series" ].concat(c.tiers.map(t => t.key)).forEach(p => {
+					n[p] = pre + p
+					var o = isFunction(spec.options) ? spec.options(p) : merge(isMap(spec.options) ? clone(spec.options) : {}, { map: pre + p })
+					$ch(n[p]).create(spec.compress === true, spec.type, o)
+					made.push(n[p])
+				})
+			} catch(e) { close(); throw e }
+			var bulk = spec.bulk === true || (spec.bulk !== false && spec.type == "mvs")
+			var cs = k => c.tierBy[k].chunk
+			var bk = (k, t) => Math.floor(t / cs(k)) * cs(k)
+			var rec = id => $ch(n.series).get({ s: id })
+			var tinfo = (r, k) => { if (isUnDef(r.t[k])) r.t[k] = { first: __, last: __, count: 0, chunks: [] }; return r.t[k] }
+			var chunk = (id, k, b) => $ch(n[k]).get({ s: id, b: b })
+			var wr = (k, list) => {
+				if (list.length == 0) return
+				if (bulk && list.length > 1) $ch(n[k]).setAll([ "s", "b" ], list)
+				else list.forEach(x => $ch(n[k]).set({ s: x.s, b: x.b }, x))
+			}
+			var refresh = (id, r, k) => {
+				var info = tinfo(r, k)
+				info.chunks.sort((a, b) => a - b)
+				if (info.chunks.length == 0 || info.count <= 0) { info.first = __; info.last = __; info.count = 0; info.chunks = []; return }
+				var f = chunk(id, k, info.chunks[0]), l = info.chunks.length == 1 ? f : chunk(id, k, info.chunks[info.chunks.length - 1])
+				info.first = f.ts[0]
+				info.last = l.ts[l.ts.length - 1]
+			}
+			var save = r => $ch(n.series).set({ s: r.s }, r)
+			// groups ts (+ optional v) by chunk start
+			var group = (k, ts, v) => {
+				var g = {}, order = []
+				ts.forEach((t, i) => {
+					var b = bk(k, t)
+					if (isUnDef(g[b])) { g[b] = { ts: [], v: [] }; order.push(b) }
+					g[b].ts.push(t); if (isDef(v)) g[b].v.push(v[i])
+				})
+				return { g: g, order: order }
+			}
+			return {
+				names     : n,
+				bulk      : bulk,
+				ids       : () => $ch(n.series).getKeys().map(k => k.s),
+				has       : id => isMap(rec(id)),
+				meta      : id => { var r = rec(id); return isMap(r) ? { id: id, metric: r.metric, labels: r.labels } : __ },
+				putMeta   : m => { if (!isMap(rec(m.id))) save({ s: m.id, metric: m.metric, labels: m.labels, t: {} }) },
+				read      : (id, k, from, to) => {
+					var r = rec(id), res = { ts: [], v: [] }
+					if (!isMap(r) || isUnDef(r.t[k])) return res
+					r.t[k].chunks.forEach(b => {
+						if (b > to || b + cs(k) - 1 < from) return
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) return
+						var a = self.__lb(ch.ts, from), z = self.__ub(ch.ts, to)
+						res.ts = res.ts.concat(ch.ts.slice(a, z)); res.v = res.v.concat(ch.v.slice(a, z))
+					})
+					return res
+				},
+				upsert    : (id, k, ts, v) => {
+					var r = rec(id), info = tinfo(r, k), gr = group(k, ts, v), added = 0, out = []
+					gr.order.forEach(b => {
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) { ch = { s: id, b: b, ts: [], v: [] }; if (info.chunks.indexOf(b) < 0) info.chunks.push(b) }
+						added += self.__put(ch, gr.g[b].ts, gr.g[b].v)
+						out.push(ch)
+					})
+					wr(k, out)
+					info.count += added
+					refresh(id, r, k)
+					save(r)
+					return added
+				},
+				del       : (id, k, ts) => {
+					var r = rec(id)
+					if (!isMap(r) || isUnDef(r.t[k])) return 0
+					var info = r.t[k], gr = group(k, ts), removed = 0, out = []
+					gr.order.forEach(b => {
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) return
+						removed += self.__rm(ch, gr.g[b].ts)
+						if (ch.ts.length == 0) { $ch(n[k]).unset({ s: id, b: b }); info.chunks = info.chunks.filter(x => x !== b) } else out.push(ch)
+					})
+					wr(k, out)
+					info.count -= removed
+					refresh(id, r, k)
+					save(r)
+					return removed
+				},
+				trimBefore: (id, k, cut) => {
+					var r = rec(id)
+					if (!isMap(r) || isUnDef(r.t[k]) || isUnDef(r.t[k].first) || r.t[k].first >= cut) return 0
+					var info = r.t[k], removed = 0, keep = []
+					info.chunks.sort((a, b) => a - b).forEach(b => {
+						if (b > cut) { keep.push(b); return }
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) return
+						var p = self.__lb(ch.ts, cut)
+						removed += p
+						if (p >= ch.ts.length) { $ch(n[k]).unset({ s: id, b: b }); return }
+						if (p > 0) { ch.ts.splice(0, p); ch.v.splice(0, p); $ch(n[k]).set({ s: id, b: b }, ch) }
+						keep.push(b)
+					})
+					info.chunks = keep
+					info.count -= removed
+					refresh(id, r, k)
+					save(r)
+					return removed
+				},
+				trimCount : (id, k, max) => {
+					var r = rec(id)
+					if (!isMap(r) || isUnDef(r.t[k]) || r.t[k].count <= max) return 0
+					var info = r.t[k], left = info.count - max, removed = 0, keep = []
+					info.chunks.sort((a, b) => a - b).forEach(b => {
+						if (left <= 0) { keep.push(b); return }
+						var ch = chunk(id, k, b)
+						if (!isMap(ch)) return
+						var p = Math.min(left, ch.ts.length)
+						left -= p; removed += p
+						if (p >= ch.ts.length) { $ch(n[k]).unset({ s: id, b: b }); return }
+						ch.ts.splice(0, p); ch.v.splice(0, p); $ch(n[k]).set({ s: id, b: b }, ch)
+						keep.push(b)
+					})
+					info.chunks = keep
+					info.count -= removed
+					refresh(id, r, k)
+					save(r)
+					return removed
+				},
+				bounds    : (id, k) => {
+					var r = rec(id)
+					if (!isMap(r) || isUnDef(r.t[k]) || r.t[k].count <= 0) return __
+					return { first: r.t[k].first, last: r.t[k].last, count: r.t[k].count }
+				},
+				drop      : id => {
+					var r = rec(id)
+					if (!isMap(r)) return
+					Object.keys(r.t).forEach(k => r.t[k].chunks.forEach(b => $ch(n[k]).unset({ s: id, b: b })))
+					$ch(n.series).unset({ s: id })
+				},
+				rawCount  : () => $ch(n.series).getAll().reduce((a, r) => a + (isDef(r.t.raw) ? r.t.raw.count : 0), 0),
+				liveCount : () => 0,
+				close     : close
+			}
+		},
+		// ---- engine
+		// reference timestamp used by retention for a series
+		__ref: function(c, id, aNow) {
+			if (isDef(aNow)) return aNow
+			if (c.opts.retentionRef == "now") return now()
+			var b = c.st.bounds(id, "raw")
+			return isDef(b) ? b.last : __
+		},
+		__retain: function(c, id, aNow) {
+			var ref = this.__ref(c, id, aNow), removed = 0
+			if (isUnDef(ref)) return 0
+			c.tiers.forEach(t => {
+				if (isDef(t.keep)) removed += c.st.trimBefore(id, t.key, ref - t.keep - (t.step > 0 ? t.step - 1 : 0))
+				if (isDef(t.maxPoints)) removed += c.st.trimCount(id, t.key, t.maxPoints)
+			})
+			return removed
+		},
+		__hk: function(c, id) {
+			if (!c.hasRetention) return
+			var ids = [ id ]
+			if (c.opts.housekeepEveryMs > 0) {
+				c.touched[id] = true
+				if (now() - c.lastHK < c.opts.housekeepEveryMs) return
+				ids = Object.keys(c.touched); c.touched = {}; c.lastHK = now()
+			}
+			for (var i = 0; i < ids.length; i++) if (c.st.has(ids[i])) this.__retain(c, ids[i])
+		},
+		__lg: function(c, o) {
+			if (isDef(c.buf)) c.buf.push(stringify(o, __, ""))
+		},
+		// is the raw data of the bucket starting at b intact (no raw trimming configured or nothing older than b was lost)?
+		__intact: function(c, id, b) {
+			if (!c.rawTrims) return true
+			var bd = c.st.bounds(id, "raw")
+			return isDef(bd) && bd.first <= b
+		},
+		__rebuild: function(c, id, t, b) {
+			var r = c.st.read(id, "raw", b, b + t.step - 1), agg
+			for (var i = 0; i < r.ts.length; i++) agg = this.__am(agg, this.__a0(r.ts[i], r.v[i]))
+			return agg
+		},
+		// updates the rollup tiers after raw points ts/vs were written (old holds the previous values of overwritten points)
+		__roll: function(c, id, ts, vs, old) {
+			var self = this
+			c.tiers.forEach(t => {
+				if (t.step <= 0) return
+				var ref = self.__ref(c, id), cut = (isDef(t.keep) && isDef(ref)) ? ref - t.keep : __
+				var bl = {}, order = []
+				ts.forEach((x, i) => {
+					var b = Math.floor(x / t.step) * t.step
+					if (isDef(cut) && b + t.step <= cut) return
+					if (isUnDef(bl[b])) { bl[b] = []; order.push(b) }
+					bl[b].push(i)
+				})
+				var ub = [], uv = []
+				order.forEach(b => {
+					var cur = c.st.read(id, t.key, b, b), agg = cur.ts.length > 0 ? cur.v[0] : __
+					var over = bl[b].some(i => isDef(old[ts[i]]))
+					if (over && self.__intact(c, id, b)) {
+						agg = self.__rebuild(c, id, t, b)
+					} else {
+						bl[b].forEach(i => {
+							var x = ts[i], v = vs[i]
+							if (isDef(old[x]) && isDef(agg)) {
+								agg = { count: agg.count, sum: agg.sum - old[x] + v, min: Math.min(agg.min, v), max: Math.max(agg.max, v),
+								        first: agg.ft === x ? v : agg.first, ft: agg.ft, last: agg.lt === x ? v : agg.last, lt: agg.lt }
+							} else {
+								agg = self.__am(agg, self.__a0(x, v))
+							}
+						})
+					}
+					if (isDef(agg)) { ub.push(b); uv.push(agg); self.__lg(c, { o: "r", s: id, k: t.key, t: b, a: self.__ae(agg) }) }
+				})
+				if (ub.length > 0) c.st.upsert(id, t.key, ub, uv)
+			})
+		},
+		// fixes rollup buckets after raw points were removed
+		__fix: function(c, id, ts) {
+			var self = this
+			c.tiers.forEach(t => {
+				if (t.step <= 0) return
+				var seen = {}
+				ts.forEach(x => {
+					var b = Math.floor(x / t.step) * t.step
+					if (seen[b] || !self.__intact(c, id, b)) return
+					seen[b] = true
+					var agg = self.__rebuild(c, id, t, b)
+					if (isDef(agg)) {
+						c.st.upsert(id, t.key, [ b ], [ agg ]); self.__lg(c, { o: "r", s: id, k: t.key, t: b, a: self.__ae(agg) })
+					} else {
+						c.st.del(id, t.key, [ b ]); self.__lg(c, { o: "d", s: id, k: t.key, t: b })
+					}
+				})
+			})
+		},
+		// writes points [ { t, v } ] of one series
+		__write: function(c, m, pts) {
+			var st = c.st, id = m.id
+			if (!st.has(id)) {
+				st.putMeta({ id: id, metric: m.metric, labels: m.labels })
+				this.__lg(c, { o: "s", s: id, m: m.metric, l: m.labels })
+			}
+			var map = {}
+			pts.forEach(p => { map[p.t] = p.v })
+			var ts = Object.keys(map).map(Number).sort((a, b) => a - b), vs = ts.map(t => map[t])
+			if (ts.length == 0) return
+			var old = {}
+			if (c.tiers.length > 1) {
+				var ex = st.read(id, "raw", ts[0], ts[ts.length - 1])
+				ex.ts.forEach((t, i) => { old[t] = ex.v[i] })
+			}
+			st.upsert(id, "raw", ts, vs)
+			for (var i = 0; i < ts.length; i++) this.__lg(c, { o: "p", s: id, t: ts[i], v: vs[i] })
+			if (c.tiers.length > 1) this.__roll(c, id, ts, vs, old)
+			this.__hk(c, id)
+		},
+		__changed: function(c) {
+			if (isUnDef(c.opts.file)) return
+			c.dirty = true
+			if (c.opts.autosave === "always" || (c.opts.autosave === "debounced" && now() - c.lastSave >= c.opts.saveDebounceMs)) this.__flush(c)
+		},
+		__flush: function(c) {
+			var o = c.opts
+			if (o.readOnly) return false
+			if (isUnDef(o.file)) return true
+			if (c.buf.length > 0) {
+				this.__l(o)
+				try {
+					var dir = new java.io.File(o.file).getAbsoluteFile().getParentFile()
+					if (isDef(dir) && !dir.exists()) dir.mkdirs()
+					io.writeFileString(o.file, (c.needNL ? "\n" : "") + c.buf.join("\n") + "\n", __, true)
+					c.needNL = false
+					c.lines += c.buf.length
+					c.buf = []
+				} finally {
+					this.__ul(o)
+				}
+			}
+			c.dirty = false
+			c.lastSave = now()
+			if (c.lines - c.lastCompact >= 1000) this.__compactIf(c)
+			return true
+		},
+		__compactIf: function(c) {
+			var live = c.st.liveCount()
+			if (c.lines > 0 && (c.lines - live) / c.lines > c.opts.compactRatio) this.__compact(c); else c.lastCompact = c.lines
+		},
+		// rewrites the file with the live state only
+		__compact: function(c) {
+			var o = c.opts, self = this
+			if (o.readOnly || isUnDef(o.file)) return false
+			var lines = []
+			c.st.ids().sort().forEach(id => {
+				var m = c.st.meta(id)
+				lines.push(stringify({ o: "s", s: id, m: m.metric, l: m.labels }, __, ""))
+				c.tiers.forEach(t => {
+					var r = c.st.read(id, t.key, -Infinity, Infinity)
+					for (var i = 0; i < r.ts.length; i++)
+						lines.push(t.step > 0 ? stringify({ o: "r", s: id, k: t.key, t: r.ts[i], a: self.__ae(r.v[i]) }, __, "") : stringify({ o: "p", s: id, t: r.ts[i], v: r.v[i] }, __, ""))
+				})
+			})
+			this.__l(o)
+			try {
+				var dir = new java.io.File(o.file).getAbsoluteFile().getParentFile()
+				if (isDef(dir) && !dir.exists()) dir.mkdirs()
+				var tmp = o.file + "." + java.util.UUID.randomUUID() + ".tmp"
+				try {
+					io.writeFileString(tmp, lines.length > 0 ? lines.join("\n") + "\n" : "")
+					java.nio.file.Files.move(new java.io.File(tmp).toPath(), new java.io.File(o.file).toPath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+				} finally {
+					java.nio.file.Files.deleteIfExists(new java.io.File(tmp).toPath())
+				}
+			} finally {
+				this.__ul(o)
+			}
+			c.buf = []
+			c.needNL = false
+			c.lines = lines.length
+			c.lastCompact = c.lines
+			c.dirty = false
+			c.lastSave = now()
+			return true
+		},
+		__load: function(c) {
+			var o = c.opts, st = c.st
+			this.__l(o)
+			try {
+				if (!io.fileExists(o.file)) {
+					if (o.create === false) throw "timeseries file '" + o.file + "' not found"
+					return
+				}
+				var txt = io.readFileString(o.file)
+				c.needNL = txt.length > 0 && txt.charAt(txt.length - 1) != "\n"
+				var self = this
+				txt.split("\n").forEach(line => {
+					if (line.length == 0) return
+					c.lines++
+					var r
+					try { r = JSON.parse(line) } catch(e) { c.bad++; return }
+					if (!isMap(r)) { c.bad++; return }
+					var k = isString(r.k) ? r.k : "raw"
+					switch(r.o) {
+					case "s": st.putMeta({ id: r.s, metric: r.m, labels: isMap(r.l) ? r.l : {} }); break
+					case "p": if (st.has(r.s)) st.upsert(r.s, "raw", [ r.t ], [ r.v ]); break
+					case "r": if (st.has(r.s) && isDef(c.tierBy[k])) st.upsert(r.s, k, [ r.t ], [ self.__ad(r.a) ]); break
+					case "d": if (st.has(r.s) && isDef(c.tierBy[k])) st.del(r.s, k, [ r.t ]); break
+					case "x": st.drop(r.s); break
+					default: c.bad++
+					}
+				})
+			} finally {
+				this.__ul(o)
+			}
+		},
+		// applies retention to every series
+		__housekeep: function(c, aNow) {
+			var self = this, removed = 0
+			if (!c.hasRetention) return 0
+			c.st.ids().forEach(id => { removed += self.__retain(c, id, aNow) })
+			return removed
+		},
+		// rebuilds every rollup tier of every series from the raw points
+		__rebuildAll: function(c) {
+			var self = this
+			c.st.ids().forEach(id => {
+				c.tiers.forEach(t => {
+					if (t.step <= 0) return
+					c.st.trimBefore(id, t.key, Infinity)
+				})
+				var r = c.st.read(id, "raw", -Infinity, Infinity)
+				c.tiers.forEach(t => {
+					if (t.step <= 0) return
+					var map = {}, bs = []
+					r.ts.forEach((x, i) => {
+						var b = Math.floor(x / t.step) * t.step
+						if (isUnDef(map[b])) bs.push(b)
+						map[b] = self.__am(map[b], self.__a0(x, r.v[i]))
+					})
+					if (bs.length > 0) c.st.upsert(id, t.key, bs, bs.map(b => map[b]))
+				})
+			})
+			this.__housekeep(c)
+		},
+		// public helpers used by ow.ch.utils.timeseries
+		__save: function(aName) { var c = this.__c(aName); return this.__flush(c) },
+		create       : function(aName, shouldCompress, options) {
+			options = _$(options, "options").isMap().default({})
+			var o = {
+				file            : _$(options.file, "options.file").isString().default(__),
+				store           : isDef(options.store) ? _$(options.store, "options.store").isMap().$_() : __,
+				readOnly        : _$(options.readOnly, "options.readOnly").isBoolean().default(false),
+				create          : _$(options.create, "options.create").isBoolean().default(true),
+				autosave        : String(_$(options.autosave, "options.autosave").isString().default("always")).toLowerCase(),
+				saveDebounceMs  : _$(options.saveDebounceMs, "options.saveDebounceMs").isNumber().default(5000),
+				lock            : options.lock,
+				compactRatio    : _$(options.compactRatio, "options.compactRatio").isNumber().default(0.5),
+				retentionRef    : String(_$(options.retentionRef, "options.retentionRef").isString().default("series")).toLowerCase(),
+				housekeepEveryMs: _$(options.housekeepEveryMs, "options.housekeepEveryMs").isNumber().default(0)
+			}
+			if ([ "always", "debounced", "off" ].indexOf(o.autosave) < 0) throw "options.autosave must be 'always', 'debounced' or 'off'"
+			if ([ "series", "now" ].indexOf(o.retentionRef) < 0) throw "options.retentionRef must be 'series' or 'now'"
+			if (isDef(o.store)) {
+				_$(o.store.type, "options.store.type").isString().$_()
+				if (isDef(o.file)) throw "options.file and options.store can't be used together"
+			}
+			var chunk = this.__dur(options.chunk, "options.chunk") || 3600000
+			var raw = _$(options.raw, "options.raw").isMap().default({})
+			var tiers = [ {
+				key: "raw", step: 0, chunk: chunk,
+				keep: this.__dur(isDef(raw.keep) ? raw.keep : options.retention, "raw.keep"),
+				maxPoints: isDef(raw.maxPoints) ? raw.maxPoints : options.maxPoints
+			} ]
+			if (isDef(tiers[0].maxPoints) && (!isNumber(tiers[0].maxPoints) || tiers[0].maxPoints < 1)) throw "options.maxPoints must be a number >= 1"
+			var rolls = _$(options.rollups, "options.rollups").isArray().default([])
+			var steps = {}
+			rolls.map(r => {
+				_$(r, "options.rollups[]").isMap().$_()
+				var step = this.__dur(r.step, "rollup step")
+				if (isUnDef(step)) throw "each rollup needs a step"
+				if (isDef(steps[step])) throw "duplicated rollup step " + step
+				steps[step] = true
+				return { key: "r" + step, step: step, chunk: Math.max(chunk, step * 60), keep: this.__dur(r.keep, "rollup keep") }
+			}).sort((a, b) => a.step - b.step).forEach(t => tiers.push(t))
+			var c = {
+				mx: new java.util.concurrent.locks.ReentrantLock(), opts: o, name: aName, tiers: tiers, tierBy: {}, buf: isDef(o.file) ? [] : __, lines: 0, bad: 0, lastCompact: 0,
+				lastHK: 0, touched: {}, lastSave: 0, dirty: false, needNL: false
+			}
+			tiers.forEach(t => { c.tierBy[t.key] = t })
+			c.hasRetention = tiers.some(t => isDef(t.keep) || isDef(t.maxPoints))
+			c.rawTrims = isDef(tiers[0].keep) || isDef(tiers[0].maxPoints)
+			if (isDef(o.store)) {
+				c.st = this.__chStore(c, aName)
+				if (o.create === false && c.st.ids().length == 0) { c.st.close(); throw "timeseries store for '" + aName + "' not found" }
+			} else {
+				c.st = this.__memStore(c)
+				if (isDef(o.file)) this.__load(c)
+			}
+			this.__channels[aName] = c
+			if (!o.readOnly) this.__housekeep(c)
+		},
+		destroy      : function(aName) {
+			var c = this.__channels[aName]
+			if (isUnDef(c)) return
+			try {
+				if (!c.opts.readOnly && isDef(c.opts.file)) {
+					this.__flush(c)
+					this.__compactIf(c)
+				}
+			} finally { delete this.__channels[aName]; c.st.close() }
+		},
+		size         : function(aName) {
+			return this.__c(aName).st.rawCount()
+		},
+		forEach      : function(aName, aFunction) {
+			var ks = this.getKeys(aName)
+			for (var i = 0; i < ks.length; i++) {
+				try { aFunction(ks[i], this.get(aName, ks[i])) } catch(e) {}
+			}
+		},
+		// full: optional selector { metric, labels, from, to }
+		__points: function(c, full, withV) {
+			var self = this, sel = isMap(full) ? full : {}, res = []
+			var from = isDef(sel.from) ? this.__ts(sel.from) : -Infinity, to = isDef(sel.to) ? this.__ts(sel.to) : Infinity
+			this.__select(c, sel).forEach(id => {
+				var m = c.st.meta(id), r = c.st.read(id, "raw", from, to)
+				for (var i = 0; i < r.ts.length; i++)
+					res.push(withV ? self.__pt(m, r.ts[i], r.v[i]) : { metric: m.metric, labels: clone(m.labels), ts: r.ts[i] })
+			})
+			return res
+		},
+		getAll       : function(aName, full) {
+			return this.__points(this.__c(aName), full, true)
+		},
+		getKeys      : function(aName, full) {
+			return this.__points(this.__c(aName), full, false)
+		},
+		getSortedKeys: function(aName, full) {
+			var self = this
+			return this.getKeys(aName, full).sort((a, b) => a.ts != b.ts ? a.ts - b.ts : (self.__sid(a.metric, a.labels) < self.__sid(b.metric, b.labels) ? -1 : 1))
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res = this.get(aName, aK)
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp)
+			}
+			return __
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			var k = this.__key(aK)
+			var t = isDef(k.ts) ? k.ts : (isMap(aV) && isDef(aV.ts) ? this.__ts(aV.ts) : now())
+			this.__write(c, k, [ { t: t, v: this.__val(aV) } ])
+			this.__changed(c)
+			return aK
+		},
+		// aKs are the key fields in each value (defaults to metric, labels, ts)
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			var c = this.__c(aName)
+			this.__rw(c)
+			if (!isArray(aKs) || aKs.length == 0) aKs = [ "metric", "labels", "ts" ]
+			var groups = {}, order = []
+			for (var i = 0; i < aVs.length; i++) {
+				var k = this.__key(ow.obj.filterKeys(aKs, aVs[i]))
+				var t = isDef(k.ts) ? k.ts : (isDef(aVs[i].ts) ? this.__ts(aVs[i].ts) : now())
+				if (isUnDef(groups[k.id])) { groups[k.id] = { k: k, pts: [] }; order.push(k.id) }
+				groups[k.id].pts.push({ t: t, v: this.__val(aVs[i]) })
+			}
+			order.forEach(id => this.__write(c, groups[id].k, groups[id].pts))
+			this.__changed(c)
+		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			if (!isArray(aKs) || aKs.length == 0) aKs = [ "metric", "labels", "ts" ]
+			for (var i = 0; i < aVs.length; i++) {
+				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aTimestamp)
+			}
+		},
+		get          : function(aName, aK) {
+			var c = this.__c(aName)
+			if (!isMap(aK) || !isString(aK.metric)) return __
+			var k = this.__key(aK)
+			if (!c.st.has(k.id)) return __
+			var t = k.ts
+			if (isUnDef(t)) {
+				var b = c.st.bounds(k.id, "raw")
+				if (isUnDef(b)) return __
+				t = b.last
+			}
+			var r = c.st.read(k.id, "raw", t, t)
+			return r.ts.length > 0 ? this.__pt(k, t, r.v[0]) : __
+		},
+		pop          : function(aName) {
+			var c = this.__c(aName), best
+			c.st.ids().sort().forEach(id => {
+				var b = c.st.bounds(id, "raw")
+				if (isDef(b) && (isUnDef(best) || b.last > best.t)) best = { id: id, t: b.last }
+			})
+			if (isUnDef(best)) return __
+			var m = c.st.meta(best.id)
+			return { metric: m.metric, labels: clone(m.labels), ts: best.t }
+		},
+		shift        : function(aName) {
+			var c = this.__c(aName), best
+			c.st.ids().sort().forEach(id => {
+				var b = c.st.bounds(id, "raw")
+				if (isDef(b) && (isUnDef(best) || b.first < best.t)) best = { id: id, t: b.first }
+			})
+			if (isUnDef(best)) return __
+			var m = c.st.meta(best.id)
+			return { metric: m.metric, labels: clone(m.labels), ts: best.t }
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var c = this.__c(aName)
+			this.__rw(c)
+			if (!isMap(aK) || !isString(aK.metric)) return
+			var k = this.__key(aK)
+			if (!c.st.has(k.id)) return
+			if (isDef(k.ts)) {
+				if (c.st.del(k.id, "raw", [ k.ts ]) == 0) return
+				this.__lg(c, { o: "d", s: k.id, t: k.ts })
+				this.__fix(c, k.id, [ k.ts ])
+			} else {
+				c.st.drop(k.id)
+				this.__lg(c, { o: "x", s: k.id })
+			}
+			this.__changed(c)
+		}
+	},
 	// Remote channel implementation
 	//
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.remote</key>
-	 * This OpenAF channel implementation connects to a remote channel exposed via ow.ch.server.expose or ow.ch.server.peer. The creation options are:\
-	 * \
-	 *    - url             (String)   The HTTP(S) URL of the remote exposed channel (e.g. http://server:8090/channel).\
-	 *    - login           (String)   Optional username for HTTP basic authentication.\
-	 *    - password        (String)   Optional password for HTTP basic authentication (encrypted or not).\
-	 *    - timeout         (Number)   Optional connection and request timeout in ms.\
-	 *    - default         (Object)   Optional default value to return when the request fails instead of throwing.\
-	 *    - stopWhen        (Function) Optional function that, if it returns true, stops the underlying HTTP request retry.\
-	 *    - throwExceptions (Boolean)  If true (default) exceptions from the remote server will be thrown locally.\
-	 *    - preAction       (Function) Optional function called before every HTTP request (receives the $rest options map).\
-	 * \
-	 * Example:\
-	 * \
-	 *    ow.ch.create("myRemote", false, "remote", { url: "http://server:8090/myChannel" });\
-	 *    $ch("myRemote").set({ id: 1 }, { id: 1, name: "test" });\
-	 * \
-	 * Note: the remote channel relies on ow.ch.server.expose/peer on the server side and uses the OpenAF REST channel\
-	 * protocol over HTTP(S). For two-way synchronization between nodes consider using ow.ch.server.peer instead.\
+	 * <![CDATA[
+	 * This OpenAF channel implementation connects to a remote channel exposed via `ow.ch.server.expose` or `ow.ch.server.peer`. The creation options are:
+	 *
+	 * - `url` (String) The HTTP(S) URL of the remote exposed channel (e.g. http://server:8090/channel).
+	 * - `login` (String) Optional username for HTTP basic authentication.
+	 * - `password` (String) Optional password for HTTP basic authentication (encrypted or not).
+	 * - `timeout` (Number) Optional connection and request timeout in ms.
+	 * - `default` (Object) Optional default value to return when the request fails instead of throwing.
+	 * - `stopWhen` (Function) Optional function that, if it returns true, stops the underlying HTTP request retry.
+	 * - `throwExceptions` (Boolean) If true (default) exceptions from the remote server will be thrown locally.
+	 * - `preAction` (Function) Optional function called before every HTTP request (receives the `$rest` options map).
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.ch.create("myRemote", false, "remote", { url: "http://server:8090/myChannel" });
+	 * $ch("myRemote").set({ id: 1 }, { id: 1, name: "test" });
+	 * ```
+	 *
+	 * Note: the remote channel relies on `ow.ch.server.expose`/peer on the server side and uses the OpenAF REST channel
+	 * protocol over HTTP(S). For two-way synchronization between nodes consider using `ow.ch.server.peer` instead.
+	 * ]]>
 	 * </odoc>
 	 */
 	remote: {
@@ -2039,23 +3278,25 @@ OpenWrap.ch.prototype.__types = {
 		}
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.elasticsearch</key>
-	 * This OpenAF implementation connects to an ElasticSearch (ES) server/cluster. The creation options are:\
-	 * \
-	 *    - index       (String/Function) The ES index to use or a function to return the name (see also ow.ch.utils.getElasticIndex).\
-	 *    - format      (String)          If index is a string will use format with ow.ch.utils.getElasticIndex.\
-	 *    - idKey       (String)          The ES key id field. Defaults to 'id'.\
-	 *    - url         (String)          The HTTP(S) URL to access the ES server/cluster.\
-	 *    - user        (String)          Optionally provide a user name to access the ES server/cluster.\
-	 *    - pass        (String)          Optionally provide a password to access the ES server/cluster (encrypted or not).\
-	 *    - fnId        (String/Function) Optionally called on every operation to calculate the idKey with the key provided as argument. If string will the corresponding hash function (md5/sha1/etc...) with sortMapKeys + stringify.\
-	 *    - size        (Number)          Optionally getAll/getKeys to return more than 10 records (up to 10000).\
-	 *    - stamp       (Map)             Optionally merge with stamp map.\
-	 *    - timeout     (Number)          Optional request timeout in ms.\
-	 *    - preAction   (Function)        Optional function to be called before every request.\
-	 * \
+	 * <![CDATA[
+	 * This OpenAF implementation connects to an ElasticSearch (ES) server/cluster. The creation options are:
+	 *
+	 * - `index` (String/Function) The ES index to use or a function to return the name (see also `ow.ch.utils.getElasticIndex`).
+	 * - `format` (String) If index is a string will use format with `ow.ch.utils.getElasticIndex`.
+	 * - `idKey` (String) The ES key id field. Defaults to 'id'.
+	 * - `url` (String) The HTTP(S) URL to access the ES server/cluster.
+	 * - `user` (String) Optionally provide a user name to access the ES server/cluster.
+	 * - `pass` (String) Optionally provide a password to access the ES server/cluster (encrypted or not).
+	 * - `fnId` (String/Function) Optionally called on every operation to calculate the idKey with the key provided as argument. If string will the corresponding hash function (md5/sha1/etc...) with sortMapKeys + stringify.
+	 * - `size` (Number) Optionally getAll/getKeys to return more than 10 records (up to 10000).
+	 * - `stamp` (Map) Optionally merge with stamp map.
+	 * - `timeout` (Number) Optional request timeout in ms.
+	 * - `preAction` (Function) Optional function to be called before every request.
+	 *
 	 * The getAll/getKeys functions accept an extra argument to provide a ES query map to restrict the results.
+	 * ]]>
 	 * </odoc>
 	 */
 	elasticsearch: {
@@ -2420,22 +3661,24 @@ OpenWrap.ch.prototype.__types = {
 		}
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.prometheus</key>
-	 * This OpenAF implementation connects to a prometheus server. The creation options are:\
-	 * \
-	 *    - urlQuery  (String) The URL of a prometheus server (e.g. http://prometheus:9090) \
-	 *    - urlPushGW (String) The URL of a prometheus push gateway server (e.g. http://prometheus:9091).\
-	 *    - prefix    (String) If defined the prefix for all openmetrics.\
-	 *    - gwGroup   (Map)    A map of grouping labels for data ingestion by the push gw (job label must be defined).\
-	 *    - helpMap   (Map)    The helpMap for the openmetrics (see more in ow.metrics.fromObj2OpenMetrics).\
-	 * \
-	 * The forEach/getSet/pop/shift/unsetAll functions are not supported.\
-	 * The size function retrieves the total number of labels.\
-	 * The get/getAll function enables instant query (with the extra map key query), query range query (with the extra map keys query, start and end) and label values query (with the extra map key label).\
-	 * The set/setAll functions only consider the value(s) argument, the key(s) is ignored.\
-	 * \
-	 * Note: query by specific series are not currently supported.\
+	 * <![CDATA[
+	 * This OpenAF implementation connects to a prometheus server. The creation options are:
+	 *
+	 * - `urlQuery` (String) The URL of a prometheus server (e.g. http://prometheus:9090)
+	 * - `urlPushGW` (String) The URL of a prometheus push gateway server (e.g. http://prometheus:9091).
+	 * - `prefix` (String) If defined the prefix for all openmetrics.
+	 * - `gwGroup` (Map) A map of grouping labels for data ingestion by the push gw (job label must be defined).
+	 * - `helpMap` (Map) The helpMap for the openmetrics (see more in `ow.metrics.fromObj2OpenMetrics`).
+	 *
+	 * The forEach/getSet/pop/shift/unsetAll functions are not supported.
+	 * The size function retrieves the total number of labels.
+	 * The get/getAll function enables instant query (with the extra map key query), query range query (with the extra map keys query, start and end) and label values query (with the extra map key label).
+	 * The set/setAll functions only consider the value(s) argument, the key(s) is ignored.
+	 *
+	 * Note: query by specific series are not currently supported.
+	 * ]]>
 	 * </odoc>
 	 */
 	prometheus: {
@@ -2574,56 +3817,134 @@ OpenWrap.ch.prototype.__types = {
 		}
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.mvs</key>
+	 * <![CDATA[
 	 * The channel type mvs uses H2 MVStore to keep key/value structures either in memory or in files.
-	 * The creation options are:\
-	 * \
-	 *    - file (String) If not defined it will default to the in-memory implementation otherwise a file.\
-	 *    - shouldCompress (Boolean) Specifies if it should compress the entire structure or not.\
-	 *    - compact (Boolean) Upon channel create/destroy it will try to run a compact operation over the file to save space.\
-	 *    - map (String/Function) The map name (defaults to 'default'). If defined as a function it will receive the key as argument if possible (only for get/set/unset/setall)
-	 * for sharding proposes.\
-	 * \
-	 * The map will be created if it doesn't exist. Operations getKeys/getAll can be paginated with the extra map argument containing start and end\
+	 * The creation options are:
+	 *
+	 * - `file` (String) If not defined it will default to the in-memory implementation otherwise a file.
+	 * - `shouldCompress` (Boolean) Specifies if it should compress the entire structure or not.
+	 * - `compact` (Boolean) Upon channel create/destroy it will try to run a compact operation over the file to save space.
+	 * - `map` (String/Function) The map name (defaults to 'default'). If defined as a function it will receive the key as argument if possible (only for get/set/unset/setall)
+	 * for sharding purposes.
+	 *
+	 * - `multifile` (Boolean) If true keys will be spread (by key hash) across several MVStore files on "path" (defaults to false) (*)
+	 * - `path` (String) The folder where to keep the MVStore files (required if multifile is true)
+	 * - `files` (Number) The number of MVStore files to use if multifile is true (defaults to 4 or to the number already in use on "path")
+	 *
+	 * The map will be created if it doesn't exist. Operations getKeys/getAll can be paginated with the extra map argument containing start and end
+	 *
+	 * (*) - With multifile the files are named mvs-NN.db and a mvs-multifile.json manifest records the number of files (to change it use `ow.ch.utils.mvs.reshard`).
+	 * All other options apply to each file. getKeys/getAll (including start/end pagination) and pop/shift go through the files in order (no global key ordering).
+	 * Each file can be handled individually with `ow.ch.utils.mvs`.
+	 * ]]>
 	 * </odoc>
 	 */
 	mvs: {
+		__open: function(absFile, shouldCompress) {
+			if (isUnDef(this.__f[absFile])) {
+				var s = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled();
+				if (absFile != "memory") s = s.fileName(absFile);
+				if (shouldCompress) s = s.compress();
+				this.__f[absFile] = s.open();
+			}
+			if (absFile != "memory") this.__f[absFile].setReuseSpace(true);
+			return this.__f[absFile];
+		},
+		// Shard file names for a multifile path (mvs-00.db, mvs-01.db, ...)
+		__fnames: function(aPath, aN) {
+			var width = Math.max(2, String(aN - 1).length);
+			var res = [];
+			for(var i = 0; i < aN; i++) {
+				var n = String(i);
+				while(n.length < width) n = "0" + n;
+				res.push(aPath + "/mvs-" + n + ".db");
+			}
+			return res;
+		},
+		// Shard index for an already canonical (untrimmed) key string
+		__hidx: function(aCanonicalKey, aN) {
+			if (aN <= 1) return 0;
+			return Number(java.lang.Math.floorMod(new java.lang.String(aCanonicalKey).hashCode(), aN));
+		},
+		__idx: function(aName, aKey) {
+			// Always hash the untrimmed canonical key so internalTrim can't move keys between files
+			return this.__hidx(stringify(sortMapKeys(aKey), __, ""), this.__o[aName].files);
+		},
+		__st: function(aName, aKey) {
+			return this.__ss[aName][this.__idx(aName, aKey)];
+		},
+		__k: function(aName, aKey) {
+			return stringify(sortMapKeys(aKey), __, this.__o[aName].stry);
+		},
+		__page: function(aName, full, fn) {
+			var res = [];
+			full = _$(full, "full").isMap().default({});
+
+			var mapName = this.__m[aName](full);
+			var maps = this.__ss[aName].map(s => s.openMap(mapName));
+
+			if (isDef(full.start) || isDef(full.end)) {
+				var start = _$(full.start, "full.start").isNumber().default(0);
+				var limit = _$(full.end, "full.end").isNumber().default(Infinity);
+
+				var offset = 0;
+				for(var m = 0; m < maps.length && offset < limit; m++) {
+					var size = Number(maps[m].sizeAsLong());
+					for(var i = Math.max(start - offset, 0); i < size && offset + i < limit; i++) {
+						res.push(fn(maps[m], maps[m].getKey(i)));
+					}
+					offset += size;
+				}
+			} else {
+				maps.forEach(map => {
+					af.fromJavaArray(map.keyList()).forEach(k => res.push(fn(map, k)));
+				});
+			}
+
+			return res;
+		},
 		create       : function(aName, shouldCompress, options) {
 			if (isUnDef(options)) options = {};
 			if (isUnDef(options.file)) options.file = undefined;
 
 			if (isUnDef(this.__s)) this.__s = {};
+			if (isUnDef(this.__ss)) this.__ss = {};
 			if (isUnDef(this.__f)) this.__f = {};
 			if (isUnDef(this.__m)) this.__m = {};
 			if (isUnDef(this.__o)) this.__o = {};
 
 			var shut = _$(options.closeOnShutdown).isBoolean().default(true);
+			options.multifile = _$(options.multifile, "options.multifile").isBoolean().default(false);
 
-			var existing = false, absFile;
-			if (isDef(options.file)) {
-				absFile = String((new java.io.File(options.file)).getAbsoluteFile());
+			var absFiles = [];
+			if (options.multifile) {
+				_$(options.path, "options.path").isString().$_();
+				var absPath = String((new java.io.File(options.path)).getAbsoluteFile());
+				io.mkdir(absPath);
+
+				var manifestFile = absPath + "/mvs-multifile.json";
+				var manifest = io.fileExists(manifestFile) ? io.readFileJSON(manifestFile) : __;
+				if (isMap(manifest) && isNumber(manifest.files)) {
+					if (isDef(options.files) && options.files != manifest.files) throw "mvs multifile: options.files (" + options.files + ") doesn't match the " + manifest.files + " files already in use on " + absPath;
+					options.files = manifest.files;
+				} else {
+					options.files = _$(options.files, "options.files").isNumber().default(4);
+					if (options.files < 1 || options.files != Math.floor(options.files)) throw "mvs multifile: options.files needs to be an integer >= 1";
+					io.writeFileJSON(manifestFile, { files: options.files, hash: "javaStringHashCode", version: 1 }, "");
+				}
+
+				absFiles = this.__fnames(absPath, options.files);
 			} else {
-				absFile = "memory";
+				options.files = 1;
+				absFiles.push(isDef(options.file) ? String((new java.io.File(options.file)).getAbsoluteFile()) : "memory");
 			}
-			options.absFile = absFile;
-			
-			if (isUnDef(this.__f[absFile])) {
-				this.__s[aName] = Packages.org.h2.mvstore.MVStore.Builder();
-				this.__s[aName] = this.__s[aName].autoCommitDisabled();
+			options.absFile  = absFiles[0];
+			options.absFiles = absFiles;
 
-				if (absFile != "memory") this.__s[aName] = this.__s[aName].fileName(absFile);
-				if (shouldCompress) this.__s[aName] = this.__s[aName].compress();
-				this.__s[aName] = this.__s[aName].open();
-
-				this.__f[absFile] = this.__s[aName];
-			} else {
-				existing = true;
-				this.__s[aName] = this.__f[absFile];
-			}
-
-			//this.__s[aName].setVersionsToKeep(2);
-			if (isDef(options.file)) this.__s[aName].setReuseSpace(true)
+			this.__ss[aName] = absFiles.map(f => this.__open(f, shouldCompress));
+			this.__s[aName]  = this.__ss[aName][0];
 
 			if (isUnDef(options.map)) {
 				options.map = function() { return "default"; };
@@ -2635,8 +3956,8 @@ OpenWrap.ch.prototype.__types = {
 
 			this.__m[aName] = options.map;
 
-			if (isDef(options.file) && isDef(options.compact) && options.compact) {
-				this.__s[aName].compactFile(2500)
+			if ((isDef(options.file) || options.multifile) && isDef(options.compact) && options.compact) {
+				this.__ss[aName].forEach(s => s.compactFile(2500));
 			}
 
 			this.__o[aName] = options;
@@ -2648,28 +3969,26 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		destroy      : function(aName) {
-			if (isDef(this.__o[aName].absFile) && isDef(this.__o[aName].compact) && this.__o[aName].compact) {
-				this.__s[aName].compactFile(2500)
-			}			
+			var o = this.__o[aName], sts = this.__ss[aName];
 
-			var found = false;
-			for(var i in this.__s) {
-				if (i != aName && 
-					this.__s[i] == this.__f[this.__o[aName].absFile]) 
-				   found = true;
-			}
+			o.absFiles.forEach((f, i) => {
+				if (f != "memory" && isDef(o.compact) && o.compact) sts[i].compactFile(2500);
 
-			if (!found) {
-				this.__s[aName].close();
-				delete this.__f[this.__o[aName].absFile];
-			}
+				var found = Object.keys(this.__o).some(n => n != aName && this.__o[n].absFiles.indexOf(f) >= 0);
+				if (!found) {
+					sts[i].close();
+					delete this.__f[f];
+				}
+			});
 
 			delete this.__s[aName];
+			delete this.__ss[aName];
 			delete this.__o[aName];
 		},
 		size         : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
-			return map.sizeAsLong();
+			var mapName = this.__m[aName](), size = 0;
+			this.__ss[aName].forEach(s => size += Number(s.openMap(mapName).sizeAsLong()));
+			return size;
 		},
 		forEach      : function(aName, aFunction, x) {
 			var aKs = this.getKeys(aName, x);
@@ -2679,44 +3998,10 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getKeys      : function(aName, full) {
-			var res = [];
-			full = _$(full, "full").isMap().default({});
-
-			var map = this.__s[aName].openMap(this.__m[aName](full));
-
-			if (isDef(full.start) || isDef(full.end)) {
-				var start = _$(full.start, "full.start").isNumber().default(0);
-				var max = this.size(aName);
-				var limit = _$(full.end, "full.end").isNumber().default(max);
-	
-				for(var i = start; i < limit && i < max; i++) {
-					res.push(jsonParse(map.getKey(i), true));
-				}
-			} else {
-				res = af.fromJavaArray(map.keyList()).map(r => jsonParse(r, true))
-			}
-
-			return res;
+			return this.__page(aName, full, (map, k) => jsonParse(k, true));
 		},
 		getAll      : function(aName, full) {
-			var res = [];
-			full = _$(full, "full").isMap().default({});
-
-			var map = this.__s[aName].openMap(this.__m[aName](full));
-
-			if (isDef(full.start) || isDef(full.end)) {
-				var start = _$(full.start, "full.start").isNumber().default(0);
-				var max = this.size(aName);
-				var limit = _$(full.end, "full.end").isNumber().default(max);
-	
-				for(var i = start; i < limit && i < max; i++) {
-					res.push(jsonParse(map.get(map.getKey(i)), true));
-				}
-			} else {
-				res = af.fromJavaArray(map.keyList()).map(k => jsonParse(map.get(k), true))
-			}
-
-			return res;
+			return this.__page(aName, full, (map, k) => jsonParse(map.get(k), true));
 		},
 		getSortedKeys: function(aName, full) {
 			return this.getKeys(aName, full);
@@ -2727,72 +4012,90 @@ OpenWrap.ch.prototype.__types = {
 			if ($stream([res]).anyMatch(aMatch)) {
 				return this.set(aName, aK, aV, aTimestamp);
 			}
-			return undefined;		
+			return undefined;
 		},
 		set          : function(aName, ak, av, aTimestamp) {
-			var map = this.__s[aName].openMap(this.__m[aName](ak));
+			var s = this.__st(aName, ak);
+			var map = s.openMap(this.__m[aName](ak));
 
-			map.put(stringify(sortMapKeys(ak), __, this.__o[aName].stry), stringify(av, __, this.__o[aName].stry));
-			this.__s[aName].commit();
+			map.put(this.__k(aName, ak), stringify(av, __, this.__o[aName].stry));
+			s.commit();
 			return ak;
 		},
 		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			ow.loadObj();
+			var touched = {};
 			for(var iii in anArrayOfMapData) {
 				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
 				var av = anArrayOfMapData[iii];
-				var map = this.__s[aName].openMap(this.__m[aName](ak));
-				map.put(stringify(sortMapKeys(ak), __, this.__o[aName].stry), stringify(av, __, this.__o[aName].stry));
+				var idx = this.__idx(aName, ak);
+				var map = this.__ss[aName][idx].openMap(this.__m[aName](ak));
+				map.put(this.__k(aName, ak), stringify(av, __, this.__o[aName].stry));
+				touched[idx] = true;
 			}
-			this.__s[aName].sync();
-			this.__s[aName].commit();
+			Object.keys(touched).forEach(i => {
+				this.__ss[aName][i].sync();
+				this.__ss[aName][i].commit();
+			});
 		},
 		unsetAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			ow.loadObj();
+			var touched = {};
 			for(var iii in anArrayOfMapData) {
 				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
-				//var av = anArrayOfMapData[iii];
-				var map = this.__s[aName].openMap(this.__m[aName](ak));
-				map.remove(stringify(sortMapKeys(ak), __, this.__o[aName].stry));
+				var idx = this.__idx(aName, ak);
+				var map = this.__ss[aName][idx].openMap(this.__m[aName](ak));
+				map.remove(this.__k(aName, ak));
+				touched[idx] = true;
 			}
-			this.__s[aName].sync();
-			this.__s[aName].commit();
+			Object.keys(touched).forEach(i => {
+				this.__ss[aName][i].sync();
+				this.__ss[aName][i].commit();
+			});
 		},
 		get          : function(aName, aKey) {
-			var map = this.__s[aName].openMap(this.__m[aName](aKey));
+			var map = this.__st(aName, aKey).openMap(this.__m[aName](aKey));
 
-			var r = map.get(stringify(sortMapKeys(aKey), __, this.__o[aName].stry));
+			var r = map.get(this.__k(aName, aKey));
 			if (r == null || isUnDef(r)) return __; else return jsonParse(r, true);
 		},
+		// pop/shift return the key; ow.ch.pop/shift then get and unset it
 		pop          : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
-			var aKey = map.lastKey();
-			return jsonParse(map.remove(aKey), true);	
+			var mapName = this.__m[aName](), sts = this.__ss[aName];
+			for(var i = sts.length - 1; i >= 0; i--) {
+				var map = sts[i].openMap(mapName);
+				if (map.sizeAsLong() > 0) return jsonParse(map.lastKey(), true);
+			}
+			return __;
 		},
 		shift        : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
-			var aKey = map.firstKey();
-			return jsonParse(map.remove(aKey), true);
+			var mapName = this.__m[aName](), sts = this.__ss[aName];
+			for(var i = 0; i < sts.length; i++) {
+				var map = sts[i].openMap(mapName);
+				if (map.sizeAsLong() > 0) return jsonParse(map.firstKey(), true);
+			}
+			return __;
 		},
 		unset        : function(aName, aKey) {
-			var map = this.__s[aName].openMap(this.__m[aName](aKey));
+			var map = this.__st(aName, aKey).openMap(this.__m[aName](aKey));
 
-			return jsonParse(map.remove(stringify(sortMapKeys(aKey), __, this.__o[aName].stry)), true);
+			return jsonParse(map.remove(this.__k(aName, aKey)), true);
 		}
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.ignite</key>
-	 * This channel type uses plugin-Ignite 3.1 tables with JSON keys and values. The creation options are:\
-	 * \
-	 *    - ignite (Ignite) Use a previously instantiated Ignite plugin (defaults to a new instance).\
-	 *    - gridName (String) Use a specific Ignite node/client name.\
-	 *    - client (Boolean) Connect a thin client instead of starting an embedded node.\
-	 *    - configuration (Map) Ignite.configure options, including addresses or configFile/workDir.\
-	 *    - persist (String) Persistent Ignite 3 work directory (alias for configuration.workDir).\
-	 *    - cacheName (String) Shared backing table name (defaults to the channel name).\
-	 *    - keepOnDestroy (Boolean) Keep the backing table when destroying the channel (default false).\
-	 * \
+	 * <![CDATA[
+	 * This channel type uses plugin-Ignite 3.1 tables with JSON keys and values. The creation options are:
+	 *
+	 * - `ignite` (Ignite) Use a previously instantiated Ignite plugin (defaults to a new instance).
+	 * - `gridName` (String) Use a specific Ignite node/client name.
+	 * - `client` (Boolean) Connect a thin client instead of starting an embedded node.
+	 * - `configuration` (Map) Ignite.configure options, including addresses or configFile/workDir.
+	 * - `persist` (String) Persistent Ignite 3 work directory (alias for configuration.workDir).
+	 * - `cacheName` (String) Shared backing table name (defaults to the channel name).
+	 * - `keepOnDestroy` (Boolean) Keep the backing table when destroying the channel (default false).
+	 * ]]>
 	 * </odoc>
 	 */
 	ignite: {
@@ -2868,22 +4171,25 @@ OpenWrap.ch.prototype.__types = {
 	// etcd implementation (etcd v2)
 	//
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.etcd</key>
-	 * This OpenAF channel implementation connects to an etcd v2 key/value store. The creation options are:\
-	 * \
-	 *    - url             (String)   The HTTP(S) URL of the etcd daemon (e.g. http://etcd-host:2379). Mandatory.\
-	 *    - folder          (String)   Optional key prefix/folder path to scope all channel operations (defaults to root).\
-	 *    - throwExceptions (Boolean)  If true (default) HTTP errors from etcd will be thrown as exceptions.\
-	 *    - default         (Object)   Optional default value to return when a request fails instead of throwing.\
-	 *    - preAction       (Function) Optional function called before every HTTP request (receives the $rest options map).\
-	 * \
-	 * Note: this implementation targets the etcd v2 HTTP API (/v2/keys). For etcd v3 consider an alternative approach.\
-	 * \
-	 * Example:\
-	 * \
-	 *    ow.ch.create("myEtcd", false, "etcd", { url: "http://etcd:2379", folder: "/myapp" });\
-	 * \
+	 * <![CDATA[
+	 * This OpenAF channel implementation connects to an etcd v2 key/value store. The creation options are:
+	 *
+	 * - `url` (String) The HTTP(S) URL of the etcd daemon (e.g. http://etcd-host:2379). Mandatory.
+	 * - `folder` (String) Optional key prefix/folder path to scope all channel operations (defaults to root).
+	 * - `throwExceptions` (Boolean) If true (default) HTTP errors from etcd will be thrown as exceptions.
+	 * - `default` (Object) Optional default value to return when a request fails instead of throwing.
+	 * - `preAction` (Function) Optional function called before every HTTP request (receives the `$rest` options map).
+	 *
+	 * Note: this implementation targets the etcd v2 HTTP API (/v2/keys). For etcd v3 consider an alternative approach.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.ch.create("myEtcd", false, "etcd", { url: "http://etcd:2379", folder: "/myapp" });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	etcd: {
@@ -3007,18 +4313,19 @@ OpenWrap.ch.prototype.__types = {
 		}
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.types.all</key>
-	 * This channel type aggregates access to several channels. The creation options are:\
-	 * \
-	 *    - chs      (Array)    An array of names of channels to aggregate.\
-	 *    - fn       (Function) A function that will receive an operation, a key and value (when applicable)) to return which channel name should be used (if no return or void all channels will be considered).\
-	 *    - errFn    (Function) A function to call with: the name of this channel, the exception, the target channel, the operation and the arguments whenever a error occurs accessing a channel.\
-	 *    - fnTrans  (Function) A function to translate the key (for example, to remove elements used only on fn).\
-	 *    - fnKeys   (Function) Allows to filter an array of resulting keys, from different channels, for: getKeys, getSortedKeys\
-	 *    - fnValues (Function) Allows to filter an array of resulting values, from different channels, for: getAll, get, getSet, set and unset\
-	 *    - treatAll (Boolean)  If true size, setAll and unsetAll will be executed individually and fn called for each (default is false and size will take the first result)\
-	 * \
+	 * <![CDATA[
+	 * This channel type aggregates access to several channels. The creation options are:
+	 *
+	 * - `chs` (Array) An array of names of channels to aggregate.
+	 * - `fn` (Function) A function that will receive an operation, a key and value (when applicable)) to return which channel name should be used (if no return or void all channels will be considered).
+	 * - `errFn` (Function) A function to call with: the name of this channel, the exception, the target channel, the operation and the arguments whenever a error occurs accessing a channel.
+	 * - `fnTrans` (Function) A function to translate the key (for example, to remove elements used only on fn).
+	 * - `fnKeys` (Function) Allows to filter an array of resulting keys, from different channels, for: getKeys, getSortedKeys
+	 * - `fnValues` (Function) Allows to filter an array of resulting values, from different channels, for: getAll, get, getSet, set and unset
+	 * - `treatAll` (Boolean) If true size, setAll and unsetAll will be executed individually and fn called for each (default is false and size will take the first result)
+	 * ]]>
 	 * </odoc>
 	 */
 	all: {
@@ -3270,15 +4577,19 @@ OpenWrap.ch.prototype.__types = {
 };
 	
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ch.create(aName, shouldCompress, type, options) : ow.ch</key>
- * Creates a channel of key/values with aName. Optionally you can specify if keys should also
- * be compressed in memory (shouldCompress = true), a channels implementation type and corresponding
- * options in a map.\
- * \
- * Example:\
- * \
- * ow.ch.create("myChan", false, "db", { db: myDB, from: "TABLE" });\
+ * <![CDATA[
+ * Creates a channel of key/values with `aName`. Optionally you can specify if keys should also
+ * be compressed in memory (`shouldCompress` = true), a channels implementation `type` and corresponding
+ * `options` in a map.
+ *
+ * Example:
+ *
+ * ```javascript
+ * ow.ch.create("myChan", false, "db", { db: myDB, from: "TABLE" });
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
@@ -3454,20 +4765,22 @@ OpenWrap.ch.prototype.__errorHandle = function(id, e) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ch.subscribe(aName, aFunction, onlyFromNowm, anId) : String</key>
- * Adds a callback function to the channel aName. The callback function will receive, as arguments:
- * the channel name, the operation, a key or an array of keys (for operation = setall/unsetall), a value or an array 
- * of values (for operation = setall/unsetall) and the ow.ch object. Returns the subscriber id.
+ * <![CDATA[
+ * Adds a callback function to the channel `aName`. The callback function will receive, as arguments:
+ * the channel name, the operation, a key or an array of keys (for operation = setall/unsetall), a value or an array
+ * of values (for operation = setall/unsetall) and the `ow.ch` object. Returns the subscriber id.
  * Optionally you can specify that existing
- * elements won't trigger operation = set callback calls and/or a custom subscriber anId.\
- * \
- * Possible operations:\
- *    - set\
- *    - setall\
- *    - unset\
- *    - unsetall\
- * \
+ * elements won't trigger operation = set callback calls and/or a custom subscriber `anId`.
+ *
+ * Possible operations:
+ *
+ * - `set`
+ * - `setall`
+ * - `unset`
+ * - `unsetall`
+ * ]]>
  * </odoc>
  */
 OpenWrap.ch.prototype.subscribe = function(aName, aFunction, onlyFromNow, anId) {
@@ -4169,17 +5482,18 @@ OpenWrap.ch.prototype.utils = {
 		}
 	},	
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.utils.getBufferSubscriber(aSourceCh, indexes, byNumber, byTimeInMs, aBufferCh, aTmpBufferCh, aFilterFunc, aBufferFunc) : Function</key>
-	 * Returns a channel subscriber function that will buffer set, setall, unsetall and unset operations from aSourceCh channel to aBufferCh (by
-	 * default a dummy channel to be subscribed, if not defined the name will be aSourceCh + "::buffer"). As a temporary buffer channel
-	 * aTmpBufferCh will be used (if not defined the name will be aSourceCh + "::__bufferStorage"). The aBufferCh will be configured with
-	 * the provided indexes, byNumber (number of times to trigger the buffer) and byTimeInMs (amount of time in ms to trigger the buffer).
-	 * Additionally you can specify aFilterFunc (with arguments channel, operation, key(s) and value(s)) that will only buffer if returns false
-	 * and aBufferFunc that will trigger the buffer flush if it returns true.\
-	 * \
-	 * NOTE: do call ow.ch.utils.closeBuffer(aSourceCh) when it's no longer needed.\
-	 * \
+	 * <![CDATA[
+	 * Returns a channel subscriber function that will buffer set, setall, unsetall and unset operations from `aSourceCh` channel to `aBufferCh` (by
+	 * default a dummy channel to be subscribed, if not defined the name will be `aSourceCh` + "::buffer"). As a temporary buffer channel
+	 * `aTmpBufferCh` will be used (if not defined the name will be `aSourceCh` + "::`__bufferStorage`"). The `aBufferCh` will be configured with
+	 * the provided `indexes`, `byNumber` (number of times to trigger the buffer) and `byTimeInMs` (amount of time in ms to trigger the buffer).
+	 * Additionally you can specify `aFilterFunc` (with arguments channel, operation, key(s) and value(s)) that will only buffer if returns false
+	 * and `aBufferFunc` that will trigger the buffer flush if it returns true.
+	 *
+	 * NOTE: do call `ow.ch.utils.closeBuffer(aSourceCh)` when it's no longer needed.
+	 * ]]>
 	 * </odoc>
 	 */
 	getBufferSubscriber: function(aSourceCh, idxs, byNumber, byTime, aBufferCh, aTmpBufferCh, aFilterFunc, aBufferFunc) {
@@ -4301,20 +5615,21 @@ OpenWrap.ch.prototype.utils = {
 		};
 	},
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.utils.syncCh(aIdxsArray, aSource, aTarget, aSyncFn, aLogFn)</key>
-	 * Tries to sync all values from aSource with aTarget channel using the aIdxsArray (list of value indexes field).
-	 * Optionally aSyncFn can be provided to decide how to sync the values between source and target (defaults to return always true). A aLogFn
-	 * can be provided so all sync actions can be logged.\
-	 * \
-	 * Table of sync actions given the return values of a custom syncFn(source, target) : boolean\
-	 * \
-	 *   | source | target | return true | return false |\
-	 *   |--------|--------|-------------|--------------|\
-	 *   | __     | def    | del target  | add source   |\
-	 *   | def    | __     | add target  | del source   |\
-	 *   | def    | def    | set target  | set source   |\
-	 * \
+	 * <![CDATA[
+	 * Tries to sync all values from `aSource` with `aTarget` channel using the `aIdxsArray` (list of value indexes field).
+	 * Optionally `aSyncFn` can be provided to decide how to sync the values between source and target (defaults to return always true). A `aLogFn`
+	 * can be provided so all sync actions can be logged.
+	 *
+	 * Table of sync actions given the return values of a custom syncFn(source, target) : boolean
+	 *
+	 * | source | target | return true | return false |
+	 * |--------|--------|-------------|--------------|
+	 * | __     | def    | del target  | add source   |
+	 * | def    | __     | add target  | del source   |
+	 * | def    | def    | set target  | set source   |
+	 * ]]>
 	 * </odoc>
 	 */
 	syncCh: function(idxs, source, target, aSyncFn, logFn) {
@@ -4586,22 +5901,23 @@ OpenWrap.ch.prototype.utils = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.utils.setLogToFile(aConfigMap)</key>
-	 * Shortcut to set OpenAF's logging into a rotating per date set of log files. You can set any of these options:\
-	 * \
-	 * logFolder             (string)  Where the current log file should be written (defaults to '.')\
-	 * filenameTemplate      (string)  ow.template for the log filename (defaults to 'log-{{timedate}}.log')\
-	 * fileDateFormat        (string)  File date format to be used in filenameTemplate (defaults to 'yyyy-MM-dd')\
-	 * lineTemplate          (string)  ow.template for each log line (defaults to '{{timedate}} | {{type}} | {{message}}\n')\
-	 * lineDateFormat        (string)  Date format to be used in lineTemplate (defaults to 'yyyy-MM-dd HH:mm:ss.SSS')\
-	 * HKRegExPattern        (string)  Housekeeping regular expression pattern to find log files (defaults to 'log-\\d{4}-\\d{2}-\\d{2}\\.log')\
-	 * HKhowLongAgoInMinutes (number)  How many minutes of logs should be kept (if not defined won't delete files)\
-	 * dontCompress          (boolean) Defines if older files should not be gzip (default to false)\
-	 * backupFolder          (string)  If defined older log files will be moved to this folder (if not defined they won't be moved)\
-	 * numberOfEntriesToKeep (number)  Number of OpenAF log channel entries to keep in memory (defaults to 100)\
-	 * setLogOff             (boolean) Turns off console logging (defaults to false)\
-	 * \
+	 * <![CDATA[
+	 * Shortcut to set OpenAF's logging into a rotating per date set of log files. You can set any of these options:
+	 *
+	 * - `logFolder` (string) Where the current log file should be written (defaults to '.')
+	 * - `filenameTemplate` (string) `ow.template` for the log filename (defaults to 'log-{{timedate}}.log')
+	 * - `fileDateFormat` (string) File date format to be used in filenameTemplate (defaults to 'yyyy-MM-dd')
+	 * - `lineTemplate` (string) `ow.template` for each log line (defaults to '{{timedate}} | {{type}} | {{message}}\n')
+	 * - `lineDateFormat` (string) Date format to be used in lineTemplate (defaults to 'yyyy-MM-dd HH:mm:ss.SSS')
+	 * - `HKRegExPattern` (string) Housekeeping regular expression pattern to find log files (defaults to 'log-\\d{4}-\\d{2}-\\d{2}\\.log')
+	 * - `HKhowLongAgoInMinutes` (number) How many minutes of logs should be kept (if not defined won't delete files)
+	 * - `dontCompress` (boolean) Defines if older files should not be gzip (default to false)
+	 * - `backupFolder` (string) If defined older log files will be moved to this folder (if not defined they won't be moved)
+	 * - `numberOfEntriesToKeep` (number) Number of OpenAF log channel entries to keep in memory (defaults to 100)
+	 * - `setLogOff` (boolean) Turns off console logging (defaults to false)
+	 * ]]>
 	 * </odoc>
 	 */
 	setLogToFile: function(aConfigMap) {
@@ -4647,32 +5963,37 @@ OpenWrap.ch.prototype.utils = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.utils.getK8sRemoteURLArrayFunc(aOptions) : Function</key>
-	 * Returns a function to be used as aRemoteURLArray in ow.ch.server.peer. It will resolve
+	 * <![CDATA[
+	 * Returns a function to be used as `aRemoteURLArray` in `ow.ch.server.peer`. It will resolve
 	 * all IP addresses from a Kubernetes DNS name (typically a headless service for deployments)
-	 * using ow.net.getDNS and return an array of remote channel URLs.\
-	 * \
-	 * aOptions map entries:\
-	 * - dnsName    (String, mandatory) Kubernetes DNS name to resolve\
-	 * - recordType (String, optional)  DNS record type (defaults to "a")\
-	 * - dnsServer  (String, optional)  DNS server to use\
-	 * - protocol   (String, optional)  URL protocol (defaults to "http")\
-	 * - port       (Number, optional)  Port to use (defaults to local peer port when numeric)\
-	 * - path       (String, optional)  URL path (defaults to peer path argument)\
-	 * - excludeCurrentIP (Boolean, optional) Excludes current instance IP from result (defaults to false)\
-	 * - currentIP  (String, optional)  Explicit current instance IP (otherwise uses POD_IP env var or ow.net.getHostAddress())\
-	 * - urlFn      (Function, optional) Custom URL builder fn(ip, ctx)\
-	 * \
-	 * Example:\
-	 * \
-	 * var peersFn = ow.ch.utils.getK8sRemoteURLArrayFunc({\
-	 *   dnsName: "openaf-peers.default.svc.cluster.local",\
-	 *   protocol: "http",\
-	 *   port: 8090,\
-	 *   path: "/log"\
-	 * });\
-	 * ow.ch.server.peer("__log", 8090, "/log", peersFn);\
+	 * using `ow.net.getDNS` and return an array of remote channel URLs.
+	 *
+	 * `aOptions` map entries:
+	 *
+	 * - `dnsName` (String, mandatory) Kubernetes DNS name to resolve
+	 * - `recordType` (String, optional) DNS record type (defaults to "a")
+	 * - `dnsServer` (String, optional) DNS server to use
+	 * - `protocol` (String, optional) URL protocol (defaults to "http")
+	 * - `port` (Number, optional) Port to use (defaults to local peer port when numeric)
+	 * - `path` (String, optional) URL path (defaults to peer path argument)
+	 * - `excludeCurrentIP` (Boolean, optional) Excludes current instance IP from result (defaults to false)
+	 * - `currentIP` (String, optional) Explicit current instance IP (otherwise uses POD_IP env var or `ow.net.getHostAddress()`)
+	 * - `urlFn` (Function, optional) Custom URL builder fn(ip, ctx)
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * var peersFn = ow.ch.utils.getK8sRemoteURLArrayFunc({
+	 *   dnsName: "openaf-peers.default.svc.cluster.local",
+	 *   protocol: "http",
+	 *   port: 8090,
+	 *   path: "/log"
+	 * });
+	 * ow.ch.server.peer("__log", 8090, "/log", peersFn);
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	getK8sRemoteURLArrayFunc: function(aOptions) {
@@ -4860,9 +6181,603 @@ OpenWrap.ch.prototype.utils = {
 			}
 
 			return true;			
+		},
+
+		/**
+		 * <odoc>
+		 * <key>ow.ch.utils.mvs.reshard(aPath, aNewFiles, shouldCompress) : Number</key>
+		 * Changes the number of files of an "mvs" channel created with multifile = true on aPath to aNewFiles, redistributing
+		 * all the entries of all the maps. Returns the number of entries moved. The channel(s) using aPath need to be destroyed first.
+		 * The new files are built on a temporary folder inside aPath and only replace the current ones (and the mvs-multifile.json manifest) after
+		 * all the entries are copied and counted. Use shouldCompress = true if the channel was created with it.
+		 * </odoc>
+		 */
+		reshard: function(aPath, aNewFiles, shouldCompress) {
+			_$(aPath, "aPath").isString().$_();
+			_$(aNewFiles, "aNewFiles").isNumber().$_();
+			if (aNewFiles < 1 || aNewFiles != Math.floor(aNewFiles)) throw "aNewFiles needs to be an integer >= 1";
+
+			var t = ow.ch.__types.mvs;
+			var absPath = String((new java.io.File(aPath)).getAbsoluteFile());
+			var manifestFile = absPath + "/mvs-multifile.json";
+			var manifest = io.fileExists(manifestFile) ? io.readFileJSON(manifestFile) : __;
+			if (!isMap(manifest) || !isNumber(manifest.files)) throw "No mvs multifile manifest found on " + absPath;
+
+			var oldFiles = t.__fnames(absPath, manifest.files);
+			var inUse = isMap(t.__o) && Object.keys(t.__o).some(n => t.__o[n].absFiles.some(f => oldFiles.indexOf(f) >= 0));
+			if (inUse) throw "Channels using " + absPath + " need to be destroyed before resharding";
+			if (manifest.files == aNewFiles) return 0;
+
+			var tmpPath = absPath + "/.reshard-tmp";
+			if (io.fileExists(tmpPath)) io.rm(tmpPath);
+			io.mkdir(tmpPath);
+
+			var newFiles = t.__fnames(tmpPath, aNewFiles);
+			var sources = [], targets = [], moved = 0, expected = 0;
+			var open = (f, comp) => {
+				var b = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled().fileName(f);
+				if (comp) b = b.compress();
+				return b.open();
+			};
+
+			try {
+				sources = oldFiles.map(f => open(f, shouldCompress));
+				targets = newFiles.map(f => open(f, shouldCompress));
+
+				sources.forEach(src => {
+					af.fromJavaArray(src.getMapNames().toArray()).forEach(mapName => {
+						mapName = String(mapName);
+						var smap = src.openMap(mapName);
+						af.fromJavaArray(smap.keyList()).forEach(k => {
+							// Same placement rule as the channel: hash of the untrimmed canonical key
+							var idx = t.__hidx(stringify(sortMapKeys(jsonParse(String(k), true)), __, ""), aNewFiles);
+							targets[idx].openMap(mapName).put(k, smap.get(k));
+							moved++;
+						});
+						expected += Number(smap.sizeAsLong());
+					});
+				});
+
+				var total = 0;
+				targets.forEach(tgt => {
+					tgt.commit();
+					af.fromJavaArray(tgt.getMapNames().toArray()).forEach(mapName => total += Number(tgt.openMap(String(mapName)).sizeAsLong()));
+				});
+				if (total != expected) throw "reshard failed: expected " + expected + " entries but copied " + total;
+			} catch(e) {
+				targets.forEach(tgt => { try { tgt.close() } catch(ee) {} });
+				sources.forEach(src => { try { src.close() } catch(ee) {} });
+				io.rm(tmpPath);
+				throw e;
+			}
+
+			targets.forEach(tgt => tgt.close());
+			sources.forEach(src => src.close());
+
+			// Swap: remove the old files, move the new ones and finally update the manifest
+			oldFiles.forEach(f => { if (io.fileExists(f)) io.rm(f); });
+			t.__fnames(absPath, aNewFiles).forEach((f, i) => io.mv(newFiles[i], f));
+			io.writeFileJSON(manifestFile, { files: aNewFiles, hash: "javaStringHashCode", version: 1 }, "");
+			io.rm(tmpPath);
+
+			return moved;
 		}
 	}
 };
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.ch.utils.graph</key>
+ * <![CDATA[
+ * Helpers to navigate and query a channel of type `graph` (see `ow.ch.types.graph`). Node ids without a `:` are treated as `doc:` ids.
+ *
+ * | Function | Returns | Description |
+ * | --- | --- | --- |
+ * | `neighbors(aName, anId, aOptions)` | Array | Edges connected to a node. Options: `direction` (`"out"`, `"in"` or `"both"`), `type`, `provenance` (String or Array) |
+ * | `degree(aName, anId, aOptions)` | Number | Number of edges connected to a node (same options as `neighbors`) |
+ * | `path(aName, aFromId, aToId, aOptions)` | Array | Shortest path (BFS, ignoring direction) as node ids, `[]` if none. Options: `maxDepth`, `type` |
+ * | `traverse(aName, anId, aOptions)` | Map | `{ nodes, edges }` sub-graph reachable from a node. Options: `depth` (default 1), `direction`, `type`, `provenance` |
+ * | `find(aName, aOptions)` | Array | Nodes matching `type` and/or `text` (case insensitive match on id and props) |
+ * | `stats(aName)` | Map | Node and edge counts plus counts by node type, edge type and provenance |
+ * | `save(aName)` | Boolean | Flushes pending changes to the file (`false` if read-only) |
+ *
+ * Example:
+ *
+ * ```javascript
+ * ow.ch.utils.graph.neighbors("g", "a.md", { direction: "out", type: "LINKS_TO" });
+ * ow.ch.utils.graph.traverse("g", "a.md", { depth: 2 }); // { nodes: [...], edges: [...] }
+ * ```
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.ch.prototype.utils.graph = {
+	__id: function(id) {
+		id = String(id)
+		return id.indexOf(":") > 0 ? id : "doc:" + id
+	},
+	__arr: function(v) { return isUnDef(v) ? __ : (isArray(v) ? v : [ v ]) },
+	__edges: function(aName, id, o) {
+		o = _$(o, "options").isMap().default({})
+		var dir = isString(o.direction) ? o.direction : "both", types = this.__arr(o.type), provs = this.__arr(o.provenance)
+		if (isDef(provs)) provs = provs.map(p => String(p).toUpperCase())
+		return ow.ch.__types.graph.__edgesOf(aName, id).filter(e =>
+			(dir == "both" || (dir == "out" && e.from === id) || (dir == "in" && e.to === id)) &&
+			(isUnDef(types) || types.indexOf(e.type) >= 0) &&
+			(isUnDef(provs) || provs.indexOf(e.provenance) >= 0)
+		)
+	},
+	neighbors: function(aName, anId, aOptions) {
+		var id = this.__id(anId)
+		return this.__edges(aName, id, aOptions).map(e => ow.ch.__types.graph.__edgeVal(e))
+	},
+	degree: function(aName, anId, aOptions) {
+		return this.__edges(aName, this.__id(anId), aOptions).length
+	},
+	path: function(aName, aFromId, aToId, aOptions) {
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var a = this.__id(aFromId), b = this.__id(aToId), gt = ow.ch.__types.graph
+		if (!isMap(gt.__getNode(aName, a)) || !isMap(gt.__getNode(aName, b))) return []
+		var maxDepth = isNumber(aOptions.maxDepth) ? aOptions.maxDepth : __
+		var q = [ a ], depth = {}, prev = {}
+		depth[a] = 0
+		for (var qi = 0; qi < q.length && q[qi] !== b; qi++) {
+			var cur = q[qi]
+			if (isDef(maxDepth) && depth[cur] >= maxDepth) continue
+			var es = this.__edges(aName, cur, { type: aOptions.type })
+			for (var i = 0; i < es.length; i++) {
+				var nx = es[i].from === cur ? es[i].to : es[i].from
+				if (isDef(depth[nx])) continue
+				depth[nx] = depth[cur] + 1
+				prev[nx] = cur
+				q.push(nx)
+			}
+		}
+		if (isUnDef(depth[b])) return []
+		var res = [ b ], p = b
+		while (p !== a) { p = prev[p]; res.unshift(p) }
+		return res
+	},
+	traverse: function(aName, anId, aOptions) {
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var id = this.__id(anId), gt = ow.ch.__types.graph, maxDepth = isNumber(aOptions.depth) ? aOptions.depth : 1
+		if (!isMap(gt.__getNode(aName, id))) return { nodes: [], edges: [] }
+		var depth = {}, seenE = {}, resE = [], q = [ id ]
+		depth[id] = 0
+		for (var qi = 0; qi < q.length; qi++) {
+			var cur = q[qi]
+			if (depth[cur] >= maxDepth) continue
+			var es = this.__edges(aName, cur, aOptions)
+			for (var i = 0; i < es.length; i++) {
+				var e = es[i], k = ow.ch.__types.graph.__edgeKeyOf(e)
+				if (!seenE[k]) { seenE[k] = true; resE.push(ow.ch.__types.graph.__edgeVal(e)) }
+				var nx = e.from === cur ? e.to : e.from
+				if (isDef(depth[nx])) continue
+				depth[nx] = depth[cur] + 1
+				q.push(nx)
+			}
+		}
+		return { nodes: q.map(n => gt.__nodeVal(gt.__getNode(aName, n))), edges: resE }
+	},
+	find: function(aName, aOptions) {
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var types = this.__arr(aOptions.type), text = isString(aOptions.text) ? aOptions.text.toLowerCase() : __
+		var gt = ow.ch.__types.graph
+		return gt.__nodeIds(aName).map(id => gt.__getNode(aName, id)).filter(n => 
+			(isUnDef(types) || types.indexOf(n.type) >= 0) && (isUnDef(text) || (n.id + " " + stringify(n.props, __, "")).toLowerCase().indexOf(text) >= 0)
+		).map(n => gt.__nodeVal(n))
+	},
+	stats: function(aName) {
+		var gt = ow.ch.__types.graph, ids = gt.__nodeIds(aName), es = gt.__edges(aName), r = { nodes: ids.length, edges: es.length, nodeTypes: {}, edgeTypes: {}, provenance: {} }
+		ids.forEach(id => { var t = gt.__getNode(aName, id).type; r.nodeTypes[t] = (r.nodeTypes[t] || 0) + 1 })
+		es.forEach(e => { r.edgeTypes[e.type] = (r.edgeTypes[e.type] || 0) + 1; r.provenance[e.provenance] = (r.provenance[e.provenance] || 0) + 1 })
+		return r
+	},
+	save: function(aName) {
+		return ow.ch.__types.graph.__save(aName)
+	}
+};
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.ch.utils.timeseries</key>
+ * <![CDATA[
+ * Helpers to query and feed channels of type `timeseries`. Every function takes the channel name first. A `selector` is a map
+ * `{ metric, labels }` where `metric` and each label value can be a String, an Array (any of), a RegExp or a Function.
+ *
+ * | Function | Returns | Description |
+ * | --- | --- | --- |
+ * | `series(aName, aSelector)` | Array | `{ metric, labels }` of the matching series |
+ * | `labels(aName, aMetric)` | Map | Label names with their sorted values for a metric (or all metrics) |
+ * | `latest(aName, aSelector)` | Array | Newest point of each matching series as flat rows |
+ * | `range(aName, aSelector, aOptions)` | Array | Flat rows `{ ts, metric, ...labels, v }`. Options: `from`, `to`, `step` (ms or "1m"), `fn` (`avg`, `min`, `max`, `sum`, `count`, `first`, `last`, `rate`, `increase`; default `avg`), `fill` (`none`, `null`, `zero`, `prev`), `tier` (`raw` or a rollup step to force one) |
+ * | `drop(aName, aSelector)` | Number | Removes the matching series, returns how many |
+ * | `stats(aName)` | Map | Series and point counts, per metric and per tier |
+ * | `housekeep(aName, aOptions)` | Number | Applies retention now (`{ now }` to measure from a given time); returns the removed entries |
+ * | `rebuildRollups(aName)` | | Recomputes every rollup from the raw points |
+ * | `compact(aName)` | Boolean | Rewrites the NDJSON file with the live data only |
+ * | `save(aName)` | Boolean | Flushes pending changes now |
+ * | `collect(aEvery, aName, aSource, aOptions)` | Map | Periodically records metrics (default `ow.metrics.getAll()`); returns `{ once, stop }` |
+ * | `getTimeSeriesSubscriber(aTargetCh, aOptions)` | Function | Channel subscriber that records changes of another channel as points |
+ * | `toOpenMetrics(aName, aSelector, aOptions)` | String | OpenMetrics text of the latest points (or all points with `from`/`to`) |
+ * | `fromOpenMetrics(aName, aText, aOptions)` | Number | Records OpenMetrics text as points; returns how many |
+ * | `pushPrometheus(aName, aPushGwUrl, aJob, aSelector, aOptions)` | Number | Pushes the latest point of each series to a Prometheus push gateway (one request per `groupBy` value); returns how many series were pushed |
+ *
+ * With `step`, points are grouped in buckets aligned to the epoch and the row `ts` is the start of the bucket. When rollups exist, the finest
+ * tier that reaches back to `from` and divides `step` is used. `rate` and `increase` treat a decrease in value as a counter reset (on rollup tiers they are approximate).
+ *
+ * Example:
+ *
+ * ```javascript
+ * ow.ch.utils.timeseries.range("m", { metric: "cpu", labels: { host: /^web/ } }, { from: "2026-01-01", step: "5m", fn: "max" });
+ * ```
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.ch.prototype.utils.timeseries = {
+	__t: () => ow.ch.__types.timeseries,
+	__FNS: [ "avg", "min", "max", "sum", "count", "first", "last", "rate", "increase" ],
+	// finest tier that reaches back to 'from' and whose buckets divide 'step'
+	__pick: function(c, id, from, step, force) {
+		var tt = this.__t()
+		if (isDef(force)) {
+			if (String(force) == "raw") return c.tiers[0]
+			var s = tt.__dur(force, "tier"), f = c.tiers.filter(t => t.step == s)
+			if (f.length == 0) throw "timeseries: tier '" + force + "' not found"
+			return f[0]
+		}
+		if (isUnDef(step)) return c.tiers[0]
+		var cand = c.tiers.filter(t => t.step == 0 || (t.step <= step && step % t.step == 0)), best, bestFirst
+		cand.forEach(t => {
+			var b = c.st.bounds(id, t.key)
+			if (isUnDef(b)) return
+			if (isUnDef(best) || b.first <= bestFirst - t.step) { best = t; bestFirst = b.first }
+		})
+		if (isUnDef(best)) return c.tiers[0]
+		for (var i = 0; i < cand.length; i++) {
+			var bd = c.st.bounds(id, cand[i].key)
+			if (isUnDef(bd)) continue
+			if (cand[i] === best || bd.first <= from) return cand[i]
+		}
+		return best
+	},
+	__row: function(m, t, v) {
+		var r = { ts: t, metric: m.metric }
+		Object.keys(m.labels).forEach(k => { r[(k == "ts" || k == "metric" || k == "v") ? "_" + k : k] = m.labels[k] })
+		r.v = v
+		return r
+	},
+	series: function(aName, aSelector) {
+		var tt = this.__t(), c = tt.__c(aName)
+		return tt.__select(c, aSelector).map(id => { var m = c.st.meta(id); return { metric: m.metric, labels: clone(m.labels) } })
+	},
+	labels: function(aName, aMetric) {
+		var res = {}
+		this.series(aName, isDef(aMetric) ? { metric: aMetric } : {}).forEach(s => {
+			Object.keys(s.labels).forEach(k => {
+				if (isUnDef(res[k])) res[k] = []
+				if (res[k].indexOf(s.labels[k]) < 0) res[k].push(s.labels[k])
+			})
+		})
+		Object.keys(res).forEach(k => res[k].sort())
+		return res
+	},
+	latest: function(aName, aSelector) {
+		var tt = this.__t(), c = tt.__c(aName), res = []
+		tt.__select(c, aSelector).forEach(id => {
+			var b = c.st.bounds(id, "raw")
+			if (isUnDef(b)) return
+			var m = c.st.meta(id), r = c.st.read(id, "raw", b.last, b.last)
+			res.push(this.__row(m, b.last, r.v[0]))
+		})
+		return res
+	},
+	range: function(aName, aSelector, aOptions) {
+		var tt = this.__t(), c = tt.__c(aName), self = this
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var from = isDef(aOptions.from) ? tt.__ts(aOptions.from) : -Infinity, to = isDef(aOptions.to) ? tt.__ts(aOptions.to) : Infinity
+		var step = tt.__dur(aOptions.step, "step"), fn = String(isDef(aOptions.fn) ? aOptions.fn : "avg"), fill = String(isDef(aOptions.fill) ? aOptions.fill : "none")
+		if (this.__FNS.indexOf(fn) < 0) throw "timeseries: unknown fn '" + fn + "' (use " + this.__FNS.join(", ") + ")"
+		if ([ "none", "null", "zero", "prev" ].indexOf(fill) < 0) throw "timeseries: unknown fill '" + fill + "'"
+		var res = []
+		tt.__select(c, aSelector).forEach(id => {
+			var m = c.st.meta(id), tier = self.__pick(c, id, from, step, aOptions.tier)
+			var s = step
+			if (isUnDef(s) && tier.step > 0) s = tier.step
+			var rd = c.st.read(id, tier.key, tier.step > 0 ? from - tier.step + 1 : from, to)
+			if (tier.step > 0 && isDef(from) && isFinite(from)) {
+				// drop rollup buckets that end before 'from'
+				var keep = rd.ts.map((b, i) => b + tier.step > from)
+				rd = { ts: rd.ts.filter((b, i) => keep[i]), v: rd.v.filter((b, i) => keep[i]) }
+			}
+			// no step on the raw tier: the points as they are
+			if (isUnDef(s)) {
+				rd.ts.forEach((t, i) => res.push(self.__row(m, t, rd.v[i])))
+				return
+			}
+			var rows = {}, order = [], bucket = t => Math.floor(t / s) * s
+			if (fn == "rate" || fn == "increase") {
+				var prevLast
+				rd.ts.forEach((t, i) => {
+					var inc = 0, b = bucket(t)
+					if (tier.step == 0) {
+						var v = rd.v[i]
+						if (isDef(prevLast)) inc = v >= prevLast ? v - prevLast : v
+						prevLast = v
+					} else {
+						var a = rd.v[i]
+						inc = a.last >= a.first ? a.last - a.first : a.last
+						if (isDef(prevLast)) inc += a.first >= prevLast ? a.first - prevLast : a.first
+						prevLast = a.last
+					}
+					if (isUnDef(rows[b])) { rows[b] = 0; order.push(b) }
+					rows[b] += inc
+				})
+				order.forEach(b => { rows[b] = fn == "rate" ? rows[b] / (s / 1000) : rows[b] })
+			} else {
+				rd.ts.forEach((t, i) => {
+					var b = bucket(t), a = tier.step == 0 ? tt.__a0(t, rd.v[i]) : rd.v[i]
+					if (isUnDef(rows[b])) order.push(b)
+					rows[b] = tt.__am(rows[b], a)
+				})
+				order.forEach(b => {
+					var a = rows[b]
+					rows[b] = fn == "avg" ? a.sum / a.count : a[fn]
+				})
+			}
+			order.sort((a, b) => a - b)
+			var out = order.map(b => ({ b: b, v: rows[b] }))
+			if (fill != "none" && out.length > 0) {
+				var f0 = isFinite(from) ? bucket(from) : out[0].b, f1 = isFinite(to) ? bucket(to) : out[out.length - 1].b
+				if ((f1 - f0) / s > 1000000) throw "timeseries: too many buckets to fill"
+				var byB = {}, last
+				out.forEach(o => { byB[o.b] = o.v })
+				out = []
+				for (var b = f0; b <= f1; b += s) {
+					if (isDef(byB[b])) { last = byB[b]; out.push({ b: b, v: last }) }
+					else out.push({ b: b, v: fill == "null" ? null : (fill == "zero" ? 0 : (isDef(last) ? last : null)) })
+				}
+			}
+			out.forEach(o => res.push(self.__row(m, o.b, o.v)))
+		})
+		return res
+	},
+	drop: function(aName, aSelector) {
+		var tt = this.__t(), c = tt.__c(aName)
+		tt.__rw(c)
+		var ids = tt.__select(c, aSelector)
+		ids.forEach(id => { c.st.drop(id); tt.__lg(c, { o: "x", s: id }) })
+		if (ids.length > 0) tt.__changed(c)
+		return ids.length
+	},
+	stats: function(aName) {
+		var tt = this.__t(), c = tt.__c(aName), res = { series: 0, points: 0, metrics: {}, tiers: {} }
+		c.tiers.forEach(t => { res.tiers[t.key] = { step: t.step, entries: 0 } })
+		c.st.ids().forEach(id => {
+			var m = c.st.meta(id)
+			res.series++
+			if (isUnDef(res.metrics[m.metric])) res.metrics[m.metric] = { series: 0, points: 0, first: __, last: __ }
+			var ms = res.metrics[m.metric]
+			ms.series++
+			c.tiers.forEach(t => {
+				var b = c.st.bounds(id, t.key)
+				if (isUnDef(b)) return
+				res.tiers[t.key].entries += b.count
+				if (t.step == 0) {
+					res.points += b.count; ms.points += b.count
+					ms.first = isUnDef(ms.first) ? b.first : Math.min(ms.first, b.first)
+					ms.last = isUnDef(ms.last) ? b.last : Math.max(ms.last, b.last)
+				}
+			})
+		})
+		return res
+	},
+	housekeep: function(aName, aOptions) {
+		var tt = this.__t(), c = tt.__c(aName)
+		aOptions = _$(aOptions, "options").isMap().default({})
+		tt.__rw(c)
+		var n = tt.__housekeep(c, isDef(aOptions.now) ? tt.__ts(aOptions.now) : __)
+		if (isDef(c.opts.file)) { tt.__flush(c); tt.__compactIf(c) }
+		return n
+	},
+	rebuildRollups: function(aName) {
+		var tt = this.__t(), c = tt.__c(aName)
+		tt.__rw(c)
+		tt.__rebuildAll(c)
+		if (isDef(c.opts.file)) tt.__compact(c)
+	},
+	compact: function(aName) {
+		var tt = this.__t()
+		return tt.__compact(tt.__c(aName))
+	},
+	save: function(aName) {
+		return this.__t().__save(aName)
+	},
+	// flattens a map of metrics into [ { metric, labels, v } ]; nested maps extend the metric name, arrays add an 'idx' label
+	__flat: function(aObj, aPrefix, aLabels, aOut) {
+		var self = this
+		if (isNumber(aObj) && isFinite(aObj)) aOut.push({ metric: aPrefix, labels: aLabels, v: aObj })
+		else if (isBoolean(aObj)) aOut.push({ metric: aPrefix, labels: aLabels, v: aObj ? 1 : 0 })
+		else if (isArray(aObj)) aObj.forEach((o, i) => self.__flat(o, aPrefix, merge(aLabels, { idx: String(i) }), aOut))
+		else if (isMap(aObj)) Object.keys(aObj).forEach(k => { var n = k.replace(/^_+/, ""); self.__flat(aObj[k], isDef(aPrefix) && aPrefix.length > 0 ? aPrefix + "_" + n : n, aLabels, aOut) })
+		return aOut
+	},
+	__sane: s => String(s).replace(/[^a-zA-Z0-9_:]/g, "_").replace(/^(\d)/, "_$1"),
+	collect: function(aEvery, aName, aSource, aOptions) {
+		var self = this, tt = this.__t()
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var labels = tt.__labels(aOptions.labels), prefix = isString(aOptions.prefix) ? aOptions.prefix : ""
+		tt.__c(aName)
+		var once = function() {
+			var raw = isFunction(aSource) ? aSource() : (isArray(aSource) ? ow.loadMetrics().getSome(aSource) : ow.loadMetrics().getAll())
+			var pts = []
+			if (isArray(raw) && raw.length > 0 && isString(raw[0].metric)) {
+				pts = raw.map(r => ({ metric: r.metric, labels: merge(labels, tt.__labels(r.labels)), v: r.v, ts: r.ts }))
+			} else {
+				pts = self.__flat(raw, "", labels, [])
+			}
+			var t = now()
+			pts = pts.filter(p => isString(p.metric) && p.metric.length > 0).map(p => ({ metric: self.__sane(prefix + p.metric), labels: p.labels, ts: isDef(p.ts) ? p.ts : t, v: p.v }))
+			if (pts.length > 0) $ch(aName).setAll([ "metric", "labels", "ts" ], pts)
+			return pts.length
+		}
+		var __f = function() {
+			if ($ch().list().indexOf(aName) < 0) { res.stop(); return }
+			try { once() } catch(e) { if (isFunction(aOptions.onError)) aOptions.onError(e); else logErr("timeseries collect: " + e) }
+		}
+		var res
+		if (isString(aEvery)) {
+			ow.loadServer()
+			var sch = new ow.server.scheduler()
+			sch.addEntry(aEvery, __f)
+			res = { once: once, stop: () => sch.stop() }
+		} else if (isNumber(aEvery)) {
+			var th = new Threads()
+			th.addScheduleThreadWithFixedDelay(__f, aEvery)
+			res = { once: once, stop: () => th.stop() }
+		} else {
+			res = { once: once, stop: () => {} }
+		}
+		return res
+	},
+	// records changes of a channel into aTargetCh. aOptions: metric (String|Function(key, value)), labels (Array of field names | Function), values (Array of field names; one metric per field named metric_field) or value (field name | Function), ts (field name | Function)
+	getTimeSeriesSubscriber: function(aTargetCh, aOptions) {
+		var self = this
+		ow.loadObj()
+		_$(aTargetCh, "aTargetCh").isString().$_()
+		aOptions = _$(aOptions, "options").isMap().$_()
+		if (isUnDef(aOptions.metric)) throw "options.metric is required"
+		var ops = isArray(aOptions.ops) ? aOptions.ops : [ "set", "setall" ]
+		var rec = function(k, v, out) {
+			var all = merge(isMap(k) ? k : {}, isMap(v) ? v : {})
+			var metric = isFunction(aOptions.metric) ? aOptions.metric(k, v) : aOptions.metric
+			var lbs = {}
+			if (isFunction(aOptions.labels)) lbs = aOptions.labels(k, v)
+			else if (isArray(aOptions.labels)) aOptions.labels.forEach(f => { if (isDef(all[f])) lbs[f] = all[f] })
+			var t = isFunction(aOptions.ts) ? aOptions.ts(k, v) : (isString(aOptions.ts) ? all[aOptions.ts] : __)
+			var add = (m, x) => { if (isNumber(x) && isFinite(x)) out.push({ metric: self.__sane(m), labels: lbs, ts: t, v: x }) }
+			if (isArray(aOptions.values)) aOptions.values.forEach(f => add(metric + "_" + f, all[f]))
+			else add(metric, isFunction(aOptions.value) ? aOptions.value(k, v) : (isString(aOptions.value) ? all[aOptions.value] : all.v))
+		}
+		return function(aC, aO, aK, aV) {
+			if (ops.indexOf(aO) < 0 || aC == aTargetCh) return
+			var out = []
+			if (aO == "set") rec(aK, aV, out)
+			else if (aO == "setall") { for (var i in aV) rec(ow.obj.filterKeys(isArray(aK) ? aK : [], aV[i]), aV[i], out) }
+			if (out.length > 0) $ch(aTargetCh).setAll([ "metric", "labels", "ts" ], out)
+		}
+	},
+	toOpenMetrics: function(aName, aSelector, aOptions) {
+		var tt = this.__t(), c = tt.__c(aName), self = this
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var unit = aOptions.tsUnit == "ms" ? 1 : 1000, help = _$(aOptions.help, "options.help").isMap().default({})
+		var all = isDef(aOptions.from) || isDef(aOptions.to)
+		var from = isDef(aOptions.from) ? tt.__ts(aOptions.from) : -Infinity, to = isDef(aOptions.to) ? tt.__ts(aOptions.to) : Infinity
+		var esc = s => String(s).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n")
+		var lines = [], seen = {}
+		tt.__select(c, aSelector).forEach(id => {
+			var m = c.st.meta(id), name = self.__sane(m.metric), ls = Object.keys(m.labels).map(k => self.__sane(k) + "=\"" + esc(m.labels[k]) + "\"").join(",")
+			var r
+			if (all) r = c.st.read(id, "raw", from, to)
+			else { var b = c.st.bounds(id, "raw"); if (isUnDef(b)) return; r = c.st.read(id, "raw", b.last, b.last) }
+			if (!seen[name] && isMap(help[m.metric])) {
+				seen[name] = true
+				if (isDef(help[m.metric].help)) lines.push("# HELP " + name + " " + help[m.metric].help)
+				if (isDef(help[m.metric].type)) lines.push("# TYPE " + name + " " + help[m.metric].type)
+			}
+			for (var i = 0; i < r.ts.length; i++)
+				lines.push(name + (ls.length > 0 ? "{" + ls + "}" : "") + " " + r.v[i] + (aOptions.timestamps === false ? "" : " " + (r.ts[i] / unit)))
+		})
+		return lines.join("\n") + (lines.length > 0 ? "\n" : "")
+	},
+	fromOpenMetrics: function(aName, aText, aOptions) {
+		var tt = this.__t(), c = tt.__c(aName), self = this
+		aOptions = _$(aOptions, "options").isMap().default({})
+		var unit = aOptions.tsUnit == "ms" ? 1 : 1000, extra = tt.__labels(aOptions.labels)
+		var re = /^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:\{(.*)\})?\s+(\S+)(?:\s+(\S+))?\s*$/
+		var pts = []
+		String(aText).split("\n").forEach(line => {
+			line = line.trim()
+			if (line.length == 0 || line.charAt(0) == "#") return
+			var mm = line.match(re)
+			if (!isArray(mm)) return
+			var v = Number(mm[3])
+			if (!isFinite(v)) return
+			var lbs = {}, lre = /([a-zA-Z_][a-zA-Z0-9_]*)="((?:[^"\\]|\\.)*)"/g, x
+			while ((x = lre.exec(mm[2] || "")) !== null) lbs[x[1]] = x[2].replace(/\\n/g, "\n").replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
+			var t = isDef(mm[4]) && isFinite(Number(mm[4])) ? Math.round(Number(mm[4]) * unit) : (isDef(aOptions.ts) ? tt.__ts(aOptions.ts) : now())
+			pts.push({ metric: mm[1], labels: merge(lbs, extra), ts: t, v: v })
+		})
+		if (pts.length > 0) $ch(aName).setAll([ "metric", "labels", "ts" ], pts)
+		return pts.length
+	},
+	/**
+	 * Pushes the latest point of each series matching aSelector to a Prometheus push gateway (aPushGwUrl) under the job aJob.
+	 * Series are grouped by the values of the aOptions.groupBy labels: each distinct combination is one request to
+	 * <gateway>/metrics/job/<job>/<label>/<value>... Options: mode ("post", default: replaces only the metrics pushed; or "put":
+	 * replaces every metric of the grouping key), help (as in toOpenMetrics). Timestamps are not sent (the gateway rejects them).
+	 * Label values that are empty or contain "/" are sent base64 encoded (label@base64). Returns the number of series pushed.
+	 */
+	pushPrometheus: function(aName, aPushGwUrl, aJob, aSelector, aOptions) {
+		var self = this
+		aOptions = _$(aOptions, "options").isMap().default({})
+		_$(aPushGwUrl, "aPushGwUrl").isString().$_()
+		_$(aJob, "aJob").isString().$_()
+		if (aJob.length == 0 || aJob.indexOf("/") >= 0) throw "timeseries pushPrometheus: job must not be empty or contain '/'"
+		var groupBy = _$(aOptions.groupBy, "options.groupBy").isArray().default([])
+		var mode = String(_$(aOptions.mode, "options.mode").isString().default("post")).toLowerCase()
+		if ([ "post", "put" ].indexOf(mode) < 0) throw "timeseries pushPrometheus: options.mode must be 'post' or 'put'"
+		var sel = isMap(aSelector) ? aSelector : {}, base = aPushGwUrl.replace(/\/+$/, "") + "/metrics/job/" + encodeURIComponent(aJob)
+
+		// one group (and one request) per distinct combination of the groupBy values
+		var groups = {}, order = [], count = 0
+		this.series(aName, sel).forEach(s => {
+			var key = {}
+			groupBy.forEach(l => {
+				if (isUnDef(s.labels[l])) throw "timeseries pushPrometheus: series " + s.metric + " has no label '" + l + "' (groupBy)"
+				key[l] = s.labels[l]
+			})
+			var id = stringify(key, __, "")
+			if (isUnDef(groups[id])) { groups[id] = key; order.push(id) }
+			count++
+		})
+
+		var encLabel = l => encodeURIComponent(self.__sane(l))
+		var encValue = (l, v) => {
+			if (v.length == 0 || v.indexOf("/") >= 0) {
+				var b = String(java.util.Base64.getUrlEncoder().encodeToString(java.lang.String.valueOf(v).getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+				return { name: self.__sane(l) + "@base64", value: b.length == 0 ? "=" : b }
+			}
+			return { name: encLabel(l), value: encodeURIComponent(v) }
+		}
+
+		order.forEach(id => {
+			var key = groups[id], path = "", gsel = { metric: sel.metric, labels: merge(isMap(sel.labels) ? sel.labels : {}, key) }
+			groupBy.forEach(l => { var e = encValue(l, key[l]); path += "/" + e.name + "/" + e.value })
+			var text = this.toOpenMetrics(aName, gsel, { timestamps: false, help: aOptions.help })
+			if (text.length == 0) return
+			var req = $rest({ requestHeaders: { "Content-Type": "text/plain; version=0.0.4" }, throwExceptions: true })
+			if (mode == "put") req.put(base + path, text); else req.post(base + path, text)
+		})
+		return count
+	}
+};
+
+// Serializes the access to each timeseries channel: collectors and subscribers write from other threads while queries read the same arrays
+;(function() {
+	var wrap = function(o, names) {
+		names.forEach(function(n) {
+			var orig = o[n]
+			o[n] = function(aName) {
+				var c = ow.ch.__types.timeseries.__channels[aName]
+				if (isUnDef(c)) return orig.apply(this, arguments)
+				c.mx.lock()
+				try { return orig.apply(this, arguments) } finally { c.mx.unlock() }
+			}
+		})
+	}
+	wrap(OpenWrap.ch.prototype.__types.timeseries, [ "destroy", "size", "forEach", "getAll", "getKeys", "getSortedKeys", "getSet", "set", "setAll", "unset", "unsetAll", "get", "pop", "shift" ])
+	wrap(OpenWrap.ch.prototype.utils.timeseries, [ "series", "labels", "latest", "range", "drop", "stats", "housekeep", "rebuildRollups", "compact", "save", "toOpenMetrics" ])
+})();
 
 OpenWrap.ch.prototype.comms = {
 	__counter: {},
@@ -5152,16 +7067,18 @@ OpenWrap.ch.prototype.server = {
     __log: () => {},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.server.setLog(aLogFunction)</key>
-	 * Sets aLogFunction to act as audit for external communication to access a channel. The aLogFunction
-	 * will be called passing, as a single argument, a map with:\
-	 *    - name    (the channel name)\
-	 *    - op      (the operation can be AUTH_OK, AUTH_NOT_OK, GET, SET, REMOVE or CREATE)\
-	 *    - request (the HTTP request map)\
-	 * \
-	 * The request, when available, will include an entry with the current user.\
-	 * \
+	 * <![CDATA[
+	 * Sets `aLogFunction` to act as audit for external communication to access a channel. The `aLogFunction`
+	 * will be called passing, as a single argument, a map with:
+	 *
+	 * - `name` (the channel name)
+	 * - `op` (the operation can be AUTH_OK, AUTH_NOT_OK, GET, SET, REMOVE or CREATE)
+	 * - `request` (the HTTP request map)
+	 *
+	 * The request, when available, will include an entry with the current user.
+	 * ]]>
 	 * </odoc>
 	 */
 	setLog: function(aLogFunction) {
@@ -5169,20 +7086,23 @@ OpenWrap.ch.prototype.server = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.server.expose(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) : String</key>
-	 * Given aName channel and aLocalPortORServer will use the provided server, or start a simple http server on the 
-	 * provided port, to expose access to the aName channel on the URL aPath. It will return an unique identifier
-	 * to be use to identify incoming requests from this aPath and server on channel subscribe functions. Optionally
-	 * you can also provide aAuthFunc(user, pass, aServer, aRequest) and aUnAuthFunc(aServer, aRequest) functions using ow.server.httpd.authBasic.
-	 * The aAuthFunc can add aRequest.channelPermission to enforce read and/or write permissions on a channel (e.g. "r", "rw").
-	 * If needed you can ignore the checking if the aName channel exists with noCheck.\
-	 * \
-	 * Example:\
-	 * \
-	 * // Exposing the a log dump channel on port 8090 for test proposes.\
-	 * ow.ch.server.expose("__log", 8090, "/log");\
-	 * \
+	 * <![CDATA[
+	 * Given `aName` channel and `aLocalPortORServer` will use the provided server, or start a simple http server on the
+	 * provided port, to expose access to the `aName` channel on the URL `aPath`. It will return an unique identifier
+	 * to be use to identify incoming requests from this `aPath` and server on channel subscribe functions. Optionally
+	 * you can also provide `aAuthFunc(user, pass, aServer, aRequest)` and `aUnAuthFunc(aServer, aRequest)` functions using `ow.server.httpd.authBasic`.
+	 * The `aAuthFunc` can add `aRequest.channelPermission` to enforce read and/or write permissions on a channel (e.g. "r", "rw").
+	 * If needed you can ignore the checking if the `aName` channel exists with `noCheck`.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * // Exposing the a log dump channel on port 8090 for test proposes.
+	 * ow.ch.server.expose("__log", 8090, "/log");
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	expose: function(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) {
@@ -5263,19 +7183,22 @@ OpenWrap.ch.prototype.server = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.server.peer(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount)</key>
-	 * Exposes aName channel in the same way as ow.ch.server.expose but it also add a subscribe function to 
-	 * the aName channel to remotely peer with other expose channel(s) given aRemoteURLArray. Optionally
-	 * aRemoteURLArray can also be a function returning a URL or an array of URLs. Optionally
-	 * you can also provide aAuthFunc(user, pass) and aUnAuthFunc(aServer, aRequest) functions using ow.server.httpd.authBasic.
-	 * The aAuthFunc can add aRequest.channelPermission to enforce read and/or write permissions on a channel (e.g. "r", "rw").
-	 * Optionally you can provide aMaxTime for expiration of commands to retry to communicate and aMaxCount of commands to retry to communicate.\
-	 * \
-	 * Example:\
-	 * \
-	 * ow.ch.server.peer("__log", 8090, "/log", [ "http://server1.local:8090/log", "https://l:p@server2.local:8090/log" ]);\
-	 * \
+	 * <![CDATA[
+	 * Exposes `aName` channel in the same way as `ow.ch.server.expose` but it also add a subscribe function to
+	 * the `aName` channel to remotely peer with other expose channel(s) given `aRemoteURLArray`. Optionally
+	 * `aRemoteURLArray` can also be a function returning a URL or an array of URLs. Optionally
+	 * you can also provide `aAuthFunc(user, pass)` and `aUnAuthFunc(aServer, aRequest)` functions using `ow.server.httpd.authBasic`.
+	 * The `aAuthFunc` can add `aRequest.channelPermission` to enforce read and/or write permissions on a channel (e.g. "r", "rw").
+	 * Optionally you can provide `aMaxTime` for expiration of commands to retry to communicate and `aMaxCount` of commands to retry to communicate.
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * ow.ch.server.peer("__log", 8090, "/log", [ "http://server1.local:8090/log", "https://l:p@server2.local:8090/log" ]);
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	peer: function(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount) {
@@ -5333,27 +7256,33 @@ OpenWrap.ch.prototype.server = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.ch.server.routeProcessing(aURI, aRequest, aName) : HTTPServerReply</key>
-	 * Creates a server route processing for a ow.ch.comms client provided aURI, a HTTPServer aRequest and the 
-	 * aName of a channel (please note that you should create the channel prior to using this function).
-	 * Depending on aRequest.channelPermission some operations may not execute:\
-	 * \
-	 * - "r" - allows channel get/getAll operations\
-	 * - "w" - allows channel set/setAll/getSet/unset/unsetAll operations\
-	 * \
-	 * Example:\
-	 * \
-	 * var hs = ow.loadServer().httpd.start(17878);\
-	 * ow.server.httpd.route(hs, { "/rest": function(r) { return ow.ch.server.routeProcessing("/rest", r, "my-channel") }});\
-	 * \
-	 * for multiple channels:\
-	 * var hs = ow.loadServer().httpd.start(17878);\
-	 * ow.server.httpd.route(hs, {\
-	 *    "/chan1": function(r) { return ow.ch.server.routeProcessing("/chan1", r, "chan-1") },\
-	 *    "/chan2": function(r) { return ow.ch.server.routeProcessing("/chan2", r, "chan-2") }\
-	 * };\
-	 * \
+	 * <![CDATA[
+	 * Creates a server route processing for a `ow.ch.comms` client provided `aURI`, a HTTPServer `aRequest` and the
+	 * `aName` of a channel (please note that you should create the channel prior to using this function).
+	 * Depending on `aRequest.channelPermission` some operations may not execute:
+	 *
+	 * - "r" - allows channel get/getAll operations
+	 * - "w" - allows channel set/setAll/getSet/unset/unsetAll operations
+	 *
+	 * Example:
+	 *
+	 * ```javascript
+	 * var hs = ow.loadServer().httpd.start(17878);
+	 * ow.server.httpd.route(hs, { "/rest": function(r) { return ow.ch.server.routeProcessing("/rest", r, "my-channel") }});
+	 * ```
+	 *
+	 * for multiple channels:
+	 *
+	 * ```javascript
+	 * var hs = ow.loadServer().httpd.start(17878);
+	 * ow.server.httpd.route(hs, {
+	 *    "/chan1": function(r) { return ow.ch.server.routeProcessing("/chan1", r, "chan-1") },
+	 *    "/chan2": function(r) { return ow.ch.server.routeProcessing("/chan2", r, "chan-2") }
+	 * });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	routeProcessing: function(aURI, aRequest, aName, aaUUID) {

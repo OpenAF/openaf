@@ -432,16 +432,20 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.fuzzySearch(anArrayOfKeys, anArrayOfObjects, searchString, fuseOptions) : Array</key>
- * Given anArrayOfObjects (similar objects) will fuzzy search the searchString on the values for the keys in anArrayOfKeys.
- * Returns an array of the most probable objects to match the searchString (you can use fuseOptions = { shouldSort: true } to 
+ * <![CDATA[
+ * Given `anArrayOfObjects` (similar objects) will fuzzy search the `searchString` on the values for the keys in `anArrayOfKeys`.
+ * Returns an array of the most probable objects to match the `searchString` (you can use `fuseOptions` = { shouldSort: true } to
  * ensure that the array is ordered by score).
- * It uses the FuseJS library internally so fuseOptions can be used to add more options (check more in http://fusejs.io/).\
- * \
- * For example:\
- *    ow.obj.fuzzySearch(["n"], [{n: "World War I"}, {n: "World War II"}, {n: "Name a war"}, {n: "Name some war"}], "world");\
- * \
+ * It uses the FuseJS library internally so `fuseOptions` can be used to add more options (check more in http://fusejs.io/).
+ *
+ * For example:
+ *
+ * ```javascript
+ * ow.obj.fuzzySearch(["n"], [{n: "World War I"}, {n: "World War II"}, {n: "Name a war"}, {n: "Name some war"}], "world");
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.fuzzySearch = function(anArrayOfKeys, anArrayOfObjects, searchString, fuseOptions) {
@@ -455,26 +459,30 @@ OpenWrap.obj.prototype.fuzzySearch = function(anArrayOfKeys, anArrayOfObjects, s
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) : Array</key>
- * Searches anArray of maps for entries where aPartialMap matches. If useRegEx is true all string entries
- * on aPartialMap will be interpreted as regular expressions. For number entries on the original map you can 
- * have the prefixes &gt;, &lt;, &gt;= and &lt;= to limit the numeric values. The complete comparison must
- * contain a signed or unsigned number, optionally with decimals or an exponent (for example, &gt;=-1.5).
+ * <![CDATA[
+ * Searches `anArray` of maps for entries where `aPartialMap` matches. If `useRegEx` is true all string entries
+ * on `aPartialMap` will be interpreted as regular expressions. For number entries on the original map you can
+ * have the prefixes `>`, `<`, `>=` and `<=` to limit the numeric values. The complete comparison must
+ * contain a signed or unsigned number, optionally with decimals or an exponent (for example, `>=-1.5`).
  * Comparisons accept numbers and numeric strings; missing, null, boolean and nonnumeric values do not match.
  * Other string patterns remain regular expressions. Optionally you can provide also
- * ignoreCase = true to ignore case (will only affect if useRegEx is true). And optionally also useParallel to
- * provide the number of threads to use. Example:\
- * \
- * ow.obj.searchArray(io.listFiles("/usr/bin").files, { "isFile": true, "filename": "^cal.*", "size": "&gt;=32000" }, true, true);\
- * \
- * // you can use it, for example, in conjunction with jLinq\
- * $from(ow.obj.searchArray(listFilesRecursive("/usr/lib"), { "filepath": "/usr/lib/ruby", "size": "&gt;100000" }, true)).sort("size").select();\
- * \
- * // to refer to a sub map value\
- * ow.obj.searchArray(students, { "details.age": "&lt;=25", "details.isMale": true }, true);\
- * \
- * (available after ow.loadObj())
+ * `ignoreCase` = true to ignore case (will only affect if `useRegEx` is true). And optionally also `useParallel` to
+ * provide the number of threads to use. Example:
+ *
+ * ```javascript
+ * ow.obj.searchArray(io.listFiles("/usr/bin").files, { "isFile": true, "filename": "^cal.*", "size": ">=32000" }, true, true);
+ *
+ * // you can use it, for example, in conjunction with jLinq
+ * $from(ow.obj.searchArray(listFilesRecursive("/usr/lib"), { "filepath": "/usr/lib/ruby", "size": ">100000" }, true)).sort("size").select();
+ *
+ * // to refer to a sub map value
+ * ow.obj.searchArray(students, { "details.age": "<=25", "details.isMale": true }, true);
+ * ```
+ *
+ * (available after `ow.loadObj()`)
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) {
@@ -559,24 +567,27 @@ OpenWrap.obj.prototype.key2array = function(aMap, aREMatch, outkey, removeEmptys
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.fromObj2Array(anObj, aKey) : Array</key>
- * Tries to create an array of maps from the provided anObj map of maps. Optionally if aKey is provided
- * it will be added to each array map with the map key. Example:\
- * \
- * var a = {\
- *    "A1": { "abc": "123", "xpt": "000" },\
- *    "A2": { "abc": "456", "xpt": "001" },\
- *    "A3": { "abc": "789", "xpt": "002" }\
- * }\
- * \
- * fromObj2Array(a, "key");\
- * // [\
- * //  { "key": "A1", "abc": "123", "xpt": "000" },\
- * //  { "key": "A2", "abc": "456", "xpt": "001" },\
- * //  { "key": "A3", "abc": "789", "xpt": "002" }\
- * // ]\
- * \
+ * <![CDATA[
+ * Tries to create an array of maps from the provided `anObj` map of maps. Optionally if `aKey` is provided
+ * it will be added to each array map with the map key. Example:
+ *
+ * ```javascript
+ * var a = {
+ *    "A1": { "abc": "123", "xpt": "000" },
+ *    "A2": { "abc": "456", "xpt": "001" },
+ *    "A3": { "abc": "789", "xpt": "002" }
+ * }
+ *
+ * fromObj2Array(a, "key");
+ * // [
+ * //  { "key": "A1", "abc": "123", "xpt": "000" },
+ * //  { "key": "A2", "abc": "456", "xpt": "001" },
+ * //  { "key": "A3", "abc": "789", "xpt": "002" }
+ * // ]
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.fromObj2Array = function(aObj, aKey) {
@@ -596,34 +607,37 @@ OpenWrap.obj.prototype.fromObj2Array = function(aObj, aKey) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.filter(anObject, aMap) : Object</key>
- * Given anObject (either a map or array) will use $from with the options on aMap basically making all $from options map parameters. 
- * If a "path" string is included it will fallback to $path. Example:\
- * \ 
- * filter:\
- *   #fromKey: arr\
- *   where:\
- *   - cond: equals\
- *     args:\
- *     - isFile\
- *     - true\
- *   transform:\
- *   - func: attach\
- *     args:\
- *     - lastAccess\
- *     - !!js/eval elem => new Date(elem.lastAccess)\
- *   - func: sort\
- *     args:\
- *     - "-size"\
- *   select:\
- *     filename: n/a\
- *     size    : -1\
- *   #selector:\
- *   #  func: at\
- *   #  args:\
- *   #  - 0\
- * \
+ * <![CDATA[
+ * Given `anObject` (either a map or array) will use `$from` with the options on `aMap` basically making all `$from` options map parameters.
+ * If a "path" string is included it will fallback to `$path`. Example:
+ *
+ * ```yaml
+ * filter:
+ *   #fromKey: arr
+ *   where:
+ *   - cond: equals
+ *     args:
+ *     - isFile
+ *     - true
+ *   transform:
+ *   - func: attach
+ *     args:
+ *     - lastAccess
+ *     - !!js/eval elem => new Date(elem.lastAccess)
+ *   - func: sort
+ *     args:
+ *     - "-size"
+ *   select:
+ *     filename: n/a
+ *     size    : -1
+ *   #selector:
+ *   #  func: at
+ *   #  args:
+ *   #  - 0
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.filter = function(aObj, aMap) {
@@ -682,25 +696,28 @@ OpenWrap.obj.prototype.filterKeys = function(anArrayKeyNames, aRow) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.fromArray2Obj(anArray, aKey, dontRemove) : Array</key>
- * Tries to create a map of maps from the provided anArrays. Optionally if aKey is provided
+ * <![CDATA[
+ * Tries to create a map of maps from the provided `anArrays`. Optionally if `aKey` is provided
  * it will be used to create the map keys (otherwise will fallback to "row[number]"). And can also
- * optionally indicate by dontRemove = true that aKey shouldn't be removed from each map.
- * \
- * var a = [\
- *   { "abc": "123", "xpt": "000", "key": "A1" },\
- *   { "abc": "456", "xpt": "001", "key": "A2" },\
- *   { "abc": "789", "xpt": "002", "key": "A3" }\
- * ]\
- * \
- * fromArray2Obj(a, "key");\
- * // {\
- * //   "A1": { "abc": "123", "xpt": "000" },\
- * //   "A2": { "abc": "456", "xpt": "001" },\
- * //   "A3": { "abc": "789", "xpt": "002" }\
- * // }\
- * \
+ * optionally indicate by `dontRemove` = true that `aKey` shouldn't be removed from each map.
+ *
+ * ```javascript
+ * var a = [
+ *   { "abc": "123", "xpt": "000", "key": "A1" },
+ *   { "abc": "456", "xpt": "001", "key": "A2" },
+ *   { "abc": "789", "xpt": "002", "key": "A3" }
+ * ]
+ *
+ * fromArray2Obj(a, "key");
+ * // {
+ * //   "A1": { "abc": "123", "xpt": "000" },
+ * //   "A2": { "abc": "456", "xpt": "001" },
+ * //   "A3": { "abc": "789", "xpt": "002" }
+ * // }
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.fromArray2Obj = function(anArray, aKey, dontRemove) {
@@ -1226,16 +1243,17 @@ OpenWrap.obj.prototype.pool = {
 
 OpenWrap.obj.prototype.big = {
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.obj.big.create(shouldCompressKeys) : Object</key>
-	 * Creates a "big" map object that compresses contents in memory. Optionally if shouldCompressKeys = true
-	 * the key map will also be compressed. See also:\
-	 * \
-	 * ow.obj.big.set\
-	 * ow.obj.big.setAll\
-	 * ow.obj.big.get\
-	 * ow.obj.big.find\
-	 * \
+	 * <![CDATA[
+	 * Creates a "big" map object that compresses contents in memory. Optionally if `shouldCompressKeys` = true
+	 * the key map will also be compressed. See also:
+	 *
+	 * - `ow.obj.big.set`
+	 * - `ow.obj.big.setAll`
+	 * - `ow.obj.big.get`
+	 * - `ow.obj.big.find`
+	 * ]]>
 	 * </odoc>
 	 */
 	create: function(shoudCompress) {
@@ -1246,14 +1264,17 @@ OpenWrap.obj.prototype.big = {
 			compressKeys: shoudCompress,
 
 			/**
-			 * <odoc>
+			 * <odoc format="markdown">
 			 * <key>ow.obj.big.set(aKeyMap, aValueMap, aTimestamp)</key>
-			 * Sets aValueMap associated with a aKeyMap. Optionally you can set the internal aTimestamp for the record.\
-			 * Example:\
-			 * \
-			 * var big = ow.obj.big.create();\
-			 * big.set({"name": "Anne"}, {"name": "Anne", "country": "USA", "company": "Wedo"});\
-			 * \
+			 * <![CDATA[
+			 * Sets `aValueMap` associated with a `aKeyMap`. Optionally you can set the internal `aTimestamp` for the record.
+			 * Example:
+			 *
+			 * ```javascript
+			 * var big = ow.obj.big.create();
+			 * big.set({"name": "Anne"}, {"name": "Anne", "country": "USA", "company": "Wedo"});
+			 * ```
+			 * ]]>
 			 * </odoc>
 			 */
 			set: function(aKeys, aColumns, aTime) {
@@ -1317,23 +1338,26 @@ OpenWrap.obj.prototype.big = {
 			}, 
 			
 			/**
-			 * <odoc>
+			 * <odoc format="markdown">
 			 * <key>ow.obj.big.setAll(anArrayKeyNames, anArrayOfValues, aTimestamp)</key>
-			 * Given anArrayOfValues will set them internally using the keys on anArrayKeyNames to define
-			 * the corresponding keys. Optionally you can set the internal aTimestamp for the record.\
-			 * \
-			 * Example:\
-			 * \
-			 * var big = ow.obj.big.create();\
-			 * var data = [\
-			 * 		{"name": "Anne", "country": "USA", "company": "Wedo"},\
-			 * 		{"name": "Rui", "country": "Portugal", "company": "Wedo"},\
-			 * 		{"name": "Paulo", "country": "Portugal", "company": "Sonae"},\
-			 * 		{"name": "Peter", "country": "USA", "company": "ACME"},\
-			 * 		{"name": "Louis", "country": "USA", "company": "ACME"}\
-			 * ];\
-			 * big.setAll(["name", "country"], data);\
-			 * \
+			 * <![CDATA[
+			 * Given `anArrayOfValues` will set them internally using the keys on `anArrayKeyNames` to define
+			 * the corresponding keys. Optionally you can set the internal `aTimestamp` for the record.
+			 *
+			 * Example:
+			 *
+			 * ```javascript
+			 * var big = ow.obj.big.create();
+			 * var data = [
+			 * 		{"name": "Anne", "country": "USA", "company": "Wedo"},
+			 * 		{"name": "Rui", "country": "Portugal", "company": "Wedo"},
+			 * 		{"name": "Paulo", "country": "Portugal", "company": "Sonae"},
+			 * 		{"name": "Peter", "country": "USA", "company": "ACME"},
+			 * 		{"name": "Louis", "country": "USA", "company": "ACME"}
+			 * ];
+			 * big.setAll(["name", "country"], data);
+			 * ```
+			 * ]]>
 			 * </odoc>
 			 */
 			setAll: function(anArrayKeyNames, anArray, aTimestamp) {
@@ -1429,22 +1453,25 @@ OpenWrap.obj.prototype.big = {
 			},
 			
 			/**
-			 * <odoc>
+			 * <odoc format="markdown">
 			 * <key>ow.obj.big.get(aKeyMap) : Map</key>
-			 * Retrieves a value map given the provided aKeyMap.\
-			 * Example:\
-			 * \
-			 * var big = ow.obj.big.create();\
-			 * var data = [\
-			 * 		{"name": "Anne", "country": "USA", "company": "Wedo"},\
-			 * 		{"name": "Rui", "country": "Portugal", "company": "Wedo"},\
-			 * 		{"name": "Paulo", "country": "Portugal", "company": "Sonae"},\
-			 * 		{"name": "Peter", "country": "USA", "company": "ACME"},\
-			 * 		{"name": "Louis", "country": "USA", "company": "ACME"}\
-			 * ];\
-			 * big.setAll(["name"], data);\
-			 * big.get({"name": "Rui"}); // {"name": "Rui", "country": "Portugal", "company": "Wedo"}\
-			 * \
+			 * <![CDATA[
+			 * Retrieves a value map given the provided `aKeyMap`.
+			 * Example:
+			 *
+			 * ```javascript
+			 * var big = ow.obj.big.create();
+			 * var data = [
+			 * 		{"name": "Anne", "country": "USA", "company": "Wedo"},
+			 * 		{"name": "Rui", "country": "Portugal", "company": "Wedo"},
+			 * 		{"name": "Paulo", "country": "Portugal", "company": "Sonae"},
+			 * 		{"name": "Peter", "country": "USA", "company": "ACME"},
+			 * 		{"name": "Louis", "country": "USA", "company": "ACME"}
+			 * ];
+			 * big.setAll(["name"], data);
+			 * big.get({"name": "Rui"}); // {"name": "Rui", "country": "Portugal", "company": "Wedo"}
+			 * ```
+			 * ]]>
 			 * </odoc>
 			 */
 			get: function(aKeys) {
@@ -1532,26 +1559,29 @@ OpenWrap.obj.prototype.big = {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.fromJson(aJson) : Object</key>
- * Creates an object or objects, using the aJson and the indication of the object prototypes to use. This is based on JMix from
- * https://github.com/khayll/jsmix.\
- * Example:\
- * \
- * var Point = function() {};\
- * Point.prototype.getX = function() { return this.x; }\
- * Point.prototype.getY = function() { return this.y; }\
- * \
- * ow.obj.fromJson({ x: 1, y: 2 }).withObject(Point.prototype).build().getX(); // 1\
- * \
- * var mylines = { "lines": [\
- *    { "name": "line 1", "points": [ { x: 0, y: 0}, { x: 5, y: 6} ] },\
- *    { "name": "line 2", "points": [ { x: -5, y: -5}, { x: 1, y: 3} ] },\
- * ]};\
- * \
- * var res = ow.obj.fromJson(mylines).withObject(Point.prototype, "lines.*.points.*").build();\
- * res.lines[1].points[1].getY(); // 3\
- * \
+ * <![CDATA[
+ * Creates an object or objects, using the `aJson` and the indication of the object prototypes to use. This is based on JMix from
+ * https://github.com/khayll/jsmix.
+ * Example:
+ *
+ * ```javascript
+ * var Point = function() {};
+ * Point.prototype.getX = function() { return this.x; }
+ * Point.prototype.getY = function() { return this.y; }
+ *
+ * ow.obj.fromJson({ x: 1, y: 2 }).withObject(Point.prototype).build().getX(); // 1
+ *
+ * var mylines = { "lines": [
+ *    { "name": "line 1", "points": [ { x: 0, y: 0}, { x: 5, y: 6} ] },
+ *    { "name": "line 2", "points": [ { x: -5, y: -5}, { x: 1, y: 3} ] },
+ * ]};
+ *
+ * var res = ow.obj.fromJson(mylines).withObject(Point.prototype, "lines.*.points.*").build();
+ * res.lines[1].points[1].getY(); // 3
+ * ```
+ * ]]>
  * </odoc>
  * 
  * from https://github.com/khayll/jsmix
@@ -1793,25 +1823,28 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
 
 // https://javadoc.io/static/com.squareup.okhttp3/okhttp/3.14.9/index.html?okhttp3/Request.html
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.http(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) : Object</key>
- * Creates a new instance of an HTTP client to be used to execute a request to aURL using aRequestType (GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS, TRACE).
- * Optionally you can provide aIn (the body of the request), aRequestMap (a map with the headers), isBytes (if the body is bytes), aTimeout (timeout in milliseconds),
- * returnStream (if the response should be a stream) and options (a map with the following options:\
- * \
- *   - timeout: the connection timeout in milliseconds\
- *   - readTimeout: the read timeout in milliseconds\
- *   - writeTimeout: the write timeout in milliseconds\
- *   - callTimeout: the call timeout in milliseconds\
- *   - followRedirects: if should follow redirects\
- *   - followSslRedirects: if should follow ssl redirects\
- *   - delayBuild: if should delay the build of the client\
- * \
- * Example:\
- * \
- *   var http = ow.obj.http("http://www.google.com", "GET");\
- *   var res = http.exec();\
- * 
+ * <![CDATA[
+ * Creates a new instance of an HTTP client to be used to execute a request to `aURL` using `aRequestType` (GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS, TRACE).
+ * Optionally you can provide `aIn` (the body of the request), `aRequestMap` (a map with the headers), `isBytes` (if the body is bytes), `aTimeout` (timeout in milliseconds),
+ * `returnStream` (if the response should be a stream) and `options`, a map with the following keys:
+ *
+ * - `timeout`: the connection timeout in milliseconds
+ * - `readTimeout`: the read timeout in milliseconds
+ * - `writeTimeout`: the write timeout in milliseconds
+ * - `callTimeout`: the call timeout in milliseconds
+ * - `followRedirects`: if should follow redirects
+ * - `followSslRedirects`: if should follow ssl redirects
+ * - `delayBuild`: if should delay the build of the client
+ *
+ * Example:
+ *
+ * ```javascript
+ * var http = ow.obj.http("http://www.google.com", "GET");
+ * var res = http.exec();
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
@@ -3034,11 +3067,15 @@ OpenWrap.obj.prototype.rest = {
 	},
 
 	/**
-	 * <odoc>
+	 * <odoc format="markdown">
 	 * <key>ow.obj.rest.writeQuery(aMap) : String</key>
-	 * Given aMap will return a URL query string. Example:\
-	 * "http://some.thing/other/stuff?" + ow.obj.rest.writeQuery({ a: 1, b: 2}));\
-	 * \
+	 * <![CDATA[
+	 * Given `aMap` will return a URL query string. Example:
+	 *
+	 * ```javascript
+	 * "http://some.thing/other/stuff?" + ow.obj.rest.writeQuery({ a: 1, b: 2 });
+	 * ```
+	 * ]]>
 	 * </odoc>
 	 */
 	writeQuery: function(aMap) {
@@ -3241,18 +3278,21 @@ OpenWrap.obj.prototype.pmSchema = {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.getPath(aObject, aPath) : Object</key>
- * Given aObject, retrieves the value at aPath using dot notation or unquoted bracket indexes.
+ * <![CDATA[
+ * Given `aObject`, retrieves the value at `aPath` using dot notation or unquoted bracket indexes.
  * Returns undefined if a key is absent or an intermediate value is null, undefined or a scalar.
- * A null or scalar at the final path segment is returned unchanged. Example:\
- * \
- * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
- * \
- * print(ow.obj.getPath(a, "b.c")); // 2\
- * sprint(ow.obj.getPath(a, "b.d")); // [0, 1]\
- * print(ow.obj.getPath(a, "b.d[0]")); // 0\
- * \
+ * A null or scalar at the final path segment is returned unchanged. Example:
+ *
+ * ```javascript
+ * var a = { a : 1, b : { c: 2, d: [0, 1] } };
+ *
+ * print(ow.obj.getPath(a, "b.c")); // 2
+ * sprint(ow.obj.getPath(a, "b.d")); // [0, 1]
+ * print(ow.obj.getPath(a, "b.d[0]")); // 0
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
@@ -3276,14 +3316,17 @@ OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.setPath(aObject, aPath, aNewValue) : Object</key>
- * Given aObject it will try to parse the aPath a set the corresponding object under that path to aNewValue. Example:\
- * \
- * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
- * \
- * sprint(ow.obj.setPath(a, "b.c", 123); // { a : 1, b : { c: 123, d: [0, 1] } }\
- * \
+ * <![CDATA[
+ * Given `aObject` it will try to parse the `aPath` a set the corresponding object under that path to `aNewValue`. Example:
+ *
+ * ```javascript
+ * var a = { a : 1, b : { c: 2, d: [0, 1] } };
+ *
+ * sprint(ow.obj.setPath(a, "b.c", 123)); // { a : 1, b : { c: 123, d: [0, 1] } }
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.setPath = function(aObj, aPath, aValue) {
@@ -4263,13 +4306,16 @@ OpenWrap.obj.prototype.randomRange = function(min, max) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.randomDateRange(aFormat, aMin, aMax) : Date</key>
- * Generates a random date between aMin date string and aMax date string which the corresponding format is determined
- * by aFormat. For example:\
- * \
- * randomDateRange("yyyyMMdd hhmm", "19991231 2300", "20000101 0200");\
- * \
+ * <![CDATA[
+ * Generates a random date between `aMin` date string and `aMax` date string which the corresponding format is determined
+ * by `aFormat`. For example:
+ *
+ * ```javascript
+ * randomDateRange("yyyyMMdd hhmm", "19991231 2300", "20000101 0200");
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.randomDateRange = function(aFormat, aMin, aMax) {

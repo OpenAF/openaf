@@ -1,17 +1,21 @@
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>index</key>
- * OpenAF scripting is based on Javascript. There are built in objects and implicit functions
- * to add extra functionality. To get more help:\
- *   - for built in objects just search by the object name + the function name (e.g. openaf -helpscript io.readFile)\
- *   - for implicit functions search by the function name (e.g. openaf -helpscript compress) or enter "scope" (e.g. openaf -helpscript scope)
- * to see a complete list.\
- * \
- * Built-in objects are:\
- *   - af\
- *   - io\
- *   - CSV\
- *   - DB\
+ * <![CDATA[
+ * OpenAF scripting is based on JavaScript. There are built-in objects and implicit functions
+ * to add extra functionality. To get more help:
+ *
+ * - for built-in objects just search by the object name + the function name (e.g. openaf -helpscript `io.readFile`)
+ * - for implicit functions search by the function name (e.g. openaf -helpscript compress) or enter "scope" (e.g. openaf -helpscript scope)
+ *   to see a complete list.
+ *
+ * Built-in objects are:
+ *
+ * - `af`
+ * - `io`
+ * - `CSV`
+ * - `DB`
+ * ]]>
  * </odoc>
  */
 

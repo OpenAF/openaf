@@ -120,7 +120,72 @@ jobs:
    - name: Channels::Test MVS Utils
      from: Channels::Init
      to  : oJob Test
-     exec: args.func = args.tests.testMVSUtils; 
+     exec: args.func = args.tests.testMVSUtils;
+
+   - name: Channels::MVS multifile basic
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifile;
+
+   - name: Channels::MVS multifile manifest mismatch
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifileManifestMismatch;
+
+   - name: Channels::MVS multifile pagination
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifilePagination;
+
+   - name: Channels::MVS multifile sharing
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifileSharing;
+
+   - name: Channels::MVS multifile reshard
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSMultifileReshard;
+
+   - name: Channels::MVS shift and pop
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSShiftPop;
+
+   - name: Channels::Graph channel
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGraphChannel;
+
+   - name: Channels::Graph channel store
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGraphChannelStore;
+
+   - name: Channels::TimeSeries channel
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesChannel;
+
+   - name: Channels::TimeSeries channel store
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesChannelStore;
+
+   - name: Channels::TimeSeries integrations
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesIntegrations;
+
+   - name: Channels::TimeSeries concurrency
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesConcurrency;
+
+   - name: Channels::TimeSeries push Prometheus
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTimeSeriesPushPrometheus;
 
    - name: Channels::Test channel (all)
      from: Channels::Init
@@ -188,6 +253,12 @@ todo:
    - Channels::Remote channel access auditing
    - Channels::Subscribers test
    - Channels::Test MVS Utils
+   - Channels::MVS multifile basic
+   - Channels::MVS multifile manifest mismatch
+   - Channels::MVS multifile pagination
+   - Channels::MVS multifile sharing
+   - Channels::MVS multifile reshard
+   - Channels::MVS shift and pop
    - Channels::Keep history util
    
    # Big
@@ -206,6 +277,17 @@ todo:
    - Channels::Test channel (cache)
 
    - Channels::Test channel (all)
+
+   # Graph
+   - Channels::Graph channel
+   - Channels::Graph channel store
+
+   # TimeSeries
+   - Channels::TimeSeries channel
+   - Channels::TimeSeries channel store
+   - Channels::TimeSeries integrations
+   - Channels::TimeSeries concurrency
+   - Channels::TimeSeries push Prometheus
 
    # Ignite
    #- name: Channels::Creating a channel

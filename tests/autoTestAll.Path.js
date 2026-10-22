@@ -178,6 +178,31 @@
     });
     assertEqual(results,input.map(function(i) {return [i*2,0];}),'Concurrent input/function/literal isolation');
   };
+  exports.testPathQueryHelpers = function() {
+    var old=__flags.ALTERNATIVES.path;
+    try {
+      [false,true].forEach(function(java) {
+        __flags.ALTERNATIVES.path=java;
+        var data={items:[{name:'low',price:5},{name:'high',price:20}]};
+        assertEqual($path(data,"sql(items, 'select name where price > 10')"),[{name:'high'}],'SQL helper');
+        assertEqual($path(data,"from(items, 'greater(price, 10)')"),[data.items[1]],'nLinq string helper');
+        var query=af.fromNLinq('greater(price, 10)');
+        assertEqual($path({items:data.items,query:query},'from(items, query)'),[data.items[1]],'nLinq query map');
+        assertEqual($path(data,"jq(items, 'map(select(.price > 10))') | [0].name"),'high','jq array and path composition');
+        assertEqual($path(data,"jq(items, '.[].name')"),['low','high'],'jq multiple outputs');
+        assertEqual($path(2,"jq(@, '. + 1')"),3,'jq scalar');
+        assertEqual($path({},"jq(@, 'null')"),null,'jq null');
+        assertEqual($path({},"jq(@, 'empty')"),undefined,'jq empty stream');
+        assertEqual($path(data,"from(sql(items, 'select * where price > 10'), 'count()')"),1,'Query helper composition');
+        ["sql(items)","from(items, `1`)","jq(items, '[')"].forEach(function(q) {
+          var failed=false;
+          try { $path(data,q); } catch(e) { failed=true; }
+          assertEqual(failed,true,'Query helper rejects invalid call: '+q);
+        });
+      });
+    } finally { __flags.ALTERNATIVES.path=old; }
+  };
+
   exports.testPathWrapper = function() {
     var old=__flags.ALTERNATIVES.path, referenceRegistry, nestedReference;
     try {

@@ -45,18 +45,21 @@ OpenWrap.debug.prototype.unregister = function() {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.debug.load(aScript)</key>
- * Equivalent to OpenAF's "load" but registering the debug preparser. The comments code that can be used are:\
- * \
- *   //@  This is a checkpoint on the code you want to know it was reached\
- *   //#  assertVarA == assertVarB\
- *   //?  printVarA\
- *   //?s printInSLONVarA\
- *   //?y printInYAMLVarA\
- *   //[  begin of unique profile block\
- *   //]  end of unique profile block\
- * \
+ * <![CDATA[
+ * Equivalent to OpenAF's "load" but registering the debug preparser. The comments code that can be used are:
+ *
+ * ```javascript
+ * //@  This is a checkpoint on the code you want to know it was reached
+ * //#  assertVarA == assertVarB
+ * //?  printVarA
+ * //?s printInSLONVarA
+ * //?y printInYAMLVarA
+ * //[  begin of unique profile block
+ * //]  end of unique profile block
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.debug.prototype.load = function(aScript) { 
@@ -67,26 +70,29 @@ OpenWrap.debug.prototype.load = function(aScript) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.debug.require(aScript, force)</key>
- * Equivalent to OpenAF's "require" but registering the debug preparser. The comments code that can be used are:\
- * \
- *   //@  This is a checkpoint on the code you want to know it was reached\
- *   //#  assertVarA == assertVarB\
- *   //?  printVarA\
- *   //?s printInSLONVarA\
- *   //?y printInYAMLVarA\
- *   //?t printInTableVarA\
- *   //?r printInTreeVarA\
- *   //{  begin of unique block with prefix\
- *   //}  end of unique block with prefix\
- *   //[  begin of unique profile block\
- *   //]  end of unique profile block\
- *   //{[ begin of unique profile block with prefix\
- *   //]} end of unique profile block with prefix\
- *   //+  incrementVarA\
- *   //-  decrementVarA\ 
- * \
+ * <![CDATA[
+ * Equivalent to OpenAF's "require" but registering the debug preparser. The comments code that can be used are:
+ *
+ * ```javascript
+ * //@  This is a checkpoint on the code you want to know it was reached
+ * //#  assertVarA == assertVarB
+ * //?  printVarA
+ * //?s printInSLONVarA
+ * //?y printInYAMLVarA
+ * //?t printInTableVarA
+ * //?r printInTreeVarA
+ * //{  begin of unique block with prefix
+ * //}  end of unique block with prefix
+ * //[  begin of unique profile block
+ * //]  end of unique profile block
+ * //{[ begin of unique profile block with prefix
+ * //]} end of unique profile block with prefix
+ * //+  incrementVarA
+ * //-  decrementVarA
+ * ```
+ * ]]>
  * </odoc>
  */
 OpenWrap.debug.prototype.require = function(aScript, force) { 
@@ -98,37 +104,41 @@ OpenWrap.debug.prototype.require = function(aScript, force) {
 
 var OAF_DEBUG_ARGS
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.debug.debug(aCode, args, aReturnCode, aPrefix) : String</key>
- * Parses aCode for debug comments and replaces the appropriate code. The comments code that can be used are:\
- * \
- *   //@  This is a checkpoint on the code you want to know it was reached\
- *   //#  assertVarA == assertVarB\
- *   //?  printVarA\
- *   //?s printInSLONVarA\
- *   //?y printInYAMLVarA\
- *   //?t printInTableVarA\
- *   //?r printInTreeVarA\
- *   //{  begin of unique block with prefix\
- *   //}  end of unique block with prefix\
- *   //[  begin of unique profile block\
- *   //]  end of unique profile block\
- *   //{[ begin of unique profile block with prefix\
- *   //]} end of unique profile block with prefix\
- *   //+  incrementVarA\
- *   //-  decrementVarA\ 
- * \
- * If aReturnCode is true instead of executing the code, the code will just be returned. Customization can be provided through args
- * or the global map variable OAF_DEBUG_ARGS accepting the following entries:\
- * \
- *   lineColor   (string)  defaults to FG(220)\
- *   textColor   (string)  defaults to BG(230),BLACK\
- *   lineError   (string)  defaults to FG(220)\
- *   textError   (string)  defaults to BG(196),FG(255),BOLD\
- *   theme       (string)  defaults to doubleLineBothSides\
- *   emoticons   (boolean) defaults to true\
- *   signs       (map)     the emoticons to use (checkpoint, assert, print, error and time)\
- *   includeTime (boolean) defaults to false
+ * <![CDATA[
+ * Parses `aCode` for debug comments and replaces the appropriate code. The comments code that can be used are:
+ *
+ * ```javascript
+ * //@  This is a checkpoint on the code you want to know it was reached
+ * //#  assertVarA == assertVarB
+ * //?  printVarA
+ * //?s printInSLONVarA
+ * //?y printInYAMLVarA
+ * //?t printInTableVarA
+ * //?r printInTreeVarA
+ * //{  begin of unique block with prefix
+ * //}  end of unique block with prefix
+ * //[  begin of unique profile block
+ * //]  end of unique profile block
+ * //{[ begin of unique profile block with prefix
+ * //]} end of unique profile block with prefix
+ * //+  incrementVarA
+ * //-  decrementVarA
+ * ```
+ *
+ * If `aReturnCode` is true instead of executing the code, the code will just be returned. Customization can be provided through `args`
+ * or the global map variable OAF_DEBUG_ARGS accepting the following entries:
+ *
+ * - `lineColor` (string) defaults to FG(220)
+ * - `textColor` (string) defaults to BG(230),BLACK
+ * - `lineError` (string) defaults to FG(220)
+ * - `textError` (string) defaults to BG(196),FG(255),BOLD
+ * - `theme` (string) defaults to doubleLineBothSides
+ * - `emoticons` (boolean) defaults to true
+ * - `signs` (map) the emoticons to use (checkpoint, assert, print, error and time)
+ * - `includeTime` (boolean) defaults to false
+ * ]]>
  * </odoc>
  */
 OpenWrap.debug.prototype.debug = function(aCode, args, returnCode, aPrefix) {

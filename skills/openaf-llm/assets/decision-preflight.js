@@ -3,13 +3,14 @@ ow.loadTest();
 var llm = $llm({ type: "openai", model: "example-model", key: "unused-offline-placeholder" });
 var caps = llm.getCapabilities();
 ow.test.assert(caps.contractVersion, 1, "decision contract");
-var rejected = false;
+ow.test.assert(caps.native.availability, "incompatible", "unverified model is not native-eligible");
+var code;
 try {
   llm.decide("A billing question", {
     urgent: { type: "boolean", instructions: "Is immediate action needed?" }
   }, { strategy: "native" });
 } catch (e) {
-  rejected = String(e.code || e).indexOf("LLM_DECISION_CONTRACT_UNVERIFIED") >= 0;
+  code = e.code;
 }
-ow.test.assert(rejected, true, "native contract rejected before HTTP");
+ow.test.assert(code, "LLM_DECISION_UNSUPPORTED", "native request rejected before HTTP");
 print("decision preflight: ok");

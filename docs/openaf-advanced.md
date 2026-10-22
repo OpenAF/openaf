@@ -190,7 +190,7 @@ ow.loadServer();
 
 // Passive telemetry endpoint
 ow.server.telemetry.passive(9102, "/health", true, "myapp", {
-  "requests_total": { 
+  "myapp_requests_total": {
     text: "Total requests", 
     help: "Number of requests processed", 
     type: "counter" 
@@ -216,22 +216,41 @@ ow.server.telemetry.active(sender, 60000);
 
 ### OpenMetrics Format Support
 
+Passive telemetry with `useOpenMetrics=true` serves OpenMetrics 1.0 text with
+`application/openmetrics-text; version=1.0.0; charset=utf-8` and a final `# EOF` line.
+It omits scrape timestamps. Pass `false` as the sixth argument of
+`ow.server.telemetry.passive`, or set `ojob.metrics.openMetricsStrict: false`, to
+select the legacy Prometheus text response. The JSON response and `f=json` query
+override are also available; `f=om` selects the configured metrics text mode.
+
+The object formatter retains its legacy output unless its sixth argument is `true`.
+Strict mode supports scalar `unknown` (default), `gauge` and `counter` families;
+other types need a structured metric model and are rejected. Help-map keys are the
+fully prefixed sample names. Counter metadata uses the family name without
+`_total`, while the sample uses `_total`. Strict mode groups each family, escapes
+labels and help, uses `<prefix>_id` for array indexes, and rejects colliding names,
+duplicate series, invalid timestamps and carriage returns in text. Numeric
+timestamps are epoch seconds; a string timestamp argument selects a date label.
+
 ```javascript
 // Convert metrics to OpenMetrics format
 var openMetrics = ow.metrics.fromObj2OpenMetrics(
   ow.metrics.getAll(),      // metrics object
   "myapp",                  // prefix
-  new Date(),               // timestamp
+  undefined,                // omit timestamps for a scrape
   {                         // help text mapping
-    "cpu": { text: "CPU usage percentage", type: "gauge" },
-    "mem": { text: "Memory usage bytes", type: "gauge" }
-  }
+    "myapp_cpu_load": { help: "CPU load", type: "gauge" },
+    "myapp_mem_used": { help: "Memory used bytes", type: "gauge" }
+  },
+  undefined,                // optional value conversion map
+  true                      // strict OpenMetrics 1.0
 );
 
 // Expose via HTTP server
 var httpd = ow.server.httpd.start(9090);
 ow.server.httpd.route(httpd, "/metrics", function(req) {
-  return httpd.replyOKText(openMetrics);
+  return httpd.reply(openMetrics,
+    "application/openmetrics-text; version=1.0.0; charset=utf-8", 200, {});
 });
 ```
 

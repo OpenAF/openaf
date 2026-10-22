@@ -265,29 +265,33 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
          return ow.sec._sb[aRepo].setBucket(aBucket, aLockSecret, aBucketString);
       },
       /**
-       * <odoc>
+       * <odoc format="markdown">
        * <key>$sec.encSKey(aKey) : String</key>
-       * Given aKey will return the encrypted version of it with the current main sectet for the repo.\
-       * \
-       * Example:\
-       * \
-       *   $sec("test", "b1", $sec("test", __, __, "Password123").encSKey("Password1"), "Password123", "test.yml").set("mysecret", { l:"l", p:"p" })\
-       *   // ...\
-       *   $sec("test", "b1", $sec("test", __, __, "Password123").encSKey("Password1"), "Password123", "test.yml").get("mysecret")\
-       * \
+       * <![CDATA[
+       * Given `aKey` will return the encrypted version of it with the current main secret for the repo.
+       *
+       * Example:
+       *
+       * ```javascript
+       * $sec("test", "b1", $sec("test", __, __, "Password123").encSKey("Password1"), "Password123", "test.yml").set("mysecret", { l:"l", p:"p" })
+       * // ...
+       * $sec("test", "b1", $sec("test", __, __, "Password123").encSKey("Password1"), "Password123", "test.yml").get("mysecret")
+       * ```
+       * ]]>
        * </odoc>
        */
       encSKey: aKey => {
          return af.encrypt(aKey, sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainSecret)).substr(0, 16))
       },
       /**
-       * <odoc>
+       * <odoc format="markdown">
        * <key>$sec.procMap(aMap, aPath) : Map</key>
-       * Given aMap will process it and replace any secKey with the corresponding secret. Optionally you can provide aPath to
+       * <![CDATA[
+       * Given `aMap` will process it and replace any secKey with the corresponding secret. Optionally you can provide `aPath` to
        * process only a specific path of the map.
-       * \
-       *   secKey, secRepo, secBucket, secPass, secMainPass, secFile\
-       * \
+       *
+       * `secKey`, `secRepo`, `secBucket`, `secPass`, `secMainPass`, `secFile`
+       * ]]>
        * </odoc>
        */
       procMap: (aM, aPath) => {
