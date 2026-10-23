@@ -241,3 +241,70 @@ exports.testJSONExtraction = function() {
     ow.test.assert(String(out.toString("UTF-8")), io.readFileString(file), "Exact root bytes");
   } finally {io.rm(file);}
 };
+
+exports.testUnzipContainment = function() {
+  var files = java.nio.file.Files;
+  var base = String(files.createTempDirectory("openaf-unzip-"));
+  var target = base + "/target", outside = base + "/outside", zipFile = base + "/fixture.zip";
+  var absoluteEscape = base + "/absolute-escape.txt";
+  var errors = [];
+  try {
+    io.mkdir(target);
+    io.mkdir(outside);
+
+    var zos = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(zipFile));
+    try {
+      var addEntry = function(name, contents) {
+        zos.putNextEntry(new java.util.zip.ZipEntry(name));
+        if (isDef(contents)) {
+          var bytes = af.fromString2Bytes(contents);
+          zos.write(bytes, 0, bytes.length);
+        }
+        zos.closeEntry();
+      };
+      addEntry("safe/", __);
+      addEntry("safe/ok.txt", "safe");
+      addEntry("../escaped.txt", "parent traversal");
+      addEntry("../target-sibling/escaped.txt", "sibling prefix");
+      addEntry("safe/../../escaped-twice.txt", "nested traversal");
+      addEntry("..\\escaped-backslash.txt", "backslash traversal");
+      addEntry(absoluteEscape, "absolute traversal");
+      addEntry("C:/escaped-drive.txt", "drive traversal");
+      addEntry("\\\\server\\share\\escaped-unc.txt", "UNC traversal");
+
+      if (!ow.loadFormat().isWindows()) {
+        io.mkdir(target + "/internal-target");
+        files.createSymbolicLink(new java.io.File(target + "/internal-link").toPath(), new java.io.File(target + "/internal-target").toPath());
+        files.createSymbolicLink(new java.io.File(target + "/linked").toPath(), new java.io.File(outside).toPath());
+        files.createSymbolicLink(new java.io.File(target + "/dangling.txt").toPath(), new java.io.File(base + "/dangling-outside.txt").toPath());
+        addEntry("internal-link/ok.txt", "safe linked entry");
+        addEntry("linked/escaped.txt", "linked traversal");
+        addEntry("dangling.txt", "dangling symlink traversal");
+      }
+    } finally {
+      zos.close();
+    }
+
+    io.unzip(zipFile, target, function() {}, function(message) { errors.push(String(message)); });
+
+    ow.test.assert(io.readFileString(target + "/safe/ok.txt"), "safe", "Extract a normal nested ZIP entry.");
+    ow.test.assert(io.fileExists(base + "/escaped.txt"), false, "Reject parent traversal.");
+    ow.test.assert(io.fileExists(base + "/target-sibling/escaped.txt"), false, "Reject sibling-prefix traversal.");
+    ow.test.assert(io.fileExists(base + "/escaped-twice.txt"), false, "Reject nested parent traversal.");
+    ow.test.assert(io.fileExists(absoluteEscape), false, "Reject absolute paths.");
+    ["../escaped.txt", "../target-sibling/escaped.txt", "safe/../../escaped-twice.txt",
+     "..\\escaped-backslash.txt", absoluteEscape, "C:/escaped-drive.txt", "\\\\server\\share\\escaped-unc.txt"].forEach(function(name) {
+      ow.test.assert(errors.some(function(message) { return message.indexOf("[" + name + "]") >= 0; }), true, "Reject ZIP entry " + name);
+    });
+    if (!ow.loadFormat().isWindows()) {
+      ow.test.assert(io.readFileString(target + "/internal-target/ok.txt"), "safe linked entry", "Allow an existing symlink that remains inside the extraction root.");
+      ow.test.assert(io.fileExists(outside + "/escaped.txt"), false, "Reject extraction through a directory symlink.");
+      ow.test.assert(io.fileExists(base + "/dangling-outside.txt"), false, "Reject extraction through a dangling file symlink.");
+      ["linked/escaped.txt", "dangling.txt"].forEach(function(name) {
+        ow.test.assert(errors.some(function(message) { return message.indexOf("[" + name + "]") >= 0; }), true, "Reject ZIP entry " + name);
+      });
+    }
+  } finally {
+    io.rm(base);
+  }
+};

@@ -1,0 +1,23 @@
+# Copyright 2026 Nuno Aguiar
+
+include:
+  - oJobTest.yaml
+
+jobs:
+  - name: SecurityTransport::Init
+    exec: args.tests = require("autoTestAll.SecurityTransport.js");
+
+  - name: SecurityTransport::SMTP STARTTLS requirement
+    from: SecurityTransport::Init
+    to  : oJob Test
+    exec: args.func = args.tests.testEmailTLSRequirement;
+
+  - name: SecurityTransport::FTPS trust configuration
+    from: SecurityTransport::Init
+    to  : oJob Test
+    exec: args.func = args.tests.testFTPSTrustConfiguration;
+
+todo:
+  - SecurityTransport::Init
+  - SecurityTransport::SMTP STARTTLS requirement
+  - SecurityTransport::FTPS trust configuration

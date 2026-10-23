@@ -1,0 +1,17 @@
+# Copyright 2026 Nuno Aguiar
+
+include:
+  - oJobTest.yaml
+
+jobs:
+  - name: SecuritySignature::Init
+    exec: args.tests = require("autoTestAll.SecuritySignature.js");
+
+  - name: SecuritySignature::Strict policy
+    from: SecuritySignature::Init
+    to  : oJob Test
+    exec: args.func = args.tests.testUnsupportedStrictSignaturePolicy;
+
+todo:
+  - SecuritySignature::Init
+  - SecuritySignature::Strict policy

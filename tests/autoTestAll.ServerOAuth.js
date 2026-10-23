@@ -1,4 +1,41 @@
 (function() {
+  exports.testLegacySessionBoundary = function() {
+    ow.loadServer();
+    var httpd = ow.server.httpd, saved = httpd.oauth_realms;
+    var opts = { realm: 'legacy-boundary', baseURL: 'https://app.example', oauthAuthURL: 'https://id.example/auth',
+      oauthTokenURL: 'https://id.example/token', oauthLogoutURL: 'https://id.example/logout', oauthClientId: 'client', oauthClientSecret: 'secret' };
+    var server = { getPort: function() { return 0; }, reply: function(body, mime, code, headers) { return { code: code, headers: headers }; } };
+    var calls = 0;
+    function request(cookie, params, uri) {
+      return httpd.authOAuth(opts, server, { uri: uri || '/private', header: { cookie: 'OAF_AUTH_SESSION_ID=' + cookie }, params: params }, function() { calls++; return 'protected'; });
+    }
+    try {
+      httpd.oauth_realms = {};
+      var login = request('missing');
+      var state = String(login.headers.Location).split('state=')[1];
+      eq(state.indexOf('temp.'), 0, 'Login produces pending state');
+      eq(request(state).code, 303, 'Pending state cannot authenticate');
+      ['toString', 'constructor', '__proto__', 'hasOwnProperty'].forEach(function(id) {
+        eq(request(id).code, 303, 'Inherited session cannot authenticate: ' + id);
+      });
+      var records = httpd.oauth_realms[opts.realm];
+      records.empty = { access_token: '' };
+      records.invalid = { access_token: 1 };
+      records.inherited = Object.create({ access_token: 'inherited' });
+      ['empty', 'invalid', 'inherited'].forEach(function(id) { eq(request(id).code, 303, 'Malformed token is rejected: ' + id); });
+      eq(calls, 0, 'No unauthenticated request reached protected callback');
+      records.valid = { access_token: 'valid-token', x: nowUTC() + 60000 };
+      records.noExpiry = { access_token: 'valid-token' };
+      eq(request('valid'), 'protected', 'Unexpired token session remains accepted');
+      eq(request('noExpiry'), 'protected', 'Existing token session without expiry remains accepted');
+      eq(request('', { state: 'valid' }, '/cb').code, 303, 'Token record is not callback state');
+      eq(request('', { state: 'constructor' }, '/cb').code, 303, 'Inherited callback state is rejected');
+      eq(request('', __, '/cb').code, 303, 'Missing callback parameters are rejected');
+      opts.realm = '__proto__';
+      eq(request('toString').code, 303, 'Prototype-named realm cannot authenticate inherited state');
+      eq(calls, 2, 'Only valid sessions reached protected callback');
+    } finally { httpd.oauth_realms = saved; }
+  };
   function eq(a, b, message) { ow.test.assert(a, b, message); }
   function fails(fn, fragment) {
     var error;

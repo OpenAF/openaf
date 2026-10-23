@@ -120,7 +120,7 @@ Invoke it as `openaf --opack <verb> [args...] [options]` (packaged distributions
 - `-force` — reinstall even if already at the same/newer version, and skip the dependency-satisfied check.
 - `-repo <url\|path>` — prepend an extra repository to search for this run only.
 - `-deps` — automatically install missing dependencies instead of prompting interactively.
-- `-useunzip` — stream-extract to save memory on very large opacks.
+- `-useunzip` — accepted for compatibility; extraction uses the same safe internal streaming path.
 - `-noverify` — skip the post-install file-hash verification pass.
 - `-cred <user:pass>` — HTTP basic-auth credentials for protected repositories/URLs.
 - `-arg <value>` — passed through to `preinstall`/`postinstall` scripts as `arg`.

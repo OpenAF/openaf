@@ -926,11 +926,11 @@ Environment-level controls:
 OAF_INTEGRITY           # { filePath: alg-hash }
 OAF_INTEGRITY_WARN      # warn vs abort on mismatch (default true)
 OAF_INTEGRITY_STRICT    # if true require all loaded scripts have integrity entries
-OAF_SIGNATURE_STRICT    # require valid signature for loaded scripts
-OAF_SIGNATURE_KEY       # public key for signature verification
-OAF_VALIDATION_STRICT   # require integrity + signature success
+OAF_SIGNATURE_STRICT    # fail closed; script signature format is not currently defined
+OAF_SIGNATURE_KEY       # reserved for a future documented script signature format
+OAF_VALIDATION_STRICT   # fail closed until combined integrity and signature validation is defined
 ```
-Combine with oJob integrity (`ojob.integrity`) for full chain trust.
+Use integrity validation or signed oJob definitions where those formats are explicitly supported.
 
 ### Timeout Aware Sleep & stopWhen
 

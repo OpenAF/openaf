@@ -3807,9 +3807,23 @@ const loadExternalJars = function(aPath, dontCheck) {
 var __preCompileLevel = __flags.OAF_PRECOMPILE_LEVEL
 
 var __loadPreParser = function(s) { return s }
+const __strictFlagEnabled = function(aValue) {
+	if (aValue === true) return true
+	if (aValue === false || isUnDef(aValue)) return false
+	return String(aValue).trim().toLowerCase() == "true"
+}
+const __signaturePolicyGuard = function(aFile) {
+	var signatureStrict = __strictFlagEnabled(OAF_SIGNATURE_STRICT)
+	var validationStrict = __strictFlagEnabled(OAF_VALIDATION_STRICT)
+	if (signatureStrict || validationStrict) {
+		var file = (typeof aFile == "undefined" || aFile == null) ? "untitled" : String(aFile)
+		throw "OAF SIGNATURE VALIDATION OF '" + file + "' is unavailable because no script signature format is defined."
+	}
+}
 const __codeVerify = function(aCode, aFile) {
 	_$(aCode, "aCode").isString().$_()
 	aFile     = _$(aFile, "aFile").isString().default("untitled")
+	__signaturePolicyGuard(aFile)
 
 	var validation = false
 
@@ -3863,7 +3877,7 @@ const __codeVerify = function(aCode, aFile) {
 			}
 		}
 	}
-	if (OAF_VALIDATION_STRICT && !validation) {
+	if (__strictFlagEnabled(OAF_VALIDATION_STRICT) && !validation) {
 		throw "OAF VALIDATION OF '" + aFile + "' failed.";
 	}
 }
@@ -3880,6 +3894,7 @@ const requireDebug = (aScript, aForce) => ow.loadDebug().require(aScript, aForce
  * </odoc>
  */
 const load = function(aScript, loadPrecompiled) {
+	__signaturePolicyGuard(aScript)
 	var error = [], inErr = false;
 	var fn = function(aS, aLevel) {
 		var res = false, err;
@@ -4020,6 +4035,7 @@ const loadPy = function(aPyScript, aInput, aOutputArray, dontStop) {
  * inside an .opack for a different OpenAF version - is purged exactly once on upgrade.
  */
 const __precompiledArtifact = function(aScript, info, path, cl, aWrapCode, dontCompile) {
+	__signaturePolicyGuard(aScript)
 	var artifact = path + cl + ".jar";
 	var marker = path + "." + getDistribution() + "-" + getVersion() + "-j2";
 	if (!io.fileExists(marker)) {
@@ -4049,6 +4065,7 @@ const __precompiledArtifact = function(aScript, info, path, cl, aWrapCode, dontC
  * </odoc>
  */
 const requireCompiled = function(aScript, dontCompile, dontLoad) {
+	__signaturePolicyGuard(aScript)
 	var res = false, cl, artifact;
 	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
@@ -4092,6 +4109,7 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
  * </odoc>
  */
 const loadCompiled = function(aScript, dontCompile, dontLoad) {
+	__signaturePolicyGuard(aScript)
 	var res = false, cl, artifact;
 	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
@@ -7030,6 +7048,7 @@ const __compiledClass2Source = aClass => String(aClass).replace(/_js$/, "").repl
  * </odoc>
  */
 const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
+	__signaturePolicyGuard(getOpenAFJar() + "::js/" + __compiledClass2Source(aClass))
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
@@ -7071,6 +7090,7 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 
 const loadCompiledRequire = function(aClass, forceReload, aFunction) {
 	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass);
+	__signaturePolicyGuard(_libPath)
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
@@ -7362,6 +7382,7 @@ loadRequire();
  * </odoc>
  */
 const require = function(aScript, force) {
+	__signaturePolicyGuard(aScript)
 	var o, f, exports = {}, module = { id: aScript, uri: aScript, exports: exports };
 	
 	if (isUnDef(require.cache)) require.cache = {};
@@ -12636,45 +12657,83 @@ IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
 	logErrFn  = _$(logErrFn, "logErrFn").isFunction().default(printErr)
 	zipFile   = _$(zipFile, "zipFile").isString().$_()
 	targetDir = _$(targetDir, "targetDir").isString().default(".")
- 
-	var fis = new java.io.FileInputStream(zipFile)
-	var zis = new java.util.zip.ZipInputStream(fis)
 
-	var ne = zis.getNextEntry()
-	while (!isNull(ne)) {
-		var p = String(ne.getName()).lastIndexOf("/")
-		var _targetDir = targetDir + "/" + String(ne.getName()).substring(0, p)
-		var _targetFile = String(ne.getName()).substring(p + 1)
-
-		if (!io.fileExists(_targetDir)) {
-			try {
-				logFn("Creating dir " + _targetDir, {
-					type: "dir",
-					target: _targetDir
-				})
-				io.mkdir(_targetDir)
-			} catch(e) {
-				logErrFn("ERROR: [" + _targetDir + "] " + e, e)
-			}
+	var rootFile = new java.io.File(targetDir).getCanonicalFile()
+	if (!rootFile.exists()) io.mkdir(String(rootFile))
+	var rootPath = rootFile.toPath()
+	var files = java.nio.file.Files
+	var resolveEntry = function(entryName) {
+		if (entryName.indexOf("\\") >= 0 || entryName.indexOf("/") == 0 || /^[A-Za-z]:/.test(entryName)) {
+			throw "Unsafe ZIP entry path: " + entryName
 		}
 
-		if (!ne.isDirectory() && _targetFile.length > 0) {
-			try {
-				logFn("Extracting " + String(ne.getName()) + " -> " + _targetDir + "/" + _targetFile, {
-					type: "file",
-					source: String(ne.getName()),
-					target: _targetDir + "/" + _targetFile
-				})
-				var wtmp = io.writeFileStream(_targetDir + "/" + _targetFile)
-				Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
-				wtmp.close()
-			} catch(e) {
-				logErrFn("ERROR: [" + _targetDir + " | " + _targetFile + "] " + e, e)
-			}
+		var relativePath = java.nio.file.Paths.get(entryName).normalize()
+		for (var i = 0; i < relativePath.getNameCount(); i++) {
+			if (String(relativePath.getName(i)) == "..") throw "Unsafe ZIP entry path: " + entryName
 		}
-		
-		zis.closeEntry()
-		ne = zis.getNextEntry()
+
+		var entryPath = rootPath.resolve(relativePath).normalize()
+		if (!entryPath.startsWith(rootPath)) throw "Unsafe ZIP entry path: " + entryName
+
+		var currentPath = rootPath
+		for (var i = 0; i < relativePath.getNameCount(); i++) {
+			currentPath = currentPath.resolve(relativePath.getName(i))
+			if (files.isSymbolicLink(currentPath) && !files.exists(currentPath)) throw "Unsafe ZIP entry symlink: " + entryName
+		}
+		if (!new java.io.File(String(entryPath)).getCanonicalFile().toPath().startsWith(rootPath)) {
+			throw "Unsafe ZIP entry symlink: " + entryName
+		}
+		return entryPath
+	}
+
+	var fis, zis
+	try {
+		fis = new java.io.FileInputStream(zipFile)
+		zis = new java.util.zip.ZipInputStream(fis)
+
+		var ne = zis.getNextEntry()
+		while (!isNull(ne)) {
+			var entryName = String(ne.getName())
+			try {
+				var entryPath = resolveEntry(entryName)
+				var dirPath = ne.isDirectory() ? entryPath : entryPath.getParent()
+				var p = entryName.lastIndexOf("/")
+				var targetPath = targetDir + "/" + entryName
+				var targetDirPath = targetDir + "/" + entryName.substring(0, p)
+				if (!isNull(dirPath) && !files.exists(dirPath)) {
+					logFn("Creating dir " + targetDirPath, {
+						type: "dir",
+						target: targetDirPath
+					})
+					io.mkdir(String(dirPath))
+					resolveEntry(entryName)
+				}
+
+				if (!ne.isDirectory() && String(entryPath.getFileName()).length > 0) {
+					resolveEntry(entryName)
+					logFn("Extracting " + entryName + " -> " + targetPath, {
+						type: "file",
+						source: entryName,
+						target: targetPath
+					})
+					var wtmp
+					try {
+						wtmp = io.writeFileStream(String(entryPath))
+						Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
+					} finally {
+						if (isDef(wtmp)) wtmp.close()
+					}
+				}
+			} catch(e) {
+				logErrFn("ERROR: [" + entryName + "] " + e, e)
+			}
+
+			zis.closeEntry()
+			ne = zis.getNextEntry()
+		}
+	} finally {
+		if (isDef(zis)) zis.close()
+		else if (isDef(fis)) fis.close()
 	}
 }
 

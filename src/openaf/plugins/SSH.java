@@ -1018,16 +1018,31 @@ public class SSH extends ScriptableObject {
 		else
 			return getSSHFile(remoteFile, localFile, false);
 	}
+
+	private static File resolveScpDownloadTarget(File directory, String peerName) throws IOException {
+		if (peerName == null || peerName.length() == 0 || peerName.equals(".") || peerName.equals("..") ||
+			peerName.indexOf('/') >= 0 || peerName.indexOf('\\') >= 0 ||
+			peerName.matches("^[A-Za-z]:.*")) {
+			throw new IOException("Invalid SCP file name");
+		}
+
+		File root = directory.getCanonicalFile();
+		File target = new File(root, peerName).getCanonicalFile();
+		if (target.getParentFile() == null || !target.getParentFile().equals(root)) {
+			throw new IOException("SCP file name escapes the destination directory");
+		}
+		return target;
+	}
 	
 	public byte[] getSSHFile(String remoteFile, String localFile, boolean fileFlag) throws JSchException, IOException {
 		OutputStream fos = null;
 		byte[] res = null;
 		
 		try {
-	        String prefix = null;
+		        File targetDirectory = null;
 	        if (fileFlag)
 		        if(new File(localFile).isDirectory()) {
-		           prefix=localFile + File.separator;
+		           targetDirectory = new File(localFile);
 		        }
 		      
 			// exec 'scp -f rfile' remotely
@@ -1084,7 +1099,7 @@ public class SSH extends ScriptableObject {
 
 				// read a content of lfile
 				if (fileFlag)
-					fos = new FileOutputStream(prefix==null ? localFile : prefix + file);
+					fos = new FileOutputStream(targetDirectory == null ? new File(localFile) : resolveScpDownloadTarget(targetDirectory, file));
 				else
 					fos = new ByteArrayOutputStream();
 				int foo;

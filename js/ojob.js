@@ -235,7 +235,7 @@ function ojob__rawHasEncryptedIncludes(aFile) {
 			if (isDef(ow) && isDef(ow.oJob) && isArray(ow.oJob.authorizedDomains)) {
 				if (ow.oJob.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) return false;
 			}
-			content = $rest({ throwExceptions: true }).get(f);
+			content = af.fromBytes2String(ow.oJob.__readAuthorizedRemoteBytes(f));
 		} else {
 			content = io.readFileString(f);
 		}
@@ -642,7 +642,7 @@ function ojob_completion() {
 				var _d
 				var _cf = __gHDir() + "/.openaf_completion_" + domain + ".json"
 				if (!io.fileExists(_cf) || io.fileInfo(_cf).lastModified < (new Date().getTime() - 86400000)) {
-					_d = $rest().get("https://" + domain + "/_integrity.json")
+					_d = jsonParse(af.fromBytes2String(ow.loadOJob().__readAuthorizedRemoteBytes("https://" + domain + "/_integrity.json")), true)
 					io.writeFileJSON(_cf, _d)
 				} else {
 					_d = io.readFileJSON(_cf)

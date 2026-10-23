@@ -149,7 +149,46 @@ OpenWrap.oJob = function(isNonLocal) {
 	return this;
 };
 
-OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
+OpenWrap.oJob.prototype.__readAuthorizedRemoteBytes = function(aURL) {
+	var current = String(aURL)
+	var initialURL = new java.net.URL(current), initialUserInfo = initialURL.getUserInfo(), initialPort = initialURL.getPort() >= 0 ? initialURL.getPort() : initialURL.getDefaultPort()
+	var user, pass
+	if (!isNull(initialUserInfo) && String(initialUserInfo).indexOf(":") >= 0) {
+		user = String(java.net.URLDecoder.decode(String(initialUserInfo).substring(0, String(initialUserInfo).indexOf(":")), "UTF-8"))
+		pass = String(java.net.URLDecoder.decode(String(initialUserInfo).substring(String(initialUserInfo).indexOf(":") + 1), "UTF-8"))
+	}
+	for (var redirects = 0; redirects <= 10; redirects++) {
+		var currentURL = new java.net.URL(current)
+		if (!String(currentURL.getProtocol()).match(/^https?$/i)) throw "Unauthorized URL scheme: " + current
+		if (this.authorizedDomains.indexOf(String(currentURL.getHost())) < 0) throw "Unauthorized URL redirect: " + current
+
+		var http = ow.loadObj().rest.connectionFactory()
+		try {
+			http.client = http.client.newBuilder().followRedirects(false).followSslRedirects(false).build()
+			var currentPort = currentURL.getPort() >= 0 ? currentURL.getPort() : currentURL.getDefaultPort()
+			if (isDef(user) && String(currentURL.getProtocol()).toLowerCase() == String(initialURL.getProtocol()).toLowerCase() &&
+				String(currentURL.getHost()).toLowerCase() == String(initialURL.getHost()).toLowerCase() && currentPort == initialPort) {
+				http.login(user, pass, false, current)
+			}
+			http.setThrowExceptions(false)
+			var response = http.getBytes(current)
+			var code = response.responseCode
+			if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
+				var location = http._response.header("Location")
+				if (isNull(location)) throw "HTTP redirect without Location for URL: " + current
+				current = String(new java.net.URI(current).resolve(String(location)))
+				continue
+			}
+			if (code >= 300) throw "HTTP response code " + code + " for URL: " + current
+			return response.responseBytes
+		} finally {
+			try { http.close() } catch(e) {}
+		}
+	}
+	throw "Too many HTTP redirects for URL: " + aURL
+}
+
+OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath, aContentCallback) {
 	_$(aFileOrPath, "aFileOrPath").isString().$_();
 	
 	var isUrl = false;
@@ -174,51 +213,65 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
     }
 
 	if (isDef(OJOB_INTEGRITY[aFileOrPath])) {
-		var stream, http;
-		if (isUrl) {
-			http = ow.loadObj().rest.connectionFactory();
-			stream = $rest({ httpClient: http }).get2Stream(aFileOrPath);
-		} else {
-			stream = io.readFileStream(aFileOrPath);
-		}
-
+		var stream, http, digestStream, capturedFile;
 		var valid = false;
 		try {
-
-		if (OJOB_INTEGRITY[aFileOrPath].indexOf("-") >= 0) {
-			var _p = OJOB_INTEGRITY[aFileOrPath].split("-"), alg = _p[0], h = _p[1];
-			switch (alg) {
-			case "sha256":
-				valid = (sha256(stream) == h);
-				break;
-			case "sha512":
-				valid = (sha512(stream) == h);
-				break;
-			case "sha384":
-				valid = (sha384(stream) == h);
-				break;
-			case "sha1"  :
-				valid = (sha1(stream) == h);
-				break;
-			case "md5"   :
-				valid = (md5(stream) == h)
-				break
-			case "md2"   :
-				valid = (md2(stream) == h)
-				break
-			default      : 
-				valid = false;
+			if (isUrl) {
+				stream = new java.io.ByteArrayInputStream(this.__readAuthorizedRemoteBytes(aFileOrPath));
+			} else {
+				stream = io.readFileStream(aFileOrPath);
 			}
-		}
-                if (OJOB_INTEGRITY[aFileOrPath].indexOf(":") >= 0) {
-                        ow.loadJava()
-                        valid = ow.java.checkDigest(OJOB_INTEGRITY[aFileOrPath], stream)
-                }
+
+			if (isFunction(aContentCallback)) {
+				capturedFile = java.nio.file.Files.createTempFile("openaf-ojob-integrity-", ".tmp");
+				java.nio.file.Files.copy(stream, capturedFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+				digestStream = java.nio.file.Files.newInputStream(capturedFile);
+			} else {
+				digestStream = stream;
+			}
+
+			if (OJOB_INTEGRITY[aFileOrPath].indexOf("-") >= 0) {
+				var _p = OJOB_INTEGRITY[aFileOrPath].split("-"), alg = _p[0], h = _p[1];
+				switch (alg) {
+				case "sha256":
+					valid = (sha256(digestStream) == h);
+					break;
+				case "sha512":
+					valid = (sha512(digestStream) == h);
+					break;
+				case "sha384":
+					valid = (sha384(digestStream) == h);
+					break;
+				case "sha1"  :
+					valid = (sha1(digestStream) == h);
+					break;
+				case "md5"   :
+					valid = (md5(digestStream) == h)
+					break
+				case "md2"   :
+					valid = (md2(digestStream) == h)
+					break
+				default      :
+					valid = false;
+				}
+			}
+			if (OJOB_INTEGRITY[aFileOrPath].indexOf(":") >= 0) {
+				ow.loadJava()
+				valid = ow.java.checkDigest(OJOB_INTEGRITY[aFileOrPath], digestStream)
+			}
+
+			if (isFunction(aContentCallback)) {
+				try { digestStream.close(); } catch(e) {}
+				digestStream = __;
+				aContentCallback(() => java.nio.file.Files.readAllBytes(capturedFile), valid, aFileOrPath);
+			}
 
 			return valid;
 		} finally {
-			try { stream.close(); } catch(e) {}
+			try { if (isDef(digestStream)) digestStream.close(); } catch(e) {}
+			try { if (isDef(stream)) stream.close(); } catch(e) {}
 			try { if (isDef(http)) http.close(); } catch(e) {}
+			try { if (isDef(capturedFile)) java.nio.file.Files.deleteIfExists(capturedFile); } catch(e) {}
 		}
 	} else {
 		return __;
@@ -859,7 +912,63 @@ OpenWrap.oJob.prototype.__readCachedFile = function(aPath, aReadFn) {
 }
 
 OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
-	var res = {}, parent = this, validation = false, aOrigFile = aFile;
+	var res = {}, parent = this, validation = false, signatureRejected = false, verifiedContent, aOrigFile = aFile;
+
+	function _readRemoteBytes(url) {
+		return parent.__readAuthorizedRemoteBytes(url)
+	}
+
+	function _readLocalBytes(file) {
+		try {
+			return io.readFileBytes(file);
+		} catch(e1) {
+			if (isUnDef(e1.message) || !e1.message.match(/FileNotFoundException|NoSuchFileException/)) throw e1;
+			var paths = getOPackPaths(), found;
+			if (io.fileExists(__flags.OJOB_LOCALPATH)) paths["__ojobs_local"] = __flags.OJOB_LOCALPATH;
+			for(var i in paths) {
+				try {
+					found = (paths[i] + "/" + file).replace(/\\+/g, "/").replace(/\/+/g, "/");
+					return io.readFileBytes(found);
+				} catch(e2) {
+					if (isUnDef(e2.message) || !e2.message.match(/FileNotFoundException|NoSuchFileException/)) throw e2;
+				}
+			}
+			throw "File not found! (" + file + ")";
+		}
+	}
+
+	function _parseYAML(content, unsafe) {
+		if (unsafe) return af.fromYAML(content, true);
+		loadJSYAML();
+		var t = new jsyaml.Type("tag:yaml.org,2002:js/eval", {
+			kind: "scalar",
+			resolve: function() { return true; },
+			construct: function(d) { return "!!js/eval " + d; }
+		});
+		var parsed = jsyaml.loadAll(content, { schema: jsyaml.DEFAULT_SCHEMA.extend([t]) });
+		return (isArray(parsed) && parsed.length == 1) ? parsed[0] : parsed;
+	}
+
+	function _parseCaptured(content, unsafe) {
+		var clean = String(aFile).replace(/[?#].*$/, ""), encrypted = clean.match(/\.enc$/i), text;
+		if (encrypted) {
+			text = String(Packages.openaf.AFCmdBase.afc.dbIP(content));
+			clean = clean.replace(/\.enc$/i, "");
+		} else {
+			text = af.fromBytes2String(content);
+		}
+
+		if (clean.match(/\.ya?ml$/i)) return _parseYAML(text, unsafe);
+		if (clean.match(/\.js(on)?$/i)) {
+			var parsed = encrypted ? JSON.parse(text) : jsonParse(text, true);
+			if (unsafe && isMap(parsed) && __JSONformat.unsafe) {
+				traverse(parsed, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+			}
+			return parsed;
+		}
+		if (String(aFile).match(/^https?:\/\//i)) return _parseYAML(text, unsafe);
+		return text;
+	}
 
 	var fnDown = url => {
 		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
@@ -870,10 +979,14 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		else {
 			if (url.endsWith("/")) url += "index.json"
 			
-			var res = $rest({ throwExceptions: true }).get(url);
+			var res = af.fromBytes2String(_readRemoteBytes(url));
 			if (isString(res)) {
-				try { res = af.fromYAML(res, true); } catch (e) { }
-			} else {
+				var parsed = jsonParse(res, true)
+				if (isString(parsed)) {
+					try { res = af.fromYAML(res, true); } catch (e) { }
+				} else {
+					res = parsed
+				}
 				if (isMap(res) && __JSONformat.unsafe) {
 					traverse(res, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
 				}
@@ -888,7 +1001,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var _r = $rest({ throwExceptions: true }).get(url);
+			var _r = af.fromBytes2String(_readRemoteBytes(url));
 			if (isMap(_r)) {
 				if (__JSONformat.unsafe) traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
 				return _r;
@@ -904,7 +1017,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var _r = $rest({ throwExceptions: true }).getBytes(url);
+			var _r = _readRemoteBytes(url);
 			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
 			if (isString(_r)) {
 				try {
@@ -926,7 +1039,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var _r = $rest({ throwExceptions: true }).getBytes(url);
+			var _r = _readRemoteBytes(url);
 			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
 			if (isString(_r)) {
 				try {
@@ -999,12 +1112,18 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		}
 		
 		// Check for internal signature
+		if (OJOB_SIGNATURE_STRICT && (isUnDef(res) || isUnDef(res.__jwt) || isUnDef(OJOB_SIGNATURE_KEY))) {
+			logErr("SIGNATURE: Verification of '" + aFile + "' failed. Strict signature enforced. Not loading oJob definition.");
+			signatureRejected = true;
+			return {};
+		}
 		if (isDef(res) && isDef(res.__jwt) && isDef(OJOB_SIGNATURE_KEY)) {
 			ow.loadObj();
 
 			if (!ow.obj.signVerify(OJOB_SIGNATURE_KEY, res)) {
 				if (OJOB_SIGNATURE_STRICT) {
 					logErr("SIGNATURE: Verification of '" + aFile + "' failed. Strict signature enforced. Not loading oJob definition.");
+					signatureRejected = true;
 					return {};
 				} else {
 					logWarn("SIGNATURE: Verification of '" + aFile + "' failed. Please check the source and update the corresponding signature. Execution will continue.");
@@ -1038,7 +1157,9 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		if (Object.keys(OJOB_INTEGRITY).length > 0) {
 			Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "oJob checking integrity of '" + aFile + "'", null);
 
-			var ig = parent.verifyIntegrity(aFile);
+			var ig = parent.verifyIntegrity(aFile, (readContent, valid) => {
+				if (valid || OJOB_INTEGRITY_WARN) verifiedContent = readContent();
+			});
 			if (isDef(ig) && ig == false) {
 				if (OJOB_INTEGRITY_WARN) {
 					logWarn("INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list. Execution will continue.");
@@ -1054,7 +1175,16 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			}
 		}
 
-		if (aFile.match(/\.ya?ml\.enc$/i)) {
+		var isRemote = aFile.match(/^https?:\/\//i);
+		var domainAuthorized = !isRemote || parent.authorizedDomains.indexOf(String((new java.net.URL(aFile)).getHost())) >= 0;
+		var preauthParse = OJOB_SIGNATURE_STRICT || (OJOB_VALIDATION_STRICT && !validation);
+		if (domainAuthorized && (isDef(verifiedContent) || preauthParse)) {
+			if (isUnDef(verifiedContent)) verifiedContent = isRemote ? _readRemoteBytes(aFile) : _readLocalBytes(aFile);
+			res = this.__merge(_load(() => _parseCaptured(verifiedContent, !preauthParse)), res);
+			if (preauthParse && !signatureRejected && validation) {
+				res = this.__merge(_parseCaptured(verifiedContent, true), {});
+			}
+		} else if (aFile.match(/\.ya?ml\.enc$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownEncYAML), res);
 			} else {
@@ -1328,7 +1458,7 @@ OpenWrap.oJob.prototype.getRawIncludes = function(aFile) {
 			if (this.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) {
 				return { include: [], jobsInclude: [] };
 			}
-			content = $rest({ throwExceptions: true }).get(f);
+			content = af.fromBytes2String(this.__readAuthorizedRemoteBytes(f));
 		} else {
 			content = io.readFileString(f);
 		}
@@ -1338,14 +1468,14 @@ OpenWrap.oJob.prototype.getRawIncludes = function(aFile) {
 		} else if (isString(content)) {
 			var fclean = f.replace(/[?#].*$/, "");
 			if (fclean.match(/\.js(on)?$/i)) {
-				res = jsonParse(content, __, __, true);
+				res = jsonParse(content, true);
 			} else if (fclean.match(/\.ya?ml$/i)) {
-				res = af.fromYAML(content, true);
+				res = af.fromYAML(content);
 			} else {
 				try {
-					res = af.fromYAML(content, true);
+					res = af.fromYAML(content);
 				} catch(e1) {
-					res = jsonParse(content, __, __, true);
+					res = jsonParse(content, true);
 				}
 			}
 		}
@@ -1461,8 +1591,8 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 	aId = altId;
 	for(var i in todoList) { 
 		var name = isDef(todoList[i].name) ? todoList[i].name : Object.keys(todoList[i])[0]
-		if(isDef(aJobArgs) && isObject(todoList[i])) 
-			todoList[i].args = this.__processArgs(todoList[i].args, aJobArgs, aId);
+		if(isObject(todoList[i]) && (isDef(todoList[i].args) || isDef(aJobArgs)))
+			todoList[i].args = this.__processArgs(todoList[i].args, aJobArgs, aId, true);
 
 		if (isMap(todoList[i])) {
 			todoList[i] = this.parseTodo(todoList[i])
@@ -1490,6 +1620,7 @@ OpenWrap.oJob.prototype.add2Todo = function(aTodo, aId) {
 	aTodo = this.parseTodo(aTodo)
 	if (isMap(aTodo)) {
 		if (isDef(aTodo.job) && isUnDef(aTodo.name)) aTodo.name = aTodo.job;
+		if (isDef(aTodo.args)) aTodo.args = this.__processArgs(aTodo.args, __, aId, true)
 		this.addTodo(this.getID() + aId, this.getJobsCh(), this.getTodoCh(), aTodo.name, aTodo.args, aTodo.type, aTodo.typeArgs);
 	} else {
 		this.addTodo(this.getID() + aId, this.getJobsCh(), this.getTodoCh(), aTodo, __, __, __);
@@ -1932,10 +2063,7 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 			argss = this.__mergeArgs(argss, { __oJobRepeat: aArgsA });	
 		} else {
 			if (isObject(aArgsA)) {
-				if (execStr && isDef(aArgsA.__oJobExec)) 
-					argss = this.__mergeArgs(argss, this.__processArgs(af.eval(aArgsA.__oJobExec), aArgsA));
-				else
-					argss = this.__mergeArgs(argss, aArgsA);
+				argss = this.__mergeArgs(argss, aArgsA);
 			} else {
 				if (isString(aArgsA)) {
 					argss = this.__mergeArgs(argss, { __oJobExec: aArgsA });

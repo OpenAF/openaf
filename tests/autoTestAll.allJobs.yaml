@@ -33,6 +33,12 @@ include:
 - autoTestAll.Sec.yaml
 - autoTestAll.Languages.yaml
 - autoTestAll.oJob.yaml
+- autoTestAll.oPack.yaml
+- autoTestAll.SSH.yaml
+- autoTestAll.SecurityTransport.yaml
+- autoTestAll.SecurityHTTP.yaml
+- autoTestAll.SecurityCookies.yaml
+- autoTestAll.SecuritySignature.yaml
 - autoTestAll.oJobCode.yaml
 - autoTestAll.MCP.yaml
 - autoTestAll.TOON.yaml

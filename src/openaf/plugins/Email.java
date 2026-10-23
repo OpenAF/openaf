@@ -397,8 +397,10 @@ public class Email extends ScriptableObject {
 		this.secureProto = true;
 		if (!tls)
 			email.setSSLOnConnect(secure);
-		else
+		else {
 			email.setStartTLSEnabled(secure);
+			email.setStartTLSRequired(secure);
+		}
 		return this;
 	}
 	

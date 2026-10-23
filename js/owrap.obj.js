@@ -1946,8 +1946,29 @@ OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) {
 		loadForRequest  : aUrl => { 
 			var res = []
 			this.__cookies.forEach((k, v) => {
-				var cookie = Packages.okhttp3.Cookie.parse(aUrl, v.value)
-				if (cookie.expiresAt() < now()) {
+				if (!isMap(v) || isUnDef(v.domain) || String(v.domain).length == 0 || isUnDef(v.value)) {
+					this.__cookies.unset(k)
+					return
+				}
+				var parseUrl
+				try {
+					parseUrl = aUrl.newBuilder().host(String(v.domain)).build()
+				} catch(e) {
+					this.__cookies.unset(k)
+					return
+				}
+				var cookie
+				try {
+					cookie = Packages.okhttp3.Cookie.parse(parseUrl, String(v.value))
+				} catch(e) {
+					this.__cookies.unset(k)
+					return
+				}
+				if (isNull(cookie)) {
+					this.__cookies.unset(k)
+				} else if ((v.hostOnly === true || String(v.hostOnly).toLowerCase() == "true") && (!cookie.hostOnly() || String(cookie.domain()) != String(parseUrl.host()))) {
+					this.__cookies.unset(k)
+				} else if (cookie.expiresAt() < now()) {
 					this.__cookies.unset(k)
 				} else {
 					if (cookie.matches(aUrl)) {
@@ -1960,13 +1981,13 @@ OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) {
 		saveFromResponse: (aUrl, cookies) => { 
 			var lst = af.fromJavaArray(cookies).map(r => {
 				var k = {
-					name    : r.name(),
-					domain  : r.domain(),
-					path    : r.path(),
-					secure  : r.secure(),
-					hostOnly: r.hostOnly()
+					name    : String(r.name()),
+					domain  : String(r.domain()),
+					path    : String(r.path()),
+					secure  : Boolean(r.secure()),
+					hostOnly: Boolean(r.hostOnly())
 				}
-				this.__cookies.set(k, merge(k, { value: r.toString() }))
+				this.__cookies.set(k, merge(k, { value: String(r.toString()) }))
 			})
 		}
 	}).build()

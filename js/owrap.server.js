@@ -4085,22 +4085,25 @@ OpenWrap.server.prototype.httpd = {
 		if (isString(aBaseFilePath)) {
 			try {
 				// Determine the full canonical path
-				var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
+				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile();
+				var basePath = baseFile.toPath();
 				// Determine the full canonical path of the file to be served
-				var furi = String((new java.io.File(new java.io.File(baseFilePath),
-					(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalPath()).replace(/\\/g, "/")
+				var targetFile = (new java.io.File(baseFile,
+					(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalFile();
+				var furi = String(targetFile.getPath());
 				
 				// If the file is a directory, try to find the documentRootArray
-				if (furi.match(new RegExp("^" + baseFilePath + "$"))) {
+				if (targetFile.equals(baseFile)) {
 					for(var i in documentRootArray) {
-						furi = String((new java.io.File(new java.io.File(baseFilePath),
-							(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
-						if (furi.match(new RegExp("^" + baseFilePath))) break;
+						targetFile = (new java.io.File(baseFile,
+							(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalFile();
+						furi = String(targetFile.getPath());
+						if (targetFile.toPath().startsWith(basePath)) break;
 					}
 				}
 			
 				// If full uri matches the baseFilePath then proceed to serve the file
-				if (furi.match(new RegExp("^" + baseFilePath))) {
+				if (targetFile.toPath().startsWith(basePath)) {
 					return aHTTPd.replyStream(io.readFileStream(furi), ow.server.httpd.getMimeType(furi), __, mapOfHeaders)
 				} else {
 				  return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI)
@@ -4150,24 +4153,30 @@ OpenWrap.server.prototype.httpd = {
 		
 		if (isString(aBaseFilePath)) {
 			try {
-				var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
-				var furi = String((new java.io.File(new java.io.File(baseFilePath),
-					(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalPath()).replace(/\\/g, "/");
+				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile();
+				var basePath = baseFile.toPath();
+				var targetFile = (new java.io.File(baseFile,
+					(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile();
+				var furi = String(targetFile.getPath());
 				
 				if (isUnDef(documentRootArray)) documentRootArray = [ "index.md" ];
 	
 				// TODO:if io.fileExists is false to directories
 				if (io.fileExists(furi) && io.fileInfo(furi).isDirectory) {
 					for(var i in documentRootArray) {
-						furi = String((new java.io.File(new java.io.File(baseFilePath),
-							(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalPath());
-						if (furi.match(new RegExp("^" + baseFilePath))) break;
+						targetFile = (new java.io.File(baseFile,
+							(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile();
+						furi = String(targetFile.getPath());
+						if (targetFile.toPath().startsWith(basePath)) break;
 					}
 				}
 	
-				if (!(furi.match(/[^/]+\.[^/]+$/))) furi = furi + ".md";
+				if (!(String(targetFile.getName()).match(/[^.]+\.[^.]+$/))) {
+					targetFile = (new java.io.File(furi + ".md")).getCanonicalFile();
+					furi = String(targetFile.getPath());
+				}
 	
-				if (furi.match(new RegExp("^" + baseFilePath))) {
+				if (targetFile.toPath().startsWith(basePath)) {
 					if (furi.match(/\.md$/)) {
 						return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(io.readFileString(furi), 1, noMaxWidth, __, __, ow.server.httpd.getPrefix(aHTTPd)));
 					} else {
@@ -4651,8 +4660,12 @@ OpenWrap.server.prototype.httpd = {
 		var parent = this, aRealm = aMapOptions.realm;
 		if (isUnDef(parent.oauth_realms)) parent.oauth_realms = {};
 
-		var r = _$(parent.oauth_realms[aRealm]).default({});
-		parent.oauth_realms[aRealm] = _$(parent.oauth_realms[aRealm]).default({});
+		if (!Object.prototype.hasOwnProperty.call(parent.oauth_realms, aRealm)) {
+			Object.defineProperty(parent.oauth_realms, aRealm, { value: Object.create(null), writable: true, enumerable: true, configurable: true });
+		}
+		var records = parent.oauth_realms[aRealm];
+		var ownRecord = key => isString(key) && Object.prototype.hasOwnProperty.call(records, key);
+		var hasToken = record => isMap(record) && Object.prototype.hasOwnProperty.call(record, "access_token") && isString(record.access_token) && record.access_token.length > 0;
 		var shouldLogin = false, session = _getSession(aReq);
 
 		// Logout redirect endpoint
@@ -4668,8 +4681,8 @@ OpenWrap.server.prototype.httpd = {
 		if ((aReq.uri != aMapOptions.uriCallBack) && 
 				isDef(aReq.header) && isDef(aReq.header.cookie) && aReq.header.cookie.indexOf(aMapOptions.cookie) >= 0) {
 			if (isDef(session) && session.length > 0) {
-				if (isDef(parent.oauth_realms[aRealm][session])) {
-					if (isDef(parent.oauth_realms[aRealm][session].access_token)) {
+				if (ownRecord(session)) {
+					if (hasToken(records[session])) {
 						if (isDef(parent.oauth_realms[aRealm][session].x)) {
 							if ((nowUTC() < parent.oauth_realms[aRealm][session].x)) {
 								return aFnReply(aReq);
@@ -4682,7 +4695,7 @@ OpenWrap.server.prototype.httpd = {
 									client_secret: aMapOptions.oauthClientSecret
 								});
 				
-								if (isUnDef(res.access_token)) {
+								if (!hasToken(res)) {
 									shouldLogin = true;
 								} else {
 									var jwt = ow.server.jwt.decode(res.access_token);
@@ -4694,7 +4707,7 @@ OpenWrap.server.prototype.httpd = {
 							return aFnReply(aReq);
 						}
 					} else {
-						return aFnReply(aReq);
+						shouldLogin = true;
 					}
 				} else {
 					shouldLogin = true;
@@ -4710,8 +4723,8 @@ OpenWrap.server.prototype.httpd = {
 		// If no session exists yet but there is a state the oauth token is invoked
 		if (aReq.uri == aMapOptions.uriCallBack) {
 			//if (Object.keys(parent.oauth_realms[aRealm]).length == 0) parent.oauth_realms[aRealm] = "/";
-			if (isUnDef(parent.oauth_realms[aRealm][aReq.params.state])) return ow.server.httpd.replyRedirect(aHTTPd, "/", {});
-			if (isDef(aReq.params.state) && isDef(parent.oauth_realms[aRealm][aReq.params.state])) {
+			if (!isMap(aReq.params) || !ownRecord(aReq.params.state) || !isString(records[aReq.params.state])) return ow.server.httpd.replyRedirect(aHTTPd, "/", {});
+			if (ownRecord(aReq.params.state)) {
 				var target = parent.oauth_realms[aRealm][aReq.params.state];
 				var res = $rest({ urlEncode: true }).post(aMapOptions.oauthTokenURL, {
 					grant_type   : "authorization_code",
@@ -4722,6 +4735,7 @@ OpenWrap.server.prototype.httpd = {
 				});
 
 				delete parent.oauth_realms[aRealm][aReq.params.state];
+				if (!hasToken(res) || !isString(res.session_state) || res.session_state.length == 0) return ow.server.httpd.replyRedirect(aHTTPd, "/", {});
 				var jwt = ow.server.jwt.decode(res.access_token);
 				parent.oauth_realms[aRealm][res.session_state] = merge(res, { x: (jwt.exp * 1000) });
 
