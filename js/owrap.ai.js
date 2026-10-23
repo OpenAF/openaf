@@ -91,6 +91,34 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
 // | ollama    | ✔    | ✔       | ✔     | ✔    | ✖      |
 // | anthropic | ✔    | ✔       | ✖     | ✔    | ✖      |
 
+// Scan image payloads without retaining Rhino regular-expression match states.
+OpenWrap.ai.prototype.__image = {
+    validBase64: function(value, start) {
+        start = start || 0;
+        var length = value.length - start;
+        if (!length || length % 4) return false;
+        var end = value.length;
+        if (value.charAt(end - 1) == "=") end--;
+        if (value.charAt(end - 1) == "=") end--;
+        for (var i = start; i < end; i++) {
+            var code = value.charCodeAt(i);
+            if (!((code >= 65 && code <= 90) || (code >= 97 && code <= 122) ||
+                  (code >= 48 && code <= 57) || code == 43 || code == 47)) return false;
+        }
+        return true;
+    },
+    mediaType: function(base64) {
+        // Only decode a short prefix; never allocate a raster image.
+        try {
+            var bytes = java.util.Base64.getDecoder().decode(String(base64.substring(0, 16)));
+            var png = [137, 80, 78, 71, 13, 10, 26, 10];
+            if (bytes.length >= png.length && png.every((v, i) => (bytes[i] & 255) == v)) return "image/png";
+        } catch(ignore) {}
+        // Preserve the legacy JPEG default, including unrecognized inputs.
+        return "image/jpeg";
+    }
+};
+
 // Shared, stateless decision contract. Provider envelopes are parsed only by adapter hooks.
 OpenWrap.ai.prototype.__decision = {
     has: (o, k) => Object.prototype.hasOwnProperty.call(o, k),
@@ -162,13 +190,13 @@ OpenWrap.ai.prototype.__decision = {
             if (provider == "openai" && options.images.length > 128) this.invalid();
             options.images.forEach(v => {
                 if (typeof v != "string" || v.length == 0) this.invalid();
-                var base64 = v;
+                var start = 0;
                 if (provider == "openai") {
-                    var match = /^data:image\/[A-Za-z0-9.+-]+;base64,(.+)$/.exec(v);
-                    if (!match) this.invalid();
-                    base64 = match[1];
+                    var comma = v.indexOf(",");
+                    if (comma < 0 || !/^data:image\/[A-Za-z0-9.+-]+;base64$/.test(v.substring(0, comma))) this.invalid();
+                    start = comma + 1;
                 }
-                if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(base64)) this.invalid();
+                if (!ow.ai.__image.validBase64(v, start)) this.invalid();
             });
         }
         var strategy = this.has(options, "strategy") ? options.strategy : "auto";
@@ -683,6 +711,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 return errorObj
             }
             var _r = {
+                supportsImageMimeTypes: true,
                 conversation: [],
                 tools: {},
                 getModelName: () => _model,
@@ -916,7 +945,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             role: aRole,
                             content: [
                                 { type: "text", text: aPrompt },
-                                { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64, detail: aDetailLevel } } 
+                                { type: "image_url", image_url: { url: "data:" + ow.ai.__image.mediaType(base64) + ";base64," + base64, detail: aDetailLevel } }
                             ]
                         }
                     ], aModel, aTemperature, aJsonFlag)
@@ -4339,7 +4368,7 @@ OpenWrap.ai.prototype.gpt.prototype.promptWithStats = function(aPrompt, aRole, a
 /**
  * <odoc>
  * <key>ow.ai.gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) : String</key>
- * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor). OpenAI detects PNG signatures without decoding a bitmap and otherwise retains the JPEG default.
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.promptImage = function(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) {
@@ -4997,7 +5026,7 @@ global.$gpt = function(aModel) {
         /**
          * <odoc>
          * <key>$gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) : String</key>
-         * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+         * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor). OpenAI detects PNG signatures without decoding a bitmap and otherwise retains the JPEG default.
          * </odoc>
          */
         promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) => {
