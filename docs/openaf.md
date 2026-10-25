@@ -17,6 +17,7 @@ OpenAF is a comprehensive JavaScript framework that extends the Mozilla Rhino Ja
 7. [Testing Framework](#testing-framework)
 8. [Python Integration](#python-integration)
 9. [Parsing Utilities](#parsing-utilities)
+    - See also [Data Formats and Streams](#data-formats-and-streams) (TOON, stream conversions)
 10. [Data Validation](#data-validation)
 11. [Additional Core Shortcuts & Utilities](#additional-core-shortcuts--utilities)
 12. [Metrics API (ow.metrics)](#metrics-api-owmetrics)
@@ -590,6 +591,7 @@ var result2 = ow.template.execTemplate(template2, {
 - **Custom Helpers**: Easy registration of custom helper functions
 - **Markdown Support**: Built-in markdown processing capabilities
 - **Source Path Tracking**: Template source location tracking
+- **Display math**: in markdown rendered to HTML, a standalone `$$ ... $$` block (own lines) is protected from markdown processing and typeset with KaTeX when the `KaTeX` opack is installed.
 
 ---
 
@@ -707,6 +709,35 @@ ow.python.stopServer();
 - **Performance**: Server mode for high-performance repeated operations
 
 ---
+
+## Data Formats and Streams
+
+### TOON (Token-Oriented Object Notation)
+
+`af.toTOON(aObj, alternative)` and `af.fromTOON(aTOONStr, alternative)` convert between JavaScript values and TOON, a compact format suited to LLM prompts. By default (`__flags.ALTERNATIVES.toTOON` / `fromTOON` = `true`) a native Java engine is used, which is faster and lighter on large payloads. Pass `alternative = false` (or set the flags to `false`) to use the bundled JavaScript implementation. `oafp` reads and writes TOON with `in=toon` / `out=toon`.
+
+```javascript
+var toon = af.toTOON({ users: [ { id: 1, name: "a" }, { id: 2, name: "b" } ] });
+print(toon);
+sprint(af.fromTOON(toon));
+```
+
+### Streaming conversions
+
+Large payloads can be converted without loading them into memory. Each function reads `aInputStream` and writes to `aOutputStream`; both streams are closed on success or failure unless `shouldNotClose` is `true`.
+
+| Function | Purpose |
+|---|---|
+| `af.toBase64Stream(in, out, shouldNotClose)` | Base64 encode |
+| `af.fromBase64Stream(in, out, shouldNotClose)` | Base64 decode |
+| `io.gzipStream(in, out, shouldNotClose)` | GZIP compress |
+| `io.gunzipStream(in, out, shouldNotClose)` | GZIP decompress |
+
+```javascript
+var i = io.readFileStream("big.bin");
+var o = io.writeFileStream("big.b64");
+af.toBase64Stream(i, o); // closes both
+```
 
 ## Parsing Utilities
 

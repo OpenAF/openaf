@@ -17,6 +17,16 @@ Central list of noteworthy runtime flags and environment variables.
 | OJOB_AUTHORIZEDDOMAINS | ojob.io | Allowlist for remote includes |
 | OJOB_LOCALPATH | (unset) | Local path for ojob files resolution |
 
+## Alternative (native) implementations (`__flags.ALTERNATIVES`)
+
+Each flag selects a native Java implementation over the bundled JavaScript one when `true`. Set to `false` to fall back.
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| toTOON / fromTOON | true | Native Java TOON encoder/decoder (`af.toTOON`, `af.fromTOON`) |
+| path | true | Native Java JMESPath engine behind `$path` (`af.pathJava`, see [path-java.md](./path-java.md)); `false` uses the bundled JavaScript `jmespath` |
+| jsonParse, merge, extend, traverse, colorify, listFilesRecursive, restart | true | See `openaf.js` ODoc for each |
+
 ## AI/LLM Configuration
 
 | Env | Default | Purpose |

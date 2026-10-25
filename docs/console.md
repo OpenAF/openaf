@@ -105,6 +105,10 @@ If dimensions remain unavailable, OpenAF retains the last known values
 The POSIX pipeline and resize regression can be run after building with
 `python3 tests/test-terminal-size.py openaf.jar` from the repository root.
 
+## Windows terminal
+
+On Windows the console uses a system terminal through JLine's JNI support (`OpenAFWinSysTerminal`), falling back to the previous behaviour if it cannot be initialised. The console is built on JLine 4.x (migrated from JLine 2.x), so key handling and terminal-size queries follow JLine 4 semantics.
+
 ## See also
 
 - [cli.md](./cli.md) — full `openaf`/`oaf` flag reference and generated wrapper scripts.
