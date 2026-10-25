@@ -89,10 +89,202 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
 // | openai    | ✔    | ✔       | ✔     | ✔    | ✔      |
 // | gemini    | ✔    | ✔       | ✔     | ✔    | ✖      |
 // | ollama    | ✔    | ✔       | ✔     | ✔    | ✖      |
-// | anthropic | ✔    | ✔       | ✖     | ✔    | ✖      |
+// | anthropic | ✔    | ✔       | ✔     | ✔    | ✖      |
 
 // Scan image payloads without retaining Rhino regular-expression match states.
+/**
+ * <key>ow.ai.prepareImage(aImage, aOptions) : Map</key>
+ * Prepares a file path or base64 image. Options: maxSide (2048; 0 disables scaling),
+ * maxBytes (5242880), maxPixels (25000000), format (auto/jpeg/png), quality (0.85),
+ * background (#ffffff). Returns base64, mediaType, width, height, resized, originalBytes and bytes.
+ * Normal auto images pass through byte-identically. Uses JDK ImageIO; WebP/HEIC require
+ * conversion to PNG/JPEG when resizing. Containers can use OAF_JARGS=-Djava.awt.headless=true.
+ */
+OpenWrap.ai.prototype.prepareImage = function(aImage, aOptions) {
+    return this.__image.prepare(aImage, aOptions);
+};
+
 OpenWrap.ai.prototype.__image = {
+    // Local quality/cost defaults, not provider input caps. Reviewed 2026-10-25:
+    // https://developers.openai.com/api/docs/guides/images-vision
+    // https://ai.google.dev/gemini-api/docs/image-understanding
+    // https://docs.ollama.com/capabilities/vision (resolution is model-dependent).
+    options: function(config, provider) {
+        var out = { maxSide: {openai: 2048, gemini: 3072, ollama: 1024, anthropic: 1568}[provider] };
+        ["MaxSide", "MaxBytes", "MaxPixels", "Format", "Quality", "Background"].forEach(function(k) {
+            if (isDef(config["image" + k])) out[k.charAt(0).toLowerCase() + k.substring(1)] = config["image" + k];
+        });
+        if (config.imageResize === false) out.disabled = true;
+        return out;
+    },
+    prepare: function(input, options) {
+        var o = options || {}, side = isDef(o.maxSide) ? o.maxSide : 2048,
+            limit = isDef(o.maxBytes) ? o.maxBytes : 5242880,
+            pixels = isDef(o.maxPixels) ? o.maxPixels : 25000000,
+            format = o.format || "auto", quality = isDef(o.quality) ? o.quality : 0.85;
+        if (!isString(input)) throw new Error("Image must be a file path or base64 string");
+        if (!isNumber(side) || !isFinite(side) || side < 0 || Math.floor(side) != side ||
+            !isNumber(limit) || !isFinite(limit) || limit <= 0 ||
+            !isNumber(pixels) || !isFinite(pixels) || pixels <= 0 ||
+            !isNumber(quality) || !isFinite(quality) || quality <= 0 || quality > 1 ||
+            ["auto", "jpeg", "png"].indexOf(format) < 0) throw new Error("Invalid image preparation options");
+        var base64 = io.fileExists(input) ? __streamCodec.encodeFile(input) : input;
+        if (!this.validBase64(base64)) throw new Error("Invalid image base64");
+        var raw = java.util.Base64.getDecoder().decode(String(base64)), mime = this.mediaType(base64), original = raw.length;
+        var result = function(b, m, w, h, changed) {
+            return { base64: b, mediaType: m, width: w, height: h, resized: changed, originalBytes: original,
+                bytes: changed ? java.util.Base64.getDecoder().decode(String(b)).length : original };
+        };
+        if (o.disabled) return result(base64, mime, __, __, false);
+        var stream, reader, images = [];
+        try {
+            stream = new javax.imageio.stream.MemoryCacheImageInputStream(new java.io.ByteArrayInputStream(raw));
+            var readers = javax.imageio.ImageIO.getImageReaders(stream);
+            if (!readers.hasNext()) {
+                // Stock ImageIO cannot inspect these. Preserve small supported provider inputs.
+                if (["image/webp", "image/heic", "image/heif"].indexOf(mime) >= 0) {
+                    if (original <= limit && format == "auto") return result(base64, mime, __, __, false);
+                    throw new Error("Cannot resize " + mime + "; convert to PNG/JPEG");
+                }
+                throw new Error("Cannot decode image; convert to PNG/JPEG");
+            }
+            reader = readers.next(); reader.setInput(stream);
+            var w = Number(reader.getWidth(0)), h = Number(reader.getHeight(0));
+            if (w <= 0 || h <= 0 || w * h > pixels) throw new Error("Image dimensions exceed maxPixels (" + pixels + "): " + w + "x" + h);
+            if ((!side || Math.max(w, h) <= side) && original <= limit &&
+                (format == "auto" || mime == "image/" + format)) return result(base64, mime, w, h, false);
+            var orientation = this.orientation(raw), swap = orientation >= 5;
+            var target = side || Math.max(w, h), param = reader.getDefaultReadParam();
+            var sub = Math.max(1, Math.floor(Math.max(w, h) / target));
+            param.setSourceSubsampling(sub, sub, 0, 0);
+            var image = reader.read(0, param); images.push(image);
+            if (orientation > 1) {
+                var iw = image.getWidth(), ih = image.getHeight();
+                var rotated = new java.awt.image.BufferedImage(swap ? ih : iw, swap ? iw : ih, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                images.push(rotated);
+                var transforms = [null, null, [-1,0,0,1,iw,0], [-1,0,0,-1,iw,ih], [1,0,0,-1,0,ih],
+                    [0,1,1,0,0,0], [0,1,-1,0,ih,0], [0,-1,-1,0,ih,iw], [0,-1,1,0,0,iw]];
+                var t = transforms[orientation], g = rotated.createGraphics();
+                try { g.drawImage(image, new java.awt.geom.AffineTransform(t[0],t[1],t[2],t[3],t[4],t[5]), null); }
+                finally { g.dispose(); }
+                image = rotated;
+            }
+            var scale = function(src, nw, nh, jpeg) {
+                var dest = new java.awt.image.BufferedImage(nw, nh, jpeg ? java.awt.image.BufferedImage.TYPE_INT_RGB : java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                images.push(dest);
+                var g = dest.createGraphics();
+                try {
+                    if (jpeg) { g.setColor(java.awt.Color.decode(String(o.background || "#ffffff"))); g.fillRect(0,0,nw,nh); }
+                    g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                    g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                    g.drawImage(src, 0, 0, nw, nh, null);
+                } finally { g.dispose(); }
+                return dest;
+            };
+            var ratio = Math.min(1, target / Math.max(image.getWidth(), image.getHeight()));
+            var nw = Math.max(1, Math.round(image.getWidth() * ratio)), nh = Math.max(1, Math.round(image.getHeight() * ratio));
+            while (image.getWidth() / 2 >= nw && image.getHeight() / 2 >= nh) image = scale(image, Math.max(nw,Math.floor(image.getWidth()/2)), Math.max(nh,Math.floor(image.getHeight()/2)), false);
+            image = scale(image, nw, nh, false);
+            var enc = format == "auto" ? (image.getColorModel().hasAlpha() && mime == "image/png" ? "png" : "jpeg") : format;
+            for (;;) {
+                var qualities = enc == "jpeg" ? [quality, Math.min(quality,0.75), Math.min(quality,0.65), Math.min(quality,0.55)] : [quality];
+                var outputImage = enc == "jpeg" ? scale(image, nw, nh, true) : image;
+                for (var q = 0; q < qualities.length; q++) {
+                    var out = new java.io.ByteArrayOutputStream(), writer, os;
+                    try {
+                        writer = javax.imageio.ImageIO.getImageWritersByFormatName(enc).next();
+                        os = new javax.imageio.stream.MemoryCacheImageOutputStream(out); writer.setOutput(os);
+                        var wp = writer.getDefaultWriteParam();
+                        if (enc == "jpeg") { wp.setCompressionMode(javax.imageio.ImageWriteParam.MODE_EXPLICIT); wp.setCompressionQuality(qualities[q]); }
+                        writer.write(null, new javax.imageio.IIOImage(outputImage, null, null), wp); os.flush();
+                        if (out.size() <= limit) return result(String(java.util.Base64.getEncoder().encodeToString(out.toByteArray())), "image/" + enc, nw, nh, true);
+                    } finally { if (writer) writer.dispose(); if (os) os.close(); out.close(); }
+                }
+                if (format == "auto" && enc == "png") { enc = "jpeg"; continue; }
+                if (Math.max(nw, nh) <= 256) throw new Error("Cannot fit image within maxBytes (" + limit + ")");
+                var factor = Math.max(256 / Math.max(nw,nh), 0.75);
+                nw = Math.max(1,Math.round(nw*factor)); nh = Math.max(1,Math.round(nh*factor)); image = scale(image,nw,nh,false);
+            }
+        } catch(e) {
+            throw new Error("Image preparation failed: " + e + ". For AWT failures use OAF_JARGS=-Djava.awt.headless=true");
+        } finally {
+            if (reader) reader.dispose(); if (stream) stream.close();
+            images.forEach(function(im) { im.flush(); });
+        }
+    },
+    // Read TIFF orientation from a JPEG APP1 segment, without decoding a raster.
+    orientation: function(bytes) {
+        var u = function(p) { return bytes[p] & 255; };
+        if (u(0) != 255 || u(1) != 216) return 1;
+        for (var p = 2; p + 4 < bytes.length;) {
+            if (u(p) != 255 || u(p+1) == 218 || u(p+1) == 217) break;
+            var len = (u(p+2)<<8) | u(p+3), end = p+2+len;
+            if (len < 2 || end > bytes.length) break;
+            if (u(p+1) == 225 && len >= 16 && u(p+4) == 69 && u(p+5) == 120 && u(p+6) == 105 && u(p+7) == 102) {
+                var t = p+10, le = u(t) == 73 && u(t+1) == 73;
+                var n16 = function(i) { return le ? u(i)|(u(i+1)<<8) : (u(i)<<8)|u(i+1); };
+                var n32 = function(i) { return le ? n16(i)+n16(i+2)*65536 : n16(i)*65536+n16(i+2); };
+                var d = t+n32(t+4);
+                if (d < t || d+2 > end) return 1;
+                for (var j=0, count=n16(d); j<count; j++) {
+                    var at=d+2+j*12; if (at+12>end) break;
+                    if (n16(at)==274 && n16(at+2)==3 && n32(at+4)==1) { var v=n16(at+8); return v>=1 && v<=8 ? v : 1; }
+                }
+            }
+            p=end;
+        }
+        return 1;
+    },
+
+    // Builds Anthropic Messages API content blocks (image/document) from images and attachments.
+    // Items: a string (image file path or base64) or a map { file | base64 | url, mediaType }.
+    // Images go through prepare(); PDFs and text files become "document" blocks. Used by the
+    // anthropic provider and by Claude on Bedrock (allowUrl:false, as InvokeModel rejects url sources).
+    anthropicBlocks: function(items, options, allowUrl) {
+        if (!isArray(items)) items = [ items ];
+        var textExt = ["txt", "md", "csv", "json", "xml", "html", "yaml", "yml", "log", "tsv"],
+            byExt = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp" },
+            total = 0, stats = [], blocks = [];
+        var extOf = function(n) { var m = String(n).toLowerCase().match(/\.([a-z0-9]+)(?:[?#].*)?$/); return m ? m[1] : __; };
+        var guess = function(n) { var e = extOf(n); return isDef(e) ? (byExt[e] || (textExt.indexOf(e) >= 0 ? "text/plain" : __)) : __; };
+        var image = function(input) {
+            var img = ow.ai.__image.prepare(input, options);
+            if (["image/jpeg", "image/png", "image/gif", "image/webp"].indexOf(img.mediaType) < 0)
+                throw new Error("Unsupported image type for Anthropic (" + img.mediaType + "); use JPEG, PNG, GIF or WebP");
+            total += img.base64.length;
+            stats.push({ width: img.width, height: img.height, resized: img.resized, originalBytes: img.originalBytes, bytes: img.bytes });
+            return { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.base64 } };
+        };
+        items.forEach(function(it) {
+            if (isString(it)) { blocks.push(image(it)); return; }
+            if (!isMap(it)) throw new Error("Attachment must be a string or a map { file | base64 | url, mediaType }");
+            var src = it.file || it.path || it.base64 || it.url;
+            if (!isString(src)) throw new Error("Attachment needs one of file, base64 or url");
+            var mime = it.mediaType || (isDef(it.url) ? guess(it.url) : (isDef(it.file) || isDef(it.path) ? guess(src) : __));
+            if (isDef(it.url)) {
+                if (allowUrl === false) throw new Error("URL attachments are not supported by this provider");
+                if (isUnDef(mime) || mime == "text/plain") throw new Error("URL attachments must be images or PDFs; set mediaType");
+                blocks.push({ type: mime.indexOf("image/") == 0 ? "image" : "document", source: { type: "url", url: it.url } });
+                return;
+            }
+            if (isUnDef(mime) || mime.indexOf("image/") == 0) {
+                blocks.push(image(src));
+            } else if (mime == "application/pdf") {
+                var b64 = io.fileExists(src) ? __streamCodec.encodeFile(src) : src;
+                if (!ow.ai.__image.validBase64(b64)) throw new Error("Invalid PDF base64");
+                total += b64.length;
+                blocks.push({ type: "document", source: { type: "base64", media_type: mime, data: b64 } });
+            } else if (mime.indexOf("text/") == 0 || /json|xml|yaml/.test(mime)) {
+                var txt = isDef(it.file) || isDef(it.path) ? io.readFileString(src) : __streamCodec.decodeToString(__streamCodec.textInput(src));
+                total += txt.length;
+                blocks.push({ type: "document", source: { type: "text", media_type: "text/plain", data: txt } });
+            } else throw new Error("Unsupported attachment type: " + mime);
+        });
+        // Anthropic caps the whole request at 32 MB
+        if (total > 32 * 1024 * 1024) throw new Error("Attachments exceed the 32 MB request limit");
+        return { blocks: blocks, images: stats };
+    },
+
     validBase64: function(value, start) {
         start = start || 0;
         var length = value.length - start;
@@ -112,6 +304,14 @@ OpenWrap.ai.prototype.__image = {
         try {
             var bytes = java.util.Base64.getDecoder().decode(String(base64.substring(0, 16)));
             var png = [137, 80, 78, 71, 13, 10, 26, 10];
+            if ((bytes[0] & 255) == 255 && (bytes[1] & 255) == 216) return "image/jpeg";
+            var sig = String(new java.lang.String(bytes, "ISO-8859-1"));
+            if (sig.substring(0, 3) == "GIF") return "image/gif";
+            if (sig.substring(0, 4) == "RIFF" && sig.substring(8, 12) == "WEBP") return "image/webp";
+            if (sig.substring(4, 8) == "ftyp") {
+                if (["heic", "heix", "hevc", "hevx"].indexOf(sig.substring(8,12)) >= 0) return "image/heic";
+                if (["mif1", "msf1"].indexOf(sig.substring(8,12)) >= 0) return "image/heif";
+            }
             if (bytes.length >= png.length && png.every((v, i) => (bytes[i] & 255) == v)) return "image/png";
         } catch(ignore) {}
         // Preserve the legacy JPEG default, including unrecognized inputs.
@@ -931,24 +1131,20 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aRole        = _$(aRole, "aRole").isString().default("user")
                     aDetailLevel = _$(aDetailLevel, "aDetailLevel").isString().default("low")
 
-                    var base64 = ""
-                    if (io.fileExists(aImage)) {
-                        base64 = __streamCodec.encodeFile(aImage)
-                    } else {
-                        if (isString(aImage)) {
-                            base64 = aImage
-                        }
-                    }
+                    var img = ow.ai.__image.prepare(aImage, ow.ai.__image.options(aOptions, "openai"));
 
                     var __r = _r.prompt([
                         {
                             role: aRole,
                             content: [
                                 { type: "text", text: aPrompt },
-                                { type: "image_url", image_url: { url: "data:" + ow.ai.__image.mediaType(base64) + ";base64," + base64, detail: aDetailLevel } }
+                                { type: "image_url", image_url: { url: "data:" + img.mediaType + ";base64," + img.base64, detail: aDetailLevel } }
                             ]
                         }
                     ], aModel, aTemperature, aJsonFlag)
+
+                    _lastStats = _lastStats || {};
+                    _lastStats.images = [img].map(function(i) { return { width:i.width, height:i.height, resized:i.resized, originalBytes:i.originalBytes, bytes:i.bytes }; });
 
                     if (isArray(__r.choices) && __r.choices.length > 0) {
                         return __r.choices[0].message.content
@@ -1841,34 +2037,23 @@ OpenWrap.ai.prototype.__gpttypes = {
                         text: aPrompt
                     } ]
 
+                    var prepared = [];
                     aImage.forEach(r => {
-                        var base64 = ""
-                        if (io.fileExists(r)) {
-                            base64 = __streamCodec.encodeFile(r)
-                        } else {
-                            if (isString(r)) {
-                                base64 = r
-                            }
-                        }
-
-                        aMime = "image/jpeg"
-                        switch(r.substring(r.lastIndexOf(".") + 1).toLowerCase()) {
-                        case "png": aMime = "image/png"; break
-                        case "webp": aMime = "image/webp"; break
-                        case "heic": aMime = "image/heic"; break
-                        case "webp": aMime = "image/webp"; break
-                        default: aMime = "image/jpeg"
-                        }
+                        var img = ow.ai.__image.prepare(r, ow.ai.__image.options(aOptions, "gemini"));
+                        prepared.push(img);
 
                         body.push({
                             inline_data: {
-                                mime_type: aMime,
-                                data: base64
+                                mime_type: img.mediaType,
+                                data: img.base64
                             }
                         })
                     })
                     
                     var __r = _r.rawPrompt({ parts: body }, aModel, aTemperature, aJsonFlag)
+
+                    _lastStats = _lastStats || {};
+                    _lastStats.images = prepared.map(function(i) { return { width:i.width, height:i.height, resized:i.resized, originalBytes:i.originalBytes, bytes:i.bytes }; });
 
                     if (isArray(__r.candidates) && isArray(__r.candidates[0].content.parts) && __r.candidates[0].content.parts.length > 0) {
                         if (__r.candidates[0].finishReason == "STOP") {
@@ -2620,22 +2805,18 @@ OpenWrap.ai.prototype.__gpttypes = {
                 promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, aJsonFlag) => {
                     aRole   = _$(aRole, "aRole").isString().default("user")
 
-                    var base64 = ""
-                    if (io.fileExists(aImage)) {
-                        base64 = __streamCodec.encodeFile(aImage)
-                    } else {
-                        if (isString(aImage)) {
-                            base64 = aImage
-                        }
-                    }
+                    var img = ow.ai.__image.prepare(aImage, ow.ai.__image.options(aOptions, "ollama"));
 
                     var __r = _r.rawPrompt([
                         {
                             role: aRole,
                             content: aPrompt,
-                            images: [ base64 ]
+                            images: [ img.base64 ]
                         }
                     ], aModel, aTemperature, aJsonFlag)
+                    _lastStats = _lastStats || {};
+                    _lastStats.images = [img].map(function(i) { return { width:i.width, height:i.height, resized:i.resized, originalBytes:i.originalBytes, bytes:i.bytes }; });
+
                     if (isString(__r.response)) return __r.response
                     if (isMap(__r.message) && isString(__r.message.content)) return __r.message.content.trim()
                     return __r
@@ -3231,7 +3412,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                             var textParts = msg.content.filter(c => isMap(c) && c.type == "text")
                             var toolUseParts = msg.content.filter(c => isMap(c) && c.type == "tool_use")
                             var toolResultParts = msg.content.filter(c => isMap(c) && c.type == "tool_result")
-                            if (textParts.length > 0) entry.content = textParts.map(c => c.text).join("\n")
+                            var attParts = msg.content.filter(c => isMap(c) && (c.type == "image" || c.type == "document")).map(c => "[" + c.type + (isMap(c.source) && isString(c.source.media_type) ? ": " + c.source.media_type : "") + "]")
+                            if (textParts.length > 0 || attParts.length > 0) entry.content = attParts.concat(textParts.map(c => c.text)).join("\n")
                             if (toolUseParts.length > 0) {
                                 entry.toolCalls = toolUseParts.map(tc => ({
                                     id: tc.id || "",
@@ -3318,7 +3500,23 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return __r
                 },
                 promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, aJsonFlag) => {
-                    throw "Not supported yet"
+                    aRole = _$(aRole, "aRole").isString().default("user")
+
+                    // aDetailLevel has no Anthropic equivalent and is ignored
+                    var _att = ow.ai.__image.anthropicBlocks(aImage, ow.ai.__image.options(aOptions, "anthropic"))
+                    // Anthropic recommends images/documents before the text
+                    var _content = _att.blocks.concat([ { type: "text", text: isArray(aPrompt) ? aPrompt.join("\n") : String(aPrompt) } ])
+
+                    var __r = _r.rawPrompt([ { role: aRole, content: _content } ], aModel, aTemperature, aJsonFlag)
+
+                    _lastStats = _lastStats || {}
+                    _lastStats.images = _att.images
+
+                    if (isMap(__r) && isArray(__r.content)) {
+                        var textParts = __r.content.filter(c => isMap(c) && c.type == "text" && isString(c.text))
+                        if (textParts.length > 0) return textParts.map(c => c.text).join("\n")
+                    }
+                    return __r
                 },
                 rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag, aTools) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
@@ -4368,7 +4566,7 @@ OpenWrap.ai.prototype.gpt.prototype.promptWithStats = function(aPrompt, aRole, a
 /**
  * <odoc>
  * <key>ow.ai.gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) : String</key>
- * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor). OpenAI detects PNG signatures without decoding a bitmap and otherwise retains the JPEG default.
+ * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor). Images are prepared with ow.ai.prepareImage; detail semantics are unchanged. Constructor options imageMaxSide, imageMaxBytes, imageMaxPixels, imageFormat, imageQuality and imageBackground override preparation defaults; imageResize:false preserves original bytes. For the anthropic provider aImage can also be an array, and items can be maps { file | base64 | url, mediaType } to attach PDFs and text files (sent as document blocks); aDetailLevel is ignored.
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.promptImage = function(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) {
@@ -5037,7 +5235,7 @@ global.$gpt = function(aModel) {
         /**
          * <odoc>
          * <key>$gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) : String</key>
-         * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor). OpenAI detects PNG signatures without decoding a bitmap and otherwise retains the JPEG default.
+         * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor). Images are prepared with ow.ai.prepareImage; detail semantics are unchanged. Constructor options imageMaxSide, imageMaxBytes, imageMaxPixels, imageFormat, imageQuality and imageBackground override preparation defaults; imageResize:false preserves original bytes. For the anthropic provider aImage can also be an array, and items can be maps { file | base64 | url, mediaType } to attach PDFs and text files (sent as document blocks); aDetailLevel is ignored.
          * </odoc>
          */
         promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) => {
