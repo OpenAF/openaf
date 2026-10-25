@@ -8128,19 +8128,24 @@ const checkLatestVersion = function() {
 
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback) : String</key>
- * Tries to execute commandArguments (either a String or an array of strings) in the operating system as a shortcut for 
- * AF.sh except that it will run them through the OS shell. Optionally aStdIn can be provided, aTimeout can be defined 
- * for the execution and if shouldInheritIO is true the stdout, stderr and stdin will be inherit from OpenAF. If 
- * shouldInheritIO is not defined or false it will return the stdout of the command execution. It's possible also to 
- * provide a different working aDirectory. If envsMap (a map of strings) is defined the environment variables will be replaced by envsMap.
- * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly.
- * In alternative if returnMap = true a map will be returned with stdout, stderr and exitcode.
- * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output 
- * stream, a error stream and an input stream (see help af.sh for an example). 
- * An exitCallback can also be provided that will receive the exit code as a parameter.
- * If defined the stdout and stderr won't be available for the returnMap if true.
+ * <![CDATA[
+ * Executes `commandArguments` (a string or an array of strings) through the operating system shell as a shortcut for `AF.sh`.
+ *
+ * - `aStdIn`: optional standard input.
+ * - `aTimeout`: optional execution timeout.
+ * - `shouldInheritIO`: when true, inherits stdout, stderr and stdin from OpenAF. When false or undefined, returns the command's stdout.
+ * - `aDirectory`: optional working directory.
+ * - `envsMap`: a map of strings that replaces the environment variables.
+ * - `returnMap`: when true, returns a map with `stdout`, `stderr` and `exitcode`.
+ *
+ * Check `__exitcode` and `__stderr` for the command exit code and stderr output.
+ *
+ * When `shouldInheritIO` is false or undefined, `callbackFunc` can receive an output stream, an error stream and an input stream (see `af.sh` for an example). With a callback, stdout and stderr are unavailable in the returned map.
+ *
+ * An optional `exitCallback` receives the exit code.
+ * ]]>
  * </odoc>
  */
 const sh = function(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback) {
@@ -12482,16 +12487,19 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>AF.toKYAML(aJson, multiDoc, sanitize, shouldColor, perEntryNewLine) : String</key>
- * Converts aJson to a Kubernetes style YAML (flow) string obeying rules:\
- *  - Double-quoted string values\
- *  - Unquoted keys unless ambiguous\
- *  - Flow style {} for maps and [] for arrays\
- *  - If perEntryNewLine (or __flags.YAML.perEntryNewLine) is true each entry / element appears in its own line similar to JSON pretty-print\
- * If multiDoc and aJson is an array multiple documents will be emitted separated by '---'.
- * If sanitize true Java objects are stringified.
- * Color can be toggled with shouldColor.
+ * <![CDATA[
+ * Converts `aJson` to a Kubernetes-style YAML (flow) string using these rules:
+ *
+ * - Double-quoted string values.
+ * - Unquoted keys unless ambiguous.
+ * - Flow style `{}` for maps and `[]` for arrays.
+ * - If `perEntryNewLine` (or `__flags.YAML.perEntryNewLine`) is true, each entry or element appears on its own line, similar to JSON pretty-print.
+ *
+ * If `multiDoc` is true and `aJson` is an array, multiple documents are emitted separated by `---`.
+ * If `sanitize` is true, Java objects are stringified. Toggle color with `shouldColor`.
+ * ]]>
  * </odoc>
  */
 AF.prototype.toKYAML = function(aJson, multiDoc, sanitize, shouldColor, perEntryNewLine) {

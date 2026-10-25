@@ -4470,13 +4470,24 @@ OpenWrap.ai.prototype.gpt.prototype.__structuredSchemaPrompt = function(aPrompt,
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.ai.gpt.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Object</key>
- * Executes a prompt using OpenAI's JSON Schema response format, enforcing structured output validated against aResponseSchema.\
- * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).\
- * Gemini uses its provider-specific GenerateContent schema hook and supported schema subset; explicit nonempty tools are rejected.\
- * Returns the parsed JSON response matching the provided schema.\
- * Only supported by the "openai" provider; throws if the underlying provider does not implement rawResponse.
+ * <![CDATA[
+ * Executes a prompt using OpenAI's JSON Schema response format, enforcing structured output validated against `aResponseSchema`.
+ *
+ * `aResponseSchema` should be a map with:
+ *
+ * - `name` (string)
+ * - `description` (string)
+ * - `schema` (JSON Schema object)
+ * - `strict` (boolean, defaults to true)
+ *
+ * Gemini uses its provider-specific GenerateContent schema hook and supported schema subset; explicit nonempty `tools` are rejected.
+ *
+ * Returns the parsed JSON response matching the provided schema.
+ *
+ * Only supported by the `openai` provider. Throws if the underlying provider does not implement `rawResponse`.
+ * ]]>
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.jsonSchemaPrompt = function(aPrompt, aResponseSchema, aModel, aTemperature, tools) {
@@ -5376,14 +5387,25 @@ global.$gpt = function(aModel) {
          */
         importConversation: (aExport) => { _g.importConversation(aExport); return _r },
         /**
-         * <odoc>
-         * <key>$gpt.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Object</key>
-         * Executes a prompt using OpenAI's JSON Schema response format, enforcing structured output validated against aResponseSchema.\
-         * aResponseSchema should be a map with: name (string), description (string), schema (JSON Schema object), strict (boolean, defaults to true).\
-         * Gemini uses its provider-specific GenerateContent schema hook and supported schema subset; explicit nonempty tools are rejected.\
-         * Returns the parsed JSON response matching the provided schema.\
-         * Only supported by the "openai" provider.
-         * </odoc>
+         * <odoc format="markdown">
+ * <key>$gpt.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Object</key>
+ * <![CDATA[
+ * Executes a prompt using OpenAI's JSON Schema response format, enforcing structured output validated against `aResponseSchema`.
+ *
+ * `aResponseSchema` should be a map with:
+ *
+ * - `name` (string)
+ * - `description` (string)
+ * - `schema` (JSON Schema object)
+ * - `strict` (boolean, defaults to true)
+ *
+ * Gemini uses its provider-specific GenerateContent schema hook and supported schema subset; explicit nonempty `tools` are rejected.
+ *
+ * Returns the parsed JSON response matching the provided schema.
+ *
+ * Only supported by the `openai` provider.
+ * ]]>
+ * </odoc>
          */
         jsonSchemaPrompt: (aPrompt, aResponseSchema, aModel, aTemperature, tools) => {
             return _g.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools)

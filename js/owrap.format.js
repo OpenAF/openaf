@@ -1492,20 +1492,23 @@ OpenWrap.format.prototype.string = {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.format.semver(aVersion) : ow.format.semver</key>
- * Creates a new instance of ow.format.semver for the provided aVersion:\
- *   - nextMajor\
- *   - nextMinor\
- *   - nextPatch\
- *   - getMajor\
- *   - getMinor\
- *   - getPatch\
- *   - greater(aVersion)\
- *   - lower(aVersion)\
- *   - greaterEquals(aVersion)\
- *   - lowerEquals(aVersion)\
- *   - equals(aVersion)
+ * <![CDATA[
+ * Creates an `ow.format.semver` instance for `aVersion`, with the following methods:
+ *
+ * - `nextMajor`
+ * - `nextMinor`
+ * - `nextPatch`
+ * - `getMajor`
+ * - `getMinor`
+ * - `getPatch`
+ * - `greater(aVersion)`
+ * - `lower(aVersion)`
+ * - `greaterEquals(aVersion)`
+ * - `lowerEquals(aVersion)`
+ * - `equals(aVersion)`
+ * ]]>
  * </odoc>
  */
 OpenWrap.format.prototype.semver = function(aVer) {
