@@ -1635,7 +1635,7 @@ OpenWrap.template.prototype.html = {
 		aSuffix = _$(aSuffix, "aSuffix").isString().default("");
 
 		ow.loadServer();
-		var src = "data:" + ow.server.httpd.getMimeType(aFile) +";base64," + af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aFile)));
+		var src = "data:" + ow.server.httpd.getMimeType(aFile) +";base64," + __streamCodec.encodeFile(aFile);
 		return aPrefix + src + aSuffix;
 	},
 	/**
@@ -1651,9 +1651,11 @@ OpenWrap.template.prototype.html = {
 		var h = new ow.obj.http();
 		try {
 			var u = new java.net.URL(aURL);
-			var b = h.get(aURL, __, __, true);
-			try { h.close(); } catch(e2) {}
-			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes)) + aSuffix;
+			var stream = h.getStream(aURL);
+			var b = { contentType: h.responseType() };
+			var encoded = __streamCodec.use([stream], () => __streamCodec.encodeToString(stream));
+            try { h.close(); } catch(e2) {}
+			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + encoded + aSuffix;
 			} catch(e1) {
 				try { h.close(); } catch(e2) {}
 				return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
@@ -1715,12 +1717,12 @@ OpenWrap.template.prototype.html = {
 			var h = new ow.obj.http();
 			try {
 				var u = new java.net.URL(aURL);
-				var b = h.get(aURL, __, __, true);
-				try { h.close(); } catch(e4) {}
-				if (withContents)
-					return af.fromBytes2String(b.responseBytes);
-				else
-					return "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes));
+				var stream = h.getStream(aURL);
+			var b = { contentType: h.responseType() };
+                var content = __streamCodec.use([stream], () => withContents
+                    ? af.fromInputStream2String(stream) : __streamCodec.encodeToString(stream));
+                try { h.close(); } catch(e4) {}
+                return withContents ? content : "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") + ";base64," + content;
 				} catch(e1) {
 				try { h.close(); } catch(e4) {}
 				try {

@@ -153,10 +153,10 @@
       try {
         HTTP = function(url) {
           calls.push(url);
-          return { responseBytes: function() {
-            if (url.indexOf("bad/") >= 0) return af.fromString2Bytes("bad gzip");
-            return io.gzip(af.fromString2Bytes(stringify(/__odockeys.gz$/.test(url) ? { web: ["shared"] } : entries("web"))));
-          } };
+          return { responseStream: function() {
+            return af.fromBytes2InputStream(url.indexOf("bad/") >= 0 ? af.fromString2Bytes("bad gzip") :
+              io.gzip(af.fromString2Bytes(stringify(/__odockeys.gz$/.test(url) ? { web: ["shared"] } : entries("web")))));
+          }, close: function() {} };
         };
         var docs = new ODocs(path, __, [], true);
         docs.offline = false;
@@ -172,7 +172,7 @@
         HTTP = function(url) {
           calls.push(url);
           docs.offline = true;
-          return { responseBytes: function() { return af.fromString2Bytes("bad gzip"); } };
+          return { responseStream: function() { return af.fromString2InputStream("bad gzip"); }, close: function() {} };
         };
         ow.test.assert(docs.loadWeb("web"), false, "Changing to offline during a fetch must stop further requests");
         ow.test.assert(calls.length, 5, "Offline transition must stop URL fallback and subject fetching");

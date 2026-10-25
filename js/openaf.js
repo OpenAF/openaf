@@ -8330,6 +8330,96 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 	}
 }
 
+// Internal text/stream bridges shared by codec consumers. Keep the older-runtime
+// fallback in oafp src/include/streamFns.js in sync.
+const __streamCodec = (() => {
+  var IO = Packages.org.apache.commons.io, Codec = Packages.org.apache.commons.codec.binary
+  var charset = value => java.nio.charset.Charset.forName(String(value || java.nio.charset.Charset.defaultCharset().name()))
+  var use = (resources, fn) => {
+    var result, failure, failed = false
+    try { result = fn() } catch(e) { failure = e; failed = true }
+    resources.forEach(resource => {
+      try { resource.close() } catch(e) {
+        if (!failed) { failure = e; failed = true }
+        else {
+          try { (failure.javaException || failure).addSuppressed(e.javaException || e) } catch(ignore) {}
+        }
+      }
+    })
+    if (failed) throw failure
+    return result
+  }
+  var textInput = (text, encoding) => new IO.input.ReaderInputStream(new java.io.StringReader(String(text)), charset(encoding))
+  var textOutput = (writer, encoding) => new IO.output.WriterOutputStream(writer, charset(encoding))
+  var copy = (input, output) => { IO.IOUtils.copyLarge(input, output); output.flush() }
+  var encode = (input, output, gzip) => {
+    if (!gzip && isFunction(af.toBase64Stream)) return af.toBase64Stream(input, output, true)
+    var base64 = new Codec.Base64OutputStream(IO.output.CloseShieldOutputStream.wrap(output), true, 0, null)
+    use([base64], () => {
+      if (gzip) {
+        if (isFunction(io.gzipStream)) io.gzipStream(input, base64, true)
+        else {
+          var zipped = new java.util.zip.GZIPOutputStream(IO.output.CloseShieldOutputStream.wrap(base64))
+          use([zipped], () => copy(input, zipped))
+        }
+      } else copy(input, base64)
+    })
+    output.flush()
+  }
+  var decode = (input, output, gzip) => {
+    if (!gzip && isFunction(af.fromBase64Stream)) return af.fromBase64Stream(input, output, true)
+    var base64 = new Codec.Base64InputStream(IO.input.CloseShieldInputStream.wrap(input), false)
+    use([base64], () => {
+      if (gzip) {
+        if (isFunction(io.gunzipStream)) io.gunzipStream(base64, output, true)
+        else {
+          var zipped = new java.util.zip.GZIPInputStream(IO.input.CloseShieldInputStream.wrap(base64))
+          use([zipped], () => copy(zipped, output))
+        }
+      } else copy(base64, output)
+    })
+    output.flush()
+  }
+  var toText = (input, convert, encoding) => {
+    var writer = new java.io.StringWriter(), output = textOutput(writer, encoding)
+    use([output], () => convert(input, output))
+    return String(writer.toString())
+  }
+  var fileInput = file => {
+    if (String(file).indexOf("::") < 0) return io.readFileStream(file)
+    plugin("ZIP")
+    var split = String(file).indexOf("::"), zip = new ZIP()
+    return zip.streamGetFileStream(String(file).substring(0, split), String(file).substring(split + 2))
+  }
+  return {
+    use: use, textInput: textInput, textOutput: textOutput, copy: copy,
+    encode: encode, decode: decode, fileInput: fileInput,
+    encodeText: (text, output, gzip) => {
+      var input = textInput(text)
+      return use([input], () => encode(input, output, gzip))
+    },
+    encodeToString: (input, gzip) => toText(input, (i, o) => encode(i, o, gzip), "US-ASCII"),
+    decodeToString: (input, gzip) => toText(input, (i, o) => decode(i, o, gzip)),
+    encodeFile: file => {
+      var input = fileInput(file)
+      return use([input], () => toText(input, (i, o) => encode(i, o, false), "US-ASCII"))
+    },
+    gzipText: (text, output) => {
+      var input = textInput(text)
+      return use([input], () => {
+        if (isFunction(io.gzipStream)) return io.gzipStream(input, output, true)
+        var zipped = new java.util.zip.GZIPOutputStream(IO.output.CloseShieldOutputStream.wrap(output))
+        return use([zipped], () => copy(input, zipped))
+      })
+    },
+    gunzipText: input => toText(input, (i, o) => {
+      if (isFunction(io.gunzipStream)) return io.gunzipStream(i, o, true)
+      var zipped = new java.util.zip.GZIPInputStream(IO.input.CloseShieldInputStream.wrap(i))
+      return use([zipped], () => copy(zipped, o))
+    })
+  }
+})();
+
 /**
  * <odoc>
  * <key>ioStreamCopy(aOutputStream, aInputStream)</key>
@@ -17544,7 +17634,14 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__conConsole = true
 			return fnP(colorify(res))
 		case "gb64json":
-			return fnP(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(stringify(res, __, ""))))))
+			var text = stringify(res, __, "")
+            if (!shouldReturn && !pause) {
+                __streamCodec.encodeText(text, java.lang.System.out, true)
+                print("")
+                return
+            }
+            var input = __streamCodec.textInput(text)
+            return __streamCodec.use([input], () => fnP(__streamCodec.encodeToString(input, true)))
 		case "slon":
 			return fnP(ow.format.toSLON(res))
 		case "cslon":

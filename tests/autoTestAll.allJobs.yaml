@@ -10,6 +10,8 @@ include:
 - autoTestAll.Joni.yaml
 - autoTestAll.CSV.yaml
 - autoTestAll.IO.yaml
+- autoTestAll.StreamConversions.yaml
+- autoTestAll.StreamConsumers.yaml
 - autoTestAll.DB.yaml   
 - autoTestAll.HTTP.yaml
 - autoTestAll.Net.yaml

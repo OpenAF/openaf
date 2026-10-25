@@ -933,7 +933,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     var base64 = ""
                     if (io.fileExists(aImage)) {
-                        base64 = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage)))
+                        base64 = __streamCodec.encodeFile(aImage)
                     } else {
                         if (isString(aImage)) {
                             base64 = aImage
@@ -1844,7 +1844,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aImage.forEach(r => {
                         var base64 = ""
                         if (io.fileExists(r)) {
-                            base64 = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(r)))
+                            base64 = __streamCodec.encodeFile(r)
                         } else {
                             if (isString(r)) {
                                 base64 = r
@@ -2622,7 +2622,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     var base64 = ""
                     if (io.fileExists(aImage)) {
-                        base64 = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage)))
+                        base64 = __streamCodec.encodeFile(aImage)
                     } else {
                         if (isString(aImage)) {
                             base64 = aImage
