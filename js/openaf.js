@@ -17708,7 +17708,11 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true }))
-		case "ntree":
+		case "cntree":
+			__ansiColorFlag = true
+			__conConsole = true
+			return fnP(printTreeOrS(res, __, { fullKeySize: false, noansi: !__conAnsi, mono: false, color: true }))
+		case "atree":
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true, tableArrays: false }))
@@ -17716,8 +17720,12 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			//__ansiColorFlag = true
 			//__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: true, mono: true, color: false, curved: false }))
+		case "mntree":
+			return fnP(printTreeOrS(res, __, { fullKeySize: false, noansi: true, mono: true, color: false, curved: false }))
 		case "btree":
 			return fnP(printTreeOrS(res, __, { noansi: true, mono: false, color: false }))
+	  	case "bntree":
+			return fnP(printTreeOrS(res, __, { fullKeySize: false, noansi: true, mono: false, color: false }))
 		case "res":
 			if (isDef(res)) $set("res", res)
 			break
