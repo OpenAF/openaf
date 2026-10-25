@@ -9,6 +9,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testPauseNavigation;
 
+   - name: Format::Pause search
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPauseSearch;
+
+   - name: Format::Pause search ANSI
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPauseSearchAnsi;
+
    - name: Format::Print tree without console
      from: Format::Init
      to  : oJob Test
@@ -377,6 +387,8 @@ jobs:
 
 todo:
    - Format::Pause navigation
+   - Format::Pause search
+   - Format::Pause search ANSI
    - Format::Print tree without console
    # Format tests
    # ------------

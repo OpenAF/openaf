@@ -1426,16 +1426,114 @@ OpenWrap.format.prototype.string = {
 	 * Shift+Left/Home jumps to the top and Shift+Right/End jumps to the bottom.
 	 * Shift+PgUp and Shift+PgDown are also supported as top/bottom aliases.
 	 * At the bottom navigation remains available; forward paging or any ordinary key exits. Use q to quit.
+	 * Press / to find literal text, Enter to search, Escape to cancel, and n/N for next/previous match.
+	 * Search ignores case unless the query contains uppercase letters; matches wrap at either end.
+	 * An empty search clears matches. ANSI styling is ignored when searching and preserved when highlighting.
+	 * Text fitting on one screen is printed immediately without waiting for input.
 	 * Optionally aMsg can be provided to be displayed with the paging percentage (use \{{percentage}} to be replaced by the percentage).
 	 * </odoc>
 	 */
 	pauseString: (aString, aMsg) => {
 		_$(aString, "aString").isString().$_()
-		aMsg = _$(aMsg, "aMsg").isString().default("{{percentage}}% (PgUp/Left: back, PgDown/Right: forward, Shift+Left/Right: top/bottom, Up/Down: line, q: quit)")
+		aMsg = _$(aMsg, "aMsg").isString().default("{{percentage}}% (arrows/PgUp/PgDown: move, Home/End: jump, /: find, n/N: match, q: quit)")
 
-		//__initializeCon()
 		plugin("Console")
 		var _c = new Console()
+		var terminal = _c.getConsoleReader().getTerminal()
+		var query = "", matches = [], byLine = {}, selected = -1, notice = "", cleanLines
+		var pending = ""
+		// Include CSI and OSC sequences (e.g. hyperlinks) in the invisible text.
+		var ansiRE = /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\))/g
+		var clearStatus = () => printnl("\r" + repeat(Math.max(1, terminal.getWidth() - 1), " ") + "\r")
+		var status = text => {
+			clearStatus()
+			printnl(ow.format.string.ansiClip(text, Math.max(1, terminal.getWidth() - 1), ""))
+		}
+		var readKey = () => {
+			var key = pending || String(_c.readChar(""))
+			pending = ""
+			if (key == "\uffff" || key == "\x03") throw new Error("Pager input interrupted")
+			if (key != "\x1b") return key
+			// Wait at most 100 ms per sequence byte; standalone Escape must not block.
+			var next = () => {
+				var until = Date.now() + 100, c
+				do {
+					c = Number(_c.readCharNB())
+					if (c != -2) return c < 0 ? "" : String.fromCharCode(c)
+					sleep(5, true)
+				} while (Date.now() < until)
+				return ""
+			}
+			var prefix = next()
+			if (prefix != "[" && prefix != "O") {
+				pending = prefix
+				return key
+			}
+			key += prefix
+			for (var i = 0; i < 32; i++) {
+				var ch = next()
+				if (!ch) break
+				key += ch
+				if (/[@-~]/.test(ch)) break
+			}
+			return key
+		}
+		var find = (aText, aStart) => {
+			var input = ""
+			while (true) {
+				status("/" + input)
+				var key = readKey()
+				if (key == "\x1b") return aStart
+				if (key == "\r" || key == "\n") break
+				if (key == "\x7f" || key == "\b") {
+					// Remove a complete surrogate pair when editing supplementary characters.
+					input = input.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]$|[\s\S]$/, "")
+				} else if (key.length == 1 && key >= " " && key != "\uffff") input += key
+			}
+			query = input
+			matches = []; byLine = {}; selected = -1; notice = ""
+			if (!query) return aStart
+			if (!cleanLines) cleanLines = aText.map(line => line.replace(ansiRE, ""))
+			var sensitive = query != query.toLowerCase()
+			// Escaping makes punctuation literal; regex case folding preserves source offsets.
+			var re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), sensitive ? "g" : "gi")
+			cleanLines.forEach((line, row) => {
+				re.lastIndex = 0
+				var m
+				while ((m = re.exec(line)) !== null) {
+					var match = { line: row, start: m.index, end: m.index + m[0].length, index: matches.length }
+					matches.push(match)
+					if (!byLine[row]) byLine[row] = []
+					byLine[row].push(match)
+				}
+			})
+			if (!matches.length) { notice = "No matches"; return aStart }
+			selected = matches.findIndex(m => m.line >= aStart)
+			if (selected < 0) { selected = 0; notice = "Search wrapped" }
+			return matches[selected].line
+		}
+		var highlight = (line, row) => {
+			var found = byLine[row]
+			if (!found || !terminal.isAnsiSupported()) return line
+			var out = [], pos = 0, at = 0, active = false, sgr = "", token
+			var tokens = new RegExp(ansiRE.source + "|[\\s\\S]", "g")
+			var style = () => found[at].index == selected ? "\x1b[7m" : "\x1b[4m"
+			while ((token = tokens.exec(line)) !== null) {
+				if (active && pos == found[at].end) {
+					out.push("\x1b[0m" + sgr); active = false; at++
+				}
+				if (token[0].length > 1) {
+					if (/^\x1b\[[0-9;:]*m$/.test(token[0])) sgr += token[0]
+					out.push(token[0])
+					if (active) out.push(style())
+				} else {
+					if (at < found.length && pos == found[at].start) { out.push(style()); active = true }
+					out.push(token[0]); pos++
+				}
+			}
+			if (active) out.push("\x1b[0m" + sgr)
+			return out.join("")
+		}
 
 		var __pauseArray = (aText, aStart) => {
 			_$(aText, "aText").isArray().$_()
@@ -1449,23 +1547,25 @@ OpenWrap.format.prototype.string = {
 			}
 			var last = lines - pageSize
 			aStart = Math.max(0, Math.min(last, isUnDef(aStart) ? 0 : aStart))
-			print(aText.slice(aStart, aStart + pageSize).join("\n"))
-			tprintnl(aMsg, { percentage: Math.floor((aStart + pageSize) * 100 / lines) })
-			var key = String(_c.readChar(""))
-			if (key == "\x1b") {
-				var prefix = String(_c.readChar(""))
-				key += prefix
-				if (prefix == "[" || prefix == "O") {
-					// Consume the whole sequence, including modifier parameters.
-					var ch
-					do {
-						ch = String(_c.readChar(""))
-						key += ch
-					} while (!/[@-~]/.test(ch))
-				}
-			}
-			printnl("\r" + repeat(terminal.getWidth(), " ") + "\r")
+			print(aText.slice(aStart, aStart + pageSize).map((line, i) => highlight(line, aStart + i)).join("\n"))
+			var searchStatus = notice || (query && !matches.length ? "No matches" : "")
+			if (matches.length) searchStatus = "Match " + (selected + 1) + "/" + matches.length + (searchStatus ? " - " + searchStatus : "")
+			var footer = templify(aMsg, { percentage: Math.floor((aStart + pageSize) * 100 / lines) })
+			// Put search feedback first so it remains visible on narrow terminals.
+			status((searchStatus ? searchStatus + " | " : "") + footer)
+			notice = ""
+			var key = readKey()
+			clearStatus()
+
 			switch (key) {
+			case "/": return Math.max(0, Math.min(last, find(aText, aStart)))
+			case "n": case "N":
+				if (!query) { notice = "Use / to search"; return aStart }
+				if (!matches.length) { notice = "No matches"; return aStart }
+				var target = selected + (key == "n" ? 1 : -1)
+				if (target < 0 || target >= matches.length) notice = "Search wrapped"
+				selected = (target + matches.length) % matches.length
+				return Math.min(last, matches[selected].line)
 			case "q": case "Q": return -1
 			case "\x1b[5~": case "\x1b[D": return Math.max(0, aStart - pageSize)
 			case "\x1b[6~": case "\x1b[C": return aStart == last ? -1 : Math.min(last, aStart + pageSize)
@@ -1486,7 +1586,7 @@ OpenWrap.format.prototype.string = {
 			while(pres >= 0) pres = __pauseArray(lines, pres)
 		} finally {
 			// Restore terminal settings (also on errors/interrupts)
-			_c.getConsoleReader().getTerminal().settings.set(current)
+			try { clearStatus() } finally { terminal.settings.set(current) }
 		}
 	}
 };

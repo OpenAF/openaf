@@ -1,31 +1,50 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
-    exports.testPauseNavigation = function() {
+    function runPause(keys, content, options) {
         ow.loadFormat();
-        function run(keys, count, fail) {
-            var pages = [], percentages = [], settings = [], reads = 0;
-            var terminal = { getHeight: () => 5, getWidth: () => 80,
-                settings: { get: () => "original", set: value => settings.push(value) } };
-            var MockConsole = function() {
-                this.getConsoleReader = () => ({ getTerminal: () => terminal });
-                this.readChar = function() {
-                    if (fail || reads >= keys.length) throw new Error("input exhausted");
-                    return keys.charAt(reads++);
-                };
+        options = options || {};
+        var pages = [], statuses = [], settings = [], reads = 0;
+        var terminal = { getHeight: () => 5, getWidth: () => options.width || 180,
+            isAnsiSupported: () => options.ansi !== false,
+            settings: { get: () => "original", set: value => settings.push(value) } };
+        var MockConsole = function() {
+            this.getConsoleReader = () => ({ getTerminal: () => terminal });
+            this.readChar = function() {
+                if (reads >= keys.length) throw new Error("input exhausted");
+                return keys.charAt(reads++);
             };
-            var pager = new Function("Console", "plugin", "print", "printnl", "tprintnl",
-                "return (" + ow.format.string.pauseString.toString() + ")")(
-                MockConsole, () => {}, text => pages.push(text), () => {},
-                (msg, values) => percentages.push(values.percentage));
-            var lines = []; for (var i = 0; i < count; i++) lines.push(String(i));
-            var error = false;
-            try { pager(lines.join("\n")); } catch (e) { error = true; }
-            ow.test.assert(error, !!fail, "Unexpected pager error");
-            ow.test.assert(settings[settings.length - 1], "original", "Terminal restored");
-            ow.test.assert(reads, keys.length, "Whole key sequences consumed");
-            return { starts: pages.map(text => Number(text.split("\n")[0])), percentages: percentages, pages: pages };
+            this.readCharNB = function() {
+                if (reads >= keys.length || keys.charAt(reads) == "\u0000") {
+                    if (keys.charAt(reads) == "\u0000") reads++;
+                    return -1; // Deterministic standalone Escape or truncated sequence.
+                }
+                return keys.charCodeAt(reads++);
+            };
+        };
+        var pager = new Function("Console", "plugin", "print", "printnl",
+            "return (" + ow.format.string.pauseString.toString() + ")")(
+            MockConsole, () => {}, text => pages.push(text), text => {
+                if (text.charAt(0) != "\r") statuses.push(text);
+            });
+        if (isNumber(content)) {
+            var lines = []; for (var i = 0; i < content; i++) lines.push(String(i));
+            content = lines.join("\n");
         }
+        var error = false, errorMessage = "";
+        try { pager(content, options.message); } catch (e) { error = true; errorMessage = String(e); }
+        ow.test.assert(error, !!options.fail, "Unexpected pager error: " + errorMessage);
+        ow.test.assert(settings[settings.length - 1], "original", "Terminal restored");
+        ow.test.assert(reads, keys.length, "Whole key sequences consumed");
+        return {
+            starts: pages.map(text => parseInt(ow.format.string._stripAnsi(text).split("\n")[0], 10)),
+            percentages: statuses.filter(text => /\d+%/.test(text)).map(text => Number(text.match(/(\d+)%/)[1])),
+            pages: pages, statuses: statuses
+        };
+    }
+
+    exports.testPauseNavigation = function() {
+        function run(keys, count, fail) { return runPause(keys, count, { fail: fail }); }
         var esc = "\x1b[";
         ow.test.assert(run(esc+"6~"+esc+"5~"+esc+"C"+esc+"Dq", 13).starts,
             [0,4,0,4,0], "Page keys and arrow aliases");
@@ -49,6 +68,64 @@
         ow.test.assert(run("    ", 13).starts, [0,4,8,9], "Ordinary paging exits at bottom");
         ow.test.assert(run("", 4).pages, ["0\n1\n2\n3"], "Short output needs no input");
         run("", 13, true);
+    };
+
+    exports.testPauseSearch = function() {
+        var esc = "\x1b[";
+        var lines = ["0", "1 error ERROR error", "2", "3", "4", "5 Error", "6", "7", "8", "9 error", "10", "11", "12"];
+        var content = lines.join("\n");
+        var result = runPause("/error\rnnnnNq", content);
+        ow.test.assert(result.starts, [0,1,1,1,5,9,5], "Each occurrence is a separate result");
+        ow.test.assert(result.statuses.some(s => s.indexOf("Match 5/5") == 0), true, "Smart case matches all spellings");
+        ow.test.assert(result.pages[1].indexOf("\x1b[7merror\x1b[0m") >= 0, true, "Selected occurrence highlighted");
+        ow.test.assert(result.pages[1].indexOf("\x1b[4mERROR\x1b[0m") >= 0, true, "Other visible matches underlined");
+        result = runPause("/Error\rnNq", content);
+        ow.test.assert(result.starts, [0,5,5,5], "Uppercase query matches exact case");
+        ow.test.assert(result.statuses.filter(s => s.indexOf("Search wrapped") >= 0).length, 2, "Both search directions wrap");
+        result = runPause(esc+"6~"+"/error\rq", content);
+        ow.test.assert(result.starts, [0,4,5], "New search starts at the current page");
+        result = runPause(esc+"F"+"/Error\rq", content);
+        ow.test.assert(result.starts, [0,9,5], "Initial search wraps when necessary");
+        result = runPause("/12\rq", content);
+        ow.test.assert(result.starts, [0,9], "Final line match retains a full page");
+        result = runPause("nN/missing\rnNq", content);
+        ow.test.assert(result.starts, [0,0,0,0,0,0], "Missing queries never move or exit");
+        ow.test.assert(result.statuses.some(s => s.indexOf("No matches") == 0), true, "Missing query feedback");
+        ow.test.assert(result.statuses.some(s => s.indexOf("Use / to search") == 0), true, "No active query feedback");
+        result = runPause("/error\r/changed\x1b\u0000n/\rnq", content);
+        ow.test.assert(result.starts, [0,1,1,1,1,1], "Cancellation retains query; empty input clears it");
+        ow.test.assert(result.pages[4].indexOf("\x1b[7m"), -1, "Clear removes highlighting");
+        result = runPause("/errox\berror\x7f\x7f\x7f\x7f\x7f\rQ", content);
+        ow.test.assert(result.starts, [0,1], "Both backspace encodings edit the query");
+        var literal = "a.*+[x](y)?^${z}|\\";
+        result = runPause("/"+literal+"\rq", ["0", "1", "2 "+literal, "3", "4", "5"].join("\n"));
+        ow.test.assert(result.starts, [0,2], "Regex punctuation is literal");
+        result = runPause("/1\nq", content, { ansi: false });
+        ow.test.assert(result.pages[1].indexOf("\x1b"), -1, "Search works without ANSI highlighting");
+        result = runPause("/error\rq", content, { width: 26, message: "Custom {{percentage}}%" });
+        ow.test.assert(result.statuses.some(s => s.indexOf("Match 1/5 | Custom") == 0), true, "Custom message and search status");
+        ow.test.assert(result.statuses.every(s => visibleLength(s) <= 25), true, "Status and prompt fit terminal");
+        result = runPause("/error"+esc+"D\rq", content);
+        ow.test.assert(result.starts, [0,1], "Arrow sequences in prompt are fully consumed");
+        result = runPause("/error\x1bq", content);
+        ow.test.assert(result.starts, [0,0], "Key immediately after Escape is preserved");
+        runPause("/error\r\x1b[\u0000q", content);
+        runPause("/unfinished", content, { fail: true });
+        runPause("/\x03", content, { fail: true });
+    };
+
+    exports.testPauseSearchAnsi = function() {
+        var line = "1 \x1b[31mer\x1b[0mror\x1b[34m tail\x1b[0m";
+        var result = runPause("/error\rq", ["0", line, "2", "3", "4", "5"].join("\n"));
+        ow.test.assert(result.starts, [0,1], "Match spans ANSI sequences");
+        ow.test.assert(ow.format.string._stripAnsi(result.pages[1]).split("\n")[0], "1 error tail", "Highlight preserves visible text");
+        ow.test.assert(result.pages[1].indexOf("\x1b[0m\x1b[7mror") >= 0, true, "Highlight survives embedded reset");
+        ow.test.assert(result.pages[1].indexOf("\x1b[0m\x1b[31m\x1b[0m\x1b[34m tail") >= 0, true, "Original colour restored after match");
+        var link = "\x1b]8;;https://error.example\x1b\\plain\x1b]8;;\x1b\\";
+        result = runPause("/error\rq", ["0", "1 "+link, "2", "3", "4", "5"].join("\n"));
+        ow.test.assert(result.statuses.some(s => s.indexOf("No matches") == 0), true, "Hyperlink targets are not searchable text");
+        result = runPause("/plain\rq", ["0", "1 "+link, "2", "3", "4", "5"].join("\n"));
+        ow.test.assert(result.pages[1].indexOf("\x1b[7mplain\x1b[0m") >= 0, true, "Hyperlink label highlighted");
     };
 
     exports.testPrintTreeWithoutConsole = function() {
