@@ -17562,17 +17562,95 @@ function __defaultTableFormat() {
 }
 
 /**
- * <ojob>
+ * <odoc format="markdown">
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
- * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "btable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
- * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
- * For map/array output, __colorFormat.table.format selects a default table renderer when no global or explicit format is set.
- * Supported preferences: table, stable, ctable, btable, bstable; unset/unsupported values preserve human output.
- * In "btable", __rowsep (or __ROWSEP) enables light rules between records (default false); __width (or __WIDTH)
- * sets a positive integer wrapping width, otherwise the available terminal width is used. Unicode rules are always used.
- * If shouldReturn = true the string output will be returned
- * </ojob>
+ * <![CDATA[
+ * Formats and prints `aObj` using the options in `args` (defaults to `{}`). Also available as `$o`.
+ * Set `shouldReturn` to `true` to return formatted output instead of printing it.
+ *
+ * ## Format selection
+ *
+ * Use `args.__format` (or `args.__FORMAT`) to select a format. The lowercase option takes precedence.
+ * Without an explicit format, `global.__format` is used when defined. Otherwise, maps and arrays use
+ * `__colorFormat.table.format` when it is `table`, `stable`, `ctable`, `btable` or `bstable`;
+ * all other cases default to `human`.
+ *
+ * | Formats | Output |
+ * | --- | --- |
+ * | `json`, `prettyjson`, `cjson` | Compact, indented or colored JSON. |
+ * | `gb64json` | Compact JSON encoded with gzip and Base64. |
+ * | `slon`, `cslon` | SLON or colored SLON. |
+ * | `ndjson` | One JSON value per array element. With `shouldReturn`, returns an array of strings. Use an array as input. |
+ * | `xml`, `yaml`, `cyaml`, `toon` | XML, YAML, colored YAML or TOON. |
+ * | `kyaml`, `ckyaml`, `lkyaml`, `clkyaml` | KYAML and its colored (`c`), single-line flow (`l`) variants. |
+ * | `table`, `stable`, `ctable` | Table, wrapped table with row separators, or colored wrapped table. Maps become single-row arrays. |
+ * | `btable`, `bstable` | Unicode borderless tables; `bstable` always separates records with light rules. |
+ * | `tree`, `ctree`, `cntree`, `atree` | Tree output; colored (`c`), shortened keys (`n`), or colored without tables for arrays (`a`). |
+ * | `mtree`, `mntree`, `btree`, `bntree` | Uncolored trees; monochrome (`m`) or plain (`b`), with shortened-key variants (`n`). |
+ * | `map` | Map-style output using `printMap`. |
+ * | `html`, `jsmap` | A complete HTML document from `ow.template.html.parseMap`. |
+ * | `text` | JavaScript string conversion using `String`. |
+ * | `md` | Render Markdown text for the terminal, or generate Markdown from maps and arrays (see below). |
+ * | `csv` | CSV from an array of maps; a single map becomes a one-row array. |
+ * | `human` | Call `aFunc` with the transformed value, or use the default tree/string output. |
+ *
+ * ## Options
+ *
+ * These options also accept uppercase names (for example, `__PATH`); lowercase takes precedence.
+ * Transformations run before formatting, in the order `__path`, `__from`, `__sql`.
+ *
+ * | Option | Purpose |
+ * | --- | --- |
+ * | `__path` | Select data with `$path(aObj, expression)`. |
+ * | `__from` | Query data with `$from` using an nLinq expression parsed by `af.fromNLinq`. |
+ * | `__sql` | Query data with `$sql`. |
+ * | `__csv` | CSV configuration as a JSON or SLON string, passed to `$csv`. |
+ * | `__pause` | Page printed text with `ow.format.string.pauseString`. Ignored when returning output. |
+ * | `__width` | Positive integer wrapping width for `btable` and `bstable`; defaults to the available terminal width. |
+ * | `__rowsep` | Enable light rules between records in `btable` (default `false`). `bstable` always enables them. |
+ * | `__key` | Storage key for the `key` format (default `"res"`). |
+ *
+ * ## Markdown output
+ *
+ * For maps and arrays, `args.mdformat` accepts `structured` (default), `json` or `yaml`.
+ * `structured` produces field/value tables for flat maps, column tables for arrays of flat maps,
+ * lists for arrays of scalar values, and headings for nested data. Nested string sections use code fences.
+ * `json` and `yaml` produce fenced code blocks. These map/array modes return or print Markdown source.
+ * String input is rendered by `ow.format.withMD` for terminal display.
+ *
+ * ## Storing results
+ *
+ * The `res` format stores the transformed value with `$set("res", value)`; `key` uses `args.__key`.
+ * A format named `set_NAME` stores it with `$set("NAME", value)`.
+ * The `args` format writes to `args._list`, `args._map` or `args.result` according to the value type.
+ * The `pm` format merges the same fields into `__pm`.
+ *
+ * Storage formats do not return formatted data. With `shouldReturn` omitted or false, they print a blank line.
+ * The return value depends on the format: usually a string, an array of strings for `ndjson`, or undefined.
+ * `human` does not forward the return value from `aFunc`, including the default formatter.
+ * A custom `aFunc` is responsible for its own printing.
+ *
+ * ## Examples
+ *
+ * ```javascript
+ * var rows = [{ name: "alpha", count: 2 }, { name: "beta", count: 5 }];
+ * $output(rows, { __format: "btable", __width: 80, __rowsep: true });
+ *
+ * // Capture formatted text without printing.
+ * var json = $output(rows, { __format: "prettyjson" }, __, true);
+ *
+ * // Select part of an object before formatting.
+ * $output({ items: rows }, { __path: "items", __format: "yaml" });
+ *
+ * // Generate Markdown source from structured data.
+ * var markdown = $output(rows, { __format: "md" }, __, true);
+ * var fenced = $output(rows, { __format: "md", mdformat: "json" }, __, true);
+ *
+ * // Render Markdown text in the terminal.
+ * $output("# Results\n\n**Complete**", { __format: "md" });
+ * ```
+ * ]]>
+ * </odoc>
  */
 const $output = function(aObj, args, aFunc, shouldReturn) {
 	args = _$(args).default({})
