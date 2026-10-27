@@ -123,9 +123,9 @@ The loader recognizes `.yaml.enc`, `.yml.enc`, `.json.enc`, and `.js.enc` defini
 
 The CLI blocks `-compile`, `-tojson`, `-jobs`, `-todo`, and `-deps` for an encrypted entry definition or detected encrypted `include`/`jobsInclude`. These are specific inspection restrictions, not a claim that all help or loading operations are blocked. Encryption and integrity/signature verification are separate mechanisms.
 
-## Combined Integrity / Signature (OpenAF)
+## OpenAF Script Validation
 
-OpenAF core can also enforce script integrity & signatures (`OAF_INTEGRITY`, `OAF_SIGNATURE_*`). Use together for full chain trust: platform JS + oJob YAML includes.
+OpenAF core can enforce script integrity with `OAF_INTEGRITY` and `OAF_INTEGRITY_STRICT`. A script signature format is not currently defined, so `OAF_SIGNATURE_STRICT` and `OAF_VALIDATION_STRICT` fail closed. Signed oJob definitions use their separately documented `__jwt` format.
 
 ---
 See also: `openaf-flags.md`, main `ojob.md`.

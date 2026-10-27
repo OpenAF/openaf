@@ -390,6 +390,99 @@
         delete __flags.HTTPD_PREFIX["0"]
     }
 
+    exports.testHTTPFileHelperContainment = function() {
+        ow.loadServer()
+
+        var base = String(java.nio.file.Files.createTempDirectory("openaf-http-file-"))
+        var root = base + "/root.dir"
+        var sibling = base + "/rootXdir"
+        io.mkdir(root)
+        io.mkdir(sibling)
+        io.writeFileString(root + "/inside.txt", "inside")
+        io.writeFileString(sibling + "/secret.txt", "outside")
+
+        var httpd = {
+            replyStream: function(stream) {
+                try { return { data: af.fromInputStream2String(stream) } } finally { stream.close() }
+            },
+            replyOKHTML: function(data) { return { data: data } },
+            replyBytes: function(data) { return { data: af.fromBytes2String(data) } },
+            reply: function(data) { return { data: data, missing: true } }
+        }
+        var notFound = function() { return { missing: true } }
+
+        try {
+            var inside = ow.server.httpd.replyFile(httpd, root, "/files", "/files/inside.txt", notFound, [])
+            ow.test.assert(inside.data, "inside", "Static helper should serve files inside its root.")
+
+            var escaped = ow.server.httpd.replyFile(httpd, root, "/files", "/files/../rootXdir/secret.txt", notFound, [])
+            ow.test.assert(escaped.missing, true, "Static helper should reject a sibling path sharing the root prefix.")
+
+            io.writeFileString(root + "/article.md", "inside markdown")
+            var markdown = ow.server.httpd.replyFileMD(httpd, root, "/files", "/files/article", notFound)
+            ow.test.assert(markdown.data.indexOf("inside markdown") >= 0, true, "Markdown helper should preserve extensionless in-root routes.")
+
+            try {
+                java.nio.file.Files.createSymbolicLink(java.nio.file.Paths.get(root, "outside-link.txt"), java.nio.file.Paths.get(sibling, "secret.txt"))
+                java.nio.file.Files.createSymbolicLink(java.nio.file.Paths.get(root, "inside-link.txt"), java.nio.file.Paths.get(root, "inside.txt"))
+                ow.test.assert(ow.server.httpd.replyFile(httpd, root, "/files", "/files/outside-link.txt", notFound, []).missing, true, "Static helper should reject a symlink outside its root.")
+                ow.test.assert(ow.server.httpd.replyFile(httpd, root, "/files", "/files/inside-link.txt", notFound, []).data, "inside", "Static helper should preserve an in-root symlink.")
+
+                io.writeFileString(sibling + "/outside.md", "outside markdown")
+                io.rm(root + "/article.md")
+                java.nio.file.Files.createSymbolicLink(java.nio.file.Paths.get(root, "article.md"), java.nio.file.Paths.get(sibling, "outside.md"))
+                ow.test.assert(ow.server.httpd.replyFileMD(httpd, root, "/files", "/files/article", notFound).missing, true, "Markdown helper should recheck containment after adding the extension.")
+            } catch(e) {
+                if (!(e instanceof java.lang.UnsupportedOperationException) && !(e instanceof java.nio.file.FileSystemException)) throw e
+            }
+        } finally {
+            io.rm(base)
+        }
+    }
+
+    exports.testHTTPFileBrowseJava = function() {
+        ow.loadServer()
+
+        function request(port, path) {
+            var socket = new java.net.Socket("127.0.0.1", port)
+            try {
+                var output = socket.getOutputStream()
+                output.write(new java.lang.String("GET " + path + " HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n").getBytes(java.nio.charset.StandardCharsets.US_ASCII))
+                output.flush()
+                return String(new java.lang.String(socket.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8))
+            } finally {
+                socket.close()
+            }
+        }
+
+        var base = String(java.nio.file.Files.createTempDirectory("openaf-http-browse-"))
+        var root = base + "/public"
+        var sibling = base + "/public-secret"
+        io.mkdir(root)
+        io.mkdir(sibling)
+        io.writeFileString(root + "/inside.txt", "inside-browser")
+        io.writeFileString(sibling + "/secret.txt", "outside-browser")
+
+        var port = findRandomOpenPort()
+        var hs = ow.server.httpd.start(port, "127.0.0.1", __, __, __, __, 5000, "java")
+        try {
+            hs.addFileBrowse("/static", root)
+            var inside = request(port, "/static/inside.txt")
+            ow.test.assert(inside.indexOf("200") >= 0 && inside.indexOf("inside-browser") >= 0, true, "Java file browser should serve an in-root file.")
+
+            var paths = ["/static/../public-secret/secret.txt", "/static/%2e%2e/public-secret/secret.txt", "/static/%2e%2e%2fpublic-secret/secret.txt", "/static/%3Cimg%20src=x%20onerror=alert(1)%3E/.."]
+            for (var i = 0; i < paths.length; i++) {
+                var requestPath = paths[i]
+                var response = request(port, requestPath)
+                ow.test.assert(response.indexOf("404") >= 0, true, "Java file browser should reject traversal: " + requestPath)
+                ow.test.assert(response.indexOf("outside-browser") < 0, true, "Java file browser should not return outside bytes: " + requestPath)
+            }
+        } finally {
+            ow.server.httpd.stop(hs)
+            io.rm(base)
+        }
+    }
+
     exports.testQueue = function() {
         ow.loadServer();
         var q = new ow.server.queue({ t: "q" }, "test");

@@ -1,6 +1,6 @@
 # FTP Java Plugin Reference
 
-The `FTP` plugin provides plain FTP and FTPS (SSL/TLS implicit/explicit) file transfers based on Apache Commons Net `FTPClient` and `FTPSClient`.
+The `FTP` plugin provides plain FTP and FTPS (SSL/TLS implicit/explicit) file transfers based on Apache Commons Net `FTPClient` and `FTPSClient`. FTPS validates the control server certificate against the JVM trust store and verifies its hostname.
 
 ---
 

@@ -60,6 +60,26 @@ jobs:
   to  : oJob Test
   exec: args.func = args.tests.testOJobEncryptedJSON
 
+- name: oJob::oJobExternalExecArgs
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobExternalExecArgs
+
+- name: oJob::oJobStrictParsing
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobStrictParsing
+
+- name: oJob::oJobIntegritySingleFetch
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobIntegritySingleFetch
+
+- name: oJob::oJobAuthorizedDomainRedirects
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobAuthorizedDomainRedirects
+
 - name: oJob::oJobShutdownConsole
   from: oJob::Init
   to  : oJob Test
@@ -77,5 +97,9 @@ todo:
 - oJob::oJobPass
 - oJob::oJobEncryptedYAML
 - oJob::oJobEncryptedJSON
+- oJob::oJobExternalExecArgs
+- oJob::oJobStrictParsing
+- oJob::oJobIntegritySingleFetch
+- oJob::oJobAuthorizedDomainRedirects
 - oJob::oJobShutdownConsole
 - oJob::oJobHelpExamples

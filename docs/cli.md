@@ -65,6 +65,8 @@ With no arguments, OpenAF launches the interactive GUI if a desktop is available
 | `--bashcompletion <arg>` | arg | Generate bash completion script. |
 | `--zshcompletion <arg>` | arg | Generate zsh completion script. |
 
+Generated completion scripts match subcommands exactly once chosen (so a subcommand name that prefixes another no longer offers the wrong options) and print with `printf` for safe output of special characters.
+
 ## Generated wrapper commands
 
 After running `--install`, the following wrapper scripts are created in the install directory. These are separate binaries (not flags of `openaf`), but are the most common way to invoke the subsystems:

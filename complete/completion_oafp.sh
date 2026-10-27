@@ -2,24 +2,169 @@
 
 # Flags
 _G_EXACT_CHOSEN=0
+F__h=1
+F_help_=1
+F_help__help_filters=0
+F_help__help_template=0
+F_help__help_examples=0
+F_help__help_jsonschema=0
+F_help__help_readme=0
+F_file_=1
+F_ingzip_=1
+F_cmd_=1
+F_data_=1
+F_out_=1
+F_out__out_base64=0
+F_out__out_base64_base64gzip_=1
+F_out__out_bstable=0
+F_out__out_btable=0
+F_out__out_btree=0
+F_out__out_ch=0
+F_out__out_ch_ch_=1
+F_out__out_ch_chkey_=1
+F_out__out_ch_chunset_=1
+F_out__out_chart=0
+F_out__out_chart_chart_=1
+F_out__out_chart_chartcls_=1
+F_out__out_chart_loop_=1
+F_out__out_cjson=0
+F_out__out_cmd=0
+F_out__out_cmd_outcmd_=1
+F_out__out_cmd_outcmdjoin_=1
+F_out__out_cmd_outcmdseq_=1
+F_out__out_cmd_outcmdnl_=1
+F_out__out_cmd_outcmdparam_=1
+F_out__out_cmd_outcmdtmpl_=1
+F_out__out_cslon=0
+F_out__out_csv=0
+F_out__out_csv_inputcsv_=1
+F_out__out_csv_incsv_=1
+F_out__out_csv_csv_=1
+F_out__out_ctable=0
+F_out__out_ctree=0
+F_out__out_clkyaml=0
+F_out__out_ckyaml=0
+F_out__out_cyaml=0
+F_out__out_db=0
+F_out__out_db_dbjdbc_=1
+F_out__out_db_dbuser_=1
+F_out__out_db_dbpass_=1
+F_out__out_db_dbtimeout_=1
+F_out__out_db_dblib_=1
+F_out__out_db_dbtable_=1
+F_out__out_db_dbnocreate_=1
+F_out__out_db_dbicase_=1
+F_out__out_db_dbbatchsize_=1
+F_out__out_dsv=0
+F_out__out_dsv_dsvsep_=1
+F_out__out_dsv_dsvquote_=1
+F_out__out_dsv_dsvfields_=1
+F_out__out_dsv_dsvuseslon_=1
+F_out__out_dsv_dsvheader_=1
+F_out__out_dsv_dsvnl_=1
+F_out__out_envs=0
+F_out__out_envs_envscmd_=1
+F_out__out_envs_envsnocmd_=1
+F_out__out_envs_envsprefix_=1
+F_out__out_envs_envsnoprefix_=1
+F_out__out_gb64json=0
+F_out__out_grid=0
+F_out__out_grid_grid_=1
+F_out__out_html=0
+F_out__out_html_htmlcompact_=1
+F_out__out_html_htmlpart_=1
+F_out__out_html_htmlopen_=1
+F_out__out_html_htmlwait_=1
+F_out__out_html_htmldark_=1
+F_out__out_idesc=0
+F_out__out_idesc_idescsource_=1
+F_out__out_idesc_idescrecipe_=1
+F_out__out_idesc_idescpage_=1
+F_out__out_idesc_idescrecords_=1
+F_out__out_idesc_idescdepth_=1
+F_out__out_idesc_idescstring_=1
+F_out__out_idesc_idescbytes_=1
+F_out__out_idesc_idescnodes_=1
+F_out__out_ini=0
+F_out__out_json=0
+F_out__out_jsmap=0
+F_out__out_jwt=0
+F_out__out_jwt_jwtsecret_=1
+F_out__out_jwt_jwtprivkey_=1
+F_out__out_jwt_jwtalg_=1
+F_out__out_key=0
+F_out__out_kyaml=0
+F_out__out_lkyaml=0
+F_out__out_lines=0
+F_out__out_log=0
+F_out__out_log_logprintall_=1
+F_out__out_map=0
+F_out__out_md=0
+F_out__out_md_mdtemplate_=1
+F_out__out_md_mdformat_=1
+F_out__out_mdtable=0
+F_out__out_mdyaml=0
+F_out__out_mtree=0
+F_out__out_ndjson=0
+F_out__out_ndslon=0
+F_out__out_ndcslon=0
+F_out__out_openmetrics=0
+F_out__out_openmetrics_metricsprefix_=1
+F_out__out_openmetrics_metricstimestamp_=1
+F_out__out_oaf=0
+F_out__out_oaf_outoaf_=1
+F_out__out_pjson=0
+F_out__out_prettyjson=0
+F_out__out_pxml=0
+F_out__out_pxml_pxmlprefix_=1
+F_out__out_raw=0
+F_out__out_rawascii=0
+F_out__out_rawascii_rawasciistart_=1
+F_out__out_rawascii_rawasciiend_=1
+F_out__out_rawascii_rawasciitab_=1
+F_out__out_rawascii_rawasciinovisual_=1
+F_out__out_rawascii_rawasciinolinenum_=1
+F_out__out_res=0
+F_out__out_schart=0
+F_out__out_schart_schart_=1
+F_out__out_slon=0
+F_out__out_sql=0
+F_out__out_sql_sqltable_=1
+F_out__out_sql_sqlicase_=1
+F_out__out_sql_sqlnocreate_=1
+F_out__out_stable=0
+F_out__out_table=0
+F_out__out_template=0
+F_out__out_template_template_=1
+F_out__out_template_templatepath_=1
+F_out__out_template_templatedata_=1
+F_out__out_template_templatetmpl_=1
+F_out__out_text=0
+F_out__out_toml=0
+F_out__out_toon=0
+F_out__out_tree=0
+F_out__out_xls=0
+F_out__out_xls_xlsfile_=1
+F_out__out_xls_xlssheet_=1
+F_out__out_xls_xlsformat_=1
+F_out__out_xls_xlsopen_=1
+F_out__out_xls_xlsopenwait_=1
+F_out__out_xml=0
+F_out__out_xml_outxmlprefix_=1
+F_out__out_yaml=0
+F_idescsource_=1
+F_idescrecipe_=1
 F_in_=1
 F_in__in_ask=0
 F_in__in_base64=0
+F_in__in_base64_base64gzip_=1
 F_in__in_ch=0
-F_in__in_ch_inch=1
-F_in__in_ch_inchall=1
+F_in__in_ch_inch_=1
+F_in__in_ch_inchall_=1
 F_in__in_csv=0
+F_in__in_csv_inputcsv_=1
 F_in__in_csv_incsv_=1
-F_in__in_dsv=0
-F_in__in_dsv_indsvsep_=1
-F_in__in_dsv_indsvsepre_=1
-F_in__in_dsv_indsvquote_=1
-F_in__in_dsv_indsvescape_=1
-F_in__in_dsv_indsvcomment_=1
-F_in__in_dsv_indsvheader_=1
-F_in__in_dsv_indsvtrim_=1
-F_in__in_dsv_indsvjoin_=1
-F_in__in_dsv_indsvfields_=1
+F_in__in_csv_csv_=1
 F_in__in_db=0
 F_in__in_db_indbjdbc_=1
 F_in__in_db_indbuser_=1
@@ -30,8 +175,19 @@ F_in__in_db_indbstream_=1
 F_in__in_db_indbexec_=1
 F_in__in_db_indbautocommit_=1
 F_in__in_db_indbdesc_=1
+F_in__in_dsv=0
+F_in__in_dsv_indsvsep_=1
+F_in__in_dsv_indsvsepre_=1
+F_in__in_dsv_indsvquote_=1
+F_in__in_dsv_indsvescape_=1
+F_in__in_dsv_indsvcomment_=1
+F_in__in_dsv_indsvheader_=1
+F_in__in_dsv_indsvtrim_=1
+F_in__in_dsv_indsvjoin_=1
+F_in__in_dsv_indsvfields_=1
 F_in__in_gb64json=0
 F_in__in_hsperf=0
+F_in__in_hsperf_hsperfmetadata_=1
 F_in__in_ini=0
 F_in__in_javas=0
 F_in__in_javas_javasinception_=1
@@ -63,8 +219,18 @@ F_in__in_lines=0
 F_in__in_lines_linesjoin_=1
 F_in__in_lines_linesvisual_=1
 F_in__in_lines_linesvisualsepre_=1
-F_in__in_lines_linesvisualheadsep=1
+F_in__in_lines_linesvisualheadsep_=1
 F_in__in_llm=0
+F_in__in_llm_llmenv_=1
+F_in__in_llm_llmoptions_=1
+F_in__in_llm_llmconversation_=1
+F_in__in_llm_llmimage_=1
+F_in__in_llmdecide=0
+F_in__in_llmdecide_llmenv_=1
+F_in__in_llmdecide_llmoptions_=1
+F_in__in_llmdecide_llmdecidesample_=1
+F_in__in_llmdecide_llmimage_=1
+F_in__in_llmdecide_llmdecidestats_=1
 F_in__in_llmmodels=0
 F_in__in_ls=0
 F_in__in_ls_lsext_=1
@@ -98,16 +264,16 @@ F_in__in_rawhex_inrawhexline_=1
 F_in__in_sh=0
 F_in__in_sh_inshformat_=1
 F_in__in_slon=0
-F_in__in_sql=0
-F_in__in_sql_sqlparse_=1
-F_in__in_sql_sqloptions_=1
 F_in__in_snmp=0
 F_in__in_snmp_insnmp_=1
 F_in__in_snmp_insnmpcommunity_=1
-F_in__in_snmp_insnmpversion_=1
 F_in__in_snmp_insnmptimeout_=1
 F_in__in_snmp_insnmpretries_=1
+F_in__in_snmp_insnmpversion_=1
 F_in__in_snmp_insnmpsec_=1
+F_in__in_sql=0
+F_in__in_sql_sqlparse_=1
+F_in__in_sql_sqloptions_=1
 F_in__in_toml=0
 F_in__in_toon=0
 F_in__in_xls=0
@@ -121,163 +287,46 @@ F_in__in_xml_xmlignored_=1
 F_in__in_xml_xmlprefix_=1
 F_in__in_xml_xmlfiltertag_=1
 F_in__in_yaml=0
-F_out_=1
-F_out__out_base64=0
-F_out__out_base64_base64gzip_=1
-F_out__out_ch=0
-F_out__out_ch_ch_=1
-F_out__out_ch_chkey_=1
-F_out__out_ch_chunset_=1
-F_out__out_chart=0
-F_out__out_chart_chart_=1
-F_out__out_chart_chartcls_=1
-F_out__out_cjson=0
-F_out__out_cmd=0
-F_out__out_cmd_outcmd_=1
-F_out__out_cmd_outcmdjoin_=1
-F_out__out_cmd_outcmdseq_=1
-F_out__out_cmd_outcmdnl_=1
-F_out__out_cmd_outcmdparam_=1
-F_out__out_cmd_outcmdtmpl_=1
-F_out__out_cslon=0
-F_out__out_csv=0
-F_out__out_csv_csv_=1
-F_out__out_dsv=0
-F_out__out_dsv_dsvsep_=1
-F_out__out_dsv_dsvquote_=1
-F_out__out_dsv_dsvfields_=1
-F_out__out_dsv_dsvuseslon_=1
-F_out__out_dsv_dsvheader_=1
-F_out__out_ctable=0
-F_out__out_ctree=0
-F_out__out_ttree=0
-F_out__out_mtree=0
-F_out__out_btree=0
-F_out__out_cyaml=0
-F_out__out_kyaml=0
-F_out__out_ckyaml=0
-F_out__out_lkyaml=0
-F_out__out_clkyaml=0
-F_out__out_db=0
-F_out__out_db_dbjdbc_=1
-F_out__out_db_dbuser_=1
-F_out__out_db_dbpass_=1
-F_out__out_db_dbtimeout_=1
-F_out__out_db_dblib_=1
-F_out__out_db_dbtable_=1
-F_out__out_db_dbnocreate_=1
-F_out__out_db_dbicase_=1
-F_out__out_db_dbbatchsize_=1
-F_out__out_envs=0
-F_out__out_envs_envscmd_=1
-F_out__out_envs_envsprefix_=1
-F_out__out_envs_envsnoprefix_=1
-F_out__out_gb64json=0
-F_out__out_grid=0
-F_out__out_grid_grid_=1
-F_out__out_html=0
-F_out__out_html_htmlcompact_=1
-F_out__out_html_htmlpart_=1
-F_out__out_html_htmlopen_=1
-F_out__out_html_htmlwait_=1
-F_out__out_html_htmldark_=1
-F_out__out_ini=0
-F_out__out_json=0
-F_out__out_jwt=0
-F_out__out_jwt_jwtsecret_=1
-F_out__out_jwt_jwtprivkey_=1
-F_out__out_jwt_jwtalg_=1
-F_out__out_lines=0
-F_out__out_log=0
-F_out__out_log_logprintall_=1
-F_out__out_map=0
-F_out__out_md=0
-F_out__out_md_mdtemplate_=1
-F_out__out_mdtable=0
-F_out__out_mdyaml=0
-F_out__out_ndjson=0
-F_out__out_ndslon=0
-F_out__out_ndcslon=0
-F_out__out_oaf=0
-F_out__out_oaf_outoaf_=1
-F_out__out_openmetrics=0
-F_out__out_openmetrics_metricsprefix_=1
-F_out__out_openmetrics_metricstimestamp_=1
-F_out__out_pjson=0
-F_out__out_prettyjson=0
-F_out__out_pxml=0
-F_out__out_pxml_pxmlprefix=1
-F_out__out_raw=0
-F_out__out_rawascii=0
-F_out__out_rawascii_rawasciistart_=1
-F_out__out_rawascii_rawasciiend_=1
-F_out__out_rawascii_rawasciitab_=1
-F_out__out_rawascii_rawasciinovisual_=1
-F_out__out_rawascii_rawasciinolinenum_=1
-F_out__out_schart=0
-F_out__out_schart_schart_=1
-F_out__out_slon=0
-F_out__out_sql=0
-F_out__out_sql_sqltable_=1
-F_out__out_sql_sqlicase_=1
-F_out__out_sql_sqlnocreate_=1
-F_out__out_stable=0
-F_out__out_table=0
-F_out__out_template=0
-F_out__out_template_template_=1
-F_out__out_template_templatepath_=1
-F_out__out_template_templatedata_=1
-F_out__out_template_templatetmpl_=1
-F_out__out_text=0
-F_out__out_toml=0
-F_out__out_toon=0
-F_out__out_tree=0
-F_out__out_xls=0
-F_out__out_xls_xlsfile_=1
-F_out__out_xls_xlssheet_=1
-F_out__out_xls_xlsformat_=1
-F_out__out_xls_xlsopen_=1
-F_out__out_xls_xlsopenwait_=1
-F_out__out_xml=0
-F_out__out_xml_outxmlprefix=1
-F_out__out_yaml=0
-F__h=1
-F_help_=1
-F_help__help_filters=0
-F_help__help_template=0
-F_help__help_examples=0
-F_file_=1
-F_cmd_=1
-F_data_=1
+F_ifrom_=1
+F_isql_=1
 F_from_=1
 F_sql_=1
+F_ijq_=1
+F_jq_=1
+F_ojq_=1
+F_opath_=1
 F_sqlfilter_=1
 F_sqlfiltertables_=1
 F_path_=1
+F_csv_=1
 F_outkey_=1
 F_outfile_=1
 F_outfileappend_=1
+F_parallel_=1
+F_progress_=1
+F_stream_=1
 F_pause_=1
 F_color_=1
 F_url_=1
 F_urlmethod_=1
 F_urlparams_=1
 F_urldata_=1
+F_insecure_=1
 F_chs_=1
 F_loop_=1
 F_loopcls_=1
 F_libs_=1
+F_pipe_=1
+F__f=1
 F__examples=1
 F_examples_=1
 F_version_=1
-F_pipe_=1
-F_parallel_=1
 F__v=1
-F__f=1
-F_allstrings_=1
+F_debug_=1
 F_arraytomap_=1
 F_arraytomapkeepkey_=1
 F_arraytomapkey_=1
+F_allstrings_=1
 F_cmlt_=1
 F_cmlt__cmltch_=0
 F_cmlt__cmltsize_=0
@@ -291,6 +340,7 @@ F_diff__diffwordswithspace_=0
 F_diff__difflines_=0
 F_diff__diffsentences_=0
 F_diff__diffchars_=0
+F_mapdiff_=1
 F_field2byte_=1
 F_field2date_=1
 F_field2si_=1
@@ -298,12 +348,19 @@ F_field2str_=1
 F_field4map_=1
 F_flatmap_=1
 F_getlist_=1
+F_forcearray_=1
 F_jsonschema_=1
 F_jsonschemacmd_=1
+F_jsonschemaoptions_=1
 F_jsonschemagen_=1
 F_kmeans_=1
+F_llmcontext_=1
+F_llmdecide_=1
+F_llmdecide__llmenv_=0
+F_llmdecide__llmoptions_=0
+F_llmdecide__llmconversation_=0
+F_llmdecide__llmimage_=0
 F_llmprompt_=1
-F_llmprompt__llmcontext_=0
 F_llmprompt__llmenv_=0
 F_llmprompt__llmoptions_=0
 F_llmprompt__llmconversation_=0
@@ -319,36 +376,217 @@ F_regression__regressionpath_=0
 F_regression__regressionx_=0
 F_regression__regressionoptions_=0
 F_regression__regressionforecast_=0
+F_removedups_=1
+F_removeempty_=1
+F_removenulls_=1
+F_searchkeys_=1
+F_searchvalues_=1
 F_set_=1
 F_set__setop_=0
 F_set__setop__setop_union=1
 F_set__setop__setop_diffa=1
 F_set__setop__setop_diffb=1
 F_set__setop__setop_diffab=1
+F_set__setop__setop_diff=1
 F_set__setop__setop_intersect=1
-F_removedups_=1
-F_removeempty_=1
-F_removenulls_=1
-F_spacekeys_=1
-F_searchkeys_=1
-F_searchvalues_=1
 F_sortmapkeys_=1
+F_spacekeys_=1
 F_trim_=1
-F_forcearray_=1
-F_secKey_=1
-F_secKey__secEnv_=0
-F_secKey__secFile_=0
-F_secKey__secMainPass_=0
-F_secKey__secPass_=0
-F_secKey__secBucket_=0
-F_secKey__secRepo_=0
+F_val2icon_=1
 F_xjs_=1
 F_xpy_=1
 F_xfn_=1
 F_xrjs_=1
 F_xrpy_=1
 F_xrfn_=1
-F_val2icon_=1
+F_inch_=1
+F_inchall_=1
+F_indbjdbc_=1
+F_indbuser_=1
+F_indbpass_=1
+F_indbtimeout_=1
+F_indblib_=1
+F_indbstream_=1
+F_indbexec_=1
+F_indbautocommit_=1
+F_indbdesc_=1
+F_indsvsep_=1
+F_indsvsepre_=1
+F_indsvquote_=1
+F_indsvescape_=1
+F_indsvcomment_=1
+F_indsvheader_=1
+F_indsvtrim_=1
+F_indsvjoin_=1
+F_indsvfields_=1
+F_javagcjoin_=1
+F_javathreadpid_=1
+F_hsperfmetadata_=1
+F_javasinception_=1
+F_jfrjoin_=1
+F_jfrdesc_=1
+F_jmxpid_=1
+F_jmxurl_=1
+F_jmxuser_=1
+F_jmxpass_=1
+F_jmxprovider_=1
+F_jmxop_=1
+F_jsondesc_=1
+F_jsonprefix_=1
+F_injwtverify_=1
+F_injwtsecret_=1
+F_injwtpubkey_=1
+F_injwtalg_=1
+F_injwtraw_=1
+F_linesjoin_=1
+F_linesvisual_=1
+F_linesvisualsepre_=1
+F_linesvisualheadsep_=1
+F_llmenv_=1
+F_llmoptions_=1
+F_llmconversation_=1
+F_llmimage_=1
+F_llmdecidesample_=1
+F_llmdecidestats_=1
+F_lsext_=1
+F_lsrecursive_=1
+F_lsposix_=1
+F_inmdtablejoin_=1
+F_inmcptoolslist_=1
+F_inmcplistprompts_=1
+F_minianolog_=1
+F_minialogfile_=1
+F_miniametrics_=1
+F_ndjsonjoin_=1
+F_ndjsonfilter_=1
+F_ndslonjoin_=1
+F_ndslonfilter_=1
+F_inoafpseq_=1
+F_inrawhexline_=1
+F_inshformat_=1
+F_insnmp_=1
+F_insnmpcommunity_=1
+F_insnmptimeout_=1
+F_insnmpretries_=1
+F_insnmpversion_=1
+F_insnmpsec_=1
+F_sqlparse_=1
+F_sqloptions_=1
+F_inxlssheet_=1
+F_inxlsevalformulas_=1
+F_inxlsdesc_=1
+F_inxlscol_=1
+F_inxlsrow_=1
+F_xmlignored_=1
+F_xmlprefix_=1
+F_xmlfiltertag_=1
+F_base64gzip_=1
+F_inputcsv_=1
+F_incsv_=1
+F_cmltch_=1
+F_cmltsize_=1
+F_difftheme_=1
+F_diffnlines_=1
+F_diffwords_=1
+F_diffwordswithspace_=1
+F_difflines_=1
+F_diffsentences_=1
+F_diffchars_=1
+F_regressionpath_=1
+F_regressionx_=1
+F_regressionoptions_=1
+F_regressionforecast_=1
+F_setop_=1
+F_setop__setop_union=0
+F_setop__setop_diffa=0
+F_setop__setop_diffb=0
+F_setop__setop_diffab=0
+F_setop__setop_diff=0
+F_setop__setop_intersect=0
+F_idescpage_=1
+F_idescrecords_=1
+F_idescdepth_=1
+F_idescstring_=1
+F_idescbytes_=1
+F_idescnodes_=1
+F_ch_=1
+F_chkey_=1
+F_chunset_=1
+F_chart_=1
+F_chartcls_=1
+F_outcmd_=1
+F_outcmdjoin_=1
+F_outcmdseq_=1
+F_outcmdnl_=1
+F_outcmdparam_=1
+F_outcmdtmpl_=1
+F_dbjdbc_=1
+F_dbuser_=1
+F_dbpass_=1
+F_dbtimeout_=1
+F_dblib_=1
+F_dbtable_=1
+F_dbnocreate_=1
+F_dbicase_=1
+F_dbbatchsize_=1
+F_dsvsep_=1
+F_dsvquote_=1
+F_dsvfields_=1
+F_dsvuseslon_=1
+F_dsvheader_=1
+F_dsvnl_=1
+F_envscmd_=1
+F_envsnocmd_=1
+F_envsprefix_=1
+F_envsnoprefix_=1
+F_jwtsecret_=1
+F_jwtprivkey_=1
+F_jwtalg_=1
+F_grid_=1
+F_htmlcompact_=1
+F_htmlpart_=1
+F_htmlopen_=1
+F_htmlwait_=1
+F_htmldark_=1
+F_logprintall_=1
+F_mdtemplate_=1
+F_mdformat_=1
+F_outoaf_=1
+F_pxmlprefix_=1
+F_rawasciistart_=1
+F_rawasciiend_=1
+F_rawasciitab_=1
+F_rawasciinovisual_=1
+F_rawasciinolinenum_=1
+F_metricsprefix_=1
+F_metricstimestamp_=1
+F_schart_=1
+F_sqltable_=1
+F_sqlicase_=1
+F_sqlnocreate_=1
+F_template_=1
+F_templatepath_=1
+F_templatedata_=1
+F_templatetmpl_=1
+F_xlsfile_=1
+F_xlssheet_=1
+F_xlsformat_=1
+F_xlsopen_=1
+F_xlsopenwait_=1
+F_outxmlprefix_=1
+F_secRepo_=1
+F_secBucket_=1
+F_secPass_=1
+F_secMainPass_=1
+F_secFile_=1
+F_secEnv_=1
+F_secKey_=1
+F_secKey__secRepo_=0
+F_secKey__secBucket_=0
+F_secKey__secPass_=0
+F_secKey__secMainPass_=0
+F_secKey__secFile_=0
+F_secKey__secEnv_=0
 
 # Iterate over the arguments
 FFOUND=0
@@ -358,24 +596,176 @@ if [ $# -gt 0 ]; then
   for arg in "$@"; do
     _i=$((_i+1))
     if [ $_i -eq $_n ]; then FFOUND=1; break; fi
+    # -h single option
+    if [ "$arg" = "-h" ]; then FFOUND=1; F__h=0; fi
+    # help= options
+    if [ "$arg" = "help=filters" ]; then FFOUND=1; F_help__help_filters=1; F_help_=0; fi
+    if [ "$arg" = "help=template" ]; then FFOUND=1; F_help__help_template=1; F_help_=0; fi
+    if [ "$arg" = "help=examples" ]; then FFOUND=1; F_help__help_examples=1; F_help_=0; fi
+    if [ "$arg" = "help=jsonschema" ]; then FFOUND=1; F_help__help_jsonschema=1; F_help_=0; fi
+    if [ "$arg" = "help=readme" ]; then FFOUND=1; F_help__help_readme=1; F_help_=0; fi
+    # file= single option
+    if [ "$arg" = "file=" ]; then FFOUND=1; F_file_=0; fi
+    # ingzip= single option
+    if [ "$arg" = "ingzip=" ]; then FFOUND=1; F_ingzip_=0; fi
+    # cmd= single option
+    if [ "$arg" = "cmd=" ]; then FFOUND=1; F_cmd_=0; fi
+    # data= single option
+    if [ "$arg" = "data=" ]; then FFOUND=1; F_data_=0; fi
+    # out= options
+    if [ "$arg" = "out=base64" ]; then FFOUND=1; F_out__out_base64=1; F_out_=0; fi
+    if [ "${arg#base64gzip=}" != "$arg" ]; then FFOUND=1; F_out__out_base64_base64gzip_=0; fi
+    if [ "$arg" = "out=bstable" ]; then FFOUND=1; F_out__out_bstable=1; F_out_=0; fi
+    if [ "$arg" = "out=btable" ]; then FFOUND=1; F_out__out_btable=1; F_out_=0; fi
+    if [ "$arg" = "out=btree" ]; then FFOUND=1; F_out__out_btree=1; F_out_=0; fi
+    if [ "$arg" = "out=ch" ]; then FFOUND=1; F_out__out_ch=1; F_out_=0; fi
+    if [ "${arg#ch=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_ch_=0; fi
+    if [ "${arg#chkey=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_chkey_=0; fi
+    if [ "${arg#chunset=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_chunset_=0; fi
+    if [ "$arg" = "out=chart" ]; then FFOUND=1; F_out__out_chart=1; F_out_=0; fi
+    if [ "${arg#chart=}" != "$arg" ]; then FFOUND=1; F_out__out_chart_chart_=0; fi
+    if [ "${arg#chartcls=}" != "$arg" ]; then FFOUND=1; F_out__out_chart_chartcls_=0; fi
+    if [ "${arg#loop=}" != "$arg" ]; then FFOUND=1; F_out__out_chart_loop_=0; fi
+    if [ "$arg" = "out=cjson" ]; then FFOUND=1; F_out__out_cjson=1; F_out_=0; fi
+    if [ "$arg" = "out=cmd" ]; then FFOUND=1; F_out__out_cmd=1; F_out_=0; fi
+    if [ "${arg#outcmd=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmd_=0; fi
+    if [ "${arg#outcmdjoin=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdjoin_=0; fi
+    if [ "${arg#outcmdseq=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdseq_=0; fi
+    if [ "${arg#outcmdnl=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdnl_=0; fi
+    if [ "${arg#outcmdparam=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdparam_=0; fi
+    if [ "${arg#outcmdtmpl=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdtmpl_=0; fi
+    if [ "$arg" = "out=cslon" ]; then FFOUND=1; F_out__out_cslon=1; F_out_=0; fi
+    if [ "$arg" = "out=csv" ]; then FFOUND=1; F_out__out_csv=1; F_out_=0; fi
+    if [ "${arg#inputcsv=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_inputcsv_=0; fi
+    if [ "${arg#incsv=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_incsv_=0; fi
+    if [ "${arg#csv=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_csv_=0; fi
+    if [ "$arg" = "out=ctable" ]; then FFOUND=1; F_out__out_ctable=1; F_out_=0; fi
+    if [ "$arg" = "out=ctree" ]; then FFOUND=1; F_out__out_ctree=1; F_out_=0; fi
+    if [ "$arg" = "out=clkyaml" ]; then FFOUND=1; F_out__out_clkyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=ckyaml" ]; then FFOUND=1; F_out__out_ckyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=cyaml" ]; then FFOUND=1; F_out__out_cyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=db" ]; then FFOUND=1; F_out__out_db=1; F_out_=0; fi
+    if [ "${arg#dbjdbc=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbjdbc_=0; fi
+    if [ "${arg#dbuser=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbuser_=0; fi
+    if [ "${arg#dbpass=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbpass_=0; fi
+    if [ "${arg#dbtimeout=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbtimeout_=0; fi
+    if [ "${arg#dblib=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dblib_=0; fi
+    if [ "${arg#dbtable=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbtable_=0; fi
+    if [ "${arg#dbnocreate=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbnocreate_=0; fi
+    if [ "${arg#dbicase=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbicase_=0; fi
+    if [ "${arg#dbbatchsize=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbbatchsize_=0; fi
+    if [ "$arg" = "out=dsv" ]; then FFOUND=1; F_out__out_dsv=1; F_out_=0; fi
+    if [ "${arg#dsvsep=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvsep_=0; fi
+    if [ "${arg#dsvquote=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvquote_=0; fi
+    if [ "${arg#dsvfields=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvfields_=0; fi
+    if [ "${arg#dsvuseslon=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvuseslon_=0; fi
+    if [ "${arg#dsvheader=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvheader_=0; fi
+    if [ "${arg#dsvnl=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvnl_=0; fi
+    if [ "$arg" = "out=envs" ]; then FFOUND=1; F_out__out_envs=1; F_out_=0; fi
+    if [ "${arg#envscmd=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envscmd_=0; fi
+    if [ "${arg#envsnocmd=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envsnocmd_=0; fi
+    if [ "${arg#envsprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envsprefix_=0; fi
+    if [ "${arg#envsnoprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envsnoprefix_=0; fi
+    if [ "$arg" = "out=gb64json" ]; then FFOUND=1; F_out__out_gb64json=1; F_out_=0; fi
+    if [ "$arg" = "out=grid" ]; then FFOUND=1; F_out__out_grid=1; F_out_=0; fi
+    if [ "${arg#grid=}" != "$arg" ]; then FFOUND=1; F_out__out_grid_grid_=0; fi
+    if [ "$arg" = "out=html" ]; then FFOUND=1; F_out__out_html=1; F_out_=0; fi
+    if [ "${arg#htmlcompact=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlcompact_=0; fi
+    if [ "${arg#htmlpart=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlpart_=0; fi
+    if [ "${arg#htmlopen=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlopen_=0; fi
+    if [ "${arg#htmlwait=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlwait_=0; fi
+    if [ "${arg#htmldark=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmldark_=0; fi
+    if [ "$arg" = "out=idesc" ]; then FFOUND=1; F_out__out_idesc=1; F_out_=0; fi
+    if [ "${arg#idescsource=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescsource_=0; fi
+    if [ "${arg#idescrecipe=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescrecipe_=0; fi
+    if [ "${arg#idescpage=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescpage_=0; fi
+    if [ "${arg#idescrecords=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescrecords_=0; fi
+    if [ "${arg#idescdepth=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescdepth_=0; fi
+    if [ "${arg#idescstring=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescstring_=0; fi
+    if [ "${arg#idescbytes=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescbytes_=0; fi
+    if [ "${arg#idescnodes=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescnodes_=0; fi
+    if [ "$arg" = "out=ini" ]; then FFOUND=1; F_out__out_ini=1; F_out_=0; fi
+    if [ "$arg" = "out=json" ]; then FFOUND=1; F_out__out_json=1; F_out_=0; fi
+    if [ "$arg" = "out=jsmap" ]; then FFOUND=1; F_out__out_jsmap=1; F_out_=0; fi
+    if [ "$arg" = "out=jwt" ]; then FFOUND=1; F_out__out_jwt=1; F_out_=0; fi
+    if [ "${arg#jwtsecret=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtsecret_=0; fi
+    if [ "${arg#jwtprivkey=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtprivkey_=0; fi
+    if [ "${arg#jwtalg=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtalg_=0; fi
+    if [ "$arg" = "out=key" ]; then FFOUND=1; F_out__out_key=1; F_out_=0; fi
+    if [ "$arg" = "out=kyaml" ]; then FFOUND=1; F_out__out_kyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=lkyaml" ]; then FFOUND=1; F_out__out_lkyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=lines" ]; then FFOUND=1; F_out__out_lines=1; F_out_=0; fi
+    if [ "$arg" = "out=log" ]; then FFOUND=1; F_out__out_log=1; F_out_=0; fi
+    if [ "${arg#logprintall=}" != "$arg" ]; then FFOUND=1; F_out__out_log_logprintall_=0; fi
+    if [ "$arg" = "out=map" ]; then FFOUND=1; F_out__out_map=1; F_out_=0; fi
+    if [ "$arg" = "out=md" ]; then FFOUND=1; F_out__out_md=1; F_out_=0; fi
+    if [ "${arg#mdtemplate=}" != "$arg" ]; then FFOUND=1; F_out__out_md_mdtemplate_=0; fi
+    if [ "${arg#mdformat=}" != "$arg" ]; then FFOUND=1; F_out__out_md_mdformat_=0; fi
+    if [ "$arg" = "out=mdtable" ]; then FFOUND=1; F_out__out_mdtable=1; F_out_=0; fi
+    if [ "$arg" = "out=mdyaml" ]; then FFOUND=1; F_out__out_mdyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=mtree" ]; then FFOUND=1; F_out__out_mtree=1; F_out_=0; fi
+    if [ "$arg" = "out=ndjson" ]; then FFOUND=1; F_out__out_ndjson=1; F_out_=0; fi
+    if [ "$arg" = "out=ndslon" ]; then FFOUND=1; F_out__out_ndslon=1; F_out_=0; fi
+    if [ "$arg" = "out=ndcslon" ]; then FFOUND=1; F_out__out_ndcslon=1; F_out_=0; fi
+    if [ "$arg" = "out=openmetrics" ]; then FFOUND=1; F_out__out_openmetrics=1; F_out_=0; fi
+    if [ "${arg#metricsprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_openmetrics_metricsprefix_=0; fi
+    if [ "${arg#metricstimestamp=}" != "$arg" ]; then FFOUND=1; F_out__out_openmetrics_metricstimestamp_=0; fi
+    if [ "$arg" = "out=oaf" ]; then FFOUND=1; F_out__out_oaf=1; F_out_=0; fi
+    if [ "${arg#outoaf=}" != "$arg" ]; then FFOUND=1; F_out__out_oaf_outoaf_=0; fi
+    if [ "$arg" = "out=pjson" ]; then FFOUND=1; F_out__out_pjson=1; F_out_=0; fi
+    if [ "$arg" = "out=prettyjson" ]; then FFOUND=1; F_out__out_prettyjson=1; F_out_=0; fi
+    if [ "$arg" = "out=pxml" ]; then FFOUND=1; F_out__out_pxml=1; F_out_=0; fi
+    if [ "${arg#pxmlprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_pxml_pxmlprefix_=0; fi
+    if [ "$arg" = "out=raw" ]; then FFOUND=1; F_out__out_raw=1; F_out_=0; fi
+    if [ "$arg" = "out=rawascii" ]; then FFOUND=1; F_out__out_rawascii=1; F_out_=0; fi
+    if [ "${arg#rawasciistart=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciistart_=0; fi
+    if [ "${arg#rawasciiend=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciiend_=0; fi
+    if [ "${arg#rawasciitab=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciitab_=0; fi
+    if [ "${arg#rawasciinovisual=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciinovisual_=0; fi
+    if [ "${arg#rawasciinolinenum=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciinolinenum_=0; fi
+    if [ "$arg" = "out=res" ]; then FFOUND=1; F_out__out_res=1; F_out_=0; fi
+    if [ "$arg" = "out=schart" ]; then FFOUND=1; F_out__out_schart=1; F_out_=0; fi
+    if [ "${arg#schart=}" != "$arg" ]; then FFOUND=1; F_out__out_schart_schart_=0; fi
+    if [ "$arg" = "out=slon" ]; then FFOUND=1; F_out__out_slon=1; F_out_=0; fi
+    if [ "$arg" = "out=sql" ]; then FFOUND=1; F_out__out_sql=1; F_out_=0; fi
+    if [ "${arg#sqltable=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqltable_=0; fi
+    if [ "${arg#sqlicase=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqlicase_=0; fi
+    if [ "${arg#sqlnocreate=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqlnocreate_=0; fi
+    if [ "$arg" = "out=stable" ]; then FFOUND=1; F_out__out_stable=1; F_out_=0; fi
+    if [ "$arg" = "out=table" ]; then FFOUND=1; F_out__out_table=1; F_out_=0; fi
+    if [ "$arg" = "out=template" ]; then FFOUND=1; F_out__out_template=1; F_out_=0; fi
+    if [ "${arg#template=}" != "$arg" ]; then FFOUND=1; F_out__out_template_template_=0; fi
+    if [ "${arg#templatepath=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatepath_=0; fi
+    if [ "${arg#templatedata=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatedata_=0; fi
+    if [ "${arg#templatetmpl=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatetmpl_=0; fi
+    if [ "$arg" = "out=text" ]; then FFOUND=1; F_out__out_text=1; F_out_=0; fi
+    if [ "$arg" = "out=toml" ]; then FFOUND=1; F_out__out_toml=1; F_out_=0; fi
+    if [ "$arg" = "out=toon" ]; then FFOUND=1; F_out__out_toon=1; F_out_=0; fi
+    if [ "$arg" = "out=tree" ]; then FFOUND=1; F_out__out_tree=1; F_out_=0; fi
+    if [ "$arg" = "out=xls" ]; then FFOUND=1; F_out__out_xls=1; F_out_=0; fi
+    if [ "${arg#xlsfile=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsfile_=0; fi
+    if [ "${arg#xlssheet=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlssheet_=0; fi
+    if [ "${arg#xlsformat=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsformat_=0; fi
+    if [ "${arg#xlsopen=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsopen_=0; fi
+    if [ "${arg#xlsopenwait=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsopenwait_=0; fi
+    if [ "$arg" = "out=xml" ]; then FFOUND=1; F_out__out_xml=1; F_out_=0; fi
+    if [ "${arg#outxmlprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_xml_outxmlprefix_=0; fi
+    if [ "$arg" = "out=yaml" ]; then FFOUND=1; F_out__out_yaml=1; F_out_=0; fi
+    # idescsource= single option
+    if [ "$arg" = "idescsource=" ]; then FFOUND=1; F_idescsource_=0; fi
+    # idescrecipe= single option
+    if [ "$arg" = "idescrecipe=" ]; then FFOUND=1; F_idescrecipe_=0; fi
     # in= options
     if [ "$arg" = "in=ask" ]; then FFOUND=1; F_in__in_ask=1; F_in_=0; fi
     if [ "$arg" = "in=base64" ]; then FFOUND=1; F_in__in_base64=1; F_in_=0; fi
+    if [ "${arg#base64gzip=}" != "$arg" ]; then FFOUND=1; F_in__in_base64_base64gzip_=0; fi
     if [ "$arg" = "in=ch" ]; then FFOUND=1; F_in__in_ch=1; F_in_=0; fi
-    if [ "${arg#inch}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inch=0; fi
-    if [ "${arg#inchall}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inchall=0; fi
+    if [ "${arg#inch=}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inch_=0; fi
+    if [ "${arg#inchall=}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inchall_=0; fi
     if [ "$arg" = "in=csv" ]; then FFOUND=1; F_in__in_csv=1; F_in_=0; fi
+    if [ "${arg#inputcsv=}" != "$arg" ]; then FFOUND=1; F_in__in_csv_inputcsv_=0; fi
     if [ "${arg#incsv=}" != "$arg" ]; then FFOUND=1; F_in__in_csv_incsv_=0; fi
-    if [ "$arg" = "in=dsv" ]; then FFOUND=1; F_in__in_dsv=1; F_in_=0; fi
-    if [ "${arg#indsvsep=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvsep_=0; fi
-    if [ "${arg#indsvsepre=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvsepre_=0; fi
-    if [ "${arg#indsvquote=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvquote_=0; fi
-    if [ "${arg#indsvescape=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvescape_=0; fi
-    if [ "${arg#indsvcomment=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvcomment_=0; fi
-    if [ "${arg#indsvheader=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvheader_=0; fi
-    if [ "${arg#indsvtrim=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvtrim_=0; fi
-    if [ "${arg#indsvjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvjoin_=0; fi
-    if [ "${arg#indsvfields=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvfields_=0; fi
+    if [ "${arg#csv=}" != "$arg" ]; then FFOUND=1; F_in__in_csv_csv_=0; fi
     if [ "$arg" = "in=db" ]; then FFOUND=1; F_in__in_db=1; F_in_=0; fi
     if [ "${arg#indbjdbc=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbjdbc_=0; fi
     if [ "${arg#indbuser=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbuser_=0; fi
@@ -386,8 +776,19 @@ if [ $# -gt 0 ]; then
     if [ "${arg#indbexec=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbexec_=0; fi
     if [ "${arg#indbautocommit=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbautocommit_=0; fi
     if [ "${arg#indbdesc=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbdesc_=0; fi
+    if [ "$arg" = "in=dsv" ]; then FFOUND=1; F_in__in_dsv=1; F_in_=0; fi
+    if [ "${arg#indsvsep=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvsep_=0; fi
+    if [ "${arg#indsvsepre=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvsepre_=0; fi
+    if [ "${arg#indsvquote=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvquote_=0; fi
+    if [ "${arg#indsvescape=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvescape_=0; fi
+    if [ "${arg#indsvcomment=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvcomment_=0; fi
+    if [ "${arg#indsvheader=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvheader_=0; fi
+    if [ "${arg#indsvtrim=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvtrim_=0; fi
+    if [ "${arg#indsvjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvjoin_=0; fi
+    if [ "${arg#indsvfields=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvfields_=0; fi
     if [ "$arg" = "in=gb64json" ]; then FFOUND=1; F_in__in_gb64json=1; F_in_=0; fi
     if [ "$arg" = "in=hsperf" ]; then FFOUND=1; F_in__in_hsperf=1; F_in_=0; fi
+    if [ "${arg#hsperfmetadata=}" != "$arg" ]; then FFOUND=1; F_in__in_hsperf_hsperfmetadata_=0; fi
     if [ "$arg" = "in=ini" ]; then FFOUND=1; F_in__in_ini=1; F_in_=0; fi
     if [ "$arg" = "in=javas" ]; then FFOUND=1; F_in__in_javas=1; F_in_=0; fi
     if [ "${arg#javasinception=}" != "$arg" ]; then FFOUND=1; F_in__in_javas_javasinception_=0; fi
@@ -419,8 +820,18 @@ if [ $# -gt 0 ]; then
     if [ "${arg#linesjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesjoin_=0; fi
     if [ "${arg#linesvisual=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisual_=0; fi
     if [ "${arg#linesvisualsepre=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisualsepre_=0; fi
-    if [ "${arg#linesvisualheadsep}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisualheadsep=0; fi
+    if [ "${arg#linesvisualheadsep=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisualheadsep_=0; fi
     if [ "$arg" = "in=llm" ]; then FFOUND=1; F_in__in_llm=1; F_in_=0; fi
+    if [ "${arg#llmenv=}" != "$arg" ]; then FFOUND=1; F_in__in_llm_llmenv_=0; fi
+    if [ "${arg#llmoptions=}" != "$arg" ]; then FFOUND=1; F_in__in_llm_llmoptions_=0; fi
+    if [ "${arg#llmconversation=}" != "$arg" ]; then FFOUND=1; F_in__in_llm_llmconversation_=0; fi
+    if [ "${arg#llmimage=}" != "$arg" ]; then FFOUND=1; F_in__in_llm_llmimage_=0; fi
+    if [ "$arg" = "in=llmdecide" ]; then FFOUND=1; F_in__in_llmdecide=1; F_in_=0; fi
+    if [ "${arg#llmenv=}" != "$arg" ]; then FFOUND=1; F_in__in_llmdecide_llmenv_=0; fi
+    if [ "${arg#llmoptions=}" != "$arg" ]; then FFOUND=1; F_in__in_llmdecide_llmoptions_=0; fi
+    if [ "${arg#llmdecidesample=}" != "$arg" ]; then FFOUND=1; F_in__in_llmdecide_llmdecidesample_=0; fi
+    if [ "${arg#llmimage=}" != "$arg" ]; then FFOUND=1; F_in__in_llmdecide_llmimage_=0; fi
+    if [ "${arg#llmdecidestats=}" != "$arg" ]; then FFOUND=1; F_in__in_llmdecide_llmdecidestats_=0; fi
     if [ "$arg" = "in=llmmodels" ]; then FFOUND=1; F_in__in_llmmodels=1; F_in_=0; fi
     if [ "$arg" = "in=ls" ]; then FFOUND=1; F_in__in_ls=1; F_in_=0; fi
     if [ "${arg#lsext=}" != "$arg" ]; then FFOUND=1; F_in__in_ls_lsext_=0; fi
@@ -454,16 +865,16 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=sh" ]; then FFOUND=1; F_in__in_sh=1; F_in_=0; fi
     if [ "${arg#inshformat=}" != "$arg" ]; then FFOUND=1; F_in__in_sh_inshformat_=0; fi
     if [ "$arg" = "in=slon" ]; then FFOUND=1; F_in__in_slon=1; F_in_=0; fi
-    if [ "$arg" = "in=sql" ]; then FFOUND=1; F_in__in_sql=1; F_in_=0; fi
-    if [ "${arg#sqlparse=}" != "$arg" ]; then FFOUND=1; F_in__in_sql_sqlparse_=0; fi
-    if [ "${arg#sqloptions=}" != "$arg" ]; then FFOUND=1; F_in__in_sql_sqloptions_=0; fi
     if [ "$arg" = "in=snmp" ]; then FFOUND=1; F_in__in_snmp=1; F_in_=0; fi
     if [ "${arg#insnmp=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmp_=0; fi
     if [ "${arg#insnmpcommunity=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmpcommunity_=0; fi
-    if [ "${arg#insnmpversion=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmpversion_=0; fi
     if [ "${arg#insnmptimeout=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmptimeout_=0; fi
     if [ "${arg#insnmpretries=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmpretries_=0; fi
+    if [ "${arg#insnmpversion=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmpversion_=0; fi
     if [ "${arg#insnmpsec=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmpsec_=0; fi
+    if [ "$arg" = "in=sql" ]; then FFOUND=1; F_in__in_sql=1; F_in_=0; fi
+    if [ "${arg#sqlparse=}" != "$arg" ]; then FFOUND=1; F_in__in_sql_sqlparse_=0; fi
+    if [ "${arg#sqloptions=}" != "$arg" ]; then FFOUND=1; F_in__in_sql_sqloptions_=0; fi
     if [ "$arg" = "in=toml" ]; then FFOUND=1; F_in__in_toml=1; F_in_=0; fi
     if [ "$arg" = "in=toon" ]; then FFOUND=1; F_in__in_toon=1; F_in_=0; fi
     if [ "$arg" = "in=xls" ]; then FFOUND=1; F_in__in_xls=1; F_in_=0; fi
@@ -477,154 +888,42 @@ if [ $# -gt 0 ]; then
     if [ "${arg#xmlprefix=}" != "$arg" ]; then FFOUND=1; F_in__in_xml_xmlprefix_=0; fi
     if [ "${arg#xmlfiltertag=}" != "$arg" ]; then FFOUND=1; F_in__in_xml_xmlfiltertag_=0; fi
     if [ "$arg" = "in=yaml" ]; then FFOUND=1; F_in__in_yaml=1; F_in_=0; fi
-    # out= options
-    if [ "$arg" = "out=base64" ]; then FFOUND=1; F_out__out_base64=1; F_out_=0; fi
-    if [ "${arg#base64gzip=}" != "$arg" ]; then FFOUND=1; F_out__out_base64_base64gzip_=0; fi
-    if [ "$arg" = "out=ch" ]; then FFOUND=1; F_out__out_ch=1; F_out_=0; fi
-    if [ "${arg#ch=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_ch_=0; fi
-    if [ "${arg#chkey=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_chkey_=0; fi
-    if [ "${arg#chunset=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_chunset_=0; fi
-    if [ "$arg" = "out=chart" ]; then FFOUND=1; F_out__out_chart=1; F_out_=0; fi
-    if [ "${arg#chart=}" != "$arg" ]; then FFOUND=1; F_out__out_chart_chart_=0; fi
-    if [ "${arg#chartcls=}" != "$arg" ]; then FFOUND=1; F_out__out_chart_chartcls_=0; fi
-    if [ "$arg" = "out=cjson" ]; then FFOUND=1; F_out__out_cjson=1; F_out_=0; fi
-    if [ "$arg" = "out=cmd" ]; then FFOUND=1; F_out__out_cmd=1; F_out_=0; fi
-    if [ "${arg#outcmd=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmd_=0; fi
-    if [ "${arg#outcmdjoin=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdjoin_=0; fi
-    if [ "${arg#outcmdseq=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdseq_=0; fi
-    if [ "${arg#outcmdnl=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdnl_=0; fi
-    if [ "${arg#outcmdparam=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdparam_=0; fi
-    if [ "${arg#outcmdtmpl=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdtmpl_=0; fi
-    if [ "$arg" = "out=cslon" ]; then FFOUND=1; F_out__out_cslon=1; F_out_=0; fi
-    if [ "$arg" = "out=csv" ]; then FFOUND=1; F_out__out_csv=1; F_out_=0; fi
-    if [ "${arg#csv=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_csv_=0; fi
-    if [ "$arg" = "out=dsv" ]; then FFOUND=1; F_out__out_dsv=1; F_out_=0; fi
-    if [ "${arg#dsvsep=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvsep_=0; fi
-    if [ "${arg#dsvquote=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvquote_=0; fi
-    if [ "${arg#dsvfields=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvfields_=0; fi
-    if [ "${arg#dsvuseslon=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvuseslon_=0; fi
-    if [ "${arg#dsvheader=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvheader_=0; fi
-    if [ "$arg" = "out=ctable" ]; then FFOUND=1; F_out__out_ctable=1; F_out_=0; fi
-    if [ "$arg" = "out=ctree" ]; then FFOUND=1; F_out__out_ctree=1; F_out_=0; fi
-    if [ "$arg" = "out=ttree" ]; then FFOUND=1; F_out__out_ttree=1; F_out_=0; fi
-    if [ "$arg" = "out=mtree" ]; then FFOUND=1; F_out__out_mtree=1; F_out_=0; fi
-    if [ "$arg" = "out=btree" ]; then FFOUND=1; F_out__out_btree=1; F_out_=0; fi
-    if [ "$arg" = "out=cyaml" ]; then FFOUND=1; F_out__out_cyaml=1; F_out_=0; fi
-    if [ "$arg" = "out=kyaml" ]; then FFOUND=1; F_out__out_kyaml=1; F_out_=0; fi
-    if [ "$arg" = "out=ckyaml" ]; then FFOUND=1; F_out__out_ckyaml=1; F_out_=0; fi
-    if [ "$arg" = "out=lkyaml" ]; then FFOUND=1; F_out__out_lkyaml=1; F_out_=0; fi
-    if [ "$arg" = "out=clkyaml" ]; then FFOUND=1; F_out__out_clkyaml=1; F_out_=0; fi
-    if [ "$arg" = "out=db" ]; then FFOUND=1; F_out__out_db=1; F_out_=0; fi
-    if [ "${arg#dbjdbc=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbjdbc_=0; fi
-    if [ "${arg#dbuser=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbuser_=0; fi
-    if [ "${arg#dbpass=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbpass_=0; fi
-    if [ "${arg#dbtimeout=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbtimeout_=0; fi
-    if [ "${arg#dblib=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dblib_=0; fi
-    if [ "${arg#dbtable=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbtable_=0; fi
-    if [ "${arg#dbnocreate=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbnocreate_=0; fi
-    if [ "${arg#dbicase=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbicase_=0; fi
-    if [ "${arg#dbbatchsize=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbbatchsize_=0; fi
-    if [ "$arg" = "out=envs" ]; then FFOUND=1; F_out__out_envs=1; F_out_=0; fi
-    if [ "${arg#envscmd=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envscmd_=0; fi
-    if [ "${arg#envsprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envsprefix_=0; fi
-    if [ "${arg#envsnoprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envsnoprefix_=0; fi
-    if [ "$arg" = "out=gb64json" ]; then FFOUND=1; F_out__out_gb64json=1; F_out_=0; fi
-    if [ "$arg" = "out=grid" ]; then FFOUND=1; F_out__out_grid=1; F_out_=0; fi
-    if [ "${arg#grid=}" != "$arg" ]; then FFOUND=1; F_out__out_grid_grid_=0; fi
-    if [ "$arg" = "out=html" ]; then FFOUND=1; F_out__out_html=1; F_out_=0; fi
-    if [ "${arg#htmlcompact=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlcompact_=0; fi
-    if [ "${arg#htmlpart=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlpart_=0; fi
-    if [ "${arg#htmlopen=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlopen_=0; fi
-    if [ "${arg#htmlwait=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlwait_=0; fi
-    if [ "${arg#htmldark=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmldark_=0; fi
-    if [ "$arg" = "out=ini" ]; then FFOUND=1; F_out__out_ini=1; F_out_=0; fi
-    if [ "$arg" = "out=json" ]; then FFOUND=1; F_out__out_json=1; F_out_=0; fi
-    if [ "$arg" = "out=jwt" ]; then FFOUND=1; F_out__out_jwt=1; F_out_=0; fi
-    if [ "${arg#jwtsecret=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtsecret_=0; fi
-    if [ "${arg#jwtprivkey=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtprivkey_=0; fi
-    if [ "${arg#jwtalg=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtalg_=0; fi
-    if [ "$arg" = "out=lines" ]; then FFOUND=1; F_out__out_lines=1; F_out_=0; fi
-    if [ "$arg" = "out=log" ]; then FFOUND=1; F_out__out_log=1; F_out_=0; fi
-    if [ "${arg#logprintall=}" != "$arg" ]; then FFOUND=1; F_out__out_log_logprintall_=0; fi
-    if [ "$arg" = "out=map" ]; then FFOUND=1; F_out__out_map=1; F_out_=0; fi
-    if [ "$arg" = "out=md" ]; then FFOUND=1; F_out__out_md=1; F_out_=0; fi
-    if [ "${arg#mdtemplate=}" != "$arg" ]; then FFOUND=1; F_out__out_md_mdtemplate_=0; fi
-    if [ "$arg" = "out=mdtable" ]; then FFOUND=1; F_out__out_mdtable=1; F_out_=0; fi
-    if [ "$arg" = "out=mdyaml" ]; then FFOUND=1; F_out__out_mdyaml=1; F_out_=0; fi
-    if [ "$arg" = "out=ndjson" ]; then FFOUND=1; F_out__out_ndjson=1; F_out_=0; fi
-    if [ "$arg" = "out=ndslon" ]; then FFOUND=1; F_out__out_ndslon=1; F_out_=0; fi
-    if [ "$arg" = "out=ndcslon" ]; then FFOUND=1; F_out__out_ndcslon=1; F_out_=0; fi
-    if [ "$arg" = "out=oaf" ]; then FFOUND=1; F_out__out_oaf=1; F_out_=0; fi
-    if [ "${arg#outoaf=}" != "$arg" ]; then FFOUND=1; F_out__out_oaf_outoaf_=0; fi
-    if [ "$arg" = "out=openmetrics" ]; then FFOUND=1; F_out__out_openmetrics=1; F_out_=0; fi
-    if [ "${arg#metricsprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_openmetrics_metricsprefix_=0; fi
-    if [ "${arg#metricstimestamp=}" != "$arg" ]; then FFOUND=1; F_out__out_openmetrics_metricstimestamp_=0; fi
-    if [ "$arg" = "out=pjson" ]; then FFOUND=1; F_out__out_pjson=1; F_out_=0; fi
-    if [ "$arg" = "out=prettyjson" ]; then FFOUND=1; F_out__out_prettyjson=1; F_out_=0; fi
-    if [ "$arg" = "out=pxml" ]; then FFOUND=1; F_out__out_pxml=1; F_out_=0; fi
-    if [ "${arg#pxmlprefix}" != "$arg" ]; then FFOUND=1; F_out__out_pxml_pxmlprefix=0; fi
-    if [ "$arg" = "out=raw" ]; then FFOUND=1; F_out__out_raw=1; F_out_=0; fi
-    if [ "$arg" = "out=rawascii" ]; then FFOUND=1; F_out__out_rawascii=1; F_out_=0; fi
-    if [ "${arg#rawasciistart=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciistart_=0; fi
-    if [ "${arg#rawasciiend=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciiend_=0; fi
-    if [ "${arg#rawasciitab=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciitab_=0; fi
-    if [ "${arg#rawasciinovisual=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciinovisual_=0; fi
-    if [ "${arg#rawasciinolinenum=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciinolinenum_=0; fi
-    if [ "$arg" = "out=schart" ]; then FFOUND=1; F_out__out_schart=1; F_out_=0; fi
-    if [ "${arg#schart=}" != "$arg" ]; then FFOUND=1; F_out__out_schart_schart_=0; fi
-    if [ "$arg" = "out=slon" ]; then FFOUND=1; F_out__out_slon=1; F_out_=0; fi
-    if [ "$arg" = "out=sql" ]; then FFOUND=1; F_out__out_sql=1; F_out_=0; fi
-    if [ "${arg#sqltable=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqltable_=0; fi
-    if [ "${arg#sqlicase=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqlicase_=0; fi
-    if [ "${arg#sqlnocreate=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqlnocreate_=0; fi
-    if [ "$arg" = "out=stable" ]; then FFOUND=1; F_out__out_stable=1; F_out_=0; fi
-    if [ "$arg" = "out=table" ]; then FFOUND=1; F_out__out_table=1; F_out_=0; fi
-    if [ "$arg" = "out=template" ]; then FFOUND=1; F_out__out_template=1; F_out_=0; fi
-    if [ "${arg#template=}" != "$arg" ]; then FFOUND=1; F_out__out_template_template_=0; fi
-    if [ "${arg#templatepath=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatepath_=0; fi
-    if [ "${arg#templatedata=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatedata_=0; fi
-    if [ "${arg#templatetmpl=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatetmpl_=0; fi
-    if [ "$arg" = "out=text" ]; then FFOUND=1; F_out__out_text=1; F_out_=0; fi
-    if [ "$arg" = "out=toml" ]; then FFOUND=1; F_out__out_toml=1; F_out_=0; fi
-    if [ "$arg" = "out=toon" ]; then FFOUND=1; F_out__out_toon=1; F_out_=0; fi
-    if [ "$arg" = "out=tree" ]; then FFOUND=1; F_out__out_tree=1; F_out_=0; fi
-    if [ "$arg" = "out=xls" ]; then FFOUND=1; F_out__out_xls=1; F_out_=0; fi
-    if [ "${arg#xlsfile=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsfile_=0; fi
-    if [ "${arg#xlssheet=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlssheet_=0; fi
-    if [ "${arg#xlsformat=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsformat_=0; fi
-    if [ "${arg#xlsopen=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsopen_=0; fi
-    if [ "${arg#xlsopenwait=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsopenwait_=0; fi
-    if [ "$arg" = "out=xml" ]; then FFOUND=1; F_out__out_xml=1; F_out_=0; fi
-    if [ "${arg#outxmlprefix}" != "$arg" ]; then FFOUND=1; F_out__out_xml_outxmlprefix=0; fi
-    if [ "$arg" = "out=yaml" ]; then FFOUND=1; F_out__out_yaml=1; F_out_=0; fi
-    # -h single option
-    if [ "$arg" = "-h" ]; then FFOUND=1; F__h=0; fi
-    # help= options
-    if [ "$arg" = "help=filters" ]; then FFOUND=1; F_help__help_filters=1; F_help_=0; fi
-    if [ "$arg" = "help=template" ]; then FFOUND=1; F_help__help_template=1; F_help_=0; fi
-    if [ "$arg" = "help=examples" ]; then FFOUND=1; F_help__help_examples=1; F_help_=0; fi
-    # file= single option
-    if [ "$arg" = "file=" ]; then FFOUND=1; F_file_=0; fi
-    # cmd= single option
-    if [ "$arg" = "cmd=" ]; then FFOUND=1; F_cmd_=0; fi
-    # data= single option
-    if [ "$arg" = "data=" ]; then FFOUND=1; F_data_=0; fi
+    # ifrom= single option
+    if [ "$arg" = "ifrom=" ]; then FFOUND=1; F_ifrom_=0; fi
+    # isql= single option
+    if [ "$arg" = "isql=" ]; then FFOUND=1; F_isql_=0; fi
     # from= single option
     if [ "$arg" = "from=" ]; then FFOUND=1; F_from_=0; fi
     # sql= single option
     if [ "$arg" = "sql=" ]; then FFOUND=1; F_sql_=0; fi
+    # ijq= single option
+    if [ "$arg" = "ijq=" ]; then FFOUND=1; F_ijq_=0; fi
+    # jq= single option
+    if [ "$arg" = "jq=" ]; then FFOUND=1; F_jq_=0; fi
+    # ojq= single option
+    if [ "$arg" = "ojq=" ]; then FFOUND=1; F_ojq_=0; fi
+    # opath= single option
+    if [ "$arg" = "opath=" ]; then FFOUND=1; F_opath_=0; fi
     # sqlfilter= single option
     if [ "$arg" = "sqlfilter=" ]; then FFOUND=1; F_sqlfilter_=0; fi
     # sqlfiltertables= single option
     if [ "$arg" = "sqlfiltertables=" ]; then FFOUND=1; F_sqlfiltertables_=0; fi
     # path= single option
     if [ "$arg" = "path=" ]; then FFOUND=1; F_path_=0; fi
+    # csv= single option
+    if [ "$arg" = "csv=" ]; then FFOUND=1; F_csv_=0; fi
     # outkey= single option
     if [ "$arg" = "outkey=" ]; then FFOUND=1; F_outkey_=0; fi
     # outfile= single option
     if [ "$arg" = "outfile=" ]; then FFOUND=1; F_outfile_=0; fi
     # outfileappend= single option
     if [ "$arg" = "outfileappend=" ]; then FFOUND=1; F_outfileappend_=0; fi
+    # parallel= single option
+    if [ "$arg" = "parallel=" ]; then FFOUND=1; F_parallel_=0; fi
+    # progress= single option
+    if [ "$arg" = "progress=" ]; then FFOUND=1; F_progress_=0; fi
+    # stream= single option
+    if [ "$arg" = "stream=" ]; then FFOUND=1; F_stream_=0; fi
     # pause= single option
     if [ "$arg" = "pause=" ]; then FFOUND=1; F_pause_=0; fi
     # color= single option
@@ -637,6 +936,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "urlparams=" ]; then FFOUND=1; F_urlparams_=0; fi
     # urldata= single option
     if [ "$arg" = "urldata=" ]; then FFOUND=1; F_urldata_=0; fi
+    # insecure= single option
+    if [ "$arg" = "insecure=" ]; then FFOUND=1; F_insecure_=0; fi
     # chs= single option
     if [ "$arg" = "chs=" ]; then FFOUND=1; F_chs_=0; fi
     # loop= single option
@@ -645,28 +946,28 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "loopcls=" ]; then FFOUND=1; F_loopcls_=0; fi
     # libs= single option
     if [ "$arg" = "libs=" ]; then FFOUND=1; F_libs_=0; fi
+    # pipe= single option
+    if [ "$arg" = "pipe=" ]; then FFOUND=1; F_pipe_=0; fi
+    # -f single option
+    if [ "$arg" = "-f" ]; then FFOUND=1; F__f=0; fi
     # -examples single option
     if [ "$arg" = "-examples" ]; then FFOUND=1; F__examples=0; fi
     # examples= single option
     if [ "$arg" = "examples=" ]; then FFOUND=1; F_examples_=0; fi
     # version= single option
     if [ "$arg" = "version=" ]; then FFOUND=1; F_version_=0; fi
-    # pipe= single option
-    if [ "$arg" = "pipe=" ]; then FFOUND=1; F_pipe_=0; fi
-    # parallel= single option
-    if [ "$arg" = "parallel=" ]; then FFOUND=1; F_parallel_=0; fi
     # -v single option
     if [ "$arg" = "-v" ]; then FFOUND=1; F__v=0; fi
-    # -f single option
-    if [ "$arg" = "-f" ]; then FFOUND=1; F__f=0; fi
-    # allstrings= single option
-    if [ "$arg" = "allstrings=" ]; then FFOUND=1; F_allstrings_=0; fi
+    # debug= single option
+    if [ "$arg" = "debug=" ]; then FFOUND=1; F_debug_=0; fi
     # arraytomap= single option
     if [ "$arg" = "arraytomap=" ]; then FFOUND=1; F_arraytomap_=0; fi
     # arraytomapkeepkey= single option
     if [ "$arg" = "arraytomapkeepkey=" ]; then FFOUND=1; F_arraytomapkeepkey_=0; fi
     # arraytomapkey= single option
     if [ "$arg" = "arraytomapkey=" ]; then FFOUND=1; F_arraytomapkey_=0; fi
+    # allstrings= single option
+    if [ "$arg" = "allstrings=" ]; then FFOUND=1; F_allstrings_=0; fi
     # cmlt= options
     if [ "$arg" = "cmltch=" ]; then FFOUND=1; F_cmlt__cmltch_=1; F_cmlt_=0; fi
     if [ "$arg" = "cmltsize=" ]; then FFOUND=1; F_cmlt__cmltsize_=1; F_cmlt_=0; fi
@@ -682,6 +983,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "difflines=" ]; then FFOUND=1; F_diff__difflines_=1; F_diff_=0; fi
     if [ "$arg" = "diffsentences=" ]; then FFOUND=1; F_diff__diffsentences_=1; F_diff_=0; fi
     if [ "$arg" = "diffchars=" ]; then FFOUND=1; F_diff__diffchars_=1; F_diff_=0; fi
+    # mapdiff= single option
+    if [ "$arg" = "mapdiff=" ]; then FFOUND=1; F_mapdiff_=0; fi
     # field2byte= single option
     if [ "$arg" = "field2byte=" ]; then FFOUND=1; F_field2byte_=0; fi
     # field2date= single option
@@ -696,16 +999,26 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "flatmap=" ]; then FFOUND=1; F_flatmap_=0; fi
     # getlist= single option
     if [ "$arg" = "getlist=" ]; then FFOUND=1; F_getlist_=0; fi
+    # forcearray= single option
+    if [ "$arg" = "forcearray=" ]; then FFOUND=1; F_forcearray_=0; fi
     # jsonschema= single option
     if [ "$arg" = "jsonschema=" ]; then FFOUND=1; F_jsonschema_=0; fi
     # jsonschemacmd= single option
     if [ "$arg" = "jsonschemacmd=" ]; then FFOUND=1; F_jsonschemacmd_=0; fi
+    # jsonschemaoptions= single option
+    if [ "$arg" = "jsonschemaoptions=" ]; then FFOUND=1; F_jsonschemaoptions_=0; fi
     # jsonschemagen= single option
     if [ "$arg" = "jsonschemagen=" ]; then FFOUND=1; F_jsonschemagen_=0; fi
     # kmeans= single option
     if [ "$arg" = "kmeans=" ]; then FFOUND=1; F_kmeans_=0; fi
+    # llmcontext= single option
+    if [ "$arg" = "llmcontext=" ]; then FFOUND=1; F_llmcontext_=0; fi
+    # llmdecide= options
+    if [ "$arg" = "llmenv=" ]; then FFOUND=1; F_llmdecide__llmenv_=1; F_llmdecide_=0; fi
+    if [ "$arg" = "llmoptions=" ]; then FFOUND=1; F_llmdecide__llmoptions_=1; F_llmdecide_=0; fi
+    if [ "$arg" = "llmconversation=" ]; then FFOUND=1; F_llmdecide__llmconversation_=1; F_llmdecide_=0; fi
+    if [ "$arg" = "llmimage=" ]; then FFOUND=1; F_llmdecide__llmimage_=1; F_llmdecide_=0; fi
     # llmprompt= options
-    if [ "$arg" = "llmcontext=" ]; then FFOUND=1; F_llmprompt__llmcontext_=1; F_llmprompt_=0; fi
     if [ "$arg" = "llmenv=" ]; then FFOUND=1; F_llmprompt__llmenv_=1; F_llmprompt_=0; fi
     if [ "$arg" = "llmoptions=" ]; then FFOUND=1; F_llmprompt__llmoptions_=1; F_llmprompt_=0; fi
     if [ "$arg" = "llmconversation=" ]; then FFOUND=1; F_llmprompt__llmconversation_=1; F_llmprompt_=0; fi
@@ -727,38 +1040,32 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "regressionx=" ]; then FFOUND=1; F_regression__regressionx_=1; F_regression_=0; fi
     if [ "$arg" = "regressionoptions=" ]; then FFOUND=1; F_regression__regressionoptions_=1; F_regression_=0; fi
     if [ "$arg" = "regressionforecast=" ]; then FFOUND=1; F_regression__regressionforecast_=1; F_regression_=0; fi
-    # set= options
-    if [ "$arg" = "setop=" ]; then FFOUND=1; F_set__setop_=1; F_set_=0; fi
-    if [ "${arg#setop=union}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_union=0; fi
-    if [ "${arg#setop=diffa}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffa=0; fi
-    if [ "${arg#setop=diffb}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffb=0; fi
-    if [ "${arg#setop=diffab}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffab=0; fi
-    if [ "${arg#setop=intersect}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_intersect=0; fi
     # removedups= single option
     if [ "$arg" = "removedups=" ]; then FFOUND=1; F_removedups_=0; fi
     # removeempty= single option
     if [ "$arg" = "removeempty=" ]; then FFOUND=1; F_removeempty_=0; fi
     # removenulls= single option
     if [ "$arg" = "removenulls=" ]; then FFOUND=1; F_removenulls_=0; fi
-    # spacekeys= single option
-    if [ "$arg" = "spacekeys=" ]; then FFOUND=1; F_spacekeys_=0; fi
     # searchkeys= single option
     if [ "$arg" = "searchkeys=" ]; then FFOUND=1; F_searchkeys_=0; fi
     # searchvalues= single option
     if [ "$arg" = "searchvalues=" ]; then FFOUND=1; F_searchvalues_=0; fi
+    # set= options
+    if [ "$arg" = "setop=" ]; then FFOUND=1; F_set__setop_=1; F_set_=0; fi
+    if [ "${arg#setop=union}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_union=0; fi
+    if [ "${arg#setop=diffa}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffa=0; fi
+    if [ "${arg#setop=diffb}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffb=0; fi
+    if [ "${arg#setop=diffab}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffab=0; fi
+    if [ "${arg#setop=diff}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diff=0; fi
+    if [ "${arg#setop=intersect}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_intersect=0; fi
     # sortmapkeys= single option
     if [ "$arg" = "sortmapkeys=" ]; then FFOUND=1; F_sortmapkeys_=0; fi
+    # spacekeys= single option
+    if [ "$arg" = "spacekeys=" ]; then FFOUND=1; F_spacekeys_=0; fi
     # trim= single option
     if [ "$arg" = "trim=" ]; then FFOUND=1; F_trim_=0; fi
-    # forcearray= single option
-    if [ "$arg" = "forcearray=" ]; then FFOUND=1; F_forcearray_=0; fi
-    # secKey= options
-    if [ "$arg" = "secEnv=" ]; then FFOUND=1; F_secKey__secEnv_=1; F_secKey_=0; fi
-    if [ "$arg" = "secFile=" ]; then FFOUND=1; F_secKey__secFile_=1; F_secKey_=0; fi
-    if [ "$arg" = "secMainPass=" ]; then FFOUND=1; F_secKey__secMainPass_=1; F_secKey_=0; fi
-    if [ "$arg" = "secPass=" ]; then FFOUND=1; F_secKey__secPass_=1; F_secKey_=0; fi
-    if [ "$arg" = "secBucket=" ]; then FFOUND=1; F_secKey__secBucket_=1; F_secKey_=0; fi
-    if [ "$arg" = "secRepo=" ]; then FFOUND=1; F_secKey__secRepo_=1; F_secKey_=0; fi
+    # val2icon= single option
+    if [ "$arg" = "val2icon=" ]; then FFOUND=1; F_val2icon_=0; fi
     # xjs= single option
     if [ "$arg" = "xjs=" ]; then FFOUND=1; F_xjs_=0; fi
     # xpy= single option
@@ -771,98 +1078,822 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "xrpy=" ]; then FFOUND=1; F_xrpy_=0; fi
     # xrfn= single option
     if [ "$arg" = "xrfn=" ]; then FFOUND=1; F_xrfn_=0; fi
-    # val2icon= single option
-    if [ "$arg" = "val2icon=" ]; then FFOUND=1; F_val2icon_=0; fi
+    # inch= single option
+    if [ "$arg" = "inch=" ]; then FFOUND=1; F_inch_=0; fi
+    # inchall= single option
+    if [ "$arg" = "inchall=" ]; then FFOUND=1; F_inchall_=0; fi
+    # indbjdbc= single option
+    if [ "$arg" = "indbjdbc=" ]; then FFOUND=1; F_indbjdbc_=0; fi
+    # indbuser= single option
+    if [ "$arg" = "indbuser=" ]; then FFOUND=1; F_indbuser_=0; fi
+    # indbpass= single option
+    if [ "$arg" = "indbpass=" ]; then FFOUND=1; F_indbpass_=0; fi
+    # indbtimeout= single option
+    if [ "$arg" = "indbtimeout=" ]; then FFOUND=1; F_indbtimeout_=0; fi
+    # indblib= single option
+    if [ "$arg" = "indblib=" ]; then FFOUND=1; F_indblib_=0; fi
+    # indbstream= single option
+    if [ "$arg" = "indbstream=" ]; then FFOUND=1; F_indbstream_=0; fi
+    # indbexec= single option
+    if [ "$arg" = "indbexec=" ]; then FFOUND=1; F_indbexec_=0; fi
+    # indbautocommit= single option
+    if [ "$arg" = "indbautocommit=" ]; then FFOUND=1; F_indbautocommit_=0; fi
+    # indbdesc= single option
+    if [ "$arg" = "indbdesc=" ]; then FFOUND=1; F_indbdesc_=0; fi
+    # indsvsep= single option
+    if [ "$arg" = "indsvsep=" ]; then FFOUND=1; F_indsvsep_=0; fi
+    # indsvsepre= single option
+    if [ "$arg" = "indsvsepre=" ]; then FFOUND=1; F_indsvsepre_=0; fi
+    # indsvquote= single option
+    if [ "$arg" = "indsvquote=" ]; then FFOUND=1; F_indsvquote_=0; fi
+    # indsvescape= single option
+    if [ "$arg" = "indsvescape=" ]; then FFOUND=1; F_indsvescape_=0; fi
+    # indsvcomment= single option
+    if [ "$arg" = "indsvcomment=" ]; then FFOUND=1; F_indsvcomment_=0; fi
+    # indsvheader= single option
+    if [ "$arg" = "indsvheader=" ]; then FFOUND=1; F_indsvheader_=0; fi
+    # indsvtrim= single option
+    if [ "$arg" = "indsvtrim=" ]; then FFOUND=1; F_indsvtrim_=0; fi
+    # indsvjoin= single option
+    if [ "$arg" = "indsvjoin=" ]; then FFOUND=1; F_indsvjoin_=0; fi
+    # indsvfields= single option
+    if [ "$arg" = "indsvfields=" ]; then FFOUND=1; F_indsvfields_=0; fi
+    # javagcjoin= single option
+    if [ "$arg" = "javagcjoin=" ]; then FFOUND=1; F_javagcjoin_=0; fi
+    # javathreadpid= single option
+    if [ "$arg" = "javathreadpid=" ]; then FFOUND=1; F_javathreadpid_=0; fi
+    # hsperfmetadata= single option
+    if [ "$arg" = "hsperfmetadata=" ]; then FFOUND=1; F_hsperfmetadata_=0; fi
+    # javasinception= single option
+    if [ "$arg" = "javasinception=" ]; then FFOUND=1; F_javasinception_=0; fi
+    # jfrjoin= single option
+    if [ "$arg" = "jfrjoin=" ]; then FFOUND=1; F_jfrjoin_=0; fi
+    # jfrdesc= single option
+    if [ "$arg" = "jfrdesc=" ]; then FFOUND=1; F_jfrdesc_=0; fi
+    # jmxpid= single option
+    if [ "$arg" = "jmxpid=" ]; then FFOUND=1; F_jmxpid_=0; fi
+    # jmxurl= single option
+    if [ "$arg" = "jmxurl=" ]; then FFOUND=1; F_jmxurl_=0; fi
+    # jmxuser= single option
+    if [ "$arg" = "jmxuser=" ]; then FFOUND=1; F_jmxuser_=0; fi
+    # jmxpass= single option
+    if [ "$arg" = "jmxpass=" ]; then FFOUND=1; F_jmxpass_=0; fi
+    # jmxprovider= single option
+    if [ "$arg" = "jmxprovider=" ]; then FFOUND=1; F_jmxprovider_=0; fi
+    # jmxop= single option
+    if [ "$arg" = "jmxop=" ]; then FFOUND=1; F_jmxop_=0; fi
+    # jsondesc= single option
+    if [ "$arg" = "jsondesc=" ]; then FFOUND=1; F_jsondesc_=0; fi
+    # jsonprefix= single option
+    if [ "$arg" = "jsonprefix=" ]; then FFOUND=1; F_jsonprefix_=0; fi
+    # injwtverify= single option
+    if [ "$arg" = "injwtverify=" ]; then FFOUND=1; F_injwtverify_=0; fi
+    # injwtsecret= single option
+    if [ "$arg" = "injwtsecret=" ]; then FFOUND=1; F_injwtsecret_=0; fi
+    # injwtpubkey= single option
+    if [ "$arg" = "injwtpubkey=" ]; then FFOUND=1; F_injwtpubkey_=0; fi
+    # injwtalg= single option
+    if [ "$arg" = "injwtalg=" ]; then FFOUND=1; F_injwtalg_=0; fi
+    # injwtraw= single option
+    if [ "$arg" = "injwtraw=" ]; then FFOUND=1; F_injwtraw_=0; fi
+    # linesjoin= single option
+    if [ "$arg" = "linesjoin=" ]; then FFOUND=1; F_linesjoin_=0; fi
+    # linesvisual= single option
+    if [ "$arg" = "linesvisual=" ]; then FFOUND=1; F_linesvisual_=0; fi
+    # linesvisualsepre= single option
+    if [ "$arg" = "linesvisualsepre=" ]; then FFOUND=1; F_linesvisualsepre_=0; fi
+    # linesvisualheadsep= single option
+    if [ "$arg" = "linesvisualheadsep=" ]; then FFOUND=1; F_linesvisualheadsep_=0; fi
+    # llmenv= single option
+    if [ "$arg" = "llmenv=" ]; then FFOUND=1; F_llmenv_=0; fi
+    # llmoptions= single option
+    if [ "$arg" = "llmoptions=" ]; then FFOUND=1; F_llmoptions_=0; fi
+    # llmconversation= single option
+    if [ "$arg" = "llmconversation=" ]; then FFOUND=1; F_llmconversation_=0; fi
+    # llmimage= single option
+    if [ "$arg" = "llmimage=" ]; then FFOUND=1; F_llmimage_=0; fi
+    # llmdecidesample= single option
+    if [ "$arg" = "llmdecidesample=" ]; then FFOUND=1; F_llmdecidesample_=0; fi
+    # llmdecidestats= single option
+    if [ "$arg" = "llmdecidestats=" ]; then FFOUND=1; F_llmdecidestats_=0; fi
+    # lsext= single option
+    if [ "$arg" = "lsext=" ]; then FFOUND=1; F_lsext_=0; fi
+    # lsrecursive= single option
+    if [ "$arg" = "lsrecursive=" ]; then FFOUND=1; F_lsrecursive_=0; fi
+    # lsposix= single option
+    if [ "$arg" = "lsposix=" ]; then FFOUND=1; F_lsposix_=0; fi
+    # inmdtablejoin= single option
+    if [ "$arg" = "inmdtablejoin=" ]; then FFOUND=1; F_inmdtablejoin_=0; fi
+    # inmcptoolslist= single option
+    if [ "$arg" = "inmcptoolslist=" ]; then FFOUND=1; F_inmcptoolslist_=0; fi
+    # inmcplistprompts= single option
+    if [ "$arg" = "inmcplistprompts=" ]; then FFOUND=1; F_inmcplistprompts_=0; fi
+    # minianolog= single option
+    if [ "$arg" = "minianolog=" ]; then FFOUND=1; F_minianolog_=0; fi
+    # minialogfile= single option
+    if [ "$arg" = "minialogfile=" ]; then FFOUND=1; F_minialogfile_=0; fi
+    # miniametrics= single option
+    if [ "$arg" = "miniametrics=" ]; then FFOUND=1; F_miniametrics_=0; fi
+    # ndjsonjoin= single option
+    if [ "$arg" = "ndjsonjoin=" ]; then FFOUND=1; F_ndjsonjoin_=0; fi
+    # ndjsonfilter= single option
+    if [ "$arg" = "ndjsonfilter=" ]; then FFOUND=1; F_ndjsonfilter_=0; fi
+    # ndslonjoin= single option
+    if [ "$arg" = "ndslonjoin=" ]; then FFOUND=1; F_ndslonjoin_=0; fi
+    # ndslonfilter= single option
+    if [ "$arg" = "ndslonfilter=" ]; then FFOUND=1; F_ndslonfilter_=0; fi
+    # inoafpseq= single option
+    if [ "$arg" = "inoafpseq=" ]; then FFOUND=1; F_inoafpseq_=0; fi
+    # inrawhexline= single option
+    if [ "$arg" = "inrawhexline=" ]; then FFOUND=1; F_inrawhexline_=0; fi
+    # inshformat= single option
+    if [ "$arg" = "inshformat=" ]; then FFOUND=1; F_inshformat_=0; fi
+    # insnmp= single option
+    if [ "$arg" = "insnmp=" ]; then FFOUND=1; F_insnmp_=0; fi
+    # insnmpcommunity= single option
+    if [ "$arg" = "insnmpcommunity=" ]; then FFOUND=1; F_insnmpcommunity_=0; fi
+    # insnmptimeout= single option
+    if [ "$arg" = "insnmptimeout=" ]; then FFOUND=1; F_insnmptimeout_=0; fi
+    # insnmpretries= single option
+    if [ "$arg" = "insnmpretries=" ]; then FFOUND=1; F_insnmpretries_=0; fi
+    # insnmpversion= single option
+    if [ "$arg" = "insnmpversion=" ]; then FFOUND=1; F_insnmpversion_=0; fi
+    # insnmpsec= single option
+    if [ "$arg" = "insnmpsec=" ]; then FFOUND=1; F_insnmpsec_=0; fi
+    # sqlparse= single option
+    if [ "$arg" = "sqlparse=" ]; then FFOUND=1; F_sqlparse_=0; fi
+    # sqloptions= single option
+    if [ "$arg" = "sqloptions=" ]; then FFOUND=1; F_sqloptions_=0; fi
+    # inxlssheet= single option
+    if [ "$arg" = "inxlssheet=" ]; then FFOUND=1; F_inxlssheet_=0; fi
+    # inxlsevalformulas= single option
+    if [ "$arg" = "inxlsevalformulas=" ]; then FFOUND=1; F_inxlsevalformulas_=0; fi
+    # inxlsdesc= single option
+    if [ "$arg" = "inxlsdesc=" ]; then FFOUND=1; F_inxlsdesc_=0; fi
+    # inxlscol= single option
+    if [ "$arg" = "inxlscol=" ]; then FFOUND=1; F_inxlscol_=0; fi
+    # inxlsrow= single option
+    if [ "$arg" = "inxlsrow=" ]; then FFOUND=1; F_inxlsrow_=0; fi
+    # xmlignored= single option
+    if [ "$arg" = "xmlignored=" ]; then FFOUND=1; F_xmlignored_=0; fi
+    # xmlprefix= single option
+    if [ "$arg" = "xmlprefix=" ]; then FFOUND=1; F_xmlprefix_=0; fi
+    # xmlfiltertag= single option
+    if [ "$arg" = "xmlfiltertag=" ]; then FFOUND=1; F_xmlfiltertag_=0; fi
+    # base64gzip= single option
+    if [ "$arg" = "base64gzip=" ]; then FFOUND=1; F_base64gzip_=0; fi
+    # inputcsv= single option
+    if [ "$arg" = "inputcsv=" ]; then FFOUND=1; F_inputcsv_=0; fi
+    # incsv= single option
+    if [ "$arg" = "incsv=" ]; then FFOUND=1; F_incsv_=0; fi
+    # cmltch= single option
+    if [ "$arg" = "cmltch=" ]; then FFOUND=1; F_cmltch_=0; fi
+    # cmltsize= single option
+    if [ "$arg" = "cmltsize=" ]; then FFOUND=1; F_cmltsize_=0; fi
+    # difftheme= single option
+    if [ "$arg" = "difftheme=" ]; then FFOUND=1; F_difftheme_=0; fi
+    # diffnlines= single option
+    if [ "$arg" = "diffnlines=" ]; then FFOUND=1; F_diffnlines_=0; fi
+    # diffwords= single option
+    if [ "$arg" = "diffwords=" ]; then FFOUND=1; F_diffwords_=0; fi
+    # diffwordswithspace= single option
+    if [ "$arg" = "diffwordswithspace=" ]; then FFOUND=1; F_diffwordswithspace_=0; fi
+    # difflines= single option
+    if [ "$arg" = "difflines=" ]; then FFOUND=1; F_difflines_=0; fi
+    # diffsentences= single option
+    if [ "$arg" = "diffsentences=" ]; then FFOUND=1; F_diffsentences_=0; fi
+    # diffchars= single option
+    if [ "$arg" = "diffchars=" ]; then FFOUND=1; F_diffchars_=0; fi
+    # regressionpath= single option
+    if [ "$arg" = "regressionpath=" ]; then FFOUND=1; F_regressionpath_=0; fi
+    # regressionx= single option
+    if [ "$arg" = "regressionx=" ]; then FFOUND=1; F_regressionx_=0; fi
+    # regressionoptions= single option
+    if [ "$arg" = "regressionoptions=" ]; then FFOUND=1; F_regressionoptions_=0; fi
+    # regressionforecast= single option
+    if [ "$arg" = "regressionforecast=" ]; then FFOUND=1; F_regressionforecast_=0; fi
+    # setop= options
+    if [ "$arg" = "setop=union" ]; then FFOUND=1; F_setop__setop_union=1; F_setop_=0; fi
+    if [ "$arg" = "setop=diffa" ]; then FFOUND=1; F_setop__setop_diffa=1; F_setop_=0; fi
+    if [ "$arg" = "setop=diffb" ]; then FFOUND=1; F_setop__setop_diffb=1; F_setop_=0; fi
+    if [ "$arg" = "setop=diffab" ]; then FFOUND=1; F_setop__setop_diffab=1; F_setop_=0; fi
+    if [ "$arg" = "setop=diff" ]; then FFOUND=1; F_setop__setop_diff=1; F_setop_=0; fi
+    if [ "$arg" = "setop=intersect" ]; then FFOUND=1; F_setop__setop_intersect=1; F_setop_=0; fi
+    # idescpage= single option
+    if [ "$arg" = "idescpage=" ]; then FFOUND=1; F_idescpage_=0; fi
+    # idescrecords= single option
+    if [ "$arg" = "idescrecords=" ]; then FFOUND=1; F_idescrecords_=0; fi
+    # idescdepth= single option
+    if [ "$arg" = "idescdepth=" ]; then FFOUND=1; F_idescdepth_=0; fi
+    # idescstring= single option
+    if [ "$arg" = "idescstring=" ]; then FFOUND=1; F_idescstring_=0; fi
+    # idescbytes= single option
+    if [ "$arg" = "idescbytes=" ]; then FFOUND=1; F_idescbytes_=0; fi
+    # idescnodes= single option
+    if [ "$arg" = "idescnodes=" ]; then FFOUND=1; F_idescnodes_=0; fi
+    # ch= single option
+    if [ "$arg" = "ch=" ]; then FFOUND=1; F_ch_=0; fi
+    # chkey= single option
+    if [ "$arg" = "chkey=" ]; then FFOUND=1; F_chkey_=0; fi
+    # chunset= single option
+    if [ "$arg" = "chunset=" ]; then FFOUND=1; F_chunset_=0; fi
+    # chart= single option
+    if [ "$arg" = "chart=" ]; then FFOUND=1; F_chart_=0; fi
+    # chartcls= single option
+    if [ "$arg" = "chartcls=" ]; then FFOUND=1; F_chartcls_=0; fi
+    # outcmd= single option
+    if [ "$arg" = "outcmd=" ]; then FFOUND=1; F_outcmd_=0; fi
+    # outcmdjoin= single option
+    if [ "$arg" = "outcmdjoin=" ]; then FFOUND=1; F_outcmdjoin_=0; fi
+    # outcmdseq= single option
+    if [ "$arg" = "outcmdseq=" ]; then FFOUND=1; F_outcmdseq_=0; fi
+    # outcmdnl= single option
+    if [ "$arg" = "outcmdnl=" ]; then FFOUND=1; F_outcmdnl_=0; fi
+    # outcmdparam= single option
+    if [ "$arg" = "outcmdparam=" ]; then FFOUND=1; F_outcmdparam_=0; fi
+    # outcmdtmpl= single option
+    if [ "$arg" = "outcmdtmpl=" ]; then FFOUND=1; F_outcmdtmpl_=0; fi
+    # dbjdbc= single option
+    if [ "$arg" = "dbjdbc=" ]; then FFOUND=1; F_dbjdbc_=0; fi
+    # dbuser= single option
+    if [ "$arg" = "dbuser=" ]; then FFOUND=1; F_dbuser_=0; fi
+    # dbpass= single option
+    if [ "$arg" = "dbpass=" ]; then FFOUND=1; F_dbpass_=0; fi
+    # dbtimeout= single option
+    if [ "$arg" = "dbtimeout=" ]; then FFOUND=1; F_dbtimeout_=0; fi
+    # dblib= single option
+    if [ "$arg" = "dblib=" ]; then FFOUND=1; F_dblib_=0; fi
+    # dbtable= single option
+    if [ "$arg" = "dbtable=" ]; then FFOUND=1; F_dbtable_=0; fi
+    # dbnocreate= single option
+    if [ "$arg" = "dbnocreate=" ]; then FFOUND=1; F_dbnocreate_=0; fi
+    # dbicase= single option
+    if [ "$arg" = "dbicase=" ]; then FFOUND=1; F_dbicase_=0; fi
+    # dbbatchsize= single option
+    if [ "$arg" = "dbbatchsize=" ]; then FFOUND=1; F_dbbatchsize_=0; fi
+    # dsvsep= single option
+    if [ "$arg" = "dsvsep=" ]; then FFOUND=1; F_dsvsep_=0; fi
+    # dsvquote= single option
+    if [ "$arg" = "dsvquote=" ]; then FFOUND=1; F_dsvquote_=0; fi
+    # dsvfields= single option
+    if [ "$arg" = "dsvfields=" ]; then FFOUND=1; F_dsvfields_=0; fi
+    # dsvuseslon= single option
+    if [ "$arg" = "dsvuseslon=" ]; then FFOUND=1; F_dsvuseslon_=0; fi
+    # dsvheader= single option
+    if [ "$arg" = "dsvheader=" ]; then FFOUND=1; F_dsvheader_=0; fi
+    # dsvnl= single option
+    if [ "$arg" = "dsvnl=" ]; then FFOUND=1; F_dsvnl_=0; fi
+    # envscmd= single option
+    if [ "$arg" = "envscmd=" ]; then FFOUND=1; F_envscmd_=0; fi
+    # envsnocmd= single option
+    if [ "$arg" = "envsnocmd=" ]; then FFOUND=1; F_envsnocmd_=0; fi
+    # envsprefix= single option
+    if [ "$arg" = "envsprefix=" ]; then FFOUND=1; F_envsprefix_=0; fi
+    # envsnoprefix= single option
+    if [ "$arg" = "envsnoprefix=" ]; then FFOUND=1; F_envsnoprefix_=0; fi
+    # jwtsecret= single option
+    if [ "$arg" = "jwtsecret=" ]; then FFOUND=1; F_jwtsecret_=0; fi
+    # jwtprivkey= single option
+    if [ "$arg" = "jwtprivkey=" ]; then FFOUND=1; F_jwtprivkey_=0; fi
+    # jwtalg= single option
+    if [ "$arg" = "jwtalg=" ]; then FFOUND=1; F_jwtalg_=0; fi
+    # grid= single option
+    if [ "$arg" = "grid=" ]; then FFOUND=1; F_grid_=0; fi
+    # htmlcompact= single option
+    if [ "$arg" = "htmlcompact=" ]; then FFOUND=1; F_htmlcompact_=0; fi
+    # htmlpart= single option
+    if [ "$arg" = "htmlpart=" ]; then FFOUND=1; F_htmlpart_=0; fi
+    # htmlopen= single option
+    if [ "$arg" = "htmlopen=" ]; then FFOUND=1; F_htmlopen_=0; fi
+    # htmlwait= single option
+    if [ "$arg" = "htmlwait=" ]; then FFOUND=1; F_htmlwait_=0; fi
+    # htmldark= single option
+    if [ "$arg" = "htmldark=" ]; then FFOUND=1; F_htmldark_=0; fi
+    # logprintall= single option
+    if [ "$arg" = "logprintall=" ]; then FFOUND=1; F_logprintall_=0; fi
+    # mdtemplate= single option
+    if [ "$arg" = "mdtemplate=" ]; then FFOUND=1; F_mdtemplate_=0; fi
+    # mdformat= single option
+    if [ "$arg" = "mdformat=" ]; then FFOUND=1; F_mdformat_=0; fi
+    # outoaf= single option
+    if [ "$arg" = "outoaf=" ]; then FFOUND=1; F_outoaf_=0; fi
+    # pxmlprefix= single option
+    if [ "$arg" = "pxmlprefix=" ]; then FFOUND=1; F_pxmlprefix_=0; fi
+    # rawasciistart= single option
+    if [ "$arg" = "rawasciistart=" ]; then FFOUND=1; F_rawasciistart_=0; fi
+    # rawasciiend= single option
+    if [ "$arg" = "rawasciiend=" ]; then FFOUND=1; F_rawasciiend_=0; fi
+    # rawasciitab= single option
+    if [ "$arg" = "rawasciitab=" ]; then FFOUND=1; F_rawasciitab_=0; fi
+    # rawasciinovisual= single option
+    if [ "$arg" = "rawasciinovisual=" ]; then FFOUND=1; F_rawasciinovisual_=0; fi
+    # rawasciinolinenum= single option
+    if [ "$arg" = "rawasciinolinenum=" ]; then FFOUND=1; F_rawasciinolinenum_=0; fi
+    # metricsprefix= single option
+    if [ "$arg" = "metricsprefix=" ]; then FFOUND=1; F_metricsprefix_=0; fi
+    # metricstimestamp= single option
+    if [ "$arg" = "metricstimestamp=" ]; then FFOUND=1; F_metricstimestamp_=0; fi
+    # schart= single option
+    if [ "$arg" = "schart=" ]; then FFOUND=1; F_schart_=0; fi
+    # sqltable= single option
+    if [ "$arg" = "sqltable=" ]; then FFOUND=1; F_sqltable_=0; fi
+    # sqlicase= single option
+    if [ "$arg" = "sqlicase=" ]; then FFOUND=1; F_sqlicase_=0; fi
+    # sqlnocreate= single option
+    if [ "$arg" = "sqlnocreate=" ]; then FFOUND=1; F_sqlnocreate_=0; fi
+    # template= single option
+    if [ "$arg" = "template=" ]; then FFOUND=1; F_template_=0; fi
+    # templatepath= single option
+    if [ "$arg" = "templatepath=" ]; then FFOUND=1; F_templatepath_=0; fi
+    # templatedata= single option
+    if [ "$arg" = "templatedata=" ]; then FFOUND=1; F_templatedata_=0; fi
+    # templatetmpl= single option
+    if [ "$arg" = "templatetmpl=" ]; then FFOUND=1; F_templatetmpl_=0; fi
+    # xlsfile= single option
+    if [ "$arg" = "xlsfile=" ]; then FFOUND=1; F_xlsfile_=0; fi
+    # xlssheet= single option
+    if [ "$arg" = "xlssheet=" ]; then FFOUND=1; F_xlssheet_=0; fi
+    # xlsformat= single option
+    if [ "$arg" = "xlsformat=" ]; then FFOUND=1; F_xlsformat_=0; fi
+    # xlsopen= single option
+    if [ "$arg" = "xlsopen=" ]; then FFOUND=1; F_xlsopen_=0; fi
+    # xlsopenwait= single option
+    if [ "$arg" = "xlsopenwait=" ]; then FFOUND=1; F_xlsopenwait_=0; fi
+    # outxmlprefix= single option
+    if [ "$arg" = "outxmlprefix=" ]; then FFOUND=1; F_outxmlprefix_=0; fi
+    # secRepo= single option
+    if [ "$arg" = "secRepo=" ]; then FFOUND=1; F_secRepo_=0; fi
+    # secBucket= single option
+    if [ "$arg" = "secBucket=" ]; then FFOUND=1; F_secBucket_=0; fi
+    # secPass= single option
+    if [ "$arg" = "secPass=" ]; then FFOUND=1; F_secPass_=0; fi
+    # secMainPass= single option
+    if [ "$arg" = "secMainPass=" ]; then FFOUND=1; F_secMainPass_=0; fi
+    # secFile= single option
+    if [ "$arg" = "secFile=" ]; then FFOUND=1; F_secFile_=0; fi
+    # secEnv= single option
+    if [ "$arg" = "secEnv=" ]; then FFOUND=1; F_secEnv_=0; fi
+    # secKey= options
+    if [ "$arg" = "secRepo=" ]; then FFOUND=1; F_secKey__secRepo_=1; F_secKey_=0; fi
+    if [ "$arg" = "secBucket=" ]; then FFOUND=1; F_secKey__secBucket_=1; F_secKey_=0; fi
+    if [ "$arg" = "secPass=" ]; then FFOUND=1; F_secKey__secPass_=1; F_secKey_=0; fi
+    if [ "$arg" = "secMainPass=" ]; then FFOUND=1; F_secKey__secMainPass_=1; F_secKey_=0; fi
+    if [ "$arg" = "secFile=" ]; then FFOUND=1; F_secKey__secFile_=1; F_secKey_=0; fi
+    if [ "$arg" = "secEnv=" ]; then FFOUND=1; F_secKey__secEnv_=1; F_secKey_=0; fi
   done
 fi
 
+# Print completion for -h
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__h -eq 1 ]; then
+  printf '%s\t%s\n' '-h' 'Show this document'
+fi
+# Print completion for help=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_help_ -eq 1 ]; then
+  printf '%s\t%s\n' 'help=' 'Alternative way to show this document or others (e.g. filters, template)'
+  printf '%s\t%s\n' 'help=filters' 'Filter order, JMESPath functions, jq, nLinq and SQL'
+  printf '%s\t%s\n' 'help=template' 'Provides more details regarding the use of "output=template"'
+  printf '%s\t%s\n' 'help=examples' 'Provide several examples'
+  printf '%s\t%s\n' 'help=jsonschema' 'JSON Schema validation, options, drafts and sample generation'
+  printf '%s\t%s\n' 'help=readme' 'Returns this document'
+fi
+# Print completion for file=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_file_ -eq 1 ]; then
+  printf '%s\t%s\n' 'file=' 'The file to parse (if not provided stdin is used)'
+fi
+# Print completion for ingzip=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ingzip_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ingzip=' 'Decompress file input with OpenAF gzip streams. Auto-detected from .gz (case-insensitive); true forces decompression and false disables it. The preceding extension selects the input format.'
+fi
+# Print completion for cmd=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_cmd_ -eq 1 ]; then
+  printf '%s\t%s\n' 'cmd=' 'Alternative to file and stdin to execute a command (e.g. kubectl, docker) to get the file contents'
+fi
+# Print completion for data=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_data_ -eq 1 ]; then
+  printf '%s\t%s\n' 'data=' 'Alternative to file, stdin and cmd to provide data input'
+fi
+# Print completion for out=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_out_ -eq 1 ]; then
+  printf '%s\t%s\n' 'out=' 'The output format (default: ctree)'
+  printf '%s\t%s\n' 'out=base64' 'A base64 text format'
+  printf '%s\t%s\n' 'out=bstable' 'A borderless Unicode table with separators between records and wrapping to the terminal width (for lists or maps)'
+  printf '%s\t%s\n' 'out=btable' 'A borderless Unicode table without separators between records and with wrapping to the terminal width (for lists or maps)'
+  printf '%s\t%s\n' 'out=btree' 'A tree-like format without ANSI colors, using plain-text branch characters'
+  printf '%s\t%s\n' 'out=ch' 'An OpenAF channel format'
+  printf '%s\t%s\n' 'out=chart' 'A line-chart style chart (useful together with '\''loop'\'')'
+  printf '%s\t%s\n' 'out=cjson' 'A JSON forcely colored format'
+  printf '%s\t%s\n' 'out=cmd' 'Executes a command for each input data entry'
+  printf '%s\t%s\n' 'out=cslon' 'A SLON format forcely colored'
+  printf '%s\t%s\n' 'out=csv' 'A CSV format (only for list outputs)'
+  printf '%s\t%s\n' 'out=ctable' 'A table-like forcely colored format (only for list outputs)'
+  printf '%s\t%s\n' 'out=ctree' 'A tree-like forcely colored format'
+  printf '%s\t%s\n' 'out=clkyaml' 'A Kubernetes YAML without new-lines colored format'
+  printf '%s\t%s\n' 'out=ckyaml' 'A Kubernetes YAML colored format'
+  printf '%s\t%s\n' 'out=cyaml' 'An YAML colored format'
+  printf '%s\t%s\n' 'out=db' 'Output to a JDBC database'
+  printf '%s\t%s\n' 'out=dsv' 'A delimiter-separated values format with configurable separator, quoting and headers (for lists or maps; see DSV output options)'
+  printf '%s\t%s\n' 'out=envs' 'Tries to output the input data as OS environment variables setting commands'
+  printf '%s\t%s\n' 'out=gb64json' 'Equivalent to out=base64 and base64gzip=true'
+  printf '%s\t%s\n' 'out=grid' 'A multiple output ascii grid (useful together with '\''loop'\'')'
+  printf '%s\t%s\n' 'out=html' 'An HTML format'
+  printf '%s\t%s\n' 'out=idesc' 'Interactive full-screen tree browser for maps, arrays and scalar values; expand/collapse, zoom, filter, queries, previews, bookmarks, comparison and export'
+  printf '%s\t%s\n' 'out=ini' 'A INI/Properties format (arrays are not supported)'
+  printf '%s\t%s\n' 'out=json' 'A JSON format without spacing'
+  printf '%s\t%s\n' 'out=jsmap' 'OpenAF'\''s HTML representation of structured data, printed directly without opening a browser'
+  printf '%s\t%s\n' 'out=jwt' 'Signs map data into a JSON Web Token (JWT)'
+  printf '%s\t%s\n' 'out=key' 'Stores data into an OpenAF global (used inside OpenAF)'
+  printf '%s\t%s\n' 'out=kyaml' 'A Kubernetes YAML format'
+  printf '%s\t%s\n' 'out=lkyaml' 'A Kubernetes YAML format without new-lines'
+  printf '%s\t%s\n' 'out=lines' 'Given an array of strings prints each line'
+  printf '%s\t%s\n' 'out=log' 'If input has Logstash compatible fields outputs a human-readable log'
+  printf '%s\t%s\n' 'out=map' 'A rectangle map format'
+  printf '%s\t%s\n' 'out=md' 'A Markdown format'
+  printf '%s\t%s\n' 'out=mdtable' 'A Markdown table format (only for list outputs)'
+  printf '%s\t%s\n' 'out=mdyaml' 'A multi document YAML format (only for list outputs)'
+  printf '%s\t%s\n' 'out=mtree' 'A tree-like format without ANSI colors, using Unicode branch characters (falls back to ctree on older OpenAF versions without TREE.mono support)'
+  printf '%s\t%s\n' 'out=ndjson' 'A NDJSON (new-line delimited JSON) format'
+  printf '%s\t%s\n' 'out=ndslon' 'A NDSLON (new-line delimited SLON) format'
+  printf '%s\t%s\n' 'out=ndcslon' 'A NDSLON (new-line delimited SLON) format forcely colored'
+  printf '%s\t%s\n' 'out=openmetrics' 'Converts a map or list to OpenMetrics/Prometheus compatible format'
+  printf '%s\t%s\n' 'out=oaf' 'An OpenAF scripting code or OpenAF scripting file (together with '\''outoaf'\'') to execute taking input transformed as '\''data'\'''
+  printf '%s\t%s\n' 'out=pjson' 'A JSON format with spacing (equivalent to prettyjson)'
+  printf '%s\t%s\n' 'out=prettyjson' 'A JSON format with spacing'
+  printf '%s\t%s\n' 'out=pxml' 'Tries to output the input data into pretty xml'
+  printf '%s\t%s\n' 'out=raw' 'Tries to output the internal representation (string or json) of the input transformed data'
+  printf '%s\t%s\n' 'out=rawascii' 'Outputs text data line by line with visual representation of non-visual characters'
+  printf '%s\t%s\n' 'out=res' 'Outputs data to an OpenAF global '\''res'\'' (used in oJobs)'
+  printf '%s\t%s\n' 'out=schart' 'A static line-chart like chart (for a fixed list/array of values)'
+  printf '%s\t%s\n' 'out=slon' 'A SLON format'
+  printf '%s\t%s\n' 'out=sql' 'Outputs a series of SQL statements for an input list/array data'
+  printf '%s\t%s\n' 'out=stable' 'A table-like format with separation (only for list outputs)'
+  printf '%s\t%s\n' 'out=table' 'A table-like format without size constraints (only for list outputs)'
+  printf '%s\t%s\n' 'out=template' 'A Handlebars template format'
+  printf '%s\t%s\n' 'out=text' 'A string text format'
+  printf '%s\t%s\n' 'out=toml' 'A TOML format (arrays will have outkey=list)'
+  printf '%s\t%s\n' 'out=toon' 'A TOON format'
+  printf '%s\t%s\n' 'out=tree' 'A tree-like format'
+  printf '%s\t%s\n' 'out=xls' 'A XLSx output format'
+  printf '%s\t%s\n' 'out=xml' 'An XML format'
+  printf '%s\t%s\n' 'out=yaml' 'A YAML format'
+fi
+if [ $F_out__out_base64 -eq 1 ]; then
+  if [ $F_out__out_base64_base64gzip_ -eq 1 ]; then
+    printf '%s\t%s\n' 'base64gzip=' 'If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output'
+  fi
+fi
+if [ $F_out__out_ch -eq 1 ]; then
+  if [ $F_out__out_ch_ch_ -eq 1 ]; then
+    printf '%s\t%s\n' 'ch=' 'A JSON/SLON configuration string with type and options/url'
+  fi
+  if [ $F_out__out_ch_chkey_ -eq 1 ]; then
+    printf '%s\t%s\n' 'chkey=' 'A comma delimited list of map keys to build a key from each array value'
+  fi
+  if [ $F_out__out_ch_chunset_ -eq 1 ]; then
+    printf '%s\t%s\n' 'chunset=' 'If true the input data will be used to unset data on the output channel instead of set'
+  fi
+fi
+if [ $F_out__out_chart -eq 1 ]; then
+  if [ $F_out__out_chart_chart_ -eq 1 ]; then
+    printf '%s\t%s\n' 'chart=' 'Required. Unit, one or more series, and optional axis/size flags, as described below.'
+  fi
+  if [ $F_out__out_chart_chartcls_ -eq 1 ]; then
+    printf '%s\t%s\n' 'chartcls=' 'Clear the screen before printing each chart update. Use this or the general loopcls=true option to redraw in place. Otherwise updates are printed one after another.'
+  fi
+  if [ $F_out__out_chart_loop_ -eq 1 ]; then
+    printf '%s\t%s\n' 'loop=' 'If defined will loop the processing by the number of seconds provided'
+  fi
+fi
+if [ $F_out__out_cmd -eq 1 ]; then
+  if [ $F_out__out_cmd_outcmd_ -eq 1 ]; then
+    printf '%s\t%s\n' 'outcmd=' 'The command to execute receiving, in pipeline, each input entry in json'
+  fi
+  if [ $F_out__out_cmd_outcmdjoin_ -eq 1 ]; then
+    printf '%s\t%s\n' 'outcmdjoin=' 'If true and if input is an array the entire array will be the input entry'
+  fi
+  if [ $F_out__out_cmd_outcmdseq_ -eq 1 ]; then
+    printf '%s\t%s\n' 'outcmdseq=' 'If true and if input is an array the commands will be executed in sequence'
+  fi
+  if [ $F_out__out_cmd_outcmdnl_ -eq 1 ]; then
+    printf '%s\t%s\n' 'outcmdnl=' 'If true each command execution output will be appended with a new-line'
+  fi
+  if [ $F_out__out_cmd_outcmdparam_ -eq 1 ]; then
+    printf '%s\t%s\n' 'outcmdparam=' 'If true the input entry will be replaced on the '\''outcmd'\'' where '\''{}'\'' is found'
+  fi
+  if [ $F_out__out_cmd_outcmdtmpl_ -eq 1 ]; then
+    printf '%s\t%s\n' 'outcmdtmpl=' 'If true the input entry will be considered as an HandleBars'\'' template'
+  fi
+fi
+if [ $F_out__out_csv -eq 1 ]; then
+  if [ $F_out__out_csv_inputcsv_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inputcsv=' 'CSV input configuration as JSON/SLON'
+  fi
+  if [ $F_out__out_csv_incsv_ -eq 1 ]; then
+    printf '%s\t%s\n' 'incsv=' 'Alias for inputcsv'
+  fi
+  if [ $F_out__out_csv_csv_ -eq 1 ]; then
+    printf '%s\t%s\n' 'csv=' 'If type=csv, the CSV options to use'
+  fi
+fi
+if [ $F_out__out_db -eq 1 ]; then
+  if [ $F_out__out_db_dbjdbc_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dbjdbc=' 'The JDBC URL to access the input database'
+  fi
+  if [ $F_out__out_db_dbuser_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dbuser=' 'The JDBC access user'
+  fi
+  if [ $F_out__out_db_dbpass_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dbpass=' 'The JDBC access password'
+  fi
+  if [ $F_out__out_db_dbtimeout_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dbtimeout=' 'The JDBC access timeout'
+  fi
+  if [ $F_out__out_db_dblib_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dblib=' 'Use a JDBC driver oPack generated by ojob.io/db/getDriver'
+  fi
+  if [ $F_out__out_db_dbtable_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dbtable=' 'The db table in which should be inserted ('\''data'\'' by default)'
+  fi
+  if [ $F_out__out_db_dbnocreate_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dbnocreate=' 'If true no table creation command will be executed (if the table already exists set this to true)'
+  fi
+  if [ $F_out__out_db_dbicase_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dbicase=' 'If true table and field names will try to ignore case'
+  fi
+  if [ $F_out__out_db_dbbatchsize_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dbbatchsize=' 'If defined it will changed the default batch data insert process'
+  fi
+fi
+if [ $F_out__out_dsv -eq 1 ]; then
+  if [ $F_out__out_dsv_dsvsep_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dsvsep=' 'The separator to use (default is '\'','\'')'
+  fi
+  if [ $F_out__out_dsv_dsvquote_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dsvquote=' 'Replacement for double quotes inside serialized object/array cells (default is a backslash followed by a double quote). String cells and headers always use double quotes, with embedded quotes doubled.'
+  fi
+  if [ $F_out__out_dsv_dsvfields_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dsvfields=' 'Comma separated output columns in the requested order. Defaults to the first row'\''s keys for the whole table. Missing values are empty; additional keys in later rows are omitted. Does not override dsvheader=false.'
+  fi
+  if [ $F_out__out_dsv_dsvuseslon_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dsvuseslon=' 'If true the output of value objects will be in SLON format (default is false)'
+  fi
+  if [ $F_out__out_dsv_dsvheader_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dsvheader=' 'If true will try to output the first line as header (default is true)'
+  fi
+  if [ $F_out__out_dsv_dsvnl_ -eq 1 ]; then
+    printf '%s\t%s\n' 'dsvnl=' 'Newline sequence to use (default is '\''\n'\'')'
+  fi
+fi
+if [ $F_out__out_envs -eq 1 ]; then
+  if [ $F_out__out_envs_envscmd_ -eq 1 ]; then
+    printf '%s\t%s\n' 'envscmd=' 'If defined will output the provided command to set each environment variable (defaults to '\''export'\'' or '\''set'\'' in Windows)'
+  fi
+  if [ $F_out__out_envs_envsnocmd_ -eq 1 ]; then
+    printf '%s\t%s\n' 'envsnocmd=' 'If true omits the command before each environment variable assignment, including a custom envscmd (defaults to false)'
+  fi
+  if [ $F_out__out_envs_envsprefix_ -eq 1 ]; then
+    printf '%s\t%s\n' 'envsprefix=' 'If defined uses the provided prefix for each environment variable key (defaults to '\''_OAFP_'\'')'
+  fi
+  if [ $F_out__out_envs_envsnoprefix_ -eq 1 ]; then
+    printf '%s\t%s\n' 'envsnoprefix=' 'Boolean flag to indicate that no envsprefix should be used (defaults to false)'
+  fi
+fi
+if [ $F_out__out_grid -eq 1 ]; then
+  if [ $F_out__out_grid_grid_ -eq 1 ]; then
+    printf '%s\t%s\n' 'grid=' 'A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).'
+  fi
+fi
+if [ $F_out__out_html -eq 1 ]; then
+  if [ $F_out__out_html_htmlcompact_ -eq 1 ]; then
+    printf '%s\t%s\n' 'htmlcompact=' 'Boolean flag that if true and the input data is a string or markdown the generated html will have a visual compact width format'
+  fi
+  if [ $F_out__out_html_htmlpart_ -eq 1 ]; then
+    printf '%s\t%s\n' 'htmlpart=' 'Boolean flag that if true and the input data is a string or markdown the generated html will be partial and not the complete file'
+  fi
+  if [ $F_out__out_html_htmlopen_ -eq 1 ]; then
+    printf '%s\t%s\n' 'htmlopen=' 'Boolean that if false won'\''t try to open the output contents in a browser (defaults to true). To use outfile= you need to set htmlopen=false.'
+  fi
+  if [ $F_out__out_html_htmlwait_ -eq 1 ]; then
+    printf '%s\t%s\n' 'htmlwait=' 'Amount of ms, when htmlopen=true, to wait for the system browser to open an render the html output'
+  fi
+  if [ $F_out__out_html_htmldark_ -eq 1 ]; then
+    printf '%s\t%s\n' 'htmldark=' 'If supported and true the output html will use a dark theme.'
+  fi
+fi
+if [ $F_out__out_idesc -eq 1 ]; then
+  if [ $F_out__out_idesc_idescsource_ -eq 1 ]; then
+    printf '%s\t%s\n' 'idescsource=' 'loaded (default) or stream. stream enables file-backed JSON browsing with out=idesc.'
+  fi
+  if [ $F_out__out_idesc_idescrecipe_ -eq 1 ]; then
+    printf '%s\t%s\n' 'idescrecipe=' 'Replay a saved idesc selection/query recipe with the supplied source; use out=idesc to reopen interactively.'
+  fi
+  if [ $F_out__out_idesc_idescpage_ -eq 1 ]; then
+    printf '%s\t%s\n' 'idescpage=' 'Entries loaded per expand/"more" step in the tree browser (and per page in the numbered fallback and previews). Default 20.'
+  fi
+  if [ $F_out__out_idesc_idescrecords_ -eq 1 ]; then
+    printf '%s\t%s\n' 'idescrecords=' 'Batch size for line-oriented input (NDJSON, NDSLON, lines, DSV) or in=json stream=true. Each batch of processed records opens one explorer session; press n (or :next) to drop it and read the next batch, q to stop reading. Only one batch is held in memory. A selection/query is carried over to the next batch when it still applies. Positive integer, default 100. CSV and explicit join options still browse the whole result.'
+  fi
+  if [ $F_out__out_idesc_idescdepth_ -eq 1 ]; then
+    printf '%s\t%s\n' 'idescdepth=' 'Maximum preview depth. Default 3.'
+  fi
+  if [ $F_out__out_idesc_idescstring_ -eq 1 ]; then
+    printf '%s\t%s\n' 'idescstring=' 'Maximum displayed characters per preview string. Default 200. Oversized file-backed scalars may be omitted with a byte-size label.'
+  fi
+  if [ $F_out__out_idesc_idescbytes_ -eq 1 ]; then
+    printf '%s\t%s\n' 'idescbytes=' 'Maximum selected JSON bytes admitted for file-backed queries/slices. Default 16777216 (16 MiB).'
+  fi
+  if [ $F_out__out_idesc_idescnodes_ -eq 1 ]; then
+    printf '%s\t%s\n' 'idescnodes=' 'Maximum value nodes admitted for file-backed queries/slices and preview traversal. Default 100000.'
+  fi
+fi
+if [ $F_out__out_jwt -eq 1 ]; then
+  if [ $F_out__out_jwt_jwtsecret_ -eq 1 ]; then
+    printf '%s\t%s\n' 'jwtsecret=' 'A string secret for using HS256, HS384 or HS512 depending on secret size used to sign the JWT.'
+  fi
+  if [ $F_out__out_jwt_jwtprivkey_ -eq 1 ]; then
+    printf '%s\t%s\n' 'jwtprivkey=' 'A private key file used to sign (might require specifying the jwtalg).'
+  fi
+  if [ $F_out__out_jwt_jwtalg_ -eq 1 ]; then
+    printf '%s\t%s\n' 'jwtalg=' 'Specifies the algorithm used to sign the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM.'
+  fi
+fi
+if [ $F_out__out_log -eq 1 ]; then
+  if [ $F_out__out_log_logprintall_ -eq 1 ]; then
+    printf '%s\t%s\n' 'logprintall=' 'If true all original non data (string) lines will be output'
+  fi
+fi
+if [ $F_out__out_md -eq 1 ]; then
+  if [ $F_out__out_md_mdtemplate_ -eq 1 ]; then
+    printf '%s\t%s\n' 'mdtemplate=' 'If true will apply a template output without any input data'
+  fi
+  if [ $F_out__out_md_mdformat_ -eq 1 ]; then
+    printf '%s\t%s\n' 'mdformat=' 'For map or array values: structured (default) renders headings, scalar tables, and lists; json or yaml emits the value in a fenced code block.'
+  fi
+fi
+if [ $F_out__out_openmetrics -eq 1 ]; then
+  if [ $F_out__out_openmetrics_metricsprefix_ -eq 1 ]; then
+    printf '%s\t%s\n' 'metricsprefix=' 'The prefix to use for each metric (defaults to '\''metrics'\'')'
+  fi
+  if [ $F_out__out_openmetrics_metricstimestamp_ -eq 1 ]; then
+    printf '%s\t%s\n' 'metricstimestamp=' 'Unix Epoch in seconds for each metric'
+  fi
+fi
+if [ $F_out__out_oaf -eq 1 ]; then
+  if [ $F_out__out_oaf_outoaf_ -eq 1 ]; then
+    printf '%s\t%s\n' 'outoaf=' 'OpenAF code or a script file to execute with the transformed input as data'
+  fi
+fi
+if [ $F_out__out_pxml -eq 1 ]; then
+  if [ $F_out__out_pxml_pxmlprefix_ -eq 1 ]; then
+    printf '%s\t%s\n' 'pxmlprefix=' 'A prefix added to all XML tags'
+  fi
+fi
+if [ $F_out__out_rawascii -eq 1 ]; then
+  if [ $F_out__out_rawascii_rawasciistart_ -eq 1 ]; then
+    printf '%s\t%s\n' 'rawasciistart=' 'Starting line number to display'
+  fi
+  if [ $F_out__out_rawascii_rawasciiend_ -eq 1 ]; then
+    printf '%s\t%s\n' 'rawasciiend=' 'Ending line number to display'
+  fi
+  if [ $F_out__out_rawascii_rawasciitab_ -eq 1 ]; then
+    printf '%s\t%s\n' 'rawasciitab=' 'Tab size for tab character visualization (defaults to 8)'
+  fi
+  if [ $F_out__out_rawascii_rawasciinovisual_ -eq 1 ]; then
+    printf '%s\t%s\n' 'rawasciinovisual=' 'If true, non-visual characters won'\''t be replaced by their visual representation'
+  fi
+  if [ $F_out__out_rawascii_rawasciinolinenum_ -eq 1 ]; then
+    printf '%s\t%s\n' 'rawasciinolinenum=' 'If true, line numbers won'\''t be displayed'
+  fi
+fi
+if [ $F_out__out_schart -eq 1 ]; then
+  if [ $F_out__out_schart_schart_ -eq 1 ]; then
+    printf '%s\t%s\n' 'schart=' 'Chart definition in the format "<unit> <path:color:legend>... [-min:<n>] [-max:<n>] [-hsize:<n>] [-vsize:<n>]". Unit must be one of: int, dec1, dec2, dec3, dec4, dec, bytes or si. Path is a JMESPath expression equivalent to the path= filter (use quotes for non-basic expressions). The -min and -max flags set the Y-axis range; -hsize and -vsize override the default chart width and height in terminal columns/rows. Unlike out=chart (which accumulates values over time), schart renders a fixed snapshot from the current input array.'
+  fi
+fi
+if [ $F_out__out_sql -eq 1 ]; then
+  if [ $F_out__out_sql_sqltable_ -eq 1 ]; then
+    printf '%s\t%s\n' 'sqltable=' 'The table name to use for the SQL statements (defaults to '\''data'\'')'
+  fi
+  if [ $F_out__out_sql_sqlicase_ -eq 1 ]; then
+    printf '%s\t%s\n' 'sqlicase=' 'If true the table and fields names won'\''t be double-quoted'
+  fi
+  if [ $F_out__out_sql_sqlnocreate_ -eq 1 ]; then
+    printf '%s\t%s\n' 'sqlnocreate=' 'If true the create table statement won'\''t be generated'
+  fi
+fi
+if [ $F_out__out_template -eq 1 ]; then
+  if [ $F_out__out_template_template_ -eq 1 ]; then
+    printf '%s\t%s\n' 'template=' 'A file path to a HandleBars'\'' template or a string template definition if '\''templatetmpl'\'' is true'
+  fi
+  if [ $F_out__out_template_templatepath_ -eq 1 ]; then
+    printf '%s\t%s\n' 'templatepath=' 'If '\''template'\'' is not provided a path to the template definition (pre-transformation)'
+  fi
+  if [ $F_out__out_template_templatedata_ -eq 1 ]; then
+    printf '%s\t%s\n' 'templatedata=' 'If defined the template data will be retrieved from the provided path'
+  fi
+  if [ $F_out__out_template_templatetmpl_ -eq 1 ]; then
+    printf '%s\t%s\n' 'templatetmpl=' 'If true the '\''template'\'' will be interpreted as the template definition instead of a file path'
+  fi
+fi
+if [ $F_out__out_xls -eq 1 ]; then
+  if [ $F_out__out_xls_xlsfile_ -eq 1 ]; then
+    printf '%s\t%s\n' 'xlsfile=' 'The output filename (if not defined a temporary file will be used to open with the OS'\''s Excel-compatible application)'
+  fi
+  if [ $F_out__out_xls_xlssheet_ -eq 1 ]; then
+    printf '%s\t%s\n' 'xlssheet=' 'The name of sheet to use (default to '\''data'\'')'
+  fi
+  if [ $F_out__out_xls_xlsformat_ -eq 1 ]; then
+    printf '%s\t%s\n' 'xlsformat=' 'A SLON or JSON string with the formatting of the output file (e.g. (bold: true, borderBottom: "medium", borderBottomColor: "red"))'
+  fi
+  if [ $F_out__out_xls_xlsopen_ -eq 1 ]; then
+    printf '%s\t%s\n' 'xlsopen=' 'If false it won'\''t try to open the OS'\''s Excel-compatible application (defaults to true)'
+  fi
+  if [ $F_out__out_xls_xlsopenwait_ -eq 1 ]; then
+    printf '%s\t%s\n' 'xlsopenwait=' 'The amount of time, in ms, to keep the temporary file for the OS'\''s Excel-compatible application to start and open the file'
+  fi
+fi
+if [ $F_out__out_xml -eq 1 ]; then
+  if [ $F_out__out_xml_outxmlprefix_ -eq 1 ]; then
+    printf '%s\t%s\n' 'outxmlprefix=' 'A prefix added to all XML tags'
+  fi
+fi
+# Print completion for idescsource=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_idescsource_ -eq 1 ]; then
+  printf '%s\t%s\n' 'idescsource=' 'loaded (default) or stream. stream enables file-backed JSON browsing with out=idesc.'
+fi
+# Print completion for idescrecipe=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_idescrecipe_ -eq 1 ]; then
+  printf '%s\t%s\n' 'idescrecipe=' 'Replay a saved idesc selection/query recipe with the supplied source; use out=idesc to reopen interactively.'
+fi
 # Print completion for in=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_in_ -eq 1 ]; then
-  printf '%s\t%s\n' 'in=' 'The input type -if not provided it will try to be auto-detected-'
-  printf '%s\t%s\n' 'in=ask' 'Interactively asks questions to an user -using JSON/SLON for OpenAF'\''s askStruct-'
-  printf '%s\t%s\n' 'in=base64' 'A base64 text input format'
-  printf '%s\t%s\n' 'in=ch' 'An OpenAF channel input format'
-  printf '%s\t%s\n' 'in=csv' 'A CSV format -auto-detected-'
-  printf '%s\t%s\n' 'in=dsv' 'A DSV -Delimiter Separated Values- format'
+  printf '%s\t%s\n' 'in=' 'The input type (if not provided it will try to be auto-detected)'
+  printf '%s\t%s\n' 'in=ask' 'Interactively asks questions to an user (using JSON/SLON for OpenAF'\''s askStruct)'
+  printf '%s\t%s\n' 'in=base64' 'A base64 text format'
+  printf '%s\t%s\n' 'in=ch' 'An OpenAF channel format'
+  printf '%s\t%s\n' 'in=csv' 'A CSV format (auto-detected)'
   printf '%s\t%s\n' 'in=db' 'A JDBC query to a database'
+  printf '%s\t%s\n' 'in=dsv' 'A DSV (Delimiter Separated Values) format'
   printf '%s\t%s\n' 'in=gb64json' 'Equivalent to in=base64 and base64gzip=true'
-  printf '%s\t%s\n' 'in=hsperf' 'A Java hsperfdata* file -requires file=hsperfdata_user/123-'
+  printf '%s\t%s\n' 'in=hsperf' 'A Java hsperfdata* file (requires file=hsperfdata_user/123)'
   printf '%s\t%s\n' 'in=ini' 'INI/Properties format'
-  printf '%s\t%s\n' 'in=javas' 'Tries to list java processes running locally'
-  printf '%s\t%s\n' 'in=javagc' 'A Java GC log text file format'
-  printf '%s\t%s\n' 'in=javathread' 'A Java thread dump text file format or java pid'
-  printf '%s\t%s\n' 'in=jfr' 'A Java Flight Recorder file format'
+  printf '%s\t%s\n' 'in=javas' 'Tries to list java processes running locally (javasinception=true to include itself). Adds the hsperf file path when the process id matches ow.java.getLocalJavaPIDs()'
+  printf '%s\t%s\n' 'in=javagc' 'The Java GC log lines text format'
+  printf '%s\t%s\n' 'in=javathread' 'The Java Thread stack dump lines text format'
+  printf '%s\t%s\n' 'in=jfr' 'The Java Flight Recorder format'
   printf '%s\t%s\n' 'in=jmx' 'Uses Java JMX to retrieve data from another Java process'
-  printf '%s\t%s\n' 'in=json' 'A JSON format -auto-detected-'
+  printf '%s\t%s\n' 'in=json' 'A JSON format (auto-detected)'
   printf '%s\t%s\n' 'in=jsonschema' 'Given a JSON schema format tries to generate sample data for it'
-  printf '%s\t%s\n' 'in=jwt' 'Decodes and/or verifies a JSON Web Token -JWT-'
+  printf '%s\t%s\n' 'in=jwt' 'Decodes and/or verifies a JSON Web Token (JWT)'
   printf '%s\t%s\n' 'in=lines' 'A given string/text to be processed line by line'
-  printf '%s\t%s\n' 'in=llm' 'A large language model input -uses '\''llmenv'\'' or '\''llmoptions'\''-'
-  printf '%s\t%s\n' 'in=llmmodels' 'Lists the large language models available -using '\''llmenv'\'' or '\''llmoptions'\''-'
+  printf '%s\t%s\n' 'in=llm' 'A large language model input (uses '\''llmenv'\'' or '\''llmoptions'\'')'
+  printf '%s\t%s\n' 'in=llmdecide' 'Stateless decisions over a whole state and named questions using OpenAF $llm().decide()'
+  printf '%s\t%s\n' 'in=llmmodels' 'Lists the large language models available (using '\''llmenv'\'' or '\''llmoptions'\'')'
   printf '%s\t%s\n' 'in=ls' 'Returns a list of files and folders for a given directory path or zip or tar or tgz file'
-  printf '%s\t%s\n' 'in=md' 'A Markdown input format'
+  printf '%s\t%s\n' 'in=md' 'A Markdown format'
   printf '%s\t%s\n' 'in=mdtable' 'A Markdown table format'
   printf '%s\t%s\n' 'in=mdcode' 'A Markdown code blocks format'
   printf '%s\t%s\n' 'in=mcp' 'A Model Context Protocol (MCP) input'
   printf '%s\t%s\n' 'in=minia' 'Executes a mini-a interaction definition (requires the mini-a oPack)'
   printf '%s\t%s\n' 'in=ndjson' 'A NDJSON (new-line delimited JSON) format'
   printf '%s\t%s\n' 'in=ndslon' 'A NDSLON (new-line delimited SLON) format'
-  printf '%s\t%s\n' 'in=oaf' 'Takes an OpenAF scripting code or OpenAF script file to execute and use the result as input'
-  printf '%s\t%s\n' 'in=oafp' 'Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process -arrays will call multiple oafp processes-'
+  printf '%s\t%s\n' 'in=oaf' 'Takes an OpenAF scripting code or OpenAF scripting file to execute and use the result as input'
+  printf '%s\t%s\n' 'in=oafp' 'Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process (arrays will call multiple oafp processes; inoafpseq=true will process sequentially)'
   printf '%s\t%s\n' 'in=ojob' 'Takes a JSON/SLON/YAML map input with a '\''ojob'\'' string and a '\''args'\'' map parameter'
   printf '%s\t%s\n' 'in=openmetrics' 'An OpenMetrics/Prometheus compatible format'
   printf '%s\t%s\n' 'in=raw' 'Passes the input directly to transforms and output'
   printf '%s\t%s\n' 'in=rawhex' 'Tries to read the input char by char converting into lines with the hexadecimal representation'
   printf '%s\t%s\n' 'in=sh' 'Executes a shell command returning stdout, stderr and exitcode as a map'
-  printf '%s\t%s\n' 'in=slon' 'A SLON format -auto-detected-'
-  printf '%s\t%s\n' 'in=sql' 'One or more SQLs statements to AST -Abstract Syntax Tree- or beautified SQL'
-  printf '%s\t%s\n' 'in=snmp' 'Retrieves data from a SNMP device'
+  printf '%s\t%s\n' 'in=slon' 'A SLON format (auto-detected)'
+  printf '%s\t%s\n' 'in=snmp' 'A SNMP device source'
+  printf '%s\t%s\n' 'in=sql' 'One or more SQLs statements to AST (Abstract Syntax Tree) or beautified SQL'
   printf '%s\t%s\n' 'in=toml' 'TOML format'
   printf '%s\t%s\n' 'in=toon' 'TOON format'
-  printf '%s\t%s\n' 'in=xls' 'A XLSx compatible file -requires file=abc.xlsx-'
-  printf '%s\t%s\n' 'in=xml' 'An XML format -auto-detected-'
-  printf '%s\t%s\n' 'in=yaml' 'A YAML format -auto-detected-'
+  printf '%s\t%s\n' 'in=xls' 'A XLSx compatible file (requires file=abc.xlsx)'
+  printf '%s\t%s\n' 'in=xml' 'An XML format (auto-detected)'
+  printf '%s\t%s\n' 'in=yaml' 'A YAML format (auto-detected)'
+fi
+if [ $F_in__in_base64 -eq 1 ]; then
+  if [ $F_in__in_base64_base64gzip_ -eq 1 ]; then
+    printf '%s\t%s\n' 'base64gzip=' 'If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output'
+  fi
 fi
 if [ $F_in__in_ch -eq 1 ]; then
-  if [ $F_in__in_ch_inch -eq 1 ]; then
-    printf '%s\t%s\n' 'inch' 'A JSON/SLON configuration string with type and options/url'
+  if [ $F_in__in_ch_inch_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inch=' 'A JSON/SLON configuration string with type and options/url'
   fi
-  if [ $F_in__in_ch_inchall -eq 1 ]; then
-    printf '%s\t%s\n' 'inchall' 'A boolean flag to determine if the input map will be used for a getAll query'
+  if [ $F_in__in_ch_inchall_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inchall=' 'A boolean flag to determine if the input map will be used for a getAll query'
   fi
 fi
 if [ $F_in__in_csv -eq 1 ]; then
+  if [ $F_in__in_csv_inputcsv_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inputcsv=' 'CSV input configuration as JSON/SLON'
+  fi
   if [ $F_in__in_csv_incsv_ -eq 1 ]; then
-    printf '%s\t%s\n' 'incsv=' 'If in=csv, the CSV options to use'
+    printf '%s\t%s\n' 'incsv=' 'Alias for inputcsv'
   fi
-fi
-if [ $F_in__in_dsv -eq 1 ]; then
-  if [ $F_in__in_dsv_indsvsep_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvsep=' 'The separator to use for the DSV format -defaults to comma-'
-  fi
-  if [ $F_in__in_dsv_indsvsepre_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvsepre=' 'The regular expression to use for the DSV format'
-  fi
-  if [ $F_in__in_dsv_indsvquote_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvquote=' 'The quote character to use for the DSV format -defaults to double quote-'
-  fi
-  if [ $F_in__in_dsv_indsvescape_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvescape=' 'The escape character to use for the DSV format -defaults to backslash -'
-  fi
-  if [ $F_in__in_dsv_indsvcomment_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvcomment=' 'The comment character to use for the DSV format -defaults to pound-'
-  fi
-  if [ $F_in__in_dsv_indsvheader_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvheader=' 'If true the first line will be considered as header -defaults to true-'
-  fi
-  if [ $F_in__in_dsv_indsvtrim_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvtrim=' 'If true the values will be trimmed -defaults to true-'
-  fi
-  if [ $F_in__in_dsv_indsvjoin_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvjoin=' 'If true will join the DSV records to build an output array'
-  fi
-  if [ $F_in__in_dsv_indsvfields_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indsvfields=' 'Comma delimited list of fields to use for the DSV format -defaults to all fields-'
+  if [ $F_in__in_csv_csv_ -eq 1 ]; then
+    printf '%s\t%s\n' 'csv=' 'If type=csv, the CSV options to use'
   fi
 fi
 if [ $F_in__in_db -eq 1 ]; then
@@ -882,7 +1913,7 @@ if [ $F_in__in_db -eq 1 ]; then
     printf '%s\t%s\n' 'indblib=' 'Use a JDBC driver oPack generated by ojob.io/db/getDriver'
   fi
   if [ $F_in__in_db_indbstream_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indbstream=' 'If true will stream the data instead of loading it all in memory'
+    printf '%s\t%s\n' 'indbstream=' 'If true the output will be processed record by record'
   fi
   if [ $F_in__in_db_indbexec_ -eq 1 ]; then
     printf '%s\t%s\n' 'indbexec=' 'If true the input SQL is not a query but a DML statement'
@@ -891,12 +1922,46 @@ if [ $F_in__in_db -eq 1 ]; then
     printf '%s\t%s\n' 'indbautocommit=' 'If true the input SQL will be executed with autocommit enabled'
   fi
   if [ $F_in__in_db_indbdesc_ -eq 1 ]; then
-    printf '%s\t%s\n' 'indbdesc=' 'If true, the output will be a list of column names and types. Use '\''LIMIT 1'\'' for faster results.'
+    printf '%s\t%s\n' 'indbdesc=' 'If true the output will be a list of column names and types (use '\''LIMIT 1'\'' for faster results)'
+  fi
+fi
+if [ $F_in__in_dsv -eq 1 ]; then
+  if [ $F_in__in_dsv_indsvsep_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvsep=' 'The separator to use (default is '\'','\'')'
+  fi
+  if [ $F_in__in_dsv_indsvsepre_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvsepre=' 'The regular expression to use as separator'
+  fi
+  if [ $F_in__in_dsv_indsvquote_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvquote=' 'The quote character to use (default is '\''"'\'')'
+  fi
+  if [ $F_in__in_dsv_indsvescape_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvescape=' 'The escape character to use for double-quotes'
+  fi
+  if [ $F_in__in_dsv_indsvcomment_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvcomment=' 'The comment character to use (default is '\''#'\'')'
+  fi
+  if [ $F_in__in_dsv_indsvheader_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvheader=' 'Uses the first non-comment line as column names (default is true). When false, provide indsvfields.'
+  fi
+  if [ $F_in__in_dsv_indsvtrim_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvtrim=' 'Trims header names and values (default is true). Set false to preserve leading and trailing whitespace.'
+  fi
+  if [ $F_in__in_dsv_indsvjoin_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvjoin=' 'Returns one array of records when true; otherwise emits each record once (default is false). Applies to stdin, file, cmd and data input.'
+  fi
+  if [ $F_in__in_dsv_indsvfields_ -eq 1 ]; then
+    printf '%s\t%s\n' 'indsvfields=' 'Comma separated column names. When provided, every non-comment line is data, including the first; no input header is consumed.'
+  fi
+fi
+if [ $F_in__in_hsperf -eq 1 ]; then
+  if [ $F_in__in_hsperf_hsperfmetadata_ -eq 1 ]; then
+    printf '%s\t%s\n' 'hsperfmetadata=' 'With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime.'
   fi
 fi
 if [ $F_in__in_javas -eq 1 ]; then
   if [ $F_in__in_javas_javasinception_ -eq 1 ]; then
-    printf '%s\t%s\n' 'javasinception=' 'If true will include also oafp itself'
+    printf '%s\t%s\n' 'javasinception=' 'If true includes oafp itself in the local Java process list'
   fi
 fi
 if [ $F_in__in_javagc -eq 1 ]; then
@@ -906,12 +1971,12 @@ if [ $F_in__in_javagc -eq 1 ]; then
 fi
 if [ $F_in__in_javathread -eq 1 ]; then
   if [ $F_in__in_javathread_javathreadpid_ -eq 1 ]; then
-    printf '%s\t%s\n' 'javathreadpid=' 'The PID of the Java process to connect to -requires Java SDK-'
+    printf '%s\t%s\n' 'javathreadpid=' 'Optional you can provider the local java process pid to try to get the thread stack trace (*)'
   fi
 fi
 if [ $F_in__in_jfr -eq 1 ]; then
   if [ $F_in__in_jfr_jfrjoin_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jfrjoin=' 'If true it will return an array with each processed line.'
+    printf '%s\t%s\n' 'jfrjoin=' 'If true will join the JFR records to build an output array'
   fi
   if [ $F_in__in_jfr_jfrdesc_ -eq 1 ]; then
     printf '%s\t%s\n' 'jfrdesc=' 'If true it will include a __desc_ entry with the JFR event description'
@@ -919,27 +1984,27 @@ if [ $F_in__in_jfr -eq 1 ]; then
 fi
 if [ $F_in__in_jmx -eq 1 ]; then
   if [ $F_in__in_jmx_jmxpid_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jmxpid=' 'The PID of the Java process to connect to'
+    printf '%s\t%s\n' 'jmxpid=' 'The local java process pid to connect to if '\''jmxurl'\'' is not provided.'
   fi
   if [ $F_in__in_jmx_jmxurl_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jmxurl=' 'The JMX URL to connect to'
+    printf '%s\t%s\n' 'jmxurl=' 'The JMX URL to connect to if '\''jmxpid'\'' is not provided.'
   fi
   if [ $F_in__in_jmx_jmxuser_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jmxuser=' 'The JMX user to connect to'
+    printf '%s\t%s\n' 'jmxuser=' 'The JMX user to use if JMX URL was provided.'
   fi
   if [ $F_in__in_jmx_jmxpass_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jmxpass=' 'The JMX password to connect to'
+    printf '%s\t%s\n' 'jmxpass=' 'The JMX password to use if JMX URL was provided.'
   fi
   if [ $F_in__in_jmx_jmxprovider_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jmxprovider=' 'The JMX Java class provider to use'
+    printf '%s\t%s\n' 'jmxprovider=' 'The JMX provider Java class if JMX URL was provided.'
   fi
   if [ $F_in__in_jmx_jmxop_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jmxop=' 'The JMX operation to execute between '\''all'\'', '\''domains'\'', '\''query'\'' and '\''get'\'''
+    printf '%s\t%s\n' 'jmxop=' 'The operation to perform (see below for options)'
   fi
 fi
 if [ $F_in__in_json -eq 1 ]; then
   if [ $F_in__in_json_jsondesc_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jsondesc=' 'If true the output will be a list of JSON paths of the original json.'
+    printf '%s\t%s\n' 'jsondesc=' 'If true the output will be a list of JSON paths of the original json. Uses metadata-only scanning when OpenAF provides io.scanJSON, avoiding scalar-value loading; older runtimes and lenient JSON use the compatible reader.'
   fi
   if [ $F_in__in_json_jsonprefix_ -eq 1 ]; then
     printf '%s\t%s\n' 'jsonprefix=' 'Given the '\''jsondesc=true'\'' output list you can use each to filter big json files by prefix.'
@@ -953,10 +2018,10 @@ if [ $F_in__in_jwt -eq 1 ]; then
     printf '%s\t%s\n' 'injwtsecret=' 'A string secret for using HS256, HS384 or HS512 depending on secret size used to verify.'
   fi
   if [ $F_in__in_jwt_injwtpubkey_ -eq 1 ]; then
-    printf '%s\t%s\n' 'injwtpubkey=' 'A public key file used to verify -might require specifying the injwtalg-.'
+    printf '%s\t%s\n' 'injwtpubkey=' 'A public key file used to verify (might require specifying the injwtalg).'
   fi
   if [ $F_in__in_jwt_injwtalg_ -eq 1 ]; then
-    printf '%s\t%s\n' 'injwtalg=' 'Specifies the algorithm used to verify the JWT -HS* or RSA by default-. Depends on available algorithms on the current JVM.'
+    printf '%s\t%s\n' 'injwtalg=' 'Specifies the algorithm used to verify the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM.'
   fi
   if [ $F_in__in_jwt_injwtraw_ -eq 1 ]; then
     printf '%s\t%s\n' 'injwtraw=' 'If true it won'\''t try to convert Unix epoch timestamps to dates.'
@@ -970,21 +2035,52 @@ if [ $F_in__in_lines -eq 1 ]; then
     printf '%s\t%s\n' 'linesvisual=' 'If true it will try to determine header and column position from spaces and tabs'
   fi
   if [ $F_in__in_lines_linesvisualsepre_ -eq 1 ]; then
-    printf '%s\t%s\n' 'linesvisualsepre=' 'Regular expression representing the separator between columns when linesvisual=true -defaults to '\'' \\s+'\''-'
+    printf '%s\t%s\n' 'linesvisualsepre=' 'Regular expression representing the separator between columns when linesvisual=true (defaults to '\'' \\s+'\'')'
   fi
-  if [ $F_in__in_lines_linesvisualheadsep -eq 1 ]; then
-    printf '%s\t%s\n' 'linesvisualheadsep' 'If true will try to process the second line as header separator aiding on column position determination -if linesvisualsepre is not defined it will default to '\''\\s+'\''-'
+  if [ $F_in__in_lines_linesvisualheadsep_ -eq 1 ]; then
+    printf '%s\t%s\n' 'linesvisualheadsep=' 'If true will try to process the second line as header separator aiding on column position determination (if linesvisualsepre is not defined it will default to '\''\\s+'\'')'
+  fi
+fi
+if [ $F_in__in_llm -eq 1 ]; then
+  if [ $F_in__in_llm_llmenv_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmenv=' 'Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_MODEL when absent).'
+  fi
+  if [ $F_in__in_llm_llmoptions_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmoptions=' 'Model configuration as a JSON/SLON string or map; overrides llmenv. See the shared LLM input/transform options below.'
+  fi
+  if [ $F_in__in_llm_llmconversation_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmconversation=' 'JSON file to load an existing conversation from and save the updated conversation to.'
+  fi
+  if [ $F_in__in_llm_llmimage_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmimage=' 'Image file path or HTTP(S) URL to use with a visual model.'
+  fi
+fi
+if [ $F_in__in_llmdecide -eq 1 ]; then
+  if [ $F_in__in_llmdecide_llmenv_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmenv=' 'Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_MODEL when absent).'
+  fi
+  if [ $F_in__in_llmdecide_llmoptions_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmoptions=' 'Model configuration as a JSON/SLON string or map; overrides llmenv. See the shared LLM input/transform options below.'
+  fi
+  if [ $F_in__in_llmdecide_llmdecidesample_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmdecidesample=' 'Emit a gemini, ollama or openai request sample without input, credentials or inference. Use out=yaml or out=json.'
+  fi
+  if [ $F_in__in_llmdecide_llmimage_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmimage=' 'Image file path or HTTP(S) URL to use with a visual model.'
+  fi
+  if [ $F_in__in_llmdecide_llmdecidestats_ -eq 1 ]; then
+    printf '%s\t%s\n' 'llmdecidestats=' 'Return {response, stats} from one decideWithStats() execution (defaults to false).'
   fi
 fi
 if [ $F_in__in_ls -eq 1 ]; then
   if [ $F_in__in_ls_lsext_ -eq 1 ]; then
-    printf '%s\t%s\n' 'lsext=' 'Forces the file format parsing of the provided path or file -between zip, tar, tgz-'
+    printf '%s\t%s\n' 'lsext=' 'Forces the file format parsing of the provided path or file (between zip, tar, tgz)'
   fi
   if [ $F_in__in_ls_lsrecursive_ -eq 1 ]; then
-    printf '%s\t%s\n' 'lsrecursive=' 'Will list all files and folders recursively -for folders-'
+    printf '%s\t%s\n' 'lsrecursive=' 'Will list all files and folders recursively (for folders)'
   fi
   if [ $F_in__in_ls_lsposix_ -eq 1 ]; then
-    printf '%s\t%s\n' 'lsposix=' 'Tries to add extra posix data if available -for ZIP files-'
+    printf '%s\t%s\n' 'lsposix=' 'Tries to add extra posix data if available (for ZIP files)'
   fi
 fi
 if [ $F_in__in_mdtable -eq 1 ]; then
@@ -1016,7 +2112,7 @@ if [ $F_in__in_ndjson -eq 1 ]; then
     printf '%s\t%s\n' 'ndjsonjoin=' 'If true will join the ndjson records to build an output array'
   fi
   if [ $F_in__in_ndjson_ndjsonfilter_ -eq 1 ]; then
-    printf '%s\t%s\n' 'ndjsonfilter=' 'If true each line is interpreted as an array before filters execute -this allows to filter json records on a ndjson-'
+    printf '%s\t%s\n' 'ndjsonfilter=' 'If true each line is interpreted as an array before filters execute (this allows to filter json records on a ndjson)'
   fi
 fi
 if [ $F_in__in_ndslon -eq 1 ]; then
@@ -1024,12 +2120,12 @@ if [ $F_in__in_ndslon -eq 1 ]; then
     printf '%s\t%s\n' 'ndslonjoin=' 'If true will join the ndslon records to build an output array'
   fi
   if [ $F_in__in_ndslon_ndslonfilter_ -eq 1 ]; then
-    printf '%s\t%s\n' 'ndslonfilter=' 'If true each line is interpreted as an array before filters execute -this allows to filter slon records on a ndslon-'
+    printf '%s\t%s\n' 'ndslonfilter=' 'If true each line is interpreted as an array before filters execute (this allows to filter slon records on a ndslon)'
   fi
 fi
 if [ $F_in__in_oafp -eq 1 ]; then
   if [ $F_in__in_oafp_inoafpseq_ -eq 1 ]; then
-    printf '%s\t%s\n' 'inoafpseq=' 'If true and if input is an array the oafp processes will be executed in sequence'
+    printf '%s\t%s\n' 'inoafpseq=' 'If true processes an input array of oafp parameter maps sequentially'
   fi
 fi
 if [ $F_in__in_rawhex -eq 1 ]; then
@@ -1039,52 +2135,52 @@ if [ $F_in__in_rawhex -eq 1 ]; then
 fi
 if [ $F_in__in_sh -eq 1 ]; then
   if [ $F_in__in_sh_inshformat_ -eq 1 ]; then
-    printf '%s\t%s\n' 'inshformat=' 'The format to parse stdout and stderr between raw, yaml or json -default-'
+    printf '%s\t%s\n' 'inshformat=' 'The format to parse stdout and stderr between raw, yaml or json (default)'
+  fi
+fi
+if [ $F_in__in_snmp -eq 1 ]; then
+  if [ $F_in__in_snmp_insnmp_ -eq 1 ]; then
+    printf '%s\t%s\n' 'insnmp=' 'A SNMP address in the form '\''udp://1.2.3.4/161'\'''
+  fi
+  if [ $F_in__in_snmp_insnmpcommunity_ -eq 1 ]; then
+    printf '%s\t%s\n' 'insnmpcommunity=' 'The SNMP community to use (default '\''public'\'')'
+  fi
+  if [ $F_in__in_snmp_insnmptimeout_ -eq 1 ]; then
+    printf '%s\t%s\n' 'insnmptimeout=' 'The timeout to wait for a reply'
+  fi
+  if [ $F_in__in_snmp_insnmpretries_ -eq 1 ]; then
+    printf '%s\t%s\n' 'insnmpretries=' 'Number of retries in case of failure'
+  fi
+  if [ $F_in__in_snmp_insnmpversion_ -eq 1 ]; then
+    printf '%s\t%s\n' 'insnmpversion=' 'Version of the SNMP server (e.g. 2, 3)'
+  fi
+  if [ $F_in__in_snmp_insnmpsec_ -eq 1 ]; then
+    printf '%s\t%s\n' 'insnmpsec=' 'A JSON/SLON representation of security attributes (see below)'
   fi
 fi
 if [ $F_in__in_sql -eq 1 ]; then
   if [ $F_in__in_sql_sqlparse_ -eq 1 ]; then
-    printf '%s\t%s\n' 'sqlparse=' 'If true instead of returning a SQL AST representation it will beautify the SQL statements'
+    printf '%s\t%s\n' 'sqlparse=' 'If true instead of returning a SQL AST representation it will beautify the SQL statement(s)'
   fi
   if [ $F_in__in_sql_sqloptions_ -eq 1 ]; then
     printf '%s\t%s\n' 'sqloptions=' 'A JSON/SLON map with options for sqlparse=true'
   fi
 fi
-if [ $F_in__in_snmp -eq 1 ]; then
-  if [ $F_in__in_snmp_insnmp_ -eq 1 ]; then
-    printf '%s\t%s\n' 'insnmp=' 'The SNMP address '\''udp://1.2.3.4/161'\'''
-  fi
-  if [ $F_in__in_snmp_insnmpcommunity_ -eq 1 ]; then
-    printf '%s\t%s\n' 'insnmpcommunity=' 'The SNMP community'
-  fi
-  if [ $F_in__in_snmp_insnmpversion_ -eq 1 ]; then
-    printf '%s\t%s\n' 'insnmpversion=' 'The SNMP version -1, 2, 3-'
-  fi
-  if [ $F_in__in_snmp_insnmptimeout_ -eq 1 ]; then
-    printf '%s\t%s\n' 'insnmptimeout=' 'The SNMP timeout'
-  fi
-  if [ $F_in__in_snmp_insnmpretries_ -eq 1 ]; then
-    printf '%s\t%s\n' 'insnmpretries=' 'The SNMP retries'
-  fi
-  if [ $F_in__in_snmp_insnmpsec_ -eq 1 ]; then
-    printf '%s\t%s\n' 'insnmpsec=' 'JSON/SLON map with SNMPv3 security options'
-  fi
-fi
 if [ $F_in__in_xls -eq 1 ]; then
   if [ $F_in__in_xls_inxlssheet_ -eq 1 ]; then
-    printf '%s\t%s\n' 'inxlssheet=' 'The name of sheet to consider -default to the first sheet-'
+    printf '%s\t%s\n' 'inxlssheet=' 'The name of sheet to consider (default to the first sheet)'
   fi
   if [ $F_in__in_xls_inxlsevalformulas_ -eq 1 ]; then
-    printf '%s\t%s\n' 'inxlsevalformulas=' 'If false the existing formulas won'\''t be evaluated -defaults to true-'
+    printf '%s\t%s\n' 'inxlsevalformulas=' 'If false the existing formulas won'\''t be evaluated (defaults to true)'
   fi
   if [ $F_in__in_xls_inxlsdesc_ -eq 1 ]; then
-    printf '%s\t%s\n' 'inxlsdesc=' 'If true, instead of retrieving data, either a list of sheet names will be returned, or, if inxlssheet is provided, a table empty and non-empty will be returned'
+    printf '%s\t%s\n' 'inxlsdesc=' 'If true, instead of retrieving data, either a list of sheet names will be returned, or, if inxlssheet is provided, a table with '\''___'\'' of empty cells and '\''###'\'' for non-empty cells will be returned'
   fi
   if [ $F_in__in_xls_inxlscol_ -eq 1 ]; then
-    printf '%s\t%s\n' 'inxlscol=' 'The column on the sheet where a table should be detected -e.g. "A"-'
+    printf '%s\t%s\n' 'inxlscol=' 'The column on the sheet where a table should be detected (e.g. "A")'
   fi
   if [ $F_in__in_xls_inxlsrow_ -eq 1 ]; then
-    printf '%s\t%s\n' 'inxlsrow=' 'The row on the sheet where a table should be detected -e.g. 1-'
+    printf '%s\t%s\n' 'inxlsrow=' 'The row on the sheet where a table should be detected (e.g. 1)'
   fi
 fi
 if [ $F_in__in_xml -eq 1 ]; then
@@ -1098,323 +2194,13 @@ if [ $F_in__in_xml -eq 1 ]; then
     printf '%s\t%s\n' 'xmlfiltertag=' 'If true will filter the XML tags'
   fi
 fi
-# Print completion for out=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_out_ -eq 1 ]; then
-  printf '%s\t%s\n' 'out=' 'The output format -default mtree-'
-  printf '%s\t%s\n' 'out=base64' 'A base64 text output format'
-  printf '%s\t%s\n' 'out=ch' 'An OpenAF channel output format'
-  printf '%s\t%s\n' 'out=chart' 'A line-chart like chart -usefull together with '\''loop'\''-'
-  printf '%s\t%s\n' 'out=cjson' 'A JSON forcely colored format'
-  printf '%s\t%s\n' 'out=cmd' 'Executes a command for each input data entry'
-  printf '%s\t%s\n' 'out=cslon' 'A SLON format forcely colored'
-  printf '%s\t%s\n' 'out=csv' 'A CSV format -only for list outputs-'
-  printf '%s\t%s\n' 'out=dsv' 'A DSV -Delimiter Separated Values- format -only for list outputs-'
-  printf '%s\t%s\n' 'out=ctable' 'A table-like forcely colored format -only for list outputs-'
-  printf '%s\t%s\n' 'out=ctree' 'A tree-like forcely colored format'
-  printf '%s\t%s\n' 'out=ttree' 'A tree-like forcely colored format with flat arrays shown as tables'
-  printf '%s\t%s\n' 'out=mtree' 'A tree-like forcely monochrome format'
-  printf '%s\t%s\n' 'out=btree' 'A tree-like forcely with non-ansi characters format'
-  printf '%s\t%s\n' 'out=cyaml' 'An YAML colored format'
-  printf '%s\t%s\n' 'out=kyaml' 'A Kubernetes YAML format'
-  printf '%s\t%s\n' 'out=ckyaml' 'A Kubernetes YAML colored format'
-  printf '%s\t%s\n' 'out=lkyaml' 'A Kubernetes YAML format without new-lines'
-  printf '%s\t%s\n' 'out=clkyaml' 'A Kubernetes YAML without new-lines colored format'
-  printf '%s\t%s\n' 'out=db' 'Output to a JDBC database'
-  printf '%s\t%s\n' 'out=envs' 'Tries to output the input data as OS environment variables setting commands'
-  printf '%s\t%s\n' 'out=gb64json' 'Equivalent to out=base64 and base64gzip=true'
-  printf '%s\t%s\n' 'out=grid' 'A multiple output ascii grid -usefull together with '\''loop'\''-'
-  printf '%s\t%s\n' 'out=html' 'An HTML format'
-  printf '%s\t%s\n' 'out=ini' 'A INI/Properties format -arrays are not supported-'
-  printf '%s\t%s\n' 'out=json' 'A JSON format without spacing'
-  printf '%s\t%s\n' 'out=jwt' 'Signs map data into a JSON Web Token -JWT-'
-  printf '%s\t%s\n' 'out=lines' 'Given an array of strings prints each line'
-  printf '%s\t%s\n' 'out=log' 'If input has Logstash compatible fields outputs a human-readable log'
-  printf '%s\t%s\n' 'out=map' 'A rectangle map format'
-  printf '%s\t%s\n' 'out=md' 'An output Markdown format'
-  printf '%s\t%s\n' 'out=mdtable' 'A Markdown table format -only for list outputs-'
-  printf '%s\t%s\n' 'out=mdyaml' 'A multi document YAML format -only for list outputs-'
-  printf '%s\t%s\n' 'out=ndjson' 'A NDJSON -new-line delimited JSON- format'
-  printf '%s\t%s\n' 'out=ndslon' 'A NDSLON -new-line delimited SLON- format'
-  printf '%s\t%s\n' 'out=ndcslon' 'A NDSLON -new-line delimited SLON- forcely colored'
-  printf '%s\t%s\n' 'out=oaf' 'Executes OpenAF scripting code or an OpenAF script file and receives -data- as input and outputs via -outoaf-'
-  printf '%s\t%s\n' 'out=openmetrics' 'Converts a map or list to OpenMetrics/Prometheus compatible format'
-  printf '%s\t%s\n' 'out=pjson' 'A JSON format with spacing -equivalent to prettyjson-'
-  printf '%s\t%s\n' 'out=prettyjson' 'A JSON format with spacing'
-  printf '%s\t%s\n' 'out=pxml' 'Tries to output the input data into pretty xml'
-  printf '%s\t%s\n' 'out=raw' 'Tries to output the internal representation -string or json- of the input transformed data'
-  printf '%s\t%s\n' 'out=rawascii' 'Outputs text data line by line with visual representation of non-visual characters'
-  printf '%s\t%s\n' 'out=schart' 'A static line-chart like chart -for a fixed list/array of values-'
-  printf '%s\t%s\n' 'out=slon' 'A SLON format'
-  printf '%s\t%s\n' 'out=sql' 'Outputs a series of SQL statements for an input list/array data'
-  printf '%s\t%s\n' 'out=stable' 'A table-like format with separation -only for list outputs-'
-  printf '%s\t%s\n' 'out=table' 'A table-like format without size constraints -only for list outputs-'
-  printf '%s\t%s\n' 'out=template' 'A Handlebars template format'
-  printf '%s\t%s\n' 'out=text' 'A string text format'
-  printf '%s\t%s\n' 'out=toml' 'A TOML format -arrays will have outkey=list-'
-  printf '%s\t%s\n' 'out=toon' 'A TOON format'
-  printf '%s\t%s\n' 'out=tree' 'A tree-like format'
-  printf '%s\t%s\n' 'out=xls' 'A XLSx output format'
-  printf '%s\t%s\n' 'out=xml' 'An XML format'
-  printf '%s\t%s\n' 'out=yaml' 'A YAML format'
+# Print completion for ifrom=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ifrom_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ifrom=' 'An OpenAF nLinq expression to filter input data'
 fi
-if [ $F_out__out_base64 -eq 1 ]; then
-  if [ $F_out__out_base64_base64gzip_ -eq 1 ]; then
-    printf '%s\t%s\n' 'base64gzip=' 'If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output'
-  fi
-fi
-if [ $F_out__out_ch -eq 1 ]; then
-  if [ $F_out__out_ch_ch_ -eq 1 ]; then
-    printf '%s\t%s\n' 'ch=' 'A JSON/SLON configuration string with type and options/url'
-  fi
-  if [ $F_out__out_ch_chkey_ -eq 1 ]; then
-    printf '%s\t%s\n' 'chkey=' 'A comma delimited list of map keys to build a key from each array value'
-  fi
-  if [ $F_out__out_ch_chunset_ -eq 1 ]; then
-    printf '%s\t%s\n' 'chunset=' 'If true the input data will be used to unset data on the output channel instead of set'
-  fi
-fi
-if [ $F_out__out_chart -eq 1 ]; then
-  if [ $F_out__out_chart_chart_ -eq 1 ]; then
-    printf '%s\t%s\n' 'chart=' 'Chart definition in the format --unit path:color:legend... -min:0 -max:100--'
-  fi
-  if [ $F_out__out_chart_chartcls_ -eq 1 ]; then
-    printf '%s\t%s\n' 'chartcls=' 'If true the screen will be cleared for each execution'
-  fi
-fi
-if [ $F_out__out_cmd -eq 1 ]; then
-  if [ $F_out__out_cmd_outcmd_ -eq 1 ]; then
-    printf '%s\t%s\n' 'outcmd=' 'The command to execute receiving, in pipeline, each input entry in json'
-  fi
-  if [ $F_out__out_cmd_outcmdjoin_ -eq 1 ]; then
-    printf '%s\t%s\n' 'outcmdjoin=' 'If true and if input is an array the entire array will be the input entry'
-  fi
-  if [ $F_out__out_cmd_outcmdseq_ -eq 1 ]; then
-    printf '%s\t%s\n' 'outcmdseq=' 'If true and if input is an array the commands will be executed in sequence'
-  fi
-  if [ $F_out__out_cmd_outcmdnl_ -eq 1 ]; then
-    printf '%s\t%s\n' 'outcmdnl=' 'If true each command execution output will be appended with a new-line'
-  fi
-  if [ $F_out__out_cmd_outcmdparam_ -eq 1 ]; then
-    printf '%s\t%s\n' 'outcmdparam=' 'If true the input entry will be replaced on the '\''outcmd'\'' where '\''{}'\'' is found'
-  fi
-  if [ $F_out__out_cmd_outcmdtmpl_ -eq 1 ]; then
-    printf '%s\t%s\n' 'outcmdtmpl=' 'If true the input entry will be considered as an OpenAF template'
-  fi
-fi
-if [ $F_out__out_csv -eq 1 ]; then
-  if [ $F_out__out_csv_csv_ -eq 1 ]; then
-    printf '%s\t%s\n' 'csv=' 'If out=csv, the CSV options to use'
-  fi
-fi
-if [ $F_out__out_dsv -eq 1 ]; then
-  if [ $F_out__out_dsv_dsvsep_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dsvsep=' 'The separator to use for the DSV format -defaults to comma-'
-  fi
-  if [ $F_out__out_dsv_dsvquote_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dsvquote=' 'The quote character to use for the DSV format -defaults to double quote-'
-  fi
-  if [ $F_out__out_dsv_dsvfields_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dsvfields=' 'Comma delimited list of fields to use for the DSV format -defaults to all fields-'
-  fi
-  if [ $F_out__out_dsv_dsvuseslon_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dsvuseslon=' 'If true the output of value objects will be a SLON format -default is false-'
-  fi
-  if [ $F_out__out_dsv_dsvheader_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dsvheader=' 'If true will try to output the first line as header -default is true-'
-  fi
-fi
-if [ $F_out__out_db -eq 1 ]; then
-  if [ $F_out__out_db_dbjdbc_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dbjdbc=' 'The JDBC URL to access the input database'
-  fi
-  if [ $F_out__out_db_dbuser_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dbuser=' 'The JDBC access user'
-  fi
-  if [ $F_out__out_db_dbpass_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dbpass=' 'The JDBC access password'
-  fi
-  if [ $F_out__out_db_dbtimeout_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dbtimeout=' 'The JDBC access timeout'
-  fi
-  if [ $F_out__out_db_dblib_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dblib=' 'Use a JDBC driver oPack generated by ojob.io/db/getDriver'
-  fi
-  if [ $F_out__out_db_dbtable_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dbtable=' 'The db table in which should be inserted -'\''data'\'' by default-'
-  fi
-  if [ $F_out__out_db_dbnocreate_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dbnocreate=' 'If true no table creation command will be executed -if the table already exists set this to true-'
-  fi
-  if [ $F_out__out_db_dbicase_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dbicase=' 'If true table and field names will try to ignore case'
-  fi
-  if [ $F_out__out_db_dbbatchsize_ -eq 1 ]; then
-    printf '%s\t%s\n' 'dbbatchsize=' 'If defined it will changed the default batch data insert process'
-  fi
-fi
-if [ $F_out__out_envs -eq 1 ]; then
-  if [ $F_out__out_envs_envscmd_ -eq 1 ]; then
-    printf '%s\t%s\n' 'envscmd=' 'If defined will output the provided command to set each environment variable -defaults to '\''export'\'' or '\''set'\'' in Windows-'
-  fi
-  if [ $F_out__out_envs_envsprefix_ -eq 1 ]; then
-    printf '%s\t%s\n' 'envsprefix=' 'If defined uses the provided prefix for each environment variable key -defaults to '\''OAFP'\''-'
-  fi
-  if [ $F_out__out_envs_envsnoprefix_ -eq 1 ]; then
-    printf '%s\t%s\n' 'envsnoprefix=' 'Boolean flag to indicate that no envsprefix should be used -defaults to false-'
-  fi
-fi
-if [ $F_out__out_grid -eq 1 ]; then
-  if [ $F_out__out_grid_grid_ -eq 1 ]; then
-    printf '%s\t%s\n' 'grid=' 'A JSON/SLON configuration composed of an array with another array per grid line. Each line array should have a map per column -see below for the map options-'
-  fi
-fi
-if [ $F_out__out_html -eq 1 ]; then
-  if [ $F_out__out_html_htmlcompact_ -eq 1 ]; then
-    printf '%s\t%s\n' 'htmlcompact=' 'Boolean flag that if true and the input data is a string or markdown the generated html will have a visual compact width format'
-  fi
-  if [ $F_out__out_html_htmlpart_ -eq 1 ]; then
-    printf '%s\t%s\n' 'htmlpart=' 'Boolean flag that if true and the input data is a string or markdown the generated html will be partial and not the complete file'
-  fi
-  if [ $F_out__out_html_htmlopen_ -eq 1 ]; then
-    printf '%s\t%s\n' 'htmlopen=' 'Boolean that if false won'\''t try to open the output contents in a browser -defaults to true-'
-  fi
-  if [ $F_out__out_html_htmlwait_ -eq 1 ]; then
-    printf '%s\t%s\n' 'htmlwait=' 'Amount of ms, when htmlopen=true, to wait for the system browser to open an render the html output'
-  fi
-  if [ $F_out__out_html_htmldark_ -eq 1 ]; then
-    printf '%s\t%s\n' 'htmldark=' 'If supported and true the output html will use a dark theme.'
-  fi
-fi
-if [ $F_out__out_jwt -eq 1 ]; then
-  if [ $F_out__out_jwt_jwtsecret_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jwtsecret=' 'A string secret for using HS256, HS384 or HS512 depending on secret size used to sign the JWT.'
-  fi
-  if [ $F_out__out_jwt_jwtprivkey_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jwtprivkey=' 'A private key file used to sign -might require specifying the jwtalg-.'
-  fi
-  if [ $F_out__out_jwt_jwtalg_ -eq 1 ]; then
-    printf '%s\t%s\n' 'jwtalg=' 'Specifies the algorithm used to sign the JWT -HS* or RSA by default-. Depends on available algorithms on the current JVM.'
-  fi
-fi
-if [ $F_out__out_log -eq 1 ]; then
-  if [ $F_out__out_log_logprintall_ -eq 1 ]; then
-    printf '%s\t%s\n' 'logprintall=' 'If true all original non data -string- lines will be output'
-  fi
-fi
-if [ $F_out__out_md -eq 1 ]; then
-  if [ $F_out__out_md_mdtemplate_ -eq 1 ]; then
-    printf '%s\t%s\n' 'mdtemplate=' 'If true will apply a template output without any input data'
-  fi
-fi
-if [ $F_out__out_oaf -eq 1 ]; then
-  if [ $F_out__out_oaf_outoaf_ -eq 1 ]; then
-    printf '%s\t%s\n' 'outoaf=' 'The OpenAF script to execute scripting code or file path receiving -data- as input'
-  fi
-fi
-if [ $F_out__out_openmetrics -eq 1 ]; then
-  if [ $F_out__out_openmetrics_metricsprefix_ -eq 1 ]; then
-    printf '%s\t%s\n' 'metricsprefix=' 'The prefix to use for each metric -defaults to '\''metrics'\''-'
-  fi
-  if [ $F_out__out_openmetrics_metricstimestamp_ -eq 1 ]; then
-    printf '%s\t%s\n' 'metricstimestamp=' 'Unix Epoch in seconds for each metric'
-  fi
-fi
-if [ $F_out__out_pxml -eq 1 ]; then
-  if [ $F_out__out_pxml_pxmlprefix -eq 1 ]; then
-    printf '%s\t%s\n' 'pxmlprefix' 'A prefix added to all XML tags'
-  fi
-fi
-if [ $F_out__out_rawascii -eq 1 ]; then
-  if [ $F_out__out_rawascii_rawasciistart_ -eq 1 ]; then
-    printf '%s\t%s\n' 'rawasciistart=' 'Starting line number to display'
-  fi
-  if [ $F_out__out_rawascii_rawasciiend_ -eq 1 ]; then
-    printf '%s\t%s\n' 'rawasciiend=' 'Ending line number to display'
-  fi
-  if [ $F_out__out_rawascii_rawasciitab_ -eq 1 ]; then
-    printf '%s\t%s\n' 'rawasciitab=' 'Tab size for tab character visualization -defaults to 8-'
-  fi
-  if [ $F_out__out_rawascii_rawasciinovisual_ -eq 1 ]; then
-    printf '%s\t%s\n' 'rawasciinovisual=' 'If true, non-visual characters won'\''t be replaced by their visual representation'
-  fi
-  if [ $F_out__out_rawascii_rawasciinolinenum_ -eq 1 ]; then
-    printf '%s\t%s\n' 'rawasciinolinenum=' 'If true, line numbers won'\''t be displayed'
-  fi
-fi
-if [ $F_out__out_schart -eq 1 ]; then
-  if [ $F_out__out_schart_schart_ -eq 1 ]; then
-    printf '%s\t%s\n' 'schart=' 'Chart definition in the format --unit path:color:legend... -min:0 -max:100--'
-  fi
-fi
-if [ $F_out__out_sql -eq 1 ]; then
-  if [ $F_out__out_sql_sqltable_ -eq 1 ]; then
-    printf '%s\t%s\n' 'sqltable=' 'The table name to use for the SQL statements -defaults to '\''data'\''-'
-  fi
-  if [ $F_out__out_sql_sqlicase_ -eq 1 ]; then
-    printf '%s\t%s\n' 'sqlicase=' 'If true the table and fields names won'\''t be double-quoted'
-  fi
-  if [ $F_out__out_sql_sqlnocreate_ -eq 1 ]; then
-    printf '%s\t%s\n' 'sqlnocreate=' 'If true the create table statement won'\''t be generated'
-  fi
-fi
-if [ $F_out__out_template -eq 1 ]; then
-  if [ $F_out__out_template_template_ -eq 1 ]; then
-    printf '%s\t%s\n' 'template=' 'A file path to a HandleBars'\'' template or a string template definition if '\''templatetmpl'\'' is true'
-  fi
-  if [ $F_out__out_template_templatepath_ -eq 1 ]; then
-    printf '%s\t%s\n' 'templatepath=' 'If '\''template'\'' is not provided a path to the template definition -pre-transformation-'
-  fi
-  if [ $F_out__out_template_templatedata_ -eq 1 ]; then
-    printf '%s\t%s\n' 'templatedata=' 'If defined the template data will be retrieved from the provided path'
-  fi
-  if [ $F_out__out_template_templatetmpl_ -eq 1 ]; then
-    printf '%s\t%s\n' 'templatetmpl=' 'If true the '\''template'\'' will be interpreted as the template defintion instead of a file path'
-  fi
-fi
-if [ $F_out__out_xls -eq 1 ]; then
-  if [ $F_out__out_xls_xlsfile_ -eq 1 ]; then
-    printf '%s\t%s\n' 'xlsfile=' 'The output filename -if not defined a temporary file will be used to open with the OS'\''s Excel-compatible application-'
-  fi
-  if [ $F_out__out_xls_xlssheet_ -eq 1 ]; then
-    printf '%s\t%s\n' 'xlssheet=' 'The name of sheet to use -default to '\''data'\''-'
-  fi
-  if [ $F_out__out_xls_xlsformat_ -eq 1 ]; then
-    printf '%s\t%s\n' 'xlsformat=' 'A SLON or JSON string with the formatting of the output file -e.g. -bold: true, borderBottom: "medium", borderBottomColor: "red"--'
-  fi
-  if [ $F_out__out_xls_xlsopen_ -eq 1 ]; then
-    printf '%s\t%s\n' 'xlsopen=' 'If false it won'\''t try to open the OS'\''s Excel-compatible application -defaults to true-'
-  fi
-  if [ $F_out__out_xls_xlsopenwait_ -eq 1 ]; then
-    printf '%s\t%s\n' 'xlsopenwait=' 'The amount of time, in ms, to keep the temporary file for the OS'\''s Excel-compatible application to start and open the file'
-  fi
-fi
-if [ $F_out__out_xml -eq 1 ]; then
-  if [ $F_out__out_xml_outxmlprefix -eq 1 ]; then
-    printf '%s\t%s\n' 'outxmlprefix' 'A prefix added to all XML tags'
-  fi
-fi
-# Print completion for -h
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__h -eq 1 ]; then
-  printf '%s\t%s\n' '-h' 'Shows the help document'
-fi
-# Print completion for help=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_help_ -eq 1 ]; then
-  printf '%s\t%s\n' 'help=' 'If true will show the help document or other available -e.g. filters, template-'
-  printf '%s\t%s\n' 'help=filters' 'Shows the filters help'
-  printf '%s\t%s\n' 'help=template' 'Shows the template help'
-  printf '%s\t%s\n' 'help=examples' 'Shows examples'
-fi
-# Print completion for file=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_file_ -eq 1 ]; then
-  printf '%s\t%s\n' 'file=' 'The file to parse -if not provide stdin is used-'
-fi
-# Print completion for cmd=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_cmd_ -eq 1 ]; then
-  printf '%s\t%s\n' 'cmd=' 'Alternative to file and stdin to execute a command -e.g. kubectl, docker- to get the file contents'
-fi
-# Print completion for data=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_data_ -eq 1 ]; then
-  printf '%s\t%s\n' 'data=' 'Alternative to file, stdin and cmd to provide data input'
+# Print completion for isql=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_isql_ -eq 1 ]; then
+  printf '%s\t%s\n' 'isql=' 'A SQL expression to filter input data'
 fi
 # Print completion for from=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_from_ -eq 1 ]; then
@@ -1424,9 +2210,25 @@ fi
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sql_ -eq 1 ]; then
   printf '%s\t%s\n' 'sql=' 'A SQL expression to filter output'
 fi
+# Print completion for ijq=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ijq_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ijq=' 'A jq expression to filter input after path and before transforms; requires OpenAF $jq'
+fi
+# Print completion for jq=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jq_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jq=' 'Alias for ijq; do not combine with ijq'
+fi
+# Print completion for ojq=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ojq_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ojq=' 'A jq expression to filter output after opath'
+fi
+# Print completion for opath=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_opath_ -eq 1 ]; then
+  printf '%s\t%s\n' 'opath=' 'A JMESPath expression to filter output data'
+fi
 # Print completion for sqlfilter=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sqlfilter_ -eq 1 ]; then
-  printf '%s\t%s\n' 'sqlfilter=' 'Enables the forcing of the sql filter parser -values: auto, simple, advanced-'
+  printf '%s\t%s\n' 'sqlfilter=' 'Enables the forcing of the sql filter parser (values: auto, simple, advanced)'
 fi
 # Print completion for sqlfiltertables=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sqlfiltertables_ -eq 1 ]; then
@@ -1434,11 +2236,15 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sqlfiltertables_ -eq 1 ]; then
 fi
 # Print completion for path=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_path_ -eq 1 ]; then
-  printf '%s\t%s\n' 'path=' 'A JMESPath expression to filter output'
+  printf '%s\t%s\n' 'path=' 'A JMESPath expression to filter input before transforms'
+fi
+# Print completion for csv=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_csv_ -eq 1 ]; then
+  printf '%s\t%s\n' 'csv=' 'If type=csv, the CSV options to use'
 fi
 # Print completion for outkey=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outkey_ -eq 1 ]; then
-  printf '%s\t%s\n' 'outkey=' 'If defined the map/list output will be prefix with the provided key'
+  printf '%s\t%s\n' 'outkey=' 'If defined the map/list output will be prefixed with the provided key'
 fi
 # Print completion for outfile=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outfile_ -eq 1 ]; then
@@ -1448,9 +2254,21 @@ fi
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outfileappend_ -eq 1 ]; then
   printf '%s\t%s\n' 'outfileappend=' 'If '\''true'\'' and outfile=true the output will be appended on the provided file'
 fi
+# Print completion for parallel=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_parallel_ -eq 1 ]; then
+  printf '%s\t%s\n' 'parallel=' 'auto (default), true, or false. Auto measures eligible pure work before using bounded workers. Record output stays ordered; explicit true also enables supported specialized parallel operations. false overrides OAFP_PARALLEL.'
+fi
+# Print completion for progress=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_progress_ -eq 1 ]; then
+  printf '%s\t%s\n' 'progress=' 'auto (default) or off. Shows a delayed wait animation on interactive stderr only.'
+fi
+# Print completion for stream=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_stream_ -eq 1 ]; then
+  printf '%s\t%s\n' 'stream=' 'With in=json, processes a top-level array one element at a time using record-level filters and output. Default false.'
+fi
 # Print completion for pause=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_pause_ -eq 1 ]; then
-  printf '%s\t%s\n' 'pause=' 'If '\''true'\'' will try to pause contents in alternative to _less -r_'
+  printf '%s\t%s\n' 'pause=' 'If '\''true'\'' (or -p) will try to pause contents in alternative to _less -r_. PgUp/Left and PgDown/Right move by a page; Up/Down move by a line. Shift+Left/Home goes to the top; Shift+Right/End goes to the bottom. Shift+PgUp/PgDown are also supported as top/bottom aliases. At the bottom, navigation remains available; forward paging or an ordinary key exits. Use q to quit. These controls require an updated OpenAF runtime.'
 fi
 # Print completion for color=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_color_ -eq 1 ]; then
@@ -1466,11 +2284,15 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_urlmethod_ -eq 1 ]; then
 fi
 # Print completion for urlparams=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_urlparams_ -eq 1 ]; then
-  printf '%s\t%s\n' 'urlparams=' 'If '\''url'\'' is provided extra parameters -equivalent to OpenAF'\''s $rest- can be provided in JSON/SLON'
+  printf '%s\t%s\n' 'urlparams=' 'If '\''url'\'' is provided extra parameters (equivalent to OpenAF'\''s $rest) can be provided in JSON/SLON'
 fi
 # Print completion for urldata=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_urldata_ -eq 1 ]; then
   printf '%s\t%s\n' 'urldata=' 'If '\''url'\'' is provided a JSON/SLON/text data can be provided'
+fi
+# Print completion for insecure=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_insecure_ -eq 1 ]; then
+  printf '%s\t%s\n' 'insecure=' 'If true will ignore SSL/TLS certificate validation'
 fi
 # Print completion for chs=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_chs_ -eq 1 ]; then
@@ -1482,11 +2304,19 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_loop_ -eq 1 ]; then
 fi
 # Print completion for loopcls=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_loopcls_ -eq 1 ]; then
-  printf '%s\t%s\n' 'loopcls=' 'If '\''true'\'' and loop is defined it will clear the screen -or file- on each loop cycle'
+  printf '%s\t%s\n' 'loopcls=' 'If '\''true'\'' and loop is defined it will clear the screen (or file) on each loop cycle'
 fi
 # Print completion for libs=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_libs_ -eq 1 ]; then
   printf '%s\t%s\n' 'libs=' 'Comma delimited list of installed OpenAF'\''s oPacks to consider to extend oafp'\''s inputs, transformations and outputs'
+fi
+# Print completion for pipe=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_pipe_ -eq 1 ]; then
+  printf '%s\t%s\n' 'pipe=' 'A JSON/SLON/YAML map for recursive call of oafp similar to using unix pipes (useful with -f)'
+fi
+# Print completion for -f
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__f -eq 1 ]; then
+  printf '%s\t%s\n' '-f' 'Enables to provide a JSON/SLON/YAML file with all the oafp parameters as a map'
 fi
 # Print completion for -examples
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__examples -eq 1 ]; then
@@ -1500,29 +2330,17 @@ fi
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_version_ -eq 1 ]; then
   printf '%s\t%s\n' 'version=' 'Alternative way to change the input to a map with the tool'\''s version'
 fi
-# Print completion for pipe=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_pipe_ -eq 1 ]; then
-  printf '%s\t%s\n' 'pipe=' 'A JSON/SLON/YAML map for recursive call of oafp similar to using unix pipes - useful with -f -'
-fi
-# Print completion for parallel=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_parallel_ -eq 1 ]; then
-  printf '%s\t%s\n' 'parallel=' 'If true and input supports parallel processing it will try to process the input in parallel regardless of the input data order'
-fi
 # Print completion for -v
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__v -eq 1 ]; then
   printf '%s\t%s\n' '-v' 'Changes the input to a map with the tool'\''s version info'
 fi
-# Print completion for -f
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__f -eq 1 ]; then
-  printf '%s\t%s\n' '-f' 'A JSON/SLON/YAML file with all the oafp parameters as a map'
-fi
-# Print completion for allstrings=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_allstrings_ -eq 1 ]; then
-  printf '%s\t%s\n' 'allstrings=' 'If true all fields will be converted to strings -useful for text processing-'
+# Print completion for debug=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_debug_ -eq 1 ]; then
+  printf '%s\t%s\n' 'debug=' 'If true prints debugging messages'
 fi
 # Print completion for arraytomap=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_arraytomap_ -eq 1 ]; then
-  printf '%s\t%s\n' 'arraytomap=' 'If true will try to convert the input array to a map -see arraytomapkey, arraytomapkeepkey-'
+  printf '%s\t%s\n' 'arraytomap=' 'If true will try to convert the input array to a map (see arraytomapkey, arraytomapkeepkey)'
 fi
 # Print completion for arraytomapkeepkey=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_arraytomapkeepkey_ -eq 1 ]; then
@@ -1530,13 +2348,17 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_arraytomapkeepkey_ -eq 1 ]; then
 fi
 # Print completion for arraytomapkey=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_arraytomapkey_ -eq 1 ]; then
-  printf '%s\t%s\n' 'arraytomapkey=' 'For arraytomap=true defines the name of the map property that will be each element key -see arraytomapkeepkey-'
+  printf '%s\t%s\n' 'arraytomapkey=' 'For arraytomap=true defines the name of the map property that will be each element key (see arraytomapkeepkey)'
+fi
+# Print completion for allstrings=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_allstrings_ -eq 1 ]; then
+  printf '%s\t%s\n' 'allstrings=' 'If true will try to convert all values to strings'
 fi
 # Print completion for cmlt=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_cmlt_ -eq 1 ]; then
-  printf '%s\t%s\n' 'cmlt=' 'If true will accumulate the input values into an output array -useful with loop-'
-  printf '%s\t%s\n' 'cmltch=' 'A JSON/SLON OpenAF channel configuration string with type and options/url -defaults to simple-'
-  printf '%s\t%s\n' 'cmltsize=' 'The number of input data values to keep -default 100-. If -1 it will keep without a limit'
+  printf '%s\t%s\n' 'cmlt=' 'If true will accumulate the input values into an output array (useful with loop)'
+  printf '%s\t%s\n' 'cmltch=' 'A JSON/SLON OpenAF channel configuration string with type and options/url (defaults to simple)'
+  printf '%s\t%s\n' 'cmltsize=' 'The number of input data values to keep (default 100). If -1 it will keep without a limit'
 fi
 # Print completion for correcttypes=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_correcttypes_ -eq 1 ]; then
@@ -1544,18 +2366,22 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_correcttypes_ -eq 1 ]; then
 fi
 # Print completion for denormalize=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_denormalize_ -eq 1 ]; then
-  printf '%s\t%s\n' 'denormalize=' 'Reverses '\''normalize'\'' given a JSON/SLON map with a normalize schema -see OpenAF'\''s ow.ai.normalize.withSchema-'
+  printf '%s\t%s\n' 'denormalize=' 'Reverses '\''normalize'\'' given a JSON/SLON map with a normalize schema (see OpenAF'\''s ow.ai.normalize.withSchema)'
 fi
 # Print completion for diff=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_diff_ -eq 1 ]; then
   printf '%s\t%s\n' 'diff=' 'A JSON/SLON map with a '\''a'\'' path and a '\''b'\'' path to compare and provide diff data'
   printf '%s\t%s\n' 'difftheme=' 'A JSON/SLON map with the colors to use if color = true'
-  printf '%s\t%s\n' 'diffnlines=' 'If true will append each line with a line number of the final result of the differences between '\''a'\'' and '\''b'\'' -just for rough reference-'
+  printf '%s\t%s\n' 'diffnlines=' 'If true will append each line with a line number of the final result of the differences between '\''a'\'' and '\''b'\'' (just for rough reference)'
   printf '%s\t%s\n' 'diffwords=' 'If true and the input is text based will perform the diff at the word level'
   printf '%s\t%s\n' 'diffwordswithspace=' 'If true and the input is text based will perform the diff at the word + spaces level'
   printf '%s\t%s\n' 'difflines=' 'If true and the input is text based will perform the diff at the lines level'
-  printf '%s\t%s\n' 'diffsentences=' 'If true and the input is text based will perfom the diff at the sentence level'
+  printf '%s\t%s\n' 'diffsentences=' 'If true and the input is text based will perform the diff at the sentence level'
   printf '%s\t%s\n' 'diffchars=' 'If true and the input is text based will perform the diff at the char level'
+fi
+# Print completion for mapdiff=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_mapdiff_ -eq 1 ]; then
+  printf '%s\t%s\n' 'mapdiff=' 'A JSON/SLON map with '\''a'\'' and '\''b'\'' paths selecting maps to compare structurally. Returns onlyA, onlyB and changed maps. See Map diff.'
 fi
 # Print completion for field2byte=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_field2byte_ -eq 1 ]; then
@@ -1579,11 +2405,15 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_field4map_ -eq 1 ]; then
 fi
 # Print completion for flatmap=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_flatmap_ -eq 1 ]; then
-  printf '%s\t%s\n' 'flatmap=' 'If true a map structure will be flat to just one level -optionally flatmapsep=[char] to use a different separator that '\''.'\''-'
+  printf '%s\t%s\n' 'flatmap=' 'If true a map structure will be flat to just one level (optionally flatmapsep=[char] to use a different separator that '\''.'\'')'
 fi
 # Print completion for getlist=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_getlist_ -eq 1 ]; then
-  printf '%s\t%s\n' 'getlist=' 'If true will try to find the first array on the input value -if number will stop only after the number of checks-'
+  printf '%s\t%s\n' 'getlist=' 'If true, selects the first nested array; a positive number selects the nth nested array in traversal order. If disabled or no matching array is found, preserves the input, including scalar values.'
+fi
+# Print completion for forcearray=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_forcearray_ -eq 1 ]; then
+  printf '%s\t%s\n' 'forcearray=' 'If true and if the input is a map it will force it to be an array with that map as the only element'
 fi
 # Print completion for jsonschema=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jsonschema_ -eq 1 ]; then
@@ -1593,6 +2423,10 @@ fi
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jsonschemacmd_ -eq 1 ]; then
   printf '%s\t%s\n' 'jsonschemacmd=' 'Alternative option to '\''jsonschema'\'' to retrieve the JSON schema data to use for validation returning a map with a boolean valid and errors if exist'
 fi
+# Print completion for jsonschemaoptions=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jsonschemaoptions_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jsonschemaoptions=' 'JSON/SLON Ajv options for jsonschema or jsonschemacmd, merged with allErrors=true; see JSON Schema'
+fi
 # Print completion for jsonschemagen=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jsonschemagen_ -eq 1 ]; then
   printf '%s\t%s\n' 'jsonschemagen=' 'If true will taken the provided input map as an example to generate an output json schema'
@@ -1601,18 +2435,29 @@ fi
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_kmeans_ -eq 1 ]; then
   printf '%s\t%s\n' 'kmeans=' 'Given an array of '\''normalized'\'' data will cluster data into the number of centroids provided'
 fi
+# Print completion for llmcontext=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmcontext_ -eq 1 ]; then
+  printf '%s\t%s\n' 'llmcontext=' 'If '\''llmprompt'\'' is defined provides extra context to the model regarding the input data'
+fi
+# Print completion for llmdecide=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmdecide_ -eq 1 ]; then
+  printf '%s\t%s\n' 'llmdecide=' 'Per-entry stateless decisions; inline JSON/SLON configuration or JSON/YAML/SLON file. See Decision enrichment.'
+  printf '%s\t%s\n' 'llmenv=' 'Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_MODEL when absent).'
+  printf '%s\t%s\n' 'llmoptions=' 'Model configuration as a JSON/SLON string or map; overrides llmenv. See the shared LLM input/transform options below.'
+  printf '%s\t%s\n' 'llmconversation=' 'JSON file to load an existing conversation from and save the updated conversation to.'
+  printf '%s\t%s\n' 'llmimage=' 'Image file path or HTTP(S) URL to use with a visual model.'
+fi
 # Print completion for llmprompt=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmprompt_ -eq 1 ]; then
-  printf '%s\t%s\n' 'llmprompt=' 'A large language model prompt to transform the input data to json -uses the same input options '\''llmenv'\'' and '\''llmoptions'\''-'
-  printf '%s\t%s\n' 'llmcontext=' 'If '\''llmprompt'\'' is defined provides extra context to the model regarding the input data'
-  printf '%s\t%s\n' 'llmenv=' 'The environment variable containing the value of '\''llmoptions'\'' -defaults to OAFP_MODEL-'
-  printf '%s\t%s\n' 'llmoptions=' 'A JSON or SLON string with OpenAF'\''s LLM '\''type'\'' -e.g. openai/ollama-, '\''model'\'' name, '\''timeout'\'' in ms for answers, '\''url'\'' for the ollama type or '\''key'\'' for openai type'
-  printf '%s\t%s\n' 'llmconversation=' 'File to keep the LLM conversation'
-  printf '%s\t%s\n' 'llmimage=' 'For visual models you can provide a base64 image or an image file path or an URL of an image'
+  printf '%s\t%s\n' 'llmprompt=' 'A large language model prompt to transform the input data to json (uses the same input options '\''llmenv'\'' and '\''llmoptions'\'')'
+  printf '%s\t%s\n' 'llmenv=' 'Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_MODEL when absent).'
+  printf '%s\t%s\n' 'llmoptions=' 'Model configuration as a JSON/SLON string or map; overrides llmenv. See the shared LLM input/transform options below.'
+  printf '%s\t%s\n' 'llmconversation=' 'JSON file to load an existing conversation from and save the updated conversation to.'
+  printf '%s\t%s\n' 'llmimage=' 'Image file path or HTTP(S) URL to use with a visual model.'
 fi
 # Print completion for maptoarray=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_maptoarray_ -eq 1 ]; then
-  printf '%s\t%s\n' 'maptoarray=' 'If true will try to convert the input map to an array -see maptoarraykey-'
+  printf '%s\t%s\n' 'maptoarray=' 'If true will try to convert the input map to an array (see maptoarraykey)'
 fi
 # Print completion for maptoarraykey=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_maptoarraykey_ -eq 1 ]; then
@@ -1624,28 +2469,48 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_merge_ -eq 1 ]; then
 fi
 # Print completion for normalize=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_normalize_ -eq 1 ]; then
-  printf '%s\t%s\n' 'normalize=' 'A JSON/SLON map with a normalize schema -see OpenAF'\''s ow.ai.normalize.withSchema-'
+  printf '%s\t%s\n' 'normalize=' 'A JSON/SLON map with a normalize schema (see OpenAF'\''s ow.ai.normalize.withSchema)'
 fi
 # Print completion for numformat=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_numformat_ -eq 1 ]; then
-  printf '%s\t%s\n' 'numformat=' 'For all number values applies a java.util.Formatter format -e.g. %,d-'
+  printf '%s\t%s\n' 'numformat=' 'For all number values applies a java.util.Formatter format (e.g. %,d)'
 fi
 # Print completion for oaf=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_oaf_ -eq 1 ]; then
-  printf '%s\t%s\n' 'oaf=' 'An OpenAF script to execute or a file path to an OpenAF script taking -data- as input and returning the transformed data'
+  printf '%s\t%s\n' 'oaf=' 'An OpenAF scripting code or OpenAF scripting file to execute taking input as '\''data'\'' and returning the transformed data'
 fi
 # Print completion for regression=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_regression_ -eq 1 ]; then
-  printf '%s\t%s\n' 'regression=' 'Performs a regression -linear, log, exp, poly or power- over a provided list/array of numeric values'
+  printf '%s\t%s\n' 'regression=' 'Performs a regression (linear, log, exp, poly or power) over a provided list/array of numeric values'
   printf '%s\t%s\n' 'regressionpath=' 'The path to the array of y values for the regression formulas'
-  printf '%s\t%s\n' 'regressionx=' 'Optional path to the array of x values for the regression formulas -defaults to 1, 2, 3, ...-'
-  printf '%s\t%s\n' 'regressionoptions=' 'A JSON/SLON configuration with order -defaults to 2- and/or precision -defaults to 5-'
+  printf '%s\t%s\n' 'regressionx=' 'Optional path to the array of x values for the regression formulas (defaults to 1, 2, 3, ...)'
+  printf '%s\t%s\n' 'regressionoptions=' 'A JSON/SLON configuration with order (defaults to 2) and/or precision (defaults to 5)'
   printf '%s\t%s\n' 'regressionforecast=' 'Optional path to an array of x values for which to forecast the corresponding y'
+fi
+# Print completion for removedups=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_removedups_ -eq 1 ]; then
+  printf '%s\t%s\n' 'removedups=' 'Removes duplicate array entries, retaining the first occurrence. Map key order is ignored recursively; array order and the distinction between arrays and maps are preserved.'
+fi
+# Print completion for removeempty=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_removeempty_ -eq 1 ]; then
+  printf '%s\t%s\n' 'removeempty=' 'If true will remove array/list entries that are either null or undefined'
+fi
+# Print completion for removenulls=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_removenulls_ -eq 1 ]; then
+  printf '%s\t%s\n' 'removenulls=' 'If true will try to remove nulls and undefined values from a map or array'
+fi
+# Print completion for searchkeys=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_searchkeys_ -eq 1 ]; then
+  printf '%s\t%s\n' 'searchkeys=' 'Will return a map with only keys that match the provided string'
+fi
+# Print completion for searchvalues=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_searchvalues_ -eq 1 ]; then
+  printf '%s\t%s\n' 'searchvalues=' 'Will return am map with only values that match the provided string'
 fi
 # Print completion for set=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_set_ -eq 1 ]; then
-  printf '%s\t%s\n' 'set=' 'Performs set operations (intersection by default) over an '\''a'\'' and '\''b'\'' path to an array defined in a JSON/SLON map'
-  printf '%s\t%s\n' 'setop=' 'Allows to choose a different set operation between '\''union'\'', '\''diffa'\'', '\''diffb'\'', '\''diffab'\'' -symetric difference-, '\''diff'\'' and '\''intersect'\'' -default-'
+  printf '%s\t%s\n' 'set=' 'Performs set operations (intersection by default) over an '\''a'\'' and '\''b'\'' path to an array defined in a JSON/SLON map. Comparisons ignore map key order recursively while preserving array order and distinguishing arrays from maps.'
+  printf '%s\t%s\n' 'setop=' 'Allows to choose a different set operation between '\''union'\'', '\''diffa'\'', '\''diffb'\'', '\''diffab'\'' (symmetric difference), '\''diff'\'' and '\''intersect'\'' (default)'
 fi
 if [ $F_set__setop_ -eq 1 ]; then
   if [ $F_set__setop__setop_union -eq 1 ]; then
@@ -1658,85 +2523,770 @@ if [ $F_set__setop_ -eq 1 ]; then
     printf '%s\t%s\n' 'setop=diffb' 'Will return the difference between '\''b'\'' and '\''a'\'''
   fi
   if [ $F_set__setop__setop_diffab -eq 1 ]; then
-    printf '%s\t%s\n' 'setop=diffab' 'Will return the symetric difference between '\''a'\'' and '\''b'\'''
+    printf '%s\t%s\n' 'setop=diffab' 'Will return the symmetric difference between '\''a'\'' and '\''b'\'''
+  fi
+  if [ $F_set__setop__setop_diff -eq 1 ]; then
+    printf '%s\t%s\n' 'setop=diff' 'Will identify which set contains each entry'
   fi
   if [ $F_set__setop__setop_intersect -eq 1 ]; then
     printf '%s\t%s\n' 'setop=intersect' 'Will return the intersection of the two sets'
   fi
 fi
-# Print completion for removedups=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_removedups_ -eq 1 ]; then
-  printf '%s\t%s\n' 'removedups=' 'If true will try to remove duplicates from an array'
-fi
-# Print completion for removeempty=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_removeempty_ -eq 1 ]; then
-  printf '%s\t%s\n' 'removeempty=' 'If true will remove array/list entries that are either null or undefined'
-fi
-# Print completion for removenulls=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_removenulls_ -eq 1 ]; then
-  printf '%s\t%s\n' 'removenulls=' 'If true will try to remove nulls and undefined values from a map or array'
+# Print completion for sortmapkeys=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sortmapkeys_ -eq 1 ]; then
+  printf '%s\t%s\n' 'sortmapkeys=' 'Recursively sorts map keys, including maps inside arrays. Preserves arrays, their element order, and scalar values.'
 fi
 # Print completion for spacekeys=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_spacekeys_ -eq 1 ]; then
-  printf '%s\t%s\n' 'spacekeys=' 'Replaces spaces in keys with the provided string -for example, helpful to xml output-'
-fi
-# Print completion for searchkeys=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_searchkeys_ -eq 1 ]; then
-  printf '%s\t%s\n' 'searchkeys=' 'Will return a map with only keys that match the provided string'
-fi
-# Print completion for searchvalues=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_searchvalues_ -eq 1 ]; then
-  printf '%s\t%s\n' 'searchvalues=' 'Will return am map with only values that match the provided string'
-fi
-# Print completion for sortmapkeys=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sortmapkeys_ -eq 1 ]; then
-  printf '%s\t%s\n' 'sortmapkeys=' 'If true the resulting map keys will be sorted'
+  printf '%s\t%s\n' 'spacekeys=' 'Replaces spaces in keys with the provided string (for example, helpful for XML output)'
 fi
 # Print completion for trim=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_trim_ -eq 1 ]; then
   printf '%s\t%s\n' 'trim=' 'If true all the strings of the result map/list will be trimmed'
 fi
-# Print completion for forcearray=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_forcearray_ -eq 1 ]; then
-  printf '%s\t%s\n' 'forcearray=' 'If true and if the input is map it will force it to be an array with that map as the only element'
+# Print completion for val2icon=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_val2icon_ -eq 1 ]; then
+  printf '%s\t%s\n' 'val2icon=' 'If defined will transform undefined, null and boolean values to emoticons (values can be '\''default'\'' or '\''simple'\'')'
+fi
+# Print completion for xjs=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xjs_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xjs=' 'A .js file with function code manipulating an input '\''args'\''. Returns the transformed '\''args'\'' variable.'
+fi
+# Print completion for xpy=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xpy_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xpy=' 'A .py file with Python function code manipulating an input '\''args'\''. Returns the transformed '\''args'\'' variable.'
+fi
+# Print completion for xfn=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xfn_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xfn=' 'A javascript code, receiving input as '\''args'\'' and return it'\''s code evaluation.'
+fi
+# Print completion for xrjs=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xrjs_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xrjs=' 'A .js file with function code to manipulate each input array record as '\''args'\''. Returns the transformed '\''args'\'' record.'
+fi
+# Print completion for xrpy=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xrpy_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xrpy=' 'A .py file with function code to manipulate each input array record as '\''args'\''. Returns the transformed '\''args'\'' record.'
+fi
+# Print completion for xrfn=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xrfn_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xrfn=' 'A javascript code, receiving each input array record as '\''args'\'' and return it'\''s code evaluation.'
+fi
+# Print completion for inch=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inch_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inch=' 'A JSON/SLON configuration string with type and options/url'
+fi
+# Print completion for inchall=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inchall_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inchall=' 'A boolean flag to determine if the input map will be used for a getAll query'
+fi
+# Print completion for indbjdbc=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indbjdbc_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indbjdbc=' 'The JDBC URL to access the input database'
+fi
+# Print completion for indbuser=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indbuser_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indbuser=' 'The JDBC access user'
+fi
+# Print completion for indbpass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indbpass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indbpass=' 'The JDBC access password'
+fi
+# Print completion for indbtimeout=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indbtimeout_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indbtimeout=' 'The JDBC access timeout'
+fi
+# Print completion for indblib=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indblib_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indblib=' 'Use a JDBC driver oPack generated by ojob.io/db/getDriver'
+fi
+# Print completion for indbstream=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indbstream_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indbstream=' 'If true the output will be processed record by record'
+fi
+# Print completion for indbexec=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indbexec_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indbexec=' 'If true the input SQL is not a query but a DML statement'
+fi
+# Print completion for indbautocommit=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indbautocommit_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indbautocommit=' 'If true the input SQL will be executed with autocommit enabled'
+fi
+# Print completion for indbdesc=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indbdesc_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indbdesc=' 'If true the output will be a list of column names and types (use '\''LIMIT 1'\'' for faster results)'
+fi
+# Print completion for indsvsep=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvsep_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvsep=' 'The separator to use (default is '\'','\'')'
+fi
+# Print completion for indsvsepre=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvsepre_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvsepre=' 'The regular expression to use as separator'
+fi
+# Print completion for indsvquote=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvquote_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvquote=' 'The quote character to use (default is '\''"'\'')'
+fi
+# Print completion for indsvescape=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvescape_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvescape=' 'The escape character to use for double-quotes'
+fi
+# Print completion for indsvcomment=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvcomment_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvcomment=' 'The comment character to use (default is '\''#'\'')'
+fi
+# Print completion for indsvheader=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvheader_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvheader=' 'Uses the first non-comment line as column names (default is true). When false, provide indsvfields.'
+fi
+# Print completion for indsvtrim=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvtrim_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvtrim=' 'Trims header names and values (default is true). Set false to preserve leading and trailing whitespace.'
+fi
+# Print completion for indsvjoin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvjoin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvjoin=' 'Returns one array of records when true; otherwise emits each record once (default is false). Applies to stdin, file, cmd and data input.'
+fi
+# Print completion for indsvfields=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvfields_ -eq 1 ]; then
+  printf '%s\t%s\n' 'indsvfields=' 'Comma separated column names. When provided, every non-comment line is data, including the first; no input header is consumed.'
+fi
+# Print completion for javagcjoin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javagcjoin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javagcjoin=' 'If true it will return an array with each processed line.'
+fi
+# Print completion for javathreadpid=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javathreadpid_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javathreadpid=' 'Optional you can provider the local java process pid to try to get the thread stack trace (*)'
+fi
+# Print completion for hsperfmetadata=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_hsperfmetadata_ -eq 1 ]; then
+  printf '%s\t%s\n' 'hsperfmetadata=' 'With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime.'
+fi
+# Print completion for javasinception=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javasinception_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javasinception=' 'If true includes oafp itself in the local Java process list'
+fi
+# Print completion for jfrjoin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jfrjoin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jfrjoin=' 'If true will join the JFR records to build an output array'
+fi
+# Print completion for jfrdesc=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jfrdesc_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jfrdesc=' 'If true it will include a __desc_ entry with the JFR event description'
+fi
+# Print completion for jmxpid=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jmxpid_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jmxpid=' 'The local java process pid to connect to if '\''jmxurl'\'' is not provided.'
+fi
+# Print completion for jmxurl=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jmxurl_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jmxurl=' 'The JMX URL to connect to if '\''jmxpid'\'' is not provided.'
+fi
+# Print completion for jmxuser=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jmxuser_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jmxuser=' 'The JMX user to use if JMX URL was provided.'
+fi
+# Print completion for jmxpass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jmxpass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jmxpass=' 'The JMX password to use if JMX URL was provided.'
+fi
+# Print completion for jmxprovider=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jmxprovider_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jmxprovider=' 'The JMX provider Java class if JMX URL was provided.'
+fi
+# Print completion for jmxop=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jmxop_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jmxop=' 'The operation to perform (see below for options)'
+fi
+# Print completion for jsondesc=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jsondesc_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jsondesc=' 'If true the output will be a list of JSON paths of the original json. Uses metadata-only scanning when OpenAF provides io.scanJSON, avoiding scalar-value loading; older runtimes and lenient JSON use the compatible reader.'
+fi
+# Print completion for jsonprefix=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jsonprefix_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jsonprefix=' 'Given the '\''jsondesc=true'\'' output list you can use each to filter big json files by prefix.'
+fi
+# Print completion for injwtverify=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_injwtverify_ -eq 1 ]; then
+  printf '%s\t%s\n' 'injwtverify=' 'If true the boolean entry '\''__verified'\'' will be added to the result.'
+fi
+# Print completion for injwtsecret=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_injwtsecret_ -eq 1 ]; then
+  printf '%s\t%s\n' 'injwtsecret=' 'A string secret for using HS256, HS384 or HS512 depending on secret size used to verify.'
+fi
+# Print completion for injwtpubkey=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_injwtpubkey_ -eq 1 ]; then
+  printf '%s\t%s\n' 'injwtpubkey=' 'A public key file used to verify (might require specifying the injwtalg).'
+fi
+# Print completion for injwtalg=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_injwtalg_ -eq 1 ]; then
+  printf '%s\t%s\n' 'injwtalg=' 'Specifies the algorithm used to verify the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM.'
+fi
+# Print completion for injwtraw=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_injwtraw_ -eq 1 ]; then
+  printf '%s\t%s\n' 'injwtraw=' 'If true it won'\''t try to convert Unix epoch timestamps to dates.'
+fi
+# Print completion for linesjoin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_linesjoin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'linesjoin=' 'If true it will return an array with each processed line'
+fi
+# Print completion for linesvisual=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_linesvisual_ -eq 1 ]; then
+  printf '%s\t%s\n' 'linesvisual=' 'If true it will try to determine header and column position from spaces and tabs'
+fi
+# Print completion for linesvisualsepre=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_linesvisualsepre_ -eq 1 ]; then
+  printf '%s\t%s\n' 'linesvisualsepre=' 'Regular expression representing the separator between columns when linesvisual=true (defaults to '\'' \\s+'\'')'
+fi
+# Print completion for linesvisualheadsep=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_linesvisualheadsep_ -eq 1 ]; then
+  printf '%s\t%s\n' 'linesvisualheadsep=' 'If true will try to process the second line as header separator aiding on column position determination (if linesvisualsepre is not defined it will default to '\''\\s+'\'')'
+fi
+# Print completion for llmenv=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmenv_ -eq 1 ]; then
+  printf '%s\t%s\n' 'llmenv=' 'Environment variable containing the model configuration (defaults to OAFP_MODEL, falling back to OAF_MODEL when absent).'
+fi
+# Print completion for llmoptions=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmoptions_ -eq 1 ]; then
+  printf '%s\t%s\n' 'llmoptions=' 'Model configuration as a JSON/SLON string or map; overrides llmenv. See the shared LLM input/transform options below.'
+fi
+# Print completion for llmconversation=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmconversation_ -eq 1 ]; then
+  printf '%s\t%s\n' 'llmconversation=' 'JSON file to load an existing conversation from and save the updated conversation to.'
+fi
+# Print completion for llmimage=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmimage_ -eq 1 ]; then
+  printf '%s\t%s\n' 'llmimage=' 'Image file path or HTTP(S) URL to use with a visual model.'
+fi
+# Print completion for llmdecidesample=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmdecidesample_ -eq 1 ]; then
+  printf '%s\t%s\n' 'llmdecidesample=' 'Emit a gemini, ollama or openai request sample without input, credentials or inference. Use out=yaml or out=json.'
+fi
+# Print completion for llmdecidestats=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_llmdecidestats_ -eq 1 ]; then
+  printf '%s\t%s\n' 'llmdecidestats=' 'Return {response, stats} from one decideWithStats() execution (defaults to false).'
+fi
+# Print completion for lsext=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_lsext_ -eq 1 ]; then
+  printf '%s\t%s\n' 'lsext=' 'Forces the file format parsing of the provided path or file (between zip, tar, tgz)'
+fi
+# Print completion for lsrecursive=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_lsrecursive_ -eq 1 ]; then
+  printf '%s\t%s\n' 'lsrecursive=' 'Will list all files and folders recursively (for folders)'
+fi
+# Print completion for lsposix=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_lsposix_ -eq 1 ]; then
+  printf '%s\t%s\n' 'lsposix=' 'Tries to add extra posix data if available (for ZIP files)'
+fi
+# Print completion for inmdtablejoin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inmdtablejoin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inmdtablejoin=' 'Scans an entire markdown input for tables and returns an array with the data of each markdown table'
+fi
+# Print completion for inmcptoolslist=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inmcptoolslist_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inmcptoolslist=' 'If true will list all available MCP tools'
+fi
+# Print completion for inmcplistprompts=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inmcplistprompts_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inmcplistprompts=' 'If true will list all available MCP prompts'
+fi
+# Print completion for minianolog=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_minianolog_ -eq 1 ]; then
+  printf '%s\t%s\n' 'minianolog=' 'If true hides mini-a interaction logs and shows a temporary progress message instead'
+fi
+# Print completion for minialogfile=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_minialogfile_ -eq 1 ]; then
+  printf '%s\t%s\n' 'minialogfile=' 'Path to append interaction log lines with timestamps'
+fi
+# Print completion for miniametrics=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_miniametrics_ -eq 1 ]; then
+  printf '%s\t%s\n' 'miniametrics=' 'Path to write the mini-a run metrics as JSON (placeholders can include the run id)'
+fi
+# Print completion for ndjsonjoin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ndjsonjoin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ndjsonjoin=' 'If true will join the ndjson records to build an output array'
+fi
+# Print completion for ndjsonfilter=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ndjsonfilter_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ndjsonfilter=' 'If true each line is interpreted as an array before filters execute (this allows to filter json records on a ndjson)'
+fi
+# Print completion for ndslonjoin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ndslonjoin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ndslonjoin=' 'If true will join the ndslon records to build an output array'
+fi
+# Print completion for ndslonfilter=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ndslonfilter_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ndslonfilter=' 'If true each line is interpreted as an array before filters execute (this allows to filter slon records on a ndslon)'
+fi
+# Print completion for inoafpseq=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inoafpseq_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inoafpseq=' 'If true processes an input array of oafp parameter maps sequentially'
+fi
+# Print completion for inrawhexline=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inrawhexline_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inrawhexline=' 'Number of hexadecimal characters per returned array line'
+fi
+# Print completion for inshformat=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inshformat_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inshformat=' 'The format to parse stdout and stderr between raw, yaml or json (default)'
+fi
+# Print completion for insnmp=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_insnmp_ -eq 1 ]; then
+  printf '%s\t%s\n' 'insnmp=' 'A SNMP address in the form '\''udp://1.2.3.4/161'\'''
+fi
+# Print completion for insnmpcommunity=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_insnmpcommunity_ -eq 1 ]; then
+  printf '%s\t%s\n' 'insnmpcommunity=' 'The SNMP community to use (default '\''public'\'')'
+fi
+# Print completion for insnmptimeout=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_insnmptimeout_ -eq 1 ]; then
+  printf '%s\t%s\n' 'insnmptimeout=' 'The timeout to wait for a reply'
+fi
+# Print completion for insnmpretries=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_insnmpretries_ -eq 1 ]; then
+  printf '%s\t%s\n' 'insnmpretries=' 'Number of retries in case of failure'
+fi
+# Print completion for insnmpversion=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_insnmpversion_ -eq 1 ]; then
+  printf '%s\t%s\n' 'insnmpversion=' 'Version of the SNMP server (e.g. 2, 3)'
+fi
+# Print completion for insnmpsec=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_insnmpsec_ -eq 1 ]; then
+  printf '%s\t%s\n' 'insnmpsec=' 'A JSON/SLON representation of security attributes (see below)'
+fi
+# Print completion for sqlparse=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sqlparse_ -eq 1 ]; then
+  printf '%s\t%s\n' 'sqlparse=' 'If true instead of returning a SQL AST representation it will beautify the SQL statement(s)'
+fi
+# Print completion for sqloptions=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sqloptions_ -eq 1 ]; then
+  printf '%s\t%s\n' 'sqloptions=' 'A JSON/SLON map with options for sqlparse=true'
+fi
+# Print completion for inxlssheet=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inxlssheet_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inxlssheet=' 'The name of sheet to consider (default to the first sheet)'
+fi
+# Print completion for inxlsevalformulas=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inxlsevalformulas_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inxlsevalformulas=' 'If false the existing formulas won'\''t be evaluated (defaults to true)'
+fi
+# Print completion for inxlsdesc=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inxlsdesc_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inxlsdesc=' 'If true, instead of retrieving data, either a list of sheet names will be returned, or, if inxlssheet is provided, a table with '\''___'\'' of empty cells and '\''###'\'' for non-empty cells will be returned'
+fi
+# Print completion for inxlscol=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inxlscol_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inxlscol=' 'The column on the sheet where a table should be detected (e.g. "A")'
+fi
+# Print completion for inxlsrow=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inxlsrow_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inxlsrow=' 'The row on the sheet where a table should be detected (e.g. 1)'
+fi
+# Print completion for xmlignored=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xmlignored_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xmlignored=' 'A comma-separated list of XML tags to ignore'
+fi
+# Print completion for xmlprefix=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xmlprefix_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xmlprefix=' 'A prefix to add to all XML tags'
+fi
+# Print completion for xmlfiltertag=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xmlfiltertag_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xmlfiltertag=' 'If true will filter the XML tags'
+fi
+# Print completion for base64gzip=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_base64gzip_ -eq 1 ]; then
+  printf '%s\t%s\n' 'base64gzip=' 'If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output'
+fi
+# Print completion for inputcsv=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inputcsv_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inputcsv=' 'CSV input configuration as JSON/SLON'
+fi
+# Print completion for incsv=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_incsv_ -eq 1 ]; then
+  printf '%s\t%s\n' 'incsv=' 'Alias for inputcsv'
+fi
+# Print completion for cmltch=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_cmltch_ -eq 1 ]; then
+  printf '%s\t%s\n' 'cmltch=' 'A JSON/SLON OpenAF channel configuration string with type and options/url (defaults to simple)'
+fi
+# Print completion for cmltsize=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_cmltsize_ -eq 1 ]; then
+  printf '%s\t%s\n' 'cmltsize=' 'The number of input data values to keep (default 100). If -1 it will keep without a limit'
+fi
+# Print completion for difftheme=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_difftheme_ -eq 1 ]; then
+  printf '%s\t%s\n' 'difftheme=' 'A JSON/SLON map with the colors to use if color = true'
+fi
+# Print completion for diffnlines=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_diffnlines_ -eq 1 ]; then
+  printf '%s\t%s\n' 'diffnlines=' 'If true will append each line with a line number of the final result of the differences between '\''a'\'' and '\''b'\'' (just for rough reference)'
+fi
+# Print completion for diffwords=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_diffwords_ -eq 1 ]; then
+  printf '%s\t%s\n' 'diffwords=' 'If true and the input is text based will perform the diff at the word level'
+fi
+# Print completion for diffwordswithspace=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_diffwordswithspace_ -eq 1 ]; then
+  printf '%s\t%s\n' 'diffwordswithspace=' 'If true and the input is text based will perform the diff at the word + spaces level'
+fi
+# Print completion for difflines=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_difflines_ -eq 1 ]; then
+  printf '%s\t%s\n' 'difflines=' 'If true and the input is text based will perform the diff at the lines level'
+fi
+# Print completion for diffsentences=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_diffsentences_ -eq 1 ]; then
+  printf '%s\t%s\n' 'diffsentences=' 'If true and the input is text based will perform the diff at the sentence level'
+fi
+# Print completion for diffchars=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_diffchars_ -eq 1 ]; then
+  printf '%s\t%s\n' 'diffchars=' 'If true and the input is text based will perform the diff at the char level'
+fi
+# Print completion for regressionpath=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_regressionpath_ -eq 1 ]; then
+  printf '%s\t%s\n' 'regressionpath=' 'The path to the array of y values for the regression formulas'
+fi
+# Print completion for regressionx=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_regressionx_ -eq 1 ]; then
+  printf '%s\t%s\n' 'regressionx=' 'Optional path to the array of x values for the regression formulas (defaults to 1, 2, 3, ...)'
+fi
+# Print completion for regressionoptions=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_regressionoptions_ -eq 1 ]; then
+  printf '%s\t%s\n' 'regressionoptions=' 'A JSON/SLON configuration with order (defaults to 2) and/or precision (defaults to 5)'
+fi
+# Print completion for regressionforecast=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_regressionforecast_ -eq 1 ]; then
+  printf '%s\t%s\n' 'regressionforecast=' 'Optional path to an array of x values for which to forecast the corresponding y'
+fi
+# Print completion for setop=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_setop_ -eq 1 ]; then
+  printf '%s\t%s\n' 'setop=' 'Allows to choose a different set operation between '\''union'\'', '\''diffa'\'', '\''diffb'\'', '\''diffab'\'' (symmetric difference), '\''diff'\'' and '\''intersect'\'' (default)'
+  printf '%s\t%s\n' 'setop=union' 'Will return the union of the two sets'
+  printf '%s\t%s\n' 'setop=diffa' 'Will return the difference between '\''a'\'' and '\''b'\'''
+  printf '%s\t%s\n' 'setop=diffb' 'Will return the difference between '\''b'\'' and '\''a'\'''
+  printf '%s\t%s\n' 'setop=diffab' 'Will return the symmetric difference between '\''a'\'' and '\''b'\'''
+  printf '%s\t%s\n' 'setop=diff' 'Will identify which set contains each entry'
+  printf '%s\t%s\n' 'setop=intersect' 'Will return the intersection of the two sets'
+fi
+# Print completion for idescpage=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_idescpage_ -eq 1 ]; then
+  printf '%s\t%s\n' 'idescpage=' 'Entries loaded per expand/"more" step in the tree browser (and per page in the numbered fallback and previews). Default 20.'
+fi
+# Print completion for idescrecords=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_idescrecords_ -eq 1 ]; then
+  printf '%s\t%s\n' 'idescrecords=' 'Batch size for line-oriented input (NDJSON, NDSLON, lines, DSV) or in=json stream=true. Each batch of processed records opens one explorer session; press n (or :next) to drop it and read the next batch, q to stop reading. Only one batch is held in memory. A selection/query is carried over to the next batch when it still applies. Positive integer, default 100. CSV and explicit join options still browse the whole result.'
+fi
+# Print completion for idescdepth=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_idescdepth_ -eq 1 ]; then
+  printf '%s\t%s\n' 'idescdepth=' 'Maximum preview depth. Default 3.'
+fi
+# Print completion for idescstring=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_idescstring_ -eq 1 ]; then
+  printf '%s\t%s\n' 'idescstring=' 'Maximum displayed characters per preview string. Default 200. Oversized file-backed scalars may be omitted with a byte-size label.'
+fi
+# Print completion for idescbytes=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_idescbytes_ -eq 1 ]; then
+  printf '%s\t%s\n' 'idescbytes=' 'Maximum selected JSON bytes admitted for file-backed queries/slices. Default 16777216 (16 MiB).'
+fi
+# Print completion for idescnodes=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_idescnodes_ -eq 1 ]; then
+  printf '%s\t%s\n' 'idescnodes=' 'Maximum value nodes admitted for file-backed queries/slices and preview traversal. Default 100000.'
+fi
+# Print completion for ch=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_ch_ -eq 1 ]; then
+  printf '%s\t%s\n' 'ch=' 'A JSON/SLON configuration string with type and options/url'
+fi
+# Print completion for chkey=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_chkey_ -eq 1 ]; then
+  printf '%s\t%s\n' 'chkey=' 'A comma delimited list of map keys to build a key from each array value'
+fi
+# Print completion for chunset=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_chunset_ -eq 1 ]; then
+  printf '%s\t%s\n' 'chunset=' 'If true the input data will be used to unset data on the output channel instead of set'
+fi
+# Print completion for chart=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_chart_ -eq 1 ]; then
+  printf '%s\t%s\n' 'chart=' 'Required. Unit, one or more series, and optional axis/size flags, as described below.'
+fi
+# Print completion for chartcls=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_chartcls_ -eq 1 ]; then
+  printf '%s\t%s\n' 'chartcls=' 'Clear the screen before printing each chart update. Use this or the general loopcls=true option to redraw in place. Otherwise updates are printed one after another.'
+fi
+# Print completion for outcmd=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outcmd_ -eq 1 ]; then
+  printf '%s\t%s\n' 'outcmd=' 'The command to execute receiving, in pipeline, each input entry in json'
+fi
+# Print completion for outcmdjoin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outcmdjoin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'outcmdjoin=' 'If true and if input is an array the entire array will be the input entry'
+fi
+# Print completion for outcmdseq=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outcmdseq_ -eq 1 ]; then
+  printf '%s\t%s\n' 'outcmdseq=' 'If true and if input is an array the commands will be executed in sequence'
+fi
+# Print completion for outcmdnl=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outcmdnl_ -eq 1 ]; then
+  printf '%s\t%s\n' 'outcmdnl=' 'If true each command execution output will be appended with a new-line'
+fi
+# Print completion for outcmdparam=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outcmdparam_ -eq 1 ]; then
+  printf '%s\t%s\n' 'outcmdparam=' 'If true the input entry will be replaced on the '\''outcmd'\'' where '\''{}'\'' is found'
+fi
+# Print completion for outcmdtmpl=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outcmdtmpl_ -eq 1 ]; then
+  printf '%s\t%s\n' 'outcmdtmpl=' 'If true the input entry will be considered as an HandleBars'\'' template'
+fi
+# Print completion for dbjdbc=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dbjdbc_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dbjdbc=' 'The JDBC URL to access the input database'
+fi
+# Print completion for dbuser=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dbuser_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dbuser=' 'The JDBC access user'
+fi
+# Print completion for dbpass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dbpass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dbpass=' 'The JDBC access password'
+fi
+# Print completion for dbtimeout=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dbtimeout_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dbtimeout=' 'The JDBC access timeout'
+fi
+# Print completion for dblib=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dblib_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dblib=' 'Use a JDBC driver oPack generated by ojob.io/db/getDriver'
+fi
+# Print completion for dbtable=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dbtable_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dbtable=' 'The db table in which should be inserted ('\''data'\'' by default)'
+fi
+# Print completion for dbnocreate=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dbnocreate_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dbnocreate=' 'If true no table creation command will be executed (if the table already exists set this to true)'
+fi
+# Print completion for dbicase=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dbicase_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dbicase=' 'If true table and field names will try to ignore case'
+fi
+# Print completion for dbbatchsize=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dbbatchsize_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dbbatchsize=' 'If defined it will changed the default batch data insert process'
+fi
+# Print completion for dsvsep=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dsvsep_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dsvsep=' 'The separator to use (default is '\'','\'')'
+fi
+# Print completion for dsvquote=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dsvquote_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dsvquote=' 'Replacement for double quotes inside serialized object/array cells (default is a backslash followed by a double quote). String cells and headers always use double quotes, with embedded quotes doubled.'
+fi
+# Print completion for dsvfields=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dsvfields_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dsvfields=' 'Comma separated output columns in the requested order. Defaults to the first row'\''s keys for the whole table. Missing values are empty; additional keys in later rows are omitted. Does not override dsvheader=false.'
+fi
+# Print completion for dsvuseslon=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dsvuseslon_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dsvuseslon=' 'If true the output of value objects will be in SLON format (default is false)'
+fi
+# Print completion for dsvheader=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dsvheader_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dsvheader=' 'If true will try to output the first line as header (default is true)'
+fi
+# Print completion for dsvnl=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_dsvnl_ -eq 1 ]; then
+  printf '%s\t%s\n' 'dsvnl=' 'Newline sequence to use (default is '\''\n'\'')'
+fi
+# Print completion for envscmd=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_envscmd_ -eq 1 ]; then
+  printf '%s\t%s\n' 'envscmd=' 'If defined will output the provided command to set each environment variable (defaults to '\''export'\'' or '\''set'\'' in Windows)'
+fi
+# Print completion for envsnocmd=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_envsnocmd_ -eq 1 ]; then
+  printf '%s\t%s\n' 'envsnocmd=' 'If true omits the command before each environment variable assignment, including a custom envscmd (defaults to false)'
+fi
+# Print completion for envsprefix=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_envsprefix_ -eq 1 ]; then
+  printf '%s\t%s\n' 'envsprefix=' 'If defined uses the provided prefix for each environment variable key (defaults to '\''_OAFP_'\'')'
+fi
+# Print completion for envsnoprefix=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_envsnoprefix_ -eq 1 ]; then
+  printf '%s\t%s\n' 'envsnoprefix=' 'Boolean flag to indicate that no envsprefix should be used (defaults to false)'
+fi
+# Print completion for jwtsecret=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jwtsecret_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jwtsecret=' 'A string secret for using HS256, HS384 or HS512 depending on secret size used to sign the JWT.'
+fi
+# Print completion for jwtprivkey=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jwtprivkey_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jwtprivkey=' 'A private key file used to sign (might require specifying the jwtalg).'
+fi
+# Print completion for jwtalg=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jwtalg_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jwtalg=' 'Specifies the algorithm used to sign the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM.'
+fi
+# Print completion for grid=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_grid_ -eq 1 ]; then
+  printf '%s\t%s\n' 'grid=' 'A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).'
+fi
+# Print completion for htmlcompact=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_htmlcompact_ -eq 1 ]; then
+  printf '%s\t%s\n' 'htmlcompact=' 'Boolean flag that if true and the input data is a string or markdown the generated html will have a visual compact width format'
+fi
+# Print completion for htmlpart=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_htmlpart_ -eq 1 ]; then
+  printf '%s\t%s\n' 'htmlpart=' 'Boolean flag that if true and the input data is a string or markdown the generated html will be partial and not the complete file'
+fi
+# Print completion for htmlopen=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_htmlopen_ -eq 1 ]; then
+  printf '%s\t%s\n' 'htmlopen=' 'Boolean that if false won'\''t try to open the output contents in a browser (defaults to true). To use outfile= you need to set htmlopen=false.'
+fi
+# Print completion for htmlwait=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_htmlwait_ -eq 1 ]; then
+  printf '%s\t%s\n' 'htmlwait=' 'Amount of ms, when htmlopen=true, to wait for the system browser to open an render the html output'
+fi
+# Print completion for htmldark=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_htmldark_ -eq 1 ]; then
+  printf '%s\t%s\n' 'htmldark=' 'If supported and true the output html will use a dark theme.'
+fi
+# Print completion for logprintall=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_logprintall_ -eq 1 ]; then
+  printf '%s\t%s\n' 'logprintall=' 'If true all original non data (string) lines will be output'
+fi
+# Print completion for mdtemplate=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_mdtemplate_ -eq 1 ]; then
+  printf '%s\t%s\n' 'mdtemplate=' 'If true will apply a template output without any input data'
+fi
+# Print completion for mdformat=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_mdformat_ -eq 1 ]; then
+  printf '%s\t%s\n' 'mdformat=' 'For map or array values: structured (default) renders headings, scalar tables, and lists; json or yaml emits the value in a fenced code block.'
+fi
+# Print completion for outoaf=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outoaf_ -eq 1 ]; then
+  printf '%s\t%s\n' 'outoaf=' 'OpenAF code or a script file to execute with the transformed input as data'
+fi
+# Print completion for pxmlprefix=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_pxmlprefix_ -eq 1 ]; then
+  printf '%s\t%s\n' 'pxmlprefix=' 'A prefix added to all XML tags'
+fi
+# Print completion for rawasciistart=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_rawasciistart_ -eq 1 ]; then
+  printf '%s\t%s\n' 'rawasciistart=' 'Starting line number to display'
+fi
+# Print completion for rawasciiend=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_rawasciiend_ -eq 1 ]; then
+  printf '%s\t%s\n' 'rawasciiend=' 'Ending line number to display'
+fi
+# Print completion for rawasciitab=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_rawasciitab_ -eq 1 ]; then
+  printf '%s\t%s\n' 'rawasciitab=' 'Tab size for tab character visualization (defaults to 8)'
+fi
+# Print completion for rawasciinovisual=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_rawasciinovisual_ -eq 1 ]; then
+  printf '%s\t%s\n' 'rawasciinovisual=' 'If true, non-visual characters won'\''t be replaced by their visual representation'
+fi
+# Print completion for rawasciinolinenum=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_rawasciinolinenum_ -eq 1 ]; then
+  printf '%s\t%s\n' 'rawasciinolinenum=' 'If true, line numbers won'\''t be displayed'
+fi
+# Print completion for metricsprefix=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_metricsprefix_ -eq 1 ]; then
+  printf '%s\t%s\n' 'metricsprefix=' 'The prefix to use for each metric (defaults to '\''metrics'\'')'
+fi
+# Print completion for metricstimestamp=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_metricstimestamp_ -eq 1 ]; then
+  printf '%s\t%s\n' 'metricstimestamp=' 'Unix Epoch in seconds for each metric'
+fi
+# Print completion for schart=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_schart_ -eq 1 ]; then
+  printf '%s\t%s\n' 'schart=' 'Chart definition in the format "<unit> <path:color:legend>... [-min:<n>] [-max:<n>] [-hsize:<n>] [-vsize:<n>]". Unit must be one of: int, dec1, dec2, dec3, dec4, dec, bytes or si. Path is a JMESPath expression equivalent to the path= filter (use quotes for non-basic expressions). The -min and -max flags set the Y-axis range; -hsize and -vsize override the default chart width and height in terminal columns/rows. Unlike out=chart (which accumulates values over time), schart renders a fixed snapshot from the current input array.'
+fi
+# Print completion for sqltable=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sqltable_ -eq 1 ]; then
+  printf '%s\t%s\n' 'sqltable=' 'The table name to use for the SQL statements (defaults to '\''data'\'')'
+fi
+# Print completion for sqlicase=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sqlicase_ -eq 1 ]; then
+  printf '%s\t%s\n' 'sqlicase=' 'If true the table and fields names won'\''t be double-quoted'
+fi
+# Print completion for sqlnocreate=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_sqlnocreate_ -eq 1 ]; then
+  printf '%s\t%s\n' 'sqlnocreate=' 'If true the create table statement won'\''t be generated'
+fi
+# Print completion for template=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_template_ -eq 1 ]; then
+  printf '%s\t%s\n' 'template=' 'A file path to a HandleBars'\'' template or a string template definition if '\''templatetmpl'\'' is true'
+fi
+# Print completion for templatepath=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_templatepath_ -eq 1 ]; then
+  printf '%s\t%s\n' 'templatepath=' 'If '\''template'\'' is not provided a path to the template definition (pre-transformation)'
+fi
+# Print completion for templatedata=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_templatedata_ -eq 1 ]; then
+  printf '%s\t%s\n' 'templatedata=' 'If defined the template data will be retrieved from the provided path'
+fi
+# Print completion for templatetmpl=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_templatetmpl_ -eq 1 ]; then
+  printf '%s\t%s\n' 'templatetmpl=' 'If true the '\''template'\'' will be interpreted as the template definition instead of a file path'
+fi
+# Print completion for xlsfile=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xlsfile_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xlsfile=' 'The output filename (if not defined a temporary file will be used to open with the OS'\''s Excel-compatible application)'
+fi
+# Print completion for xlssheet=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xlssheet_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xlssheet=' 'The name of sheet to use (default to '\''data'\'')'
+fi
+# Print completion for xlsformat=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xlsformat_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xlsformat=' 'A SLON or JSON string with the formatting of the output file (e.g. (bold: true, borderBottom: "medium", borderBottomColor: "red"))'
+fi
+# Print completion for xlsopen=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xlsopen_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xlsopen=' 'If false it won'\''t try to open the OS'\''s Excel-compatible application (defaults to true)'
+fi
+# Print completion for xlsopenwait=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xlsopenwait_ -eq 1 ]; then
+  printf '%s\t%s\n' 'xlsopenwait=' 'The amount of time, in ms, to keep the temporary file for the OS'\''s Excel-compatible application to start and open the file'
+fi
+# Print completion for outxmlprefix=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_outxmlprefix_ -eq 1 ]; then
+  printf '%s\t%s\n' 'outxmlprefix=' 'A prefix added to all XML tags'
+fi
+# Print completion for secRepo=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_secRepo_ -eq 1 ]; then
+  printf '%s\t%s\n' 'secRepo=' 'sBucket repository'
+fi
+# Print completion for secBucket=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_secBucket_ -eq 1 ]; then
+  printf '%s\t%s\n' 'secBucket=' 'sBucket bucket name'
+fi
+# Print completion for secPass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_secPass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'secPass=' 'sBucket bucket password'
+fi
+# Print completion for secMainPass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_secMainPass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'secMainPass=' 'sBucket repository password'
+fi
+# Print completion for secFile=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_secFile_ -eq 1 ]; then
+  printf '%s\t%s\n' 'secFile=' 'Optional sBucket file source'
+fi
+# Print completion for secEnv=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_secEnv_ -eq 1 ]; then
+  printf '%s\t%s\n' 'secEnv=' 'A boolean flag to use environment variables as sBuckets'
 fi
 # Print completion for secKey=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_secKey_ -eq 1 ]; then
   printf '%s\t%s\n' 'secKey=' 'The mandatory sBucket bucket key to use'
-  printf '%s\t%s\n' 'secEnv=' 'A boolean flag to use environment variables as sBuckets'
-  printf '%s\t%s\n' 'secFile=' 'Optional sBucket file source'
-  printf '%s\t%s\n' 'secMainPass=' 'sBucket repository password'
-  printf '%s\t%s\n' 'secPass=' 'sBucket bucket password'
-  printf '%s\t%s\n' 'secBucket=' 'sBucket bucket name'
   printf '%s\t%s\n' 'secRepo=' 'sBucket repository'
-fi
-# Print completion for xjs=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xjs_ -eq 1 ]; then
-  printf '%s\t%s\n' 'xjs=' 'A .js file with function code manipulating an input '\''args'\''. Returns the transformed '\''args'\'' variable'
-fi
-# Print completion for xpy=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xpy_ -eq 1 ]; then
-  printf '%s\t%s\n' 'xpy=' 'A .py file with Python function code manipulating an input '\''args'\''. Returns the transformed '\''args'\'' variable'
-fi
-# Print completion for xfn=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xfn_ -eq 1 ]; then
-  printf '%s\t%s\n' 'xfn=' 'A javascript code, receiving input as '\''args'\'' and return it'\''s code evaluation'
-fi
-# Print completion for xrjs=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xrjs_ -eq 1 ]; then
-  printf '%s\t%s\n' 'xrjs=' 'A .js file with function code to manipulate each input array record as '\''args'\''. Returns the transformed '\''args'\'' record'
-fi
-# Print completion for xrpy=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xrpy_ -eq 1 ]; then
-  printf '%s\t%s\n' 'xrpy=' 'A .py file with function code to manipulate each input array record as '\''args'\''. Returns the transformed '\''args'\'' record'
-fi
-# Print completion for xrfn=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xrfn_ -eq 1 ]; then
-  printf '%s\t%s\n' 'xrfn=' 'A javascript code, receiving each input array record as '\''args'\'' and return it'\''s code evaluation'
-fi
-# Print completion for val2icon=
-if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_val2icon_ -eq 1 ]; then
-  printf '%s\t%s\n' 'val2icon=' 'If defined will transform undefined, null and boolean values to emoticons -values can be '\''default'\'' or '\''simple'\''-'
+  printf '%s\t%s\n' 'secBucket=' 'sBucket bucket name'
+  printf '%s\t%s\n' 'secPass=' 'sBucket bucket password'
+  printf '%s\t%s\n' 'secMainPass=' 'sBucket repository password'
+  printf '%s\t%s\n' 'secFile=' 'Optional sBucket file source'
+  printf '%s\t%s\n' 'secEnv=' 'A boolean flag to use environment variables as sBuckets'
 fi
 
 # end

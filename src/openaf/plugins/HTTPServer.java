@@ -893,9 +893,30 @@ public class HTTPServer extends ScriptableObject {
 						relativePath = relativePath.substring(1);
 					}
 					
-					java.io.File file = new java.io.File(filepath, relativePath);
+					java.io.File root;
+					java.io.File file;
+					try {
+						root = new java.io.File(filepath).getCanonicalFile();
+						file = new java.io.File(root, relativePath);
+						if (!file.exists()) {
+							String response = "File not found";
+							exchange.sendResponseHeaders(404, response.length());
+							try (OutputStream os = exchange.getResponseBody()) {
+								os.write(response.getBytes(StandardCharsets.UTF_8));
+							}
+							return;
+						}
+						file = file.getCanonicalFile();
+					} catch (IOException | SecurityException e) {
+						String response = "File not found";
+						exchange.sendResponseHeaders(404, response.length());
+						try (OutputStream os = exchange.getResponseBody()) {
+							os.write(response.getBytes(StandardCharsets.UTF_8));
+						}
+						return;
+					}
 					
-					if (!file.exists()) {
+					if (!file.toPath().startsWith(root.toPath())) {
 						String response = "File not found";
 						exchange.sendResponseHeaders(404, response.length());
 						try (OutputStream os = exchange.getResponseBody()) {

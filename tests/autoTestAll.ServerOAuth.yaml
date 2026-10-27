@@ -1,6 +1,9 @@
 include:
 - oJobTest.yaml
 jobs:
+- name: ServerOAuth::LegacySessionBoundary
+  to: oJob Test
+  exec: args.func = require("autoTestAll.ServerOAuth.js").testLegacySessionBoundary
 - name: ServerOAuth::LoginStorageAndRefresh
   to: oJob Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testLoginStorageAndRefresh
@@ -29,6 +32,7 @@ jobs:
   to: oJob Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testDefaultStorageWithoutDescriptor
 todo:
+- ServerOAuth::LegacySessionBoundary
 - ServerOAuth::DefaultStorageWithoutDescriptor
 - ServerOAuth::JavaListenerWorkerCleanup
 - ServerOAuth::LoginStorageAndRefresh

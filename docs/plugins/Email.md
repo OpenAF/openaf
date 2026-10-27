@@ -15,7 +15,7 @@ var email = new Email(server, sender, shouldSecure, useTLS, isHTML);
 * `server` *(String)*: SMTP server host.
 * `sender` *(String)*: Sender email address (defaults to `"openaf@openaf.io"`).
 * `shouldSecure` *(boolean)*: Enable SSL on connect (port 465).
-* `useTLS` *(boolean)*: Enable STARTTLS (port 587).
+* `useTLS` *(boolean)*: Require STARTTLS (port 587) when secure mode is enabled.
 * `isHTML` *(boolean)*: Set `true` to enable HTML body and image embedding.
 
 ---

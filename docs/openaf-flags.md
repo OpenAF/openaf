@@ -17,6 +17,16 @@ Central list of noteworthy runtime flags and environment variables.
 | OJOB_AUTHORIZEDDOMAINS | ojob.io | Allowlist for remote includes |
 | OJOB_LOCALPATH | (unset) | Local path for ojob files resolution |
 
+## Alternative (native) implementations (`__flags.ALTERNATIVES`)
+
+Each flag selects a native Java implementation over the bundled JavaScript one when `true`. Set to `false` to fall back.
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| toTOON / fromTOON | true | Native Java TOON encoder/decoder (`af.toTOON`, `af.fromTOON`) |
+| path | true | Native Java JMESPath engine behind `$path` (`af.pathJava`, see [path-java.md](./path-java.md)); `false` uses the bundled JavaScript `jmespath` |
+| jsonParse, merge, extend, traverse, colorify, listFilesRecursive, restart | true | See `openaf.js` ODoc for each |
+
 ## AI/LLM Configuration
 
 | Env | Default | Purpose |
@@ -34,9 +44,11 @@ Central list of noteworthy runtime flags and environment variables.
 | OAF_INTEGRITY | {} | Map of script integrity hashes |
 | OAF_INTEGRITY_WARN | true | Warn vs abort on mismatch |
 | OAF_INTEGRITY_STRICT | false | Require integrity entries |
-| OAF_SIGNATURE_STRICT | false | Require signed scripts |
-| OAF_SIGNATURE_KEY | (unset) | Public key for signature validation |
-| OAF_VALIDATION_STRICT | false | Require integrity + signature both |
+| OAF_SIGNATURE_STRICT | false | Reject script loading because no script signature format is currently defined |
+| OAF_SIGNATURE_KEY | (unset) | Reserved for a future documented script signature format |
+| OAF_VALIDATION_STRICT | false | Reject script loading until combined integrity and signature validation is defined |
+
+These script-policy flags apply to OpenAF's `load`, `require`, and compiled-library helpers. Low-level `af.eval`, `af.compile`, and `af.load` remain explicit trusted-code execution primitives.
 
 ## Server Management
 

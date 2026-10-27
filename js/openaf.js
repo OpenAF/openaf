@@ -3807,9 +3807,23 @@ const loadExternalJars = function(aPath, dontCheck) {
 var __preCompileLevel = __flags.OAF_PRECOMPILE_LEVEL
 
 var __loadPreParser = function(s) { return s }
+const __strictFlagEnabled = function(aValue) {
+	if (aValue === true) return true
+	if (aValue === false || isUnDef(aValue)) return false
+	return String(aValue).trim().toLowerCase() == "true"
+}
+const __signaturePolicyGuard = function(aFile) {
+	var signatureStrict = __strictFlagEnabled(OAF_SIGNATURE_STRICT)
+	var validationStrict = __strictFlagEnabled(OAF_VALIDATION_STRICT)
+	if (signatureStrict || validationStrict) {
+		var file = (typeof aFile == "undefined" || aFile == null) ? "untitled" : String(aFile)
+		throw "OAF SIGNATURE VALIDATION OF '" + file + "' is unavailable because no script signature format is defined."
+	}
+}
 const __codeVerify = function(aCode, aFile) {
 	_$(aCode, "aCode").isString().$_()
 	aFile     = _$(aFile, "aFile").isString().default("untitled")
+	__signaturePolicyGuard(aFile)
 
 	var validation = false
 
@@ -3863,7 +3877,7 @@ const __codeVerify = function(aCode, aFile) {
 			}
 		}
 	}
-	if (OAF_VALIDATION_STRICT && !validation) {
+	if (__strictFlagEnabled(OAF_VALIDATION_STRICT) && !validation) {
 		throw "OAF VALIDATION OF '" + aFile + "' failed.";
 	}
 }
@@ -3880,6 +3894,7 @@ const requireDebug = (aScript, aForce) => ow.loadDebug().require(aScript, aForce
  * </odoc>
  */
 const load = function(aScript, loadPrecompiled) {
+	__signaturePolicyGuard(aScript)
 	var error = [], inErr = false;
 	var fn = function(aS, aLevel) {
 		var res = false, err;
@@ -4020,6 +4035,7 @@ const loadPy = function(aPyScript, aInput, aOutputArray, dontStop) {
  * inside an .opack for a different OpenAF version - is purged exactly once on upgrade.
  */
 const __precompiledArtifact = function(aScript, info, path, cl, aWrapCode, dontCompile) {
+	__signaturePolicyGuard(aScript)
 	var artifact = path + cl + ".jar";
 	var marker = path + "." + getDistribution() + "-" + getVersion() + "-j2";
 	if (!io.fileExists(marker)) {
@@ -4049,6 +4065,7 @@ const __precompiledArtifact = function(aScript, info, path, cl, aWrapCode, dontC
  * </odoc>
  */
 const requireCompiled = function(aScript, dontCompile, dontLoad) {
+	__signaturePolicyGuard(aScript)
 	var res = false, cl, artifact;
 	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
@@ -4092,6 +4109,7 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
  * </odoc>
  */
 const loadCompiled = function(aScript, dontCompile, dontLoad) {
+	__signaturePolicyGuard(aScript)
 	var res = false, cl, artifact;
 	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
@@ -7030,6 +7048,7 @@ const __compiledClass2Source = aClass => String(aClass).replace(/_js$/, "").repl
  * </odoc>
  */
 const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
+	__signaturePolicyGuard(getOpenAFJar() + "::js/" + __compiledClass2Source(aClass))
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
@@ -7071,6 +7090,7 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 
 const loadCompiledRequire = function(aClass, forceReload, aFunction) {
 	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass);
+	__signaturePolicyGuard(_libPath)
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
@@ -7362,6 +7382,7 @@ loadRequire();
  * </odoc>
  */
 const require = function(aScript, force) {
+	__signaturePolicyGuard(aScript)
 	var o, f, exports = {}, module = { id: aScript, uri: aScript, exports: exports };
 	
 	if (isUnDef(require.cache)) require.cache = {};
@@ -8107,19 +8128,24 @@ const checkLatestVersion = function() {
 
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback) : String</key>
- * Tries to execute commandArguments (either a String or an array of strings) in the operating system as a shortcut for 
- * AF.sh except that it will run them through the OS shell. Optionally aStdIn can be provided, aTimeout can be defined 
- * for the execution and if shouldInheritIO is true the stdout, stderr and stdin will be inherit from OpenAF. If 
- * shouldInheritIO is not defined or false it will return the stdout of the command execution. It's possible also to 
- * provide a different working aDirectory. If envsMap (a map of strings) is defined the environment variables will be replaced by envsMap.
- * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly.
- * In alternative if returnMap = true a map will be returned with stdout, stderr and exitcode.
- * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output 
- * stream, a error stream and an input stream (see help af.sh for an example). 
- * An exitCallback can also be provided that will receive the exit code as a parameter.
- * If defined the stdout and stderr won't be available for the returnMap if true.
+ * <![CDATA[
+ * Executes `commandArguments` (a string or an array of strings) through the operating system shell as a shortcut for `AF.sh`.
+ *
+ * - `aStdIn`: optional standard input.
+ * - `aTimeout`: optional execution timeout.
+ * - `shouldInheritIO`: when true, inherits stdout, stderr and stdin from OpenAF. When false or undefined, returns the command's stdout.
+ * - `aDirectory`: optional working directory.
+ * - `envsMap`: a map of strings that replaces the environment variables.
+ * - `returnMap`: when true, returns a map with `stdout`, `stderr` and `exitcode`.
+ *
+ * Check `__exitcode` and `__stderr` for the command exit code and stderr output.
+ *
+ * When `shouldInheritIO` is false or undefined, `callbackFunc` can receive an output stream, an error stream and an input stream (see `af.sh` for an example). With a callback, stdout and stderr are unavailable in the returned map.
+ *
+ * An optional `exitCallback` receives the exit code.
+ * ]]>
  * </odoc>
  */
 const sh = function(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback) {
@@ -8308,6 +8334,96 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 		if (res == true) { buf = ""; go = false; return; }
 	}
 }
+
+// Internal text/stream bridges shared by codec consumers. Keep the older-runtime
+// fallback in oafp src/include/streamFns.js in sync.
+const __streamCodec = (() => {
+  var IO = Packages.org.apache.commons.io, Codec = Packages.org.apache.commons.codec.binary
+  var charset = value => java.nio.charset.Charset.forName(String(value || java.nio.charset.Charset.defaultCharset().name()))
+  var use = (resources, fn) => {
+    var result, failure, failed = false
+    try { result = fn() } catch(e) { failure = e; failed = true }
+    resources.forEach(resource => {
+      try { resource.close() } catch(e) {
+        if (!failed) { failure = e; failed = true }
+        else {
+          try { (failure.javaException || failure).addSuppressed(e.javaException || e) } catch(ignore) {}
+        }
+      }
+    })
+    if (failed) throw failure
+    return result
+  }
+  var textInput = (text, encoding) => new IO.input.ReaderInputStream(new java.io.StringReader(String(text)), charset(encoding))
+  var textOutput = (writer, encoding) => new IO.output.WriterOutputStream(writer, charset(encoding))
+  var copy = (input, output) => { IO.IOUtils.copyLarge(input, output); output.flush() }
+  var encode = (input, output, gzip) => {
+    if (!gzip && isFunction(af.toBase64Stream)) return af.toBase64Stream(input, output, true)
+    var base64 = new Codec.Base64OutputStream(IO.output.CloseShieldOutputStream.wrap(output), true, 0, null)
+    use([base64], () => {
+      if (gzip) {
+        if (isFunction(io.gzipStream)) io.gzipStream(input, base64, true)
+        else {
+          var zipped = new java.util.zip.GZIPOutputStream(IO.output.CloseShieldOutputStream.wrap(base64))
+          use([zipped], () => copy(input, zipped))
+        }
+      } else copy(input, base64)
+    })
+    output.flush()
+  }
+  var decode = (input, output, gzip) => {
+    if (!gzip && isFunction(af.fromBase64Stream)) return af.fromBase64Stream(input, output, true)
+    var base64 = new Codec.Base64InputStream(IO.input.CloseShieldInputStream.wrap(input), false)
+    use([base64], () => {
+      if (gzip) {
+        if (isFunction(io.gunzipStream)) io.gunzipStream(base64, output, true)
+        else {
+          var zipped = new java.util.zip.GZIPInputStream(IO.input.CloseShieldInputStream.wrap(base64))
+          use([zipped], () => copy(zipped, output))
+        }
+      } else copy(base64, output)
+    })
+    output.flush()
+  }
+  var toText = (input, convert, encoding) => {
+    var writer = new java.io.StringWriter(), output = textOutput(writer, encoding)
+    use([output], () => convert(input, output))
+    return String(writer.toString())
+  }
+  var fileInput = file => {
+    if (String(file).indexOf("::") < 0) return io.readFileStream(file)
+    plugin("ZIP")
+    var split = String(file).indexOf("::"), zip = new ZIP()
+    return zip.streamGetFileStream(String(file).substring(0, split), String(file).substring(split + 2))
+  }
+  return {
+    use: use, textInput: textInput, textOutput: textOutput, copy: copy,
+    encode: encode, decode: decode, fileInput: fileInput,
+    encodeText: (text, output, gzip) => {
+      var input = textInput(text)
+      return use([input], () => encode(input, output, gzip))
+    },
+    encodeToString: (input, gzip) => toText(input, (i, o) => encode(i, o, gzip), "US-ASCII"),
+    decodeToString: (input, gzip) => toText(input, (i, o) => decode(i, o, gzip)),
+    encodeFile: file => {
+      var input = fileInput(file)
+      return use([input], () => toText(input, (i, o) => encode(i, o, false), "US-ASCII"))
+    },
+    gzipText: (text, output) => {
+      var input = textInput(text)
+      return use([input], () => {
+        if (isFunction(io.gzipStream)) return io.gzipStream(input, output, true)
+        var zipped = new java.util.zip.GZIPOutputStream(IO.output.CloseShieldOutputStream.wrap(output))
+        return use([zipped], () => copy(input, zipped))
+      })
+    },
+    gunzipText: input => toText(input, (i, o) => {
+      if (isFunction(io.gunzipStream)) return io.gunzipStream(i, o, true)
+      var zipped = new java.util.zip.GZIPInputStream(IO.input.CloseShieldInputStream.wrap(i))
+      return use([zipped], () => copy(zipped, o))
+    })
+  }
+})();
 
 /**
  * <odoc>
@@ -12371,16 +12487,19 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) {
 }
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>AF.toKYAML(aJson, multiDoc, sanitize, shouldColor, perEntryNewLine) : String</key>
- * Converts aJson to a Kubernetes style YAML (flow) string obeying rules:\
- *  - Double-quoted string values\
- *  - Unquoted keys unless ambiguous\
- *  - Flow style {} for maps and [] for arrays\
- *  - If perEntryNewLine (or __flags.YAML.perEntryNewLine) is true each entry / element appears in its own line similar to JSON pretty-print\
- * If multiDoc and aJson is an array multiple documents will be emitted separated by '---'.
- * If sanitize true Java objects are stringified.
- * Color can be toggled with shouldColor.
+ * <![CDATA[
+ * Converts `aJson` to a Kubernetes-style YAML (flow) string using these rules:
+ *
+ * - Double-quoted string values.
+ * - Unquoted keys unless ambiguous.
+ * - Flow style `{}` for maps and `[]` for arrays.
+ * - If `perEntryNewLine` (or `__flags.YAML.perEntryNewLine`) is true, each entry or element appears on its own line, similar to JSON pretty-print.
+ *
+ * If `multiDoc` is true and `aJson` is an array, multiple documents are emitted separated by `---`.
+ * If `sanitize` is true, Java objects are stringified. Toggle color with `shouldColor`.
+ * ]]>
  * </odoc>
  */
 AF.prototype.toKYAML = function(aJson, multiDoc, sanitize, shouldColor, perEntryNewLine) {
@@ -12636,45 +12755,83 @@ IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
 	logErrFn  = _$(logErrFn, "logErrFn").isFunction().default(printErr)
 	zipFile   = _$(zipFile, "zipFile").isString().$_()
 	targetDir = _$(targetDir, "targetDir").isString().default(".")
- 
-	var fis = new java.io.FileInputStream(zipFile)
-	var zis = new java.util.zip.ZipInputStream(fis)
 
-	var ne = zis.getNextEntry()
-	while (!isNull(ne)) {
-		var p = String(ne.getName()).lastIndexOf("/")
-		var _targetDir = targetDir + "/" + String(ne.getName()).substring(0, p)
-		var _targetFile = String(ne.getName()).substring(p + 1)
-
-		if (!io.fileExists(_targetDir)) {
-			try {
-				logFn("Creating dir " + _targetDir, {
-					type: "dir",
-					target: _targetDir
-				})
-				io.mkdir(_targetDir)
-			} catch(e) {
-				logErrFn("ERROR: [" + _targetDir + "] " + e, e)
-			}
+	var rootFile = new java.io.File(targetDir).getCanonicalFile()
+	if (!rootFile.exists()) io.mkdir(String(rootFile))
+	var rootPath = rootFile.toPath()
+	var files = java.nio.file.Files
+	var resolveEntry = function(entryName) {
+		if (entryName.indexOf("\\") >= 0 || entryName.indexOf("/") == 0 || /^[A-Za-z]:/.test(entryName)) {
+			throw "Unsafe ZIP entry path: " + entryName
 		}
 
-		if (!ne.isDirectory() && _targetFile.length > 0) {
-			try {
-				logFn("Extracting " + String(ne.getName()) + " -> " + _targetDir + "/" + _targetFile, {
-					type: "file",
-					source: String(ne.getName()),
-					target: _targetDir + "/" + _targetFile
-				})
-				var wtmp = io.writeFileStream(_targetDir + "/" + _targetFile)
-				Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
-				wtmp.close()
-			} catch(e) {
-				logErrFn("ERROR: [" + _targetDir + " | " + _targetFile + "] " + e, e)
-			}
+		var relativePath = java.nio.file.Paths.get(entryName).normalize()
+		for (var i = 0; i < relativePath.getNameCount(); i++) {
+			if (String(relativePath.getName(i)) == "..") throw "Unsafe ZIP entry path: " + entryName
 		}
-		
-		zis.closeEntry()
-		ne = zis.getNextEntry()
+
+		var entryPath = rootPath.resolve(relativePath).normalize()
+		if (!entryPath.startsWith(rootPath)) throw "Unsafe ZIP entry path: " + entryName
+
+		var currentPath = rootPath
+		for (var i = 0; i < relativePath.getNameCount(); i++) {
+			currentPath = currentPath.resolve(relativePath.getName(i))
+			if (files.isSymbolicLink(currentPath) && !files.exists(currentPath)) throw "Unsafe ZIP entry symlink: " + entryName
+		}
+		if (!new java.io.File(String(entryPath)).getCanonicalFile().toPath().startsWith(rootPath)) {
+			throw "Unsafe ZIP entry symlink: " + entryName
+		}
+		return entryPath
+	}
+
+	var fis, zis
+	try {
+		fis = new java.io.FileInputStream(zipFile)
+		zis = new java.util.zip.ZipInputStream(fis)
+
+		var ne = zis.getNextEntry()
+		while (!isNull(ne)) {
+			var entryName = String(ne.getName())
+			try {
+				var entryPath = resolveEntry(entryName)
+				var dirPath = ne.isDirectory() ? entryPath : entryPath.getParent()
+				var p = entryName.lastIndexOf("/")
+				var targetPath = targetDir + "/" + entryName
+				var targetDirPath = targetDir + "/" + entryName.substring(0, p)
+				if (!isNull(dirPath) && !files.exists(dirPath)) {
+					logFn("Creating dir " + targetDirPath, {
+						type: "dir",
+						target: targetDirPath
+					})
+					io.mkdir(String(dirPath))
+					resolveEntry(entryName)
+				}
+
+				if (!ne.isDirectory() && String(entryPath.getFileName()).length > 0) {
+					resolveEntry(entryName)
+					logFn("Extracting " + entryName + " -> " + targetPath, {
+						type: "file",
+						source: entryName,
+						target: targetPath
+					})
+					var wtmp
+					try {
+						wtmp = io.writeFileStream(String(entryPath))
+						Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
+					} finally {
+						if (isDef(wtmp)) wtmp.close()
+					}
+				}
+			} catch(e) {
+				logErrFn("ERROR: [" + entryName + "] " + e, e)
+			}
+
+			zis.closeEntry()
+			ne = zis.getNextEntry()
+		}
+	} finally {
+		if (isDef(zis)) zis.close()
+		else if (isDef(fis)) fis.close()
 	}
 }
 
@@ -17413,17 +17570,95 @@ function __defaultTableFormat() {
 }
 
 /**
- * <ojob>
+ * <odoc format="markdown">
  * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
- * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "btable", "tree", "ctree", "ntree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". For map or array values, "md" accepts args.mdformat as "structured" (default), "json", or "yaml". In "human" it will use the aFunc
- * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
- * For map/array output, __colorFormat.table.format selects a default table renderer when no global or explicit format is set.
- * Supported preferences: table, stable, ctable, btable, bstable; unset/unsupported values preserve human output.
- * In "btable", __rowsep (or __ROWSEP) enables light rules between records (default false); __width (or __WIDTH)
- * sets a positive integer wrapping width, otherwise the available terminal width is used. Unicode rules are always used.
- * If shouldReturn = true the string output will be returned
- * </ojob>
+ * <![CDATA[
+ * Formats and prints `aObj` using the options in `args` (defaults to `{}`). Also available as `$o`.
+ * Set `shouldReturn` to `true` to return formatted output instead of printing it.
+ *
+ * ## Format selection
+ *
+ * Use `args.__format` (or `args.__FORMAT`) to select a format. The lowercase option takes precedence.
+ * Without an explicit format, `global.__format` is used when defined. Otherwise, maps and arrays use
+ * `__colorFormat.table.format` when it is `table`, `stable`, `ctable`, `btable` or `bstable`;
+ * all other cases default to `human`.
+ *
+ * | Formats | Output |
+ * | --- | --- |
+ * | `json`, `prettyjson`, `cjson` | Compact, indented or colored JSON. |
+ * | `gb64json` | Compact JSON encoded with gzip and Base64. |
+ * | `slon`, `cslon` | SLON or colored SLON. |
+ * | `ndjson` | One JSON value per array element. With `shouldReturn`, returns an array of strings. Use an array as input. |
+ * | `xml`, `yaml`, `cyaml`, `toon` | XML, YAML, colored YAML or TOON. |
+ * | `kyaml`, `ckyaml`, `lkyaml`, `clkyaml` | KYAML and its colored (`c`), single-line flow (`l`) variants. |
+ * | `table`, `stable`, `ctable` | Table, wrapped table with row separators, or colored wrapped table. Maps become single-row arrays. |
+ * | `btable`, `bstable` | Unicode borderless tables; `bstable` always separates records with light rules. |
+ * | `tree`, `ctree`, `cntree`, `atree` | Tree output; colored (`c`), shortened keys (`n`), or colored without tables for arrays (`a`). |
+ * | `mtree`, `mntree`, `btree`, `bntree` | Uncolored trees; monochrome (`m`) or plain (`b`), with shortened-key variants (`n`). |
+ * | `map` | Map-style output using `printMap`. |
+ * | `html`, `jsmap` | A complete HTML document from `ow.template.html.parseMap`. |
+ * | `text` | JavaScript string conversion using `String`. |
+ * | `md` | Render Markdown text for the terminal, or generate Markdown from maps and arrays (see below). |
+ * | `csv` | CSV from an array of maps; a single map becomes a one-row array. |
+ * | `human` | Call `aFunc` with the transformed value, or use the default tree/string output. |
+ *
+ * ## Options
+ *
+ * These options also accept uppercase names (for example, `__PATH`); lowercase takes precedence.
+ * Transformations run before formatting, in the order `__path`, `__from`, `__sql`.
+ *
+ * | Option | Purpose |
+ * | --- | --- |
+ * | `__path` | Select data with `$path(aObj, expression)`. |
+ * | `__from` | Query data with `$from` using an nLinq expression parsed by `af.fromNLinq`. |
+ * | `__sql` | Query data with `$sql`. |
+ * | `__csv` | CSV configuration as a JSON or SLON string, passed to `$csv`. |
+ * | `__pause` | Page printed text with `ow.format.string.pauseString`. Ignored when returning output. |
+ * | `__width` | Positive integer wrapping width for `btable` and `bstable`; defaults to the available terminal width. |
+ * | `__rowsep` | Enable light rules between records in `btable` (default `false`). `bstable` always enables them. |
+ * | `__key` | Storage key for the `key` format (default `"res"`). |
+ *
+ * ## Markdown output
+ *
+ * For maps and arrays, `args.mdformat` accepts `structured` (default), `json` or `yaml`.
+ * `structured` produces field/value tables for flat maps, column tables for arrays of flat maps,
+ * lists for arrays of scalar values, and headings for nested data. Nested string sections use code fences.
+ * `json` and `yaml` produce fenced code blocks. These map/array modes return or print Markdown source.
+ * String input is rendered by `ow.format.withMD` for terminal display.
+ *
+ * ## Storing results
+ *
+ * The `res` format stores the transformed value with `$set("res", value)`; `key` uses `args.__key`.
+ * A format named `set_NAME` stores it with `$set("NAME", value)`.
+ * The `args` format writes to `args._list`, `args._map` or `args.result` according to the value type.
+ * The `pm` format merges the same fields into `__pm`.
+ *
+ * Storage formats do not return formatted data. With `shouldReturn` omitted or false, they print a blank line.
+ * The return value depends on the format: usually a string, an array of strings for `ndjson`, or undefined.
+ * `human` does not forward the return value from `aFunc`, including the default formatter.
+ * A custom `aFunc` is responsible for its own printing.
+ *
+ * ## Examples
+ *
+ * ```javascript
+ * var rows = [{ name: "alpha", count: 2 }, { name: "beta", count: 5 }];
+ * $output(rows, { __format: "btable", __width: 80, __rowsep: true });
+ *
+ * // Capture formatted text without printing.
+ * var json = $output(rows, { __format: "prettyjson" }, __, true);
+ *
+ * // Select part of an object before formatting.
+ * $output({ items: rows }, { __path: "items", __format: "yaml" });
+ *
+ * // Generate Markdown source from structured data.
+ * var markdown = $output(rows, { __format: "md" }, __, true);
+ * var fenced = $output(rows, { __format: "md", mdformat: "json" }, __, true);
+ *
+ * // Render Markdown text in the terminal.
+ * $output("# Results\n\n**Complete**", { __format: "md" });
+ * ```
+ * ]]>
+ * </odoc>
  */
 const $output = function(aObj, args, aFunc, shouldReturn) {
 	args = _$(args).default({})
@@ -17485,7 +17720,14 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__conConsole = true
 			return fnP(colorify(res))
 		case "gb64json":
-			return fnP(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(stringify(res, __, ""))))))
+			var text = stringify(res, __, "")
+            if (!shouldReturn && !pause) {
+                __streamCodec.encodeText(text, java.lang.System.out, true)
+                print("")
+                return
+            }
+            var input = __streamCodec.textInput(text)
+            return __streamCodec.use([input], () => fnP(__streamCodec.encodeToString(input, true)))
 		case "slon":
 			return fnP(ow.format.toSLON(res))
 		case "cslon":
@@ -17552,7 +17794,11 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true }))
-		case "ntree":
+		case "cntree":
+			__ansiColorFlag = true
+			__conConsole = true
+			return fnP(printTreeOrS(res, __, { fullKeySize: false, noansi: !__conAnsi, mono: false, color: true }))
+		case "atree":
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true, tableArrays: false }))
@@ -17560,8 +17806,12 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			//__ansiColorFlag = true
 			//__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: true, mono: true, color: false, curved: false }))
+		case "mntree":
+			return fnP(printTreeOrS(res, __, { fullKeySize: false, noansi: true, mono: true, color: false, curved: false }))
 		case "btree":
 			return fnP(printTreeOrS(res, __, { noansi: true, mono: false, color: false }))
+	  	case "bntree":
+			return fnP(printTreeOrS(res, __, { fullKeySize: false, noansi: true, mono: false, color: false }))
 		case "res":
 			if (isDef(res)) $set("res", res)
 			break

@@ -1616,7 +1616,7 @@ public class AFBase extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>af.fromBase64(aBase) : anArrayOfBytes</key>
-	 * Given aBase as a string or an array of bytes will convert it to anArrayOfBytes in Base 64.
+	 * Decodes aBase, a Base64 string or array of bytes, into the original array of bytes.
 	 * </odoc>
 	 */
 	@JSFunction
@@ -1631,7 +1631,7 @@ public class AFBase extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>af.toBase64Bytes(arrayOfBytes) : anArrayOfBytes</key>
-	 * Given arrayOfBytes as a string or an array of bytes in Base 64 will convert it back to an array of bytes.
+	 * Encodes arrayOfBytes, a string or array of bytes, as Base64 bytes without line breaks.
 	 * </odoc>
 	 */
 	@JSFunction
@@ -1647,6 +1647,52 @@ public class AFBase extends ScriptableObject {
 		}
 	}
 	
+    /**
+     * <odoc format="markdown">
+     * <key>af.toBase64Stream(aInputStream, aOutputStream, shouldNotClose)</key>
+     * <![CDATA[
+     * Encodes raw bytes as standard padded Base64 without line breaks, copying Java streams with bounded memory.
+     * Both streams close on success or processing failure unless `shouldNotClose` is true
+     * (default false). Successful conversion finalizes and flushes output even when left open.
+     * Invalid arguments are rejected before reading or closing streams. Errors propagate and
+     * may leave partial output; cleanup errors are suppressed behind the original error.
+     * Returns undefined. For example:
+     *
+     * ```javascript
+     * af.toBase64Stream(io.readFileStream("A"), io.writeFileStream("B.b64"));
+     * ```
+     * ]]>
+     * </odoc>
+     */
+    @JSFunction
+    public void toBase64Stream(Object input, Object output, boolean shouldNotClose) throws IOException {
+        openaf.core.StreamConversions.convert(input, output, shouldNotClose,
+            openaf.core.StreamConversions.Format.BASE64_ENCODE);
+    }
+
+    /**
+     * <odoc format="markdown">
+     * <key>af.fromBase64Stream(aInputStream, aOutputStream, shouldNotClose)</key>
+     * <![CDATA[
+     * Decodes Base64 using the same lenient decoding as af.fromBase64, copying Java streams with bounded memory.
+     * Both streams close on success or processing failure unless `shouldNotClose` is true
+     * (default false). Successful conversion finalizes and flushes output even when left open.
+     * Invalid arguments are rejected before reading or closing streams. Errors propagate and
+     * may leave partial output; cleanup errors are suppressed behind the original error.
+     * Returns undefined. For example:
+     *
+     * ```javascript
+     * af.fromBase64Stream(io.readFileStream("B.b64"), io.writeFileStream("A.decoded"));
+     * ```
+     * ]]>
+     * </odoc>
+     */
+    @JSFunction
+    public void fromBase64Stream(Object input, Object output, boolean shouldNotClose) throws IOException {
+        openaf.core.StreamConversions.convert(input, output, shouldNotClose,
+            openaf.core.StreamConversions.Format.BASE64_DECODE);
+    }
+
 	/**
 	 * <odoc>
 	 * <key>af.fromArray2Bytes(anArray) : anArrayOfBytes</key>
