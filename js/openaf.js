@@ -6683,7 +6683,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) => {
 			var _ar = []
 			try {
 				for (var j = part.start; j < part.end; j++) {
-					if (stopped.get()) {
+					if (stopped.get() || (parallelCall && remainingMs() <= 0)) {
 						while (_ar.length < (part.end - part.start)) _ar.push(__)
 						break
 					}
@@ -6736,7 +6736,9 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) => {
 				// Apply backpressure without losing the promise needed for cancellation.
 				_tpstats = __getThreadPools()
 				if (_tpstats.queued > _tpstats.poolSize / threads_thrs) {
-					if (remainingMs() > 0) $doWait(_ts[_ts.length - 1], waitBudget())
+					while (remainingMs() > 0 && parts.get() <= _i_) {
+						$doWait(_ts[_ts.length - 1], waitBudget())
+					}
 				}
 			}
 		} catch(eee) {
