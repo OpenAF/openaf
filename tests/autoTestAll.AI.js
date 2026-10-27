@@ -593,6 +593,45 @@
         ow.test.assert(requests[1].temperature, 0.2, "Anthropic tool follow-up lost an explicit temperature");
     };
 
+    exports.testAIAnthropicPromptImageAndAttachments = function() {
+        ow.loadAI();
+
+        var png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test" });
+        var bodies = [];
+        g.model._request = function(url, body) {
+            bodies.push(__cloneForTest(body));
+            return { id: "m", model: "claude-test", type: "message", stop_reason: "end_turn",
+                content: [ { type: "text", text: "ok" } ], usage: { input_tokens: 1, output_tokens: 1 } };
+        };
+
+        ow.test.assert(g.promptImage("what?", png), "ok", "Anthropic promptImage did not return text");
+        var c = bodies[0].messages[0].content;
+        ow.test.assert(c[0].type, "image", "Image block should come first");
+        ow.test.assert(c[0].source.type, "base64", "Image source type");
+        ow.test.assert(c[0].source.media_type, "image/png", "Image media type");
+        ow.test.assert(c[1].text, "what?", "Prompt text should follow the image");
+        ow.test.assert(g.getLastStats().images.length, 1, "Image stats missing");
+
+        var tmp = io.createTempFile("oafpdf", ".pdf");
+        io.writeFileString(tmp, "%PDF-1.4 test");
+        var txt = io.createTempFile("oaftxt", ".md");
+        io.writeFileString(txt, "# hello");
+        g.promptImage("sum", [ png, { file: tmp }, { file: txt } ]);
+        io.rm(tmp); io.rm(txt);
+        c = bodies[1].messages[bodies[1].messages.length - 1].content;
+        ow.test.assert(c.length, 4, "Expected 3 attachments + text");
+        ow.test.assert(c[1].type + c[1].source.media_type, "documentapplication/pdf", "PDF document block");
+        ow.test.assert(c[2].source.type + c[2].source.data, "text# hello", "Text document block");
+
+        g.promptImage("u", [ { url: "https://example.com/a.png" } ]);
+        ow.test.assert(bodies[2].messages[bodies[2].messages.length - 1].content[0].source.type, "url", "URL source");
+
+        var failed = false;
+        try { g.promptImage("x", [ { base64: "AAAA", mediaType: "application/zip" } ]); } catch(e) { failed = true; }
+        ow.test.assert(failed, true, "Unsupported attachment type should fail");
+    };
+
     exports.testAIAnthropicPromptCachingBodyAndStats = function() {
         ow.loadAI();
 

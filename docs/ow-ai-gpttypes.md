@@ -17,6 +17,15 @@ The GPT types system provides a consistent API across different LLM providers th
 | ollama    | ✔    | ✔       | ✔     | ✔          | ✖         |
 | anthropic | ✔    | ✔       | ✖     | ✔          | ✖         |
 
+### Responses API
+
+For the `openai` provider, structured decisions use the OpenAI Responses API (`/responses`, JSON Schema `text.format`) by default; `decisionTransport: "chat"` (or `providerOptions.transport`) selects Chat Completions. Regular prompts that carry a response schema try `/responses` first and fall back to `/chat/completions` once if the endpoint is reported unavailable; the outcome is cached per wrapper instance.
+
+### Prompt caching and usage statistics
+
+- Anthropic: constructor option `promptCaching: true` adds `cache_control` markers (default `false`); no beta header is required.
+- OpenAI-compatible models report cached prompt tokens in `getLastStats().tokens.cached` when the provider returns them (also via the `*WithStats` methods). Gemini reports `cachedContentTokenCount` the same way.
+
 ### OpenAI-Compatible Transport Modes
 
 The `openai` provider can target OpenAI, Azure OpenAI, and Azure AI Foundry model inference endpoints through `aOptions.mode`.
@@ -320,6 +329,8 @@ promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, aJsonF
     // Provider-specific image format handling
 }
 ```
+
+`ow.ai.prepareImage(aImage, aOptions)` normalizes a file path or base64 image before sending. Options: `maxSide` (2048; `0` disables scaling), `maxBytes` (5242880), `maxPixels` (25000000), `format` (auto/jpeg/png), `quality` (0.85), `background` (`#ffffff`). It returns `base64`, `mediaType`, `width`, `height`, `resized`, `originalBytes` and `bytes`. Gateways can set `imageMaxSide`, `imageMaxBytes`, `imageMaxPixels`, `imageFormat`, `imageQuality`, `imageBackground` or `imageResize: false` (keep original bytes). Base64 validation and PNG detection avoid decoding a full bitmap. Uses JDK ImageIO; in containers set `OAF_JARGS=-Djava.awt.headless=true`.
 
 ### 7. JSON Response Handling
 

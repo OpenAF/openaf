@@ -178,13 +178,16 @@ ODocs.prototype.saveWeb = function() {
   var odocskeys = {};
   var keysPath = this.aFilename + "/" + this.keysfile + ".gz";
   if (io.fileExists(keysPath)) {
-    odocskeys = af.fromJson(af.fromBytes2String(io.gunzip(io.readFileBytes(keysPath))));
+    var input = io.readFileStream(keysPath);
+    odocskeys = __streamCodec.use([input], () => af.fromJson(__streamCodec.gunzipText(input)));
   }
   for(var i in this.aodocs) {
-    io.writeFileBytes(this.aFilename + "/" + i + ".gz", io.gzip(af.fromString2Bytes(beautifier(this.aodocs[i].getAll()))));
+    var output = io.writeFileStream(this.aFilename + "/" + i + ".gz");
+    __streamCodec.use([output], () => __streamCodec.gzipText(beautifier(this.aodocs[i].getAll()), output));
     odocskeys[i] = this.aodocs[i].getKeys();
   }
-  io.writeFileBytes(keysPath, io.gzip(af.fromString2Bytes(beautifier(odocskeys))));
+  var output = io.writeFileStream(keysPath);
+  __streamCodec.use([output], () => __streamCodec.gzipText(beautifier(odocskeys), output));
 }
 
 /**
@@ -201,9 +204,10 @@ ODocs.prototype.loadWeb = function(aID) {
   function getFromWeb(aSuffix) {
     for(var i = 0; i < parent.arrayurls.length && !parent.offline; i++) {
       try {
-        var h = new HTTP(parent.arrayurls[i] + "/" + aSuffix, "GET", "", {}, true, 500);
+        var h = new HTTP(parent.arrayurls[i] + "/" + aSuffix, "GET", "", {}, true, 500, true);
         // Decode within the loop so an invalid response can fall back to the next URL.
-        var data = af.fromJson(af.fromBytes2String(io.gunzip(h.responseBytes())));
+        var stream = h.responseStream();
+        var data = af.fromJson(__streamCodec.use([stream], () => __streamCodec.gunzipText(stream)));
         if (!isMap(data)) continue;
         if (aSuffix == parent.keysfile + ".gz" &&
             !Object.keys(data).every(k => isArray(data[k]))) continue;
@@ -211,6 +215,8 @@ ODocs.prototype.loadWeb = function(aID) {
             !Object.keys(data).every(k => isMap(data[k]) && isString(data[k].k) && isString(data[k].t))) continue;
         return data;
       } catch(e) {
+      } finally {
+        if (isDef(h)) { try { h.close(); } catch(ignore) {} }
       }
     }
   }

@@ -1,0 +1,23 @@
+# Copyright 2026 Nuno Aguiar
+
+include:
+  - oJobTest.yaml
+
+jobs:
+  - name: oPack::Init
+    exec: args.tests = require("autoTestAll.oPack.js");
+
+  - name: oPack::Copy-only containment
+    from: oPack::Init
+    to  : oJob Test
+    exec: args.func = args.tests.testCopyContainment;
+
+  - name: oPack::Copy-only useunzip data boundary
+    from: oPack::Init
+    to  : oJob Test
+    exec: args.func = args.tests.testCopyUseUnzipIsDataOnly;
+
+todo:
+  - oPack::Init
+  - oPack::Copy-only containment
+  - oPack::Copy-only useunzip data boundary

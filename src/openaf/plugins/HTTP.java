@@ -46,15 +46,28 @@ public class HTTP extends ScriptableObject {
 	protected String l = null;
 	protected String p = null;
 	protected String lpsID = null;
-	static protected ConcurrentHashMap<String, LPs> lps = new ConcurrentHashMap<String, LPs>();
+	protected ConcurrentHashMap<String, LPs> lps = new ConcurrentHashMap<String, LPs>();
+	protected volatile URL defaultCredentialOrigin = null;
 	
 	protected class LPs {
 		String l;
 		String p;
+		String realm;
+		String scheme;
 
 		public LPs(String ll, String pp) {
 			this.l = ll;
 			this.p = pp;
+		}
+
+		public synchronized boolean accepts(String requestRealm, String requestScheme) {
+			if (realm == null && scheme == null) {
+				realm = requestRealm;
+				scheme = requestScheme;
+				return true;
+			}
+			return (realm == null ? requestRealm == null : realm.equals(requestRealm))
+					&& (scheme == null ? requestScheme == null : scheme.equalsIgnoreCase(requestScheme));
 		}
 	}
 
@@ -142,27 +155,8 @@ public class HTTP extends ScriptableObject {
 			urlPartial = "default";
 		}		
 
-		if (!forceBasic) {
-			lps.put(urlPartial, new LPs(user, pass));
-			
-			if (authenticator == null) {
-				authenticator = new Authenticator() {
-					public PasswordAuthentication getPasswordAuthentication() {
-						URL url = getRequestingURL();
-						String getKey = null;
-						for(String key : lps.keySet()) {
-							if (!((String) key).equals("default") && url.toString().startsWith(key)) getKey = key;
-						}
-						if (getKey == null) {
-							return new PasswordAuthentication (AFCmdBase.afc.dIP(lps.get("default").l), (AFCmdBase.afc.dIP(lps.get("default").p)).toCharArray());
-						} else {
-							return new PasswordAuthentication (AFCmdBase.afc.dIP(lps.get(getKey).l), (AFCmdBase.afc.dIP(lps.get(getKey).p)).toCharArray());
-						}
-					}
-				};
-				Authenticator.setDefault(authenticator);
-			}
-		} 
+		lps.put(urlPartial, new LPs(user, pass));
+		if (urlPartial.equals("default")) defaultCredentialOrigin = null;
 
 		l = user;
 		p = pass;
@@ -172,6 +166,84 @@ public class HTTP extends ScriptableObject {
 			this.forceBasic = true;
 		}
 		SimpleLog.log(SimpleLog.logtype.DEBUG, "HTTP connection with authentication for " + user, null);
+	}
+
+	protected int effectivePort(URL url) {
+		int port = url.getPort();
+		return port >= 0 ? port : url.getDefaultPort();
+	}
+
+	protected boolean sameOrigin(URL first, URL second) {
+		return first != null && second != null
+				&& first.getProtocol().equalsIgnoreCase(second.getProtocol())
+				&& first.getHost().equalsIgnoreCase(second.getHost())
+				&& effectivePort(first) == effectivePort(second);
+	}
+
+	protected boolean pathMatches(URL scope, URL requestURL) {
+		String scopePath = scope.getPath();
+		String requestPath = requestURL.getPath();
+		if (scopePath == null || scopePath.length() == 0 || scopePath.equals("/")) return true;
+		if (requestPath == null) return false;
+		return requestPath.equals(scopePath) || requestPath.startsWith(scopePath.endsWith("/") ? scopePath : scopePath + "/");
+	}
+
+	protected synchronized URL bindDefaultCredentialOrigin(URL requestURL) {
+		if (lps.containsKey("default") && defaultCredentialOrigin == null) defaultCredentialOrigin = requestURL;
+		return defaultCredentialOrigin;
+	}
+
+	protected LPs findCredentials(URL requestURL) {
+		String selectedKey = null;
+		for (String key : lps.keySet()) {
+			if (key.equals("default")) continue;
+			try {
+				URL scope = URI.create(key).toURL();
+				if (sameOrigin(scope, requestURL) && pathMatches(scope, requestURL)
+						&& (selectedKey == null || key.length() > selectedKey.length())) selectedKey = key;
+			} catch (Exception e) {
+				// Invalid URL scopes cannot safely authorize a credential challenge.
+			}
+		}
+		if (selectedKey != null) return lps.get(selectedKey);
+
+		LPs defaultCredentials = lps.get("default");
+		if (defaultCredentials != null && sameOrigin(defaultCredentialOrigin, requestURL)) return defaultCredentials;
+		return null;
+	}
+
+	protected Authenticator createAuthenticator() {
+		final Authenticator inheritedAuthenticator = Authenticator.getDefault();
+		return new Authenticator() {
+			@Override
+			protected PasswordAuthentication getPasswordAuthentication() {
+				if (getRequestorType() == RequestorType.PROXY) {
+					if (inheritedAuthenticator == null) return null;
+					return Authenticator.requestPasswordAuthentication(inheritedAuthenticator, getRequestingHost(), getRequestingSite(),
+							getRequestingPort(), getRequestingProtocol(), getRequestingPrompt(), getRequestingScheme(),
+							getRequestingURL(), getRequestorType());
+				}
+				if (getRequestorType() != RequestorType.SERVER) return null;
+				LPs credentials = findCredentials(getRequestingURL());
+				if (credentials == null) return null;
+				if (!credentials.accepts(getRequestingPrompt(), getRequestingScheme())) return null;
+				return new PasswordAuthentication(AFCmdBase.afc.dIP(credentials.l), AFCmdBase.afc.dIP(credentials.p).toCharArray());
+			}
+		};
+	}
+
+	protected URL authenticationURL(String aURL) throws Exception {
+		URI uri = URI.create(aURL);
+		String scheme = uri.getScheme();
+		if (scheme.equalsIgnoreCase("ws")) scheme = "http";
+		if (scheme.equalsIgnoreCase("wss")) scheme = "https";
+		return new URI(scheme, uri.getRawUserInfo(), uri.getHost(), uri.getPort(), uri.getRawPath(), uri.getRawQuery(), null).toURL();
+	}
+
+	protected LPs credentialsForURL(String aURL) throws Exception {
+		URL url = authenticationURL(aURL);
+		bindDefaultCredentialOrigin(url);
+		return findCredentials(url);
 	}
 	
 	/**
@@ -399,7 +471,8 @@ public class HTTP extends ScriptableObject {
 	 */
 	@JSFunction
 	public Object wsConnect(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
-		return WebSockets.wsConnect(authenticator, l, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
+		LPs credentials = credentialsForURL(anURL);
+		return WebSockets.wsConnect(null, credentials == null ? null : credentials.l, credentials == null ? null : credentials.p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
 
 	/**
@@ -435,7 +508,8 @@ public class HTTP extends ScriptableObject {
 	 */
 	@JSFunction
 	public Object wsClient(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
-		return WebSockets.wsClient(authenticator, l, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
+		LPs credentials = credentialsForURL(anURL);
+		return WebSockets.wsClient(null, credentials == null ? null : credentials.l, credentials == null ? null : credentials.p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
 
 	/**
@@ -452,8 +526,13 @@ public class HTTP extends ScriptableObject {
 		CookieHandler.setDefault(ckman);
 		
 		URL url = URI.create(aURL).toURL();
+		bindDefaultCredentialOrigin(url);
 		
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		if (!forceBasic && !lps.isEmpty()) {
+			authenticator = createAuthenticator();
+			con.setAuthenticator(authenticator);
+		}
 		con.setRequestMethod(method);
 	
 		//con.addRequestProperty("Accept-Charset", Charset.defaultCharset().displayName());
@@ -467,7 +546,10 @@ public class HTTP extends ScriptableObject {
 		}
 		
 		if (forceBasic) {
-			con.addRequestProperty("Authorization", "Basic " + new String(Base64.encodeBase64(new String(l + ":" + p).getBytes())));
+			LPs credentials = findCredentials(url);
+			if (credentials != null) {
+				con.addRequestProperty("Authorization", "Basic " + new String(Base64.encodeBase64(new String(credentials.l + ":" + credentials.p).getBytes())));
+			}
 		}
 		
 		if (timeout > 0) con.setConnectTimeout(timeout);

@@ -654,6 +654,50 @@ public class IO extends ScriptableObject {
 		return baos.toByteArray();		
 	}
 	
+    /**
+     * <odoc format="markdown">
+     * <key>io.gzipStream(aInputStream, aOutputStream, shouldNotClose)</key>
+     * <![CDATA[
+     * Compresses raw bytes into GZIP, copying Java streams with bounded memory and no object serialization.
+     * Both streams close on success or processing failure unless `shouldNotClose` is true
+     * (default false). Successful conversion finalizes and flushes output even when left open.
+     * Invalid arguments are rejected before reading or closing streams. Errors propagate and
+     * may leave partial output; cleanup errors are suppressed behind the original error.
+     * Returns undefined. For example:
+     *
+     * ```javascript
+     * io.gzipStream(io.readFileStream("A"), io.writeFileStream("A.gz"));
+     * ```
+     * ]]>
+     * </odoc>
+     */
+    @JSFunction
+    public static void gzipStream(Object input, Object output, boolean shouldNotClose) throws IOException {
+        StreamConversions.convert(input, output, shouldNotClose, StreamConversions.Format.GZIP);
+    }
+
+    /**
+     * <odoc format="markdown">
+     * <key>io.gunzipStream(aInputStream, aOutputStream, shouldNotClose)</key>
+     * <![CDATA[
+     * Decompresses GZIP into raw bytes, copying Java streams with bounded memory and no object serialization.
+     * Both streams close on success or processing failure unless `shouldNotClose` is true
+     * (default false). Successful conversion finalizes and flushes output even when left open.
+     * Invalid arguments are rejected before reading or closing streams. Errors propagate and
+     * may leave partial output; cleanup errors are suppressed behind the original error.
+     * Returns undefined. For example:
+     *
+     * ```javascript
+     * io.gunzipStream(io.readFileStream("A.gz"), io.writeFileStream("A.decoded"));
+     * ```
+     * ]]>
+     * </odoc>
+     */
+    @JSFunction
+    public static void gunzipStream(Object input, Object output, boolean shouldNotClose) throws IOException {
+        StreamConversions.convert(input, output, shouldNotClose, StreamConversions.Format.GUNZIP);
+    }
+
 	/** 
 	 * <odoc>
 	 * <key>io.randomAccessFile(aFilename, aMode) : RandomAccessFile</key>

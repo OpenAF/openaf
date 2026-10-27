@@ -74,7 +74,6 @@ public class WebSockets {
         }
 
         if (u != null && p != null) {
-            if (authenticator != null) Authenticator.setDefault(authenticator);
             org.eclipse.jetty.client.AuthenticationStore authStore = client.getHttpClient().getAuthenticationStore();
             authStore.addAuthentication(new org.eclipse.jetty.client.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));
             if (hclient != null) {

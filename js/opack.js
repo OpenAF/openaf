@@ -24,7 +24,7 @@ var verbs = {
 		                  "'-force'   : Force installation",
 		                  "'-repo'    : Use an alternatively repository for dependencies",
 		                  "'-deps'    : Automatically try to install dependencies",
-		                  "'-useunzip': Alternatively use unzip to save memory",
+		                  "'-useunzip': Accepted for compatibility; uses safe internal streaming",
 						  "'-noverify': Don't run hash verification on the end",
 						  "'-cred'    : Provide authentication credentials (e.g. user:pass)",
 		                  "'-arg'     : Pass an argument to the pre/post install scripts"]
@@ -618,7 +618,7 @@ function listFilesWithHash(startPath, excludingList) {
 }
 
 // Verify a list of hash
-function verifyHashList(startPath, filesHash) {
+function verifyHashList(startPath, filesHash, localPaths) {
 	var results = {};
 	var location = "local";
 	var http;
@@ -655,7 +655,7 @@ function verifyHashList(startPath, filesHash) {
 
 		switch(location) {
 		case "local": 
-			hash = generateHash(startPath + "/" + file);
+			hash = generateHash(isDef(localPaths) && Object.prototype.hasOwnProperty.call(localPaths, file) ? localPaths[file] : startPath + "/" + file);
 			break;
 		case "http":
 			hash = generateHash(http);
@@ -694,6 +694,28 @@ function copyFile(source, target) {
 	} catch(e) {
 		if (!(e.message.match(/DirectoryNotEmptyException/))) throw e;
 	}
+}
+
+function resolvePackagePath(root, relativePath) {
+	root = String(root)
+	relativePath = String(relativePath)
+	if (relativePath.length == 0 || relativePath == "." || relativePath == ".." || relativePath.indexOf("\\") >= 0 ||
+		relativePath.startsWith("/") || /^[A-Za-z]:/.test(relativePath)) {
+		throw "Unsafe package path: " + relativePath
+	}
+
+	var rootFile = (new java.io.File(root)).getCanonicalFile()
+	var targetFile = (new java.io.File(rootFile, relativePath)).getCanonicalFile()
+	if (targetFile.equals(rootFile) || !targetFile.toPath().startsWith(rootFile.toPath())) {
+		throw "Unsafe package path: " + relativePath
+	}
+	return String(targetFile.getPath())
+}
+
+function localPackageRelativePath(pack, file) {
+	var prefix = String(pack).replace(/\\/g, "/").replace(/\/$/, "") + "/"
+	var normalized = String(file).replace(/\\/g, "/")
+	return normalized.startsWith(prefix) ? normalized.substring(prefix.length) : normalized
 }
 
 // Delete files from target
@@ -1310,7 +1332,6 @@ function install(args) {
 	  var foundArg = false;
 	  var foundCred = false;
     var justCopy = false;
-    var useunzip = false;
     var nohash = false;
     var deps = false;
     var forceOutput = false;
@@ -1358,7 +1379,7 @@ function install(args) {
     	if (args[i] == "-arg")      { foundArg = true; continue }
     	if (args[i] == "-justcopy") { justCopy = true; continue }
     	if (args[i] == "-noverify") { nohash = true; continue }
-		if (args[i] == "-useunzip") { useunzip = true; continue }
+		if (args[i] == "-useunzip") { continue }
 		if (args[i] == "-cred")     { foundCred = true; continue }
 
 		options.pop()
@@ -1510,6 +1531,22 @@ function install(args) {
 		}
 
 		outputPath = output;
+			var packageTargets = Object.create(null), packageSources = Object.create(null)
+			try {
+				packag.files.forEach(file => {
+					var relative = packag.__filelocation == "local" ? localPackageRelativePath(pack, file) : String(file)
+					packageTargets[file] = resolvePackagePath(outputPath, relative)
+					if (packag.__filelocation == "local") packageSources[file] = resolvePackagePath(pack, relative)
+				})
+				if (isMap(packag.filesHash)) Object.keys(packag.filesHash).forEach(file => {
+					if (!Object.prototype.hasOwnProperty.call(packageTargets, file)) packageTargets[file] = resolvePackagePath(outputPath, file)
+				})
+				if (isDef(origPack) && isArray(origPack.files)) origPack.files.forEach(file => resolvePackagePath(outputPath, file))
+			} catch(e) {
+				logErr(String(e))
+				_stats.failed++
+				return
+			}
 		if (!isUnDef(packag.scripts.preinstall) && !justCopy) {
 			var _r = runScript(packag.scripts.preinstall, { OPACK_PATH: outputPath })
 			if (!_r) {
@@ -1529,7 +1566,8 @@ function install(args) {
 					
 					try {
 						var http = execHTTPWithCred(pack.replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true, undefined, true);
-						ioStreamCopy(io.writeFileStream(outputPath + "/" + apackfile), http);
+						mkdir(String((new java.io.File(packageTargets[apackfile])).getParent()))
+						ioStreamCopy(io.writeFileStream(packageTargets[apackfile]), http);
 					} catch(e) {
 						logErr("Can't copy remote file '" + apackfile + "' (" + e.message + ")");
 						return 0
@@ -1559,7 +1597,8 @@ function install(args) {
 					_ul.line(message)
 
 					try {
-						io.writeFileBytes(outputPath + "/" + apackfile, opack.getFile(apackfile));
+						mkdir(String((new java.io.File(packageTargets[apackfile])).getParent()))
+						io.writeFileBytes(packageTargets[apackfile], opack.getFile(apackfile));
 					} catch(e) {
 						logErr("Can't write " + outputPath + "/" + apackfile + " (" + e.message + ")");
 						return 0
@@ -1582,10 +1621,10 @@ function install(args) {
 				var pres = pForEach(packag.files, function(apackfile) {
 					try {
 						mkdir(outputPath);
-						var message = "Copying " + apackfile.replace(new RegExp("^" + pack.replace(/\./g, "\\."), "") + "/", "") + "...";
+						var message = "Copying " + localPackageRelativePath(pack, apackfile) + "...";
 						//log(message);
 						_ul.line(message)
-						copyFile(pack + "/" + apackfile, outputPath + "/" + apackfile.replace(new RegExp("^" + pack.replace(/\./g, "\\."), "") + "/", ""));
+						copyFile(packageSources[apackfile], packageTargets[apackfile]);
 					} catch(e) {
 						logErr(e);
 					}
@@ -1607,19 +1646,16 @@ function install(args) {
 				outputPath = outputPath.replace(/\/{2,}/g, "/");
 				var pres = pForEach(packag.files, function(apackfile) {
 					mkdir(outputPath);
-					var message = "Copying " + apackfile.replace(new RegExp("^" + pack.replace(/\./g, "\\."), "") + "/", "") + "...";
+					var message = "Copying " + apackfile + "...";
 					log(message)
 
 					try {
-						if (!useunzip) {
-							var opack = new ZIP();
-							ioStreamCopy(io.writeFileStream(outputPath + "/" + apackfile), opack.streamGetFileStream(pack, apackfile));
+						var opack = new ZIP();
+						try {
+							mkdir(String((new java.io.File(packageTargets[apackfile])).getParent()))
+							ioStreamCopy(io.writeFileStream(packageTargets[apackfile]), opack.streamGetFileStream(pack, apackfile));
+						} finally {
 							opack.close();
-						} else {
-							sh("unzip -o " + pack + " " + apackfile + " -d " + outputPath);
-							if (__exitcode != 0) {
-								throw "Unzip exit code " + __exitcode + " for " + apackfile;
-							}
 						}
 					} catch(e) {
 						logErr("Can't write " + outputPath + "/" + apackfile + " (" + e.message + ")");
@@ -1643,14 +1679,14 @@ function install(args) {
 		if (isDef(origPack)) {
 			$from(origPack.files).except(packag.files).select(file => {
 				log("Deleting " + file + "...")
-				io.rm(outputPath + "/" + file)
+					io.rm(resolvePackagePath(outputPath, file))
 			})
 		}
 
 		// Verify package files installed
 		if (!nohash) {
 			log("Verifying package files installed...");
-			var hashResults = verifyHashList(outputPath, packag.filesHash);
+				var hashResults = verifyHashList(outputPath, packag.filesHash, packageTargets);
 			var c = 0, t = 0
 			for(let i in packag.files) {
 				var file = packag.files[i];

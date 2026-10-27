@@ -81,6 +81,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testHTTPServerPrefixHelpers;
 
+   - name: Server::HTTP file helper containment
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPFileHelperContainment;
+
+   - name: Server::HTTP file browser Java containment
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPFileBrowseJava;
+
    - name: Server::Scheduler
      from: Server::Init
      to  : oJob Test
@@ -124,6 +134,8 @@ todo:
    - Server::HTTP server prefix NWU2
    - Server::HTTP server prefix Java
    - Server::HTTP server prefix helpers
+   - Server::HTTP file helper containment
+   - Server::HTTP file browser Java containment
    - Server::Locks
    - Server::Auth
    - Server::AuthApp

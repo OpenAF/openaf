@@ -1671,13 +1671,18 @@ OpenWrap.obj.prototype.fromJson = function(json) {
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.diff(aOriginalJSON, aFinalJSON, optionsMap) : String</key>
- * Produces a string representation with the difference between aOriginalJSON and aFinalJSON.\
- * If optionsMap.printColor = true it will be immediately print with ANSI colors if available.\
- * If optionsMap.justAnsi it won't print and just produce the ANSI color codes.\
- * If optionsMap.justChanges = true only the changed lines will be represented with the rest.\
- * If optionsMap.justDiff = true only the changed lines will be included.
+ * <![CDATA[
+ * Produces a string representation of the difference between `aOriginalJSON` and `aFinalJSON`.
+ *
+ * Use `optionsMap` to control the output:
+ *
+ * - `printColor: true`: immediately prints with ANSI colors when available.
+ * - `justAnsi: true`: produces ANSI color codes without printing.
+ * - `justChanges: true`: represents only the changed lines with the rest.
+ * - `justDiff: true`: includes only the changed lines.
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
@@ -1946,8 +1951,29 @@ OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) {
 		loadForRequest  : aUrl => { 
 			var res = []
 			this.__cookies.forEach((k, v) => {
-				var cookie = Packages.okhttp3.Cookie.parse(aUrl, v.value)
-				if (cookie.expiresAt() < now()) {
+				if (!isMap(v) || isUnDef(v.domain) || String(v.domain).length == 0 || isUnDef(v.value)) {
+					this.__cookies.unset(k)
+					return
+				}
+				var parseUrl
+				try {
+					parseUrl = aUrl.newBuilder().host(String(v.domain)).build()
+				} catch(e) {
+					this.__cookies.unset(k)
+					return
+				}
+				var cookie
+				try {
+					cookie = Packages.okhttp3.Cookie.parse(parseUrl, String(v.value))
+				} catch(e) {
+					this.__cookies.unset(k)
+					return
+				}
+				if (isNull(cookie)) {
+					this.__cookies.unset(k)
+				} else if ((v.hostOnly === true || String(v.hostOnly).toLowerCase() == "true") && (!cookie.hostOnly() || String(cookie.domain()) != String(parseUrl.host()))) {
+					this.__cookies.unset(k)
+				} else if (cookie.expiresAt() < now()) {
 					this.__cookies.unset(k)
 				} else {
 					if (cookie.matches(aUrl)) {
@@ -1960,13 +1986,13 @@ OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) {
 		saveFromResponse: (aUrl, cookies) => { 
 			var lst = af.fromJavaArray(cookies).map(r => {
 				var k = {
-					name    : r.name(),
-					domain  : r.domain(),
-					path    : r.path(),
-					secure  : r.secure(),
-					hostOnly: r.hostOnly()
+					name    : String(r.name()),
+					domain  : String(r.domain()),
+					path    : String(r.path()),
+					secure  : Boolean(r.secure()),
+					hostOnly: Boolean(r.hostOnly())
 				}
-				this.__cookies.set(k, merge(k, { value: r.toString() }))
+				this.__cookies.set(k, merge(k, { value: String(r.toString()) }))
 			})
 		}
 	}).build()
@@ -4022,16 +4048,21 @@ OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) 
 };
 
 /**
- * <odoc>
+ * <odoc format="markdown">
  * <key>ow.obj.schemaGenerator(aJson, aId, aRequiredArray, aDescriptionTmpl) : Map</key>
- * Given aJson object it tries to return a generated base json-schema (http://json-schema.org/understanding-json-schema/index.html)
- * with an optional aId and optional descriptions based on aDescriptionTmpl (template) with the variables id, required, json, _detail (boolean
- * indicating whent the template is used for items), type, format and key. Some special notation:\
- * The generator emits draft-07 and infers array items from the first sample item. Review and schemaCheck the result.\
- *   - to indicate a regular expression just use a string starting and ending with a "/"\
- *   - to indicate a numeric range just use a "[" (inclusive) or a "]" (exclusive) to describe a numeric range (e.g "[2, 4[" )\
- *   - for enumeration use a "(" and a ")" on the beginning and end of a string representing an array of values (e.g. "([ 'red', 'blue', 'green' ])" )\
- * \
+ * <![CDATA[
+ * Given `aJson`, tries to generate a base [JSON Schema](http://json-schema.org/understanding-json-schema/index.html), with an optional `aId` and descriptions based on `aDescriptionTmpl`.
+ *
+ * The description template accepts `id`, `required`, `json`, `_detail` (a boolean indicating when the template is used for items), `type`, `format` and `key`.
+ *
+ * The generator emits draft-07 and infers array items from the first sample item. Review the result and validate it with `schemaCheck`.
+ *
+ * Special notation:
+ *
+ * - Regular expression: a string starting and ending with `/`.
+ * - Numeric range: use `[` (inclusive) or `]` (exclusive), for example `"[2, 4["`.
+ * - Enumeration: wrap a string representing an array of values in `(` and `)`, for example `"([ 'red', 'blue', 'green' ])"`.
+ * ]]>
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescriptionTmpl) {

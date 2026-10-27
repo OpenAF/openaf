@@ -80,7 +80,13 @@ jobs:
      to: oJob Test
      exec: args.func = args.tests.testJSONExtraction;
 
+   - name: IO::ZIP extraction containment
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testUnzipContainment;
+
 todo:
+   - IO::ZIP extraction containment
    - IO::JSON extraction
    - IO::JSON metadata traversal
    - IO::IO Test JSON array stream

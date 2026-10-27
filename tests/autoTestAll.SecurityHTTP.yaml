@@ -1,0 +1,17 @@
+# Copyright 2026 Nuno Aguiar
+
+include:
+  - oJobTest.yaml
+
+jobs:
+  - name: SecurityHTTP::Init
+    exec: args.tests = require("autoTestAll.SecurityHTTP.js");
+
+  - name: SecurityHTTP::Credential isolation
+    from: SecurityHTTP::Init
+    to  : oJob Test
+    exec: args.func = args.tests.testCredentialIsolation;
+
+todo:
+  - SecurityHTTP::Init
+  - SecurityHTTP::Credential isolation
