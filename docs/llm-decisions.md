@@ -290,3 +290,32 @@ Requests contain only `{model, state, questions}`; state remains text or JSON, a
 Explicit `strategy: "structured"` still uses the configured Foundry generation transport, subject to that deployment's support. For both generation and decisions, use a resource-root `url` and, if needed, a separate native `decisionUrl`. Foundry configurations without `decisionApi: "microsoft"` retain their existing behavior.
 
 For an opt-in live smoke, supply this configuration through `OAF_MODEL` and run `OPENAF_DECISIONS_LIVE=1 java -jar openaf.jar -f tests/ai-decisions-live.js`. The script selects native and requires probabilities. Synthetic fixtures do not establish live Foundry access or inference quality.
+
+## Schema responses with native tools
+
+`jsonSchemaPromptWithStats(prompt, descriptor, model, temperature, tools)` returns
+`{ response, stats }`. On OpenAI, omitted `tools` selects registered tools; an
+explicit empty array disables them. Schema validation does not coerce or remove
+response fields.
+
+Set `schemaTransport: "responses"` for Responses API requests (`text.format`, flat
+function declarations, and `function_call_output` continuation), or `"chat"` for
+Chat Completions (`response_format`, nested function declarations, and tool
+messages). Native-tool requests default to Responses on the official OpenAI
+endpoint and Chat Completions on compatible endpoints. Tool-free requests retain
+the existing Responses default. Explicit transport selection takes precedence;
+there is no automatic replay across endpoints. Model and endpoint support must
+still be verified for each provider.
+
+`getCapabilities().structuredOutput` describes schema implementation, schema
+profile, native tools, and streaming support separately from decision capabilities.
+Schema native-tool calls aggregate token statistics across requests. Ollama keeps
+its tool phase separate from its final schema-constrained request.
+
+OpenAI and Ollama execution errors expose `toolsExecuted` and `safeToRetry`.
+Callers must also check the error code: retry safety alone does not authorize a
+JSON-mode downgrade. Confirmed OpenAI schema-format compatibility rejections before
+tool execution use `LLM_DECISION_UNSUPPORTED`; invalid schemas, malformed responses,
+authentication, and transient failures retain their existing error categories.
+After tools execute, callers must never restart the whole invocation through a
+fallback API. Successful tool results remain in conversation history on failure.

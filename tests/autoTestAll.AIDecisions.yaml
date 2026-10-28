@@ -12,6 +12,14 @@ jobs:
   from: AIDecisions::Init
   to: oJob Test
   exec: args.func = args.tests.testDecisionValidation;
+- name: AIDecisions::OpenAISchemaResponsesTools
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testOpenAISchemaResponsesTools;
+- name: AIDecisions::OpenAISchemaNativeTools
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testOpenAISchemaNativeTools;
 - name: AIDecisions::OllamaSchemaTools
   from: AIDecisions::Init
   to: oJob Test
