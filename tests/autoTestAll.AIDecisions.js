@@ -647,6 +647,29 @@
     });
     ow.test.assert(calls.length, 3, "Invalid image requests fail before HTTP");
   };
+  exports.testOllamaSchemaTools = function() {
+    ow.loadAI();
+    var g = make("ollama"), requests = [], calls = 0;
+    var schema = { schema: { type: "object", properties: { value: { type: "string" } }, required: ["value"], additionalProperties: false } };
+    g.withTool("lookup", "Look up a value", { type: "object", properties: {} }, function() { calls++; return "found"; });
+    g.getGPT().model._request = function(uri, body) {
+      requests.push(copy(body));
+      if (requests.length == 1) return { done: true, message: { role: "assistant", content: "", tool_calls: [{ function: { name: "lookup", arguments: {} } }] } };
+      if (requests.length == 2) return { done: true, message: { role: "assistant", content: "found" } };
+      return { done: true, done_reason: "stop", message: { role: "assistant", content: '{"value":"found"}' } };
+    };
+    var result = g.jsonSchemaPrompt("Look up the value", schema);
+    ow.test.assert(result.value, "found", "Schema result uses tool output");
+    ow.test.assert(calls, 1, "Tool executed once");
+    ow.test.assert(requests.length, 3, "Two tool-phase requests and one final request");
+    ow.test.assert(isUnDef(requests[0].format) && isUnDef(requests[1].format), true, "Tool phase has no format constraint");
+    ow.test.assert(isArray(requests[0].tools) && isUnDef(requests[2].tools), true, "Only tool phase sends tools");
+    ow.test.assert(requests[2].format, schema.schema, "Final request carries schema");
+    var before = stringify(g.getGPT().getConversation());
+    g.getGPT().model._request = function() { return { done: true, message: { role: "assistant", content: '{"value":3}' } }; };
+    expectError(function() { g.jsonSchemaPrompt("Bad", schema, undefined, undefined, []); }, "LLM_DECISION_INVALID_RESPONSE");
+    ow.test.assert(stringify(g.getGPT().getConversation()), before, "Failed final response does not commit history");
+  };
   exports.testDecisionGeminiSchemaHelper = function() {
     ow.loadAI();
     var g = make("gemini"), calls = [], schema = { name: "Person", description: "Example", strict: true, schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"], additionalProperties: false } };

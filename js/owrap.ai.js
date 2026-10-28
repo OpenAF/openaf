@@ -2727,6 +2727,67 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 resetDecisionStats: () => _resetStats(),
+                structuredSchemaPrompt: (prompt, descriptor, model, temperature, tools) => {
+                    var d = ow.ai.__decision;
+                    _resetStats();
+                    try { descriptor = d.copy(descriptor); } catch(e) { d.invalid(); }
+                    d.only(descriptor, ["name", "description", "schema", "strict"]);
+                    ["name", "description"].forEach(k => { if (d.has(descriptor, k) && typeof descriptor[k] != "string") d.invalid(); });
+                    if (isDef(descriptor.strict) && typeof descriptor.strict != "boolean") d.invalid();
+                    d.checkSchema(descriptor.schema);
+                    if (typeof prompt != "string") d.invalid();
+                    model = isDef(model) ? model : _model;
+                    temperature = isDef(temperature) ? temperature : _temperature;
+                    if (!d.text(model) || typeof temperature != "number" || !isFinite(temperature)) d.invalid();
+                    tools = isDef(tools) ? tools : _r.tools;
+                    if (!isArray(tools)) d.invalid();
+                    var messages = d.copy(_r.conversation);
+                    messages.push({ role: "user", content: prompt });
+                    var toolPhase = tools.length > 0;
+                    while (true) {
+                        var body = { model: model, messages: d.copy(messages), options: merge({ temperature: temperature }, d.copy(_params)), stream: false };
+                        if (!toolPhase) body.format = d.copy(descriptor.schema);
+                        if (toolPhase) body.tools = tools.map(t => {
+                            var f = isMap(t.function) ? t.function : t;
+                            return { type: "function", function: { name: f.name, description: f.description, parameters: f.parameters } };
+                        });
+                        if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body));
+                        var res = _r._request('/api/chat', body);
+                        if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, res));
+                        if (!isMap(res) || !isMap(res.message)) d.badResponse();
+                        var msg = res.message;
+                        if (res.done !== true || (isDef(res.done_reason) && res.done_reason != "stop")) d.badResponse();
+                        if (isArray(msg.tool_calls) && msg.tool_calls.length) {
+                            if (!toolPhase) d.badResponse();
+                            messages.push(d.copy(msg));
+                            msg.tool_calls.forEach(tc => {
+                                if (!isMap(tc) || !isMap(tc.function)) d.badResponse();
+                                var tool = tools.find(t => (t.function && t.function.name == tc.function.name) || t.name == tc.function.name);
+                                if (isUnDef(tool)) throw "Tool '" + tc.function.name + "' not found";
+                                var args = tc.function.arguments;
+                                if (isString(args)) { try { args = jsonParse(args, __, __, true); } catch(e) { args = {}; } }
+                                if (!isMap(args)) args = {};
+                                var result = isFunction(tool.fn) ? tool.fn(args) : "";
+                                var tm = { role: "tool", content: isString(result) ? result : stringify(result, __, ""), tool_name: tc.function.name };
+                                if (isDef(tc.id)) tm.tool_call_id = tc.id;
+                                messages.push(tm);
+                            });
+                            continue;
+                        }
+                        if (toolPhase) {
+                            if (!isString(msg.content)) d.badResponse();
+                            messages.push(d.copy(msg));
+                            messages.push({ role: "user", content: "Return the answer to the preceding request as JSON matching this schema: " + JSON.stringify(descriptor.schema) });
+                            toolPhase = false;
+                            continue;
+                        }
+                        var response = d.validateSchema(descriptor.schema, d.parse(msg.content));
+                        messages.push(d.copy(msg));
+                        _r.conversation = messages;
+                        _captureStats(res, model);
+                        return { response: response, stats: _lastStats };
+                    }
+                },
                 getCapabilities: model => {
                     var caps = ow.ai.__decision.capabilities(true, false, "verified", "unknown");
                     caps.inputTypes.push("image");
