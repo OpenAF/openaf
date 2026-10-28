@@ -6,6 +6,17 @@ on:
   pull_request:
     branches: [ t8, master ]
   workflow_dispatch:
+    inputs:
+      openafDIST:
+        description: 'Build distribution (openafDIST)'
+        type: string
+        required: false
+        default: nightly
+      openafVERSION:
+        description: 'Build version override (blank uses the build default)'
+        type: string
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -62,6 +73,9 @@ jobs:
       uses: openaf/ojob-action@v7
       with:
         ojob: build.yaml
+        args: >-
+          openafDIST=${{ inputs.openafDIST || 'nightly' }}
+          ${{ inputs.openafVERSION != '' && format('openafVERSION={0}', inputs.openafVERSION) || '' }}
           
     # -----------------------
     - name: Update openaf.jar
