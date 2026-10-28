@@ -1073,8 +1073,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     // Select transport before HTTP; never consult or update chat's fallback cache.
                     var transport = po.transport || aOptions.decisionTransport || "responses";
                     if (["responses", "chat"].indexOf(transport) < 0) d.invalid();
-                    var schema = { name: "OpenAFDecision", schema: request.schema, strict: true };
-                    var messages = [{ role: "system", content: request.instructions }, { role: "user", content: typeof request.state == "string" ? request.state : JSON.stringify(request.state) }];
+                    var schema = request.descriptor || { name: "OpenAFDecision", schema: request.schema, strict: true };
+                    var messages = request.messages || [{ role: "system", content: request.instructions }, { role: "user", content: typeof request.state == "string" ? request.state : JSON.stringify(request.state) }];
                     var body = { model: request.model }, endpoint;
                     if (transport == "responses") {
                         endpoint = "responses";
@@ -1089,6 +1089,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isDef(po.maxOutputTokens)) body.max_completion_tokens = po.maxOutputTokens;
                     }
                     if (isDef(po.temperature)) body.temperature = po.temperature;
+                    if (request.descriptor) body = merge(d.copy(aOptions.params || {}), body);
                     var raw = d.execution(() => _r._decisionRequest(_route(endpoint, request.model), body), "openai");
                     return { raw: raw, stats: _captureStats(raw, body) };
                 },
@@ -1106,7 +1107,44 @@ OpenWrap.ai.prototype.__gpttypes = {
                             item.content.forEach(part => { if (part.type !== "output_text" || typeof part.text != "string") d.badResponse(); text += part.text; });
                         });
                     }
-                    return d.structuredAnswers(d.parse(text), request);
+                    var value = d.parse(text);
+                    if (request.validate) { if (!request.validate(value)) d.badResponse(); return value; }
+                    return d.structuredAnswers(value, request);
+                },
+                structuredSchemaPrompt: (prompt, descriptor, model, temperature, tools) => {
+                    var d = ow.ai.__decision;
+                    _resetStats();
+                    if (aOptions.noResponseFormat) throw d.error("LLM_DECISION_UNSUPPORTED", "openai");
+                    if (isDef(tools) && (!isArray(tools) || tools.length)) d.invalid();
+                    try { descriptor = d.copy(descriptor); } catch(e) { d.invalid(); }
+                    d.only(descriptor, ["name", "description", "schema", "strict"]);
+                    if (!d.text(descriptor.name) || !d.map(descriptor.schema)) d.invalid();
+                    if (isDef(descriptor.description) && typeof descriptor.description != "string") d.invalid();
+                    if (isDef(descriptor.strict) && typeof descriptor.strict != "boolean") d.invalid();
+                    if (isUnDef(descriptor.strict)) descriptor.strict = true;
+                    if (typeof prompt != "string") d.invalid();
+                    model = isDef(model) ? model : _model;
+                    temperature = isDef(temperature) ? temperature : _temperature;
+                    if (!d.text(model) || typeof temperature != "number" || !isFinite(temperature)) d.invalid();
+                    var params = aOptions.params || {};
+                    if (["response_format", "text", "tools", "tool_choice", "messages", "input", "model"].some(k => d.has(params, k))) d.invalid();
+                    // A private validator must never inherit global coercion/default/removal settings.
+                    loadAjv();
+                    var validate;
+                    try {
+                        var draft = descriptor.schema.$schema || "";
+                        var version = draft.indexOf("2020-12") >= 0 ? "2020" : draft.indexOf("2019-09") >= 0 ? "2019" : "07";
+                        validate = Ajv.OpenAF.create(version, { strict: false, code: { es5: true }, unicodeRegExp: false, useDefaults: false, coerceTypes: false, removeAdditional: false }, "full").compile(descriptor.schema);
+                    } catch(e) { d.invalid(); }
+                    var conversation = d.copy(_r.conversation);
+                    var messages = conversation.concat([{ role: "user", content: prompt }]);
+                    if (_noSystem) messages = messages.map(m => { if (m.role == "system") m.role = "developer"; return m; });
+                    var request = { model: model, schema: descriptor.schema, descriptor: descriptor, messages: messages, validate: validate,
+                        providerOptions: { transport: aOptions.schemaTransport || aOptions.decisionTransport || "responses", temperature: temperature } };
+                    var execution = _r.rawStructuredPrompt(request);
+                    var response = _r.normalizeStructuredResponse(execution.raw, request);
+                    _r.conversation = conversation.concat([{ role: "user", content: prompt }, { role: "assistant", content: JSON.stringify(response) }]);
+                    return { response: response, stats: execution.stats };
                 },
                 getLastStats: () => _lastStats,
                 setDebugCh: (aChName) => {
@@ -4228,6 +4266,7 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
  * - `headers`: extra request headers. These override generated headers with the same names.
  * - `params`: extra request body parameters merged into prompt, image and embedding calls.
  * - `noSystem`: when true, system messages are converted to developer messages where supported (defaults to true).
+ * - `schemaTransport`: explicit schema-hook transport, "responses" (default) or "chat"; no automatic fallback.
  * - `noResponseFormat`: when true, disables OpenAI-compatible JSON response_format injection.
  * - `promptCaching`: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false).
  *
