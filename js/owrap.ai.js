@@ -770,6 +770,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             }
             var _toResponsesInput = aMsgs => {
                 return _$(aMsgs, "aMsgs").isArray().default([]).map(m => {
+                    if (isMap(m) && isString(m.type)) return clone(m)
                     if (!isMap(m)) return { role: "user", content: [ { type: "input_text", text: _toResponseInputText(m) } ] }
                     if (isArray(m.content)) {
                         return {
@@ -1073,8 +1074,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     // Select transport before HTTP; never consult or update chat's fallback cache.
                     var transport = po.transport || aOptions.decisionTransport || "responses";
                     if (["responses", "chat"].indexOf(transport) < 0) d.invalid();
-                    var schema = { name: "OpenAFDecision", schema: request.schema, strict: true };
-                    var messages = [{ role: "system", content: request.instructions }, { role: "user", content: typeof request.state == "string" ? request.state : JSON.stringify(request.state) }];
+                    var schema = request.descriptor || { name: "OpenAFDecision", schema: request.schema, strict: true };
+                    var messages = request.messages || [{ role: "system", content: request.instructions }, { role: "user", content: typeof request.state == "string" ? request.state : JSON.stringify(request.state) }];
                     var body = { model: request.model }, endpoint;
                     if (transport == "responses") {
                         endpoint = "responses";
@@ -1089,6 +1090,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isDef(po.maxOutputTokens)) body.max_completion_tokens = po.maxOutputTokens;
                     }
                     if (isDef(po.temperature)) body.temperature = po.temperature;
+                    if (request.descriptor) body = merge(d.copy(aOptions.params || {}), body);
                     var raw = d.execution(() => _r._decisionRequest(_route(endpoint, request.model), body), "openai");
                     return { raw: raw, stats: _captureStats(raw, body) };
                 },
@@ -1106,7 +1108,125 @@ OpenWrap.ai.prototype.__gpttypes = {
                             item.content.forEach(part => { if (part.type !== "output_text" || typeof part.text != "string") d.badResponse(); text += part.text; });
                         });
                     }
-                    return d.structuredAnswers(d.parse(text), request);
+                    var value = d.parse(text);
+                    if (request.validate) { if (!request.validate(value)) d.badResponse(); return value; }
+                    return d.structuredAnswers(value, request);
+                },
+                structuredSchemaPrompt: (prompt, descriptor, model, temperature, tools) => {
+                    var d = ow.ai.__decision;
+                    _resetStats();
+                    if (aOptions.noResponseFormat) throw d.error("LLM_DECISION_UNSUPPORTED", "openai");
+                    if (isDef(tools) && !isArray(tools)) d.invalid();
+                    try { descriptor = d.copy(descriptor); } catch(e) { d.invalid(); }
+                    d.only(descriptor, ["name", "description", "schema", "strict"]);
+                    if (!d.text(descriptor.name) || !d.map(descriptor.schema)) d.invalid();
+                    if (isDef(descriptor.description) && typeof descriptor.description != "string") d.invalid();
+                    if (isDef(descriptor.strict) && typeof descriptor.strict != "boolean") d.invalid();
+                    if (isUnDef(descriptor.strict)) descriptor.strict = true;
+                    if (typeof prompt != "string") d.invalid();
+                    model = isDef(model) ? model : _model;
+                    temperature = isDef(temperature) ? temperature : _temperature;
+                    if (!d.text(model) || typeof temperature != "number" || !isFinite(temperature)) d.invalid();
+                    var params = aOptions.params || {};
+                    if (["response_format", "text", "tools", "tool_choice", "messages", "input", "model"].some(k => d.has(params, k))) d.invalid();
+                    // A private validator must never inherit global coercion/default/removal settings.
+                    loadAjv();
+                    var validate;
+                    try {
+                        var draft = descriptor.schema.$schema || "";
+                        var version = draft.indexOf("2020-12") >= 0 ? "2020" : draft.indexOf("2019-09") >= 0 ? "2019" : "07";
+                        validate = Ajv.OpenAF.create(version, { strict: false, code: { es5: true }, unicodeRegExp: false, useDefaults: false, coerceTypes: false, removeAdditional: false }, "full").compile(descriptor.schema);
+                    } catch(e) { d.invalid(); }
+                    var conversation = d.copy(_r.conversation);
+                    var messages = conversation.concat([{ role: "user", content: prompt }]);
+                    if (_noSystem) messages = messages.map(m => { if (m.role == "system") m.role = "developer"; return m; });
+                    var request = { model: model, schema: descriptor.schema, descriptor: descriptor, messages: messages, validate: validate,
+                        providerOptions: { transport: aOptions.schemaTransport || aOptions.decisionTransport || "responses", temperature: temperature } };
+                    var selected = isDef(tools) ? tools : Object.keys(_r.tools);
+                    var wireTools = selected.map(t => {
+                        var tool = isString(t) ? _r.tools[t] : t;
+                        if (!isMap(tool) || !isMap(tool.function)) d.invalid();
+                        return { type: "function", function: d.copy(tool.function) };
+                    });
+                    // Official OpenAI defaults to Responses; compatible endpoints retain chat.
+                    // Explicit transport always wins, and no request is replayed across transports.
+                    var officialSchemaEndpoint = aOptions.mode == "openai" && /^https:\/\/api\.openai\.com(?:\/v1)?\/?$/.test(aOptions.url);
+                    var toolTransport = aOptions.schemaTransport || aOptions.decisionTransport || (officialSchemaEndpoint ? "responses" : "chat");
+                    if (["responses", "chat"].indexOf(toolTransport) < 0) d.invalid();
+                    var responseItems = _toResponsesInput(messages);
+                    var executed = false, totals = {}, execution, response;
+                    try {
+                        while (true) {
+                            if (wireTools.length) {
+                                var body = merge(d.copy(params), { model: model, temperature: temperature, messages: d.copy(messages),
+                                    tools: wireTools, response_format: { type: "json_schema", json_schema: descriptor } });
+                                if (toolTransport == "responses") {
+                                    body = merge(d.copy(params), { model: model, temperature: temperature, input: d.copy(responseItems), store: false,
+                                        text: { format: merge({ type: "json_schema" }, descriptor) },
+                                        tools: wireTools.map(t => merge({ type: "function", strict: false }, t.function)) });
+                                }
+                                var raw = d.execution(() => _r._decisionRequest(_route(toolTransport == "responses" ? "responses" : "chat/completions", model), body), "openai");
+                                execution = { raw: raw, stats: _captureStats(raw, body) };
+                            } else execution = _r.rawStructuredPrompt(request);
+                            var stats = execution.stats || {};
+                            Object.keys(stats.tokens || {}).forEach(k => { if (typeof stats.tokens[k] == "number") totals[k] = (totals[k] || 0) + stats.tokens[k]; });
+                            if (wireTools.length && toolTransport == "responses" && isArray(execution.raw.output)) {
+                                var output = execution.raw.output;
+                                var functionCalls = output.filter(item => item.type == "function_call");
+                                if (functionCalls.length) {
+                                    if (execution.raw.status != "completed" || execution.raw.incomplete_details) d.badResponse();
+                                    responseItems = responseItems.concat(d.copy(output));
+                                    _r.conversation = d.copy(responseItems);
+                                    functionCalls.forEach(tc => {
+                                        if (!isString(tc.call_id) || !isString(tc.arguments)) d.badResponse();
+                                        var tool = _r.tools[tc.name];
+                                        if (!wireTools.some(t => t.function.name == tc.name) || !tool || !isFunction(tool.fn)) d.badResponse();
+                                        var args = d.parse(tc.arguments);
+                                        executed = true;
+                                        var result = tool.fn(args);
+                                        responseItems.push({ type: "function_call_output", call_id: tc.call_id, output: isString(result) ? result : JSON.stringify(result) });
+                                        _r.conversation = d.copy(responseItems);
+                                    });
+                                    continue;
+                                }
+                            }
+                            if (wireTools.length && isArray(execution.raw.choices) && execution.raw.choices.length == 1) {
+                                var choice = execution.raw.choices[0], msg = choice.message;
+                                if (choice.finish_reason == "tool_calls" && isMap(msg) && isArray(msg.tool_calls) && msg.tool_calls.length) {
+                                    if (msg.refusal) d.badResponse();
+                                    messages.push(d.copy(msg));
+                                    _r.conversation = d.copy(messages);
+                                    msg.tool_calls.forEach(tc => {
+                                        if (!isMap(tc.function) || !isString(tc.id)) d.badResponse();
+                                        var tool = _r.tools[tc.function.name];
+                                        if (!wireTools.some(t => t.function.name == tc.function.name) || !tool || !isFunction(tool.fn)) d.badResponse();
+                                        var args = d.parse(tc.function.arguments);
+                                        executed = true;
+                                        var result = tool.fn(args);
+                                        messages.push({ role: "tool", tool_call_id: tc.id, content: isString(result) ? result : JSON.stringify(result) });
+                                        _r.conversation = d.copy(messages);
+                                    });
+                                    continue;
+                                }
+                            }
+                            response = _r.normalizeStructuredResponse(execution.raw, request);
+                            _r.conversation = wireTools.length && toolTransport == "responses" ? responseItems.concat(d.copy(execution.raw.output)) : messages.concat([{ role: "assistant", content: JSON.stringify(response) }]);
+                            if (Object.keys(totals).length) stats.tokens = totals;
+                            _lastStats = stats;
+                            return { response: response, stats: stats };
+                        }
+                    } catch(e) {
+                        var error = e && /^LLM_DECISION_/.test(e.code || "") ? e : d.error("LLM_DECISION_PROVIDER_ERROR", "openai");
+                        if (!executed && error.code == "LLM_DECISION_PROVIDER_ERROR" && [400, 422].indexOf(error.status) >= 0 && !/invalid schema/i.test(error.providerMessage || "") &&
+                            /(?:response_format|json_schema|structured outputs?).*(?:not supported|unsupported)|(?:not supported|unsupported).*(?:response_format|json_schema|structured outputs?)/i.test(error.providerMessage || "")) {
+                            error = d.error("LLM_DECISION_UNSUPPORTED", "openai", error.status, error.providerMessage);
+                        }
+                        error.toolsExecuted = executed;
+                        error.safeToRetry = !executed;
+                        error.stats = { tokens: totals };
+                        if (!executed) _r.conversation = conversation;
+                        throw error;
+                    }
                 },
                 getLastStats: () => _lastStats,
                 setDebugCh: (aChName) => {
@@ -2727,6 +2847,81 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 resetDecisionStats: () => _resetStats(),
+                structuredSchemaPrompt: (prompt, descriptor, model, temperature, tools) => {
+                    var d = ow.ai.__decision;
+                    _resetStats();
+                    try { descriptor = d.copy(descriptor); } catch(e) { d.invalid(); }
+                    d.only(descriptor, ["name", "description", "schema", "strict"]);
+                    ["name", "description"].forEach(k => { if (d.has(descriptor, k) && typeof descriptor[k] != "string") d.invalid(); });
+                    if (isDef(descriptor.strict) && typeof descriptor.strict != "boolean") d.invalid();
+                    d.checkSchema(descriptor.schema);
+                    if (typeof prompt != "string") d.invalid();
+                    model = isDef(model) ? model : _model;
+                    temperature = isDef(temperature) ? temperature : _temperature;
+                    if (!d.text(model) || typeof temperature != "number" || !isFinite(temperature)) d.invalid();
+                    tools = isDef(tools) ? tools : _r.tools;
+                    if (!isArray(tools)) d.invalid();
+                    var messages = d.copy(_r.conversation);
+                    messages.push({ role: "user", content: prompt });
+                    var toolPhase = tools.length > 0;
+                    var executed = false, totals = {};
+                    try { while (true) {
+                        var body = { model: model, messages: d.copy(messages), options: merge({ temperature: temperature }, d.copy(_params)), stream: false };
+                        if (!toolPhase) body.format = d.copy(descriptor.schema);
+                        if (toolPhase) body.tools = tools.map(t => {
+                            var f = isMap(t.function) ? t.function : t;
+                            return { type: "function", function: { name: f.name, description: f.description, parameters: f.parameters } };
+                        });
+                        if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body));
+                        var res = _r._request('/api/chat', body);
+                        if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, res));
+                        if (!isMap(res) || !isMap(res.message)) d.badResponse();
+                        _captureStats(res, model);
+                        Object.keys((_lastStats || {}).tokens || {}).forEach(k => {
+                            if (typeof _lastStats.tokens[k] == "number") totals[k] = (totals[k] || 0) + _lastStats.tokens[k];
+                        });
+                        var msg = res.message;
+                        if (res.done !== true || (isDef(res.done_reason) && res.done_reason != "stop")) d.badResponse();
+                        if (isArray(msg.tool_calls) && msg.tool_calls.length) {
+                            if (!toolPhase) d.badResponse();
+                            messages.push(d.copy(msg));
+                            msg.tool_calls.forEach(tc => {
+                                if (!isMap(tc) || !isMap(tc.function)) d.badResponse();
+                                var tool = tools.find(t => (t.function && t.function.name == tc.function.name) || t.name == tc.function.name);
+                                if (isUnDef(tool)) throw "Tool '" + tc.function.name + "' not found";
+                                var args = tc.function.arguments;
+                                if (isString(args)) { try { args = jsonParse(args, __, __, true); } catch(e) { args = {}; } }
+                                if (!isMap(args)) args = {};
+                                if (!isFunction(tool.fn)) d.badResponse();
+                                executed = true;
+                                var result = tool.fn(args);
+                                var tm = { role: "tool", content: isString(result) ? result : stringify(result, __, ""), tool_name: tc.function.name };
+                                if (isDef(tc.id)) tm.tool_call_id = tc.id;
+                                messages.push(tm);
+                            });
+                            continue;
+                        }
+                        if (toolPhase) {
+                            if (!isString(msg.content)) d.badResponse();
+                            messages.push(d.copy(msg));
+                            messages.push({ role: "user", content: "Return the answer to the preceding request as JSON matching this schema: " + JSON.stringify(descriptor.schema) });
+                            toolPhase = false;
+                            continue;
+                        }
+                        var response = d.validateSchema(descriptor.schema, d.parse(msg.content));
+                        messages.push(d.copy(msg));
+                        _r.conversation = messages;
+                        if (_lastStats && Object.keys(totals).length) _lastStats.tokens = totals;
+                        return { response: response, stats: _lastStats };
+                    } } catch(e) {
+                        var error = e && /^LLM_DECISION_/.test(e.code || "") ? e : d.error("LLM_DECISION_PROVIDER_ERROR", "ollama");
+                        error.toolsExecuted = executed;
+                        error.safeToRetry = !executed;
+                        error.stats = { tokens: totals };
+                        if (executed) _r.conversation = messages;
+                        throw error;
+                    }
+                },
                 getCapabilities: model => {
                     var caps = ow.ai.__decision.capabilities(true, false, "verified", "unknown");
                     caps.inputTypes.push("image");
@@ -4167,6 +4362,7 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
  * - `headers`: extra request headers. These override generated headers with the same names.
  * - `params`: extra request body parameters merged into prompt, image and embedding calls.
  * - `noSystem`: when true, system messages are converted to developer messages where supported (defaults to true).
+ * - `schemaTransport`: explicit schema-hook transport, "responses" or "chat"; no automatic fallback. Tool-free calls default to Responses. Native-tool calls default to Responses on the official OpenAI endpoint and Chat Completions on compatible endpoints.
  * - `noResponseFormat`: when true, disables OpenAI-compatible JSON response_format injection.
  * - `promptCaching`: when true adds Anthropic cache_control markers; no prompt-caching beta header is required (defaults to false).
  *
@@ -4289,7 +4485,11 @@ OpenWrap.ai.prototype.gpt.prototype.getEmbeddings = function(aInput, aDimensions
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.getCapabilities = function() {
-    return isFunction(this.model.getCapabilities) ? ow.ai.__decision.copy(this.model.getCapabilities(this.__modelName)) : ow.ai.__decision.capabilities(false, false, "unsupported");
+    var caps = isFunction(this.model.getCapabilities) ? ow.ai.__decision.copy(this.model.getCapabilities(this.__modelName)) : ow.ai.__decision.capabilities(false, false, "unsupported");
+    caps.structuredOutput = { implemented: isFunction(this.model.structuredSchemaPrompt), streaming: false,
+        nativeTools: this.__type == "openai" || this.__type == "ollama",
+        schemaProfile: this.__type == "openai" ? "json-schema" : "openaf-subset" };
+    return caps;
 };
 
 OpenWrap.ai.prototype.gpt.prototype.__executeDecision = function(state, questions, options, rawOnly) {

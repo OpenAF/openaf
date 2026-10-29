@@ -6,13 +6,13 @@
     "build": "node build.cjs"
   },
   "dependencies": {
-    "ajv": "8.20.0",
-    "ajv-formats": "3.0.1"
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
   },
   "devDependencies": {
-    "browserify": "17.0.1",
     "@babel/core": "7.29.7",
     "@babel/preset-env": "7.28.5",
+    "browserify": "17.0.1",
     "terser": "5.44.1"
   }
 }

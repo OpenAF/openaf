@@ -989,11 +989,13 @@
             strict: true
         };
 
-        g.model._request = function(url, body) {
+        g.model._decisionRequest = function(url, body) {
             return {
+                status: "completed",
                 model: "gpt-4o",
                 output: [
                     {
+                        type: "message", status: "completed",
                         content: [
                             { type: "output_text", text: '{"name":"Alice","age":30}' }
                         ]
@@ -1007,6 +1009,30 @@
         ow.test.assert(isMap(result), true, "Problem: jsonSchemaPrompt should return a parsed map.");
         ow.test.assert(result.name, "Alice", "Problem: jsonSchemaPrompt should parse name from JSON.");
         ow.test.assert(result.age, 30, "Problem: jsonSchemaPrompt should parse age from JSON.");
+    };
+
+    exports.testAIOpenAISchemaHook = function() {
+        ow.loadAI();
+        var descriptor = { name: "Value", schema: { type: "object", properties: { value: { anyOf: [{ type: "string", pattern: "^ok$" }, { type: "null" }] } }, required: ["value"], additionalProperties: false } };
+        ["chat", "responses"].forEach(function(transport) {
+            var g = new ow.ai.gpt("openai", { key: "test", url: "https://example.invalid", schemaTransport: transport });
+            var before = JSON.stringify(descriptor), calls = 0;
+            g.model._decisionRequest = function(url, body) {
+                calls++;
+                var wire = transport == "chat" ? body.response_format.json_schema : body.text.format;
+                ow.test.assert(wire.name, "Value", "Schema name");
+                ow.test.assert(wire.strict, true, "Strict default");
+                return transport == "chat" ? { choices: [{ finish_reason: "stop", message: { content: '{"value":"ok"}' } }] } : { status: "completed", output: [{ type: "message", status: "completed", content: [{ type: "output_text", text: '{"value":"ok"}' }] }] };
+            };
+            ow.test.assert(g.jsonSchemaPrompt("Extract", descriptor).value, "ok", "Parsed schema response");
+            ow.test.assert(calls, 1, "Single request");
+            ow.test.assert(JSON.stringify(descriptor), before, "Descriptor preserved");
+            var history = JSON.stringify(g.model.conversation), failed = false;
+            g.model._decisionRequest = function() { return { choices: [{ finish_reason: "stop", message: { content: '{"value":"bad"}' } }] }; };
+            try { g.jsonSchemaPrompt("Extract", descriptor); } catch(e) { failed = true; }
+            ow.test.assert(failed, true, "Pattern validation rejects invalid output");
+            ow.test.assert(JSON.stringify(g.model.conversation), history, "Failed response preserves history");
+        });
     };
 
     exports.testAIOpenAIJsonSchemaPromptWithStats = function() {
@@ -1026,12 +1052,14 @@
             strict: true
         };
 
-        g.model._request = function(url, body) {
+        g.model._decisionRequest = function(url, body) {
             return {
+                status: "completed",
                 model: "gpt-4o",
                 output_text: '{"name":"Bob"}',
                 output: [
                     {
+                        type: "message", status: "completed",
                         content: [
                             { type: "output_text", text: '{"name":"Bob"}' }
                         ]

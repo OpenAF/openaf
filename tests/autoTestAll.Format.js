@@ -164,6 +164,17 @@
         ow.loadFormat();
     };
 
+    exports.testStringHex = function() {
+        var bytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 4);
+        bytes[0] = 0; bytes[1] = 15; bytes[2] = -128; bytes[3] = -1;
+        var empty = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 0);
+        ow.test.assert(ow.format.string.toHex(bytes), "00 0F 80 FF", "Default hex separator");
+        ow.test.assert(ow.format.string.toHex(bytes, ":"), "00:0F:80:FF", "Custom hex separator");
+        ow.test.assert(ow.format.string.toHex(bytes, ""), "000F80FF", "Empty hex separator");
+        ow.test.assert(ow.format.string.toHex(empty), "", "Empty hex input");
+        ow.test.assert(ow.format.string.toHexArray(bytes, 2).length, 2, "Hex array lines");
+    };
+
     exports.testCompareVersion = function() {
         ow.test.assert(ow.format.compareVersion("20260101", "20251104"), 1, "Problem comparing date versions");
         ow.test.assert(ow.format.compareVersion("20251104", "20260101"), -1, "Problem comparing lower date versions");
