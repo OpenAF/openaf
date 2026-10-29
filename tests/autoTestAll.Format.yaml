@@ -24,6 +24,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testPrintTreeWithoutConsole;
 
+   - name: Format::String hex
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testStringHex;
+
    # Format tests
    # --------------
    - name: Format::Init
@@ -394,6 +399,7 @@ todo:
    # ------------
    
    - Format::Load Format
+   - Format::String hex
    - Format::Add number separator
    - Format::Number abbreviation
    - Format::Number rounding

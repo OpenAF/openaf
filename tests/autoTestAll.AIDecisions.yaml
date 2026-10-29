@@ -12,6 +12,18 @@ jobs:
   from: AIDecisions::Init
   to: oJob Test
   exec: args.func = args.tests.testDecisionValidation;
+- name: AIDecisions::OpenAISchemaResponsesTools
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testOpenAISchemaResponsesTools;
+- name: AIDecisions::OpenAISchemaNativeTools
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testOpenAISchemaNativeTools;
+- name: AIDecisions::OllamaSchemaTools
+  from: AIDecisions::Init
+  to: oJob Test
+  exec: args.func = args.tests.testOllamaSchemaTools;
 - name: AIDecisions::DecisionGeminiStructured
   from: AIDecisions::Init
   to: oJob Test
@@ -113,6 +125,7 @@ jobs:
   to: oJob Test
   exec: args.func = args.tests.testDecisionMicrosoftHTTP;
 todo:
+- AIDecisions::OllamaSchemaTools
 - AIDecisions::DecisionMicrosoft
 - AIDecisions::DecisionMicrosoftHTTP
 - AIDecisions::DecisionOpenRouter
