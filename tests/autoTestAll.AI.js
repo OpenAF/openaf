@@ -591,6 +591,29 @@
         requests = [];
         g.model.rawPrompt("hi", __, 0.2);
         ow.test.assert(requests[1].temperature, 0.2, "Anthropic tool follow-up lost an explicit temperature");
+
+        // Mini-A constructs multiple clients from the same configuration object.
+        [__, 0, 0.2].forEach(function(temperature) {
+            var config = { key: "test-key", model: "claude-test" };
+            if (isDef(temperature)) config.temperature = temperature;
+            for (var i = 0; i < 2; i++) {
+                var client = new ow.ai.gpt("anthropic", config);
+                ow.test.assert(config.temperature, temperature, "Anthropic construction mutated configured temperature");
+                var captured;
+                client.model._request = function(url, body) {
+                    captured = body;
+                    return { content: [ { type: "text", text: "ok" } ] };
+                };
+                client.model._requestStream = function(url, body) {
+                    captured = body;
+                    return af.fromString2InputStream("data: [DONE]\n\n");
+                };
+                client.model.rawPrompt("hi");
+                ow.test.assert(captured.temperature, temperature, "Reused Anthropic config changed request temperature");
+                client.model.rawPromptStream("hi");
+                ow.test.assert(captured.temperature, temperature, "Reused Anthropic config changed streaming temperature");
+            }
+        });
     };
 
     exports.testAIAnthropicPromptImageAndAttachments = function() {

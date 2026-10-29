@@ -3426,7 +3426,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             // parameter entirely (or reject any non-default value), so it must only be
             // sent when the caller actually asked for it -- never injected as a silent default.
             var _temperatureProvided = isDef(aOptions.temperature)
-            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+            var _temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.anthropic.com/")
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
             aOptions.promptCaching = _$(aOptions.promptCaching, "aOptions.promptCaching").isBoolean().default(false)
@@ -3436,7 +3436,6 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _key = aOptions.key
             var _timeout = aOptions.timeout
             var _model = aOptions.model
-            var _temperature = aOptions.temperature
             var _noSystem = aOptions.noSystem
             var _promptCaching = aOptions.promptCaching
             var _lastStats = __
