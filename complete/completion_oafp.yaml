@@ -30,7 +30,7 @@ complete:
     desc: A base64 text format
     opts:
     - name: base64gzip=
-      desc: If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output
+      desc: If true, gzip before Base64 encoding or gunzip after Base64 decoding
   - name: out=bstable
     desc: A borderless Unicode table with separators between records and wrapping to the terminal width (for lists or maps)
   - name: out=btable
@@ -338,7 +338,7 @@ complete:
     desc: A base64 text format
     opts:
     - name: base64gzip=
-      desc: If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output
+      desc: If true, gzip before Base64 encoding or gunzip after Base64 decoding
   - name: in=ch
     desc: An OpenAF channel format
     opts:
@@ -415,7 +415,7 @@ complete:
     desc: The Java GC log lines text format
     opts:
     - name: javagcjoin=
-      desc: If true it will return an array with each processed line.
+      desc: If true returns one array of parsed GC events; otherwise emits events incrementally.
   - name: in=javathread
     desc: The Java Thread stack dump lines text format
     opts:
@@ -897,7 +897,7 @@ complete:
 - name: indsvfields=
   desc: Comma separated column names. When provided, every non-comment line is data, including the first; no input header is consumed.
 - name: javagcjoin=
-  desc: If true it will return an array with each processed line.
+  desc: If true returns one array of parsed GC events; otherwise emits events incrementally.
 - name: javathreadpid=
   desc: Optional you can provider the local java process pid to try to get the thread stack trace (*)
 - name: hsperfmetadata=
@@ -1019,7 +1019,7 @@ complete:
 - name: xmlfiltertag=
   desc: If true will filter the XML tags
 - name: base64gzip=
-  desc: If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output
+  desc: If true, gzip before Base64 encoding or gunzip after Base64 decoding
 - name: inputcsv=
   desc: CSV input configuration as JSON/SLON
 - name: incsv=
