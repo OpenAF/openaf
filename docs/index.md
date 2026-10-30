@@ -37,6 +37,7 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 - [mcp-oauth.md](mcp-oauth.md) – Localhost OAuth2 login with `$sec` storage and `$mcp` integration
 - [ojob-security.md](./ojob-security.md) – Integrity, auditing, unique execution, channel exposure
 - [openaf-flags.md](./openaf-flags.md) – Runtime flags / environment variables
+- [jdbc-url-policy.md](./jdbc-url-policy.md) – JDBC URL initialization and custom-class permissions, protected options and migration
 
 ## Advanced & Deep Dives
 - [json-schema.md](json-schema.md) – JSON Schema validation, schema generation, draft selection, and Ajv compatibility

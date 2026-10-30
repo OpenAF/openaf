@@ -1,6 +1,72 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    exports.testDBUrlPolicy = function() {
+        var savedInit = __flags.DB_ALLOW_JDBC_URL_INIT;
+        var savedClasses = __flags.DB_ALLOW_JDBC_URL_CUSTOM_CLASSES;
+        var name = "urlpolicy_" + genUUID().replace(/-/g, "");
+        var url = "jdbc:h2:mem:" + name;
+        var initUrl = url + ";INIT=CREATE TABLE marker(id INT)";
+        var db, pool;
+        var blocked = function(fn, option) {
+            var error;
+            try { fn(); } catch (e) { error = e.javaException; }
+            ow.test.assert(isDef(error), true, "Expected JDBC URL policy rejection");
+            ow.test.assert(String(error.getSQLState()), "08004", "Wrong policy SQLState");
+            ow.test.assert(String(error.getMessage()).indexOf(option) >= 0, true, "Missing blocked option");
+            ow.test.assert(String(error.getMessage()).indexOf("jdbc:") < 0, true, "Policy error leaked URL");
+        };
+        try {
+            __flags.DB_ALLOW_JDBC_URL_INIT = false;
+            __flags.DB_ALLOW_JDBC_URL_CUSTOM_CLASSES = false;
+            [
+                ["jdbc:duckdb:;session_init_sql_file=probe.sql", "session_init_sql_file"],
+                ["jdbc:sqlserver://localhost;socketFactoryClass=probe.Factory", "socketfactoryclass"],
+                ["jdbc:db2://localhost/db:pluginClassName=probe.Factory;", "pluginclassname"],
+                ["jdbc:ucanaccess://probe.mdb;jackcessOpener=probe.Factory", "jackcessopener"],
+                ["jdbc:xbib:csv:class:probe.Factory", "class:"],
+                ["jdbc:presto://localhost:8080/db?queryInterceptors=probe.Factory", "queryinterceptors"],
+                ["jdbc:yugabytedb://localhost/db?xmlFactoryFactory=probe.Factory", "xmlfactoryfactory"],
+                ["jdbc:neo4j://localhost/db?translatorFactory=DEFAULT", "translatorfactory"]
+            ].forEach(function(entry) {
+                blocked(() => new DB("openaf.guard.MissingDriver", entry[0], "", ""), entry[1]);
+            });
+            // Keep the database alive to prove a rejected connection cannot create the marker.
+            db = new DB("org.h2.Driver", url, "sa", "");
+            blocked(() => new DB("org.h2.Driver", initUrl, "sa", ""), "init");
+            blocked(() => new DB(initUrl, "sa", ""), "init");
+            blocked(() => new DB("org.h2.Driver", url + ";I\\NIT=CREATE TABLE marker(id INT)", "sa", ""), "init");
+            blocked(() => new DB("org.h2.Driver", url + ";INIT\\=CREATE TABLE marker(id INT)", "sa", ""), "init");
+            blocked(() => createDBInMem(name + ";INIT=CREATE TABLE marker(id INT)", false), "init");
+            ow.loadObj();
+            pool = ow.obj.pool.DB("org.h2.Driver", initUrl, "sa", "").setMin(1).setMax(1);
+            blocked(() => pool.start(), "init");
+            ow.test.assert(Number(db.q("SELECT COUNT(*) AS C FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='MARKER'").results[0].C),
+                0, "Rejected initialization created a table");
+            __flags.DB_ALLOW_JDBC_URL_INIT = "true";
+            blocked(() => new DB("org.h2.Driver", initUrl, "sa", ""), "init");
+            __flags.DB_ALLOW_JDBC_URL_INIT = true;
+            blocked(() => new DB("org.h2.Driver", url + ";DATABASE_EVENT_LISTENER='guard.MissingClass'", "sa", ""), "database_event_listener");
+            var initialized = new DB("org.h2.Driver", initUrl, "sa", "");
+            try {
+                ow.test.assert(Number(initialized.q("SELECT COUNT(*) AS C FROM marker").results[0].C), 0,
+                    "Explicit initialization permission did not run INIT");
+            } finally { initialized.close(); }
+            __flags.DB_ALLOW_JDBC_URL_INIT = false;
+            __flags.DB_ALLOW_JDBC_URL_CUSTOM_CLASSES = true;
+            blocked(() => new DB("org.h2.Driver", initUrl, "sa", ""), "init");
+            // URL opt-in never restricts explicit SQL executed after a normal connection.
+            db.u("CREATE TABLE explicit_sql(id INT)");
+            ow.test.assert(Number(db.q("SELECT COUNT(*) AS C FROM explicit_sql").results[0].C), 0,
+                "Ordinary explicit SQL changed");
+        } finally {
+            if (isDef(pool)) pool.stop();
+            if (isDef(db)) db.close();
+            __flags.DB_ALLOW_JDBC_URL_INIT = savedInit;
+            __flags.DB_ALLOW_JDBC_URL_CUSTOM_CLASSES = savedClasses;
+        }
+    };
+
     exports.testDBInMemory = function() {
         var db = createDBInMem("test", false);
         var l = [{operation: "hi", version:"1"}, {operation: "bye", version:"1"}];

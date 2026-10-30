@@ -200,6 +200,8 @@ var OAF_SIGNATURE_KEY = getEnvsDef("OAF_SIGNATURE_KEY", OAF_SIGNATURE_KEY, __)
 var OAF_VALIDATION_STRICT = getEnvsDef("OAF_VALIDATION_STRICT", OAF_VALIDATION_STRICT, false)
 
 var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.prototype.toString.call(__flags) ? __flags : {
+	DB_ALLOW_JDBC_URL_INIT     : false,  // Permit protected JDBC URL initialization SQL for trusted connections
+	DB_ALLOW_JDBC_URL_CUSTOM_CLASSES: false, // Permit protected JDBC URL custom classes for trusted connections
 	OJOB_SEQUENTIAL            : true,
 	OJOB_FNCACHE               : true,   // If true, oJob caches compiled exec/dep/each functions instead of recompiling per run
 	OJOB_FNCACHE_SIZE          : 512,    // Max entries in the oJob compiled-function cache before it's cleared

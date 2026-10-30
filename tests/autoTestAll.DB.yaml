@@ -29,6 +29,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testDBStatementCleanup;
 
+   - name: DB::JDBC URL policy
+     from: DB::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDBUrlPolicy;
+
 todo:
    # DB tests
    # ------------
@@ -37,3 +42,4 @@ todo:
    - DB::DB type conversion to JS
    - DB::Prepared statement binds and cache
    - DB::Statement error cleanup
+   - DB::JDBC URL policy
