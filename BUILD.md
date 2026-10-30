@@ -52,3 +52,8 @@ To test the project, you can use the following command:
 cd tests
 java --enable-native-access=ALL-UNNAMED -jar ../openaf.jar --ojob -e autoTestAll.yaml
 ```
+
+### Optional Maven Central distribution
+
+See [Maven Central publishing](docs/dev/maven-central-publishing.md) for the
+separate, opt-in release pipeline, local validation and signing requirements.

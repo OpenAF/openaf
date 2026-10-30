@@ -8207,22 +8207,7 @@ const ioStreamWrite = function(aStream, aString, aBufferSize, useNIO) {
 	if (useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aString, aStream, "utf-8");
 	} else {
-		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
-		var channel;
-		try {
-			channel = aStream.getChannel();
-		} catch(e) {
-			channel = java.nio.channels.Channels.newChannel(aStream);
-		}
-		var buffer = java.nio.ByteBuffer.allocate(bufferSize);
-
-		buffer.clear();
-		buffer.put(af.fromString2Bytes(aString));
-		buffer.flip();
-
-		while(buffer.hasRemaining()) {
-			channel.write(buffer);
-		}
+		ioStreamWriteBytes(aStream, af.fromString2Bytes(aString, "UTF-8"), aBufferSize, false);
 	}
 }
 
@@ -8239,6 +8224,7 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aArrayBytes, aStream);
 	} else {
 		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
+		if (bufferSize <= 0 || Math.floor(bufferSize) != bufferSize) throw "aBufferSize must be a positive integer";
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -8247,12 +8233,15 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 		}
 		var buffer = java.nio.ByteBuffer.allocate(bufferSize);
 
-		buffer.clear();
-		buffer.put(aArrayBytes);
-		buffer.flip();
-
-		while(buffer.hasRemaining()) {
-			channel.write(buffer);
+		for (var offset = 0; offset < aArrayBytes.length;) {
+			var length = Math.min(bufferSize, aArrayBytes.length - offset);
+			buffer.clear();
+			buffer.put(aArrayBytes, offset, length);
+			buffer.flip();
+			while (buffer.hasRemaining()) {
+				channel.write(buffer);
+			}
+			offset += length;
 		}
 	}
 }
@@ -8269,34 +8258,18 @@ const ioStreamRead = function(aStream, aFunction, aBufferSize, useNIO, encoding)
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	encoding = _$(encoding).isString().default(io.getDefaultEncoding());
 	var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
-
-	if (useNIO) {
-		var reader = new java.io.BufferedReader(new java.io.InputStreamReader(aStream, encoding), bufferSize);
-		var cbuf = java.lang.reflect.Array.newInstance(java.lang.Character.TYPE, bufferSize);
-		var nRead;
-		try {
-			while ((nRead = reader.read(cbuf, 0, bufferSize)) > 0) {
-				var res = aFunction(String(new java.lang.String(cbuf, 0, nRead)));
-				if (res == true) {
-					return;
-				}
-			}
-		} finally {
-			reader.close();
+	if (bufferSize <= 0 || Math.floor(bufferSize) != bufferSize) throw "aBufferSize must be a positive integer";
+	var reader = new java.io.InputStreamReader(aStream, encoding);
+	if (useNIO) reader = new java.io.BufferedReader(reader, bufferSize);
+	var cbuf = java.lang.reflect.Array.newInstance(java.lang.Character.TYPE, bufferSize);
+	var nRead;
+	try {
+		while ((nRead = reader.read(cbuf, 0, bufferSize)) > 0) {
+			if (aFunction(String(new java.lang.String(cbuf, 0, nRead))) == true) return;
 		}
-	} else {
-		var buffer = af.fromString2Bytes(repeat(bufferSize, ' '));
-
-		var aRead;
-		do {
-			aRead = aStream.read(buffer, 0, bufferSize);
-			if (aRead > 0) {
-				var res = aFunction(af.fromBytes2String(af.fromArray2Bytes(af.fromBytes2Array(buffer).slice(0, aRead))));
-				if (res == true) {
-					return;
-				}
-			}
-		} while(aRead >= 0);
+	} finally {
+		// The non-NIO API borrows its input; the NIO API owns and closes it.
+		if (useNIO) reader.close();
 	}
 }
 
@@ -8312,6 +8285,7 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	var buf = "", go = true;
 	if (isUnDef(aSeparator)) aSeparator = __separator;
+	if (aSeparator.length == 0) throw "aSeparator must not be empty";
 
 	ioStreamRead(aStream, function(buffer) {
 		if (go) {
@@ -8319,15 +8293,15 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 			buf += buffer;
 			while (buf.indexOf(aSeparator) >= 0) {
 				res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-				buf = buf.substring(buf.indexOf(aSeparator) + 1);
-				if (res == true) { buf = ""; go = false; return; }
+				buf = buf.substring(buf.indexOf(aSeparator) + aSeparator.length);
+				if (res == true) { buf = ""; go = false; return true; }
 			}
 			return res;
 		}
 	}, __, useNIO, anEncoding);
 	while (buf.indexOf(aSeparator) >= 0 && go) {
 		var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-		buf = buf.substring(buf.indexOf(aSeparator) + 1);
+		buf = buf.substring(buf.indexOf(aSeparator) + aSeparator.length);
 		if (res == true) { buf = ""; go = false; return; }
 	}
 	if (buf.length > 0 && go) {

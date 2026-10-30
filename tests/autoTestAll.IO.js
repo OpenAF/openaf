@@ -308,3 +308,158 @@ exports.testUnzipContainment = function() {
     io.rm(base);
   }
 };
+
+// Streams that expose short reads and ownership, without relying on timing or sockets.
+function trackedInput(text, encoding, maxRead) {
+  var bytes = new java.io.ByteArrayInputStream(af.fromString2Bytes(text, encoding || "UTF-8"));
+  var state = { reads: 0, closed: false };
+  state.stream = new JavaAdapter(java.io.InputStream, {
+    read: function(buffer, offset, length) {
+      state.reads++;
+      if (arguments.length == 0) return bytes.read();
+      return bytes.read(buffer, offset, Math.min(length, maxRead || length));
+    },
+    available: function() { return bytes.available(); },
+    close: function() { state.closed = true; bytes.close(); }
+  });
+  return state;
+}
+
+exports.testStreamWriteBoundaries = function() {
+  [false, true].forEach(function(mode) {
+    ["", "1234", "12345", repeat(5000, "€😀abc")].forEach(function(text) {
+      [false, true].forEach(function(binary) {
+        var output = new java.io.ByteArrayOutputStream();
+        if (binary) ioStreamWriteBytes(output, af.fromString2Bytes(text, "UTF-8"), 4, mode);
+        else ioStreamWrite(output, text, 4, mode);
+        ow.test.assert(String(new java.lang.String(output.toByteArray(), "UTF-8")), text, "Complete stream write");
+      });
+    });
+    var bytes = af.fromArray2Bytes(range(256).map(function(i) { return i - 128; }));
+    var output = new java.io.ByteArrayOutputStream();
+    ioStreamWriteBytes(output, bytes, 7, mode);
+    ow.test.assert(java.util.Arrays.equals(bytes, output.toByteArray()), true, "All binary bytes preserved");
+  });
+  var written = new java.io.ByteArrayOutputStream(), closed = false;
+  var channel = new JavaAdapter(java.nio.channels.WritableByteChannel, {
+    write: function(buffer) {
+      var length = Math.min(2, buffer.remaining());
+      for (var i = 0; i < length; i++) written.write(buffer.get() & 255);
+      return length;
+    },
+    isOpen: function() { return !closed; },
+    close: function() { closed = true; }
+  });
+  ioStreamWriteBytes({ getChannel: function() { return channel; } }, af.fromString2Bytes("partial writes"), 5, false);
+  ow.test.assert(String(written.toString("UTF-8")), "partial writes", "Partial channel writes retried");
+  ow.test.assert(closed, false, "Writer leaves borrowed channel open");
+};
+
+exports.testStreamDecodingAndOwnership = function() {
+  [false, true].forEach(function(mode) {
+    [["A€B😀C", "UTF-8"], ["café", "ISO-8859-1"]].forEach(function(fixture) {
+      var input = trackedInput(fixture[0], fixture[1], 1), result = "";
+      ioStreamRead(input.stream, function(text) { result += text; }, 2, mode, fixture[1]);
+      ow.test.assert(result, fixture[0], "Decode across single-byte reads: " + fixture[1]);
+      ow.test.assert(input.closed, mode, "Normal completion ownership");
+      input.stream.close();
+    });
+    [false, true].forEach(function(fail) {
+      var input = trackedInput(repeat(20000, "x"), "UTF-8", 1), calls = 0, failed = false;
+      try {
+        ioStreamRead(input.stream, function() {
+          calls++;
+          if (fail) throw "callback sentinel";
+          return true;
+        }, 2, mode, "UTF-8");
+      } catch(e) { failed = String(e).indexOf("callback sentinel") >= 0; }
+      ow.test.assert(failed, fail, "Callback exception propagates");
+      ow.test.assert(calls, 1, "Early exit invokes callback once");
+      ow.test.assert(input.closed, mode, "Early exit ownership");
+      input.stream.close();
+    });
+  });
+};
+
+exports.testStreamLineBoundaries = function() {
+  [false, true].forEach(function(mode) {
+    ["\n", "\r\n", "<END>"].forEach(function(separator) {
+      var input = trackedInput("a" + separator + separator + "b" + separator + "tail", "UTF-8", 1);
+      var lines = [];
+      try {
+        ioStreamReadLines(input.stream, function(line) { lines.push(line); }, separator, mode, "UTF-8");
+        ow.test.assert(lines, ["a", "", "b", "tail"], "Complete separators and final line");
+      } finally { input.stream.close(); }
+    });
+    var input = trackedInput("first\n" + repeat(20000, "x"), "UTF-8", 1), calls = 0, readsAtStop;
+    try {
+      ioStreamReadLines(input.stream, function() {
+        calls++;
+        readsAtStop = input.reads;
+        return true;
+      }, "\n", mode, "UTF-8");
+      ow.test.assert(calls, 1, "Line callback stops once requested");
+      ow.test.assert(input.reads, readsAtStop, "No input reads after line callback stops");
+      ow.test.assert(input.closed, mode, "Line reader ownership on stop");
+    } finally { input.stream.close(); }
+    input = trackedInput("unread", "UTF-8", 1);
+    var rejected = false;
+    try { ioStreamReadLines(input.stream, function() {}, "", mode); }
+    catch(e) { rejected = true; }
+    finally { input.stream.close(); }
+    ow.test.assert(rejected, true, "Reject empty separator");
+    ow.test.assert(input.reads, 0, "Reject separator before reading");
+  });
+};
+
+exports.testXMLSkipLines = function() {
+  var file = io.createTempFile("xml-skip-", ".xml");
+  try {
+    ["\n", "\r\n"].forEach(function(newline) {
+      [0, 1, 2].forEach(function(count) {
+        io.writeFileString(file, repeat(count, "header" + newline) + "<root>ok</root>");
+        ow.test.assert(String(io.readFileXML(file, count).toXMLString()), "<root>ok</root>", "Skip exactly " + count + " lines");
+      });
+    });
+    io.writeFileString(file, "<root>ok</root>");
+    ow.test.assert(String(io.readFileXML(file, -1).toXMLString()), "<root>ok</root>", "Negative skip retains content");
+    ["", "header", "header\n", "header\nlast"].forEach(function(text) {
+      io.writeFileString(file, text);
+      ow.test.assert(String(io.readFileXML(file, 5).toXMLString()), "", "Exhausted input is empty");
+    });
+  } finally { io.rm(file); }
+};
+
+exports.testGzipInitializationCleanup = function() {
+  var script = '(' + function() {
+    var file = io.createTempFile("gzip-header-", ".gz");
+    try {
+      var bean = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+      [af.fromString2Bytes("not gzip"), af.fromArray2Bytes([31, -117])].forEach(function(header) {
+        io.writeFileBytes(file, header);
+        try { io.readFileGzipStream(file); } catch(e) {}
+        var supported = typeof bean.getOpenFileDescriptorCount == "function";
+        var before = supported ? bean.getOpenFileDescriptorCount() : 0;
+        var errors = 0;
+        for (var i = 0; i < 100; i++) {
+          try { io.readFileGzipStream(file); } catch(e) { errors++; }
+        }
+        if (errors != 100) throw "Malformed headers were accepted";
+        if (supported && bean.getOpenFileDescriptorCount() - before > 2) throw "File descriptors leaked";
+      });
+      io.writeFileBytes(file, io.gzip(af.fromString2Bytes("round trip")));
+      var stream = io.readFileGzipStream(file);
+      try {
+        if (String(Packages.org.apache.commons.io.IOUtils.toString(stream, "UTF-8")) != "round trip") throw "Gzip round trip failed";
+      } finally { stream.close(); }
+      io.rm(file);
+      var missing = false;
+      try { io.readFileGzipStream(file); } catch(e) { missing = true; }
+      if (!missing) throw "Missing input was accepted";
+      print("GZIP_CLEANUP_OK");
+    } finally { if (io.fileExists(file)) io.rm(file); }
+  } + ')();';
+  var result = $sh([String(java.lang.System.getProperty("java.home")) + "/bin/java", "-jar", getOpenAFJar(), "-c", script]).timeout(30000).get(0);
+  ow.test.assert(result.exitcode, 0, "Gzip cleanup subprocess: " + result.stderr + result.stdout);
+  ow.test.assert(result.stdout.indexOf("GZIP_CLEANUP_OK") >= 0, true, "Gzip cleanup probe completed");
+};

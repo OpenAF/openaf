@@ -1,0 +1,10 @@
+# Copyright 2026 Nuno Aguiar
+
+include:
+  - oJobTest.yaml
+jobs:
+  - name: Threads::Cached pool lifecycle
+    to: oJob Test
+    exec: args.func = require("autoTestAll.Threads.js").testCachedPoolLifecycle;
+todo:
+  - Threads::Cached pool lifecycle

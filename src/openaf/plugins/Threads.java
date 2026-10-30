@@ -402,7 +402,9 @@ public class Threads extends ScriptableObject {
 	 */
 	@JSFunction
 	public void initCachedThreadPool() {
-		executor = Executors.newCachedThreadPool();
+		if (executor == null) {
+			executor = Executors.newCachedThreadPool();
+		}
 	}
 
 	/**

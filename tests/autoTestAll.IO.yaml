@@ -85,7 +85,37 @@ jobs:
      to: oJob Test
      exec: args.func = args.tests.testUnzipContainment;
 
+   - name: IO::Stream write boundaries
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testStreamWriteBoundaries;
+
+   - name: IO::Stream decoding and ownership
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testStreamDecodingAndOwnership;
+
+   - name: IO::Stream line boundaries
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testStreamLineBoundaries;
+
+   - name: IO::XML skip lines
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testXMLSkipLines;
+
+   - name: IO::Gzip initialization cleanup
+     from: IO::Init
+     to: oJob Test
+     exec: args.func = args.tests.testGzipInitializationCleanup;
+
 todo:
+   - IO::Stream write boundaries
+   - IO::Stream decoding and ownership
+   - IO::Stream line boundaries
+   - IO::XML skip lines
+   - IO::Gzip initialization cleanup
    - IO::ZIP extraction containment
    - IO::JSON extraction
    - IO::JSON metadata traversal
