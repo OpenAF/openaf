@@ -160,6 +160,39 @@ complete:
       desc: Amount of ms, when htmlopen=true, to wait for the system browser to open an render the html output
     - name: htmldark=
       desc: If supported and true the output html will use a dark theme.
+  - name: out=http
+    desc: Sends the output as the body of an HTTP request (POST, PUT, PATCH or DELETE)
+    opts:
+    - name: httpurl=
+      desc: The URL to send the output to (required)
+    - name: httpmethod=
+      desc: 'The HTTP method: post (default), put, patch or delete'
+      opts:
+      - name: httpmethod=post
+        desc: Sends the output with a POST request
+      - name: httpmethod=put
+        desc: Sends the output with a PUT request
+      - name: httpmethod=patch
+        desc: Sends the output with a PATCH request
+      - name: httpmethod=delete
+        desc: Sends the output with a DELETE request
+    - name: httpformat=
+      desc: 'The body format: json (default), yaml, ndjson or text. Strings are sent as-is'
+      opts:
+      - name: httpformat=json
+        desc: Sends the output as JSON
+      - name: httpformat=yaml
+        desc: Sends the output as YAML
+      - name: httpformat=ndjson
+        desc: Sends the output as newline delimited JSON
+      - name: httpformat=text
+        desc: Sends the output as plain text
+    - name: httpparams=
+      desc: A JSON/SLON map of OpenAF $rest options (e.g. requestHeaders, login, pass, timeout, retry)
+    - name: httpeach=
+      desc: If true and the input is an array, one request is made per entry
+    - name: httpquiet=
+      desc: If true the server response is not printed
   - name: out=idesc
     desc: Interactive full-screen tree browser for maps, arrays and scalar values; expand/collapse, zoom, filter, queries, previews, bookmarks, comparison and export
     opts:
@@ -404,6 +437,29 @@ complete:
     opts:
     - name: hsperfmetadata=
       desc: With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime.
+  - name: in=httpd
+    desc: Receives the input from an HTTP request sent to a temporary local HTTP server (e.g. a webhook)
+    opts:
+    - name: inhttpdport=
+      desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
+    - name: inhttpdhost=
+      desc: The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)
+    - name: inhttpdpath=
+      desc: If provided only requests to this path (or below) are accepted; others get a 404
+    - name: inhttpdtimeout=
+      desc: Milliseconds to wait for a request (defaults to 60000; 0 waits forever)
+    - name: inhttpdcount=
+      desc: Number of requests to process before stopping (defaults to 1; 0 for no limit until a timeout occurs)
+    - name: inhttpdtype=
+      desc: The input type to parse the request body with (otherwise detected from the Content-Type and the body)
+    - name: inhttpdmax=
+      desc: Maximum request body size in bytes (defaults to 10485760); larger requests get a 413
+    - name: inhttpdstatus=
+      desc: The HTTP status code returned to the sender (defaults to 200)
+    - name: inhttpdreply=
+      desc: The text returned to the sender (defaults to empty)
+    - name: inhttpdenvelope=
+      desc: If true the input is a map with method, uri, headers, params and body instead of just the parsed body
   - name: in=ini
     desc: INI/Properties format
   - name: in=javas
@@ -902,6 +958,26 @@ complete:
   desc: Optional you can provider the local java process pid to try to get the thread stack trace (*)
 - name: hsperfmetadata=
   desc: With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime.
+- name: inhttpdport=
+  desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
+- name: inhttpdhost=
+  desc: The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)
+- name: inhttpdpath=
+  desc: If provided only requests to this path (or below) are accepted; others get a 404
+- name: inhttpdtimeout=
+  desc: Milliseconds to wait for a request (defaults to 60000; 0 waits forever)
+- name: inhttpdcount=
+  desc: Number of requests to process before stopping (defaults to 1; 0 for no limit until a timeout occurs)
+- name: inhttpdtype=
+  desc: The input type to parse the request body with (otherwise detected from the Content-Type and the body)
+- name: inhttpdmax=
+  desc: Maximum request body size in bytes (defaults to 10485760); larger requests get a 413
+- name: inhttpdstatus=
+  desc: The HTTP status code returned to the sender (defaults to 200)
+- name: inhttpdreply=
+  desc: The text returned to the sender (defaults to empty)
+- name: inhttpdenvelope=
+  desc: If true the input is a map with method, uri, headers, params and body instead of just the parsed body
 - name: javasinception=
   desc: If true includes oafp itself in the local Java process list
 - name: jfrjoin=
@@ -1145,6 +1221,36 @@ complete:
   desc: Specifies the algorithm used to sign the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM.
 - name: grid=
   desc: A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).
+- name: httpurl=
+  desc: The URL to send the output to (required)
+- name: httpmethod=
+  desc: 'The HTTP method: post (default), put, patch or delete'
+  opts:
+  - name: httpmethod=post
+    desc: Sends the output with a POST request
+  - name: httpmethod=put
+    desc: Sends the output with a PUT request
+  - name: httpmethod=patch
+    desc: Sends the output with a PATCH request
+  - name: httpmethod=delete
+    desc: Sends the output with a DELETE request
+- name: httpformat=
+  desc: 'The body format: json (default), yaml, ndjson or text. Strings are sent as-is'
+  opts:
+  - name: httpformat=json
+    desc: Sends the output as JSON
+  - name: httpformat=yaml
+    desc: Sends the output as YAML
+  - name: httpformat=ndjson
+    desc: Sends the output as newline delimited JSON
+  - name: httpformat=text
+    desc: Sends the output as plain text
+- name: httpparams=
+  desc: A JSON/SLON map of OpenAF $rest options (e.g. requestHeaders, login, pass, timeout, retry)
+- name: httpeach=
+  desc: If true and the input is an array, one request is made per entry
+- name: httpquiet=
+  desc: If true the server response is not printed
 - name: htmlcompact=
   desc: Boolean flag that if true and the input data is a string or markdown the generated html will have a visual compact width format
 - name: htmlpart=

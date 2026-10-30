@@ -1538,7 +1538,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_out_ -eq 1 ]; then
 fi
 if [ $F_out__out_base64 -eq 1 ]; then
   if [ $F_out__out_base64_base64gzip_ -eq 1 ]; then
-    printf '%s\t%s\n' 'base64gzip=' 'If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output'
+    printf '%s\t%s\n' 'base64gzip=' 'If true, gzip before Base64 encoding or gunzip after Base64 decoding'
   fi
 fi
 if [ $F_out__out_ch -eq 1 ]; then
@@ -1874,7 +1874,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_in_ -eq 1 ]; then
 fi
 if [ $F_in__in_base64 -eq 1 ]; then
   if [ $F_in__in_base64_base64gzip_ -eq 1 ]; then
-    printf '%s\t%s\n' 'base64gzip=' 'If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output'
+    printf '%s\t%s\n' 'base64gzip=' 'If true, gzip before Base64 encoding or gunzip after Base64 decoding'
   fi
 fi
 if [ $F_in__in_ch -eq 1 ]; then
@@ -1966,7 +1966,7 @@ if [ $F_in__in_javas -eq 1 ]; then
 fi
 if [ $F_in__in_javagc -eq 1 ]; then
   if [ $F_in__in_javagc_javagcjoin_ -eq 1 ]; then
-    printf '%s\t%s\n' 'javagcjoin=' 'If true it will return an array with each processed line.'
+    printf '%s\t%s\n' 'javagcjoin=' 'If true returns one array of parsed GC events; otherwise emits events incrementally.'
   fi
 fi
 if [ $F_in__in_javathread -eq 1 ]; then
@@ -2654,7 +2654,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_indsvfields_ -eq 1 ]; then
 fi
 # Print completion for javagcjoin=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javagcjoin_ -eq 1 ]; then
-  printf '%s\t%s\n' 'javagcjoin=' 'If true it will return an array with each processed line.'
+  printf '%s\t%s\n' 'javagcjoin=' 'If true returns one array of parsed GC events; otherwise emits events incrementally.'
 fi
 # Print completion for javathreadpid=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javathreadpid_ -eq 1 ]; then
@@ -2898,7 +2898,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_xmlfiltertag_ -eq 1 ]; then
 fi
 # Print completion for base64gzip=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_base64gzip_ -eq 1 ]; then
-  printf '%s\t%s\n' 'base64gzip=' 'If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output'
+  printf '%s\t%s\n' 'base64gzip=' 'If true, gzip before Base64 encoding or gunzip after Base64 decoding'
 fi
 # Print completion for inputcsv=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inputcsv_ -eq 1 ]; then
