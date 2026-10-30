@@ -14603,6 +14603,13 @@ const $fnM = (aFnName, aMap) => {
 // }
 ow.loadSec();
 
+// Count physical terminal rows, ignoring ANSI styling and respecting wide characters.
+const __askRows = (text, con) => {
+	var width = Math.max(1, Number(con.getConsoleReader().getTerminal().getWidth()))
+	return Math.max(1, Number(Packages.org.jline.utils.AttributedString.fromAnsi(String(text))
+		.columnSplitLength(width, false, false).size()))
+}
+
 /**
  * <odoc>
  * <key>ask(aPrompt, aMask, aConsole, noAnsi, aWrite) : String</key>
@@ -14614,9 +14621,10 @@ const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
 	aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
-		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
+		var _prompt = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt)
+		var _v = _con.readLinePrompt(_prompt, aMask)
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
-		;(aWrite || printErr)("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
+		;(aWrite || printErr)("\x1b[" + __askRows(_prompt + (_v == null || aMask == String.fromCharCode(0) ? "" : _m), _con) + "A\x1b[0G\x1b[0J" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
 		return _con.readLinePrompt(aPrompt, aMask)
@@ -14801,15 +14809,12 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 				}
 			}
 		} while (c != 13 && c != 10)
-		_move(aMaxDisplay)
-		_write(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
-		_move(aMaxDisplay+1)
-		_write(repeat(_v.length, " ") + "\r")
+		_move(aMaxDisplay + __askRows(_v, _con))
+		_write("\x1b[0G\x1b[0J", false)
 		if (!cancelled) {
-			_write("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
+			_write(ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
 		}
-		_move(2)
-		_write("\x1B[?25h\n")
+		_write("\x1B[?25h", false)
 
 		return cancelled ? __ : option
 		} finally { _write("\x1B[?25h", false) }
@@ -14940,22 +14945,18 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 				}
 			}
 		} while (c != 13 && c != 10)
-		_move(aMaxDisplay)
-		_write(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
-		_move(aMaxDisplay+1)
-		_write(repeat(_v.length, " ") + "\r")
+		_move(aMaxDisplay + __askRows(_v, _con))
+		_write("\x1b[0G\x1b[0J", false)
 
 		if (!cancelled) {
 			let options = []
 			aSelectMap.forEach((v, k) => { if (v) options.push(k) })
-			_write("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
-			_move(2)
-			_write("\x1B[?25h\n")
+			_write(ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
+			_write("\x1B[?25h", false)
 
 			return options
 		}
-		_move(2)
-		_write("\x1B[?25h\n")
+		_write("\x1B[?25h", false)
 
 		return __
 		} finally { _write("\x1B[?25h", false); }

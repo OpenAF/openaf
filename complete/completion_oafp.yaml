@@ -193,6 +193,35 @@ complete:
       desc: If true and the input is an array, one request is made per entry
     - name: httpquiet=
       desc: If true the server response is not printed
+  - name: out=httpd
+    desc: Serves the output over a local HTTP server (e.g. a live JSON endpoint or an OpenMetrics exporter with loop)
+    opts:
+    - name: httpdport=
+      desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
+    - name: httpdhost=
+      desc: The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)
+    - name: httpdpath=
+      desc: If provided only requests to this path (or below) are accepted; others get a 404
+    - name: httpdformat=
+      desc: The output format served (defaults to json). A request can override it with _?format=_
+    - name: httpdmime=
+      desc: Forces the Content-Type of the replies
+    - name: httpdstatus=
+      desc: The HTTP status code of the replies (defaults to 200)
+    - name: httpdcount=
+      desc: 'Stop after this many requests were answered (defaults to 0: serve until interrupted)'
+    - name: httpdtimeout=
+      desc: 'Stop after this many milliseconds without requests (defaults to 0: no limit)'
+    - name: httpduser=
+      desc: If provided requests need HTTP basic authentication with this user
+    - name: httpdpass=
+      desc: The password for _httpduser_
+    - name: httpdcors=
+      desc: If true adds CORS headers and answers OPTIONS preflight requests
+    - name: httpdkeystore=
+      desc: A Java keystore path to serve HTTPS
+    - name: httpdkeypass=
+      desc: The password of _httpdkeystore_
   - name: out=idesc
     desc: Interactive full-screen tree browser for maps, arrays and scalar values; expand/collapse, zoom, filter, queries, previews, bookmarks, comparison and export
     opts:
@@ -460,6 +489,16 @@ complete:
       desc: The text returned to the sender (defaults to empty)
     - name: inhttpdenvelope=
       desc: If true the input is a map with method, uri, headers, params and body instead of just the parsed body
+    - name: inhttpduser=
+      desc: If provided requests need HTTP basic authentication with this user
+    - name: inhttpdpass=
+      desc: The password for _inhttpduser_
+    - name: inhttpdcors=
+      desc: If true adds CORS headers and answers OPTIONS preflight requests
+    - name: inhttpdkeystore=
+      desc: A Java keystore path to serve HTTPS
+    - name: inhttpdkeypass=
+      desc: The password of _inhttpdkeystore_
   - name: in=ini
     desc: INI/Properties format
   - name: in=javas
@@ -978,6 +1017,16 @@ complete:
   desc: The text returned to the sender (defaults to empty)
 - name: inhttpdenvelope=
   desc: If true the input is a map with method, uri, headers, params and body instead of just the parsed body
+- name: inhttpduser=
+  desc: If provided requests need HTTP basic authentication with this user
+- name: inhttpdpass=
+  desc: The password for _inhttpduser_
+- name: inhttpdcors=
+  desc: If true adds CORS headers and answers OPTIONS preflight requests
+- name: inhttpdkeystore=
+  desc: A Java keystore path to serve HTTPS
+- name: inhttpdkeypass=
+  desc: The password of _inhttpdkeystore_
 - name: javasinception=
   desc: If true includes oafp itself in the local Java process list
 - name: jfrjoin=
@@ -1221,6 +1270,32 @@ complete:
   desc: Specifies the algorithm used to sign the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM.
 - name: grid=
   desc: A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).
+- name: httpdport=
+  desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
+- name: httpdhost=
+  desc: The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)
+- name: httpdpath=
+  desc: If provided only requests to this path (or below) are accepted; others get a 404
+- name: httpdformat=
+  desc: The output format served (defaults to json). A request can override it with _?format=_
+- name: httpdmime=
+  desc: Forces the Content-Type of the replies
+- name: httpdstatus=
+  desc: The HTTP status code of the replies (defaults to 200)
+- name: httpdcount=
+  desc: 'Stop after this many requests were answered (defaults to 0: serve until interrupted)'
+- name: httpdtimeout=
+  desc: 'Stop after this many milliseconds without requests (defaults to 0: no limit)'
+- name: httpduser=
+  desc: If provided requests need HTTP basic authentication with this user
+- name: httpdpass=
+  desc: The password for _httpduser_
+- name: httpdcors=
+  desc: If true adds CORS headers and answers OPTIONS preflight requests
+- name: httpdkeystore=
+  desc: A Java keystore path to serve HTTPS
+- name: httpdkeypass=
+  desc: The password of _httpdkeystore_
 - name: httpurl=
   desc: The URL to send the output to (required)
 - name: httpmethod=

@@ -76,6 +76,27 @@ F_out__out_html_htmlpart_=1
 F_out__out_html_htmlopen_=1
 F_out__out_html_htmlwait_=1
 F_out__out_html_htmldark_=1
+F_out__out_http=0
+F_out__out_http_httpurl_=1
+F_out__out_http_httpmethod_=1
+F_out__out_http_httpformat_=1
+F_out__out_http_httpparams_=1
+F_out__out_http_httpeach_=1
+F_out__out_http_httpquiet_=1
+F_out__out_httpd=0
+F_out__out_httpd_httpdport_=1
+F_out__out_httpd_httpdhost_=1
+F_out__out_httpd_httpdpath_=1
+F_out__out_httpd_httpdformat_=1
+F_out__out_httpd_httpdmime_=1
+F_out__out_httpd_httpdstatus_=1
+F_out__out_httpd_httpdcount_=1
+F_out__out_httpd_httpdtimeout_=1
+F_out__out_httpd_httpduser_=1
+F_out__out_httpd_httpdpass_=1
+F_out__out_httpd_httpdcors_=1
+F_out__out_httpd_httpdkeystore_=1
+F_out__out_httpd_httpdkeypass_=1
 F_out__out_idesc=0
 F_out__out_idesc_idescsource_=1
 F_out__out_idesc_idescrecipe_=1
@@ -188,6 +209,22 @@ F_in__in_dsv_indsvfields_=1
 F_in__in_gb64json=0
 F_in__in_hsperf=0
 F_in__in_hsperf_hsperfmetadata_=1
+F_in__in_httpd=0
+F_in__in_httpd_inhttpdport_=1
+F_in__in_httpd_inhttpdhost_=1
+F_in__in_httpd_inhttpdpath_=1
+F_in__in_httpd_inhttpdtimeout_=1
+F_in__in_httpd_inhttpdcount_=1
+F_in__in_httpd_inhttpdtype_=1
+F_in__in_httpd_inhttpdmax_=1
+F_in__in_httpd_inhttpdstatus_=1
+F_in__in_httpd_inhttpdreply_=1
+F_in__in_httpd_inhttpdenvelope_=1
+F_in__in_httpd_inhttpduser_=1
+F_in__in_httpd_inhttpdpass_=1
+F_in__in_httpd_inhttpdcors_=1
+F_in__in_httpd_inhttpdkeystore_=1
+F_in__in_httpd_inhttpdkeypass_=1
 F_in__in_ini=0
 F_in__in_javas=0
 F_in__in_javas_javasinception_=1
@@ -422,6 +459,21 @@ F_indsvfields_=1
 F_javagcjoin_=1
 F_javathreadpid_=1
 F_hsperfmetadata_=1
+F_inhttpdport_=1
+F_inhttpdhost_=1
+F_inhttpdpath_=1
+F_inhttpdtimeout_=1
+F_inhttpdcount_=1
+F_inhttpdtype_=1
+F_inhttpdmax_=1
+F_inhttpdstatus_=1
+F_inhttpdreply_=1
+F_inhttpdenvelope_=1
+F_inhttpduser_=1
+F_inhttpdpass_=1
+F_inhttpdcors_=1
+F_inhttpdkeystore_=1
+F_inhttpdkeypass_=1
 F_javasinception_=1
 F_jfrjoin_=1
 F_jfrdesc_=1
@@ -543,6 +595,33 @@ F_jwtsecret_=1
 F_jwtprivkey_=1
 F_jwtalg_=1
 F_grid_=1
+F_httpdport_=1
+F_httpdhost_=1
+F_httpdpath_=1
+F_httpdformat_=1
+F_httpdmime_=1
+F_httpdstatus_=1
+F_httpdcount_=1
+F_httpdtimeout_=1
+F_httpduser_=1
+F_httpdpass_=1
+F_httpdcors_=1
+F_httpdkeystore_=1
+F_httpdkeypass_=1
+F_httpurl_=1
+F_httpmethod_=1
+F_httpmethod__httpmethod_post=0
+F_httpmethod__httpmethod_put=0
+F_httpmethod__httpmethod_patch=0
+F_httpmethod__httpmethod_delete=0
+F_httpformat_=1
+F_httpformat__httpformat_json=0
+F_httpformat__httpformat_yaml=0
+F_httpformat__httpformat_ndjson=0
+F_httpformat__httpformat_text=0
+F_httpparams_=1
+F_httpeach_=1
+F_httpquiet_=1
 F_htmlcompact_=1
 F_htmlpart_=1
 F_htmlopen_=1
@@ -675,6 +754,27 @@ if [ $# -gt 0 ]; then
     if [ "${arg#htmlopen=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlopen_=0; fi
     if [ "${arg#htmlwait=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlwait_=0; fi
     if [ "${arg#htmldark=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmldark_=0; fi
+    if [ "$arg" = "out=http" ]; then FFOUND=1; F_out__out_http=1; F_out_=0; fi
+    if [ "${arg#httpurl=}" != "$arg" ]; then FFOUND=1; F_out__out_http_httpurl_=0; fi
+    if [ "${arg#httpmethod=}" != "$arg" ]; then FFOUND=1; F_out__out_http_httpmethod_=0; fi
+    if [ "${arg#httpformat=}" != "$arg" ]; then FFOUND=1; F_out__out_http_httpformat_=0; fi
+    if [ "${arg#httpparams=}" != "$arg" ]; then FFOUND=1; F_out__out_http_httpparams_=0; fi
+    if [ "${arg#httpeach=}" != "$arg" ]; then FFOUND=1; F_out__out_http_httpeach_=0; fi
+    if [ "${arg#httpquiet=}" != "$arg" ]; then FFOUND=1; F_out__out_http_httpquiet_=0; fi
+    if [ "$arg" = "out=httpd" ]; then FFOUND=1; F_out__out_httpd=1; F_out_=0; fi
+    if [ "${arg#httpdport=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdport_=0; fi
+    if [ "${arg#httpdhost=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdhost_=0; fi
+    if [ "${arg#httpdpath=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdpath_=0; fi
+    if [ "${arg#httpdformat=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdformat_=0; fi
+    if [ "${arg#httpdmime=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdmime_=0; fi
+    if [ "${arg#httpdstatus=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdstatus_=0; fi
+    if [ "${arg#httpdcount=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdcount_=0; fi
+    if [ "${arg#httpdtimeout=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdtimeout_=0; fi
+    if [ "${arg#httpduser=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpduser_=0; fi
+    if [ "${arg#httpdpass=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdpass_=0; fi
+    if [ "${arg#httpdcors=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdcors_=0; fi
+    if [ "${arg#httpdkeystore=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdkeystore_=0; fi
+    if [ "${arg#httpdkeypass=}" != "$arg" ]; then FFOUND=1; F_out__out_httpd_httpdkeypass_=0; fi
     if [ "$arg" = "out=idesc" ]; then FFOUND=1; F_out__out_idesc=1; F_out_=0; fi
     if [ "${arg#idescsource=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescsource_=0; fi
     if [ "${arg#idescrecipe=}" != "$arg" ]; then FFOUND=1; F_out__out_idesc_idescrecipe_=0; fi
@@ -789,6 +889,22 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=gb64json" ]; then FFOUND=1; F_in__in_gb64json=1; F_in_=0; fi
     if [ "$arg" = "in=hsperf" ]; then FFOUND=1; F_in__in_hsperf=1; F_in_=0; fi
     if [ "${arg#hsperfmetadata=}" != "$arg" ]; then FFOUND=1; F_in__in_hsperf_hsperfmetadata_=0; fi
+    if [ "$arg" = "in=httpd" ]; then FFOUND=1; F_in__in_httpd=1; F_in_=0; fi
+    if [ "${arg#inhttpdport=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdport_=0; fi
+    if [ "${arg#inhttpdhost=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdhost_=0; fi
+    if [ "${arg#inhttpdpath=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdpath_=0; fi
+    if [ "${arg#inhttpdtimeout=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdtimeout_=0; fi
+    if [ "${arg#inhttpdcount=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdcount_=0; fi
+    if [ "${arg#inhttpdtype=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdtype_=0; fi
+    if [ "${arg#inhttpdmax=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdmax_=0; fi
+    if [ "${arg#inhttpdstatus=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdstatus_=0; fi
+    if [ "${arg#inhttpdreply=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdreply_=0; fi
+    if [ "${arg#inhttpdenvelope=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdenvelope_=0; fi
+    if [ "${arg#inhttpduser=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpduser_=0; fi
+    if [ "${arg#inhttpdpass=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdpass_=0; fi
+    if [ "${arg#inhttpdcors=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdcors_=0; fi
+    if [ "${arg#inhttpdkeystore=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdkeystore_=0; fi
+    if [ "${arg#inhttpdkeypass=}" != "$arg" ]; then FFOUND=1; F_in__in_httpd_inhttpdkeypass_=0; fi
     if [ "$arg" = "in=ini" ]; then FFOUND=1; F_in__in_ini=1; F_in_=0; fi
     if [ "$arg" = "in=javas" ]; then FFOUND=1; F_in__in_javas=1; F_in_=0; fi
     if [ "${arg#javasinception=}" != "$arg" ]; then FFOUND=1; F_in__in_javas_javasinception_=0; fi
@@ -1124,6 +1240,36 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "javathreadpid=" ]; then FFOUND=1; F_javathreadpid_=0; fi
     # hsperfmetadata= single option
     if [ "$arg" = "hsperfmetadata=" ]; then FFOUND=1; F_hsperfmetadata_=0; fi
+    # inhttpdport= single option
+    if [ "$arg" = "inhttpdport=" ]; then FFOUND=1; F_inhttpdport_=0; fi
+    # inhttpdhost= single option
+    if [ "$arg" = "inhttpdhost=" ]; then FFOUND=1; F_inhttpdhost_=0; fi
+    # inhttpdpath= single option
+    if [ "$arg" = "inhttpdpath=" ]; then FFOUND=1; F_inhttpdpath_=0; fi
+    # inhttpdtimeout= single option
+    if [ "$arg" = "inhttpdtimeout=" ]; then FFOUND=1; F_inhttpdtimeout_=0; fi
+    # inhttpdcount= single option
+    if [ "$arg" = "inhttpdcount=" ]; then FFOUND=1; F_inhttpdcount_=0; fi
+    # inhttpdtype= single option
+    if [ "$arg" = "inhttpdtype=" ]; then FFOUND=1; F_inhttpdtype_=0; fi
+    # inhttpdmax= single option
+    if [ "$arg" = "inhttpdmax=" ]; then FFOUND=1; F_inhttpdmax_=0; fi
+    # inhttpdstatus= single option
+    if [ "$arg" = "inhttpdstatus=" ]; then FFOUND=1; F_inhttpdstatus_=0; fi
+    # inhttpdreply= single option
+    if [ "$arg" = "inhttpdreply=" ]; then FFOUND=1; F_inhttpdreply_=0; fi
+    # inhttpdenvelope= single option
+    if [ "$arg" = "inhttpdenvelope=" ]; then FFOUND=1; F_inhttpdenvelope_=0; fi
+    # inhttpduser= single option
+    if [ "$arg" = "inhttpduser=" ]; then FFOUND=1; F_inhttpduser_=0; fi
+    # inhttpdpass= single option
+    if [ "$arg" = "inhttpdpass=" ]; then FFOUND=1; F_inhttpdpass_=0; fi
+    # inhttpdcors= single option
+    if [ "$arg" = "inhttpdcors=" ]; then FFOUND=1; F_inhttpdcors_=0; fi
+    # inhttpdkeystore= single option
+    if [ "$arg" = "inhttpdkeystore=" ]; then FFOUND=1; F_inhttpdkeystore_=0; fi
+    # inhttpdkeypass= single option
+    if [ "$arg" = "inhttpdkeypass=" ]; then FFOUND=1; F_inhttpdkeypass_=0; fi
     # javasinception= single option
     if [ "$arg" = "javasinception=" ]; then FFOUND=1; F_javasinception_=0; fi
     # jfrjoin= single option
@@ -1359,6 +1505,50 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "jwtalg=" ]; then FFOUND=1; F_jwtalg_=0; fi
     # grid= single option
     if [ "$arg" = "grid=" ]; then FFOUND=1; F_grid_=0; fi
+    # httpdport= single option
+    if [ "$arg" = "httpdport=" ]; then FFOUND=1; F_httpdport_=0; fi
+    # httpdhost= single option
+    if [ "$arg" = "httpdhost=" ]; then FFOUND=1; F_httpdhost_=0; fi
+    # httpdpath= single option
+    if [ "$arg" = "httpdpath=" ]; then FFOUND=1; F_httpdpath_=0; fi
+    # httpdformat= single option
+    if [ "$arg" = "httpdformat=" ]; then FFOUND=1; F_httpdformat_=0; fi
+    # httpdmime= single option
+    if [ "$arg" = "httpdmime=" ]; then FFOUND=1; F_httpdmime_=0; fi
+    # httpdstatus= single option
+    if [ "$arg" = "httpdstatus=" ]; then FFOUND=1; F_httpdstatus_=0; fi
+    # httpdcount= single option
+    if [ "$arg" = "httpdcount=" ]; then FFOUND=1; F_httpdcount_=0; fi
+    # httpdtimeout= single option
+    if [ "$arg" = "httpdtimeout=" ]; then FFOUND=1; F_httpdtimeout_=0; fi
+    # httpduser= single option
+    if [ "$arg" = "httpduser=" ]; then FFOUND=1; F_httpduser_=0; fi
+    # httpdpass= single option
+    if [ "$arg" = "httpdpass=" ]; then FFOUND=1; F_httpdpass_=0; fi
+    # httpdcors= single option
+    if [ "$arg" = "httpdcors=" ]; then FFOUND=1; F_httpdcors_=0; fi
+    # httpdkeystore= single option
+    if [ "$arg" = "httpdkeystore=" ]; then FFOUND=1; F_httpdkeystore_=0; fi
+    # httpdkeypass= single option
+    if [ "$arg" = "httpdkeypass=" ]; then FFOUND=1; F_httpdkeypass_=0; fi
+    # httpurl= single option
+    if [ "$arg" = "httpurl=" ]; then FFOUND=1; F_httpurl_=0; fi
+    # httpmethod= options
+    if [ "$arg" = "httpmethod=post" ]; then FFOUND=1; F_httpmethod__httpmethod_post=1; F_httpmethod_=0; fi
+    if [ "$arg" = "httpmethod=put" ]; then FFOUND=1; F_httpmethod__httpmethod_put=1; F_httpmethod_=0; fi
+    if [ "$arg" = "httpmethod=patch" ]; then FFOUND=1; F_httpmethod__httpmethod_patch=1; F_httpmethod_=0; fi
+    if [ "$arg" = "httpmethod=delete" ]; then FFOUND=1; F_httpmethod__httpmethod_delete=1; F_httpmethod_=0; fi
+    # httpformat= options
+    if [ "$arg" = "httpformat=json" ]; then FFOUND=1; F_httpformat__httpformat_json=1; F_httpformat_=0; fi
+    if [ "$arg" = "httpformat=yaml" ]; then FFOUND=1; F_httpformat__httpformat_yaml=1; F_httpformat_=0; fi
+    if [ "$arg" = "httpformat=ndjson" ]; then FFOUND=1; F_httpformat__httpformat_ndjson=1; F_httpformat_=0; fi
+    if [ "$arg" = "httpformat=text" ]; then FFOUND=1; F_httpformat__httpformat_text=1; F_httpformat_=0; fi
+    # httpparams= single option
+    if [ "$arg" = "httpparams=" ]; then FFOUND=1; F_httpparams_=0; fi
+    # httpeach= single option
+    if [ "$arg" = "httpeach=" ]; then FFOUND=1; F_httpeach_=0; fi
+    # httpquiet= single option
+    if [ "$arg" = "httpquiet=" ]; then FFOUND=1; F_httpquiet_=0; fi
     # htmlcompact= single option
     if [ "$arg" = "htmlcompact=" ]; then FFOUND=1; F_htmlcompact_=0; fi
     # htmlpart= single option
@@ -1496,6 +1686,8 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_out_ -eq 1 ]; then
   printf '%s\t%s\n' 'out=gb64json' 'Equivalent to out=base64 and base64gzip=true'
   printf '%s\t%s\n' 'out=grid' 'A multiple output ascii grid (useful together with '\''loop'\'')'
   printf '%s\t%s\n' 'out=html' 'An HTML format'
+  printf '%s\t%s\n' 'out=http' 'Sends the output as the body of an HTTP request (POST, PUT, PATCH or DELETE)'
+  printf '%s\t%s\n' 'out=httpd' 'Serves the output over a local HTTP server (e.g. a live JSON endpoint or an OpenMetrics exporter with loop)'
   printf '%s\t%s\n' 'out=idesc' 'Interactive full-screen tree browser for maps, arrays and scalar values; expand/collapse, zoom, filter, queries, previews, bookmarks, comparison and export'
   printf '%s\t%s\n' 'out=ini' 'A INI/Properties format (arrays are not supported)'
   printf '%s\t%s\n' 'out=json' 'A JSON format without spacing'
@@ -1679,6 +1871,67 @@ if [ $F_out__out_html -eq 1 ]; then
     printf '%s\t%s\n' 'htmldark=' 'If supported and true the output html will use a dark theme.'
   fi
 fi
+if [ $F_out__out_http -eq 1 ]; then
+  if [ $F_out__out_http_httpurl_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpurl=' 'The URL to send the output to (required)'
+  fi
+  if [ $F_out__out_http_httpmethod_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpmethod=' 'The HTTP method: post (default), put, patch or delete'
+  fi
+  if [ $F_out__out_http_httpformat_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpformat=' 'The body format: json (default), yaml, ndjson or text. Strings are sent as-is'
+  fi
+  if [ $F_out__out_http_httpparams_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpparams=' 'A JSON/SLON map of OpenAF $rest options (e.g. requestHeaders, login, pass, timeout, retry)'
+  fi
+  if [ $F_out__out_http_httpeach_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpeach=' 'If true and the input is an array, one request is made per entry'
+  fi
+  if [ $F_out__out_http_httpquiet_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpquiet=' 'If true the server response is not printed'
+  fi
+fi
+if [ $F_out__out_httpd -eq 1 ]; then
+  if [ $F_out__out_httpd_httpdport_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdport=' 'The port to listen on (if not provided a free port is chosen and reported on stderr)'
+  fi
+  if [ $F_out__out_httpd_httpdhost_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdhost=' 'The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)'
+  fi
+  if [ $F_out__out_httpd_httpdpath_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdpath=' 'If provided only requests to this path (or below) are accepted; others get a 404'
+  fi
+  if [ $F_out__out_httpd_httpdformat_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdformat=' 'The output format served (defaults to json). A request can override it with _?format=_'
+  fi
+  if [ $F_out__out_httpd_httpdmime_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdmime=' 'Forces the Content-Type of the replies'
+  fi
+  if [ $F_out__out_httpd_httpdstatus_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdstatus=' 'The HTTP status code of the replies (defaults to 200)'
+  fi
+  if [ $F_out__out_httpd_httpdcount_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdcount=' 'Stop after this many requests were answered (defaults to 0: serve until interrupted)'
+  fi
+  if [ $F_out__out_httpd_httpdtimeout_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdtimeout=' 'Stop after this many milliseconds without requests (defaults to 0: no limit)'
+  fi
+  if [ $F_out__out_httpd_httpduser_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpduser=' 'If provided requests need HTTP basic authentication with this user'
+  fi
+  if [ $F_out__out_httpd_httpdpass_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdpass=' 'The password for _httpduser_'
+  fi
+  if [ $F_out__out_httpd_httpdcors_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdcors=' 'If true adds CORS headers and answers OPTIONS preflight requests'
+  fi
+  if [ $F_out__out_httpd_httpdkeystore_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdkeystore=' 'A Java keystore path to serve HTTPS'
+  fi
+  if [ $F_out__out_httpd_httpdkeypass_ -eq 1 ]; then
+    printf '%s\t%s\n' 'httpdkeypass=' 'The password of _httpdkeystore_'
+  fi
+fi
 if [ $F_out__out_idesc -eq 1 ]; then
   if [ $F_out__out_idesc_idescsource_ -eq 1 ]; then
     printf '%s\t%s\n' 'idescsource=' 'loaded (default) or stream. stream enables file-backed JSON browsing with out=idesc.'
@@ -1835,6 +2088,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_in_ -eq 1 ]; then
   printf '%s\t%s\n' 'in=dsv' 'A DSV (Delimiter Separated Values) format'
   printf '%s\t%s\n' 'in=gb64json' 'Equivalent to in=base64 and base64gzip=true'
   printf '%s\t%s\n' 'in=hsperf' 'A Java hsperfdata* file (requires file=hsperfdata_user/123)'
+  printf '%s\t%s\n' 'in=httpd' 'Receives the input from an HTTP request sent to a temporary local HTTP server (e.g. a webhook)'
   printf '%s\t%s\n' 'in=ini' 'INI/Properties format'
   printf '%s\t%s\n' 'in=javas' 'Tries to list java processes running locally (javasinception=true to include itself). Adds the hsperf file path when the process id matches ow.java.getLocalJavaPIDs()'
   printf '%s\t%s\n' 'in=javagc' 'The Java GC log lines text format'
@@ -1957,6 +2211,53 @@ fi
 if [ $F_in__in_hsperf -eq 1 ]; then
   if [ $F_in__in_hsperf_hsperfmetadata_ -eq 1 ]; then
     printf '%s\t%s\n' 'hsperfmetadata=' 'With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime.'
+  fi
+fi
+if [ $F_in__in_httpd -eq 1 ]; then
+  if [ $F_in__in_httpd_inhttpdport_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdport=' 'The port to listen on (if not provided a free port is chosen and reported on stderr)'
+  fi
+  if [ $F_in__in_httpd_inhttpdhost_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdhost=' 'The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)'
+  fi
+  if [ $F_in__in_httpd_inhttpdpath_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdpath=' 'If provided only requests to this path (or below) are accepted; others get a 404'
+  fi
+  if [ $F_in__in_httpd_inhttpdtimeout_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdtimeout=' 'Milliseconds to wait for a request (defaults to 60000; 0 waits forever)'
+  fi
+  if [ $F_in__in_httpd_inhttpdcount_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdcount=' 'Number of requests to process before stopping (defaults to 1; 0 for no limit until a timeout occurs)'
+  fi
+  if [ $F_in__in_httpd_inhttpdtype_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdtype=' 'The input type to parse the request body with (otherwise detected from the Content-Type and the body)'
+  fi
+  if [ $F_in__in_httpd_inhttpdmax_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdmax=' 'Maximum request body size in bytes (defaults to 10485760); larger requests get a 413'
+  fi
+  if [ $F_in__in_httpd_inhttpdstatus_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdstatus=' 'The HTTP status code returned to the sender (defaults to 200)'
+  fi
+  if [ $F_in__in_httpd_inhttpdreply_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdreply=' 'The text returned to the sender (defaults to empty)'
+  fi
+  if [ $F_in__in_httpd_inhttpdenvelope_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdenvelope=' 'If true the input is a map with method, uri, headers, params and body instead of just the parsed body'
+  fi
+  if [ $F_in__in_httpd_inhttpduser_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpduser=' 'If provided requests need HTTP basic authentication with this user'
+  fi
+  if [ $F_in__in_httpd_inhttpdpass_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdpass=' 'The password for _inhttpduser_'
+  fi
+  if [ $F_in__in_httpd_inhttpdcors_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdcors=' 'If true adds CORS headers and answers OPTIONS preflight requests'
+  fi
+  if [ $F_in__in_httpd_inhttpdkeystore_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdkeystore=' 'A Java keystore path to serve HTTPS'
+  fi
+  if [ $F_in__in_httpd_inhttpdkeypass_ -eq 1 ]; then
+    printf '%s\t%s\n' 'inhttpdkeypass=' 'The password of _inhttpdkeystore_'
   fi
 fi
 if [ $F_in__in_javas -eq 1 ]; then
@@ -2664,6 +2965,66 @@ fi
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_hsperfmetadata_ -eq 1 ]; then
   printf '%s\t%s\n' 'hsperfmetadata=' 'With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime.'
 fi
+# Print completion for inhttpdport=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdport_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdport=' 'The port to listen on (if not provided a free port is chosen and reported on stderr)'
+fi
+# Print completion for inhttpdhost=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdhost_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdhost=' 'The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)'
+fi
+# Print completion for inhttpdpath=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdpath_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdpath=' 'If provided only requests to this path (or below) are accepted; others get a 404'
+fi
+# Print completion for inhttpdtimeout=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdtimeout_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdtimeout=' 'Milliseconds to wait for a request (defaults to 60000; 0 waits forever)'
+fi
+# Print completion for inhttpdcount=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdcount_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdcount=' 'Number of requests to process before stopping (defaults to 1; 0 for no limit until a timeout occurs)'
+fi
+# Print completion for inhttpdtype=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdtype_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdtype=' 'The input type to parse the request body with (otherwise detected from the Content-Type and the body)'
+fi
+# Print completion for inhttpdmax=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdmax_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdmax=' 'Maximum request body size in bytes (defaults to 10485760); larger requests get a 413'
+fi
+# Print completion for inhttpdstatus=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdstatus_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdstatus=' 'The HTTP status code returned to the sender (defaults to 200)'
+fi
+# Print completion for inhttpdreply=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdreply_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdreply=' 'The text returned to the sender (defaults to empty)'
+fi
+# Print completion for inhttpdenvelope=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdenvelope_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdenvelope=' 'If true the input is a map with method, uri, headers, params and body instead of just the parsed body'
+fi
+# Print completion for inhttpduser=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpduser_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpduser=' 'If provided requests need HTTP basic authentication with this user'
+fi
+# Print completion for inhttpdpass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdpass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdpass=' 'The password for _inhttpduser_'
+fi
+# Print completion for inhttpdcors=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdcors_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdcors=' 'If true adds CORS headers and answers OPTIONS preflight requests'
+fi
+# Print completion for inhttpdkeystore=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdkeystore_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdkeystore=' 'A Java keystore path to serve HTTPS'
+fi
+# Print completion for inhttpdkeypass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inhttpdkeypass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inhttpdkeypass=' 'The password of _inhttpdkeystore_'
+fi
 # Print completion for javasinception=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javasinception_ -eq 1 ]; then
   printf '%s\t%s\n' 'javasinception=' 'If true includes oafp itself in the local Java process list'
@@ -3129,6 +3490,90 @@ fi
 # Print completion for grid=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_grid_ -eq 1 ]; then
   printf '%s\t%s\n' 'grid=' 'A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).'
+fi
+# Print completion for httpdport=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdport_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdport=' 'The port to listen on (if not provided a free port is chosen and reported on stderr)'
+fi
+# Print completion for httpdhost=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdhost_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdhost=' 'The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)'
+fi
+# Print completion for httpdpath=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdpath_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdpath=' 'If provided only requests to this path (or below) are accepted; others get a 404'
+fi
+# Print completion for httpdformat=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdformat_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdformat=' 'The output format served (defaults to json). A request can override it with _?format=_'
+fi
+# Print completion for httpdmime=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdmime_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdmime=' 'Forces the Content-Type of the replies'
+fi
+# Print completion for httpdstatus=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdstatus_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdstatus=' 'The HTTP status code of the replies (defaults to 200)'
+fi
+# Print completion for httpdcount=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdcount_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdcount=' 'Stop after this many requests were answered (defaults to 0: serve until interrupted)'
+fi
+# Print completion for httpdtimeout=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdtimeout_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdtimeout=' 'Stop after this many milliseconds without requests (defaults to 0: no limit)'
+fi
+# Print completion for httpduser=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpduser_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpduser=' 'If provided requests need HTTP basic authentication with this user'
+fi
+# Print completion for httpdpass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdpass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdpass=' 'The password for _httpduser_'
+fi
+# Print completion for httpdcors=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdcors_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdcors=' 'If true adds CORS headers and answers OPTIONS preflight requests'
+fi
+# Print completion for httpdkeystore=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdkeystore_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdkeystore=' 'A Java keystore path to serve HTTPS'
+fi
+# Print completion for httpdkeypass=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdkeypass_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpdkeypass=' 'The password of _httpdkeystore_'
+fi
+# Print completion for httpurl=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpurl_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpurl=' 'The URL to send the output to (required)'
+fi
+# Print completion for httpmethod=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpmethod_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpmethod=' 'The HTTP method: post (default), put, patch or delete'
+  printf '%s\t%s\n' 'httpmethod=post' 'Sends the output with a POST request'
+  printf '%s\t%s\n' 'httpmethod=put' 'Sends the output with a PUT request'
+  printf '%s\t%s\n' 'httpmethod=patch' 'Sends the output with a PATCH request'
+  printf '%s\t%s\n' 'httpmethod=delete' 'Sends the output with a DELETE request'
+fi
+# Print completion for httpformat=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpformat_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpformat=' 'The body format: json (default), yaml, ndjson or text. Strings are sent as-is'
+  printf '%s\t%s\n' 'httpformat=json' 'Sends the output as JSON'
+  printf '%s\t%s\n' 'httpformat=yaml' 'Sends the output as YAML'
+  printf '%s\t%s\n' 'httpformat=ndjson' 'Sends the output as newline delimited JSON'
+  printf '%s\t%s\n' 'httpformat=text' 'Sends the output as plain text'
+fi
+# Print completion for httpparams=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpparams_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpparams=' 'A JSON/SLON map of OpenAF $rest options (e.g. requestHeaders, login, pass, timeout, retry)'
+fi
+# Print completion for httpeach=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpeach_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpeach=' 'If true and the input is an array, one request is made per entry'
+fi
+# Print completion for httpquiet=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpquiet_ -eq 1 ]; then
+  printf '%s\t%s\n' 'httpquiet=' 'If true the server response is not printed'
 fi
 # Print completion for htmlcompact=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_htmlcompact_ -eq 1 ]; then
