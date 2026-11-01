@@ -790,20 +790,29 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 		useColor = true
 	}
 
-	var data = _d.filter(r => !r.startsWith("-")).map(r => {
+	var data = []
+	_d.filter(r => !r.startsWith("-")).forEach(r => {
+		var _ar = useColor ? r.split(":") : [ r ]
+		var _v
 		try {
-			if (useColor) {
-				var _ar = r.split(":")
-				colors.push(_ar[1])
-				titles.push((_ar.length > 2) ? _ar[2] : "")
-				return isNumber(_ar[0]) ? _ar[0] : global[_ar[0]]() 
+			if (isNumber(_ar[0])) {
+				_v = _ar[0]
 			} else {
-				return isNumber(r) ? r : global[r]()
-			}	
+				if (!isFunction(global[_ar[0]])) throw "'" + _ar[0] + "' is not a function"
+				_v = global[_ar[0]]()
+			}
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
 		}
-	}).filter(r => isDef(r))
+		// Skip undefined values (keeping colors/titles aligned with data)
+		if (isUnDef(_v)) return
+		if (!isNumber(_v)) throw "Error on '" + r + "': '" + _ar[0] + "' returned a non-numeric value (" + (isNull(_v) ? "null" : (isArray(_v) ? "array" : typeof _v)) + "): " + stringify(_v, __, "")
+		data.push(_v)
+		if (useColor) {
+			colors.push(_ar[1])
+			titles.push((_ar.length > 2) ? _ar[2] : "")
+		}
+	})
 
 	_d.filter(r => r.startsWith("-")).forEach(r => {
 		var _ar = r.split(":")
@@ -977,20 +986,29 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 		useColor = true
 	}
 
-	var data = _d.filter(r => !r.startsWith("-")).map(r => {
+	var data = []
+	_d.filter(r => !r.startsWith("-")).forEach(r => {
+		var _ar = useColor ? r.split(":") : [ r ]
+		var _v
 		try {
-			if (useColor) {
-				var _ar = r.split(":")
-				colors.push(_ar[1])
-				titles.push((_ar.length > 2) ? _ar[2] : "")
-				return isNumber(_ar[0]) ? _ar[0] : global[_ar[0]]() 
+			if (isNumber(_ar[0])) {
+				_v = _ar[0]
 			} else {
-				return isNumber(r) ? r : global[r]()
-			}	
+				if (!isFunction(global[_ar[0]])) throw "'" + _ar[0] + "' is not a function"
+				_v = global[_ar[0]]()
+			}
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
 		}
-	}).filter(r => isDef(r))
+		// Skip undefined values (keeping colors/titles aligned with data)
+		if (isUnDef(_v)) return
+		if (!isNumber(_v)) throw "Error on '" + r + "': '" + _ar[0] + "' returned a non-numeric value (" + (isNull(_v) ? "null" : (isArray(_v) ? "array" : typeof _v)) + "): " + stringify(_v, __, "")
+		data.push(_v)
+		if (useColor) {
+			colors.push(_ar[1])
+			titles.push((_ar.length > 2) ? _ar[2] : "")
+		}
+	})
 
 	_d.filter(r => r.startsWith("-")).forEach(r => {
 		var _ar = r.split(":")
