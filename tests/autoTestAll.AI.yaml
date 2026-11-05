@@ -140,6 +140,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIOpenAIRawResponse;
 
+   - name: AI::OpenAI schema hook
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOpenAISchemaHook;
+
    - name: AI::OpenAI jsonSchemaPrompt
      from: AI::Init
      to  : oJob Test
@@ -204,6 +209,7 @@ todo:
    - AI::Ollama streaming tool execution and ids
    - AI::Ollama streaming warmup on fresh conversation
    - AI::OpenAI rawResponse prefers responses
+   - AI::OpenAI schema hook
    - AI::OpenAI jsonSchemaPrompt
    - AI::OpenAI jsonSchemaPromptWithStats
    - AI::OpenAI jsonSchemaPrompt schema defaults

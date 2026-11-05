@@ -28,7 +28,7 @@
   exports.testImageConsumers = function() {
     ow.loadAI(); ow.loadTemplate();
     var path = io.createTempDir("stream-images-");
-    var png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB";
+    var png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aXcAAAAASUVORK5CYII=";
     try {
       var file = path + "/fixture.png";
       var output = io.writeFileStream(file);

@@ -72,6 +72,10 @@ public class DB {
 	 * - Oracle Thin: `jdbc:oracle:thin:@{{host}}:{{port}}:{{database}}`
 	 * - PostgreSQL: `jdbc:postgresql://{{host}}:{{port}}/{{database}}`
 	 * - H2: `jdbc:h2:{{file}}`
+	 *
+	 * Covered URL initialization SQL and custom-class hooks are blocked by default.
+	 * Trusted URLs require the boolean flags `__flags.DB_ALLOW_JDBC_URL_INIT` and/or
+	 * `__flags.DB_ALLOW_JDBC_URL_CUSTOM_CLASSES`. See docs/jdbc-url-policy.md for covered options.
 	 * ]]>
 	 * </odoc>
 	 */
@@ -88,7 +92,7 @@ public class DB {
 				if (url.startsWith("jdbc:h2"))         connect(H2_DRIVER, driver, url, login, pass);
 			}
 		} else {
-			SimpleLog.log(SimpleLog.logtype.DEBUG, "New DB with driver='" + driver + "'|url='" + url + "'|login='"+login+"'|pass='"+pass+"'|timeout='"+timeout+"'", null);
+			SimpleLog.log(SimpleLog.logtype.DEBUG, "New DB connection requested", null);
 			connect(driver, url, login, pass, timeout);
 		}
 	}
@@ -978,6 +982,7 @@ public class DB {
 	}
 	
     protected void connect(String driver, String url, String login, String pass, String timeout) throws Exception {
+        JdbcUrlPolicy.validate(driver, url);
 		//try {
 			if (OAFdCL.oafdcl != null) 
 				Class.forName(driver, true, OAFdCL.oafdcl);

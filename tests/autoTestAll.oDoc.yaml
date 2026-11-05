@@ -10,17 +10,16 @@ jobs:
      to  : oJob Test
      args:
        func: |
-          log("Online/Offline oDoc");
-          var od1 = searchHelp("index")[0];
-          var id1 = od1.id;
-          
-          log("Just offline oDoc");
-          setOfflineHelp(true);
-          var od2 = searchHelp("index")[0];
-          var id2 = od2.id;
-
-          ow.test.assert(id1, "index", "Online or offline oDoc missing index.");
-          ow.test.assert(id2, "index", "Offline oDoc missing index.");
+          var previousOffline = __offlineHelp;
+          try {
+            var results = searchHelp("index", __, ["index"]);
+            ow.test.assert(results.length > 0, true, "Online or offline oDoc missing index.");
+            setOfflineHelp(true);
+            results = searchHelp("index", __, ["index"]);
+            ow.test.assert(results.length > 0, true, "Offline oDoc missing index.");
+          } finally {
+            setOfflineHelp(previousOffline);
+          }
 
    - name: oDoc::MemoryAndSearch
      to: oJob Test

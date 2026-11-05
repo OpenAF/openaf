@@ -149,7 +149,9 @@ OpenWrap.java.prototype.maven.prototype.search = function(aTerm) {
  * Get the latest version from the provide aURI for a Maven 2 repository.
  * </odoc>
  */
-OpenWrap.java.prototype.maven.prototype.getLatestVersion = function(aURI) {
+OpenWrap.java.prototype.maven.prototype.getLatestVersion = function(aURI, onlyStable) {
+    if (onlyStable) return this.getLatestStableVersion(aURI);
+
     plugin("XML");
     var xml = new XML(ow.obj.rest.get(this._getURL() + "/" + aURI + "/maven-metadata.xml").response);
     var x = xml.toNativeXML();
@@ -158,6 +160,56 @@ OpenWrap.java.prototype.maven.prototype.getLatestVersion = function(aURI) {
     if (isUnDef(ver) || ver == "") ver = x.version.toString();
 
     return ver;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.maven.getVersions(aURI) : Array</key>
+ * Returns the array of all versions listed in the maven-metadata.xml of the provided aURI for a Maven 2 repository.
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.getVersions = function(aURI) {
+    plugin("XML");
+    var x = new XML(ow.obj.rest.get(this._getURL() + "/" + aURI + "/maven-metadata.xml").response).toNativeXML();
+    var vs = x.versioning.versions.version, r = [];
+    for(var ii = 0; ii < vs.length(); ii++) r.push(String(vs[ii].toString()).trim());
+    return r.filter(v => v.length > 0);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.maven.isStableVersion(aVersion) : boolean</key>
+ * Returns false if aVersion looks like a pre-release (e.g. alpha, beta, milestone, rc, cr, preview, ea, snapshot, dev, nightly...)
+ * and true otherwise (e.g. 1.2.3, 1.2.3.Final, 1.2.3-jre, 5.0.0.RELEASE, 1.0-GA).
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.isStableVersion = function(aVersion) {
+    var v = String(aVersion).trim();
+    if (v.length == 0) return false;
+    // Tokens such as alpha, alpha1, alpha-1, a1, beta2, b3, M1, RC1, CR2, pre, preview, ea, SNAPSHOT, dev, nightly...
+    var _pre = /^(alpha|a|beta|b|m|milestone|rc|cr|pre|preview|ea|snapshot|dev|nightly|incubating|canary|next|draft|test)\d*$/i;
+    var tokens = v.split(/[\.\-_+~]/);
+    for(var ii = 0; ii < tokens.length; ii++) {
+        var t = tokens[ii];
+        if (_pre.test(t)) return false;
+        // Glued qualifiers like 1.0b2, 2.0rc1, 3.0M1, 1.0alpha
+        if (/^\d+(alpha|a|beta|b|m|rc|cr|pre|ea|dev)\d*$/i.test(t)) return false;
+    }
+    return true;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.maven.getLatestStableVersion(aURI) : String</key>
+ * Get the highest stable version (excluding alpha, beta, milestones, release candidates, snapshots, etc...) from the provided
+ * aURI for a Maven 2 repository. Returns undefined if no stable version is found.
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.getLatestStableVersion = function(aURI) {
+    ow.loadFormat();
+    var lst = this.getVersions(aURI).filter(v => this.isStableVersion(v));
+    if (lst.length == 0) return __;
+    return lst.reduce((a, b) => (ow.format.compareVersion(b, a) > 0 ? b : a));
 };
 
 /**
@@ -386,15 +438,28 @@ OpenWrap.java.prototype.maven.prototype.getFile = function(artifactId, aFilename
 
 /**
  * <odoc>
- * <key>ow.java.maven.getLatestVersionString(artifactId) : String</key>
- * Given the artifactId (prefixed with the group id using ".") will try to determine the latest version and return 
- * the corresponding string.
+ * <key>ow.java.maven.getLatestVersionString(artifactId, onlyStable) : String</key>
+ * Given the artifactId (prefixed with the group id using ".") will try to determine the latest version and return
+ * the corresponding string. If onlyStable = true pre-release versions (alpha, beta, rc, milestones, snapshots, etc...) are ignored.
  * </odoc>
  */
-OpenWrap.java.prototype.maven.prototype.getLatestVersionString = function(artifactId) {
+OpenWrap.java.prototype.maven.prototype.getLatestVersionString = function(artifactId, onlyStable) {
     var aURI = this._translateArtifact(artifactId)
-    var version = this.getLatestVersion(aURI)
+    var version = this.getLatestVersion(aURI, onlyStable)
     return version
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.maven.getLatestVersionGA(aGroupId, aArtifactId, onlyStable) : String</key>
+ * Same as getLatestVersionString but with separate aGroupId and aArtifactId (needed when the artifactId itself contains dots,
+ * e.g. jakarta.xml.bind:jakarta.xml.bind-api). If onlyStable = true pre-release versions are ignored.
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.getLatestVersionGA = function(aGroupId, aArtifactId, onlyStable) {
+    _$(aGroupId, "aGroupId").isString().$_()
+    _$(aArtifactId, "aArtifactId").isString().$_()
+    return this.getLatestVersion(this._translateArtifact(aGroupId) + "/" + aArtifactId, onlyStable)
 }
 
 /**

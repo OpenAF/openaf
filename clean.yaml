@@ -30,7 +30,7 @@ todo:
 
 jobs:
 - name: Clean outputs
-  exec: |
+  exec: | #js
     var root = io.fileInfo(_$(args.path, "path").isString().default(".")).canonicalPath;
     ["tests", "js", "src", "build.yaml"].forEach(function(name) {
       if (!io.fileExists(root + "/" + name)) throw "Not an OpenAF repository root: " + root;

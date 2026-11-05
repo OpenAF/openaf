@@ -21,3 +21,10 @@ dependencies.json
 maven-*
 .github/*
 .BUGS-CATALOG.md
+
+# Optional Maven Central publishing files
+!docs/dev/maven-central-publishing.md
+!.github/workflows/
+.github/workflows/*
+!.github/workflows/publish-maven.yml
+/tools/central/__pycache__/

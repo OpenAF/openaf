@@ -406,7 +406,9 @@ public class IO extends ScriptableObject {
 	 */
 	protected static String removeLines(String lines, long numLines) {
 		for(long i = 0; i < numLines; i++) {
-			lines = lines.substring(lines.indexOf("\n"));
+			int newline = lines.indexOf("\n");
+			if (newline < 0) return "";
+			lines = lines.substring(newline + 1);
 		}
 		return lines;
 	}
@@ -756,7 +758,13 @@ public class IO extends ScriptableObject {
 	 */
 	@JSFunction
 	public static Object readFileGzipStream(String filename) throws IOException {
-		return new GZIPInputStream(FileUtils.openInputStream(new File(filename)));
+		java.io.InputStream input = FileUtils.openInputStream(new File(filename));
+		try {
+			return new GZIPInputStream(input);
+		} catch (IOException | RuntimeException | Error failure) {
+			try { input.close(); } catch (Throwable cleanup) { failure.addSuppressed(cleanup); }
+			throw failure;
+		}
 	}
 	
 	/**

@@ -30,7 +30,7 @@ complete:
     desc: A base64 text format
     opts:
     - name: base64gzip=
-      desc: If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output
+      desc: If true, gzip before Base64 encoding or gunzip after Base64 decoding
   - name: out=bstable
     desc: A borderless Unicode table with separators between records and wrapping to the terminal width (for lists or maps)
   - name: out=btable
@@ -160,6 +160,68 @@ complete:
       desc: Amount of ms, when htmlopen=true, to wait for the system browser to open an render the html output
     - name: htmldark=
       desc: If supported and true the output html will use a dark theme.
+  - name: out=http
+    desc: Sends the output as the body of an HTTP request (POST, PUT, PATCH or DELETE)
+    opts:
+    - name: httpurl=
+      desc: The URL to send the output to (required)
+    - name: httpmethod=
+      desc: 'The HTTP method: post (default), put, patch or delete'
+      opts:
+      - name: httpmethod=post
+        desc: Sends the output with a POST request
+      - name: httpmethod=put
+        desc: Sends the output with a PUT request
+      - name: httpmethod=patch
+        desc: Sends the output with a PATCH request
+      - name: httpmethod=delete
+        desc: Sends the output with a DELETE request
+    - name: httpformat=
+      desc: 'The body format: json (default), yaml, ndjson or text. Strings are sent as-is'
+      opts:
+      - name: httpformat=json
+        desc: Sends the output as JSON
+      - name: httpformat=yaml
+        desc: Sends the output as YAML
+      - name: httpformat=ndjson
+        desc: Sends the output as newline delimited JSON
+      - name: httpformat=text
+        desc: Sends the output as plain text
+    - name: httpparams=
+      desc: A JSON/SLON map of OpenAF $rest options (e.g. requestHeaders, login, pass, timeout, retry)
+    - name: httpeach=
+      desc: If true and the input is an array, one request is made per entry
+    - name: httpquiet=
+      desc: If true the server response is not printed
+  - name: out=httpd
+    desc: Serves the output over a local HTTP server (e.g. a live JSON endpoint or an OpenMetrics exporter with loop)
+    opts:
+    - name: httpdport=
+      desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
+    - name: httpdhost=
+      desc: The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)
+    - name: httpdpath=
+      desc: If provided only requests to this path (or below) are accepted; others get a 404
+    - name: httpdformat=
+      desc: The output format served (defaults to json). A request can override it with _?format=_
+    - name: httpdmime=
+      desc: Forces the Content-Type of the replies
+    - name: httpdstatus=
+      desc: The HTTP status code of the replies (defaults to 200)
+    - name: httpdcount=
+      desc: 'Stop after this many requests were answered (defaults to 0: serve until interrupted)'
+    - name: httpdtimeout=
+      desc: 'Stop after this many milliseconds without requests (defaults to 0: no limit)'
+    - name: httpduser=
+      desc: If provided requests need HTTP basic authentication with this user
+    - name: httpdpass=
+      desc: The password for _httpduser_
+    - name: httpdcors=
+      desc: If true adds CORS headers and answers OPTIONS preflight requests
+    - name: httpdkeystore=
+      desc: A Java keystore path to serve HTTPS
+    - name: httpdkeypass=
+      desc: The password of _httpdkeystore_
   - name: out=idesc
     desc: Interactive full-screen tree browser for maps, arrays and scalar values; expand/collapse, zoom, filter, queries, previews, bookmarks, comparison and export
     opts:
@@ -338,7 +400,7 @@ complete:
     desc: A base64 text format
     opts:
     - name: base64gzip=
-      desc: If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output
+      desc: If true, gzip before Base64 encoding or gunzip after Base64 decoding
   - name: in=ch
     desc: An OpenAF channel format
     opts:
@@ -404,6 +466,39 @@ complete:
     opts:
     - name: hsperfmetadata=
       desc: With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime.
+  - name: in=httpd
+    desc: Receives the input from an HTTP request sent to a temporary local HTTP server (e.g. a webhook)
+    opts:
+    - name: inhttpdport=
+      desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
+    - name: inhttpdhost=
+      desc: The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)
+    - name: inhttpdpath=
+      desc: If provided only requests to this path (or below) are accepted; others get a 404
+    - name: inhttpdtimeout=
+      desc: Milliseconds to wait for a request (defaults to 60000; 0 waits forever)
+    - name: inhttpdcount=
+      desc: Number of requests to process before stopping (defaults to 1; 0 for no limit until a timeout occurs)
+    - name: inhttpdtype=
+      desc: The input type to parse the request body with (otherwise detected from the Content-Type and the body)
+    - name: inhttpdmax=
+      desc: Maximum request body size in bytes (defaults to 10485760); larger requests get a 413
+    - name: inhttpdstatus=
+      desc: The HTTP status code returned to the sender (defaults to 200)
+    - name: inhttpdreply=
+      desc: The text returned to the sender (defaults to empty)
+    - name: inhttpdenvelope=
+      desc: If true the input is a map with method, uri, headers, params and body instead of just the parsed body
+    - name: inhttpduser=
+      desc: If provided requests need HTTP basic authentication with this user
+    - name: inhttpdpass=
+      desc: The password for _inhttpduser_
+    - name: inhttpdcors=
+      desc: If true adds CORS headers and answers OPTIONS preflight requests
+    - name: inhttpdkeystore=
+      desc: A Java keystore path to serve HTTPS
+    - name: inhttpdkeypass=
+      desc: The password of _inhttpdkeystore_
   - name: in=ini
     desc: INI/Properties format
   - name: in=javas
@@ -415,7 +510,7 @@ complete:
     desc: The Java GC log lines text format
     opts:
     - name: javagcjoin=
-      desc: If true it will return an array with each processed line.
+      desc: If true returns one array of parsed GC events; otherwise emits events incrementally.
   - name: in=javathread
     desc: The Java Thread stack dump lines text format
     opts:
@@ -897,11 +992,41 @@ complete:
 - name: indsvfields=
   desc: Comma separated column names. When provided, every non-comment line is data, including the first; no input header is consumed.
 - name: javagcjoin=
-  desc: If true it will return an array with each processed line.
+  desc: If true returns one array of parsed GC events; otherwise emits events incrementally.
 - name: javathreadpid=
   desc: Optional you can provider the local java process pid to try to get the thread stack trace (*)
 - name: hsperfmetadata=
   desc: With in=hsperf, returns {values, header, entries}, including header and per-counter metadata. Defaults to false; requires an updated OpenAF runtime.
+- name: inhttpdport=
+  desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
+- name: inhttpdhost=
+  desc: The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)
+- name: inhttpdpath=
+  desc: If provided only requests to this path (or below) are accepted; others get a 404
+- name: inhttpdtimeout=
+  desc: Milliseconds to wait for a request (defaults to 60000; 0 waits forever)
+- name: inhttpdcount=
+  desc: Number of requests to process before stopping (defaults to 1; 0 for no limit until a timeout occurs)
+- name: inhttpdtype=
+  desc: The input type to parse the request body with (otherwise detected from the Content-Type and the body)
+- name: inhttpdmax=
+  desc: Maximum request body size in bytes (defaults to 10485760); larger requests get a 413
+- name: inhttpdstatus=
+  desc: The HTTP status code returned to the sender (defaults to 200)
+- name: inhttpdreply=
+  desc: The text returned to the sender (defaults to empty)
+- name: inhttpdenvelope=
+  desc: If true the input is a map with method, uri, headers, params and body instead of just the parsed body
+- name: inhttpduser=
+  desc: If provided requests need HTTP basic authentication with this user
+- name: inhttpdpass=
+  desc: The password for _inhttpduser_
+- name: inhttpdcors=
+  desc: If true adds CORS headers and answers OPTIONS preflight requests
+- name: inhttpdkeystore=
+  desc: A Java keystore path to serve HTTPS
+- name: inhttpdkeypass=
+  desc: The password of _inhttpdkeystore_
 - name: javasinception=
   desc: If true includes oafp itself in the local Java process list
 - name: jfrjoin=
@@ -1019,7 +1144,7 @@ complete:
 - name: xmlfiltertag=
   desc: If true will filter the XML tags
 - name: base64gzip=
-  desc: If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output
+  desc: If true, gzip before Base64 encoding or gunzip after Base64 decoding
 - name: inputcsv=
   desc: CSV input configuration as JSON/SLON
 - name: incsv=
@@ -1145,6 +1270,62 @@ complete:
   desc: Specifies the algorithm used to sign the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM.
 - name: grid=
   desc: A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).
+- name: httpdport=
+  desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
+- name: httpdhost=
+  desc: The address to bind to (defaults to 127.0.0.1; use 0.0.0.0 to accept remote connections)
+- name: httpdpath=
+  desc: If provided only requests to this path (or below) are accepted; others get a 404
+- name: httpdformat=
+  desc: The output format served (defaults to json). A request can override it with _?format=_
+- name: httpdmime=
+  desc: Forces the Content-Type of the replies
+- name: httpdstatus=
+  desc: The HTTP status code of the replies (defaults to 200)
+- name: httpdcount=
+  desc: 'Stop after this many requests were answered (defaults to 0: serve until interrupted)'
+- name: httpdtimeout=
+  desc: 'Stop after this many milliseconds without requests (defaults to 0: no limit)'
+- name: httpduser=
+  desc: If provided requests need HTTP basic authentication with this user
+- name: httpdpass=
+  desc: The password for _httpduser_
+- name: httpdcors=
+  desc: If true adds CORS headers and answers OPTIONS preflight requests
+- name: httpdkeystore=
+  desc: A Java keystore path to serve HTTPS
+- name: httpdkeypass=
+  desc: The password of _httpdkeystore_
+- name: httpurl=
+  desc: The URL to send the output to (required)
+- name: httpmethod=
+  desc: 'The HTTP method: post (default), put, patch or delete'
+  opts:
+  - name: httpmethod=post
+    desc: Sends the output with a POST request
+  - name: httpmethod=put
+    desc: Sends the output with a PUT request
+  - name: httpmethod=patch
+    desc: Sends the output with a PATCH request
+  - name: httpmethod=delete
+    desc: Sends the output with a DELETE request
+- name: httpformat=
+  desc: 'The body format: json (default), yaml, ndjson or text. Strings are sent as-is'
+  opts:
+  - name: httpformat=json
+    desc: Sends the output as JSON
+  - name: httpformat=yaml
+    desc: Sends the output as YAML
+  - name: httpformat=ndjson
+    desc: Sends the output as newline delimited JSON
+  - name: httpformat=text
+    desc: Sends the output as plain text
+- name: httpparams=
+  desc: A JSON/SLON map of OpenAF $rest options (e.g. requestHeaders, login, pass, timeout, retry)
+- name: httpeach=
+  desc: If true and the input is an array, one request is made per entry
+- name: httpquiet=
+  desc: If true the server response is not printed
 - name: htmlcompact=
   desc: Boolean flag that if true and the input data is a string or markdown the generated html will have a visual compact width format
 - name: htmlpart=

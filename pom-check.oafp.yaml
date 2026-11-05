@@ -1,5 +1,5 @@
 # Usage      : oafp -f pom-check.oafp.yaml
-# Description: Check for updates of maven dependencies in pom.xml
+# Description: Check for stable updates (ignoring alpha, beta, rc, milestones, snapshots, etc...) of maven dependencies in pom.xml
 #
 file: pom.xml
 path: project.dependencies.dependency
@@ -8,19 +8,19 @@ pipe:
   in      : json
   out     : json
   sql     : | #sql
-    SELECT * WHERE update = true ORDER BY update, groupId, artifactId
+    SELECT * WHERE update = true OR onlineVersion LIKE 'error:%' ORDER BY groupId, artifactId
   oaf     : | #js
     ow.loadJava()
+    ow.loadFormat()
     var m = new ow.java.maven()
     return pForEach(data, d => {
       try {
-        d.onlineVersion = m.getLatestVersionString(d.groupId + "." + d.artifactId)
-        if (d.version != d.onlineVersion) {
-          d.update = true
-        } else {
-          d.update = false
-        }
+        // Use groupId + artifactId separately (artifactIds may contain dots, e.g. jakarta.xml.bind-api)
+        d.onlineVersion = m.getLatestVersionGA(d.groupId, d.artifactId, true)
+        d.update = isDef(d.onlineVersion) && ow.format.compareVersion(d.onlineVersion, d.version) > 0
       } catch(e) {
+        d.onlineVersion = "error: " + String(e)
+        d.update = false
       }
       return d
     })

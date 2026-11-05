@@ -33,7 +33,13 @@ jobs:
   to: oJob Test
   exec: args.func = args.tests.testAskKey;
 
+- name: Console::multiline prompts
+  from: Console::Init
+  to: oJob Test
+  exec: args.func = args.tests.testMultilinePrompts;
+
 todo:
+- Console::multiline prompts
 - Console::prompt family
 - Console::injected prompts
 - Console::legacy history

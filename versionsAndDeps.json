@@ -12,31 +12,31 @@
             ],
             "license": "jackson-jq\n----------\n\nCopyright (C) 2015 Eiichi Sato\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n\n\njackson-jq/src/test/resources\n-----------------------------\n\nThese files are generated from files in stedolan/jq repository:\n\njackson-jq/src/main/resources/net/thisptr/jackson/jq/jq.json\njackson-jq/src/test/resources/jq-test-all-ng.json\njackson-jq/src/test/resources/jq-test-all-ok.json\njackson-jq/src/test/resources/jq-test-official-ng.json\njackson-jq/src/test/resources/jq-test-official-ok.json\njackson-jq/src/test/resources/compiler-test-ok.txt\njackson-jq/src/test/resources/compiler-test-ng.txt\n\nTherefore, is a derivative work of jq and the following license terms apply:\n\n\njq is copyright (C) 2012 Stephen Dolan\n\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n\"Software\"), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\nNONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE\nLIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\nOF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\nWITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n\njq's documentation (everything found under the docs/ subdirectory in\nthe source tree) is licensed under the Creative Commons CC BY 3.0\nlicense, which can be found at:\n\n         https://creativecommons.org/licenses/by/3.0/\n\nThe documentation website includes a copy of Twitter's Boostrap and\nrelies on Bonsai, Liquid templates and various other projects, look\nthem up for detailed licensing conditions.\n",
             "deps": [
-                "lib/joni-2.2.6.jar",
-                "lib/jcodings-1.0.63.jar"
+                "lib/joni-2.2.9.jar",
+                "lib/jcodings-1.0.64.jar"
             ]
         },
         {
             "description": "Joni",
             "path": [
-                "lib/joni-2.2.6.jar"
+                "lib/joni-2.2.9.jar"
             ],
-            "version": "2.2.6",
+            "version": "2.2.9",
             "changes": false,
             "type": [
                 "java"
             ],
             "license": "MIT License\n\nCopyright (c) 2017 JRuby Team\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
             "deps": [
-                "lib/jcodings-1.0.63.jar"
+                "lib/jcodings-1.0.64.jar"
             ]
         },
         {
             "description": "JCodings",
             "path": [
-                "lib/jcodings-1.0.63.jar"
+                "lib/jcodings-1.0.64.jar"
             ],
-            "version": "1.0.63",
+            "version": "1.0.64",
             "changes": false,
             "type": [
                 "java"
@@ -60,24 +60,24 @@
         {
             "description": "json-io (native Java TOON/JSON engine, see __flags.ALTERNATIVES.toTOON/fromTOON)",
             "path": [
-                "lib/json-io-4.110.0.jar"
+                "lib/json-io-4.118.0.jar"
             ],
-            "version": "4.110.0",
+            "version": "4.118.0",
             "changes": false,
             "type": [
                 "java"
             ],
             "license": "https://raw.githubusercontent.com/jdereg/json-io/master/LICENSE",
             "deps": [
-                "lib/java-util-4.108.0.jar"
+                "lib/java-util-4.118.0.jar"
             ]
         },
         {
             "description": "java-util",
             "path": [
-                "lib/java-util-4.110.0.jar"
+                "lib/java-util-4.118.0.jar"
             ],
-            "version": "4.110.0",
+            "version": "4.118.0",
             "changes": false,
             "type": [
                 "java"
@@ -349,10 +349,10 @@
             "description": "Rhino",
             "path": [
                 "lib/js.jar",
-                "lib/rhino-xml-1.9.1.jar",
-                "lib/rhino-engine-1.9.1.jar"
+                "lib/rhino-xml-1.9.2.jar",
+                "lib/rhino-engine-1.9.2.jar"
             ],
-            "version": "1.9.1",
+            "version": "1.9.2",
             "changes": false,
             "type": [
                 "java"
@@ -389,16 +389,16 @@
         {
             "description": "H2",
             "path": [
-                "lib/h2-2.4.240.jar"
+                "lib/h2-2.5.252.jar"
             ],
-            "version": "2.4.240",
+            "version": "2.5.252",
             "changes": false,
             "type": [
                 "java"
             ],
             "license": "This software contains unmodified binary redistributions for H2 database engine (http://www.h2database.com/), which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License). An original copy of the license agreement can be found at: http://www.h2database.com/html/license.html",
             "deps": [
-                "lib/slf4j-api-2.0.17.jar"
+                "lib/slf4j-api-2.0.20.jar"
             ]
         },
         {
@@ -417,7 +417,9 @@
         {
             "description": "jjwt",
             "path": [
-                "lib/jjwt-api-0.13.0.jar"
+                "lib/jjwt-api-0.13.0.jar",
+                "lib/jjwt-gson-0.13.0.jar",
+                "lib/jjwt-impl-0.13.0.jar"
             ],
             "version": "0.13.0",
             "changes": false,
@@ -430,24 +432,24 @@
         {
             "description": "JLine",
             "path": [
-                "lib/jline-reader-4.4.3.jar",
-                "lib/jline-terminal-4.4.3.jar",
-                "lib/jline-terminal-jni-4.4.3.jar",
-                "lib/jline-native-4.4.3.jar"
+                "lib/jline-reader-4.4.8.jar",
+                "lib/jline-terminal-4.4.8.jar",
+                "lib/jline-terminal-jni-4.4.8.jar",
+                "lib/jline-native-4.4.8.jar"
             ],
-            "version": "4.4.3",
+            "version": "4.4.8",
             "changes": true,
             "comment": "JLine 4 backend with OpenAF legacy console adapters",
             "type": [
                 "java"
             ],
-            "license": "https://raw.githubusercontent.com/jline/jline3/4.4.3/LICENSE.txt",
+            "license": "https://raw.githubusercontent.com/jline/jline3/4.4.8/LICENSE.txt",
             "deps": []
         },
         {
             "description": "JNA",
             "path": [
-                "lib/jna-platform-5.19.1.jar"
+                "lib/jna-5.19.1.jar"
             ],
             "version": "5.19.1",
             "changes": false,
@@ -469,7 +471,7 @@
             ],
             "license": "https://github.com/java-native-access/jna/blob/master/LICENSE",
             "deps": [
-                "lib/jna-5.18.1.jar"
+                "lib/jna-5.19.1.jar"
             ]
         },
         {
@@ -492,9 +494,9 @@
         {
             "description": "Apache Commons IO",
             "path": [
-                "lib/commons-email-1.6.0.jar"
+                "lib/commons-io-2.22.0.jar"
             ],
-            "version": "1.6.0",
+            "version": "2.22.0",
             "changes": false,
             "type": [
                 "java"
@@ -505,9 +507,9 @@
         {
             "description": "Apache Commons CSV",
             "path": [
-                "lib/commons-email-1.6.0.jar"
+                "lib/commons-csv-1.14.1.jar"
             ],
-            "version": "1.6.0",
+            "version": "1.14.1",
             "changes": false,
             "type": [
                 "java"
@@ -518,9 +520,9 @@
         {
             "description": "Apache Commons Lang",
             "path": [
-                "lib/commons-email-1.6.0.jar"
+                "lib/commons-lang3-3.21.0.jar"
             ],
-            "version": "1.6.0",
+            "version": "3.21.0",
             "changes": false,
             "type": [
                 "java"
@@ -544,9 +546,9 @@
         {
             "description": "Apache Commons Compress",
             "path": [
-                "lib/commons-email-1.6.0.jar"
+                "lib/commons-compress-1.28.0.jar"
             ],
-            "version": "1.6.0",
+            "version": "1.28.0",
             "changes": false,
             "type": [
                 "java"
@@ -557,13 +559,13 @@
         {
             "description": "OkHTTP Client",
             "path": [
-                "okhttp-5.3.0.jar",
-                "okhttp-jvm-5.3.0.jar",
-                "okio-3.16.2.jar",
-                "okio-jvm-3.16.2.jar",
-                "kotlin-stdlib-2.2.21.jar"
+                "lib/okhttp-5.5.1.jar",
+                "lib/okhttp-jvm-5.5.1.jar",
+                "lib/okio-3.18.2.jar",
+                "lib/okio-jvm-3.18.2.jar",
+                "lib/kotlin-stdlib-2.4.21.jar"
             ],
-            "version": "5.3.0",
+            "version": "5.5.1",
             "changes": false,
             "type": [
                 "java"
@@ -574,9 +576,9 @@
         {
             "description": "Oracle JDBC 23",
             "path": [
-                "lib/ojdbc17-23.26.3.0.0.jar"
+                "lib/ojdbc17-23.26.4.0.0.jar"
             ],
-            "version": "23.26.2.0.0",
+            "version": "23.26.4.0.0",
             "changes": false,
             "type": [
                 "java"
@@ -587,9 +589,9 @@
         {
             "description": "PostgreSQL JDBC",
             "path": [
-                "lib/postgresql-42.7.13.jar"
+                "lib/postgresql-42.7.14.jar"
             ],
-            "version": "42.7.13",
+            "version": "42.7.14",
             "changes": false,
             "type": [
                 "java"
@@ -600,9 +602,9 @@
         {
             "description": "DNS Java",
             "path": [
-                "lib/dnsjava-3.6.5.jar"
+                "lib/dnsjava-3.7.0.jar"
             ],
-            "version": "3.6.5",
+            "version": "3.7.0",
             "changes": false,
             "type": [
                 "java"
@@ -613,9 +615,9 @@
         {
             "description": "JavaMail API",
             "path": [
-                "lib/javax.mail.jar"
+                "lib/jakarta.mail-1.6.8.jar"
             ],
-            "version": "1.6.2",
+            "version": "1.6.8",
             "changes": false,
             "type": [
                 "java"
@@ -657,9 +659,9 @@
         {
             "description": "GSON",
             "path": [
-                "lib/gson-2.14.0.jar"
+                "lib/gson-2.15.0.jar"
             ],
-            "version": "2.14.0",
+            "version": "2.15.0",
             "changes": false,
             "type": [
                 "java"
@@ -674,9 +676,9 @@
         {
             "description": "Jackson Core",
             "path": [
-                "lib/jackson-databind-2.22.1.jar"
+                "lib/jackson-core-2.22.4.jar"
             ],
-            "version": "2.22.1",
+            "version": "2.22.4",
             "changes": false,
             "type": [
                 "java"
@@ -717,7 +719,8 @@
         {
             "description": "ASCIITable",
             "path": [
-                "lib/asciitable-j7-1.0.1.jar"
+                "lib/asciitable-j7-1.0.1.jar",
+                "lib/asciilist-j7-1.0.0.jar"
             ],
             "version": "1.0.1",
             "changes": false,
@@ -740,39 +743,40 @@
             "name": "Console",
             "removable": false,
             "deps": [
-                "lib/jline-reader-4.4.3.jar",
-                "lib/jline-terminal-4.4.3.jar",
-                "lib/jline-terminal-jni-4.4.3.jar",
-                "lib/jline-native-4.4.3.jar"
+                "lib/jline-reader-4.4.8.jar",
+                "lib/jline-terminal-4.4.8.jar",
+                "lib/jline-terminal-jni-4.4.8.jar",
+                "lib/jline-native-4.4.8.jar"
             ]
         },
         {
             "name": "Email",
             "removable": true,
             "deps": [
-                "lib/javax.mail.jar",
+                "lib/jakarta.mail-1.6.8.jar",
                 "lib/commons-email-1.6.0.jar"
             ],
             "hardDeps": [
-                "lib/commons-email-1.6.0.jar"
+                "lib/commons-net-3.13.0.jar"
             ]
         },
         {
             "name": "HTTP",
             "removable": false,
             "hardDeps": [
-                "lib/commons-email-1.6.0.jar",
-                "lib/jetty-io-12.1.11.jar",
-                "lib/jetty-io-12.1.11.jar",
-                "lib/jetty-io-12.1.11.jar",
-                "lib/jetty-io-12.1.11.jar"
+                "lib/commons-io-2.22.0.jar",
+                "lib/jetty-io-12.1.14.jar",
+                "lib/jetty-util-12.1.14.jar",
+                "lib/jetty-client-12.1.14.jar",
+                "lib/jetty-http-12.1.14.jar",
+                "lib/jetty-compression-common-12.1.14.jar"
             ],
             "deps": [
-                "lib/jetty-io-12.1.11.jar",
-                "lib/jetty-io-12.1.11.jar",
-                "lib/jetty-io-12.1.11.jar",
-                "lib/jetty-io-12.1.11.jar",
-                "lib/jetty-io-12.1.11.jar"
+                "lib/jetty-websocket-jetty-api-12.1.14.jar",
+                "lib/jetty-websocket-jetty-client-12.1.14.jar",
+                "lib/jetty-websocket-jetty-common-12.1.14.jar",
+                "lib/jetty-websocket-core-client-12.1.14.jar",
+                "lib/jetty-websocket-core-common-12.1.14.jar"
             ]
         },
         {
@@ -792,7 +796,7 @@
             "name": "SNMP",
             "removable": true,
             "deps": [
-                "lib/snmp4j-agent-3.10.1.jar",
+                "lib/snmp4j-3.13.1.jar",
                 "lib/snmp4j-agent-3.10.1.jar"
             ]
         },
@@ -800,7 +804,7 @@
             "name": "SNMPServer",
             "removable": true,
             "deps": [
-                "lib/snmp4j-agent-3.10.1.jar",
+                "lib/snmp4j-3.13.1.jar",
                 "lib/snmp4j-agent-3.10.1.jar"
             ]
         },
@@ -808,10 +812,10 @@
             "name": "SSH",
             "removable": true,
             "hardDeps": [
-                "lib/commons-email-1.6.0.jar"
+                "lib/commons-io-2.22.0.jar"
             ],
             "deps": [
-                "lib/jsch.agentproxy.connector-factory-0.0.9.jar",
+                "lib/jsch-2.28.8.jar",
                 "lib/jsch.agentproxy.connector-factory-0.0.9.jar",
                 "lib/jsch.agentproxy.core-0.0.9.jar",
                 "lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -819,7 +823,7 @@
                 "lib/jsch.agentproxy.sshagent-0.0.9.jar",
                 "lib/jsch.agentproxy.svnkit-trilead-ssh2-0.0.9.jar",
                 "lib/jsch.agentproxy.usocket-jna-0.0.9.jar",
-                "lib/jsch.agentproxy.usocket-jna-0.0.9.jar"
+                "lib/jsch.agentproxy.usocket-nc-0.0.9.jar"
             ]
         },
         {
@@ -840,8 +844,8 @@
             "name": "ZIP",
             "removable": false,
             "hardDeps": [
-                "lib/commons-email-1.6.0.jar",
-                "lib/commons-email-1.6.0.jar"
+                "lib/commons-io-2.22.0.jar",
+                "lib/commons-compress-1.28.0.jar"
             ],
             "deps": []
         },
@@ -849,7 +853,7 @@
             "name": "BSDiff",
             "removable": true,
             "hardDeps": [
-                "lib/commons-email-1.6.0.jar"
+                "lib/commons-compress-1.28.0.jar"
             ],
             "deps": [
                 "lib/jbsdiff-1.0.jar"
@@ -859,14 +863,14 @@
             "name": "Oracle",
             "removable": true,
             "deps": [
-                "lib/ojdbc17-23.26.3.0.0.jar"
+                "lib/ojdbc17-23.26.4.0.0.jar"
             ]
         },
         {
             "name": "PostgreSQL",
             "removable": true,
             "deps": [
-                "lib/postgresql-42.7.13.jar"
+                "lib/postgresql-42.7.14.jar"
             ]
         }
     ]
