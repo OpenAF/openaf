@@ -139,3 +139,22 @@ exports.testAskKey = function() {
   ow.test.assert(one([-2]), __, "Timeout");
   ow.test.assert(one([-1]), "eof", "EOF");
 };
+
+exports.testMultilinePrompts = function() {
+  var output = [], chars = [], con = {
+    getConsoleReader: function() { return {getTerminal: function() {return {getWidth: function() {return 20;}};}}; },
+    readChar: function() {return chars.shift();}
+  };
+  var ui = {ansi:true, console:con, write:function(s) {output.push(s);}};
+  [askChoose, askChooseMultiple].forEach(function(fn) {
+    ["First\nSecond", "First\r\nSecond", "1234567890123456789012345678901234567890", "色😀\nSecond"].forEach(function(prompt) {
+      output = []; chars = ["\n"];
+      fn(prompt, ["one"], 1, "", ui);
+      var header = "? " + prompt + " ";
+      var rows = Number(Packages.org.jline.utils.AttributedString.fromAnsi(header).columnSplitLength(20, false, false).size());
+      ow.test.assert(output.indexOf("\x1b[" + (rows + 1) + "A") >= 0, true, "Rewind all question and option rows");
+      ow.test.assert(output.indexOf("\x1b[0G\x1b[0J") >= 0, true, "Clear old prompt before confirmation");
+      ow.test.assert(output.join("").indexOf("\x1b[2A\x1B[?25h"), -1, "Do not rewind into completed multiline answer");
+    });
+  });
+};

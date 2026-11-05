@@ -1,0 +1,196 @@
+name: Publish Maven Central
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Published stable GitHub release tag (vYYYYMMDD[-YYYYMMDD])'
+        required: true
+        type: string
+      dry_run:
+        description: 'Validate and sign with a disposable key; never upload'
+        type: boolean
+        default: true
+      auto_publish:
+        description: 'Explicitly publish after Central validation (otherwise approve in Portal)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: maven-central-${{ inputs.release }}
+  cancel-in-progress: false
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.release.outputs.commit }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tooling
+          persist-credentials: false
+      - name: Publishing validation tests
+        run: python3 -m unittest discover -s tooling/tools/central -p 'test_*.py'
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ inputs.release }}
+          GROUP: ${{ vars.CENTRAL_GROUP_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$RELEASE" "$GROUP" <<'PY'
+          import sys
+          sys.path.insert(0, 'tooling/tools/central')
+          from publish import identity
+          identity(sys.argv[1], sys.argv[2])
+          PY
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE" > release.json
+          jq -e --arg tag "$RELEASE" '.tag_name == $tag and .draft == false and .prerelease == false' release.json
+          git -C tooling fetch origin "refs/tags/$RELEASE:refs/tags/$RELEASE"
+          commit=$(git -C tooling rev-parse "$RELEASE^{commit}")
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "tag=$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "version=${RELEASE#v}" >> "$GITHUB_OUTPUT"
+  prepare:
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.commit }}
+          path: release
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Bootstrap official builder
+        working-directory: release
+        run: |
+          mkdir _oaf
+          curl --fail --location --proto '=https' https://openaf.io/openaf.jar -o _oaf/openaf.jar
+          (cd _oaf && java -jar openaf.jar --install)
+      - name: Official build
+        working-directory: release
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+        run: _oaf/ojob build.yaml "openafVERSION=$VERSION" openafDIST=stable
+      - name: Tests against exact binary
+        working-directory: release
+        run: |
+          java -jar openaf.jar --install
+          cd tests
+          ../ojob autoTestAll.yaml
+          python3 -c 'import json; r=json.load(open("autoTestAll.results.json")); assert r["fail"] == 0 and r["count"] > 0'
+      - name: Snapshot tested binary and matching generated sources
+        working-directory: release
+        run: |
+          mkdir -p ../payload
+          cp openaf.jar ../payload/
+          cp -R src ../payload/
+          sha256sum openaf.jar > ../payload/SHA256SUMS
+          git rev-parse HEAD > ../payload/commit
+      - uses: actions/upload-artifact@v4
+        with:
+          name: central-tested-${{ needs.resolve.outputs.commit }}
+          path: payload
+          retention-days: 7
+  publish:
+    needs: [resolve, prepare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: ${{ inputs.dry_run && 'maven-central-validation' || 'maven-central' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.commit }}
+          path: release
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: central-tested-${{ needs.resolve.outputs.commit }}
+          path: payload
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Install pinned Maven
+        run: |
+          curl --fail --location --proto '=https' https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.tar.gz -o /tmp/maven.tar.gz
+          curl --fail --location --proto '=https' https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.tar.gz.sha512 -o /tmp/maven.sha512
+          echo "$(cat /tmp/maven.sha512)  /tmp/maven.tar.gz" | sha512sum -c -
+          tar -xzf /tmp/maven.tar.gz -C /tmp
+          echo /tmp/apache-maven-3.9.11/bin >> "$GITHUB_PATH"
+      - name: Restore same-run tested artifact and publishing tooling
+        env:
+          COMMIT: ${{ needs.resolve.outputs.commit }}
+        run: |
+          test "$(cat payload/commit)" = "$COMMIT"
+          cp payload/openaf.jar release/openaf.jar
+          cp -R payload/src/. release/src/
+          (cd release && sha256sum -c ../payload/SHA256SUMS)
+          mkdir -p release/tools/central
+          cp tooling/tools/central/publish.py release/tools/central/
+          cp tooling/pom-central.xml release/
+      - name: Disposable dry-run signing identity
+        if: inputs.dry_run
+        run: |
+          export GNUPGHOME=$(mktemp -d)
+          chmod 700 "$GNUPGHOME"
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+          gpg --batch --passphrase '' --quick-generate-key 'OpenAF validation only <validation@example.invalid>' rsa3072 sign 1d
+      - name: Validate locally with no publishing secrets
+        if: inputs.dry_run
+        working-directory: release
+        env:
+          TAG: ${{ needs.resolve.outputs.tag }}
+          GROUP: ${{ vars.CENTRAL_GROUP_ID }}
+        run: python3 tools/central/publish.py --tag "$TAG" --group "$GROUP"
+      - name: Sign and upload approved release
+        if: ${{ !inputs.dry_run }}
+        working-directory: release
+        env:
+          TAG: ${{ needs.resolve.outputs.tag }}
+          GROUP: ${{ vars.CENTRAL_GROUP_ID }}
+          AUTO: ${{ inputs.auto_publish }}
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GNUPGHOME=$(mktemp -d)
+          chmod 700 "$GNUPGHOME"
+          trap 'rm -rf "$GNUPGHOME" "$HOME/.m2/settings.xml"' EXIT
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          unset GPG_PRIVATE_KEY
+          mkdir -p "$HOME/.m2"
+          umask 077
+          cat > "$HOME/.m2/settings.xml" <<'XML'
+          <settings><servers><server><id>central</id><username>${env.CENTRAL_USERNAME}</username><password>${env.CENTRAL_PASSWORD}</password></server></servers></settings>
+          XML
+          opts=()
+          if [ "$AUTO" = true ]; then opts+=(--auto-publish); fi
+          python3 tools/central/publish.py --tag "$TAG" --group "$GROUP" --upload "${opts[@]}"
+      - name: Report coordinates and status
+        if: success()
+        run: cat release/target/central-release/verification.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain verified publication bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-bundle-${{ needs.resolve.outputs.commit }}
+          path: |
+            release/target/central-release/target/central-publishing/central-bundle.zip
+            release/target/central-release/verification.json
+          if-no-files-found: error
+          retention-days: 7

@@ -2209,7 +2209,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	aHelpMap.expects.forEach(param => {
 	  if (isDef(param.name)) {
 		usage   += "[" + param.name + "=..." + "] ";
-		if (isUnDef(param.mandatory) || param.mandatory) {
+		if (isDef(param.mandatory) && param.mandatory) {
 		  if (simpleUI) {
 			example += param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "...");
 			pargs   += $f(" *   %" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));

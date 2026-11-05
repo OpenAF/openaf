@@ -17,6 +17,20 @@ Central list of noteworthy runtime flags and environment variables.
 | OJOB_AUTHORIZEDDOMAINS | ojob.io | Allowlist for remote includes |
 | OJOB_LOCALPATH | (unset) | Local path for ojob files resolution |
 
+## JDBC URL execution permissions
+
+Both `__flags` entries default to boolean `false`; only boolean `true` permits the
+covered mechanisms. Set them before creating trusted connections.
+
+| Flag | Default | Restriction and reason |
+| --- | --- | --- |
+| `DB_ALLOW_JDBC_URL_INIT` | false | Blocks covered URL initialization SQL and SQL script files, which can execute statements when a connection opens. |
+| `DB_ALLOW_JDBC_URL_CUSTOM_CLASSES` | false | Blocks covered URL-selected Java classes and indirect configuration selectors, which can execute code with the OpenAF process's permissions. |
+
+See [JDBC URL execution policy](./jdbc-url-policy.md) for driver-specific options,
+examples, migration guidance and coverage boundaries. These permissions apply to
+core DB connections and are independent.
+
 ## Alternative (native) implementations (`__flags.ALTERNATIVES`)
 
 Each flag selects a native Java implementation over the bundled JavaScript one when `true`. Set to `false` to fall back.

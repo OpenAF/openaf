@@ -647,6 +647,38 @@
     });
     ow.test.assert(calls.length, 3, "Invalid image requests fail before HTTP");
   };
+  exports.testOllamaSchemaTools = function() {
+    ow.loadAI();
+    var g = make("ollama"), requests = [], calls = 0;
+    var schema = { schema: { type: "object", properties: { value: { type: "string" } }, required: ["value"], additionalProperties: false } };
+    g.withTool("lookup", "Look up a value", { type: "object", properties: {} }, function() { calls++; return "found"; });
+    g.getGPT().model._request = function(uri, body) {
+      requests.push(copy(body));
+      if (requests.length == 1) return { prompt_eval_count: 3, eval_count: 2, done: true, message: { role: "assistant", content: "", tool_calls: [{ function: { name: "lookup", arguments: {} } }] } };
+      if (requests.length == 2) return { prompt_eval_count: 3, eval_count: 2, done: true, message: { role: "assistant", content: "found" } };
+      return { prompt_eval_count: 3, eval_count: 2, done: true, done_reason: "stop", message: { role: "assistant", content: '{"value":"found"}' } };
+    };
+    var out = g.jsonSchemaPromptWithStats("Look up the value", schema);
+    ow.test.assert(out.stats.tokens.total, 15, "All Ollama phases contribute usage");
+    var result = out.response;
+    ow.test.assert(result.value, "found", "Schema result uses tool output");
+    ow.test.assert(calls, 1, "Tool executed once");
+    ow.test.assert(requests.length, 3, "Two tool-phase requests and one final request");
+    ow.test.assert(isUnDef(requests[0].format) && isUnDef(requests[1].format), true, "Tool phase has no format constraint");
+    ow.test.assert(isArray(requests[0].tools) && isUnDef(requests[2].tools), true, "Only tool phase sends tools");
+    ow.test.assert(requests[2].format, schema.schema, "Final request carries schema");
+    var before = stringify(g.getGPT().getConversation());
+    g.getGPT().model._request = function() { return { prompt_eval_count: 3, eval_count: 2, done: true, message: { role: "assistant", content: '{"value":3}' } }; };
+    expectError(function() { g.jsonSchemaPrompt("Bad", schema, undefined, undefined, []); }, "LLM_DECISION_INVALID_RESPONSE");
+    ow.test.assert(stringify(g.getGPT().getConversation()), before, "Failed final response does not commit history");
+    var step = 0;
+    g.getGPT().model._request = function() {
+      if (++step == 1) return { done: true, message: { role: "assistant", content: "", tool_calls: [{ function: { name: "lookup", arguments: {} } }] } };
+      throw new Error("connection lost after tool");
+    };
+    var error = expectError(function() { g.jsonSchemaPrompt("Fail after lookup", schema); }, "LLM_DECISION_PROVIDER_ERROR");
+    ow.test.assert(error.toolsExecuted && !error.safeToRetry, true, "Ollama prevents restart after tool execution");
+  };
   exports.testDecisionGeminiSchemaHelper = function() {
     ow.loadAI();
     var g = make("gemini"), calls = [], schema = { name: "Person", description: "Example", strict: true, schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"], additionalProperties: false } };
@@ -790,5 +822,80 @@
     var gemini = make("gemini");
     var error = expectError(function() { gemini.jsonSchemaPrompt("state", { schema: {} }); }, "LLM_DECISION_INVALID_REQUEST");
     ow.test.assert(error.provider, "gemini", "Schema-helper errors carry sanitized provider context");
+  };
+  exports.testOpenAISchemaNativeTools = function() {
+    ow.loadAI();
+    var g = make("openai", { schemaTransport: "chat" }), requests = [], calls = 0;
+    var descriptor = { name: "Lookup", strict: true, schema: { type: "object", properties: { value: { type: "string" } }, required: ["value"], additionalProperties: false } };
+    g.withTool("lookup", "Lookup", { type: "object", properties: {} }, function() { calls++; return "found"; });
+    var api = g.getGPT().model;
+    api._decisionRequest = function(uri, body) {
+      requests.push(copy(body));
+      ow.test.assert(uri.indexOf("chat/completions") >= 0, true, "Native tools use chat transport");
+      var message = requests.length == 1 ? { role: "assistant", content: null, tool_calls: [{ id: "call1", type: "function", function: { name: "lookup", arguments: "{}" } }] } : { role: "assistant", content: '{"value":"found"}' };
+      return { choices: [{ finish_reason: requests.length == 1 ? "tool_calls" : "stop", message: message }], usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 } };
+    };
+    var result = g.jsonSchemaPromptWithStats("lookup", descriptor);
+    ow.test.assert(result.response.value, "found", "Structured final answer");
+    ow.test.assert(calls, 1, "Tool executes once");
+    ow.test.assert(result.stats.tokens.total, 10, "Usage accumulates across continuation");
+    ow.test.assert(requests[1].messages[2].role, "tool", "Tool result reaches continuation");
+    ow.test.assert(requests[1].response_format.json_schema, descriptor, "Schema retained");
+    ow.test.assert(g.getCapabilities().structuredOutput.nativeTools, true, "Native schema capability");
+    var before = stringify(api.getConversation());
+    api._decisionRequest = function() { throw ow.ai.__decision.error("LLM_DECISION_PROVIDER_ERROR", "openai", 400, "json_schema is not supported"); };
+    var error = expectError(function() { g.jsonSchemaPrompt("reject", descriptor); }, "LLM_DECISION_UNSUPPORTED");
+    ow.test.assert(error.safeToRetry && !error.toolsExecuted, true, "Compatibility rejection safe to retry");
+    ow.test.assert(stringify(api.getConversation()), before, "Rejected turn leaves conversation unchanged");
+    var n = 0;
+    api._decisionRequest = function() {
+      if (++n == 1) return { choices: [{ finish_reason: "tool_calls", message: { role: "assistant", content: null, tool_calls: [{ id: "call2", type: "function", function: { name: "lookup", arguments: "{}" } }] } }] };
+      throw ow.ai.__decision.error("LLM_DECISION_PROVIDER_ERROR", "openai", 400, "json_schema is not supported");
+    };
+    error = expectError(function() { g.jsonSchemaPrompt("fail after tool", descriptor); }, "LLM_DECISION_PROVIDER_ERROR");
+    ow.test.assert(error.toolsExecuted && !error.safeToRetry, true, "Post-tool failure prohibits restart");
+    ow.test.assert(calls, 2, "Failure does not repeat tool");
+    [
+      [400, "Invalid schema for json_schema: unsupported keyword", "LLM_DECISION_PROVIDER_ERROR"],
+      [401, "json_schema is unsupported", "LLM_DECISION_PROVIDER_ERROR"],
+      [429, "Too many requests", "LLM_DECISION_PROVIDER_ERROR"],
+      [400, "Unknown model", "LLM_DECISION_PROVIDER_ERROR"]
+    ].forEach(function(fixture) {
+      api._decisionRequest = function() { throw ow.ai.__decision.error("LLM_DECISION_PROVIDER_ERROR", "openai", fixture[0], fixture[1]); };
+      expectError(function() { g.jsonSchemaPrompt("reject", descriptor, undefined, undefined, []); }, fixture[2]);
+    });
+    api._decisionRequest = function(uri, body) {
+      ow.test.assert(isUnDef(body.tools), true, "Explicit empty tools disables registered functions");
+      return { choices: [{ finish_reason: "stop", message: { content: '{"value":"found"}' } }] };
+    };
+    g.jsonSchemaPrompt("no tools", descriptor, undefined, undefined, []);
+  };
+  exports.testOpenAISchemaResponsesTools = function() {
+    ow.loadAI();
+    var g = make("openai"), bodies = [], count = 0;
+    g.withTool("lookup", "Lookup", { type: "object", properties: {} }, function() { count++; return "found"; });
+    g.getGPT().model._decisionRequest = function(uri, body) {
+      ow.test.assert(uri.indexOf("responses") >= 0, true, "Responses transport retained");
+      bodies.push(copy(body));
+      if (bodies.length == 1) return { status: "completed", output: [{ type: "reasoning", id: "r1", summary: [] }, { type: "function_call", id: "fc1", call_id: "call1", name: "lookup", arguments: "{}", status: "completed" }], usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 } };
+      return openaiFixture('{"value":"found"}');
+    };
+    var descriptor = { name: "Lookup", schema: { type: "object", properties: { value: { type: "string" } }, required: ["value"], additionalProperties: false } };
+    var result = g.jsonSchemaPromptWithStats("lookup", descriptor);
+    ow.test.assert(result.response.value, "found", "Responses structured reply");
+    ow.test.assert(count, 1, "Responses tool executes once");
+    ow.test.assert(result.stats.tokens.total, 30, "Responses usage accumulated");
+    ow.test.assert(bodies[1].input[1].type, "reasoning", "Reasoning items retained");
+    ow.test.assert(bodies[1].input[3].type, "function_call_output", "Function output retained");
+    ow.test.assert(bodies[1].tools[0].name, "lookup", "Flat Responses function declaration");
+    ow.test.assert(bodies[1].text.format.type, "json_schema", "Responses schema retained");
+    var compatible = make("openai", { url: "https://compatible.invalid/v1" });
+    compatible.withTool("lookup", "Lookup", { type: "object", properties: {} }, function() { return "found"; });
+    compatible.getGPT().model._decisionRequest = function(uri, body) {
+      ow.test.assert(uri.indexOf("chat/completions") >= 0, true, "Compatible endpoint defaults to Chat Completions");
+      ow.test.assert(body.response_format.type, "json_schema", "Compatible provider schema format");
+      return { choices: [{ finish_reason: "stop", message: { content: '{"value":"found"}' } }] };
+    };
+    compatible.jsonSchemaPrompt("lookup", descriptor);
   };
 })();

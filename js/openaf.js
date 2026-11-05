@@ -200,6 +200,8 @@ var OAF_SIGNATURE_KEY = getEnvsDef("OAF_SIGNATURE_KEY", OAF_SIGNATURE_KEY, __)
 var OAF_VALIDATION_STRICT = getEnvsDef("OAF_VALIDATION_STRICT", OAF_VALIDATION_STRICT, false)
 
 var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.prototype.toString.call(__flags) ? __flags : {
+	DB_ALLOW_JDBC_URL_INIT     : false,  // Permit protected JDBC URL initialization SQL for trusted connections
+	DB_ALLOW_JDBC_URL_CUSTOM_CLASSES: false, // Permit protected JDBC URL custom classes for trusted connections
 	OJOB_SEQUENTIAL            : true,
 	OJOB_FNCACHE               : true,   // If true, oJob caches compiled exec/dep/each functions instead of recompiling per run
 	OJOB_FNCACHE_SIZE          : 512,    // Max entries in the oJob compiled-function cache before it's cleared
@@ -788,20 +790,29 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 		useColor = true
 	}
 
-	var data = _d.filter(r => !r.startsWith("-")).map(r => {
+	var data = []
+	_d.filter(r => !r.startsWith("-")).forEach(r => {
+		var _ar = useColor ? r.split(":") : [ r ]
+		var _v
 		try {
-			if (useColor) {
-				var _ar = r.split(":")
-				colors.push(_ar[1])
-				titles.push((_ar.length > 2) ? _ar[2] : "")
-				return isNumber(_ar[0]) ? _ar[0] : global[_ar[0]]() 
+			if (isNumber(_ar[0])) {
+				_v = _ar[0]
 			} else {
-				return isNumber(r) ? r : global[r]()
-			}	
+				if (!isFunction(global[_ar[0]])) throw "'" + _ar[0] + "' is not a function"
+				_v = global[_ar[0]]()
+			}
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
 		}
-	}).filter(r => isDef(r))
+		// Skip undefined values (keeping colors/titles aligned with data)
+		if (isUnDef(_v)) return
+		if (!isNumber(_v)) throw "Error on '" + r + "': '" + _ar[0] + "' returned a non-numeric value (" + (isNull(_v) ? "null" : (isArray(_v) ? "array" : typeof _v)) + "): " + stringify(_v, __, "")
+		data.push(_v)
+		if (useColor) {
+			colors.push(_ar[1])
+			titles.push((_ar.length > 2) ? _ar[2] : "")
+		}
+	})
 
 	_d.filter(r => r.startsWith("-")).forEach(r => {
 		var _ar = r.split(":")
@@ -975,20 +986,29 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 		useColor = true
 	}
 
-	var data = _d.filter(r => !r.startsWith("-")).map(r => {
+	var data = []
+	_d.filter(r => !r.startsWith("-")).forEach(r => {
+		var _ar = useColor ? r.split(":") : [ r ]
+		var _v
 		try {
-			if (useColor) {
-				var _ar = r.split(":")
-				colors.push(_ar[1])
-				titles.push((_ar.length > 2) ? _ar[2] : "")
-				return isNumber(_ar[0]) ? _ar[0] : global[_ar[0]]() 
+			if (isNumber(_ar[0])) {
+				_v = _ar[0]
 			} else {
-				return isNumber(r) ? r : global[r]()
-			}	
+				if (!isFunction(global[_ar[0]])) throw "'" + _ar[0] + "' is not a function"
+				_v = global[_ar[0]]()
+			}
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
 		}
-	}).filter(r => isDef(r))
+		// Skip undefined values (keeping colors/titles aligned with data)
+		if (isUnDef(_v)) return
+		if (!isNumber(_v)) throw "Error on '" + r + "': '" + _ar[0] + "' returned a non-numeric value (" + (isNull(_v) ? "null" : (isArray(_v) ? "array" : typeof _v)) + "): " + stringify(_v, __, "")
+		data.push(_v)
+		if (useColor) {
+			colors.push(_ar[1])
+			titles.push((_ar.length > 2) ? _ar[2] : "")
+		}
+	})
 
 	_d.filter(r => r.startsWith("-")).forEach(r => {
 		var _ar = r.split(":")
@@ -6683,7 +6703,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) => {
 			var _ar = []
 			try {
 				for (var j = part.start; j < part.end; j++) {
-					if (stopped.get()) {
+					if (stopped.get() || (parallelCall && remainingMs() <= 0)) {
 						while (_ar.length < (part.end - part.start)) _ar.push(__)
 						break
 					}
@@ -6736,7 +6756,9 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq, aTimeoutMs, options) => {
 				// Apply backpressure without losing the promise needed for cancellation.
 				_tpstats = __getThreadPools()
 				if (_tpstats.queued > _tpstats.poolSize / threads_thrs) {
-					if (remainingMs() > 0) $doWait(_ts[_ts.length - 1], waitBudget())
+					while (remainingMs() > 0 && parts.get() <= _i_) {
+						$doWait(_ts[_ts.length - 1], waitBudget())
+					}
 				}
 			}
 		} catch(eee) {
@@ -8205,22 +8227,7 @@ const ioStreamWrite = function(aStream, aString, aBufferSize, useNIO) {
 	if (useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aString, aStream, "utf-8");
 	} else {
-		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
-		var channel;
-		try {
-			channel = aStream.getChannel();
-		} catch(e) {
-			channel = java.nio.channels.Channels.newChannel(aStream);
-		}
-		var buffer = java.nio.ByteBuffer.allocate(bufferSize);
-
-		buffer.clear();
-		buffer.put(af.fromString2Bytes(aString));
-		buffer.flip();
-
-		while(buffer.hasRemaining()) {
-			channel.write(buffer);
-		}
+		ioStreamWriteBytes(aStream, af.fromString2Bytes(aString, "UTF-8"), aBufferSize, false);
 	}
 }
 
@@ -8237,6 +8244,7 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aArrayBytes, aStream);
 	} else {
 		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
+		if (bufferSize <= 0 || Math.floor(bufferSize) != bufferSize) throw "aBufferSize must be a positive integer";
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -8245,12 +8253,15 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 		}
 		var buffer = java.nio.ByteBuffer.allocate(bufferSize);
 
-		buffer.clear();
-		buffer.put(aArrayBytes);
-		buffer.flip();
-
-		while(buffer.hasRemaining()) {
-			channel.write(buffer);
+		for (var offset = 0; offset < aArrayBytes.length;) {
+			var length = Math.min(bufferSize, aArrayBytes.length - offset);
+			buffer.clear();
+			buffer.put(aArrayBytes, offset, length);
+			buffer.flip();
+			while (buffer.hasRemaining()) {
+				channel.write(buffer);
+			}
+			offset += length;
 		}
 	}
 }
@@ -8267,34 +8278,18 @@ const ioStreamRead = function(aStream, aFunction, aBufferSize, useNIO, encoding)
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	encoding = _$(encoding).isString().default(io.getDefaultEncoding());
 	var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
-
-	if (useNIO) {
-		var reader = new java.io.BufferedReader(new java.io.InputStreamReader(aStream, encoding), bufferSize);
-		var cbuf = java.lang.reflect.Array.newInstance(java.lang.Character.TYPE, bufferSize);
-		var nRead;
-		try {
-			while ((nRead = reader.read(cbuf, 0, bufferSize)) > 0) {
-				var res = aFunction(String(new java.lang.String(cbuf, 0, nRead)));
-				if (res == true) {
-					return;
-				}
-			}
-		} finally {
-			reader.close();
+	if (bufferSize <= 0 || Math.floor(bufferSize) != bufferSize) throw "aBufferSize must be a positive integer";
+	var reader = new java.io.InputStreamReader(aStream, encoding);
+	if (useNIO) reader = new java.io.BufferedReader(reader, bufferSize);
+	var cbuf = java.lang.reflect.Array.newInstance(java.lang.Character.TYPE, bufferSize);
+	var nRead;
+	try {
+		while ((nRead = reader.read(cbuf, 0, bufferSize)) > 0) {
+			if (aFunction(String(new java.lang.String(cbuf, 0, nRead))) == true) return;
 		}
-	} else {
-		var buffer = af.fromString2Bytes(repeat(bufferSize, ' '));
-
-		var aRead;
-		do {
-			aRead = aStream.read(buffer, 0, bufferSize);
-			if (aRead > 0) {
-				var res = aFunction(af.fromBytes2String(af.fromArray2Bytes(af.fromBytes2Array(buffer).slice(0, aRead))));
-				if (res == true) {
-					return;
-				}
-			}
-		} while(aRead >= 0);
+	} finally {
+		// The non-NIO API borrows its input; the NIO API owns and closes it.
+		if (useNIO) reader.close();
 	}
 }
 
@@ -8310,6 +8305,7 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	var buf = "", go = true;
 	if (isUnDef(aSeparator)) aSeparator = __separator;
+	if (aSeparator.length == 0) throw "aSeparator must not be empty";
 
 	ioStreamRead(aStream, function(buffer) {
 		if (go) {
@@ -8317,15 +8313,15 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 			buf += buffer;
 			while (buf.indexOf(aSeparator) >= 0) {
 				res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-				buf = buf.substring(buf.indexOf(aSeparator) + 1);
-				if (res == true) { buf = ""; go = false; return; }
+				buf = buf.substring(buf.indexOf(aSeparator) + aSeparator.length);
+				if (res == true) { buf = ""; go = false; return true; }
 			}
 			return res;
 		}
 	}, __, useNIO, anEncoding);
 	while (buf.indexOf(aSeparator) >= 0 && go) {
 		var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-		buf = buf.substring(buf.indexOf(aSeparator) + 1);
+		buf = buf.substring(buf.indexOf(aSeparator) + aSeparator.length);
 		if (res == true) { buf = ""; go = false; return; }
 	}
 	if (buf.length > 0 && go) {
@@ -14627,6 +14623,13 @@ const $fnM = (aFnName, aMap) => {
 // }
 ow.loadSec();
 
+// Count physical terminal rows, ignoring ANSI styling and respecting wide characters.
+const __askRows = (text, con) => {
+	var width = Math.max(1, Number(con.getConsoleReader().getTerminal().getWidth()))
+	return Math.max(1, Number(Packages.org.jline.utils.AttributedString.fromAnsi(String(text))
+		.columnSplitLength(width, false, false).size()))
+}
+
 /**
  * <odoc>
  * <key>ask(aPrompt, aMask, aConsole, noAnsi, aWrite) : String</key>
@@ -14638,9 +14641,10 @@ const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
 	aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
-		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
+		var _prompt = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt)
+		var _v = _con.readLinePrompt(_prompt, aMask)
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
-		;(aWrite || printErr)("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
+		;(aWrite || printErr)("\x1b[" + __askRows(_prompt + (_v == null || aMask == String.fromCharCode(0) ? "" : _m), _con) + "A\x1b[0G\x1b[0J" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
 		return _con.readLinePrompt(aPrompt, aMask)
@@ -14825,15 +14829,12 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 				}
 			}
 		} while (c != 13 && c != 10)
-		_move(aMaxDisplay)
-		_write(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
-		_move(aMaxDisplay+1)
-		_write(repeat(_v.length, " ") + "\r")
+		_move(aMaxDisplay + __askRows(_v, _con))
+		_write("\x1b[0G\x1b[0J", false)
 		if (!cancelled) {
-			_write("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
+			_write(ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
 		}
-		_move(2)
-		_write("\x1B[?25h\n")
+		_write("\x1B[?25h", false)
 
 		return cancelled ? __ : option
 		} finally { _write("\x1B[?25h", false) }
@@ -14964,22 +14965,18 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 				}
 			}
 		} while (c != 13 && c != 10)
-		_move(aMaxDisplay)
-		_write(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
-		_move(aMaxDisplay+1)
-		_write(repeat(_v.length, " ") + "\r")
+		_move(aMaxDisplay + __askRows(_v, _con))
+		_write("\x1b[0G\x1b[0J", false)
 
 		if (!cancelled) {
 			let options = []
 			aSelectMap.forEach((v, k) => { if (v) options.push(k) })
-			_write("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
-			_move(2)
-			_write("\x1B[?25h\n")
+			_write(ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
+			_write("\x1B[?25h", false)
 
 			return options
 		}
-		_move(2)
-		_write("\x1B[?25h\n")
+		_write("\x1B[?25h", false)
 
 		return __
 		} finally { _write("\x1B[?25h", false); }

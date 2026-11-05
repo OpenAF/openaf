@@ -9,6 +9,7 @@ include:
 - autoTestAll.Jq.yaml
 - autoTestAll.Joni.yaml
 - autoTestAll.CSV.yaml
+- autoTestAll.Threads.yaml
 - autoTestAll.IO.yaml
 - autoTestAll.StreamConversions.yaml
 - autoTestAll.StreamConsumers.yaml
