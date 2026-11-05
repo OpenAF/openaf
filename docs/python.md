@@ -320,6 +320,8 @@ print(_g("myVar"))            # {"a": 1}
 Importing `oaf` transparently starts an `oaf -c "ow.loadPython().startServer(...)"` background
 process, waits up to 15 seconds for initialization, and registers an `atexit` hook to terminate
 it when your Python script exits. Startup failure also cleans up that owned child.
+Cleanup stops the launcher and its Java child, with bounded waits and no new Python threads
+during interpreter shutdown. After upgrading OpenAF, regenerate `oaf.py` to pick up bridge fixes.
 
 ---
 
