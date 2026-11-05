@@ -71,6 +71,17 @@ try {
 
 ## Files, CLI and inverse integration
 
+Pick one of two mutually exclusive paths:
+
+| Script run via... | `_oaf`/`_g`/`_s` are... | `import oaf`? |
+| :--- | :--- | :--- |
+| `pyoaf script.py` or `oaf --py` | auto-injected globals | **No** (causes `ModuleNotFoundError`) |
+| `python3 script.py` (independent) | not present | **Yes**, after `oaf --oafpy > oaf.py` |
+| `ojob` (`lang: python`) | auto-injected globals | **No** |
+
+Never put `import oaf` in `pyoaf`/`oaf --py`/oJob scripts: the bootstrap already defines the
+callbacks, and importing `oaf.py` would start a second background OpenAF process.
+
 `pyoaf "script name.py" "argument with spaces" --help` or
 `oaf --py "script name.py" "argument with spaces" --help` preserves Python arguments and returns
 Python's exit status. Put OpenAF options before `--py`. `--py -e script.py` remains a legacy form.
@@ -78,7 +89,7 @@ Standalone files retain `__file__`, `__name__`, `sys.argv` and sibling imports; 
 because user code is compiled separately. An explicit fourth argv array (even `[]`) overrides
 `OAF_PY_ARGC`/`OAF_PY_ARG_<n>`; omitted argv uses those legacy environment variables.
 
-For Python → OpenAF, generate `oaf --oafpy > oaf.py`, then use
+For Python → OpenAF from a script run by a standard interpreter only, generate `oaf --oafpy > oaf.py`, then use
 `from oaf import _oaf, _g, _s`. Import owns an OpenAF child, checks initialization and registers exit
 cleanup. Regenerate after changing OpenAF installations. No external Python package is required.
 
@@ -89,6 +100,9 @@ as a dictionary and `id`; update `args['key']` to return job values. Both routes
 propagation. The engine owns the shared session until shutdown; individual jobs must not stop it.
 Set `typeArgs.noTemplate: true` when Python contains literal template syntax. See the
 [oJob guide](https://github.com/openaf/openaf/blob/master/docs/ojob.md) for scheduling and error handlers.
+
+`ModuleNotFoundError: No module named 'oaf'` means `import oaf` was used in a `pyoaf`/`oaf --py`
+script: remove the import, the callbacks are already global.
 
 `throwExceptions` defaults to false: stderr/errors print and missing results return undefined.
 Set it true when the caller must fail on Python errors, stderr, nonzero status or bridge failures.

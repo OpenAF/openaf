@@ -60,7 +60,7 @@ With no arguments, OpenAF launches the interactive GUI if a desktop is available
 | `--ojob` | – | Execute an oJob (loads the oJob engine). Use with `-e` to pass a YAML file or expression. |
 | `--opack` | – | Execute the opack package-manager CLI. Use with `-e` to pass sub-commands. |
 | `--py <file> [args...]` | script path and Python arguments | Run a Python script with bridge support and propagate its exit status. All following arguments belong to Python. The legacy `--py -e <file>` form is retained. |
-| `--oafpy` | – | Emit the `oaf.py` bridge module for use from standalone Python scripts. See [python.md](./python.md). |
+| `--oafpy` | – | Emit the `oaf.py` bridge module, only for scripts run by a standard Python interpreter (`python3 script.py`), not for `pyoaf`/`--py` scripts, which get the callbacks injected. See [python.md](./python.md). |
 | `--sb <file>` | file path | Generate or prepend an OpenAF/oJob/oafp shebang line, chosen by the file's extension. See [Shebang scripts](#shebang-scripts) below. |
 | `--bashcompletion <arg>` | arg | Generate bash completion script. |
 | `--zshcompletion <arg>` | arg | Generate zsh completion script. |

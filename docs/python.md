@@ -6,6 +6,7 @@ call back into OpenAF. This guide covers every entry point, from JavaScript-side
 to running standalone `.py` files from the command line with real `sys.argv` arguments.
 
 ## Contents
+0. [Quick choice: which integration am I using?](#quick-choice-which-integration-am-i-using)
 1. [How it fits together](#how-it-fits-together)
 2. [ow.python - the core module](#owpython---the-core-module)
 3. [Global shortcuts ($py, $pyExec, ...)](#global-shortcuts-py-pyexec-)
@@ -15,6 +16,24 @@ to running standalone `.py` files from the command line with real `sys.argv` arg
 7. [Python inside oJob (lang: python)](#python-inside-ojob-lang-python)
 8. [Configuration (environment variables)](#configuration-environment-variables)
 9. [Choosing the right approach](#choosing-the-right-approach)
+10. [Common errors](#common-errors)
+
+---
+
+## Quick choice: which integration am I using?
+
+There are **two different ways** Python and OpenAF interact, and they must not be mixed:
+
+- **Bootstrap injection** (`pyoaf`, `oaf --py`, oJob `lang: python`): OpenAF is already running
+  and launches your script wrapped in a bootstrap that defines the callbacks as globals.
+- **Standalone module** (`oaf.py`): *you* run Python with a normal interpreter and `import oaf`,
+  which starts an OpenAF background process for you.
+
+| If you are running your script via... | Callbacks (`_oaf`, `_g`, `_s`) are... | Do I need `import oaf`? |
+| :--- | :--- | :--- |
+| `pyoaf script.py` or `oaf --py script.py` | **Auto-injected** as globals | **NO** (will cause an error) |
+| `python3 script.py` (independent) | **Not present** | **YES** (after `oaf --oafpy > oaf.py`) |
+| `ojob` (`lang: python`) | **Auto-injected** as globals | **NO** |
 
 ---
 
@@ -30,8 +49,8 @@ between the approaches below is **how code/data cross the process boundary**:
   small bridge injected so the Python code can call back into OpenAF (`_()`, `_oaf()`, `_g()`,
   `_s()`). This is what backs the `--py` CLI option and the generated `pyoaf` launcher.
 - **`--oafpy`** - the inverse direction: generates a standalone `oaf.py` module you `import` from
-  Python code you run *yourself* (not via `oaf`), which spins up an OpenAF background process for
-  you to call back into.
+  Python code you run *yourself* with a standard interpreter (never via `pyoaf`/`oaf --py`), which
+  spins up an OpenAF background process for you to call back into.
 
 ---
 
@@ -149,7 +168,8 @@ try {
 } finally { ow.python.stopServer(__, true); }
 ```
 
-Inside `script.py`, the bridge injects these helper functions automatically:
+Inside `script.py`, the bridge injects these helper functions automatically as globals - **do not
+`import oaf`** (see [Why](#why-pyoaf-scripts-must-not-import-oaf)):
 
 ```python
 _oaf("2 + 2")              # evaluate an OpenAF/JS expression, get the result back
@@ -203,6 +223,24 @@ pyoaf.bat myscript.py
 Both are thin wrappers that just call `oaf --py`; use whichever is more convenient for your
 environment/shebang setup.
 
+Scripts run this way already have `_oaf`, `_g`, `_s` (and `_`, `_d`) available. Do **not** add
+`import oaf` / `from oaf import ...`:
+
+```python
+# myscript.py  (run with: pyoaf myscript.py)
+print(_oaf("2 + 2"))      # 4, evaluated by the already-running OpenAF
+_s("myVar", {"a": 1})
+print(_g("myVar"))        # {'a': 1}
+```
+
+### Why pyoaf scripts must not import oaf
+
+`pyoaf`/`oaf --py` wraps your script in a bootstrap that defines the callback functions in the
+global namespace and connects them to the OpenAF process that is already managing the script.
+Importing `oaf.py` inside such a script is unnecessary and potentially harmful: it fails with
+`ModuleNotFoundError` when no `oaf.py` exists, and if one does exist it would try to start a
+*second* background OpenAF process instead of using the one already running your script.
+
 ---
 
 ## Passing command-line arguments to Python
@@ -255,7 +293,11 @@ arguments follow that legacy form, it also reads the indexed environment variabl
 
 ## Calling back into OpenAF from independent Python code (--oafpy)
 
-If you want to run Python entirely on your own (not via `oaf --py`) but still call back into
+> **Only for scripts run by a standard Python interpreter** (`python3 script.py`, notebooks,
+> existing codebases). `oaf --oafpy` is *not* for scripts launched by `pyoaf`, `oaf --py` or
+> oJob `lang: python` - those already receive the callbacks automatically.
+
+If you want to run Python entirely on your own (not via `oaf --py`/`pyoaf`) but still call back into
 OpenAF - e.g. from an existing Python codebase, a notebook, or a script launched by something
 else - generate the companion `oaf.py` module:
 
@@ -263,7 +305,8 @@ else - generate the companion `oaf.py` module:
 oaf --oafpy > oaf.py
 ```
 
-Then, from your own Python script (in the same directory, or as `oaf/__init__.py` in a package):
+Then, from your own Python script (in the same directory, or as `oaf/__init__.py` in a package),
+run it with `python3 script.py`:
 
 ```python
 import oaf
@@ -301,6 +344,8 @@ jobs:
     execPy: "/path/to/script.py"
 ```
 
+As with `pyoaf`, the callbacks (`_oaf`, `_g`, `_s`) are already available - do not `import oaf`.
+
 Both entry points request `throwExceptions=true`, so Python exceptions, nonzero exits and stderr
 propagate to oJob's error handling. The oJob engine owns the shared Python session and stops it
 at engine shutdown; individual jobs should not stop it. Calls are serialized but scheduling still
@@ -332,11 +377,34 @@ re-detect the interpreter and version at runtime instead of using the environmen
 | Evolve one object across calls without naming in/out vars each time | `ow.python.execPM` |
 | Run an existing `.py` file as-is, optionally calling back into OpenAF | `ow.python.execStandalone` / `oaf --py` / `pyoaf` |
 | Give a Python script real CLI arguments (`sys.argv`) | `pyoaf`/`pyoaf.bat` launcher |
-| Call OpenAF from Python code you run independently (not via `oaf`) | `oaf --oafpy > oaf.py`, then `import oaf` |
+| Call OpenAF from Python code you run independently with `python3` (not via `oaf`/`pyoaf`) | `oaf --oafpy > oaf.py`, then `import oaf` |
 | Write an oJob step in Python | `lang: python` (or `typeArgs.execPy`) |
+
+See also the [quick-choice table](#quick-choice-which-integration-am-i-using) at the top.
 
 For the raw wire protocol used between the Python bridge process and OpenAF (if you're implementing
 a custom client), see `dev/python-oaf-server.md`.
+
+---
+
+## Common errors
+
+### `ModuleNotFoundError: No module named 'oaf'`
+
+**Cause:** You are most likely trying to `import oaf` inside a script being executed by `pyoaf` or
+`oaf --py`.
+
+**Fix:** Remove the `import oaf` / `from oaf import ...` line. The callbacks (`_oaf`, `_g`, `_s`)
+are already provided to your script automatically by the OpenAF bootstrap process. Only scripts
+run by a plain `python3` need `oaf.py` (generated with `oaf --oafpy > oaf.py`).
+
+### `NameError: name '_oaf' is not defined`
+
+**Cause:** The script is being run by a standard Python interpreter, so no bootstrap injected the
+callbacks.
+
+**Fix:** Either run it with `pyoaf script.py` / `oaf --py script.py`, or generate `oaf.py` and add
+`from oaf import _oaf, _g, _s`.
 
 ## Runtime compatibility
 

@@ -87,7 +87,7 @@ server preserves state and serializes execution; pair explicit `startServer()` c
 in `finally`. `$py` starts implicitly once; `$pyStop()` forces global cleanup. Set `OAF_PYTHON` or
 `setPython` before starting. For full files and argv, use `execStandalone(codeOrFile, reservedInput,
 throwExceptions, argv)` and inspect `exitcode`; stop standalone mode before starting embedded mode.
-Python `_oaf`, `_g`, `_s` provide callbacks; `oaf --oafpy > oaf.py` enables inverse integration.
+Python `_oaf`, `_g`, `_s` provide callbacks; `oaf --oafpy > oaf.py` enables inverse integration for scripts run by plain `python3` (not `pyoaf`/`oaf --py`, which inject the callbacks and must not `import oaf`).
 Exception flags default to false; true also throws on stderr. Verify installed runtime support for
 persistence, forwarded flags and explicit argv, since older JARs differ. The optional
 [Python skill](../openaf-python/SKILL.md) has a runnable round trip and mode-specific details.
