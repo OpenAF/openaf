@@ -274,3 +274,21 @@ Limits to keep in mind:
 ## Source documentation
 
 The same contracts are documented in the source as Markdown ODoc entries (`ow.ch.types.graph` and `ow.ch.utils.graph`), available with `help ow.ch.types.graph` in the console or `openaf -helpscript ow.ch.types.graph`. See [odoc.md](./odoc.md#opt-in-to-markdown) for the format.
+
+## Evidence and extension metadata
+
+Graph edges preserve nested `props` (including evidence quotes, source revisions,
+locations, extraction methods and confidence) without interpreting wiki semantics.
+The assertion key remains `[from,to,type,provenance,page,section]`.
+
+`ow.ch.utils.graph.metadata(name)` returns a copy of non-entity envelope sections.
+`metadata(name, values)` updates the supplied sections and persists them in both
+JSON-file and channel-backed stores. It rejects read-only writes and replacement
+of `nodes`, `edges` or `_edgeIndex`. This supports independently versioned extraction
+checkpoints without changing envelope version 2.
+
+`neighbors`, `degree`, `traverse` and `path` share `direction`, `type`, `provenance`,
+`evidenceLayer` (string or array), and `minConfidence` filters. `path` also accepts
+`maxDepth`. Legacy edges without evidence/confidence remain navigable when no such
+filters are supplied; they cannot satisfy an evidence or confidence filter. Storage
+never invents verification or performs model extraction.

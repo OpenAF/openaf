@@ -1988,7 +1988,10 @@ OpenWrap.ch.prototype.__types = {
 		__flush: function(c) {
 			var o = c.opts
 			if (o.readOnly) return false
-			if (isDef(o.store)) return true
+			if (isDef(o.store)) {
+				$ch(c.st.names.meta).set({ k: "meta" }, { k: "meta", state: clone(c.state) });
+				return true;
+			}
 			this.__l(o)
 			try {
 				var dir = new java.io.File(o.file).getAbsoluteFile().getParentFile()
@@ -6273,9 +6276,9 @@ OpenWrap.ch.prototype.utils = {
  *
  * | Function | Returns | Description |
  * | --- | --- | --- |
- * | `neighbors(aName, anId, aOptions)` | Array | Edges connected to a node. Options: `direction` (`"out"`, `"in"` or `"both"`), `type`, `provenance` (String or Array) |
+ * | `neighbors(aName, anId, aOptions)` | Array | Edges connected to a node. Options: `direction` (`"out"`, `"in"` or `"both"`), `type`, `provenance` (String or Array), `evidenceLayer` (String or Array), `minConfidence` |
  * | `degree(aName, anId, aOptions)` | Number | Number of edges connected to a node (same options as `neighbors`) |
- * | `path(aName, aFromId, aToId, aOptions)` | Array | Shortest path (BFS, ignoring direction) as node ids, `[]` if none. Options: `maxDepth`, `type` |
+ * | `path(aName, aFromId, aToId, aOptions)` | Array | Shortest path (BFS) as node ids, `[]` if none. Options: `maxDepth` and all `neighbors` filters |
  * | `traverse(aName, anId, aOptions)` | Map | `{ nodes, edges }` sub-graph reachable from a node. Options: `depth` (default 1), `direction`, `type`, `provenance` |
  * | `find(aName, aOptions)` | Array | Nodes matching `type` and/or `text` (case insensitive match on id and props) |
  * | `stats(aName)` | Map | Node and edge counts plus counts by node type, edge type and provenance |
@@ -6303,8 +6306,23 @@ OpenWrap.ch.prototype.utils.graph = {
 		return ow.ch.__types.graph.__edgesOf(aName, id).filter(e =>
 			(dir == "both" || (dir == "out" && e.from === id) || (dir == "in" && e.to === id)) &&
 			(isUnDef(types) || types.indexOf(e.type) >= 0) &&
-			(isUnDef(provs) || provs.indexOf(e.provenance) >= 0)
+			(isUnDef(provs) || provs.indexOf(e.provenance) >= 0) &&
+			(isUnDef(o.evidenceLayer) || this.__arr(o.evidenceLayer).indexOf(e.props && e.props.evidenceLayer) >= 0) &&
+			(isUnDef(o.minConfidence) || isNumber(e.props && e.props.confidence) && e.props.confidence >= o.minConfidence)
 		)
+	},
+	metadata: function(aName, aValue) {
+		var gt = ow.ch.__types.graph, c = gt.__c(aName);
+		if (isDef(aValue)) {
+			gt.__rw(c);
+			if (!isMap(aValue)) throw "metadata must be a map";
+			Object.keys(aValue).forEach(k => { if ([ "nodes", "edges", "_edgeIndex" ].indexOf(k) >= 0) throw "metadata cannot replace graph entities"; });
+			Object.keys(aValue).forEach(k => { c.state[k] = clone(aValue[k]); });
+			gt.__flush(c);
+		}
+		var out = {};
+		Object.keys(c.state).forEach(k => { if ([ "nodes", "edges", "_edgeIndex" ].indexOf(k) < 0) out[k] = clone(c.state[k]); });
+		return out;
 	},
 	neighbors: function(aName, anId, aOptions) {
 		var id = this.__id(anId)
@@ -6323,7 +6341,7 @@ OpenWrap.ch.prototype.utils.graph = {
 		for (var qi = 0; qi < q.length && q[qi] !== b; qi++) {
 			var cur = q[qi]
 			if (isDef(maxDepth) && depth[cur] >= maxDepth) continue
-			var es = this.__edges(aName, cur, { type: aOptions.type })
+			var es = this.__edges(aName, cur, aOptions)
 			for (var i = 0; i < es.length; i++) {
 				var nx = es[i].from === cur ? es[i].to : es[i].from
 				if (isDef(depth[nx])) continue

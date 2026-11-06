@@ -552,12 +552,19 @@
             ow.test.assert(g.find(name, { type: "concept" }).length, 2, "Problem with graph find by type");
             ow.test.assert(g.stats(name).edges, 2, "Problem with graph stats");
 
+            ow.test.assert(g.path(name, "concept:x", "a.md", { direction: "out" }), [], "Path must honor direction");
+            ow.test.assert(g.path(name, "a.md", "concept:x", { provenance: "INFERRED" }), [], "Path must honor provenance");
+            ow.test.assert(g.path(name, "a.md", "concept:x", { evidenceLayer: "grounded" }), [], "Legacy edges have no invented evidence layer");
+            ow.test.assert(g.path(name, "a.md", "concept:x", { minConfidence: 0.5 }), [], "Missing confidence cannot pass a confidence filter");
+            g.metadata(name, { enrichment: { "a.md": { status: "pending", version: 2 } } });
+
             // Persistence, preserved sections and reload
             var saved = io.readFileJSON(file);
             ow.test.assert(saved.communities, [ { id: 1 } ], "Graph channel must preserve unknown sections");
             $ch(name).destroy();
             $ch(name).create(false, "graph", { file: file });
             ow.test.assert($ch(name).size(), 6, "Problem reloading a graph");
+            ow.test.assert(g.metadata(name).enrichment["a.md"].status, "pending", "Graph metadata must survive reload");
 
             // Cascade delete
             $ch(name).unset({ id: "doc:b.md" });
@@ -617,6 +624,7 @@
             ow.test.assert(g.stats(name).edges, 2, "Problem with graph store stats");
             ow.test.assert(g.stats(name).nodeTypes.concept, 2, "Problem with graph store stats (node types)");
 
+            g.metadata(name, { enrichment: { "a.md": { status: "pending", version: 2 } } });
             // Persistence through the store channel
             $ch(name).destroy();
             $ch(name).create(false, "graph", opts);

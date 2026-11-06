@@ -56,7 +56,7 @@ function nJSMap(aValue, aType, isDark) {
             if ($$(firstItem).isMap()) {
                 out += "<table class=\"njsmap_table\"><tr>";
                 for (var i in _keys) {
-                    out += "<td class=\"njsmap_tablehead\" style=\"text-align: center\"><span style=\"color: " +
+                    out += "<td class=\"njsmap_tablehead\" style=\"text-align: center; white-space: normal; word-break: normal; overflow-wrap: normal\"><span style=\"color: " +
                         (isDark ? "lightgray" : "darkblue") +
                         ";font-weight: bold;\">" + _keys[i] + "</span></td>";
                 }
@@ -98,7 +98,7 @@ function nJSMap(aValue, aType, isDark) {
                     if ("undefined" != aValue[i]) _v = aValue[i]
                     if ("undefined" == typeof _v) _v = ""
                 }
-                out += "<tr><td class=\"njsmap_tablecell\" style=\"text-align: right; vertical-align: top\"><span style=\"color: " + (isDark ? "lightgray" : "darkblue") + ";font-weight: bold;\">" + i + "</span></td><td class=\"njsmap_tablecell\">" + _render(_v) + "</td></tr>";
+                out += "<tr><td class=\"njsmap_tablecell\" style=\"text-align: right; vertical-align: top; white-space: normal; word-break: normal; overflow-wrap: normal\"><span style=\"color: " + (isDark ? "lightgray" : "darkblue") + ";font-weight: bold;\">" + i + "</span></td><td class=\"njsmap_tablecell\">" + _render(_v) + "</td></tr>";
             }
             out += "</table>";
         }
