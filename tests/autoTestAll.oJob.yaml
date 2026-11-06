@@ -85,7 +85,19 @@ jobs:
   to  : OpenAF Test
   exec: args.func = args.tests.testOJobShutdownConsole
 
+- name: oJob::OJobDependencyScores
+  from: oJob::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testOJobDependencyScores
+
+- name: oJob::OJobDependencyExecutionOrder
+  from: oJob::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testOJobDependencyExecutionOrder
+
 todo:
+- oJob::OJobDependencyScores
+- oJob::OJobDependencyExecutionOrder
 # oJob tests
 # --------------
 - oJob::oJob

@@ -315,7 +315,19 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testPForEachQueueTimeout;
 
+   - name: OpenAF::Stream copy cleanup
+     from: OpenAF::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testStreamCopyCleanup
+
+   - name: OpenAF::Shell environment overrides
+     from: OpenAF::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testShellEnvironmentOverrides
+
 todo:
+   - OpenAF::Stream copy cleanup
+   - OpenAF::Shell environment overrides
    # Generic Tests
    # -------------
    - OpenAF::Get version

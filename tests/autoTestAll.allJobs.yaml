@@ -6,6 +6,7 @@ include:
 - autoTestAll.Desktop.yaml
 - autoTestAll.DesktopTUI.yaml
 - autoTestAll.Generic.yaml
+- autoTestAll.nLinq.yaml
 - autoTestAll.Path.yaml
 - autoTestAll.Jq.yaml
 - autoTestAll.Joni.yaml

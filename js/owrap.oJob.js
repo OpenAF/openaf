@@ -278,6 +278,130 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath, aContentCallback
 	}
 };
 
+// Compile each dependency subtree into a sparse affine transformation of the scores.
+// This preserves the legacy ordered score updates without expanding shared DAG paths.
+// Integer coefficients also avoid rounding and overflow changing priority or stable ties.
+OpenWrap.oJob.prototype.__dependencyScores = function(jobs) {
+  var zero = java.math.BigInteger.ZERO, one = java.math.BigInteger.ONE
+  var names = [], ids = Object.create(null), first = Object.create(null), graph = []
+  function key(name) {
+    name = String(name)
+    if (isUnDef(ids[name])) { ids[name] = names.length; names.push(name) }
+    return ids[name]
+  }
+  jobs.forEach(function(job, i) {
+    key(job.name)
+    if (isUnDef(first[job.name])) first[job.name] = i
+  })
+  jobs.forEach(function(job) {
+    var edges = []
+    ;['from', 'earlier', 'to', 'then', 'deps'].forEach(function(field) {
+      var dependencies = job[field]
+      if (isUnDef(dependencies) || dependencies == null) return
+      ;(isString(dependencies) ? [dependencies] : dependencies).forEach(function(dependency) {
+        var name = isString(dependency) ? dependency : dependency.name
+        edges.push({ key:key(name), node:first[name] })
+      })
+    })
+    graph.push(edges)
+  })
+  var state = [], order = []
+  jobs.forEach(function(job, root) {
+    if (state[root] == 2) return
+    var stack = [{node:root,next:0}]
+    state[root] = 1
+    while (stack.length > 0) {
+      var frame = stack[stack.length - 1], edges = graph[frame.node]
+      if (frame.next < edges.length) {
+        var child = edges[frame.next++].node
+        if (isUnDef(child) || state[child] == 2) continue
+        if (state[child] == 1) throw new Error('Cyclic job dependency: ' + stack.map(function(f) { return jobs[f.node].name }).concat([jobs[child].name]).join(' -> '))
+        state[child] = 1
+        stack.push({node:child,next:0})
+      } else {
+        order.push(frame.node)
+        state[frame.node] = 2
+        stack.pop()
+      }
+    }
+  })
+  var visits = [], maxVisits = 0
+  order.forEach(function(node) {
+    var count = 1
+    graph[node].forEach(function(edge) { if (isDef(edge.node)) count = Math.min(8193, count + visits[edge.node]) })
+    visits[node] = count
+    maxVisits = Math.max(maxVisits, count)
+  })
+  // Avoid matrix construction for ordinary chains and bounded, lightly shared subtrees.
+  // Each subtree expands at most 8192 calls here unless the entire graph has no branching.
+  if (maxVisits <= 8192 || graph.every(function(edges) { return edges.length <= 1 })) {
+    var direct = names.map(function() { return zero })
+    jobs.forEach(function(job, root) {
+      var stack = [{node:root,next:0}]
+      direct[key(job.name)] = direct[key(job.name)].add(one)
+      while (stack.length > 0) {
+        var frame = stack[stack.length - 1], edges = graph[frame.node]
+        if (frame.next >= edges.length) { stack.pop(); continue }
+        var edge = edges[frame.next++]
+        direct[edge.key] = direct[edge.key].add(direct[key(jobs[frame.node].name)])
+        if (isDef(edge.node)) {
+          direct[edge.key] = direct[edge.key].add(one)
+          stack.push({node:edge.node,next:0})
+        }
+      }
+    })
+    var result = Object.create(null)
+    names.forEach(function(name, i) { result[name] = direct[i] })
+    return result
+  }
+  var identity = names.map(function(name, i) {
+    var terms = {}; terms[i] = one
+    return {constant:zero,terms:terms}
+  })
+  function add(target, source, coefficient) {
+    target.constant = target.constant.add(source.constant.multiply(coefficient))
+    Object.keys(source.terms).forEach(function(i) {
+      var value = source.terms[i].multiply(coefficient)
+      target.terms[i] = isDef(target.terms[i]) ? target.terms[i].add(value) : value
+    })
+  }
+  var transforms = []
+  order.forEach(function(node) {
+    var rows = {}, own = key(jobs[node].name)
+    rows[own] = {constant:one,terms:identity[own].terms}
+    graph[node].forEach(function(edge) {
+      var sum = {constant:zero,terms:{}}
+      add(sum, rows[edge.key] || identity[edge.key], one)
+      add(sum, rows[own], one)
+      rows[edge.key] = sum
+      if (isUnDef(edge.node)) return
+      var child = transforms[edge.node], next = {}
+      Object.keys(child).forEach(function(target) {
+        var expression = child[target], result = {constant:expression.constant,terms:{}}
+        Object.keys(expression.terms).forEach(function(input) {
+          add(result, rows[input] || identity[input], expression.terms[input])
+        })
+        next[target] = result
+      })
+      Object.keys(next).forEach(function(target) { rows[target] = next[target] })
+    })
+    transforms[node] = rows
+  })
+  var values = names.map(function() { return zero })
+  jobs.forEach(function(job, node) {
+    var next = {}, rows = transforms[node]
+    Object.keys(rows).forEach(function(target) {
+      var expression = rows[target], value = expression.constant
+      Object.keys(expression.terms).forEach(function(input) { value = value.add(expression.terms[input].multiply(values[input])) })
+      next[target] = value
+    })
+    Object.keys(next).forEach(function(target) { values[target] = next[target] })
+  })
+  var scores = Object.create(null)
+  names.forEach(function(name, i) { scores[name] = values[i] })
+  return scores
+}
+
 /**
  * <odoc>
  * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, init, help)</key>
@@ -310,42 +434,9 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 
 	if (isDef(init)) this.init = init;
 	
-	// Calculate dependencies
-	var mdeps = {};
-	function depsScore(v) {
-		//if (isString(v)) v = $path(jobs, "[?name==`" + v + "`] | @[0]");
-		if (isString(v)) v = $from(jobs).useCase(true).equals("name", v).at(0);
-		if (v == null || isUnDef(v)) return;
-
-		var s = v.name; 
-		if (isDef(mdeps[s])) {
-			mdeps[s] += 1;
-			
-			var depsScore2 = (vvv) => { 
-				if (isString(vvv)) {
-					if (vvv === v.name) logWarn("Suspicious recursive relation in job " + v.name);
-					mdeps[vvv] = (isDef(mdeps[vvv]) ? mdeps[vvv] : 0) + mdeps[s];
-					depsScore(vvv);
-				} else {
-					if (vvv.name === v.name) logWarn("Suspicious recursive relation in job " + v.name);
-					mdeps[vvv.name] = (isDef(mdeps[vvv.name]) ? mdeps[vvv.name] : 0) + mdeps[s];
-					depsScore(vvv.name);
-				}
-			};
-
-			if (isObject(v) && !isString(v)) {
-				if (isDef(v.from) && v.from != null)       (isString(v.from) ? depsScore2(v.from) : v.from.forEach(depsScore2));
-				if (isDef(v.earlier) && v.earlier != null) (isString(v.earlier) ? depsScore2(v.earlier) : v.earlier.forEach(depsScore2));
-				if (isDef(v.to) && v.to != null)           (isString(v.to) ? depsScore2(v.to) : v.to.forEach(depsScore2));
-				if (isDef(v.then) && v.then != null)       (isString(v.then) ? depsScore2(v.then) : v.then.forEach(depsScore2));
-				if (isDef(v.deps) && v.deps != null)       (isString(v.deps) ? [ v.deps ].forEach(depsScore2) : v.deps.forEach(depsScore2));
-			}
-		}
-	};
 
 	var parent = this
 	jobs.forEach((v, i) => { 
-		mdeps[v.name] = 0
 
 		// Helpers
 		if (isDef(jobs[i].execFile)) {
@@ -365,10 +456,10 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		if (isArray(jobs[i].earlier)) jobs[i].earlier = jobs[i].earlier.map(r => parent.parseTodo(r))
 		if (isArray(jobs[i].then))    jobs[i].then    = jobs[i].then.map(r => parent.parseTodo(r))
 	})
-	jobs.forEach(depsScore);
+	var mdeps = this.__dependencyScores(jobs)
 
 	var sjobs = jobs.sort((a, b) => {
-		return mdeps[b.name] - mdeps[a.name];
+		return Number(mdeps[b.name].compareTo(mdeps[a.name]))
 	});
 
 	// Add jobs

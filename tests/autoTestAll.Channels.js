@@ -202,8 +202,9 @@
             withProxyChannel(function(proxy, target) {
                 // Values deliberately differ from keys to detect double removal or value-as-key lookups.
                 var first = { text: "first" }, last = { text: "last" };
-                target.set({ id: 1 }, first, 1000);
-                target.set({ id: 2 }, last, 2000);
+                var timestamp = nowUTC() + 1000
+                target.set({ id: 1 }, first, timestamp)
+                target.set({ id: 2 }, last, timestamp + 1000)
                 ow.test.assert(proxy[op](), op == "pop" ? last : first, "Proxy queue must return the removed value");
                 ow.test.assert(target.getAll(), [op == "pop" ? first : last], "Proxy queue must remove exactly one entry");
                 ow.test.assert(proxy[op](), op == "pop" ? first : last, "Proxy queue must return the remaining value");
@@ -1171,6 +1172,261 @@
             try { $ch(name).destroy(); } catch(e) {}
         }
     };
+
+    exports.testBigHashCollisions = function() {
+        [false, true].forEach(function(compressed) {
+            var name = 'big-collision-' + genUUID(), a = {a:1,b:23}, b = {a:12,b:3}
+            $ch(name).create(compressed, 'big')
+            try {
+                $ch(name).set(a, {value:'first'})
+                $ch(name).set(b, {value:'second'})
+                ow.test.assert($ch(name).size(), 2, 'Size must count records sharing a hash bucket')
+                $ch(name).unset(a)
+                ow.test.assert($ch(name).get(b), {value:'second'}, 'Removing one colliding key must preserve the other')
+                ow.test.assert($ch(name).getKeys(), [b], 'Surviving collision must remain indexed')
+                ow.test.assert($ch(name).size(), 1, 'Size must reflect surviving collision')
+                $ch(name).unset(b)
+                var big = ow.ch.__types.big.__channels[name]
+                ow.test.assert(Object.keys(big.internalData).length, 0, 'Deletion must not orphan values')
+                ow.test.assert(Object.keys(big.internalIndex).length, 0, 'Empty buckets must be removed')
+            } finally { $ch(name).destroy() }
+        })
+    }
+
+    exports.testPersistenceDestroyRetry = function() {
+        ['graph', 'timeseries'].forEach(function(type) {
+            var dir = String(java.nio.file.Files.createTempDirectory('ch-destroy-retry-'))
+            var file = dir + '/state', name = 'destroy-retry-' + genUUID()
+            var key = type == 'graph' ? {id:'saved'} : {metric:'saved',ts:1000}
+            var value = type == 'graph' ? {type:'document',props:{value:42}} : {v:42}
+            try {
+                $ch(name).create(false, type, {file:file,autosave:'off'})
+                $ch(name).set(key, value)
+                var expected = $ch(name).get(key)
+                io.mkdir(file)
+                var failed = false
+                try { $ch(name).destroy() } catch(e) { failed = true }
+                ow.test.assert(failed, true, 'A blocked final flush must report failure')
+                ow.test.assert($ch(name).get(key), expected, 'Failed destroy must preserve pending data')
+                io.rm(file)
+                $ch(name).destroy()
+                $ch(name).create(false, type, {file:file,create:false})
+                ow.test.assert($ch(name).get(key), expected, 'Retry must persist the original pending data')
+            } finally {
+                if (io.fileExists(file) && io.fileInfo(file).isDirectory) io.rm(file)
+                try { $ch(name).destroy() } catch(e) {}
+                io.rm(dir)
+            }
+        })
+    }
+
+    exports.testConditionalSubscribers = function() {
+        ['simple', 'big', 'file', 'mvs'].forEach(function(type) {
+            var name = 'conditional-' + genUUID(), mirror = name + '-mirror'
+            var file = String(java.nio.file.Files.createTempFile('conditional-', '.json'))
+            io.rm(file)
+            $ch(name).create(false, type, type == 'file' ? {file:file} : {})
+            $ch(mirror).create()
+            try {
+                $ch(name).set({id:1}, {state:'original'})
+                $ch(name).subscribe(ow.ch.utils.getMirrorSubscriber(mirror))
+                $ch(name).waitForJobs()
+                var version = $ch(name).getVersion()
+                var result = $ch(name).getSet({state:'wrong'}, {id:1}, {state:'rejected'})
+                $ch(name).waitForJobs()
+                ow.test.assert(isUnDef(result), true, 'A mismatched conditional update retains its return value')
+                ow.test.assert($ch(name).getVersion(), version, 'Mismatch must not advance the version')
+                ow.test.assert($ch(mirror).get({id:1}), {state:'original'}, 'Mismatch must not reach mirror')
+                $ch(name).getSet({state:'original'}, {id:1}, {state:'accepted'})
+                $ch(name).waitForJobs()
+                ow.test.assert($ch(mirror).get({id:1}), {state:'accepted'}, 'Successful update must reach mirror')
+            } finally { $ch(name).destroy(); $ch(mirror).destroy(); if (io.fileExists(file)) io.rm(file) }
+        })
+        var name = 'conditional-wrappers-' + genUUID(), target = name + '-target', all = name + '-all'
+        $ch(target).create()
+        $ch(name).create(false, 'proxy', {chTarget:target,proxyFunc:function(m, outcome) {
+            if (m.op != 'getSet') return
+            if (m.v.state == 'intercept') { outcome.changed = false; return 'intercepted' }
+            if (m.v.state == 'custom') { $ch(m.name).set(m.k, m.v); return 'custom update committed' }
+        }})
+        $ch(all).create(false, 'all', {chs:[target]})
+        try {
+            $ch(target).set({id:1}, {state:'original'})
+            var count = new java.util.concurrent.atomic.AtomicInteger()
+            $ch(name).subscribe(function() { count.incrementAndGet() }, true)
+            $ch(all).subscribe(function() { count.incrementAndGet() }, true)
+            ow.test.assert($ch(name).getSet({}, {id:1}, {state:'intercept'}), 'intercepted', 'Proxy return must be preserved')
+            $ch(all).getSet({state:'wrong'}, {id:1}, {state:'rejected'})
+            $ch(name).waitForJobs(); $ch(all).waitForJobs()
+            ow.test.assert(Number(count.get()), 0, 'Intercepted and rejected aggregate operations must not emit')
+            $ch(all).getSet({state:'original'}, {id:1}, {state:'accepted'})
+            $ch(all).waitForJobs()
+            ow.test.assert(Number(count.get()), 1, 'Successful aggregate operation emits once')
+            ow.test.assert($ch(name).getSet({}, {id:1}, {state:'custom'}), 'custom update committed', 'Custom proxy return must be preserved')
+            $ch(name).waitForJobs()
+            ow.test.assert($ch(target).get({id:1}), {state:'custom'}, 'Custom proxy updates must reach the target')
+            ow.test.assert(Number(count.get()), 2, 'Uninstrumented proxy overrides retain legacy notifications')
+        } finally { $ch(all).destroy(); $ch(name).destroy(); $ch(target).destroy() }
+        var pluginName = 'conditional-plugin-' + genUUID(), pluginType = pluginName + '-type', dummy = pluginName + '-dummy', aggregate = pluginName + '-all'
+        var stored, events = new java.util.concurrent.atomic.AtomicInteger()
+        ow.ch.__types[pluginType] = {
+            create:function() {}, destroy:function() {}, size:function() { return 0 },
+            get:function() { return stored },
+            getSet:function(name, match, key, value) { stored = value }
+        }
+        try {
+            $ch(pluginName).create(false, pluginType)
+            $ch(dummy).create(false, 'dummy')
+            $ch(pluginName).subscribe(function() { events.incrementAndGet() }, true)
+            $ch(dummy).subscribe(function() { events.incrementAndGet() }, true)
+            var result = $ch(pluginName).getSet({}, {id:1}, {state:'legacy'})
+            $ch(pluginName).waitForJobs()
+            ow.test.assert(isUnDef(result), true, 'A third-party undefined success return must remain unchanged')
+            ow.test.assert($ch(pluginName).get({id:1}), {state:'legacy'}, 'Third-party mutation must succeed')
+            ow.test.assert(Number(events.get()), 1, 'Uninstrumented third-party backends retain legacy notifications')
+            ow.ch.__types[pluginType].getSet = function(name, match, key, value, timestamp, extra, outcome) {
+                outcome.changed = false
+                return 'no update'
+            }
+            ow.test.assert($ch(pluginName).getSet({}, {id:1}, {}), 'no update', 'Explicit outcomes must preserve backend return values')
+            $ch(dummy).getSet({}, {id:1}, {})
+            $ch(pluginName).waitForJobs(); $ch(dummy).waitForJobs()
+            ow.test.assert(Number(events.get()), 1, 'Explicit no-op outcomes and builtin sinks must not notify')
+            var transformations = new java.util.concurrent.atomic.AtomicInteger(), errors = []
+            ow.ch.__types[pluginType].getSet = function() { throw 'backend failure' }
+            $ch(aggregate).create(false, 'all', {
+                chs:[pluginName],
+                fnTrans:function(key) { transformations.incrementAndGet(); return {id:key.id + 1} },
+                errFn:function(name, error, target, operation, args) { errors.push({target:target,operation:operation,key:args[1],error:String(error)}) }
+            })
+            $ch(aggregate).subscribe(function() { events.incrementAndGet() }, true)
+            var failed = $ch(aggregate).getSet({}, {id:1}, {})
+            $ch(aggregate).waitForJobs()
+            ow.test.assert(failed.length, 1, 'Aggregate failure must retain the backend result slot')
+            ow.test.assert(String(failed[0]), 'undefined', 'Handled aggregate errors retain the existing Java-converted result value')
+            ow.test.assert(Number(transformations.get()), 1, 'Error reporting must not repeat key transformation')
+            ow.test.assert(errors, [{target:pluginName,operation:'getSet',key:{id:2},error:'backend failure'}], 'Aggregate errors retain the existing callback contract')
+            ow.test.assert(Number(events.get()), 1, 'Failed aggregate operations must not notify')
+        } finally { $ch(aggregate).destroy(); $ch(pluginName).destroy(); $ch(dummy).destroy(); delete ow.ch.__types[pluginType] }
+    }
+
+    exports.testRemoteConditionalSubscribers = function() {
+        ow.loadServer()
+        var name = 'conditional-wire-' + genUUID(), type = name + '-type', remote = name + '-remote', legacy = name + '-legacy'
+        var stored = {state:'original'}, reject = false, events = new java.util.concurrent.atomic.AtomicInteger()
+        var port = findRandomOpenPort(), server = ow.server.httpd.start(port, '127.0.0.1', __, __, __, __, 5000, 'java')
+        ow.ch.__types[type] = {
+            create:function() {}, destroy:function() {}, size:function() { return 1 }, get:function() { return stored },
+            getSet:function(channel, match, key, value, timestamp, extra, outcome) {
+                if (!reject) { stored = value; return }
+                outcome.changed = false
+                return {id:1}
+            }
+        }
+        try {
+            $ch(name).create(false, type)
+            ow.server.httpd.route(server, {
+                '/channel':function(request) {
+                    request.channelPermission = 'rw'
+                    return ow.ch.server.routeProcessing('/channel', request, name)
+                },
+                '/legacy':function() { return ow.server.httpd.reply({c:1}, 200, 'application/json') }
+            })
+            $ch(remote).create(false, 'remote', {url:'http://127.0.0.1:' + port + '/channel'})
+            $ch(remote).subscribe(function() { events.incrementAndGet() }, true)
+            var result = $ch(remote).getSet({}, {id:1}, {state:'accepted'})
+            $ch(remote).waitForJobs()
+            ow.test.assert(isUnDef(result), true, 'Remote success retains undefined backend returns')
+            ow.test.assert(stored, {state:'accepted'}, 'Remote conditional update reaches the backend')
+            ow.test.assert(Number(events.get()), 1, 'Remote undefined success must notify')
+            reject = true
+            result = $ch(remote).getSet({}, {id:1}, {state:'rejected'})
+            $ch(remote).waitForJobs()
+            ow.test.assert(result, {id:1}, 'Remote rejected updates retain defined backend returns')
+            ow.test.assert(stored, {state:'accepted'}, 'Remote rejected updates leave data intact')
+            ow.test.assert(Number(events.get()), 1, 'Remote rejected updates must not notify')
+            $ch(legacy).create(false, 'remote', {url:'http://127.0.0.1:' + port + '/legacy'})
+            $ch(legacy).subscribe(function() { events.incrementAndGet() }, true)
+            $ch(legacy).getSet({}, {id:1}, {state:'legacy'})
+            $ch(legacy).waitForJobs()
+            ow.test.assert(Number(events.get()), 2, 'Legacy remote servers retain notifications without outcome metadata')
+        } finally {
+            $ch(legacy).destroy(); $ch(remote).destroy(); $ch(name).destroy()
+            delete ow.ch.__types[type]
+            server.stop()
+        }
+    }
+
+    exports.testStaleChannelWrites = function() {
+        var name = 'stale-' + genUUID(), events = new java.util.concurrent.atomic.AtomicInteger()
+        $ch(name).create()
+        try {
+            $ch(name).set({id:1}, {id:1,state:'original'})
+            $ch(name).subscribe(function() { events.incrementAndGet() }, true)
+            var version = $ch(name).getVersion(), stale = version - 1
+            $ch(name).set({id:1}, {id:1,state:'bad'}, stale)
+            $ch(name).setAll(['id'], [{id:1,state:'bad'}], stale)
+            $ch(name).getSet({state:'original'}, {id:1}, {id:1,state:'bad'}, stale)
+            $ch(name).unset({id:1}, stale)
+            $ch(name).unsetAll(['id'], [{id:1}], stale)
+            $ch(name).waitForJobs()
+            ow.test.assert($ch(name).get({id:1}), {id:1,state:'original'}, 'Stale mutations must be ignored')
+            ow.test.assert($ch(name).getVersion(), version, 'Stale mutations must not advance the version')
+            ow.test.assert(Number(events.get()), 0, 'Stale mutations must not notify subscribers')
+            $ch(name).set({id:1}, {id:1,state:'equal'}, version)
+            ow.test.assert($ch(name).get({id:1}).state, 'equal', 'Equal timestamps remain accepted')
+            $ch(name).set({id:1}, {id:1,state:'newer'}, $ch(name).getVersion() + 1000)
+            ow.test.assert($ch(name).get({id:1}).state, 'newer', 'Newer timestamps remain accepted')
+        } finally { $ch(name).waitForJobs(); $ch(name).destroy() }
+    }
+
+    exports.testAllChannelDeletes = function() {
+        [false, true].forEach(function(treatAll) {
+            var a = 'all-delete-' + genUUID(), b = a + '-b', name = a + '-all'
+            $ch(a).create(); $ch(b).create()
+            $ch(name).create(false, 'all', {chs:[a,b],treatAll:treatAll})
+            try {
+                $ch(name).setAll(['id'], [{id:1},{id:2}])
+                $ch(name).unset({id:1})
+                $ch(name).unsetAll(['id'], [{id:2}])
+                ow.test.assert($ch(a).size(), 0, 'Aggregate deletes must reach first target')
+                ow.test.assert($ch(b).size(), 0, 'Aggregate deletes must reach second target')
+            } finally { $ch(name).destroy(); $ch(a).destroy(); $ch(b).destroy() }
+        })
+    }
+
+    exports.testWaitForJobsDeadline = function() {
+        var name = 'wait-jobs-' + genUUID(), release = new java.util.concurrent.CountDownLatch(1)
+        var started = new java.util.concurrent.CountDownLatch(2), finished = new java.util.concurrent.atomic.AtomicInteger()
+        $ch(name).create()
+        try {
+            for (var i = 0; i < 2; i++) $ch(name).subscribe(function() {
+                started.countDown()
+                release.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                finished.incrementAndGet()
+            }, true)
+            $ch(name).set({id:1}, {id:1})
+            ow.test.assert(started.await(5, java.util.concurrent.TimeUnit.SECONDS), true, 'Subscriber workers must start')
+            var start = now()
+            $ch(name).waitForJobs(250)
+            ow.test.assert(now() - start < 450, true, 'Timeout must be shared across subscribers')
+            ow.test.assert(Number(finished.get()), 0, 'Timed wait must not cancel subscriber work')
+            release.countDown()
+            $ch(name).waitForJobs()
+            ow.test.assert(Number(finished.get()), 2, 'Unbounded wait must drain all workers')
+            start = now()
+            $ch(name).waitForJobs(1000)
+            ow.test.assert(now() - start < 500, true, 'Completed subscribers must return without consuming timeout')
+            release = new java.util.concurrent.CountDownLatch(1)
+            started = new java.util.concurrent.CountDownLatch(2)
+            $ch(name).set({id:2}, {id:2})
+            ow.test.assert(started.await(5, java.util.concurrent.TimeUnit.SECONDS), true, 'Callbacks chained to fulfilled promises must start')
+            var unblock = $doV(function() { sleep(100, true); release.countDown() })
+            $ch(name).waitForJobs()
+            ow.test.assert(Number(finished.get()), 4, 'Wait must drain active callbacks even on previously fulfilled promises')
+            $doWait(unblock)
+        } finally { release.countDown(); $ch(name).waitForJobs(); $ch(name).destroy() }
+    }
 
     exports.testAll = function() {
         $ch("allA").destroy();

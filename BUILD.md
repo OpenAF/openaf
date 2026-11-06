@@ -32,6 +32,11 @@ This will create two main files:
 * openaf.jar
 * openaf.jar.orig
 
+Compiler failures stop the build with a nonzero exit status. The build assembles
+and checks a temporary JAR before atomically replacing `openaf.jar`, preserving
+the previous JAR if compilation or assembly fails. Packaging steps run in order
+before the completed JAR is copied to `dist/`.
+
 In an installed OpenAF directory, run `./oaf --repack` after replacing the JAR or
 changing the JDK to refresh the `.shared.oaf` archive used by generated launchers.
 Repacking trains and validates archive coverage while retaining the existing
@@ -51,6 +56,25 @@ To test the project, you can use the following command:
 ```bash
 cd tests
 java --enable-native-access=ALL-UNNAMED -jar ../openaf.jar --ojob -e autoTestAll.yaml
+```
+
+The browser table sorter and build failure regressions can also run independently
+from the repository root:
+
+```bash
+node tests/mdtablesort.cjs
+python3 tests/build-failures.py --bootstrap /path/to/existing/openaf.jar
+```
+
+The build regression uses a temporary copy and injected compiler failures,
+including large diagnostics, to verify failure status and preservation of the
+previous JAR. It requires a POSIX shell. To exercise subprocess pipe pressure,
+timeouts and cancellation against the rebuilt classes:
+
+```bash
+mkdir -p /tmp/openaf-shell-tests
+javac -cp 'bin:openaf.jar:lib/*' -d /tmp/openaf-shell-tests tests/java/ShellProcessTest.java
+java -cp '/tmp/openaf-shell-tests:bin:openaf.jar:lib/*' ShellProcessTest
 ```
 
 ### Optional Maven Central distribution

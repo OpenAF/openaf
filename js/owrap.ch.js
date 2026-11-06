@@ -91,11 +91,14 @@ OpenWrap.ch.prototype.__types = {
 			else
 				return res.select(function(r) { return r.k; });
 		},
-		getSet: function getSet(aName, aMatch, aKey, aValue, aTimestamp)  {
+		getSet: function getSet(aName, aMatch, aKey, aValue, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res;
 			res = this.__channels[aName].get(aKey);
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.__channels[aName].set(aKey, aValue, aTimestamp);
+				var result = this.__channels[aName].set(aKey, aValue, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return undefined;
 		},
@@ -243,7 +246,8 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) {
 			return this.getKeys(aName, full);
 		},
-		getSet: function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet: function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			/*var res;
 			try {
 				res = this.__db[aName].qs("select key from " + this.__table[aName] + " where key = ? for update", [stringify(aK)], true).results[0].KEY;
@@ -422,12 +426,14 @@ OpenWrap.ch.prototype.__types = {
 			}
 			return res;
 		},
-		getSet: function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet: function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res;
 			try {
 				res = this.__db[aName].qs("select key from " + this.__table[aName] + " where key = ? for update", [stringify(aK)], true).results[0].KEY;
 				if (isDef(res) && ($stream([JSON.parse(res)]).anyMatch(aMatch)) ) {
 					this.set(aName, aK, aV, aTimestamp);
+					if (isDef(outcome)) outcome.changed = true
 				}
 				this.__db[aName].commit();
 				return res;
@@ -529,7 +535,8 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) { 
 			return this.getKeys(aName, full).sort();
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  { 
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			// Not implemented
 			return undefined;
 		},
@@ -673,11 +680,14 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) { 
 			return $from(this.getKeys(aName, full)).sort("____t").select();
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  { 
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res;
 			res = this.get(aName, aK);
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aK, aV, aTimestamp);
+				var result = this.set(aName, aK, aV, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return undefined;
 		},
@@ -954,8 +964,9 @@ OpenWrap.ch.prototype.__types = {
 			//TODO
 			return $ch(this.__bc[aName]).getAll(full).concat($ch(this.__bt[aName]).getAll(full));
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
-			return $ch(this.__bc[aName]).getSet(aMatch, aK, aV, aTimestamp);		
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
+			return ow.ch.getSet(this.__bc[aName], aMatch, aK, aV, aTimestamp, __, x, outcome)
 		},
 		set          : function(aName, ak, av, aTimestamp) {
 			$ch(this.__bt[aName]).set(ak, av, aTimestamp);
@@ -1037,7 +1048,8 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) {
 			return [];				
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			return {};
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
@@ -1075,6 +1087,8 @@ OpenWrap.ch.prototype.__types = {
 	 * name (target channel), function (where applicable), full (where applicable), match (the match of getSet), k (the key(s)),
 	 * v (the value(s)) and timestamp. If this function returns something no operation will be executed on the chTarget and the
 	 * value returned by the function will be the value returned by this channel.
+	 * For `getSet`, the callback also receives an outcome map and can set `outcome.changed` to `false` for a no-op or `true` for a mutation.
+	 * When omitted, overridden calls retain their legacy subscriber notifications.
 	 * ]]>
 	 * </odoc>
 	 */
@@ -1113,12 +1127,18 @@ OpenWrap.ch.prototype.__types = {
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
 			return $ch(this.__channels[aName].chTarget).getSortedKeys(full);
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			outcome = isDef(outcome) ? outcome : {}
+			outcome.changed = __
 			var m = {
 				op: "getSet", name: this.__channels[aName].chTarget, match: aMatch, k: aK, v: aV, timestamp: aTimestamp
 			};
-			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
-			return $ch(this.__channels[aName].chTarget).getSet(m.match, m.k, m.v, m.timestamp);
+			var r = this.__channels[aName].proxyFunc(m, outcome)
+			if (isDef(r)) {
+				if (!isBoolean(outcome.changed)) outcome.changed = true
+				return r
+			}
+			return ow.ch.getSet(this.__channels[aName].chTarget, m.match, m.k, m.v, m.timestamp, __, x, outcome)
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
 			var m = {
@@ -1211,11 +1231,14 @@ OpenWrap.ch.prototype.__types = {
 			});
 			return $path(res, "sort_by([], &t)[*].k");		
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res;
 			res = this.get(aName, aK);
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aK, aV, aTimestamp);
+				var result = this.set(aName, aK, aV, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return __;
 		},
@@ -1316,11 +1339,14 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) {
 			return $path(Array.from(this.__channels[aName].values()), "sort_by([], &t)[*].k")
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res
 			res = this.get(aName, aK)
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aK, aV, aTimestamp)
+				var result = this.set(aName, aK, aV, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return __
 		},
@@ -1722,11 +1748,14 @@ OpenWrap.ch.prototype.__types = {
 			var res = Object.keys(m).map(k => jsonParse(k)); 
 			return res;	
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res;
 			res = this.get(aName, aK);
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aK, aV, aTimestamp);
+				var result = this.set(aName, aK, aV, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return __;
 		},
@@ -2192,7 +2221,9 @@ OpenWrap.ch.prototype.__types = {
 		destroy      : function(aName) {
 			var c = this.__channels[aName]
 			if (isUnDef(c)) return
-			try { if (c.dirty && !c.opts.readOnly) this.__flush(c) } finally { delete this.__channels[aName]; c.st.close() }
+			if (c.dirty && !c.opts.readOnly) this.__flush(c)
+			c.st.close()
+			delete this.__channels[aName]
 		},
 		size         : function(aName) {
 			var c = this.__c(aName)
@@ -2218,10 +2249,13 @@ OpenWrap.ch.prototype.__types = {
 			var es = c.st.edges().map(e => self.__keyOfEdge(e)).sort((a, b) => stringify([a.from, a.to, a.type, a.provenance, a.page, a.section], __, "") < stringify([b.from, b.to, b.type, b.provenance, b.page, b.section], __, "") ? -1 : 1)
 			return ns.concat(es)
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res = this.get(aName, aK)
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aK, aV, aTimestamp)
+				var result = this.set(aName, aK, aV, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return __
 		},
@@ -2959,12 +2993,12 @@ OpenWrap.ch.prototype.__types = {
 		destroy      : function(aName) {
 			var c = this.__channels[aName]
 			if (isUnDef(c)) return
-			try {
-				if (!c.opts.readOnly && isDef(c.opts.file)) {
-					this.__flush(c)
-					this.__compactIf(c)
-				}
-			} finally { delete this.__channels[aName]; c.st.close() }
+			if (!c.opts.readOnly && isDef(c.opts.file)) {
+				this.__flush(c)
+				this.__compactIf(c)
+			}
+			c.st.close()
+			delete this.__channels[aName]
 		},
 		size         : function(aName) {
 			return this.__c(aName).st.rawCount()
@@ -2996,10 +3030,13 @@ OpenWrap.ch.prototype.__types = {
 			var self = this
 			return this.getKeys(aName, full).sort((a, b) => a.ts != b.ts ? a.ts - b.ts : (self.__sid(a.metric, a.labels) < self.__sid(b.metric, b.labels) ? -1 : 1))
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res = this.get(aName, aK)
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aK, aV, aTimestamp)
+				var result = this.set(aName, aK, aV, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return __
 		},
@@ -3190,9 +3227,10 @@ OpenWrap.ch.prototype.__types = {
 				preAction: this.__channels[aName].preAction
 			}).get(this.__channels[aName].url + $rest().index({ o: "s" })).r;		
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			//return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "es", "m": aMatch, "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
-			return $rest({
+			var response = $rest({
 				login: this.__channels[aName].login,
 				pass: this.__channels[aName].password,
 				connectionTimeout: this.__channels[aName].timeout,
@@ -3201,7 +3239,10 @@ OpenWrap.ch.prototype.__types = {
 				stopWhen: this.__channels[aName].stopWhen,
 				throwExceptions: this.__channels[aName].throwExceptions,
 				preAction: this.__channels[aName].preAction
-			}).put(this.__channels[aName].url + $rest().index({ o: "es", m: aMatch, k: aK, t: aTimestamp }), aV).r;	
+			}).put(this.__channels[aName].url + $rest().index({ o: "es", m: aMatch, k: aK, t: aTimestamp }), aV)
+			// Older servers do not report outcomes; retain their historical notification behavior.
+			if (isDef(outcome)) outcome.changed = isBoolean(response.changed) ? response.changed : true
+			return response.r
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
 			//return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
@@ -3464,12 +3505,15 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) {
 			return this.getKeys(aName, full);	
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			//throw "Channel operation not supported in Elastic Search";
 			var res;
 			res = this.get(aName, aK);
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aK, aV, aTimestamp);
+				var result = this.set(aName, aK, aV, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return undefined;
 		},
@@ -4009,11 +4053,14 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) {
 			return this.getKeys(aName, full);
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			var res;
 			res = this.get(aName, aK);
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aK, aV, aTimestamp);
+				var result = this.set(aName, aK, aV, aTimestamp)
+				if (isDef(outcome)) outcome.changed = true
+				return result
 			}
 			return undefined;
 		},
@@ -4140,14 +4187,18 @@ OpenWrap.ch.prototype.__types = {
 			return result;
 		},
 		getSortedKeys: function(aName, full) { return this.getKeys(aName, full); },
-		getSet: function(aName, aMatch, aK, aV, aTimestamp) {
+		getSet: function(aName, aMatch, aK, aV, aTimestamp, x, outcome) {
+			if (isDef(outcome)) outcome.changed = false
 			var cache = this.__channels[aName].cache, key = this._key(aK), value = JSON.stringify(aV);
 			// Retry against the actual value if a writer wins between the read and CAS.
 			while (true) {
 				var previous = cache.get(key);
 				var current = isNull(previous) ? __ : JSON.parse(String(previous));
 				if (!$stream([current]).anyMatch(aMatch)) return __;
-				if (isNull(previous) ? cache.putIfAbsent(key, value) : cache.replace(key, String(previous), value)) return aV;
+				if (isNull(previous) ? cache.putIfAbsent(key, value) : cache.replace(key, String(previous), value)) {
+					if (isDef(outcome)) outcome.changed = true
+					return aV
+				}
 			}
 		},
 		set: function(aName, aKey, aValue, aTimestamp) {
@@ -4333,8 +4384,9 @@ OpenWrap.ch.prototype.__types = {
 	 */
 	all: {
 		__o: {},
-		__r: function(aName, aCh, op, args) {
+		__r: function(aName, aCh, op, args, outcome, x) {
 			try {
+				if (op == "getSet" && isDef(outcome)) return ow.ch.getSet(aCh, args[0], args[1], args[2], args[3], __, x, outcome)
 				return $ch(aCh)[op].apply(this, args);
 			} catch(e) {
 				this.__o[aName].errFn(aName, e, aCh, op, args);
@@ -4478,20 +4530,24 @@ OpenWrap.ch.prototype.__types = {
 	
 			return this.__o[aName].fnKeys(res.toArray());		
 		},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp, x, outcome)  {
+			if (isDef(outcome)) outcome.changed = false
 			ow.loadObj();
-			var arr = [], res = new ow.obj.syncArray();
+			var arr = [], res = new ow.obj.syncArray(), changes = new java.util.concurrent.atomic.AtomicBoolean(false)
 			var _lst = this.__o[aName].fn("getset", aK, aV);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
 				arr.push($doV( () => {
-					res.add( this.__r(aName, c, "getSet", [ aMatch, this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
+					var child = {}
+					res.add(this.__r(aName, c, "getSet", [ aMatch, this.__o[aName].fnTrans(aK), aV, aTimestamp ], child, x))
+					if (child.changed) changes.set(true)
 				}));
 			});
 	
 			$doWait($doAll(arr));
 	
+			if (isDef(outcome)) outcome.changed = changes.get()
 			return this.__o[aName].fnValues(res.toArray());
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
@@ -4529,7 +4585,7 @@ OpenWrap.ch.prototype.__types = {
 		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
 			if (this.__o[aName].treatAll) {
 				ow.loadObj();
-				aVs.forEach(v => this.unset(aName, ow.obj.filterKeys(aKs, v), v) );
+				aVs.forEach(v => this.unset(aName, ow.obj.filterKeys(aKs, v)))
 			} else {
 				var arr = [];
 				var _lst = this.__o[aName].fn("unsetall", aKs, aVs);
@@ -4538,7 +4594,7 @@ OpenWrap.ch.prototype.__types = {
 				var naKs = aKs.map(this.__o[aName].fnTrans);
 				lst.forEach(c => {
 					arr.push($doV( () => {
-						res.add( this.__r(aName, c, "unsetAll", [ naKs, aVs, aTimestamp ]) );
+						return this.__r(aName, c, "unsetAll", [ naKs, aVs, aTimestamp ])
 					}));
 				});
 		
@@ -4563,7 +4619,7 @@ OpenWrap.ch.prototype.__types = {
 		unset        : function(aName, aK, aTimestamp) {
 			ow.loadObj();
 			var arr = [], res = new ow.obj.syncArray();
-			var _lst = this.__o[aName].fn("unset", aK, aV);
+			var _lst = this.__o[aName].fn("unset", aK, __)
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
@@ -4642,19 +4698,20 @@ OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 
 	if (Object.keys(this.jobs[aName]).length == 0) return this;
 	
-	var shouldContinue = 0, tini = now();
+	var tini = now(), pending
 	do {
-		shouldContinue = 0;
+		pending = false
 		for(var ii in this.jobs[aName]) {
-			var _st = this.jobs[aName][ii].state.get()
-			if (_st != this.jobs[aName][ii].states.FULFILLED &&
-			    _st != this.jobs[aName][ii].states.FAILED) {
-				$doWait(this.jobs[aName][ii], (aTimeout >= 0 ? aTimeout : __));
-			} else {
-				shouldContinue++;
+			var job = this.jobs[aName][ii], state = job.state.get()
+			if (job.executing.get() || !job.executors.isEmpty() ||
+			    (state != job.states.FULFILLED && state != job.states.FAILED)) {
+				pending = true
+				var remaining = aTimeout >= 0 ? aTimeout - (now() - tini) : __
+				if (isDef(remaining) && remaining <= 0) return this
+				$doWait(job, remaining)
 			}
 		}
-	} while(shouldContinue >= Object.keys(this.jobs[aName]).length && (now() - tini) < aTimeout);		
+	} while(pending && (aTimeout < 0 || (now() - tini) < aTimeout))
 	return this;
 },
 	
@@ -4951,10 +5008,6 @@ OpenWrap.ch.prototype.getSortedKeys = function(aName, full, x) {
  */
 OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	if (isUnDef(aTimestamp)) {
-		aTimestamp = nowUTC();
-		if (this.getVersion(aName) > aTimestamp) return this;
-	}
 	
 	var ak = aKey, av = aValue;
 	if (typeof aKey != "object") ak = { "key": aKey };
@@ -4965,6 +5018,8 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 	ow.ch.lock[aName].lock();
 	//sync(function() {
 	try {
+		if (isUnDef(aTimestamp)) aTimestamp = nowUTC()
+		if (parent.vers[aName] > aTimestamp) return this
 		res = parent.__types[parent.channels[aName]].set(aName, ak, av, aTimestamp, x); 
 		parent.vers[aName] = nowUTC();
 	} catch(e) {
@@ -5032,10 +5087,6 @@ OpenWrap.ch.prototype.push = function(aName, aKey, aValue) {
  */
 OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, aUUID, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	if (isUnDef(aTimestamp)) {
-		aTimestamp = nowUTC();
-		if (this.getVersion(aName) > aTimestamp) return this;
-	}
 
 	var parent = this;
 	var res, error;
@@ -5043,6 +5094,8 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 	ow.ch.lock[aName].lock();
 	//sync(function() {
 		try {
+			if (isUnDef(aTimestamp)) aTimestamp = nowUTC()
+			if (parent.vers[aName] > aTimestamp) return this
 			res = parent.__types[parent.channels[aName]].setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
 			parent.vers[aName] = nowUTC();
 		} catch(e) {
@@ -5099,10 +5152,6 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
  */
 OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, aUUID, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	if (isUnDef(aTimestamp)) {
-		aTimestamp = nowUTC();
-		if (this.getVersion(aName) > aTimestamp) return this;
-	}
 
 	var parent = this;
 	var res, error;
@@ -5111,6 +5160,8 @@ OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData
 	ow.ch.lock[aName].lock();
 	//sync(function() {
 		try {
+			if (isUnDef(aTimestamp)) aTimestamp = nowUTC()
+			if (parent.vers[aName] > aTimestamp) return this
 			res = parent.__types[parent.channels[aName]].unsetAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
 			parent.vers[aName] = nowUTC();
 		} catch(e) {
@@ -5225,16 +5276,23 @@ OpenWrap.ch.prototype.pop = function(aName) {
  * the value will not be set)
  * </odoc>
  */
-OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp, aUUID, x) {
+OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp, aUUID, x, outcome) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	
+	// Built-in backends report committed mutations separately from their legacy return values.
+	// Third-party backends can opt in; absent an outcome, preserve their legacy notifications.
+	outcome = isDef(outcome) ? outcome : {}
+	outcome.changed = false
 	var res, out, error;
 	var parent = this 
 	ow.ch.lock[aName].lock();
 	//sync(function() {
 	try {
-		res = parent.__types[parent.channels[aName]].getSet(aName, aMatch, aKey, aValue, aTimestamp, x); 
-		parent.vers[aName] = nowUTC();
+		if (isUnDef(aTimestamp)) aTimestamp = nowUTC()
+		if (parent.vers[aName] > aTimestamp) return __
+		outcome.changed = __
+		res = parent.__types[parent.channels[aName]].getSet(aName, aMatch, aKey, aValue, aTimestamp, x, outcome)
+		if (isUnDef(outcome.changed)) outcome.changed = true
+		if (outcome.changed) parent.vers[aName] = nowUTC()
 	} catch(e) {
 		error = e;
 	} finally {
@@ -5242,6 +5300,7 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
+	if (!outcome.changed) return res
 	
 	if (Object.keys(this.subscribers[aName]).length > 0) {
 		for(var _i in this.subscribers[aName]) {
@@ -5321,10 +5380,6 @@ OpenWrap.ch.prototype.shift = function(aName) {
  */
 OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	if (isUnDef(aTimestamp)) {
-		aTimestamp = nowUTC();
-		if (this.getVersion(aName) > aTimestamp) return this;
-	}
 	
 	var ak = aKey;
 	if (typeof aKey != "object") ak = { "key": aKey };
@@ -5333,6 +5388,8 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	ow.ch.lock[aName].lock();
 	//sync(function() {	
 	try {
+		if (isUnDef(aTimestamp)) aTimestamp = nowUTC()
+		if (parent.vers[aName] > aTimestamp) return this
 		res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
 		parent.vers[aName] = nowUTC();
 	} catch(e) {
@@ -7356,8 +7413,9 @@ OpenWrap.ch.prototype.server = {
 					return { "c": cc, "r": rt };
 				case "es":
 					var cc = ow.ch.server.__counter[aName].inc()
-					var rt = $ch(aName).getSet(k.m, k.k, v, k.t, aaUUID, aRequest);
-					return { "c": cc, "r": rt };
+					var outcome = {}
+					var rt = ow.ch.getSet(aName, k.m, k.k, v, k.t, aaUUID, aRequest, outcome)
+					return { "c": cc, "r": rt, "changed": outcome.changed }
 				}
 			}
 		}
@@ -7426,7 +7484,7 @@ OpenWrap.ch.prototype.server = {
 						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restSet(i, d);
 					if (isUnDef(c)) return {};
-					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r };
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r, "changed": c.changed }
 				} catch(e) {
 					recordError("create", undefined, i, d, e);
 					return {};
@@ -7456,7 +7514,7 @@ OpenWrap.ch.prototype.server = {
 						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restSet(i, d);
 					if (isUnDef(c)) return {};				
-					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r };
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r, "changed": c.changed }
 				} catch(e) {
 					recordError("set", undefined, i, d, e);
 					return {};

@@ -607,26 +607,56 @@ public class ZIP extends ScriptableObject {
 	 * <key>ZIP.list(aFilePath) : Map</key>
 	 * Will list all files and folders of the loaded ZIP contents into a Map with name, size, compressedSize, comment,
 	 * crc and time. Optionally you can provide a zip aFilePath instead of using the current in-memory zip.
+	 * File traversal reads every payload and checks its integrity. Use listMetadata for a faster directory-only listing.
 	 * </odoc>
 	 * @throws IOException 
 	 */
 	@JSFunction
 	public Object list(Object aFilePath) throws IOException {
-		HashMap<String, Map<String, Object>> names = new HashMap<String, Map<String, Object>>();
 		Map<String, ZipEntry> zes = new HashMap<String, ZipEntry>();
 	
 		if (aFilePath != null && !(aFilePath instanceof Undefined) && aFilePath instanceof String) {
-			ZipInputStream _zis = new ZipInputStream(new FileInputStream((String) aFilePath));
-			ZipEntry _ze = null;
-			do {
-				_ze = _zis.getNextEntry();
-				if (_ze != null) zes.put(_ze.getName(), _ze);
-			} while(_ze != null);
-			_zis.close();
+            try (ZipInputStream stream = new ZipInputStream(new FileInputStream((String) aFilePath))) {
+                ZipEntry entry;
+                while ((entry = stream.getNextEntry()) != null) {
+                    zes.put(entry.getName(), entry);
+                }
+            }
 		} else {
 			zes = zipEntries;
 		}
 		
+        return describeEntries(zes);
+    }
+
+    /**
+     * <odoc format="markdown">
+     * <key>ZIP.listMetadata(aFilePath) : Map</key>
+     * <![CDATA[
+     * Lists a ZIP file's central directory without reading or decompressing its payloads. Returns the
+     * same entry fields as `ZIP.list`: `name`, `size`, `compressedSize`, `comment`, `crc` and `time`.
+     * Central-directory comments are included. This does not validate payload checksums or compressed
+     * data, and requires a valid central directory. Use `ZIP.list(aFilePath)` when payload integrity
+     * checks are needed. The loaded in-memory archive and outstanding entry streams are unchanged.
+     * ]]>
+     * </odoc>
+     */
+    @JSFunction
+    public Object listMetadata(String aFilePath) throws IOException {
+        Map<String, ZipEntry> entries = new HashMap<>();
+        try (ZipFile archive = new ZipFile(aFilePath)) {
+            Enumeration<? extends ZipEntry> directory = archive.entries();
+            while (directory.hasMoreElements()) {
+                ZipEntry entry = directory.nextElement();
+                entries.put(entry.getName(), entry);
+            }
+        }
+        return describeEntries(entries);
+    }
+
+    private Object describeEntries(Map<String, ZipEntry> zes) {
+        HashMap<String, Map<String, Object>> names = new HashMap<>();
+
 		for(Object ze : zes.keySet()) {
 			Map<String, Object> entry = new HashMap<String, Object>();
 			entry.put("name", ((ZipEntry) zes.get(ze)).getName());
@@ -640,17 +670,19 @@ public class ZIP extends ScriptableObject {
 		}
 
 		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		for (Map.Entry<String, Map<String, Object>> entry : names.entrySet()) {
-			Scriptable noChild = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-			for(Map.Entry<String, Object> childEntry : entry.getValue().entrySet() ) {
-				noChild.put(childEntry.getKey(), noChild, childEntry.getValue());
-			}
-			no.put(entry.getKey(), no, noChild);
-		}
-		AFCmdBase.jse.exitContext();
-		
-		return no;
+        try {
+            Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+            for (Map.Entry<String, Map<String, Object>> entry : names.entrySet()) {
+                Scriptable noChild = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+                for (Map.Entry<String, Object> childEntry : entry.getValue().entrySet()) {
+                    noChild.put(childEntry.getKey(), noChild, childEntry.getValue());
+                }
+                no.put(entry.getKey(), no, noChild);
+            }
+            return no;
+        } finally {
+            AFCmdBase.jse.exitContext();
+        }
 	}
 	
 	/**

@@ -978,7 +978,8 @@ OpenWrap.obj.prototype.pool = {
 								parent.__currentFree--;
 							} else {
 								r++;
-								if (r <= parent.__retry) i = 0;
+								if (r > parent.__retry) throw "No available objects in pool."
+								i = 0
 							}
 						} else {
 							i++;
@@ -1062,12 +1063,13 @@ OpenWrap.obj.prototype.pool = {
 				var parent = this;
 
 				var i = 0;
-				while(parent.__pool[i].obj != obj && i < parent.__pool.length) {
+				while(i < parent.__pool.length && parent.__pool[i].obj != obj) {
 					i++;
 				}
 				if (i == parent.__pool.length) return;
 
 				try { parent.__close(parent.__pool[i].obj) } catch (e) {}
+				if (!parent.__pool[i].inUse) parent.__currentFree--
 				delete parent.__pool[i];
 				parent.__currentSize--;
 				loadLodash();
@@ -1333,7 +1335,8 @@ OpenWrap.obj.prototype.big = {
 					uuid = existing;
 					
 					delete this.internalData[uuid];
-					delete this.internalIndex[hash];
+					this.internalIndex[hash] = this.internalIndex[hash].filter(entry => entry.u != uuid)
+					if (this.internalIndex[hash].length == 0) delete this.internalIndex[hash]
 				}
 			}, 
 			
@@ -1402,7 +1405,7 @@ OpenWrap.obj.prototype.big = {
 			 * </odoc>
 			 */
 			getSize: function() {
-				return Object.keys(this.__getIndex()).length;
+				return Object.keys(this.__getData()).length
 			},
 			
 			getByID: function(aId) {

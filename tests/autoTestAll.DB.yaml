@@ -34,6 +34,16 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testDBUrlPolicy;
 
+   - name: DB::Nullable values
+     from: DB::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testDBNullValues
+
+   - name: DB::LOB cleanup
+     from: DB::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testDBLobCleanup
+
 todo:
    # DB tests
    # ------------
@@ -43,3 +53,6 @@ todo:
    - DB::Prepared statement binds and cache
    - DB::Statement error cleanup
    - DB::JDBC URL policy
+
+   - DB::Nullable values
+   - DB::LOB cleanup

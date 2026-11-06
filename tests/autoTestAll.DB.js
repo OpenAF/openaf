@@ -256,4 +256,80 @@
         }
     };
 
+  exports.testDBNullValues = function() {
+    var db = createDBInMem('null_values_' + genUUID(), false)
+    try {
+      db.u('create table nullable_values(id int, c clob, b blob, d date, ts timestamp, tm time, flag boolean)')
+      db.u("insert into nullable_values values(1, 'text', X'0102', DATE '2026-01-02', TIMESTAMP '2026-01-02 03:04:05', TIME '03:04:05', true)")
+      db.u('insert into nullable_values values(2, null, null, null, null, null, null)')
+      db.u("insert into nullable_values values(3, 'tail', X'0304', DATE '2026-01-03', TIMESTAMP '2026-01-03 03:04:05', TIME '04:05:06', false)")
+      ;[false, true].forEach(convert => {
+        db.convertDates(convert)
+        ;[false, true].forEach(keep => {
+          var rows = db.qs('select * from nullable_values where id >= ? order by id', [1], keep).results
+          ow.test.assert(rows.length, 3, 'Nullable row interrupted prepared results')
+          ;['C', 'B', 'D', 'TS', 'TM', 'FLAG'].forEach(column => {
+            ow.test.assert(rows[1][column], null, 'NULL lost in ' + column)
+          })
+          ow.test.assert(rows[0].C, 'text', 'Non-null CLOB changed')
+          ow.test.assert(af.fromBytes2Array(rows[2].B), [3, 4], 'Non-null BLOB changed')
+          ow.test.assert(isDate(rows[0].D), convert, 'Date conversion changed')
+        })
+      })
+      var flags = db.q('select flag from nullable_values order by id').results.map(row => row.FLAG)
+      ow.test.assert(flags, [true, null, false], 'Boolean NULL was coerced to false')
+    } finally { db.close() }
+  }
+
+  exports.testDBLobCleanup = function() {
+    var db = createDBInMem('lob_cleanup_' + genUUID(), false)
+    var core = new Packages.openaf.core.DB()
+    var connectionField = core.getClass().getDeclaredField('con')
+    connectionField.setAccessible(true)
+    var statements = [], results = [], failLobRead = false
+    var connection = db.getConnect()
+    var connectionType = java.lang.Class.forName('java.sql.Connection')
+    var statementType = java.lang.Class.forName('java.sql.PreparedStatement')
+    var resultType = java.lang.Class.forName('java.sql.ResultSet')
+    var call = (delegate, method, args) => {
+      try { return method.invoke(delegate, args) }
+      catch(e) { throw e.javaException.getCause() }
+    }
+    connectionField.set(core, java.lang.reflect.Proxy.newProxyInstance(connectionType.getClassLoader(), [connectionType], new JavaAdapter(java.lang.reflect.InvocationHandler, {
+      invoke: function(object, method, args) {
+        var result = call(connection, method, args)
+        if (String(method.getName()) != 'prepareStatement') return result
+        statements.push(result)
+        return java.lang.reflect.Proxy.newProxyInstance(statementType.getClassLoader(), [statementType], new JavaAdapter(java.lang.reflect.InvocationHandler, {
+          invoke: function(object, method, args) {
+            var rs = call(result, method, args)
+            if (String(method.getName()) != 'executeQuery') return rs
+            results.push(rs)
+            return java.lang.reflect.Proxy.newProxyInstance(resultType.getClassLoader(), [resultType], new JavaAdapter(java.lang.reflect.InvocationHandler, {
+              invoke: function(object, method, args) {
+                if (failLobRead && /^get(Clob|Blob)$/.test(String(method.getName()))) throw new java.sql.SQLException('Injected LOB read failure')
+                return call(rs, method, args)
+              }
+            }))
+          }
+        }))
+      }
+    })))
+    try {
+      db.u('create table lob_values(c clob, b blob)')
+      db.u("insert into lob_values values('hello', X'0102')")
+      for (var i = 0; i < 5; i++) {
+        ow.test.assert(String(core.qLob('select c from lob_values')), 'hello', 'CLOB result changed')
+        ow.test.assert(af.fromBytes2Array(core.qLob('select b from lob_values')), [1, 2], 'BLOB result changed')
+      }
+      failLobRead = true
+      ow.test.assert(String(core.qLob('select c from lob_values')), '', 'CLOB read failure contract changed')
+      ow.test.assert(core.qLob('select b from lob_values'), null, 'BLOB read failure contract changed')
+      ow.test.assert(core.qLob('select 1'), null, 'Non-LOB result changed')
+      statements.forEach(statement => ow.test.assert(statement.isClosed(), true, 'qLob leaked statement'))
+      results.forEach(result => ow.test.assert(result.isClosed(), true, 'qLob leaked result set'))
+      ow.test.assert(core.getStatements().length, 0, 'qLob added uncached statements to cache')
+    } finally { db.close() }
+  }
+
 })();

@@ -1330,3 +1330,60 @@
         ow.test.assert(res, {a:12,b:true,c:'abc'}, "Problem with toMap (1)")
     };
 })();
+
+exports.testStreamCopyCleanup = function() {
+  ["success", "empty", "read", "write", "close", "read-close"].forEach(function(mode) {
+    var reads = 0, writes = 0, closedIn = 0, closedOut = 0, error
+    var input = new JavaAdapter(java.io.InputStream, {
+      read: function() {
+        if (mode.indexOf("read") === 0) throw new java.io.IOException("copy-read-failure")
+        return mode === "empty" || reads++ > 0 ? -1 : 65
+      },
+      close: function() {
+        closedIn++
+        if (mode.indexOf("close") >= 0) throw new java.io.IOException("input-close-failure")
+      }
+    })
+    var output = new JavaAdapter(java.io.OutputStream, {
+      write: function() {
+        if (mode === "write") throw new java.io.IOException("copy-write-failure")
+        writes++
+      },
+      close: function() {
+        closedOut++
+        if (mode.indexOf("close") >= 0) throw new java.io.IOException("output-close-failure")
+      }
+    })
+    try { ioStreamCopy(output, input) } catch(e) { error = String(e) }
+    ow.test.assert(closedIn, 1, "Input closed once after " + mode)
+    ow.test.assert(closedOut, 1, "Output closed once after " + mode)
+    if (mode.indexOf("read") === 0 || mode === "write") {
+      ow.test.assert(isString(error) && error.indexOf("copy-" + (mode === "write" ? "write" : "read") + "-failure") >= 0, true, "Original copy failure preserved: " + mode)
+    } else {
+      ow.test.assert(error, undefined, "Close IOException remains quiet: " + mode)
+      ow.test.assert(writes > 0, mode !== "empty", "Output contents transferred: " + mode)
+    }
+  })
+}
+
+exports.testShellEnvironmentOverrides = function() {
+  var env = getEnvs(), key = Object.prototype.hasOwnProperty.call(env, "PATH") ? "PATH" : "Path"
+  var explicit = { OPENAF_REVIEW_SENTINEL: "only-in-child" }
+  explicit[key] = "openaf-test-child-path"
+  var snapshot = stringify(explicit), shell = $sh().envs(explicit, true)
+  ow.test.assert(shell.envs[key], explicit[key], "Explicit environment overrides inherited value")
+  ow.test.assert(shell.envs.OPENAF_REVIEW_SENTINEL, explicit.OPENAF_REVIEW_SENTINEL, "New environment key retained")
+  Object.keys(env).filter(k => k !== key && k !== "OPENAF_REVIEW_SENTINEL").forEach(function(k) {
+    ow.test.assert(shell.envs[k] === env[k], true, "Unmodified inherited environment key retained")
+  })
+  ow.test.assert(stringify(explicit), snapshot, "Caller environment map not mutated")
+  ;[false, undefined].forEach(function(includeExisting) {
+    ow.test.assert($sh().envs({ OPENAF_REVIEW_SENTINEL: "isolated" }, includeExisting).envs,
+      { OPENAF_REVIEW_SENTINEL: "isolated" }, "Explicit environment without inheritance")
+  })
+  var child = shell.sh([String(java.lang.System.getProperty("java.home")) + "/bin/java",
+    "-Dopenaf.test.worker=true", "-jar", getOpenAFJar(), "-c",
+    "print(getEnv('" + key + "')); exit(0)"]).timeout(15000).get(0)
+  ow.test.assert(child.exitcode, 0, "Child with an overridden environment completes")
+  ow.test.assert(child.stdout.trim(), explicit[key], "Override reaches the child process")
+}

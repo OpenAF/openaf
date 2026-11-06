@@ -135,7 +135,13 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testObjPoolAddedAndFailedBatch;
 
+   - name: Obj::Object pool health retries
+     from: Obj::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testObjPoolHealthRetries
+
 todo:
+- Obj::Object pool health retries
 # Obj tests
 # ------------
 - Obj::Init

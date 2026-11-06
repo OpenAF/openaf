@@ -74,4 +74,68 @@
         }
     };
 
+  exports.testZIPMetadataListing = function() {
+    plugin('ZIP')
+    var path = io.createTempFile('zip-metadata-', '.zip')
+    var corrupt = io.createTempFile('zip-corrupt-', '.zip')
+    var sequential = io.createTempFile('zip-sequential-', '.zip')
+    var zip = new ZIP()
+    var output = new java.util.zip.ZipOutputStream(io.writeFileStream(path))
+    var payload = af.fromString2Bytes('integrity-check-payload', 'UTF-8')
+    try {
+      var stored = new java.util.zip.ZipEntry('stored.txt')
+      var crc = new java.util.zip.CRC32()
+      crc.update(payload)
+      stored.setMethod(java.util.zip.ZipEntry.STORED)
+      stored.setSize(payload.length)
+      stored.setCompressedSize(payload.length)
+      stored.setCrc(crc.getValue())
+      stored.setComment('central comment')
+      output.putNextEntry(stored)
+      output.write(payload)
+      output.closeEntry()
+      output.putNextEntry(new java.util.zip.ZipEntry('folder/'))
+      output.closeEntry()
+      output.putNextEntry(new java.util.zip.ZipEntry('folder/雪.txt'))
+      output.write(af.fromString2Bytes('compressed'.repeat(1000), 'UTF-8'))
+      output.closeEntry()
+    } finally { output.close() }
+    try {
+      zip.putFile('memory.txt', 'retained')
+      var ordinary = zip.list(path), metadata = zip.listMetadata(path)
+      ow.test.assert(Object.keys(metadata).sort(), Object.keys(ordinary).sort(), 'Metadata listing changed entry names')
+      Object.keys(ordinary).forEach(name => {
+        ;['name', 'size', 'compressedSize', 'crc', 'time'].forEach(field => {
+          ow.test.assert(metadata[name][field], ordinary[name][field], 'Metadata field differs: ' + name + '.' + field)
+        })
+      })
+      ow.test.assert(metadata['stored.txt'].comment, 'central comment', 'Central directory comment missing')
+      ow.test.assert(af.fromBytes2String(zip.getFile('memory.txt')), 'retained', 'Metadata listing replaced in-memory archive')
+
+      var bytes = af.fromBytes2Array(io.readFileBytes(path))
+      var dataOffset = 30 + (bytes[26] & 255) + ((bytes[27] & 255) << 8) + (bytes[28] & 255) + ((bytes[29] & 255) << 8)
+      bytes[dataOffset] ^= 1
+      io.writeFileBytes(corrupt, af.fromArray2Bytes(bytes))
+      ow.test.assert(zip.listMetadata(corrupt)['stored.txt'].crc, metadata['stored.txt'].crc, 'Metadata-only traversal tried to read payload')
+      var failed = false
+      try { zip.list(corrupt) } catch(e) { failed = true }
+      ow.test.assert(failed, true, 'Default list no longer checks payload CRC')
+
+      bytes = af.fromBytes2Array(io.readFileBytes(path))
+      var central = -1
+      for (var i = 0; i < bytes.length - 3; i++) {
+        if (bytes[i] == 80 && bytes[i + 1] == 75 && bytes[i + 2] == 1 && bytes[i + 3] == 2) { central = i; break }
+      }
+      ow.test.assert(central > 0, true, 'ZIP fixture has no central directory')
+      io.writeFileBytes(sequential, af.fromArray2Bytes(bytes.slice(0, central)))
+      ow.test.assert(Object.keys(zip.list(sequential)).sort(), Object.keys(ordinary).sort(), 'Default sequential ZIP support changed')
+      failed = false
+      try { zip.listMetadata(sequential) } catch(e) { failed = true }
+      ow.test.assert(failed, true, 'Metadata-only listing accepted a missing central directory')
+    } finally {
+      zip.close()
+      ;[path, corrupt, sequential].forEach(file => io.rm(file))
+    }
+  }
+
 })();

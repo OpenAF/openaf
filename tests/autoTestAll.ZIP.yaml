@@ -25,6 +25,11 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testZIPReadOwnership;
 
+   - name: ZIP::Metadata listing and integrity contracts
+     from: ZIP::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testZIPMetadataListing
+
 todo:
    # ZIP tests
    # ------------
@@ -32,3 +37,5 @@ todo:
    - ZIP::ZIP basic functionality
    - ZIP::ZIP streaming functionality
    - ZIP::Read ownership and missing entries
+
+   - ZIP::Metadata listing and integrity contracts

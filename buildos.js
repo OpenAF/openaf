@@ -1,5 +1,6 @@
 // Build OpenAF
 //
+try {
 plugin("ZIP");
 ow.loadFormat()
 
@@ -13,6 +14,25 @@ var OPENAF_SRC = OPENAF_BUILD_HOME + "/src";
 var OPENAF_BIN = OPENAF_BUILD_HOME + "/bin";
 var OPENAF_JS = OPENAF_BUILD_HOME + "/js";
 var JAVAC = "javac";
+
+function runBuildCommand(command, label) {
+	// The bootstrap JAR may predate concurrent stdout/stderr draining in af.sh.
+	// Merge the pipes before reading so verbose compiler failures cannot deadlock it.
+	var commandArguments = new java.util.ArrayList()
+	command.forEach(function(part) { commandArguments.add(String(part)) })
+	var process = new java.lang.ProcessBuilder(commandArguments).redirectErrorStream(true).start()
+	var output, status
+	try {
+		process.getOutputStream().close()
+		output = af.fromBytes2String(process.getInputStream().readAllBytes())
+		status = process.waitFor()
+	} finally {
+		if (process.isAlive()) process.destroyForcibly()
+		process.getInputStream().close()
+	}
+	if (status != 0) throw new Error(label + " failed (exit " + status + "): " + output)
+	if (output.length > 0) log(label + ": " + output)
+}
 var smallClassPath = "";
 
 var EXTERNAL = false;
@@ -61,7 +81,7 @@ function buildClasspath() {
 
 	if (isUndefined(listfiles)) {
 		logErr("Didn't found the OPENAF_LIB. Please configure it.");
-		java.lang.System.exit(0);
+		throw new Error("OPENAF_LIB is unavailable: " + OPENAF_LIB)
 	}
 
 	for (var i in $from( listfiles.files ).sort("filename").select() ) {
@@ -108,7 +128,7 @@ function buildSource() {
 	excludeFilter = "plugins/Wedo";
 	var arrayList = listFiles(OPENAF_SRC, new RegExp(".+\.java$"), excludeFilter);
 	log("Found #" + arrayList.length + " java sources.");
-	sourcePath = arrayList.join(" ");
+	sourcePath = arrayList;
 
 	return sourcePath;
 }
@@ -155,13 +175,13 @@ io.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", jsOpenAF);
 
 io.rm(OPENAF_BIN);
 io.mkdir(OPENAF_BIN);
-var cmd = JAVAC + " -cp " + classpath + " -encoding UTF-8 -source 21 -target 21 -Xlint:deprecation -d " + OPENAF_BIN + " " + buildSource();
+var cmd = [JAVAC, "-cp", classpath, "-encoding", "UTF-8", "-source", "21", "-target", "21", "-Xlint:deprecation", "-d", OPENAF_BIN].concat(buildSource())
 log("Compiling...");
-log(af.sh(cmd, "", undefined, true));
-if (__exitcode != 0) {
-	logErr("Error compiling: " + __stderr);
-}
-$sh(JAVAC + " -source 21 -target 21 -d " + OPENAF_BIN + " " + OPENAF_SRC + "/openaf/Launcher.java").exec();
+runBuildCommand(cmd, "Java compilation")
+runBuildCommand([JAVAC, "-source", "21", "-target", "21", "-d", OPENAF_BIN, OPENAF_SRC + "/openaf/Launcher.java"], "Launcher compilation")
+;["openaf/AFCmdOS.class", "openaf/Launcher.class", "openaf/CompileJS2Java.class"].forEach(function(name) {
+	if (!io.fileExists(OPENAF_BIN + "/" + name)) throw new Error("Missing compiled class: " + name)
+})
 
 var tempJar = new ZIP(io.readFileBytes(OPENAF_BUILD_HOME + "/jar-in-jar-loader.zip"));
 var binFiles = listFiles(OPENAF_BIN, new RegExp("\.class$"));
@@ -255,12 +275,13 @@ if (io.fileExists(ojson)) {
 
 var compileJS2Java = (classfile, script, path) => {
 	var tmpFile = io.createTempFile("build_", ".js");
-	io.writeFileString(tmpFile, script);
-
-	var cmd = ow.format.getJavaHome() + "/bin/java -classpath " + OPENAF_BUILD_HOME + "/bin:" + OPENAF_BUILD_HOME + "/lib/js.jar openaf.CompileJS2Java " + classfile + " " + tmpFile + " " + path;
-	$sh(cmd)
-	.prefix(classfile)
-	.get(0)
+	try {
+		io.writeFileString(tmpFile, script)
+		runBuildCommand([ow.format.getJavaHome() + "/bin/java", "-classpath", OPENAF_BIN + PATHSEPARATOR + OPENAF_LIB + "/js.jar", "openaf.CompileJS2Java", classfile, tmpFile, path], classfile)
+		if (!io.fileExists(path + "/" + classfile + ".class")) throw new Error("Missing compiled script: " + classfile)
+	} finally {
+		io.rm(tmpFile)
+	}
 }
 
 var addCompiledClasses = (baseName) => {
@@ -275,6 +296,7 @@ var addCompiledClasses = (baseName) => {
 	}
 }
 
+var compileErrors = new java.util.concurrent.ConcurrentLinkedQueue()
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {
 try {	
@@ -315,20 +337,16 @@ try {
 
 		if (doIt) {
 			log("-> Compiling " + file.filename);
-			var output = af.sh("java " + javaUnsafeFlag + "-jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT_2019" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+			var compilerCommand = [ow.format.getJavaHome() + "/bin/java"]
+			if (javaUnsafeFlag.trim().length > 0) compilerCommand.push(javaUnsafeFlag.trim())
+			runBuildCommand(compilerCommand.concat(["-jar", OPENAF_BUILD_HOME + "/compiler.jar", "--language_out", "ECMASCRIPT_2019", "--env", "CUSTOM", "--strict_mode_input", "false", "--rewrite_polyfills", "false", "--js", OPENAF_BUILD_HOME + "/js/" + file.filename, "--js_output_file", OPENAF_BUILD_HOME + "/jsmin/" + file.filename]), file.filename + " minification")
 			log("<- Compiled  " + file.filename);
 			destjssha.files.push({
 				file: file.filename,
 				orig: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/js/" + file.filename)),
 				dest: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/jsmin/" + file.filename))
 			});
-			if (output.length > 0) log(file.filename + ": " + output);
-			if (__stderr.length > 0) {
-				if (__stderr.match(/ WARNING - /))
-					logWarn(file.filename + ": " + __stderr);
-				else
-					logErr(file.filename + ": " + __stderr);
-			}
+
 		}			try {
 				log("Compiling from minimized " + file.filename + "...");
 			  if (validationForCompile(file.filename))
@@ -338,7 +356,7 @@ try {
 			    //af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");
 				compileJS2Java(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");
 			} catch(e) {
-				logErr("Error while compiling to java classes ('" + file.filename + "'): " + e);
+				throw new Error("Error while compiling to java classes ('" + file.filename + "'): " + e)
 			}
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
@@ -354,7 +372,7 @@ try {
 				  //af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");			 
 				  compileJS2Java(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib")
 			  } catch(e) {
-				  logErr("Error while compiling to java classes ('" + file.filename + "'): " + e);
+				  throw new Error("Error while compiling to java classes ('" + file.filename + "'): " + e)
 			  }   
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
@@ -363,9 +381,12 @@ try {
 		}
 	}
 	return i;
-} catch(e) { }
+} catch(e) {
+	compileErrors.add(i.filename + ": " + e)
+}
 return true;
 });
+if (!compileErrors.isEmpty()) throw new Error("JavaScript compilation failed: " + compileErrors.toString())
 
 tempJar.putFile("compiledJS.jar", zipJSlib.generate({"compressionLevel": 9}));
 zipJSlib.close();
@@ -467,8 +488,30 @@ log("Building dependencies");
 io.writeFileString(OPENAF_BUILD_HOME + "/dependencies.json", stringify(buildDeps()));
 
 log("Creating the openaf.jar in " + OPENAF_BUILD_HOME);
-io.rm(OPENAF_BUILD_HOME + "/openaf.jar");
-tempJar.generate2File(OPENAF_BUILD_HOME + "/openaf.jar", { compressionLevel: 9 }, true);
-tempJar.close();
+var jarTarget = new java.io.File(OPENAF_BUILD_HOME + "/openaf.jar").getCanonicalFile().toPath()
+var jarCandidate = jarTarget.resolveSibling(".openaf-build-" + genUUID() + ".jar")
+try {
+	tempJar.generate2File(String(jarCandidate), { compressionLevel: 9 }, true)
+	tempJar.close()
+	var builtJar = new java.util.jar.JarFile(jarCandidate.toFile())
+	try {
+		;["openaf/AFCmdOS.class", "openaf/Launcher.class", "compiledJS.jar", "META-INF/MANIFEST.MF"].forEach(function(name) {
+			if (isNull(builtJar.getEntry(name))) throw new Error("Missing JAR entry: " + name)
+		})
+	} finally {
+		builtJar.close()
+	}
+	if (java.nio.file.Files.exists(jarTarget) && java.nio.file.Files.getFileStore(jarTarget).supportsFileAttributeView("posix")) {
+		java.nio.file.Files.setPosixFilePermissions(jarCandidate, java.nio.file.Files.getPosixFilePermissions(jarTarget))
+	}
+	// The candidate is on the same filesystem; a failed atomic replacement leaves the old JAR intact.
+	java.nio.file.Files.move(jarCandidate, jarTarget, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+} finally {
+	java.nio.file.Files.deleteIfExists(jarCandidate)
+}
 
 log("Done build");
+} catch (e) {
+	logErr("Build failed: " + e)
+	exit(1)
+}

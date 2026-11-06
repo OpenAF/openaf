@@ -628,6 +628,61 @@ OpenWrap.ai.prototype.__decision = {
     }
 };
 
+// A streaming response owns its per-request client until EOF or explicit close.
+OpenWrap.ai.prototype.__httpRequest = function(http, options, verb, url, data, streaming, ownsClient) {
+    var response, handedOff = false
+    var close = () => {
+        try {
+            if (response instanceof java.io.InputStream) response.close()
+        } finally {
+            if (ownsClient) http.close()
+        }
+    }
+    try {
+        switch (verb.toUpperCase()) {
+        case "GET": response = $rest(options).get2Stream(url); break
+        case "POST": response = $rest(options).post2Stream(url, data); break
+        default: return __
+        }
+        if (streaming) {
+            if (!(response instanceof java.io.InputStream)) return response
+            var closed = false
+            var finish = () => {
+                if (closed) return
+                closed = true
+                close()
+            }
+            var wrapped = new JavaAdapter(java.io.InputStream, {
+                read: function(bytes, offset, length) {
+                    try {
+                        var count = arguments.length === 0 ? response.read() :
+                            (arguments.length === 1 ? response.read(bytes) : response.read(bytes, offset, length))
+                        if (count < 0) finish()
+                        return count
+                    } catch (e) {
+                        try { finish() } catch (ignored) {}
+                        throw e
+                    }
+                },
+                available: () => response.available(),
+                skip: count => response.skip(count),
+                markSupported: () => response.markSupported(),
+                mark: limit => response.mark(limit),
+                reset: () => response.reset(),
+                close: finish
+            })
+            handedOff = true
+            return wrapped
+        }
+        var result = response instanceof java.io.InputStream ?
+            jsonParse(af.fromBytes2String(response.readAllBytes())) :
+            (isDef(response.error) ? jsonParse(response.error, __, __, true) : response)
+        return typeof result.response !== "undefined" ? jsonParse(result.response) : result
+    } finally {
+        if (!handedOff) close()
+    }
+}
+
 OpenWrap.ai.prototype.__gpttypes = {
     openai: {
         create: (aOptions) => {
@@ -895,19 +950,22 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     aOnPayload("[DONE]")
                 } else {
-                    ioStreamReadLines(aStream, line => {
-                        if (stop) return true
-                        var _line = String(line)
-                        if (_line.length === 0) {
-                            flush()
-                            return stop === true
-                        }
-                        if (_line.indexOf("data:") === 0) {
-                            dataLines.push(_line.substring(5).trim())
-                        }
-                    }, "\n", false)
-                    flush()
-                    try { aStream.close() } catch(e) {}
+                    try {
+                        ioStreamReadLines(aStream, line => {
+                            if (stop) return true
+                            var _line = String(line)
+                            if (_line.length === 0) {
+                                flush()
+                                return stop === true
+                            }
+                            if (_line.indexOf("data:") === 0) {
+                                dataLines.push(_line.substring(5).trim())
+                            }
+                        }, "\n", false)
+                        flush()
+                    } finally {
+                        try { aStream.close() } catch(e) {}
+                    }
                 }
                 return errorObj
             }
@@ -1374,9 +1432,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                             _r.conversation = _r.conversation.concat(isString(_res) ? { role: "assistant", content: _res } : _res.choices[0].message)
                             _captureStats(_res, body)
                             return _res
-                        } else {
+                        } else if (_p.length > 0) {
                             _r.conversation = _r.conversation.concat(_p)
                             return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
+                        } else {
+                            // Terminal responses such as length/content_filter are not tool continuations.
+                            if (_res.choices.length > 0 && isMap(_res.choices[0].message)) {
+                                _r.conversation = _r.conversation.concat(_res.choices[0].message)
+                            }
+                            _captureStats(_res, body)
+                            return _res
                         }
                     } else {
                         _captureStats(_res, body)
@@ -1704,26 +1769,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                        httpClient    : _h,
                        requestHeaders: _headers("*/*")
                     } 
-                    _h.close()
                  
-                    var _fnh = r => {
-                        var _r 
-                        if ("function" !== typeof r.getClass) {
-                            _r = (isDef(r.error) ? jsonParse(r.error, __, __, true) : r)
-                        } else {
-                            _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
-                        }
-                        if (typeof _r.response !== "undefined") {
-                            return jsonParse(_r.response)
-                        } else {
-                            return _r
-                        }
-                    }
-
-                    switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__m).get2Stream(_buildURL(aURI)))
-                    case "POST": return _fnh($rest(__m).post2Stream(_buildURL(aURI), aData))
-                    }
+                    return ow.ai.__httpRequest(_h, __m, aVerb, _buildURL(aURI), aData, false, true)
                 },
                 _requestStream: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -1736,12 +1783,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                        httpClient    : _h,
                        requestHeaders: _headers("text/event-stream")
                     } 
-                    _h.close()
 
-                    switch(aVerb.toUpperCase()) {
-                    case "GET" : return $rest(__m).get2Stream(_buildURL(aURI))
-                    case "POST": return $rest(__m).post2Stream(_buildURL(aURI), aData)
-                    }
+                    return ow.ai.__httpRequest(_h, __m, aVerb, _buildURL(aURI), aData, true, true)
                 },
                 __debugTransport: (aEndpoint, aDeploymentFallback, aAccept) => {
                     var _u = _route(aEndpoint, aDeploymentFallback)
@@ -1830,42 +1873,45 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     aOnPayload("[DONE]")
                 } else {
-                    ioStreamReadLines(aStream, line => {
-                        if (stop) return true
-                        var _line = String(line)
-                        if (_line.length === 0) {
-                            flush()
-                            return stop === true
-                        }
-                        if (_line.indexOf("data:") === 0) {
-                            dataLines.push(_line.substring(5).trim())
-                            // Gemini can send one complete JSON event per `data:` line without
-                            // an empty separator line; emit as soon as the accumulated payload parses.
-                            var _candidatePayload = dataLines.join("\n")
-                            var _candidateObj = jsonParse(_candidatePayload, __, __, true)
-                            if (isDef(_candidateObj)) {
-                                dataLines = []
-                                if (aOnPayload(_candidateObj) === true) stop = true
+                    try {
+                        ioStreamReadLines(aStream, line => {
+                            if (stop) return true
+                            var _line = String(line)
+                            if (_line.length === 0) {
+                                flush()
+                                return stop === true
                             }
-                        } else {
-                            // Fallback for non-SSE JSON error responses returned by stream endpoint.
-                            nonSseLines.push(_line)
-                        }
-                    }, "\n", false)
-                    flush()
-                    if (nonSseLines.length > 0) {
-                        var fallbackPayload = nonSseLines.join("\n").trim()
-                        if (fallbackPayload.length > 0) {
-                            var fallbackObj = jsonParse(fallbackPayload, __, __, true)
-                            if (isDef(fallbackObj)) {
-                                if (isMap(fallbackObj) && (isMap(fallbackObj.error) || isDef(fallbackObj.error))) {
-                                    errorObj = fallbackObj
+                            if (_line.indexOf("data:") === 0) {
+                                dataLines.push(_line.substring(5).trim())
+                                // Gemini can send one complete JSON event per `data:` line without
+                                // an empty separator line; emit as soon as the accumulated payload parses.
+                                var _candidatePayload = dataLines.join("\n")
+                                var _candidateObj = jsonParse(_candidatePayload, __, __, true)
+                                if (isDef(_candidateObj)) {
+                                    dataLines = []
+                                    if (aOnPayload(_candidateObj) === true) stop = true
                                 }
-                                aOnPayload(fallbackObj)
+                            } else {
+                                // Fallback for non-SSE JSON error responses returned by stream endpoint.
+                                nonSseLines.push(_line)
+                            }
+                        }, "\n", false)
+                        flush()
+                        if (nonSseLines.length > 0) {
+                            var fallbackPayload = nonSseLines.join("\n").trim()
+                            if (fallbackPayload.length > 0) {
+                                var fallbackObj = jsonParse(fallbackPayload, __, __, true)
+                                if (isDef(fallbackObj)) {
+                                    if (isMap(fallbackObj) && (isMap(fallbackObj.error) || isDef(fallbackObj.error))) {
+                                        errorObj = fallbackObj
+                                    }
+                                    aOnPayload(fallbackObj)
+                                }
                             }
                         }
+                    } finally {
+                        try { aStream.close() } catch(e) {}
                     }
-                    try { aStream.close() } catch(e) {}
                 }
                 return errorObj
             }
@@ -2642,26 +2688,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                           Accept       : "*/*"
                        })
                     } 
-                    _h.close()
                  
-                    var _fnh = r => {
-                        var _r 
-                        if ("function" !== typeof r.getClass) {
-                            _r = (isDef(r.error) ? jsonParse(r.error, __, __, true) : r)
-                        } else {
-                            _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
-                        }
-                        if (typeof _r.response !== "undefined") {
-                            return jsonParse(_r.response)
-                        } else {
-                            return _r
-                        }
-                    }
-
-                    switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + Packages.openaf.AFCmdBase.afc.dIP(_key)))
-                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + Packages.openaf.AFCmdBase.afc.dIP(_key), aData))
-                    }
+                    return ow.ai.__httpRequest(_h, __m, aVerb, aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + (aURI.indexOf("?") >= 0 ? "&" : "?") + "key=" + Packages.openaf.AFCmdBase.afc.dIP(_key), aData, false, true)
                 },
                 _requestStream: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -2676,13 +2704,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                           Accept       : "text/event-stream"
                        })
                     } 
-                    _h.close()
 
-                    var sep = aURI.indexOf("?") >= 0 ? "&" : "?"
-                    switch(aVerb.toUpperCase()) {
-                    case "GET" : return $rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + sep + "key=" + Packages.openaf.AFCmdBase.afc.dIP(_key))
-                    case "POST": return $rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + sep + "key=" + Packages.openaf.AFCmdBase.afc.dIP(_key), aData)
-                    }
+                    return ow.ai.__httpRequest(_h, __m, aVerb, aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + (aURI.indexOf("?") >= 0 ? "&" : "?") + "key=" + Packages.openaf.AFCmdBase.afc.dIP(_key), aData, true, true)
                 }
             }
             return _r
@@ -3179,26 +3202,29 @@ OpenWrap.ai.prototype.__gpttypes = {
                         _captureStats(_stream, aModel)
                         return _stream
                     }
-                    ioStreamReadLines(_stream, line => {
-                        var _line = String(line).trim()
-                        if (_line.length == 0) return
-                        var data = jsonParse(_line, __, __, true)
-                        if (isDef(data)) {
-                            events.push(data)
-                            lastResponse = data
-                            if (isMap(data.message)) {
-                                if (isString(data.message.content) && data.message.content.length > 0) {
-                                    content += data.message.content
-                                    if (isFunction(aOnDelta)) aOnDelta(data.message.content, data)
+                    try {
+                        ioStreamReadLines(_stream, line => {
+                            var _line = String(line).trim()
+                            if (_line.length == 0) return
+                            var data = jsonParse(_line, __, __, true)
+                            if (isDef(data)) {
+                                events.push(data)
+                                lastResponse = data
+                                if (isMap(data.message)) {
+                                    if (isString(data.message.content) && data.message.content.length > 0) {
+                                        content += data.message.content
+                                        if (isFunction(aOnDelta)) aOnDelta(data.message.content, data)
+                                    }
+                                    if (isArray(data.message.tool_calls) && data.message.tool_calls.length > 0) {
+                                        streamedToolCalls = streamedToolCalls.concat(data.message.tool_calls)
+                                    }
                                 }
-                                if (isArray(data.message.tool_calls) && data.message.tool_calls.length > 0) {
-                                    streamedToolCalls = streamedToolCalls.concat(data.message.tool_calls)
-                                }
+                                if (data.done === true) return true
                             }
-                            if (data.done === true) return true
-                        }
-                    }, "\n", false)
-                    try { _stream.close() } catch(e) {}
+                        }, "\n", false)
+                    } finally {
+                        try { _stream.close() } catch(e) {}
+                    }
 
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
 
@@ -3338,13 +3364,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                  
                     if (!aURI.startsWith("/")) aURI = "/" + aURI
 
-                    var _h
-                    if (isUnDef(this._h)) {
-                        var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
-                        _h.close()
-                    } else {
-                        _h = this._h
-                    }
+                    var _ownsClient = isUnDef(this._h)
+                    var _h = _ownsClient ? new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout }) : this._h
                     
                     var __r = { 
                        conTimeout    : 60000,
@@ -3354,32 +3375,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                        }
                     }
                  
-                    var _fnh = r => {
-                        var _r 
-                        if ("function" !== typeof r.getClass) {
-                            _r = (isDef(r.error) ? jsonParse(r.error, __, __, true) : r)
-                        } else {
-                            _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
-                        }
-                        if (typeof _r.response !== "undefined") {
-                            return jsonParse(_r.response)
-                        } else {
-                            return _r
-                        }
-                    }
-
-                    var _r
-                    switch(aVerb.toUpperCase()) {
-                    case "GET" :
-                        var _rr = $rest(__r).get2Stream(_url + aURI)
-                        _r = _fnh(_rr)
-                        break
-                    case "POST": 
-                        var _rr = $rest(__r).post2Stream(_url + aURI, aData)
-                        _r = _fnh(_rr)
-                        break
-                    }
-                    return _r
+                    return ow.ai.__httpRequest(_h, __r, aVerb, _url + aURI, aData, false, _ownsClient)
                 },
                 _requestStream: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -3388,13 +3384,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                  
                     if (!aURI.startsWith("/")) aURI = "/" + aURI
 
-                    var _h
-                    if (isUnDef(this._h)) {
-                        var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
-                        _h.close()
-                    } else {
-                        _h = this._h
-                    }
+                    var _ownsClient = isUnDef(this._h)
+                    var _h = _ownsClient ? new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout }) : this._h
                     
                     var __r = { 
                        conTimeout    : 60000,
@@ -3404,10 +3395,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                        }
                     }
 
-                    switch(aVerb.toUpperCase()) {
-                    case "GET" : return $rest(__r).get2Stream(_url + aURI)
-                    case "POST": return $rest(__r).post2Stream(_url + aURI, aData)
-                    }
+                    return ow.ai.__httpRequest(_h, __r, aVerb, _url + aURI, aData, true, _ownsClient)
                 }
             }
             return _r
@@ -3497,19 +3485,22 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     aOnPayload("[DONE]")
                 } else {
-                    ioStreamReadLines(aStream, line => {
-                        if (stop) return true
-                        var _line = String(line)
-                        if (_line.length === 0) {
-                            flush()
-                            return stop === true
-                        }
-                        if (_line.indexOf("data:") === 0) {
-                            dataLines.push(_line.substring(5).trim())
-                        }
-                    }, "\n", false)
-                    flush()
-                    try { aStream.close() } catch(e) {}
+                    try {
+                        ioStreamReadLines(aStream, line => {
+                            if (stop) return true
+                            var _line = String(line)
+                            if (_line.length === 0) {
+                                flush()
+                                return stop === true
+                            }
+                            if (_line.indexOf("data:") === 0) {
+                                dataLines.push(_line.substring(5).trim())
+                            }
+                        }, "\n", false)
+                        flush()
+                    } finally {
+                        try { aStream.close() } catch(e) {}
+                    }
                 }
                 return errorObj
             }
@@ -4167,26 +4158,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                        httpClient    : _h,
                        requestHeaders: _reqHeaders
                     } 
-                    _h.close()
                  
-                    var _fnh = r => {
-                        var _r 
-                        if ("function" !== typeof r.getClass) {
-                            _r = (isDef(r.error) ? jsonParse(r.error, __, __, true) : r)
-                        } else {
-                            _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
-                        }
-                        if (typeof _r.response !== "undefined") {
-                            return jsonParse(_r.response)
-                        } else {
-                            return _r
-                        }
-                    }
-
-                    switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI))
-                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData))
-                    }
+                    return ow.ai.__httpRequest(_h, __m, aVerb, aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData, false, true)
                 },
                 _requestStream: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -4204,12 +4177,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                        httpClient    : _h,
                        requestHeaders: _reqHeaders
                     } 
-                    _h.close()
 
-                    switch(aVerb.toUpperCase()) {
-                    case "GET" : return $rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI)
-                    case "POST": return $rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData)
-                    }
+                    return ow.ai.__httpRequest(_h, __m, aVerb, aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData, true, true)
                 }
             }
             return _r

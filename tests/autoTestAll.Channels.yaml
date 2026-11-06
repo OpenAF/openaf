@@ -237,7 +237,49 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testLifecycleFailureAndReentry;
 
+   - name: Channels::BigHashCollisions
+     from: Channels::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testBigHashCollisions
+
+   - name: Channels::PersistenceDestroyRetry
+     from: Channels::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testPersistenceDestroyRetry
+
+   - name: Channels::ConditionalSubscribers
+     from: Channels::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testConditionalSubscribers
+
+   - name: Channels::RemoteConditionalSubscribers
+     from: Channels::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testRemoteConditionalSubscribers
+
+   - name: Channels::StaleChannelWrites
+     from: Channels::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testStaleChannelWrites
+
+   - name: Channels::AllChannelDeletes
+     from: Channels::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testAllChannelDeletes
+
+   - name: Channels::WaitForJobsDeadline
+     from: Channels::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testWaitForJobsDeadline
+
 todo:
+   - Channels::BigHashCollisions
+   - Channels::PersistenceDestroyRetry
+   - Channels::ConditionalSubscribers
+   - Channels::RemoteConditionalSubscribers
+   - Channels::StaleChannelWrites
+   - Channels::AllChannelDeletes
+   - Channels::WaitForJobsDeadline
    - Channels::Concurrent lifecycle
    - Channels::Lifecycle idempotency
    - Channels::Lifecycle failure and reentry

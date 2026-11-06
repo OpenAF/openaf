@@ -1327,11 +1327,15 @@ public class HTTPServer extends ScriptableObject {
 				sendResponse(exchange, result);
 				
 			} catch (Exception e) {
-				// Send error response
-				String response = "Internal Server Error: " + e.getMessage();
-				exchange.sendResponseHeaders(500, response.length());
-				try (OutputStream os = exchange.getResponseBody()) {
-					os.write(response.getBytes(StandardCharsets.UTF_8));
+				// Once streaming has started a second status line cannot be sent.
+				if (exchange.getResponseCode() < 0) {
+					byte[] response = ("Internal Server Error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+					exchange.sendResponseHeaders(500, response.length);
+					try (OutputStream os = exchange.getResponseBody()) {
+						os.write(response);
+					}
+				} else {
+					exchange.close();
 				}
 				SimpleLog.log(logtype.ERROR, "Error handling request: " + e.getMessage(), e);
 			}
@@ -1414,8 +1418,28 @@ public class HTTPServer extends ScriptableObject {
 					// Handle stream
 					if (streamObj instanceof InputStream) {
 						try (InputStream is = (InputStream) streamObj) {
-							responseBytes = is.readAllBytes();
+							boolean noBody = "HEAD".equals(exchange.getRequestMethod()) || status < 200
+									|| status == 204 || status == 205 || status == 304;
+							String lengthHeader = exchange.getResponseHeaders().getFirst("Content-Length");
+							long length = lengthHeader == null ? -1 : Long.parseLong(lengthHeader);
+							if (length < -1) throw new IOException("Invalid response Content-Length");
+							exchange.sendResponseHeaders(status, noBody || length == 0 ? -1 : Math.max(0, length));
+							try (OutputStream os = exchange.getResponseBody()) {
+								if (!noBody && length != 0) {
+									byte[] buffer = new byte[8192];
+									long remaining = length;
+									while (remaining != 0) {
+										int count = is.read(buffer, 0, remaining < 0 ? buffer.length : (int) Math.min(buffer.length, remaining));
+										if (count < 0) break;
+										if (count == 0) continue;
+										os.write(buffer, 0, count);
+										os.flush();
+										if (remaining > 0) remaining -= count;
+									}
+								}
+							}
 						}
+						return;
 					}
 				} else if (dataObj != null && !(dataObj instanceof Undefined) && !(dataObj instanceof UniqueTag)) {
 					if (dataObj instanceof byte[]) {

@@ -261,14 +261,11 @@ public class DB {
 								continue;
 							}
 
-							if (rs.getMetaData().getColumnType(i) == java.sql.Types.BOOLEAN) {
-								if (rs.getBoolean(i)) {
-									record.put(rs.getMetaData().getColumnLabel(i), true);
-								} else {
-									record.put(rs.getMetaData().getColumnLabel(i), false);
-								}
-								continue;
-							}
+                            if (rs.getMetaData().getColumnType(i) == java.sql.Types.BOOLEAN) {
+                                boolean value = rs.getBoolean(i);
+                                record.put(rs.getMetaData().getColumnLabel(i), rs.wasNull() ? null : value);
+                                continue;
+                            }
 
 							if (convertDates) {
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.DATE)) {
@@ -409,10 +406,16 @@ public class DB {
 							if((rs.getMetaData().getColumnType(i) == java.sql.Types.CLOB) ||
 							   (rs.getMetaData().getColumnType(i) == java.sql.Types.LONGVARCHAR))	{
 								InputStream in;
-								if (rs.getMetaData().getColumnType(i) == java.sql.Types.CLOB)
-										in = rs.getClob(i).getAsciiStream();
-								else
-										in = rs.getAsciiStream(i);
+                                if (rs.getMetaData().getColumnType(i) == java.sql.Types.CLOB) {
+                                    java.sql.Clob lob = rs.getClob(i);
+                                    in = lob == null ? null : lob.getAsciiStream();
+                                } else {
+                                    in = rs.getAsciiStream(i);
+                                }
+                                if (in == null) {
+                                    record.put(rs.getMetaData().getColumnLabel(i), null);
+                                    continue;
+                                }
 								
 								StringWriter w = new StringWriter();
 								IOUtils.copy(in, w, (Charset) null);
@@ -424,30 +427,42 @@ public class DB {
 							   (rs.getMetaData().getColumnType(i) == java.sql.Types.BINARY) ||
 							   (rs.getMetaData().getColumnType(i) == java.sql.Types.LONGVARBINARY)) {
 								InputStream in;
-								if (rs.getMetaData().getColumnType(i) == java.sql.Types.BLOB)
-										in = rs.getBlob(i).getBinaryStream();
-								else
-										in = rs.getBinaryStream(i);
+                                if (rs.getMetaData().getColumnType(i) == java.sql.Types.BLOB) {
+                                    java.sql.Blob lob = rs.getBlob(i);
+                                    in = lob == null ? null : lob.getBinaryStream();
+                                } else {
+                                    in = rs.getBinaryStream(i);
+                                }
+                                if (in == null) {
+                                    record.put(rs.getMetaData().getColumnLabel(i), null);
+                                    continue;
+                                }
 								record.put(rs.getMetaData().getColumnLabel(i), IOUtils.toByteArray(in));
 								continue;
 							}
 
 							if (convertDates) {
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.DATE)) {
-									record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
+									java.util.Date date = rs.getDate(i);
+                                    record.put(rs.getMetaData().getColumnLabel(i), date == null ? null
+                                            : AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { date.getTime() }));
 									continue;
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP) || 
 								   (rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE) ||
 								   (rs.getMetaData().getColumnTypeName(i).equals("TIMESTAMP WITH TIME ZONE"))) {
-									record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
+									java.util.Date date = rs.getTimestamp(i);
+                                    record.put(rs.getMetaData().getColumnLabel(i), date == null ? null
+                                            : AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { date.getTime() }));
 									continue;
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIME) ||
 								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIME_WITH_TIMEZONE)) {
-									record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
+									java.util.Date date = rs.getTime(i);
+                                    record.put(rs.getMetaData().getColumnLabel(i), date == null ? null
+                                            : AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { date.getTime() }));
 									continue;
 								}
 							}
@@ -481,43 +496,33 @@ public class DB {
          * CLOB a string is returned; if it is a BLOB a byte array is provided. Errors will raise an exception.
          * </odoc>
          */
-	public Object qLob(String sql) throws Exception {
-		if (con != null) {
-			//try {
-				PreparedStatement ps = con.prepareStatement(sql);
-				ResultSet rs = ps.executeQuery();
-				
-				rs.next();
-				if(rs.getMetaData().getColumnType(1) == java.sql.Types.CLOB) {
-					StringWriter w = new StringWriter();
-					try {
-						InputStream in = rs.getClob(1).getAsciiStream();
-						IOUtils.copy(in, w, (Charset) null);
-					} catch(Exception e) {
-						SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting clob", e);
-					}
-					return w.toString();
-				} 
-				if (rs.getMetaData().getColumnType(1) == java.sql.Types.BLOB) {
-					try {
-						InputStream in = rs.getBlob(1).getBinaryStream();
-						return IOUtils.toByteArray(in);
-					} catch(Exception e) {
-						SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting blob", e);
-						return null;
-					}
-				}
-				
-				rs.close();
-				ps.close();
-			//} catch (SQLException e) {
-				//SimpleLog.log(SimpleLog.logtype.ERROR, "Error executing query " + sql + ": " + e.getMessage(), e);
-			//	throw e;
-			//}
-		}
-		return null;
-	}
-	
+    public Object qLob(String sql) throws Exception {
+        if (con != null) {
+            try (PreparedStatement ps = con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                if (rs.getMetaData().getColumnType(1) == java.sql.Types.CLOB) {
+                    StringWriter w = new StringWriter();
+                    try (InputStream in = rs.getClob(1).getAsciiStream()) {
+                        IOUtils.copy(in, w, (Charset) null);
+                    } catch (Exception e) {
+                        SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting clob", e);
+                    }
+                    return w.toString();
+                }
+                if (rs.getMetaData().getColumnType(1) == java.sql.Types.BLOB) {
+                    try (InputStream in = rs.getBlob(1).getBinaryStream()) {
+                        return IOUtils.toByteArray(in);
+                    } catch (Exception e) {
+                        SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting blob", e);
+                        return null;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
 	/**
 	 * <odoc>
 	 * <key>DB.u(aSQL) : Number</key>

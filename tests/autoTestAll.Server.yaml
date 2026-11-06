@@ -116,6 +116,16 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testCheckIn;
 
+   - name: Server::HTTP file ranges and empty files
+     from: Server::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testHTTPFileRangesAndEmptyFiles
+
+   - name: Server::HTTP Java response streaming
+     from: Server::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testHTTPJavaResponseStreaming
+
 todo:
    # Server tests
    # ------------
@@ -141,3 +151,5 @@ todo:
    - Server::AuthApp
    - Server::Queue
    - Server::CheckIn
+   - Server::HTTP file ranges and empty files
+   - Server::HTTP Java response streaming

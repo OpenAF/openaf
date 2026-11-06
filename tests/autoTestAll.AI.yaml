@@ -180,6 +180,21 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptUnsupportedProvider;
 
+   - name: AI::OpenAI terminal responses do not retry
+     from: AI::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testAIOpenAITerminalResponsesDoNotRetry
+
+   - name: AI::HTTP response ownership
+     from: AI::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testAIHTTPResponseOwnership
+
+   - name: AI::Streaming callback failure closes response
+     from: AI::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testAIStreamingCallbackFailureClosesResponse
+
 todo:
    # ow.ai tests
    # -----------
@@ -217,3 +232,6 @@ todo:
    - AI::OpenAI rawResponse caches chat fallback
    - AI::OpenAI rawResponse keeps non availability errors
    - AI::OpenAI jsonSchemaPrompt unsupported provider
+   - AI::OpenAI terminal responses do not retry
+   - AI::HTTP response ownership
+   - AI::Streaming callback failure closes response

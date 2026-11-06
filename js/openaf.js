@@ -8429,9 +8429,21 @@ const __streamCodec = (() => {
  * </odoc>
  */
 const ioStreamCopy = function(aOutputStream, aInputStream) {
-	Packages.org.apache.commons.io.IOUtils.copyLarge(aInputStream, aOutputStream);
-	Packages.org.apache.commons.io.IOUtils.closeQuietly(aInputStream);
-	Packages.org.apache.commons.io.IOUtils.closeQuietly(aOutputStream);
+	var failure, failed = false
+	try {
+		Packages.org.apache.commons.io.IOUtils.copyLarge(aInputStream, aOutputStream)
+	} catch(e) {
+		failure = e
+		failed = true
+	}
+	[aInputStream, aOutputStream].forEach(stream => {
+		try {
+			Packages.org.apache.commons.io.IOUtils.closeQuietly(stream)
+		} catch(e) {
+			if (!failed) { failure = e; failed = true }
+		}
+	})
+	if (failed) throw failure
 }
 
 /**
@@ -16501,12 +16513,13 @@ const $sh = function(aString, aIn) {
 	/**
 	 * <odoc>
 	 * <key>$sh.envs(aMap, includeExisting) : $sh</key>
-	 * Uses aMap of strings as the environment variables map. If includeExisting = true it will include the current environment variables also.
+	 * Uses aMap of strings as the environment variables map. If includeExisting = true it will include the current environment variables also,
+	 * with values explicitly provided in aMap taking precedence.
 	 * </odoc>
 	 */
 	__sh.prototype.envs = function(aMap, includeExisting) {
 		aMap = _$(aMap, "envs map").isMap().default({});
-		if (includeExisting) aMap = merge(aMap, getEnvs());
+		if (includeExisting) aMap = merge(getEnvs(), aMap)
 		this.envs = aMap;
 		return this;
 	};

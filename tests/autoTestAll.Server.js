@@ -622,4 +622,115 @@
             io.rm(envPidFile);
         }
     };
+
+    exports.testHTTPFileRangesAndEmptyFiles = function() {
+        ow.loadServer()
+        ow.loadObj()
+        var dir = String(java.nio.file.Files.createTempDirectory("openaf-http-ranges-"))
+        io.writeFileString(dir + "/data.txt", "0123456789")
+        io.writeFileString(dir + "/empty.txt", "")
+        try {
+            ;["nwu", "nwu2"].forEach(impl => {
+                var hs = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1", __, __, __, __, 5000, impl)
+                var http = new ow.obj.http(), url = "http://127.0.0.1:" + hs.getPort() + "/files/"
+                http.setThrowExceptions(false)
+                try {
+                    hs.addFileBrowse("/files", dir)
+                    function check(file, range, code, body, contentRange, method) {
+                        var response = http.exec(url + file, method || "GET", __, isDef(range) ? { Range: range } : {})
+                        ow.test.assert(response.responseCode, code, impl + " status for " + file + " " + range)
+                        ow.test.assert(response.response, body, impl + " body for " + file + " " + range)
+                        if (isDef(contentRange)) ow.test.assert(String(http._response.header("Content-Range")), contentRange, impl + " range metadata")
+                        if (code < 400) {
+                            ow.test.assert(isNull(http._response.header("Transfer-Encoding")), true, impl + " fixed length must not also be chunked")
+                            if (method !== "HEAD") ow.test.assert(String(http._response.header("Content-Length")), String(body.length), impl + " exact body length")
+                        }
+                    }
+                    check("empty.txt", __, 200, "")
+                    check("empty.txt", __, 200, "", __, "HEAD")
+                    check("data.txt", __, 200, "0123456789")
+                    check("data.txt", "bytes=2-3", 206, "23", "bytes 2-3/10")
+                    check("data.txt", "bytes=7-", 206, "789", "bytes 7-9/10")
+                    check("data.txt", "bytes=-3", 206, "789", "bytes 7-9/10")
+                    check("data.txt", "bytes=-20", 206, "0123456789", "bytes 0-9/10")
+                    check("data.txt", "bytes=8-20", 206, "89", "bytes 8-9/10")
+                    check("data.txt", "bytes=2-3", 206, "", "bytes 2-3/10", "HEAD")
+                    ;["bytes=10-", "bytes=5-2", "bytes=-0", "bytes=invalid"].forEach(range => {
+                        check("data.txt", range, 416, "Requested Range Not Satisfiable", "bytes */10")
+                    })
+                    check("empty.txt", "bytes=0-", 416, "Requested Range Not Satisfiable", "bytes */0")
+                    check("data.txt", "bytes=0-1,4-5", 200, "0123456789")
+                    check("data.txt", "items=0-1", 200, "0123456789")
+                } finally {
+                    http.close()
+                    ow.server.httpd.stop(hs)
+                }
+            })
+        } finally { io.rm(dir) }
+    }
+
+    exports.testHTTPJavaResponseStreaming = function() {
+        ow.loadServer()
+        ow.loadObj()
+        var hs = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1", __, __, __, __, 5000, "java")
+        var pipe = new java.io.PipedInputStream(), producer = new java.io.PipedOutputStream(pipe)
+        var closed = new java.util.concurrent.CountDownLatch(1), bodylessClosed = new java.util.concurrent.atomic.AtomicInteger(0)
+        var failedClosed = new java.util.concurrent.CountDownLatch(1)
+        var source = new JavaAdapter(java.io.InputStream, {
+            read: function(bytes, offset, length) {
+                return arguments.length === 0 ? pipe.read() : pipe.read(bytes, offset, length)
+            },
+            close: () => { try { pipe.close() } finally { closed.countDown() } }
+        })
+        var url = "http://127.0.0.1:" + hs.getPort(), http = new ow.obj.http(), connection
+        function mustNotRead() {
+            return new JavaAdapter(java.io.InputStream, {
+                read: () => { throw new java.io.IOException("Bodyless response must not read its stream") },
+                close: () => bodylessClosed.incrementAndGet()
+            })
+        }
+        ow.server.httpd.route(hs, {
+            "/stream": () => hs.replyStream(source, "text/plain", 200, {}),
+            "/fixed": () => hs.replyStream(af.fromString2InputStream("abcdef"), "text/plain", 200, { "Content-Length": "3" }),
+            "/empty": () => hs.replyStream(af.fromString2InputStream(""), "text/plain", 200, {}),
+            "/head": () => hs.replyStream(mustNotRead(), "text/plain", 200, { "Content-Length": "6" }),
+            "/no-content": () => hs.replyStream(mustNotRead(), "text/plain", 204, {}),
+            "/failure": () => hs.replyStream(new JavaAdapter(java.io.InputStream, {
+                read: () => { throw new java.io.IOException("fixture stream failure") },
+                close: () => failedClosed.countDown()
+            }), "text/plain", 200, {})
+        })
+        try {
+            producer.write(af.fromString2Bytes("abc"))
+            producer.flush()
+            connection = new java.net.URI(url + "/stream").toURL().openConnection()
+            connection.setReadTimeout(2000)
+            var input = connection.getInputStream()
+            ow.test.assert(input.read(), 97, "First stream byte arrives before producer EOF")
+            ow.test.assert(Number(closed.getCount()), 1, "Live source remains open")
+            producer.close()
+            ow.test.assert(af.fromBytes2String(input.readAllBytes()), "bc", "Remaining stream bytes are delivered")
+            input.close()
+            ow.test.assert(closed.await(2, java.util.concurrent.TimeUnit.SECONDS), true, "Completed source is closed")
+            ow.test.assert(http.get(url + "/fixed").response, "abc", "Explicit stream length bounds consumption")
+            ow.test.assert(http.get(url + "/empty").response, "", "Unknown-length empty stream completes")
+            ow.test.assert(http.exec(url + "/head", "HEAD").response, "", "HEAD has no body")
+            ow.test.assert(String(http._response.header("Content-Length")), "6", "HEAD preserves declared length")
+            ow.test.assert(http.get(url + "/no-content").responseCode, 204, "Bodyless status preserved")
+            ow.test.assert(Number(bodylessClosed.get()), 2, "Bodyless streams close without consumption")
+            var failedConnection = new java.net.URI(url + "/failure").toURL().openConnection()
+            failedConnection.setReadTimeout(2000)
+            try {
+                try { failedConnection.getInputStream().readAllBytes() } catch (expected) {}
+                ow.test.assert(failedConnection.getResponseCode(), 200, "Producer failure after headers does not send a second status")
+            } finally { failedConnection.disconnect() }
+            ow.test.assert(failedClosed.await(2, java.util.concurrent.TimeUnit.SECONDS), true, "Failed producer is closed")
+        } finally {
+            producer.close()
+            source.close()
+            if (isDef(connection)) connection.disconnect()
+            http.close()
+            ow.server.httpd.stop(hs)
+        }
+    }
 })();

@@ -301,6 +301,38 @@
         ow.obj.schemaRemove("test");
     };
 
+    exports.testObjPoolHealthRetries = function() {
+        [0, 2].forEach(function(retries) {
+            var created = 0, closed = 0, checked = 0
+            var pool = ow.obj.pool.create().setMin(1).setMax(1).setRetry(retries)
+            pool.setFactory(function() {
+                if (++created > 10) throw 'Unbounded health retries'
+                return {id:created}
+            }, function() { closed++ }, function() { checked++; throw 'unhealthy' })
+            pool.start()
+            try {
+                var error
+                try { pool.checkOut(true) } catch(e) { error = String(e) }
+                ow.test.assert(error, 'No available objects in pool.', 'Health failures must exhaust configured retries')
+                ow.test.assert(checked, retries + 1, 'Health checks must be bounded')
+                ow.test.assert(closed, retries + 1, 'Each unhealthy object must close once')
+                ow.test.assert(pool.__currentSize, 1, 'Minimum capacity must remain available for later recovery')
+                ow.test.assert(pool.__currentFree, 1, 'Failed idle cleanup must not inflate free capacity')
+            } finally { pool.stop() }
+            ow.test.assert(closed, created, 'Stop must close the remaining replacement')
+        })
+        var checked = 0, pool = ow.obj.pool.create().setMin(1).setMax(1).setRetry(1)
+        pool.setFactory(function() { return {} }, function() {}, function() { if (++checked == 1) throw 'transient failure' })
+        pool.start()
+        try {
+            var object = pool.checkOut(true)
+            ow.test.assert(checked, 2, 'A healthy replacement must be checked and returned')
+            ow.test.assert(pool.__currentFree, 0, 'Checked-out replacement must consume its free slot')
+            pool.checkIn(object)
+            ow.test.assert(pool.__currentFree, 1, 'Check-in must restore exactly one free slot')
+        } finally { pool.stop() }
+    }
+
     exports.testObjPoolCapacity = function() {
         ow.loadObj();
         var created = 0, closed = 0;

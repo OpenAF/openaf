@@ -334,15 +334,6 @@ function sortTable(table) {
           continue;
         }
 
-        // Attempt date parsing first
-        const timeA = parseDate(valA);
-        const timeB = parseDate(valB);
-        if (!isNaN(timeA) && !isNaN(timeB)) {
-          if (timeA < timeB) return crit.direction === 'asc' ? -1 : 1;
-          if (timeA > timeB) return crit.direction === 'asc' ? 1 : -1;
-          continue;
-        }
-
         // Check if both values are single numbers using regex
         const isNumA = /^\s*-?\d+(\.\d+)?\s*$/.test(valA);
         const isNumB = /^\s*-?\d+(\.\d+)?\s*$/.test(valB);
@@ -361,6 +352,16 @@ function sortTable(table) {
           if (parsedA < parsedB) return crit.direction === 'asc' ? -1 : 1;
           if (parsedA > parsedB) return crit.direction === 'asc' ? 1 : -1;
           continue;
+        }
+
+        // Numeric text can also be accepted as an ambiguous date by browsers.
+        // Classify numbers and units before using the existing date formats.
+        const timeA = parseDate(valA)
+        const timeB = parseDate(valB)
+        if (!isNaN(timeA) && !isNaN(timeB)) {
+          if (timeA < timeB) return crit.direction === 'asc' ? -1 : 1
+          if (timeA > timeB) return crit.direction === 'asc' ? 1 : -1
+          continue
         }
 
         // Fallback to string comparison
