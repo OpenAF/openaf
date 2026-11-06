@@ -1,8 +1,16 @@
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 jobs:
 - name: Test framework::Regression
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = require('autoTestAll.Test.js').testFramework;
+- name: Test framework::YAML adapter
+  to: OpenAF Test
+  exec: args.func = require('autoTestAll.Test.js').testYAMLAdapter
+- name: Test framework::YAML reports and exit codes
+  to: OpenAF Test
+  exec: args.func = require('autoTestAll.Test.js').testYAMLReports
 todo:
 - Test framework::Regression
+- Test framework::YAML adapter
+- Test framework::YAML reports and exit codes

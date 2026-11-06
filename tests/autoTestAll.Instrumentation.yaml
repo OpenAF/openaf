@@ -1,8 +1,8 @@
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 jobs:
 - name: Instrumentation::Isolated regression
-  to: oJob Test
+  to: OpenAF Test
   exec: |
     args.func = function() {
       var code = 'var tests=require("autoTestAll.Instrumentation.js"),failed=0;Object.keys(tests).forEach(function(k){try{tests[k]();print("PASS "+k);}catch(e){failed++;printErr("FAIL "+k+": "+e);}});exit(failed?1:0);';

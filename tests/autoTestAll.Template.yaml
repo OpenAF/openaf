@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # Template tests
@@ -11,47 +11,47 @@ jobs:
 
    - name: Template::Load Template
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLoadTemplate;
 
    - name: Template::Test Markdown to HTML
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testMD2HTML;
 
    - name: Template::Test Markdown display math
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testMD2HTMLDisplayMathKeepsLineBreaks;
 
    - name: Template::Test Markdown to HTML prefix
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testMD2HTMLWithPrefix;
 
    - name: Template::Test simple template
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSimpleTemplate;
 
    - name: Template::Test format helpers
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFormatHelpers;
 
    - name: Template::Test openaf helpers
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testOpenAFHelpers
 
    - name: Template::Test conditional helpers
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testConditionalHelpers;
 
    - name: Template::Test partial helpers
      from: Template::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPartialHelpers;                    
 
 todo:

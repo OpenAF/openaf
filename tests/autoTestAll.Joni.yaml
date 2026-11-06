@@ -1,31 +1,31 @@
 include:
-  - oJobTest.yaml
+  - autoTestAll.common.yaml
 jobs:
   - name: Joni::Init
     exec: args.tests = require("autoTestAll.Joni.js");
   - name: Joni::Matching
     from: Joni::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testJoniMatching;
   - name: Joni::Unicode
     from: Joni::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testJoniUnicode;
   - name: Joni::Replacement
     from: Joni::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testJoniReplacement;
   - name: Joni::Split
     from: Joni::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testJoniSplit;
   - name: Joni::Errors
     from: Joni::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testJoniErrors;
   - name: Joni::Parallel
     from: Joni::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testJoniParallel;
 todo:
   - Joni::Matching

@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # JMS tests
@@ -12,7 +12,7 @@ jobs:
 
    - name: JMX::JMX test
      from: JMX::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testJMX;
 
 todo:

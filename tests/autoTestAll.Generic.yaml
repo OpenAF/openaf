@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # OPENAF generic tests
@@ -12,307 +12,307 @@ jobs:
 
    - name: OpenAF::Get version
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testGetVersion;
  
    - name: OpenAF::Prints
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPrints;
 
    - name: OpenAF::SPrints
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSPrints;
   
    - name: OpenAF::Logs
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLogs;
 
    - name: OpenAF::DB
      from: OpenAF::Init
-     to  : oJob Test
-     exec: args.fund = args.tests.testDBPG;
+     to  : OpenAF Test
+     exec: args.func = args.tests.testDBPG;
 
    - name: OpenAF::IsFunctions
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testIsFunctions;
 
    - name: OpenAF::DescType
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testDescType;
 
    - name: OpenAF::Test SHA1
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSHA1;
 
    - name: OpenAF::Test SHA256
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSHA256;
 
    - name: OpenAF::Test SHA384
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSHA384;
 
    - name: OpenAF::Test SHA512
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSHA512;
 
    - name: OpenAF::Test BCrypt
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testBCrypt;  
 
    - name: OpenAF::Test Merge
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testMerge;
     
    - name: OpenAF::Test Shell
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testShell;
 
    - name: OpenAF::Test Shell with Map
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testShellWithMap;  
     
    - name: OpenAF::Test Encoding
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testEncoding;
 
    - name: OpenAF::Test Format Conversion to/from bytes
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFormatConversionBytes;
 
    - name: OpenAF::Test Format Conversion to/from base64
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFormatConversionBase64;
 
    - name: OpenAF::Test Stream conversions
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFormatConversionStream;
 
    - name: OpenAF::Test Object Compression
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjectCompression;
   
    - name: OpenAF::Test $do
      from: OpenAF::Init
-     then: oJob Test
+     then: OpenAF Test
      exec: args.func = args.tests.testDo;
 
    - name: OpenAF::Test $do cancel
      from: OpenAF::Init
-     then: oJob Test
+     then: OpenAF Test
      exec: args.func = args.tests.testDoCancel;
 
    - name: OpenAF::Test $doV cancel
      from: OpenAF::Init
-     then: oJob Test
+     then: OpenAF Test
      exec: args.func = args.tests.testDoVCancel;
 
    - name: OpenAF::Test $doAll
      from: OpenAF::Init
-     then: oJob Test
+     then: OpenAF Test
      exec: args.func = args.tests.testDoAll;
 
    - name: OpenAF::Test $doFirst
      from: OpenAF::Init
-     then: oJob Test
+     then: OpenAF Test
      exec: args.func = args.tests.testDoFirst;
 
    - name: OpenAF::Test $sql
      from: OpenAF::Init
-     then: oJob Test
-     exec: args.func = args.test.testSQL     
+     then: OpenAF Test
+     exec: args.func = args.tests.testSQL
 
    - name: OpenAF::Test clone
      from: OpenAF::Init
-     then: oJob Test
+     then: OpenAF Test
      exec: args.func = args.tests.testClone
 
    - name: OpenAF::Basic Parallel processing
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testParallel;
 
    - name: OpenAF::Crypt
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testCrypt;
 
    - name: OpenAF::YAML
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testYAML;
 
    - name: OpenAF::XML2And4Obj
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testXML2And4Obj;
 
    - name: OpenAF::Map22Array
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testMap22Array;     
 
    - name: OpenAF::Search Key and Values
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSearchKeyAndValues;
 
    - name: OpenAF::NDJSON
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testNDJSON;     
 
    - name: OpenAF::Encrypt/Decrypt
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testEncryptDecrypt;
     
    - name: OpenAF::Two factor authentication
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.test2FA;
 
    - name: OpenAF::Java RegExp
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testJavaRegExp;
 
    - name: OpenAF::Get Path
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testGetPath;
 
    - name: OpenAF::Set Path
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSetPath;    
 
    - name: OpenAF::Map Array
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testMapArray; 
 
    - name: OpenAF::PSelect
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPSelect;
 
    - name: OpenAF::Thread box
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testTB;
 
    - name: OpenAF::Range
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRange;
 
    - name: OpenAF::Cache
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testCache;
 
    - name: OpenAF::Retry
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRetry;     
 
    - name: OpenAF::Await
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testAwait;    
 
    - name: OpenAF::AwaitAll
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testAwaitAll;    
 
    - name: OpenAF::Test Rest
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRest;
 
    - name: OpenAF::Test Void shortcut
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testVoidShortcut;
 
    - name: OpenAF::Test Envs
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testEnvs;
 
    - name: OpenAF::Test AF Parse
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testAFParse
 
    - name: OpenAF::Test Scope Ids
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testAFScopeIds
 
    - name: OpenAF::Test Path
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPath
 
    - name: OpenAF::Test pForEach
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPForEach
 
    - name: OpenAF::Test pForEach Timeout
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPForEachTimeout
 
    - name: OpenAF::Test pForEach No Default Timeout
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPForEachNoDefaultTimeout
 
    - name: OpenAF::Test GetSet
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testGetSet
 
    - name: OpenAF::Test Lock
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLock  
 
    - name: OpenAF::Test FLock
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFLock  
    
    - name: OpenAF::Queue
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testQueue
 
    - name: OpenAF::Test pForEach Queue Timeout
      from: OpenAF::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPForEachQueueTimeout;
 
 todo:

@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # ----------------
@@ -12,73 +12,73 @@ jobs:
    # ---------------
    - name: SNMP::SNMP Client Get v2
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP2ClientGet;
 
    # ---------------
    - name: SNMP::SNMP Server Get v2
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP2ServerGet;
 
    # ---------------
    - name: SNMP::SNMP Client Trap v2
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP2ClientTrap;
 
    # ---------------
    - name: SNMP::SNMP Server Trap v2
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP2ServerTrap;
 
    # ---------------
    - name: SNMP::SNMP Client Inform v2
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP2ClientInform;
 
    # ---------------
    - name: SNMP::SNMP Server Inform v2
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP2ServerInform;
 
    # ---------------
    - name: SNMP::SNMP Client Get v3
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP3ClientGet;
 
    # ---------------
    - name: SNMP::SNMP Server Get v3
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP3ServerGet;
 
    # ---------------
    - name: SNMP::SNMP Client Trap v3
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP3ClientTrap;
 
    # ---------------
    - name: SNMP::SNMP Server Trap v3
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP3ServerTrap;
 
    # ---------------
    - name: SNMP::SNMP Client Inform v3
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP3ClientInform;
 
    # ---------------
    - name: SNMP::SNMP Server Inform v3
      from: SNMP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSNMP3ServerInform;
 
 todo:

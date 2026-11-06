@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # Java tests
@@ -13,47 +13,47 @@ jobs:
 
    - name: Java::Java Cipher
      from: Java::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testCipher;
 
    - name: Java::Java ASym Cipher
      from: Java::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testASymCipher;
 
    - name: Java::HSPerf
      from: Java::Init
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.HSPerf.js").testHSPerf;
 
    - name: Java::JavaMaven
      from: Java::Init
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = args.tests.testJavaMaven;
 
    - name: Java::JavaJMX
      from: Java::Init
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = args.tests.testJavaJMX;
 
    - name: Java::JavaIMAP
      from: Java::Init
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = args.tests.testJavaIMAP;
 
    - name: Java::JavaClassVersion
      from: Java::Init
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = args.tests.testJavaClassVersion;
 
    - name: Java::JavaJsonMemComm
      from: Java::Init
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = args.tests.testJavaJsonMemComm;
 
    - name: Java::JavaSSL
      from: Java::Init
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = args.tests.testJavaSSL;
 
 todo:

@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 
 jobs:
 # oJob tests
@@ -12,77 +12,77 @@ jobs:
 
 - name: oJob::oJobHelpExamples
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobHelpExamples
 
 - name: oJob::oJob
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJob               
 
 - name: oJob::oJobShortcuts
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobShortcuts
 
 - name: oJob::oJobShortcutOutput
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobShortcutOutput
 
 - name: oJob::oJobArgsMultipleLevels
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobArgsMultipleLevels
 
 - name: oJob::oJobInitArray
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobInitArray
 
 - name: oJob::oJobChecks
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobChecks
 
 - name: oJob::oJobPass
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobPass
 
 - name: oJob::oJobEncryptedYAML
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobEncryptedYAML
 
 - name: oJob::oJobEncryptedJSON
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobEncryptedJSON
 
 - name: oJob::oJobExternalExecArgs
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobExternalExecArgs
 
 - name: oJob::oJobStrictParsing
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobStrictParsing
 
 - name: oJob::oJobIntegritySingleFetch
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobIntegritySingleFetch
 
 - name: oJob::oJobAuthorizedDomainRedirects
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobAuthorizedDomainRedirects
 
 - name: oJob::oJobShutdownConsole
   from: oJob::Init
-  to  : oJob Test
+  to  : OpenAF Test
   exec: args.func = args.tests.testOJobShutdownConsole
 
 todo:

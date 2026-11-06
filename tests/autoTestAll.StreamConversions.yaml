@@ -1,6 +1,6 @@
 # Copyright 2026 Nuno Aguiar
 include:
-  - oJobTest.yaml
+  - autoTestAll.common.yaml
 
 jobs:
   - name: StreamConversions::Init
@@ -8,22 +8,22 @@ jobs:
 
   - name: StreamConversions::Round trips and compatibility
     from: StreamConversions::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testRoundTrips;
 
   - name: StreamConversions::Ownership and finalization
     from: StreamConversions::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testOwnership;
 
   - name: StreamConversions::Failures and invalid arguments
     from: StreamConversions::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testFailures;
 
   - name: StreamConversions::Finalization and cleanup errors
     from: StreamConversions::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testFinalizationFailures;
 
 todo:

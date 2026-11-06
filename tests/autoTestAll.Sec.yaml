@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # ZIP tests
@@ -12,17 +12,17 @@ jobs:
 
    - name: Sec::Sec basic functionality
      from: Sec::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testGetSet;
 
    - name: Sec::Sec function functionality
      from: Sec::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testGetSetFn;
 
    - name: Sec::Sec object functionality
      from: Sec::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testGetSetObj;
 
 todo:

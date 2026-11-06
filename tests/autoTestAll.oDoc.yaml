@@ -1,68 +1,66 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # OPENAF oDoc tests
    # --------------------
    - name: oDoc::Test access to oDoc
-     to  : oJob Test
-     args:
-       func: |
-          var previousOffline = __offlineHelp;
-          try {
-            var results = searchHelp("index", __, ["index"]);
-            ow.test.assert(results.length > 0, true, "Online or offline oDoc missing index.");
-            setOfflineHelp(true);
-            results = searchHelp("index", __, ["index"]);
-            ow.test.assert(results.length > 0, true, "Offline oDoc missing index.");
-          } finally {
-            setOfflineHelp(previousOffline);
-          }
+     to  : OpenAF Test
+     exec: |
+       args.func = function(c) {
+         var previousOffline = __offlineHelp
+         c.defer(function() { setOfflineHelp(previousOffline) })
+         var results = searchHelp("index", __, ["index"])
+         c.assertEqual(results.length > 0, true, "Online or offline oDoc missing index.")
+         setOfflineHelp(true)
+         results = searchHelp("index", __, ["index"])
+         c.assertEqual(results.length > 0, true, "Offline oDoc missing index.")
+       }
 
    - name: oDoc::MemoryAndSearch
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testMemoryAndSearch;
 
    - name: oDoc::StoragePaths
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testStoragePaths;
 
    - name: oDoc::Offline
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testOffline;
 
    - name: oDoc::Generator
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testGenerator;
 
    - name: oDoc::WebAppend
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testWebAppend;
 
    - name: oDoc::MarkdownSourceEntries
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testMarkdownSourceEntries;
 
    - name: oDoc::WebFallback
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testWebFallback;
 
    - name: oDoc::SearchHelp
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testSearchHelp;
 
    - name: oDoc::ResourceCleanup
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testResourceCleanup;
 
    - name: oDoc::ConsoleDisplay
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testConsoleDisplay;
 
    - name: oDoc::BrowserHandlers
-     to: oJob Test
+     to: OpenAF Test
      exec: args.func = require("autoTestAll.oDoc.js").testBrowserHandlers;
 
 todo:

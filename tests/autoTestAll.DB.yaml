@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # DB tests
@@ -11,27 +11,27 @@ jobs:
 
    - name: DB::Simple DB in memory
      from: DB::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testDBInMemory;
 
    - name: DB::DB type conversion to JS
      from: DB::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testDBTypeConversion;     
 
    - name: DB::Prepared statement binds and cache
      from: DB::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testDBPreparedStatements;
 
    - name: DB::Statement error cleanup
      from: DB::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testDBStatementCleanup;
 
    - name: DB::JDBC URL policy
      from: DB::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testDBUrlPolicy;
 
 todo:

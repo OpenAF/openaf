@@ -1,5 +1,5 @@
 include:
-  - oJobTest.yaml
+  - autoTestAll.common.yaml
 
 jobs:
   - name: Repack::Init
@@ -7,12 +7,12 @@ jobs:
 
   - name: Repack::Open JAR survives replacement
     from: Repack::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testOpenJar;
 
   - name: Repack::Failed replacement preserves JAR
     from: Repack::Init
-    to: oJob Test
+    to: OpenAF Test
     exec: args.func = args.tests.testFailedReplacement;
 
 todo:

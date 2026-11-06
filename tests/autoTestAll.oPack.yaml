@@ -1,7 +1,7 @@
 # Copyright 2026 Nuno Aguiar
 
 include:
-  - oJobTest.yaml
+  - autoTestAll.common.yaml
 
 jobs:
   - name: oPack::Init
@@ -9,12 +9,12 @@ jobs:
 
   - name: oPack::Copy-only containment
     from: oPack::Init
-    to  : oJob Test
+    to  : OpenAF Test
     exec: args.func = args.tests.testCopyContainment;
 
   - name: oPack::Copy-only useunzip data boundary
     from: oPack::Init
-    to  : oJob Test
+    to  : OpenAF Test
     exec: args.func = args.tests.testCopyUseUnzipIsDataOnly;
 
 todo:

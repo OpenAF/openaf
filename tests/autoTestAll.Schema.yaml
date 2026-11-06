@@ -1,39 +1,39 @@
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 jobs:
 - name: Schema::Init
   exec: args.tests = require("autoTestAll.Schema.js");
 - name: Schema::Helpers
   from: Schema::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testHelpers;
 - name: Schema::Defaults and data
   from: Schema::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDefaultsAndData;
 - name: Schema::Registry and cache
   from: Schema::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testRegistryAndCache;
 - name: Schema::Draft routing
   from: Schema::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDrafts;
 - name: Schema::Formats and generator
   from: Schema::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testFormatsAndGenerator;
 - name: Schema::Configuration
   from: Schema::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testConfiguration;
 - name: Schema::Source and native loading
   from: Schema::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testSourceAndNative;
 - name: Schema::Sigil helpers
   from: Schema::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testSigil;
 todo:
 - Schema::Helpers

@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 - autoTestAll.Test.yaml
 - autoTestAll.Desktop.yaml
 - autoTestAll.DesktopTUI.yaml

@@ -1,7 +1,7 @@
 # Copyright 2025 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # Net tests
@@ -11,40 +11,40 @@ jobs:
 
    - name: Net::Load Net
      from: Net::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLoadNet;
 
    - name: Net::Get Actual Time (default)
      from: Net::Init
-     to  : oJob Test
+     to  : OpenAF Test
      deps:
        - Net::Load Net
      exec: args.func = args.tests.testGetActualTimeDefault;
 
    - name: Net::Get DoH (custom server)
      from: Net::Init
-     to  : oJob Test
+     to  : OpenAF Test
      deps:
        - Net::Load Net
      exec: args.func = args.tests.testGetDoHWithCustomServer;
 
    - name: Net::Get Actual Time (with server)
      from: Net::Init
-     to  : oJob Test
+     to  : OpenAF Test
      deps:
        - Net::Load Net
      exec: args.func = args.tests.testGetActualTimeWithServer;
 
    - name: Net::Get Actual Time (with timeout)
      from: Net::Init
-     to  : oJob Test
+     to  : OpenAF Test
      deps:
        - Net::Load Net
      exec: args.func = args.tests.testGetActualTimeWithTimeout;
 
    - name: Net::Get Actual Time (server and timeout)
      from: Net::Init
-     to  : oJob Test
+     to  : OpenAF Test
      deps:
        - Net::Load Net
      exec: args.func = args.tests.testGetActualTimeServerAndTimeout;

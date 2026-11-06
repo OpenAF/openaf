@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # Compile tests
@@ -12,47 +12,47 @@ jobs:
 
    - name: Compile::loadCompiled round-trip
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLoadCompiledRoundTrip;
 
    - name: Compile::loadCompiled large script
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLoadCompiledLargeScript;
 
    - name: Compile::requireCompiled round-trip
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRequireCompiledRoundTrip;
 
    - name: Compile::loadCompiled stale recompile
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLoadCompiledStaleRecompile;
 
    - name: Compile::loadCompiled purges stale layout
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLoadCompiledPurgesStaleLayout;
 
    - name: Compile::loadCompiled recursion depth
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLoadCompiledRecursionDepth;
 
    - name: Compile::partitioned compilation
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPartitionedCompilation;
 
    - name: Compile::failure preserves jar
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testCompilationFailurePreservesJar;
 
    - name: Compile::partition size retry
      from: Compile::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testPartitionSizeRetry;
 
 todo:
