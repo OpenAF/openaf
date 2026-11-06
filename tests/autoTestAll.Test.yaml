@@ -1,0 +1,8 @@
+include:
+- oJobTest.yaml
+jobs:
+- name: Test framework::Regression
+  to: oJob Test
+  exec: args.func = require('autoTestAll.Test.js').testFramework;
+todo:
+- Test framework::Regression

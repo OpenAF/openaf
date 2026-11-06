@@ -16,7 +16,9 @@
 ## Coding Style & Naming Conventions
 - Java: standard conventions (classes `CamelCase`, methods/fields `camelCase`, constants `UPPER_SNAKE`). Indent with 4 spaces, UTF‑8, LF endings.
 - Java packages: keep under `openaf.*`; place new plugins in `src/openaf/plugins/` when appropriate.
-- JavaScript/YAML: 2‑space indent; end statements with semicolons in JS; filenames use kebab/camel to match neighbors.
+- JavaScript/YAML: use 2-space indentation in new code; preserve the surrounding indentation in existing blocks. Filenames use kebab/camel to match neighbors.
+- JavaScript: omit optional statement-ending semicolons in new code. Retain required separators in `for` headers, between same-line statements, and wherever automatic semicolon insertion would change parsing (for example before a following `(` or `[` expression). Keep spacing readable and avoid reformatting unrelated legacy code.
+- ODoc: place documentation immediately above the corresponding function or the registration block for generated methods. Use `<odoc format="markdown">` for Markdown content, backticks for API names and parameters, and CDATA for examples or XML-sensitive text. Preserve help keys/signatures and ensure moved module documentation remains included in generated help.
 - No strict linter config is enforced; match surrounding style and minimize diff noise.
 
 ## Testing Guidelines

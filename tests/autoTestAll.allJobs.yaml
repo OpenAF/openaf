@@ -2,6 +2,7 @@
 
 include:
 - oJobTest.yaml
+- autoTestAll.Test.yaml
 - autoTestAll.Desktop.yaml
 - autoTestAll.DesktopTUI.yaml
 - autoTestAll.Generic.yaml
@@ -13,7 +14,7 @@ include:
 - autoTestAll.IO.yaml
 - autoTestAll.StreamConversions.yaml
 - autoTestAll.StreamConsumers.yaml
-- autoTestAll.DB.yaml   
+- autoTestAll.DB.yaml
 - autoTestAll.HTTP.yaml
 - autoTestAll.Net.yaml
 - autoTestAll.Java.yaml
@@ -26,7 +27,7 @@ include:
 - autoTestAll.Python.yaml
 - autoTestAll.Server.yaml
 - autoTestAll.Schema.yaml
-- autoTestAll.Obj.yaml   
+- autoTestAll.Obj.yaml
 - autoTestAll.JMX.yaml
 - autoTestAll.ZIP.yaml
 - autoTestAll.Compile.yaml

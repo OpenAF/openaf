@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openaf.io/schemas/ow-test-results-v1.json",
+  "title": "OpenAF test session snapshot v1",
+  "type": "object",
+  "required": ["schemaVersion", "sessionId", "records", "runs", "infrastructureErrors", "complete"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "sessionId": {"type": "string"},
+    "complete": {"type": "boolean"},
+    "records": {"type": "array", "items": {"$ref": "#/$defs/execution"}},
+    "runs": {"type": "array", "items": {"$ref": "#/$defs/run"}},
+    "infrastructureErrors": {"type": "array", "items": {"type": "object"}}
+  },
+  "$defs": {
+    "status": {"enum": ["PASS", "FAIL", "ERROR", "SKIP", "TODO", "TIMEOUT", "CANCELLED", "BLOCKED"]},
+    "execution": {
+      "type": "object",
+      "required": ["id", "name", "status", "start", "durationMs", "assertions", "errors"],
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "parentId": {"type": "string"},
+        "status": {"$ref": "#/$defs/status"},
+        "start": {"type": "number"},
+        "durationMs": {"type": "number", "minimum": 0},
+        "assertions": {"type": "integer", "minimum": 0},
+        "errors": {"type": "array", "items": {"type": "object", "required": ["name", "message", "phase"]}}
+      }
+    },
+    "run": {
+      "type": "object",
+      "required": ["schemaVersion", "runId", "complete", "status", "tests", "summary", "exitCode"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "runId": {"type": "string"},
+        "complete": {"type": "boolean"},
+        "status": {"enum": ["PASS", "FAIL", "ERROR"]},
+        "exitCode": {"enum": [0, 1, 2]},
+        "summary": {"type": "object"},
+        "tests": {"type": "array", "items": {"type": "object", "required": ["name", "status", "attempts", "flaky"], "properties": {
+          "name": {"type": "string"},
+          "status": {"$ref": "#/$defs/status"},
+          "flaky": {"type": "boolean"},
+          "attempts": {"type": "array", "items": {"$ref": "#/$defs/execution"}}
+        }}}
+      }
+    }
+  }
+}

@@ -519,3 +519,17 @@ Run `sh oafTest.sh` from the repository root, not from inside `tests/`. The scri
 | [`AGENTS.md`](../AGENTS.md) | Testing guidelines for contributors (naming, commands) |
 | [`docs/openaf.md`](./openaf.md) | `ow.test` API reference — search for "Testing Framework" |
 | [`README.md`](../README.md) | Top-level docs with "Testing a build" section |
+
+## Standalone framework regressions
+
+The modern API is described in [ow.test](./ow-test.md), including legacy behavior, isolated sessions, suites, mocks and workflow workers.
+
+Run the independent framework regression harness from the repository root against the built artifact:
+
+```sh
+java -Dopenaf.test.worker=true -jar openaf.jar -f tests/runTestFramework.js
+```
+
+For source-loaded development checks on POSIX systems, prefix the command with `OW_TEST_SOURCE=1`. The harness uses independent checks and explicit process status so a bug in ow.test cannot mark its own regressions green. `tests/autoTestAll.Test.yaml` integrates it with the existing orchestrator. Framework results are written to `tests/framework-results.json`.
+
+The full-suite result includes a fresh `runId` and `complete` marker. Successful CI requires completion, a positive test count, zero failures and no infrastructure errors. The final marker is written only after JSON and JUnit reporting jobs finish. `oafTest.sh` runs the built artifact and leaves an existing `_oaf` installation intact.

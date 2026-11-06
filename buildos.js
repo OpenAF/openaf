@@ -437,10 +437,15 @@ try {
 		"scopesigil": OPENAF_BUILD_HOME + "/js/openafsigil.js",
 		"index": OPENAF_BUILD_HOME + "/js/example.js"
 	};
-	saveHelp(OPENAF_BUILD_HOME, helpFiles);
+	loadHelp()
+	var helpGen = new ODocsGen(helpFiles)
+	// Keep lazy reporter documentation in the existing ow.test help subject.
+	helpGen.odoc["ow.test"].addAll(helpGen.genODoc(OPENAF_BUILD_HOME + "/js/owrap.test.report.js").getAll())
+	var helpDocs = helpGen.getODoc()
+	new ODocs(OPENAF_BUILD_HOME + "/", helpDocs).save()
 	log("Generating oDoc for Web");
 	io.mkdir(OPENAF_BUILD_HOME + "/odocweb");
-	saveHelpWeb(OPENAF_BUILD_HOME + "/odocweb", helpFiles);
+	new ODocs(OPENAF_BUILD_HOME + "/odocweb", helpDocs).saveWeb()
 	tempJar.putFile(".odoc.db", io.readFileBytes(OPENAF_BUILD_HOME + "/.odoc.db"));
 } catch (e) {
 	logErr(e);

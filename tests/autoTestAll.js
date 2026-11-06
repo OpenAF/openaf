@@ -87,8 +87,7 @@ function testExternally(aMessage, aCommand, aTimeout) {
 		aCommand = aCommand.replace(/\\/g, "/") + " ";
 		log("Running " + aCommand);
  		//var res = sh(aCommand, "", aTimeout);
- 		var res = ow.test.testExternally(aMessage, aCommand, aTimeout);
-		if (__exitcode != 0) throw "exit code " + __exitcode;
+		var res = ow.test.testExternally(aMessage, aCommand, aTimeout, {failurePolicy:"throw"});
 		execSuccessPlugs(aMessage);
  		return res;
  	} catch(e) {
@@ -102,7 +101,7 @@ function test(aMessage, aFunction) {
 	execTestPlugs(aMessage);
 	try {
 		//var res = aFunction();
-		var res = ow.test.test(aMessage, aFunction);
+		var res = ow.test.test(aMessage, aFunction, undefined, {failurePolicy:"throw"});
 		execSuccessPlugs(aMessage);
 		return res;
 	} catch(e) {

@@ -289,6 +289,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	ojob = _$(ojob).isMap().default({});
 
 	if (isUnDef(jobs)) jobs = [];
+  // Explicit test seam, installed only in an isolated test worker.
+  if (this.__testTransform) jobs = jobs.map(this.__testTransform)
 	if (isUnDef(todo)) todo = [];
 	this.__ojob = merge(this.__ojob, ojob);
 	if (isMap(help) && !compare(help, {})) this.__help = help;
@@ -1646,6 +1648,13 @@ OpenWrap.oJob.prototype.add2Todo = function(aTodo, aId) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anException, aId, aTypeArgs) {
+  if (this.__testObserver) this.__testObserver({
+    type: "job.log",
+    operation: aOp,
+    job: aJobName,
+    executionId: aJobExecId,
+    error: isDef(anException) ? String(anException) : undefined
+  })
 	var aId = (isDef(aId) ? aId : "");
 	var itsAnError = false
 		
@@ -2664,6 +2673,12 @@ OpenWrap.oJob.prototype.getState = function(altId) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.setState = function(aState, altId) {
+  if (this.__testObserver) this.__testObserver({
+    type: "state.transition",
+    previous: this.getState(altId),
+    state: String(aState),
+    id: altId
+  })
 	altId = _$(altId, "altId").isString().default("")
 	$set("ojob::state::" + this.getID() + altId, String(aState))
 }
@@ -2805,10 +2820,50 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 	}
 
   function _run(aExec, args, job, id) {
-    var ins = ow.instrumentation;
-    if (!ins || !ins.isEnabled("jobs")) return _runBody(aExec, args, job, id);
-    var execute = function() { return ins.withSpan("ojob " + job.name, { attributes: { "ojob.name": job.name, "ojob.type": job.type || "simple" } }, function() { return _runBody(aExec, args, job, id); }); };
-    return ["periodic", "subscribe", "shutdown"].indexOf(job.type) >= 0 ? ins.withContext(undefined, execute) : execute();
+    var ins = ow.instrumentation, observer = parent.__testObserver
+    var invoke = function() {
+      if (!ins || !ins.isEnabled("jobs")) return _runBody(aExec, args, job, id)
+      var execute = function() {
+        return ins.withSpan("ojob " + job.name, {
+          attributes: {
+            "ojob.name": job.name,
+            "ojob.type": job.type || "simple"
+          }
+        }, function() {
+          return _runBody(aExec, args, job, id)
+        })
+      }
+      return ["periodic", "subscribe", "shutdown"].indexOf(job.type) >= 0 ? ins.withContext(undefined, execute) : execute()
+    }
+    if (!observer) return invoke()
+    var executionId = String(java.util.UUID.randomUUID()), start = nowNano()
+    observer({
+      type: "job.start",
+      executionId: executionId,
+      job: job.name,
+      args: args
+    })
+    try {
+      var result = invoke()
+      observer({
+        type: "job.end",
+        executionId: executionId,
+        job: job.name,
+        args: isDef(resExec) ? resExec : args,
+        durationMs: (nowNano() - start) / 1000000
+      })
+      return result
+    }
+    catch (e) {
+      observer({
+        type: "job.error",
+        executionId: executionId,
+        job: job.name,
+        error: String(e),
+        durationMs: (nowNano() - start) / 1000000
+      })
+      throw e
+    }
   }
 	function _runBody(aExec, args, job, id) {
 		if (isDef(aJob.typeArgs.noTemplateArgs)) noTemplateArgs = aJob.typeArgs.noTemplateArgs; else noTemplateArgs = !parent.__ojob.templateArgs
@@ -4293,6 +4348,8 @@ OpenWrap.oJob.prototype.runLanguageProcess = function(command, options) {
   var request = { command: command };
   if (isDef(options.pwd)) request.cwd = _$(options.pwd, "pwd").isString().$_();
   if (isDef(options.env)) request.env = _$(options.env, "env").isMap().$_();
+  if (isDef(options.maxOutputBytes)) request.maxOutputBytes = options.maxOutputBytes
+  if (isDef(options.clearEnvironment)) request.clearEnvironment = options.clearEnvironment
   if (isDef(options.timeout)) {
     if (!isNumber(options.timeout) || !isFinite(options.timeout) || options.timeout <= 0) throw new Error("Language timeout must be positive milliseconds");
     request.timeout = Math.max(1, Math.ceil(options.timeout));

@@ -18093,7 +18093,7 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 
 (function() {
 	// Archive training must not execute user or embedded startup profiles.
-	if (java.lang.Boolean.getBoolean("openaf.cds.training")) return;
+	if (java.lang.Boolean.getBoolean("openaf.cds.training") || java.lang.Boolean.getBoolean("openaf.test.worker")) return
 	var prof = "";
 	try {
 		var fprof = __gHDir() + "/" + OPENAFPROFILE;
