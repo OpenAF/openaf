@@ -276,7 +276,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		path     : true
 	},
 	WITHMD: {
-		htmlFilter: true
+		htmlFilter: true,
+		bullets: ["\u2022", "\u25e6", "\u25aa"],
+		tasks: { open: "\u2610", done: "\u2611" }
 	},
 	OAFP: {
 		libs: []
@@ -2224,7 +2226,7 @@ const stringify = function(aobj, replacer, space) {
  *   selects the default table renderer for `$output` when no global or explicit format is set.
  * - `tree`: { lines } color for tree connecting lines (other tree options are merged with `__flags.TREE`).
  * - `md`: colors used by `ow.format.withMD`: codeBlock {line, text, theme}, codeInline {text, surround}, heads {h1..h4}, line, link {text, url},
- *   bullets, list, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.
+ *   bullets, list, task {open, done}, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.
  *
  * Example:
  *
@@ -9525,8 +9527,94 @@ const $jsonrpc = function (aOptions) {
 
 	const _captureSessionFromHeaders = headers => {
 		var _sid = _pickHeaderCaseInsensitive(headers, "mcp-session-id")
-		if (isDef(_sid) && String(_sid).length > 0) {
+		if ((!isString(_mcpInfo.protocolVersion) || _mcpInfo.protocolVersion < "2026-07-28") && isDef(_sid) && String(_sid).length > 0) {
 			_session.mcpSessionId = String(_sid)
+		}
+	}
+
+	// connectionFactory() creates a default HTTP client. Its exec() only applies the
+	// connection timeout and options.timeout, so configure read/write/call limits on
+	// the client's builder as well, rather than passing unused top-level REST keys.
+	const _configureHTTPTimeouts = (http, options) => {
+		var nested = options.options || {}
+		var connect = isNumber(options.connectionTimeout) ? options.connectionTimeout : aOptions.timeout
+		var read = isNumber(options.readTimeout) ? options.readTimeout : (isNumber(nested.readTimeout) ? nested.readTimeout : aOptions.timeout)
+		var write = isNumber(options.writeTimeout) ? options.writeTimeout : (isNumber(nested.writeTimeout) ? nested.writeTimeout : aOptions.timeout)
+		var call = isNumber(options.callTimeout) ? options.callTimeout : (isNumber(nested.timeout) ? nested.timeout : aOptions.timeout)
+		options.connectionTimeout = connect
+		options.options = merge(nested, { timeout: call })
+		if (isDef(http.client) && "function" === typeof http.client.newBuilder) {
+			http.client = http.client.newBuilder()
+				.connectTimeout(connect, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.readTimeout(read, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.writeTimeout(write, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.callTimeout(call, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+		}
+	}
+
+	const _requestHandlers = Object.create(null), _notificationHandlers = Object.create(null)
+	const _inbound = new java.util.concurrent.LinkedBlockingQueue(128)
+	var _workers = []
+	const _dispatch = message => {
+		if (!isMap(message) || message.jsonrpc != "2.0" || !isString(message.method)) return __
+		if (isUnDef(message.id)) {
+			var fn
+			_r._sy.run(() => {
+				_r._notifications = _r._notifications || []
+				_r._notifications.push(message)
+				if (_r._notifications.length > 50) _r._notifications.shift()
+				fn = _notificationHandlers[message.method]
+			})
+			try {
+				if (isFunction(fn)) fn(message.params || {}, message)
+			} catch(e) { _debug("jsonrpc notification handler error: " + e) }
+			try { if (isFunction(aOptions.onNotification)) aOptions.onNotification(message) }
+			catch(e) { _debug("jsonrpc onNotification error: " + e) }
+			return __
+		}
+		var reply = { jsonrpc: "2.0", id: message.id }
+		try {
+			var handler
+			_r._sy.run(() => { handler = _requestHandlers[message.method] })
+			if (!isFunction(handler)) throw { code: -32601, message: "Method not found: " + message.method }
+			var result = handler(message.params || {}, message)
+			if (isUnDef(result)) throw { code: -32603, message: "Request handler returned undefined" }
+			reply.result = result
+		} catch(e) {
+			if (isUnDef(e) || e === null) e = { message: "Request handler failed" }
+			reply.error = { code: isNumber(e.code) ? e.code : -32603, message: String(e.message || e) }
+			if (isDef(e.data)) reply.error.data = e.data
+		}
+		return reply
+	}
+	const _sendReply = reply => {
+		if (isUnDef(reply) || _r._s) return
+		if (aOptions.type == "stdio") {
+			_r._sy.run(() => {
+				var id = _r._ids.inc()
+				_r._q[id] = { __message: reply }
+				_r._wq.put(id)
+			})
+		} else {
+			// Responses use a separate HTTP POST, including the original authentication context.
+			var opts = isFunction(aOptions.getReplyOptions) ? aOptions.getReplyOptions() : {}
+			opts.message = reply
+			_r.exec("", {}, true, opts)
+		}
+	}
+	const _receive = message => {
+		if (_r._s || !isMap(message) || message.jsonrpc != "2.0") return
+		if (isString(message.method)) {
+			if (aOptions.type == "stdio") {
+				if (!_inbound.offer(stringify(message, __, "")) && isDef(message.id)) {
+					_sendReply({ jsonrpc: "2.0", id: message.id, error: { code: -32000, message: "Client inbound queue full" } })
+				}
+			} else _sendReply(_dispatch(message))
+		} else if (isDef(message.id) && (Object.prototype.hasOwnProperty.call(message, "result") || isDef(message.error))) {
+			_r._sy.run(() => {
+				var waiter = _r._w.get(String(message.id))
+				if (waiter != null) { _r._r[message.id] = message; waiter.countDown() }
+			})
 		}
 	}
 
@@ -9580,6 +9668,16 @@ const $jsonrpc = function (aOptions) {
 				return _r
 			}
 
+			if (_workers.length == 0) {
+				_workers = [0, 1].map(() => $doV(() => {
+					while (!_r._s) {
+						var message = _inbound.poll(250, java.util.concurrent.TimeUnit.MILLISECONDS)
+						if (message != null) {
+							try { _sendReply(_dispatch(jsonParse(String(message)))) } catch(e) { _debug("jsonrpc dispatch error: " + e) }
+						}
+					}
+				}))
+			}
 			aOptions.cmd = cmd
 			aOptions.type = "stdio"
 			if (isDef(_r._p)) return _r
@@ -9609,9 +9707,9 @@ const $jsonrpc = function (aOptions) {
 											var _wid = _r._wq.poll(250, java.util.concurrent.TimeUnit.MILLISECONDS)
 											if (_wid == null) continue
 											var _id = Number(_wid)
-											var _qe = _r._q[_id]
-											delete _r._q[_id]
-											if (isMap(_qe) && isDef(_qe.method)) {
+											var _qe
+											_r._sy.run(() => { _qe = _r._q[_id]; delete _r._q[_id] })
+											if (isMap(_qe) && (isDef(_qe.method) || isDef(_qe.__message))) {
 												var _m = {
 													jsonrpc: "2.0",
 													id: _id,
@@ -9621,6 +9719,7 @@ const $jsonrpc = function (aOptions) {
 												if (_qe.__notify) {
 													delete _m.id
 												}
+												if (isDef(_qe.__message)) _m = _qe.__message
 												var msg = stringify(_m, __, "") + "\n"
 												_debug("jsonrpc -> " + msg)
 												ioStreamWrite(i, msg)
@@ -9632,23 +9731,7 @@ const $jsonrpc = function (aOptions) {
 									$doV(() => {
 										ioStreamReadLines(o, line => {
 											_debug("jsonrpc <- " + line)
-											var _l = jsonParse(line)
-											if (isMap(_l) && isDef(_l.jsonrpc)) {
-												if (isDef(_l.id)) {
-													_r._r[_l.id] = _l
-													var _lw = _r._w.get(String(_l.id))
-													if (_lw != null) _lw.countDown()
-												} else {
-													_r._notifications = _r._notifications || []
-													_r._notifications.push(_l)
-													if (_r._notifications.length > 50) _r._notifications.shift()
-													if (isFunction(aOptions.onNotification)) {
-														try { aOptions.onNotification(_l) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
-													}
-												}
-											} else {
-												_debug("jsonrpc <- (ignored non-JSON-RPC line) " + line)
-											}
+											try { _receive(jsonParse(line)) } catch(e) { _debug("jsonrpc malformed message: " + e) }
 											return !!_r._s
 										}, __, true, "UTF-8")
 									}),
@@ -9724,23 +9807,19 @@ const $jsonrpc = function (aOptions) {
 				var _obj = jsonParse(_payload, __, __, true)
 				var _evt = isDef(_obj) ? _obj : _payload
 
-				if (isDef(anExpectedId) && isMap(_evt) && isUnDef(_evt.id) && isUnDef(_evt.error)) {
-					_mcpInfo.lastNotifications = _mcpInfo.lastNotifications || []
-					_mcpInfo.lastNotifications.push(_evt)
-					if (isFunction(aOptions.onNotification)) {
-						try { aOptions.onNotification(_evt) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
-					}
+				if (isMap(_evt) && isString(_evt.method)) {
+					_receive(_evt)
 					return
 				}
 
 				_events.push(_evt)
-				if (isDef(anExpectedId) && isMap(_evt) && (_evt.id == anExpectedId || isDef(_evt.error))) {
+				if (isDef(anExpectedId) && isMap(_evt) && (_evt.id === anExpectedId && isUnDef(_evt.method))) {
 					_stopped = true
 				}
 			}
 			try {
 				ioStreamReadLines(aStream, line => {
-					var _line = String(line)
+					var _line = String(line).replace(/\r$/, "")
 					if (_line.length == 0) {
 						_flush()
 						return _stopped
@@ -9754,7 +9833,7 @@ const $jsonrpc = function (aOptions) {
 						_nonSseLines.push(_line)
 					}
 					return false
-				}, "\n", false)
+				}, "\n", false, "UTF-8")
 				if (!_stopped) _flush()
 			} finally {
 				try { aStream.close() } catch(e) {}
@@ -9770,6 +9849,7 @@ const $jsonrpc = function (aOptions) {
 			return []
 		},
 		exec: (aMethod, aParams, aNotification, aExecOptions) => {
+			if (_r._s) throw new Error("JSON-RPC client has been destroyed")
 			aExecOptions = _$(aExecOptions, "aExecOptions").isMap().default({})
 			_mcpInfo.lastRequest = {
 				method: _$(aMethod, "aMethod").isString().default(__),
@@ -9812,12 +9892,11 @@ const $jsonrpc = function (aOptions) {
 						__notify: !!aNotification
 					}
 
-					var _res, _wl
+					var _res, _wl, _completed = false
 					// ids are unique per connection and responses are matched by id, so concurrent exec() calls
 					// (e.g. with shared:true) can be pipelined safely
 					_r._sy.run(() => {
-						_id = _r._ids.get()
-						_r._ids.inc()
+						_id = _r._ids.inc()
 						_r._q[_id] = _req
 						if (!aNotification) {
 							_wl = new java.util.concurrent.CountDownLatch(1)
@@ -9828,18 +9907,27 @@ const $jsonrpc = function (aOptions) {
 					// If this is a notification (no reply expected) skip waiting for a response
 					if (!!aNotification) return __
 					try {
-						if (!_wl.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)) _debug("jsonrpc request " + _id + " timed out after " + aOptions.timeout + "ms")
+						if (isFunction(aExecOptions.onRequestId)) aExecOptions.onRequestId(_id)
+						if (!_wl.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+							_r.exec("notifications/cancelled", { requestId: _id, reason: "Client timeout" }, true)
+							throw new Error("JSON-RPC request " + _id + " timed out after " + aOptions.timeout + "ms")
+						}
+						_completed = true
 					} finally {
-						_r._w.remove(String(_id))
+						_r._sy.run(() => {
+							_r._w.remove(String(_id))
+							if (!_completed) { delete _r._q[_id]; delete _r._r[_id] }
+						})
 					}
 					if (isMap(_r._r[_id])) {
 						_res = _r._r[_id]
 						delete _r._r[_id]
 					}
+					if (isUnDef(_res) && _r._s) throw new Error("JSON-RPC client destroyed while awaiting response")
 					_mcpInfo.lastResponse = _res
 					_mcpInfo.lastResponseHeaders = __
 					if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
-					return isDef(_res) && isDef(_res.result) ? _res.result : _res
+					return isMap(_res) && Object.prototype.hasOwnProperty.call(_res, "result") ? _res.result : _res
 				// Unified Streamable HTTP path (2025-06-18). type:"remote"/"http" and type:"sse"/sse:true
 				// are accepted aliases with identical behaviour: the spec requires the client to accept
 				// both application/json and text/event-stream on every POST, and the server is free to
@@ -9871,10 +9959,10 @@ const $jsonrpc = function (aOptions) {
 					if (isDef(_mcpInfo.protocolVersion) && isUnDef(_pickHeaderCaseInsensitive(_restOptions.requestHeaders, "mcp-protocol-version"))) {
 						_restOptions.requestHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
 					}
-					// route around the writeTimeout/readTimeout mixup in ow.obj.http.exec by setting all three explicitly
-					_restOptions.readTimeout  = _$(_restOptions.readTimeout, "readTimeout").isNumber().default(aOptions.timeout)
-					_restOptions.writeTimeout = _$(_restOptions.writeTimeout, "writeTimeout").isNumber().default(aOptions.timeout)
-					_restOptions.callTimeout  = _$(_restOptions.callTimeout, "callTimeout").isNumber().default(aOptions.timeout)
+					// Set defaults for each phase; _configureHTTPTimeouts applies them to the underlying client.
+					_restOptions.readTimeout  = _$(_restOptions.readTimeout, "readTimeout").isNumber().default(isMap(_restOptions.options) && isNumber(_restOptions.options.readTimeout) ? _restOptions.options.readTimeout : aOptions.timeout)
+					_restOptions.writeTimeout = _$(_restOptions.writeTimeout, "writeTimeout").isNumber().default(isMap(_restOptions.options) && isNumber(_restOptions.options.writeTimeout) ? _restOptions.options.writeTimeout : aOptions.timeout)
+					_restOptions.callTimeout  = _$(_restOptions.callTimeout, "callTimeout").isNumber().default(isMap(_restOptions.options) && isNumber(_restOptions.options.timeout) ? _restOptions.options.timeout : aOptions.timeout)
 
 					var _req = {
 						jsonrpc: "2.0",
@@ -9887,15 +9975,26 @@ const $jsonrpc = function (aOptions) {
 					} else {
 						delete _req.id
 					}
+					if (!aNotification && isFunction(aExecOptions.onRequestId)) aExecOptions.onRequestId(_req.id)
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
 
+					if (isMap(aExecOptions.message)) _req = aExecOptions.message
+					var _requestProtocol = isMap(aParams._meta) ? aParams._meta["io.modelcontextprotocol/protocolVersion"] : __
+					if (isUnDef(_requestProtocol)) _requestProtocol = _mcpInfo.protocolVersion
+					if (isString(_requestProtocol) && _requestProtocol >= "2026-07-28" && isString(_req.method)) {
+						_restOptions.requestHeaders["Mcp-Method"] = _req.method
+						if (isString(aParams.name)) _restOptions.requestHeaders["Mcp-Name"] = aParams.name
+					}
 					var _http = ow.loadObj().rest.connectionFactory()
 					try {
+						_configureHTTPTimeouts(_http, _restOptions)
 						_restOptions.httpClient = _http
 						var _raw = $rest(_restOptions).post2Stream(aOptions.url, _req)
 						_captureSessionFromHeaders(_http.responseHeaders())
 						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
-						_mcpInfo.lastResponseCode = _http.responseCode()
+						var _responseCode = _http.responseCode()
+						_mcpInfo.lastResponseCode = _responseCode
+						if (isMap(aExecOptions.diagnostics)) aExecOptions.diagnostics.responseCode = _responseCode
 
 						var res
 						// (0) shape first: with throwExceptions:false a failed call returns {error:...}
@@ -9904,30 +10003,32 @@ const $jsonrpc = function (aOptions) {
 							var _errBody = isDef(_raw.error) ? _raw.error : _raw
 							var _parsedErr = isString(_errBody) ? jsonParse(_errBody, __, __, true) : _errBody
 							res = (isMap(_parsedErr) && isDef(_parsedErr.error)) ? _parsedErr
-								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + stringify(_errBody, __, "") } }
+								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _responseCode + ": " + stringify(_errBody, __, "") } }
 						} else if (!!aNotification) {
 							try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
 							_mcpInfo.lastResponse = __
 							return
-						} else if (_mcpInfo.lastResponseCode == 202 || _mcpInfo.lastResponseCode == 204) {
+						} else if (_responseCode == 202 || _responseCode == 204) {
 							// server accepted but has nothing to say for a request expecting a reply
 							try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
 							res = __
-						} else if (_mcpInfo.lastResponseCode >= 400) {
+						} else if (_responseCode >= 400) {
 							var _errText = _r._drainStream(_raw)
 							var _parsedErr2 = jsonParse(_errText, __, __, true)
 							res = (isMap(_parsedErr2) && isDef(_parsedErr2.error)) ? _parsedErr2
-								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + _errText } }
+								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _responseCode + ": " + _errText } }
 						} else {
-							var _ct = _http.responseType()
+							var _ct = String(_http.responseType())
 							if (isString(_ct) && _ct.toLowerCase().indexOf("text/event-stream") >= 0) {
 								var _events = _r._readSSE(_raw, _req.id)
-								res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isDef(r.error)).shift()
-								if (isUnDef(res) && _events.length > 0) res = _events[0]
+								res = _events.filter(r => isMap(r)).filter(r => r.id === _req.id && isUnDef(r.method)).shift()
 							} else {
 								res = jsonParse(_r._drainStream(_raw), __, __, true)
 							}
 						}
+						if (!aNotification && _responseCode >= 200 && _responseCode < 300 &&
+							(!isMap(res) || res.jsonrpc != "2.0" || res.id !== _req.id ||
+							(!Object.prototype.hasOwnProperty.call(res, "result") && !isMap(res.error)))) throw new Error("Invalid or mismatched JSON-RPC response for request " + _req.id)
 						_mcpInfo.lastResponse = res
 						// Notifications do not expect a reply
 						if (!!aNotification) return
@@ -9935,7 +10036,7 @@ const $jsonrpc = function (aOptions) {
 						if (isDef(res)) {
 							if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
 							if (aMethod == "initialize" && !aNotification) _r._info = res.result
-							if (isDef(res.result)) return res.result
+							if (Object.prototype.hasOwnProperty.call(res, "result")) return res.result
 							if (isDef(res.error)) return res
 						}
 						return __
@@ -9944,12 +10045,75 @@ const $jsonrpc = function (aOptions) {
 					}
 			}
 		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$jsonrpc.onRequest(method, handler) : Map</key>
+		 * Registers a synchronous inbound JSON-RPC request handler `(params, request)`.
+		 * Throw `{code,message,data}` for a protocol error. `offRequest(method)` removes it.
+		 * `onNotification(method, handler)` and `offNotification(method)` register/remove event handlers.
+		 * Stdio uses two bounded callback workers; HTTP POST SSE dispatches on its response reader.
+		 * `startListening(options)` / `stopListening()` manage one optional legacy HTTP GET stream.
+		 * `exec(method, params, notification, {onRequestId: fn})` exposes the outgoing id for cancellation.
+		 * </odoc>
+		 */
+		onRequest: (method, handler) => {
+			_r._sy.run(() => { _requestHandlers[_$(method, "method").isString().$_()] = _$(handler, "handler").isFunction().$_() })
+			return _r
+		},
+		offRequest: method => { _r._sy.run(() => { delete _requestHandlers[method] }); return _r },
+		onNotification: (method, handler) => {
+			_r._sy.run(() => { _notificationHandlers[_$(method, "method").isString().$_()] = _$(handler, "handler").isFunction().$_() })
+			return _r
+		},
+		offNotification: method => { _r._sy.run(() => { delete _notificationHandlers[method] }); return _r },
+		// Also used by modern MCP input-required continuations; no transport I/O.
+		handleRequest: message => _dispatch(merge({ jsonrpc: "2.0", id: 0 }, message)),
+		// One opt-in legacy Streamable HTTP GET listener, closed explicitly or on destroy.
+		startListening: options => {
+			_r._sy.run(() => {
+				if (_r._listenerActive) return _r
+				if (["remote", "http", "sse"].indexOf(aOptions.type) < 0 || _mcpInfo.protocolVersion >= "2026-07-28") throw new Error("GET listener requires legacy Streamable HTTP")
+				var opts = merge(clone(aOptions.options || {}), options || {})
+				opts.requestHeaders = merge(merge((aOptions.options || {}).requestHeaders || {}, (options || {}).requestHeaders || {}), { Accept: "text/event-stream" })
+				if (isDef(_session.mcpSessionId)) opts.requestHeaders["mcp-session-id"] = _session.mcpSessionId
+				if (isDef(_mcpInfo.protocolVersion)) opts.requestHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
+				opts.readTimeout = opts.callTimeout = aOptions.timeout
+				var http = ow.loadObj().rest.connectionFactory(), stream
+				try {
+					_configureHTTPTimeouts(http, opts)
+					opts.httpClient = http
+					stream = $rest(opts).get2Stream(aOptions.url)
+					if (http.responseCode() != 200 || String(http.responseType()).toLowerCase().indexOf("text/event-stream") < 0) throw new Error("MCP endpoint does not provide a GET event stream")
+				} catch(e) {
+					try { if (isDef(stream)) stream.close() } catch(ignored) {}
+					http.close()
+					throw e
+				}
+				_r._listenerActive = true
+				_r._listenerStream = stream
+				_r._listenerHttp = http
+				_r._listener = $doV(() => {
+					try { _r._readSSE(stream) } catch(e) { _mcpInfo.listenerError = String(e) }
+					finally { if (_r._listenerHttp === http) _r._listenerActive = false; try { http.close() } catch(e) {} }
+				})
+			})
+			return _r
+		},
+		stopListening: () => {
+			try { if (isDef(_r._listenerStream)) _r._listenerStream.close() } catch(e) {}
+			try { if (isDef(_r._listenerHttp)) _r._listenerHttp.close() } catch(e) {}
+			_r._listenerActive = false
+			return _r
+		},
 		getInfo: () => _r._info,
-		getClientInfo: () => merge({ lastStderr: _r._stderr || [], lastNotifications: _r._notifications || [] }, _mcpInfo),
+		getClientInfo: () => merge({ lastStderr: _r._stderr || [], lastNotifications: _r._notifications || [], listenerActive: !!_r._listenerActive }, _mcpInfo),
 		// records the protocol version negotiated during initialize() so it can be echoed back
 		// via the MCP-Protocol-Version header on every subsequent HTTP request
 		setProtocolVersion: v => {
-			if (isString(v) && v.length > 0) _mcpInfo.protocolVersion = v
+			if (isString(v) && v.length > 0) {
+				_mcpInfo.protocolVersion = v
+				if (v >= "2026-07-28") _session.mcpSessionId = __
+			}
 			return _r
 		},
 		// clears a captured Mcp-Session-Id, e.g. after the server reports it expired (HTTP 404)
@@ -9958,10 +10122,12 @@ const $jsonrpc = function (aOptions) {
 			return _r
 		},
 		destroy: () => {
+			if (_r._s) return
 			if (_r._copies.get() > 0) {
 				_r._copies.dec()
 				return
 			}
+			_r.stopListening()
 			if ((aOptions.type == "remote" || aOptions.type == "http" || aOptions.type == "sse") &&
 				isDef(aOptions.url) && isDef(_session.mcpSessionId)) {
 				// clients that no longer need a session SHOULD explicitly terminate it; tolerate
@@ -9971,7 +10137,15 @@ const $jsonrpc = function (aOptions) {
 					_delHttp = ow.loadObj().rest.connectionFactory()
 					var _delHeaders = { "mcp-session-id": _session.mcpSessionId }
 					if (isDef(_mcpInfo.protocolVersion)) _delHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
-					$rest({ httpClient: _delHttp, requestHeaders: _delHeaders, timeout: aOptions.timeout }).delete(aOptions.url)
+					var _delOptions = clone(aOptions.options || {})
+					if (isFunction(aOptions.getReplyOptions)) _delOptions.requestHeaders = merge(_delOptions.requestHeaders || {}, aOptions.getReplyOptions().restOptions.requestHeaders || {})
+					_delOptions = merge(_delOptions || {}, { httpClient: _delHttp, timeout: aOptions.timeout })
+					_delOptions.requestHeaders = merge(_delOptions.requestHeaders || {}, _delHeaders)
+					if (isFunction(_delOptions.login)) _delOptions.login(_delHttp)
+					else if (isString(_delOptions.login) && isString(_delOptions.pass)) _delHttp.login(_delOptions.login, _delOptions.pass, false, aOptions.url)
+					_configureHTTPTimeouts(_delHttp, _delOptions)
+					_delHttp.exec(aOptions.url, "DELETE", __, _delOptions.requestHeaders, false, aOptions.timeout, false,
+						_delOptions.options)
 				} catch(e) {
 					_debug("jsonrpc session DELETE error: " + e)
 				} finally {
@@ -9979,6 +10153,15 @@ const $jsonrpc = function (aOptions) {
 				}
 			}
 			_r._s = true
+			_inbound.clear()
+			Object.keys(_requestHandlers).forEach(k => delete _requestHandlers[k])
+			Object.keys(_notificationHandlers).forEach(k => delete _notificationHandlers[k])
+			_r._w.values().forEach(w => w.countDown())
+			_r._w.clear()
+			_r._wq.clear()
+			_r._q = {}
+			_r._r = {}
+			if (isDef(_shareKey)) delete __jsonrpcSharedConnections[_shareKey]
 			if (isDef(_r._p)) {
 				$doWait(_r._p)
 			}
@@ -10072,8 +10255,29 @@ const $jsonrpc = function (aOptions) {
  * - `listPrompts()`: Get list of available prompts from the MCP server
  * - `getPrompt(promptName, promptArguments)`: Get a specific prompt with given arguments
  * - `toGptTools(aGptInstance, aToolNames)`: Add MCP tools to a `$gpt` instance
- * - `exec(method, params)`: Low-level method to execute any MCP/JSON-RPC method
+ * - `getCapabilities()`: Copy of the negotiated server capabilities
+ * - `listResources()` / `listResourceTemplates()`: Paginated resource catalogs, preserving metadata
+ * - `readResource(uri)`: Full resource result (text, base64 blobs, MIME types and metadata); URI is sent unchanged
+ * - `subscribeResource(uri, callback)` / `unsubscribeResource(uri)`: Legacy resource updates when the server advertises resources.subscribe
+ * - `onRequest(method, handler)` / `offRequest(method)`: Dedicated-connection inbound handlers `(params, request)`; return a result or throw `{code,message,data}`
+ * - `onNotification(method, handler)` / `offNotification(method)`: Dedicated-connection event handlers `(params, notification)`
+ * - `onSamplingRequest(handler)`: Opt into basic sampling; no automatic LLM calls or sampling tools
+ * - `onElicitationRequest(handler, modes)`: Opt into form elicitation (default), optionally url mode on supported versions
+ * - `setRoots(roots)`: Explicit file URI roots; never discovers filesystem paths automatically
+ * - `continueRequest(method, originalParams, inputRequired)`: Explicit single-round modern MRTR retry using registered handlers and opaque requestState
+ * - `startListening()` / `stopListening()`: Opt-in legacy HTTP GET event stream; no automatic reconnect
+ * - `cancelRequest(id, reason)`: Best-effort protocol cancellation
+ * - `getToolUI(name)` / `getAppResource(name)` / `hasApps()`: MCP Apps metadata and ui:// resource retrieval, without executing HTML
+ * - `exec(method, params, execOptions)`: Low-level MCP/JSON-RPC; optional `onRequestId(id)` callback in execOptions
  * - `destroy()`: Stop the client and cleanup resources
+ *
+ * Register sampling, elicitation and roots before legacy initialize(); only configured capabilities are advertised.
+ * Stdio callbacks run on two bounded workers, permitting nested synchronous calls but not arbitrary nesting.
+ * HTTP callbacks on POST SSE use independent authenticated response POSTs. HTTP resource subscriptions require
+ * a supported GET event stream; modern subscriptions/listen is not implemented and fails explicitly.
+ * Modern input_required results are never retried automatically. toGptTools retains plain text behavior and
+ * serializes rich result envelopes as JSON, excluding tools marked app-only by MCP Apps visibility.
+ * See docs/mcp-client.md for the full host integration contract, limitations and verified examples.
  *
  * Important: The initialize() method must be called before using listTools, callTool,
  * listPrompts, or getPrompt methods. All methods return results synchronously (not promises).
@@ -10188,11 +10392,10 @@ const $mcp = function(aOptions) {
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2025-06-18")
-	// capabilities we actually implement handlers for; nothing is advertised by default since this
-	// client has no inbound dispatcher (a server issuing e.g. sampling/createMessage would just hang)
+	// Optional client capabilities are added by handler registration below; none are enabled by default.
 	aOptions.capabilities = _$(aOptions.capabilities, "aOptions.capabilities").isMap().default({})
 
-	const _toolBlacklist = {}
+	const _toolBlacklist = Object.create(null)
 	aOptions.blacklist.forEach(toolName => {
 		toolName = _$(toolName, "aOptions.blacklist[]").isString().$_()
 		_toolBlacklist[toolName] = true
@@ -10613,10 +10816,21 @@ const $mcp = function(aOptions) {
     };
     const _getAuthHeaders = () => _withAuthStore(() => _getOAuthHeaders(false));
 
+	const _clientCapabilities = version => {
+		var caps = clone(aOptions.capabilities)
+		if (version < "2025-06-18") delete caps.elicitation
+		else if (version < "2025-11-25" && isMap(caps.elicitation)) {
+			delete caps.elicitation.url
+			if (!isMap(caps.elicitation.form)) delete caps.elicitation
+		}
+		if (version >= "2026-07-28" && isMap(caps.roots)) delete caps.roots.listChanged
+		return caps
+	}
+
 	// Protocol version eras this client knows how to speak. Legacy (initialize-handshake-based) eras stay the
 	// default for every caller that doesn't opt into aOptions.protocolVersion == "auto"; the modern (stateless,
 	// per-request) era is only ever used after a successful _negotiateModernEra() probe below.
-	const _MCP_KNOWN_VERSIONS = ["2024-11-05", "2025-06-18", "2026-07-28"]
+	const _MCP_KNOWN_VERSIONS = ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25", "2026-07-28"]
 	const _MCP_MODERN_THRESHOLD = "2026-07-28"
 
 	// Probes the server for the modern (2026-07-28+) stateless protocol era via server/discover, per the spec's
@@ -10629,7 +10843,7 @@ const $mcp = function(aOptions) {
 	const _negotiateModernEra = clientInfo => {
 		var _probeMeta = {
 			"io.modelcontextprotocol/protocolVersion": _MCP_MODERN_THRESHOLD,
-			"io.modelcontextprotocol/clientCapabilities": aOptions.capabilities,
+			"io.modelcontextprotocol/clientCapabilities": _clientCapabilities(_MCP_MODERN_THRESHOLD),
 			"io.modelcontextprotocol/clientInfo": clientInfo
 		}
 		var _discover
@@ -10672,7 +10886,7 @@ const $mcp = function(aOptions) {
 			params = merge({}, isMap(params) ? params : {})
 			params._meta = merge({
 				"io.modelcontextprotocol/protocolVersion": _r._negotiatedVersion,
-				"io.modelcontextprotocol/clientCapabilities": aOptions.capabilities,
+				"io.modelcontextprotocol/clientCapabilities": _clientCapabilities(_r._negotiatedVersion),
 				"io.modelcontextprotocol/clientInfo": aOptions.clientInfo
 			}, isMap(params._meta) ? params._meta : {})
 		}
@@ -10685,16 +10899,17 @@ const $mcp = function(aOptions) {
 				execOptions.restOptions = _restOptions
 			}
 		}
+		execOptions.diagnostics = {}
 		var _result = _jsonrpc.exec(method, params, notification, execOptions)
 
 		// HTTP 404 with a Mcp-Session-Id set means the session expired (per the Streamable HTTP
 		// transport spec): clear it, re-initialize and retry once. Guard against servers that
 		// (non-compliantly) answer an unknown method with a plain 404 - that's a JSON-RPC -32601
 		// error, not a session issue, and must not trigger a re-initialize loop.
-		if (_isHttp && !notification && method != "initialize") {
+		if (_isHttp && !notification && ["tools/list", "prompts/list", "resources/list", "resources/templates/list", "resources/read"].indexOf(method) >= 0) {
 			var _clientInfo = _jsonrpc.getClientInfo()
 			var _isMethodNotFound = isMap(_result) && isMap(_result.error) && _result.error.code == -32601
-			if (_clientInfo.lastResponseCode == 404 && isDef(_clientInfo.session) && isDef(_clientInfo.session.mcpSessionId) && !_isMethodNotFound) {
+			if (execOptions.diagnostics.responseCode == 404 && isDef(_clientInfo.session) && isDef(_clientInfo.session.mcpSessionId) && !_isMethodNotFound) {
 				_jsonrpc.clearSession()
 				try {
 					_r.initialize()
@@ -10968,6 +11183,28 @@ const $mcp = function(aOptions) {
 		return isDef(filter) ? filter(all) : all
 	}
 
+	// Responses to inbound HTTP requests and session DELETE use the same auth provider.
+	var _originalNotification = aOptions.onNotification
+	aOptions.onNotification = message => {
+		if (message.method == "notifications/resources/updated" && isMap(message.params) && isFunction(_subscriptions[message.params.uri])) _subscriptions[message.params.uri](message.params, message)
+		if (isFunction(_originalNotification)) _originalNotification(message)
+	}
+	aOptions.getReplyOptions = () => ({ restOptions: { requestHeaders: _getAuthHeaders() } })
+	// Advertise implemented optional capabilities only after explicit handler registration.
+	delete aOptions.capabilities.sampling
+	delete aOptions.capabilities.elicitation
+	delete aOptions.capabilities.roots
+	const _subscriptions = Object.create(null)
+	var _roots = [], _elicitationModes = { form: {} }
+	const _requireResources = () => {
+		if (!_r._initialized) throw new Error("MCP client not initialized. Call initialize() first.")
+		if (!isMap(_r._capabilities.resources)) throw new Error("MCP server does not advertise resources")
+	}
+	const _resourceURI = uri => {
+		uri = _$(uri, "uri").isString().$_()
+		if (!(new java.net.URI(uri)).isAbsolute()) throw new Error("MCP resource URI must be absolute")
+		return uri
+	}
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
 	
@@ -10996,11 +11233,12 @@ const $mcp = function(aOptions) {
 			// Modern era already negotiated: there's no handshake to repeat in this era.
 			if (_r._era == "modern") return _r
 
-			if (aOptions.protocolVersion == "auto") {
+			if (aOptions.protocolVersion == "auto" || aOptions.protocolVersion == _MCP_MODERN_THRESHOLD) {
 				if (_negotiateModernEra(clientInfo)) {
 					_r._initialized = true
 					return _r
 				}
+				if (aOptions.protocolVersion != "auto") throw new Error("Server does not support the requested stateless MCP version")
 				// Not a modern server (or no usable response): fall back to the legacy initialize
 				// handshake below, using this client's default legacy version, exactly as a caller
 				// that never set "auto" would.
@@ -11009,17 +11247,18 @@ const $mcp = function(aOptions) {
 
 			var initResult = _execWithAuth("initialize", {
 				protocolVersion: aOptions.protocolVersion,
-				capabilities: aOptions.capabilities,
+				capabilities: _clientCapabilities(aOptions.protocolVersion),
 				clientInfo: clientInfo
 			})
 
 			if (isDef(initResult) && isUnDef(initResult.error)) {
+				if (isString(initResult.protocolVersion) && _MCP_KNOWN_VERSIONS.indexOf(initResult.protocolVersion) < 0) throw new Error("Unsupported negotiated MCP version: " + initResult.protocolVersion)
                 _r._initialized = true
                 _r._era = "legacy"
+                _r._negotiatedVersion = initResult.protocolVersion || aOptions.protocolVersion
                 _r._capabilities = initResult.capabilities || {}
                 _r._initResult = initResult
-                // Negotiated version: use whatever the server returned (even if unrecognised) for
-                // the MCP-Protocol-Version header on every request from here on
+                // Echo the negotiated version in the MCP-Protocol-Version header on later requests.
                 _jsonrpc.setProtocolVersion(isString(initResult.protocolVersion) ? initResult.protocolVersion : aOptions.protocolVersion)
 
                 // Send initialized notification
@@ -11044,6 +11283,241 @@ const $mcp = function(aOptions) {
             }
         },
         getInfo: () => _r._initResult,
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.getCapabilities() : Map</key>
+		 * Returns a copy of the negotiated server capabilities.
+		 * </odoc>
+		 */
+		getCapabilities: () => clone(_r._capabilities),
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.startListening() : Map</key>
+		 * Opens one opt-in legacy HTTP GET event stream on an initialized dedicated client. Does not reconnect automatically.
+		 * </odoc>
+		 */
+		startListening: () => {
+			if (!_r._initialized || aOptions.shared) throw new Error("Listener requires initialized dedicated MCP connection")
+			_jsonrpc.startListening({ requestHeaders: _getAuthHeaders() })
+			return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.stopListening() : Map</key>
+		 * Closes the optional HTTP event stream; returns the client.
+		 * </odoc>
+		 */
+		stopListening: () => { _jsonrpc.stopListening(); return _r },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.onRequest(method, handler) : Map</key>
+		 * Registers a synchronous inbound handler `(params, request)` on a dedicated connection. Return the protocol result or throw `{code,message,data}`.
+		 * </odoc>
+		 */
+		onRequest: (method, handler) => {
+			if (aOptions.shared) throw new Error("Inbound handlers require a dedicated MCP connection (shared:false)")
+			_jsonrpc.onRequest(method, handler); return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.offRequest(method) : Map</key>
+		 * Removes the inbound handler and its optional capability from future requests.
+		 * </odoc>
+		 */
+		offRequest: method => {
+			_jsonrpc.offRequest(method)
+			var cap = { "sampling/createMessage": "sampling", "elicitation/create": "elicitation", "roots/list": "roots" }[method]
+			if (isDef(cap)) delete aOptions.capabilities[cap]
+			return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.onNotification(method, handler) : Map</key>
+		 * Registers one event callback `(params, message)` per method on a dedicated connection. Re-registration replaces it.
+		 * </odoc>
+		 */
+		onNotification: (method, handler) => {
+			if (aOptions.shared) throw new Error("Inbound handlers require a dedicated MCP connection (shared:false)")
+			_jsonrpc.onNotification(method, handler); return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.offNotification(method) : Map</key>
+		 * Removes the registered notification callback.
+		 * </odoc>
+		 */
+		offNotification: method => { _jsonrpc.offNotification(method); return _r },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.onSamplingRequest(handler) : Map</key>
+		 * Opts into basic sampling using a synchronous application handler. Register before legacy initialization. No automatic LLM calls; sampling tools are rejected.
+		 * </odoc>
+		 */
+		onSamplingRequest: handler => {
+			_$(handler, "handler").isFunction().$_()
+			_r.onRequest("sampling/createMessage", params => {
+				if (isDef(params.tools) || isDef(params.toolChoice)) throw { code: -32602, message: "Sampling tools are not supported" }
+				return handler(params)
+			})
+			aOptions.capabilities.sampling = {}
+			return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.onElicitationRequest(handler, modes) : Map</key>
+		 * Opts into elicitation; modes defaults to `{form:{}}`. URL mode requires version 2025-11-25 or later and explicit `{url:{}}` support.
+		 * </odoc>
+		 */
+		onElicitationRequest: (handler, modes) => {
+			_$(handler, "handler").isFunction().$_()
+			_elicitationModes = clone(modes || { form: {} })
+			if (!isMap(_elicitationModes.form) && !isMap(_elicitationModes.url)) throw new Error("Select form and/or url elicitation")
+			_r.onRequest("elicitation/create", params => {
+				var mode = params.mode || "form"
+				if (_r._negotiatedVersion < "2025-06-18" || !isMap(_elicitationModes[mode]) || (mode == "url" && _r._negotiatedVersion < "2025-11-25")) throw { code: -32602, message: "Unsupported elicitation mode" }
+				return handler(params)
+			})
+			aOptions.capabilities.elicitation = clone(_elicitationModes)
+			return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.setRoots(roots) : Map</key>
+		 * Sets explicit absolute file URI roots and registers roots/list. An empty array shares no roots; no paths are discovered automatically.
+		 * </odoc>
+		 */
+		setRoots: roots => {
+			_$(roots, "roots").isArray().$_()
+			var validated = roots.map(root => {
+				if (!isMap(root) || !isString(root.uri)) throw new Error("MCP roots require explicit file URIs")
+				var uri = new java.net.URI(root.uri)
+				if (String(uri.getScheme()).toLowerCase() != "file" || uri.isOpaque() || !String(uri.getPath()).startsWith("/")) throw new Error("MCP roots require absolute file URIs")
+				return clone(root)
+			})
+			_roots = validated
+			_r.onRequest("roots/list", () => ({ roots: clone(_roots) }))
+			aOptions.capabilities.roots = { listChanged: true }
+			if (_r._initialized && _r._era == "legacy") _execWithAuth("notifications/roots/list_changed", {}, true)
+			return _r
+		},
+		// Explicit MRTR retry only: callers supply the original method and params, never global lastRequest.
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.continueRequest(method, originalParams, inputRequired) : Map</key>
+		 * Explicitly continues one modern input_required round using registered handlers, keyed inputResponses and opaque requestState. Never called automatically.
+		 * </odoc>
+		 */
+		continueRequest: (method, params, inputRequired) => {
+			if (_r._era != "modern" || !_r.isInputRequired(inputRequired)) throw new Error("Expected modern input_required result")
+			if (method == "tools/call" && _isToolBlacklisted(params.name)) throw new Error("MCP tool is blacklisted")
+			var next = clone(params || {}), responses = {}
+			Object.keys(inputRequired.inputRequests || {}).forEach(key => {
+				var response = _jsonrpc.handleRequest(inputRequired.inputRequests[key])
+				if (isDef(response.error)) throw new Error("MCP input request failed: " + response.error.message)
+				responses[key] = response.result
+			})
+			next.inputResponses = responses
+			if (isDef(inputRequired.requestState)) next.requestState = inputRequired.requestState
+			if (method == "tools/call" && isFunction(aOptions.preFn)) aOptions.preFn(next.name, next.arguments)
+			var result = _execWithAuth(method, next)
+			if (method == "tools/call" && isFunction(aOptions.posFn)) aOptions.posFn(next.name, next.arguments, result)
+			return result
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.listResources() : Map</key>
+		 * Collects resource pages with metadata. Requires advertised resources capability; unsuccessful responses remain intact.
+		 * </odoc>
+		 */
+		listResources: () => { _requireResources(); return _listPages("resources/list", "resources") },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.listResourceTemplates() : Map</key>
+		 * Collects resourceTemplates pages. URI template expansion is the caller's responsibility.
+		 * </odoc>
+		 */
+		listResourceTemplates: () => { _requireResources(); return _listPages("resources/templates/list", "resourceTemplates") },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.readResource(uri) : Map</key>
+		 * Reads an absolute resource URI through MCP, retaining all text/blob contents, MIME types, metadata and unknown fields. Does not dereference URLs locally.
+		 * </odoc>
+		 */
+		readResource: uri => { _requireResources(); return _execWithAuth("resources/read", { uri: _resourceURI(uri) }) },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.subscribeResource(uri, callback) : Map</key>
+		 * Subscribes on a dedicated legacy transport with resources.subscribe. Callback receives `(params, message)`. HTTP requires GET SSE; modern subscriptions/listen is unsupported.
+		 * </odoc>
+		 */
+		subscribeResource: (uri, callback) => {
+			_requireResources()
+			if (aOptions.shared || _r._era == "modern" || _r._capabilities.resources.subscribe !== true) throw new Error("Resource subscriptions require dedicated legacy transport and server resources.subscribe")
+			uri = _resourceURI(uri)
+			_$(callback, "callback").isFunction().$_()
+			_subscriptions[uri] = callback
+			var result
+			try {
+				if (aOptions.type != "stdio") _r.startListening()
+				result = _execWithAuth("resources/subscribe", { uri: uri })
+			} catch(e) { delete _subscriptions[uri]; throw e }
+			if (isMap(result) && isDef(result.error)) delete _subscriptions[uri]
+			return result
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.unsubscribeResource(uri) : Map</key>
+		 * Unsubscribes and removes its callback after a successful response.
+		 * </odoc>
+		 */
+		unsubscribeResource: uri => {
+			_requireResources()
+			if (aOptions.shared || _r._era == "modern" || _r._capabilities.resources.subscribe !== true) throw new Error("Resource subscriptions require dedicated legacy transport and server resources.subscribe")
+			uri = _resourceURI(uri)
+			var result = _execWithAuth("resources/unsubscribe", { uri: uri })
+			if (!isMap(result) || isUnDef(result.error)) delete _subscriptions[uri]
+			return result
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.getToolUI(name) : Map</key>
+		 * Returns a copy of a discovered tool's `_meta.ui` or undefined.
+		 * </odoc>
+		 */
+		getToolUI: name => {
+			var listed = _r.listTools()
+			if (!isArray(listed.tools)) throw new Error("Unable to discover MCP tools")
+			var tool = listed.tools.filter(t => t.name == name)[0]
+			return isDef(tool) && isMap(tool._meta) && isMap(tool._meta.ui) ? clone(tool._meta.ui) : __
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.getAppResource(name) : Map</key>
+		 * Reads a tool's ui:// App resource, retaining the complete envelope. Never evaluates returned HTML or JavaScript.
+		 * </odoc>
+		 */
+		getAppResource: name => {
+			var ui = _r.getToolUI(name)
+			if (!isMap(ui) || !isString(ui.resourceUri) || ui.resourceUri.indexOf("ui://") != 0) throw new Error("Tool has no MCP App ui:// resource")
+			return _r.readResource(ui.resourceUri)
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.hasApps() : Boolean</key>
+		 * Reports whether discovered tools reference UI resources; does not imply a browser host or trusted content.
+		 * </odoc>
+		 */
+		hasApps: () => {
+			var listed = _r.listTools()
+			return isArray(listed.tools) && listed.tools.some(t => isMap(t._meta) && isMap(t._meta.ui) && isString(t._meta.ui.resourceUri))
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.cancelRequest(id, reason) : Map</key>
+		 * Sends best-effort notifications/cancelled. Does not roll back remote side effects. Low-level execOptions.onRequestId exposes outgoing ids.
+		 * </odoc>
+		 */
+		cancelRequest: (id, reason) => { _execWithAuth("notifications/cancelled", { requestId: id, reason: reason || "Client cancellation" }, true); return _r },
 		getClientInfo: () => {
 			var _clientInfo = _jsonrpc.getClientInfo()
 			if (isMap(_r._initResult)) {
@@ -11056,8 +11530,7 @@ const $mcp = function(aOptions) {
 		},
 		// True when result carries the modern era's InputRequiredResult shape (resultType "input_required"),
 		// meaning the server needs more information (sampling/elicitation/roots) before it can complete the
-		// request -- see the MRTR pattern. This client has no interactive UI to satisfy such a request; callers
-		// that talk to modern servers using those features should check for this and surface it to the user.
+		// request -- see the MRTR pattern. Callers can explicitly continue it using registered handlers.
 		isInputRequired: result => isMap(result) && result.resultType == "input_required",
 		listTools: () => {
 			if (!_r._initialized) {
@@ -11252,16 +11725,15 @@ const $mcp = function(aOptions) {
 				toolsToAdd = toolsList.tools.filter(tool => aToolNames.indexOf(tool.name) >= 0)
 			}
 
+			toolsToAdd = toolsToAdd.filter(tool => !isMap(tool._meta) || !isMap(tool._meta.ui) || !isArray(tool._meta.ui.visibility) || tool._meta.ui.visibility.indexOf("model") >= 0)
 			toolsToAdd.forEach(tool => {
-				var gptParams = {
-					type: "object",
-					properties: tool.inputSchema.properties || {},
-					required: tool.inputSchema.required || []
-				}
+				var gptParams = clone(tool.inputSchema || { type: "object", properties: {} })
 
 				var mcpToolFn = function(args) {
 					try {
 						var result = _r.callTool(tool.name, args)
+						if (Object.keys(result).some(k => ["content", "isError"].indexOf(k) < 0) || result.isError === true ||
+							(isArray(result.content) && result.content.some(c => c.type != "text"))) return stringify(result)
 						if (isDef(result.content) && isArray(result.content)) {
 							// Extract text content from MCP result
 							return result.content.map(c => c.text || c.data || stringify(c)).join("\n")
@@ -11290,13 +11762,14 @@ const $mcp = function(aOptions) {
             return _authStatus();
         }, true),
 
-		exec: (method, params) => {
-			return _execWithAuth(method, params)
+		exec: (method, params, execOptions) => {
+			return _execWithAuth(method, params, false, execOptions)
 		},
 		destroy: () => {
             if (isDef(_oauthPending)) {
                 _oauthPending.cancel();
             }
+			Object.keys(_subscriptions).forEach(k => delete _subscriptions[k])
 			_jsonrpc.destroy()
 		}
 	}

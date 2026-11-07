@@ -1,0 +1,80 @@
+include:
+  - autoTestAll.common.yaml
+
+jobs:
+  - name: MCPAdvanced::Init
+    exec: args.tests = require("autoTestAll.MCPAdvanced.js")
+
+  - name: MCPAdvanced::ResourcesAndApps
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testResourcesAndApps
+
+  - name: MCPAdvanced::BidirectionalStdio
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testBidirectionalStdio
+
+  - name: MCPAdvanced::HTTPInboundAndSession
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testHTTPInboundAndSession
+
+  - name: MCPAdvanced::ModernContinuationAndCapabilities
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testModernContinuationAndCapabilities
+
+  - name: MCPAdvanced::TimeoutAndCleanup
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testTimeoutAndCleanup
+
+  - name: MCPAdvanced::RequestHandlersAndRoots
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testRequestHandlersAndRoots
+
+  - name: MCPAdvanced::RichResultsAndLegacyGPT
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testRichResultsAndLegacyGPT
+
+  - name: MCPAdvanced::SSEFramingAndDispatch
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testSSEFramingAndDispatch
+
+  - name: MCPAdvanced::HTTPListener
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testHTTPListener
+
+  - name: MCPAdvanced::HTTPMalformedResponses
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testHTTPMalformedResponses
+
+  - name: MCPAdvanced::AppsHostContract
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testAppsHostContract
+
+  - name: MCPAdvanced::HTTPTimeout
+    from: MCPAdvanced::Init
+    to: OpenAF Test
+    exec: args.func = args.tests.testHTTPTimeout
+
+todo:
+  - MCPAdvanced::ResourcesAndApps
+  - MCPAdvanced::BidirectionalStdio
+  - MCPAdvanced::HTTPInboundAndSession
+  - MCPAdvanced::ModernContinuationAndCapabilities
+  - MCPAdvanced::TimeoutAndCleanup
+  - MCPAdvanced::RequestHandlersAndRoots
+  - MCPAdvanced::RichResultsAndLegacyGPT
+  - MCPAdvanced::SSEFramingAndDispatch
+  - MCPAdvanced::HTTPListener
+  - MCPAdvanced::HTTPMalformedResponses
+  - MCPAdvanced::AppsHostContract
+  - MCPAdvanced::HTTPTimeout

@@ -1,6 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
+   - autoTestAll.MCPAdvanced.yaml
    - autoTestAll.MCPOAuth.yaml
    - autoTestAll.common.yaml
 

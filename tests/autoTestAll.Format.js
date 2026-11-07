@@ -613,6 +613,47 @@
         ow.test.assert(lines[0], "│ some comment", "Problem with markdown blockquote rendering a single side line.");
     };
 
+    exports.testWithMDLists = function() {
+        var md = (txt, w) => ow.format.withMD(txt, __, w).replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "");
+        var eq = (txt, w, exp, msg) => ow.test.assert(md(txt, w), exp, "Problem with markdown " + msg + ".");
+
+        // marker variants
+        eq("* a\n- b\n+ c", 40, "\u2022 a\n\u2022 b\n\u2022 c", "bullet markers");
+        eq("1) a\n2) b", 40, "1) a\n2) b", "parenthesis numbering");
+        eq("---", 5, "\u2500\u2500\u2500\u2500\u2500", "line rule");
+        eq("-1 and -x", 40, "-1 and -x", "non list dashes");
+
+        // hanging indent and nesting glyphs
+        eq("* alpha beta gamma delta\n  * one two three four five", 14,
+           "\u2022 alpha beta\n  gamma delta\n  \u25e6 one two\n    three\n    four five", "nested bullet wrap");
+        eq("* a\n  * b\n    * c\n      * d", 40, "\u2022 a\n  \u25e6 b\n    \u25aa c\n      \u2022 d", "bullet glyph per level");
+
+        // number alignment (also with sub numbering)
+        eq("9. nine\n10. ten\n    1. sub item with some more words", 20,
+           " 9. nine\n10. ten\n    1. sub item\n       with some\n       more words", "right aligned numbers");
+
+        // continuation lines are merged and rewrapped, a blank line then text ends the list
+        eq("* one two three\n  four five six\nafter", 40, "\u2022 one two three four five six after", "list lazy continuation");
+        eq("* one\n\nafter list", 40, "\u2022 one\n\nafter list", "list end");
+        eq("* one\n\n  loose para\n* two", 40, "\u2022 one\n\n  loose para\n\u2022 two", "loose list paragraph");
+
+        // tasks
+        eq("- [ ] open task\n- [x] done task", 40, "\u2610 open task\n\u2611 done task", "task list");
+
+        // quotes with lists are a single side line block
+        eq("> * a\n> * b", 40, "\u2502 \u2022 a\n\u2502 \u2022 b", "blockquote list");
+
+        // table after list
+        var t = md("* a\n| x | y |\n|---|---|\n| 1 | 2 |", 40);
+        ow.test.assert(t.split("\n")[0], "\u2022 a", "Problem with markdown list before table.");
+        ow.test.assert(t.indexOf("x") > 0 && t.indexOf("2") > 0, true, "Problem with markdown table after list.");
+
+        // every rendered line fits the width
+        md("* " + repeat(30, "word ") + "\n  * " + repeat(30, "word "), 30).split("\n").forEach(line => {
+            ow.test.assert(visibleLength(line) <= 30, true, "Problem with markdown list line width.");
+        });
+    };
+
     exports.testWithSideLineUnicodeHeaderFooter = function() {
         var rendered = ow.format.withSideLine("x", 8, __, __, ow.format.withSideLineThemes().closedRect, {
             header: "🇵🇹",

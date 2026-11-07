@@ -172,6 +172,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testWithMDWrap;
 
+   - name: Format::Markdown lists
+     from: Format::Init
+     to  : OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithMDLists;
+
    - name: Format::$output Markdown
      from: Format::Init
      to  : OpenAF Test

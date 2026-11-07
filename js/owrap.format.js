@@ -5409,8 +5409,11 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi), provide aLineWidth
  * to override the detected console width when line width is needed, and provide aBgColor (an ansiColor color name, e.g. "BG_BLUE")
  * to maintain a background color throughout the output and pass it to sub-functions where applicable.
- * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets, numbered lines, links, blocks and
+ * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets (`*`, `-`, `+`), numbered lines (`1.` or `1)`),
+ * task lists (`- [ ]`, `- [x]`), nested lists, links, block quotes (that can contain lists) and
  * simple LaTeX-like math symbols (e.g. "$\rightarrow$", "$\alpha$", "$\leq$") which are converted to their unicode equivalent.
+ * List items are wrapped with a hanging indent, numbers are right-aligned per list and continuation lines are merged into their item.
+ * Bullet and task glyphs can be changed with `__flags.WITHMD.bullets` (one per nesting level) and `__flags.WITHMD.tasks`.
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aBgColor) {
@@ -5447,6 +5450,10 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 			},
 			bullets: "BOLD",
 			list: "BOLD",
+			task: {
+				open: "BOLD",
+				done: "FAINT"
+			},
 			strike: "STRIKETHROUGH",
 			note: {
 				line: "FAINT",
@@ -5590,49 +5597,141 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	var _lineChar = isDef(__con) ? "─" : "-"
 	var _lineRule = repeat(_aSize, ansiColor(__colorFormat.md.line, _lineChar))
 
-	// Single line transformers
-	res = res.split("\n").map(l => {
-		// line rule
-		if (l.trim().match(/^---+/)) {
-			return _lineRule
+	// Line transformers: paragraphs, rules, lists (nested, ordered, task) and block quotes
+	var _wf = __flags.WITHMD
+	var _bulletGlyphs = (isArray(_wf.bullets) && _wf.bullets.length > 0) ? _wf.bullets : ["•", "◦", "▪"]
+	var _taskGlyphs = isMap(_wf.tasks) ? _wf.tasks : {}
+	var _taskOpen = _taskGlyphs.open || "☐", _taskDone = _taskGlyphs.done || "☑"
+	var _taskColors = __colorFormat.md.task || {}
+	var _isTableRow = t => t.length > 2 && t.charAt(0) == "|" && t.charAt(t.length - 1) == "|"
+	var _indLen = s => s.indexOf("\t") < 0 ? s.length : s.replace(/\t/g, "    ").length
+	var _wrapTo = (s, w) => (visibleLength(ow.format.string._stripAnsi(s)) > w ? ow.format.string.wordWrap(s, Math.max(1, w)) : s)
+	var _prepLine = l => l.indexOf("](") >= 0 ? l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, _linkRep) : l
+	var _parseItem = (l, t) => {
+		var ch = t.charAt(0), m
+		if (ch == "-" || ch == "*" || ch == "+") {
+			m = l.match(/^([ \t]*)[-*+][ \t]+(.+)$/)
+			if (m) {
+				var task = __, tx = m[2], tm = tx.match(/^\[([ xX])\][ \t]+(.+)$/)
+				if (tm) { task = tm[1] == " " ? "open" : "done"; tx = tm[2] }
+				return { kind: "bullet", ind: m[1], text: tx, task: task }
+			}
+		} else if (ch >= "0" && ch <= "9") {
+			m = l.match(/^([ \t]*)(\d+)([.)])[ \t]+(.+)$/)
+			if (m) return { kind: "ordered", ind: m[1], num: m[2], delim: m[3], text: m[4] }
+		}
+		return __
+	}
+	var _mdLines = (lines, width) => {
+		var out = [], block = [], stack = [], root = {}
+
+		// render a complete list block: numbers are aligned per sibling group and
+		// wrapped lines hang under the item text
+		var _flush = () => {
+			if (block.length == 0) return
+			block.forEach(e => {
+				if (e.t == "blank") { out.push(""); return }
+				if (e.t == "para") {
+					var pp = repeat(e.owner.rcol, " ")
+					_wrapTo(e.text, width - e.owner.rcol).split("\n").forEach(w => out.push(pp + w))
+					return
+				}
+				var rind = e.parent ? e.parent.rcol : e.ind, marker, mw
+				if (e.kind == "ordered") {
+					var ms = e.num + e.delim
+					mw = e.group.w
+					marker = repeat(mw - ms.length, " ") + ansiColor(__colorFormat.md.list, ms)
+				} else {
+					var g = e.task ? (e.task == "done" ? _taskDone : _taskOpen) : _bulletGlyphs[e.bl % _bulletGlyphs.length]
+					mw = visibleLength(g)
+					marker = ansiColor(e.task ? (_taskColors[e.task] || __colorFormat.md.bullets) : __colorFormat.md.bullets, g)
+				}
+				e.rcol = rind + mw + 1
+				var pad = repeat(e.rcol, " ")
+				_wrapTo(e.text, width - e.rcol).split("\n").forEach((w, i) => out.push(i == 0 ? repeat(rind, " ") + marker + da + " " + w : pad + w))
+			})
+			block = []; stack = []; root = {}
 		}
 
-		// Links
-		l = l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, _linkRep)
+		for (var i = 0; i < lines.length; i++) {
+			var l = _prepLine(lines[i]), t = l.trim(), ch = t.charAt(0)
 
-		// bullets
-		var ar = l.match(/^(\s*)\*(\s+)(.+)$/)
-		if (ar) {
-			var lsize = visibleLength(ar[1] + "\u2022" + ar[2])
+			// blank line: keeps a list open only if the list goes on
+			if (t.length == 0) {
+				if (block.length > 0) {
+					var j = i + 1
+					while (j < lines.length && lines[j].trim().length == 0) j++
+					if (j < lines.length) {
+						var nl = lines[j], nt = nl.trim()
+						if (_parseItem(nl, nt) || (/^[ \t]/.test(nl) && nt.indexOf("```") != 0 && !_isTableRow(nt))) {
+							block.push({ t: "blank" })
+							continue
+						}
+					}
+					_flush()
+				}
+				out.push(l)
+				continue
+			}
 
-			return ow.format.string.wordWrap(ar[3], _tWidth - lsize).split("\n").map((l, i) => {
-				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.bullets, "\u2022") + ar[2] : repeat(lsize, ' ')) + l
-			}).join("\n")
+			// line rule
+			if (ch == "-" && /^---+/.test(t)) {
+				_flush()
+				out.push(_lineRule)
+				continue
+			}
+
+			// list items (bullets, numbered, task lists)
+			var it = _parseItem(l, t)
+			if (it) {
+				var ind = _indLen(it.ind)
+				while (stack.length > 0 && ind <= stack[stack.length - 1].ind) stack.pop()
+				var parent = stack.length > 0 ? stack[stack.length - 1] : __
+				var holder = parent || root
+				if (!holder.g) holder.g = {}
+				var grp = holder.g[it.kind] || (holder.g[it.kind] = { w: 0 })
+				if (it.kind == "ordered") grp.w = Math.max(grp.w, it.num.length + it.delim.length)
+				var ne = { t: "item", kind: it.kind, ind: ind, text: it.text, task: it.task, num: it.num, delim: it.delim, parent: parent, group: grp, bl: parent ? parent.bl + (parent.kind == "bullet" ? 1 : 0) : 0 }
+				block.push(ne)
+				stack.push(ne)
+				continue
+			}
+
+			// continuation of the current list item (indented or lazy) or loose paragraph
+			if (block.length > 0) {
+				var last = block[block.length - 1], ind0 = _indLen(l.match(/^[ \t]*/)[0])
+				var mergeable = !_isTableRow(t) && t.indexOf("```") != 0 && !(ind0 == 0 && (ch == "\u001b" || ch == ">"))
+				if (mergeable && last.t != "blank") {
+					last.text += " " + t
+					continue
+				}
+				if (mergeable && ind0 > 0) {
+					var owner = __
+					for (var k = stack.length - 1; k >= 0; k--) if (ind0 > stack[k].ind) { owner = stack[k]; break }
+					if (owner) {
+						block.push({ t: "para", owner: owner, text: t })
+						continue
+					}
+				}
+				_flush()
+			}
+
+			// side line render (consecutive quote lines become one block, lists inside are supported)
+			if (l.charAt(0) == ">" && /^> .+$/.test(l)) {
+				var inner = [], q = i
+				while (q < lines.length && /^> .+$/.test(lines[q])) { inner.push(lines[q].substring(2)); q++ }
+				i = q - 1
+				out.push(ow.format.withSideLine(_mdLines(inner, width - 3).join("\n"), width, __colorFormat.md.note.line, _withColor(__colorFormat.md.note.text, aBgColor), _noteTheme))
+				continue
+			}
+
+			// if not a code block or a table then it should be paragraph
+			out.push(_isTableRow(t) || t.indexOf("```") == 0 ? l : _wrapTo(l, width))
 		}
-
-		// numbered list
-		var ar = l.match(/^(\s*)(\d+)\.(\s+)(.+)$/)
-		if (ar) {
-			var lsize = visibleLength(ar[1] + ar[2] + "." + ar[3])
-
-			return ow.format.string.wordWrap(ar[4], _tWidth - lsize).split("\n").map((l, i) => {
-				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.list, ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
-			}).join("\n")
-		}
-
-		// side line render
-		if (/^(\> .+)$/.test(l)) {
-			var note = l.match(/^\> (.+)$/)
-			return ow.format.withSideLine(note[1], _aSize, __colorFormat.md.note.line, _withColor(__colorFormat.md.note.text, aBgColor), _noteTheme)
-		}
-
-		// if not a code block or a table then it should be paragraph
-		if (!/^\|.+\|$/.test(l.trim()) && !/^```/.test(l.trim()) && l.trim().length > 0) {
-			if (visibleLength(ow.format.string._stripAnsi(l)) > _aSize) l = ow.format.string.wordWrap(l, _aSize)
-		}
-
-		return l
-	}).join("\n")
+		_flush()
+		return out
+	}
+	res = _mdLines(res.split("\n"), _aSize).join("\n")
 
 	// Multi line transformers
 	// code block

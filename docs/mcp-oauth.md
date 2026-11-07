@@ -233,3 +233,12 @@ a particular identity provider's app registration or consent policy.
 A single page retains its cache metadata. For multiple pages, `ttlMs` is bounded by the earliest remaining page lifetime; a missing or invalid lifetime prevents caching. Different cache scopes produce a private, non-cacheable aggregate (`ttlMs: 0`). After the existing 1,000-page limit, `nextCursor` remains available to indicate that enumeration is incomplete; it is removed only when enumeration finishes.
 
 An error, `input_required`, or malformed list response is returned unchanged, including when it follows successful pages. Callers must inspect the response before treating it as a list; these responses are not converted to empty or partial success.
+
+## MCP event connections
+
+The [MCP client event APIs](mcp-client.md) use the configured authentication
+provider for inbound HTTP request replies, optional GET listeners and session
+DELETE. Tokens remain in the OpenAF connection; never forward Authorization
+headers or token-store data to an MCP App iframe. Session-expiry recovery retries
+only discovery and resource reads; failed mutating tools are returned to the
+caller without replay. Browser login and MCP Apps rendering are separate flows.
