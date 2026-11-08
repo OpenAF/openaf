@@ -21,6 +21,11 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testASymCipher;
 
+   - name: Java::OOM
+     from: Java::Init
+     to: OpenAF Test
+     exec: args.func = require("autoTestAll.OOM.js").testOOM;
+
    - name: Java::HSPerf
      from: Java::Init
      to: OpenAF Test
@@ -57,6 +62,7 @@ jobs:
      exec: args.func = args.tests.testJavaSSL;
 
 todo:
+   - Java::OOM
    # Java tests
    # ------------
    - Java::Init

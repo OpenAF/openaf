@@ -99,6 +99,38 @@ The first argument is an **output directory**, not a database filename. Each map
 
 After creating an output directory, `saveHelpWeb("help-web", { greetings: "greeting.js" })` writes subject `.gz` files and `__odockeys.gz`. It does not start a web server. The repository's `odocweb/` directory holds generated data. Publish it through your chosen documentation frontend.
 
+## Generate a Markdown reference wiki
+
+The standalone [genODocReference.yaml](../genODocReference.yaml) job scans JavaScript and Java source directories recursively and writes a browsable Markdown reference:
+
+```sh
+ojob genODocReference.yaml dirs=js,src output=odoc-reference
+```
+
+Open `odoc-reference/index.md` in a Markdown viewer or browse it in a Git repository. The wiki includes category indexes, breadcrumbs, an alphabetical All APIs index, and one page per lookup key. Categories follow API namespaces: `ow.test.assert` appears under `ow` → `ow.test`. Keys without a namespace, including constructors, appear under Globals. All links between generated pages are relative `.md` links. Stable hashed filenames distinguish case, punctuation, and non-ASCII keys on case-insensitive filesystems.
+
+| Argument | Meaning |
+| --- | --- |
+| `dirs` | Required comma-delimited source directories, relative to the invocation directory. Whitespace around each directory is trimmed; overlapping roots are scanned once. Paths containing commas are unsupported. |
+| `output` | Output directory; defaults to `odoc-reference`. The output subtree is excluded from scanning. |
+| `maxBlockMB` | Maximum size of one ODoc block, in units of 1,048,576 UTF-16 code units; defaults to `8`. Must be greater than zero and at most `1024`. This is a parser limit, not a process memory limit. |
+
+The job uses OpenAF's `ioStreamRead`, file I/O, hashing, temporary-directory cleanup, and oJob facilities. It processes fixed-size source chunks, buffers at most one bounded ODoc block, and spools extracted documentation bodies to temporary disk storage. Heap use grows with API/category metadata and source locations rather than total source size or documentation text. It requires writable temporary space alongside the output directory. Symbolic links are skipped; symbolic-link input roots are refused.
+
+Markdown-marked entries retain their formatting, CDATA, and examples. Legacy entries retain their extracted text and explicit line breaks, escaped for Markdown display. Duplicate keys share a page: distinct signatures, bodies, or formats remain separate sections, while identical entries merge and list all source locations in deterministic order. Source locations identify the opening ODoc tag.
+
+Malformed, oversized, unclosed, or unreadable input is reported with source locations where available. Valid entries are still published, the home page is marked incomplete, and the process exits with status `1`. The `.odoc-reference.json` manifest records counts and completeness; diagnostic details are printed to stderr. Invalid arguments or output conflicts stop publication.
+
+Reruns replace manifest-owned pages and remove stale owned pages while preserving unrelated files. Existing files that conflict with new generated filenames are refused before output changes. Pages are staged before publication and the manifest is written last; publication is not a transaction across all files. An interrupted filesystem operation may require restoring a backup or generating into an empty directory. Keep the manifest with the generated wiki. Do not run concurrent generators against the same output directory.
+
+For a direct Java invocation with arguments, pass the job and arguments together as the `-e` value:
+
+```sh
+java -Xmx256m -jar openaf.jar --ojob -e 'genODocReference.yaml dirs=js,src output=odoc-reference'
+```
+
+Focused tests are in `tests/autoTestAll.ODocReference.yaml`, including a 270 MiB source file scanned in a subprocess with a 256 MiB Java heap.
+
 ## Library interfaces
 
 Call `loadHelp()` before constructing these objects:

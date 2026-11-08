@@ -506,23 +506,6 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId,
     return this.removeOldVersionsSpecific(artifactId, aFilenameTemplate, this.getLatestVersion(aURI), aOutputDir, aFunction);
 };
 
-/**
- * <odoc>
- * <key>ow.java.jcmd(aPid, aJCmd) : String</key>
- * Tries to attach to local JVM with aPid and execute aJCmd returning the output.
- * </odoc>
- */
-OpenWrap.java.prototype.jcmd = function(aPid, aCmd) {
-    aCmd = _$(aCmd, "aCmd").isString().default("help")
-    var vm = Packages.com.sun.tools.attach.VirtualMachine.attach(aPid)
- 
-    var oo = vm.executeJCmd(aCmd)
-    var os = af.newOutputStream()
-    ioStreamCopy(os, oo)
-
-    vm.detach()
-    return String(os.toString())
-}
 
 /**
  * <odoc>
@@ -535,10 +518,6 @@ OpenWrap.java.prototype.pidStartJFR = function(aPid, aDuration, aName, aMaxSize)
     aName = _$(aName, "aName").isString().default(__)
     aMaxSize = _$(aMaxSize, "aMaxSize").isString().default(__)
 
-    // Check for Java >= 14
-    ow.loadFormat()
-    var jver = ow.format.getJavaVersion()
-    if (ow.format.semver(jver).getMajor() < 14) throw "Remote start of Java Flight Recorder is only available on Java 14 or later."
 
     var params = []
     if (isDef(aDuration)) params.push("duration=" + aDuration + "s")
@@ -557,10 +536,6 @@ OpenWrap.java.prototype.pidStartJFR = function(aPid, aDuration, aName, aMaxSize)
 OpenWrap.java.prototype.pidStopJFR = function(aPid, aName) {
     aName = _$(aName, "aName").isString().default(__)
 
-    // Check for Java >= 14
-    ow.loadFormat()
-    var jver = ow.format.getJavaVersion()
-    if (ow.format.semver(jver).getMajor() < 14) throw "Remote stop of Java Flight Recorder is only available on Java 14 or later."
 
 
     var params = []
@@ -579,10 +554,6 @@ OpenWrap.java.prototype.pidDumpJFR = function(aPid, aName, aFile) {
     aName = _$(aName, "aName").isString().default(__)
     aFile = _$(aFile, "aFile").isString().default(__)
 
-    // Check for Java >= 14
-    ow.loadFormat()
-    var jver = ow.format.getJavaVersion()
-    if (ow.format.semver(jver).getMajor() < 14) throw "Remote dump of Java Flight Recorder is only available on Java 14 or later."
 
 
     var params = []
@@ -599,10 +570,6 @@ OpenWrap.java.prototype.pidDumpJFR = function(aPid, aName, aFile) {
  * </odoc>
  */
 OpenWrap.java.prototype.pidCheckJFR = function(aPid) {
-    // Check for Java >= 14
-    ow.loadFormat()
-    var jver = ow.format.getJavaVersion()
-    if (ow.format.semver(jver).getMajor() < 14) throw "Remote view of Java Flight Recorder is only available on Java 14 or later."
 
     return ow.java.jcmd(aPid, "JFR.check")
 }
@@ -762,14 +729,7 @@ OpenWrap.java.prototype.pidSystemProperties = function(aPid) {
  * </odoc>
  */
 OpenWrap.java.prototype.pidThreadDump = function(aPid) {
-    var vm = Packages.com.sun.tools.attach.VirtualMachine.attach(aPid)
- 
-    var oo = vm.executeCommand("threaddump")
-    var os = af.newOutputStream()
-    ioStreamCopy(os, oo)
-
-    vm.detach()
-    return String(os.toString())
+    return this.jcmd(aPid, "Thread.print -l")
 }
 
 /**
@@ -2832,3 +2792,312 @@ OpenWrap.java.prototype.jsonMemComm.prototype.receive = function() {
 
     return obj;
 };
+
+// Convert diagnostic Java collections to plain JavaScript values.
+OpenWrap.java.prototype.__diagMap = function(v) {
+  if (v === null) return null
+  if (v instanceof java.util.Map) {
+    var r = {}, it = v.entrySet().iterator()
+    while (it.hasNext()) { var e = it.next(); r[String(e.getKey())] = ow.java.__diagMap(e.getValue()) }
+    return r
+  }
+  if (v instanceof java.util.List) { var a = []; for (var i = 0; i < v.size(); i++) a.push(ow.java.__diagMap(v.get(i))); return a }
+  if (v instanceof java.lang.Boolean) return v.booleanValue()
+  if (v instanceof java.lang.Number) return Number(v)
+  return String(v)
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.parseHPROF(file, callback, options) : Map</key>
+ * Streams HotSpot HPROF records through `callback`; return false to stop. Reads plain or gzip files in two passes.
+ * Options: `values` (false), `arrayLimit` (32), `maxMetadata` (1000000), `type`, `className`, `objectId`.
+ * IDs and long field values are strings. Payload bytes are serialized sizes, not retained sizes.
+ * </odoc>
+ */
+OpenWrap.java.prototype.parseHPROF = function(file, callback, options) {
+  _$(file, "file").isString().$_()
+  _$(callback, "callback").isFunction().$_()
+  var o = options || {}
+  var visitor = new JavaAdapter(Packages.openaf.HPROFReader.Visitor, { visit: function(record) {
+    var r = ow.java.__diagMap(record)
+    if (isDef(o.type) && r.type != o.type) return true
+    if (isDef(o.className) && r.className != o.className && r.name != o.className) return true
+    if (isDef(o.objectId) && r.id != o.objectId) return true
+    return callback(r) !== false
+  } })
+  return this.__diagMap(new Packages.openaf.HPROFReader().read(file, visitor, o.values === true, isDef(o.arrayLimit) ? o.arrayLimit : 32, isDef(o.maxMetadata) ? o.maxMetadata : 1000000))
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.hprofSummary(file, options) : Map</key>
+ * Returns HPROF header, counts and a class histogram without retaining the object graph.
+ * `maxMetadata` bounds name/class metadata. Summary payload bytes exclude object headers and alignment.
+ * </odoc>
+ */
+OpenWrap.java.prototype.hprofSummary = function(file, options) {
+  var o = options || {}
+  return this.__diagMap(new Packages.openaf.HPROFReader().read(file, null, false, 0, isDef(o.maxMetadata) ? o.maxMetadata : 1000000))
+}
+
+OpenWrap.java.prototype.__diagTarget = function(target) {
+  if (target === "self") return "self"
+  if (!/^[1-9][0-9]*$/.test(String(target))) throw new Error("Expected self or a positive PID")
+  return String(target)
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.jcmd(aPid, aJCmd, options) : String</key>
+ * Executes a target diagnostic command and returns text. Use `self` for the current JVM.
+ * Options: `transport` (auto, attach, socket), `tmpDir`, `initialize` (true), `timeoutMs` (30000),
+ * `maxOutputBytes` (16777216). Socket deadlines apply on Linux Java 16+; the Attach API may block.
+ * Attach socket status errors throw. A timeout does not cancel target execution. No submitted command is retried.
+ * </odoc>
+ */
+// Keep jcmd's historical string interface while making reduced Linux runtimes useful.
+OpenWrap.java.prototype.jcmd = function(pid, command, options) {
+  pid = this.__diagTarget(pid)
+  command = isDef(command) ? command : "help"
+  if (!isString(command) || !command.length || command.indexOf("\u0000") >= 0) throw new Error("Invalid diagnostic command")
+  var o = options || {}, vm, stream, output = new java.io.ByteArrayOutputStream(), submitted = false
+  if (isDef(o.transport) && ["auto", "attach", "socket"].indexOf(o.transport) < 0) throw new Error("Invalid diagnostic transport")
+  var limit = isDef(o.maxOutputBytes) ? Number(o.maxOutputBytes) : 16777216
+  var timeout = isDef(o.timeoutMs) ? Number(o.timeoutMs) : 30000
+  if (!isFinite(limit) || !isFinite(timeout) || !(limit > 0) || !(timeout > 0)) throw new Error("Invalid diagnostic limits")
+  if (pid === "self") {
+    var server = java.lang.management.ManagementFactory.getPlatformMBeanServer()
+    var name = new javax.management.ObjectName("com.sun.management:type=DiagnosticCommand")
+    var parts = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g), cmd = parts.shift()
+    var info = server.getMBeanInfo(name).getOperations(), op
+    for (var j = 0; j < info.length; j++) {
+      var desc = info[j].getDescriptor().getFieldValue("dcmd.name")
+      if (String(desc) === cmd) op = info[j].getName()
+    }
+    if (isUnDef(op)) throw new Error("Unsupported diagnostic command: " + cmd)
+    var args = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.lang.String"), parts.length)
+    for (var k = 0; k < parts.length; k++) args[k] = parts[k].replace(/^([\"\'])(.*)\1$/, "$2")
+    return String(server.invoke(name, op, [args], ["[Ljava.lang.String;"]))
+  }
+  try {
+    try { if (o.transport !== "socket") vm = Packages.com.sun.tools.attach.VirtualMachine.attach(pid) } catch (e) { if (o.transport === "attach") throw e }
+    if (vm) {
+      submitted = true
+      stream = vm.executeJCmd(command)
+      var buf = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 8192), n
+      while ((n = stream.read(buf)) >= 0) { if (output.size() + n > limit) throw new Error("Diagnostic output limit exceeded"); output.write(buf, 0, n) }
+      return String(output.toString("UTF-8"))
+    }
+  } finally { if (stream) stream.close(); if (vm) vm.detach() }
+  if (submitted) throw new Error("Diagnostic command outcome uncertain; not retried")
+  if (String(java.lang.System.getProperty("os.name")) !== "Linux") throw new Error("JRE-only attach requires Linux HotSpot and Java 16+")
+  var spec = String(java.lang.System.getProperty("java.specification.version"))
+  var major = Number(spec.indexOf("1.") === 0 ? spec.substring(2) : spec)
+  if (major < 16) throw new Error("External attach requires the Attach API on Java 8-15; use self diagnostics or a Java 16+ helper")
+  var root = "/proc/" + pid, read = function(p) { return io.readFileString(p) }
+  var status = read(root + "/status"), own = read("/proc/self/status")
+  if (status.match(/^Uid:\s+(\d+)/m)[1] != own.match(/^Uid:\s+(\d+)/m)[1]) throw new Error("Target must have the same owner")
+  var identity = read(root + "/stat")
+  if (read(root + "/maps").indexOf("libjvm") < 0) throw new Error("Cannot verify HotSpot target")
+  var tmp = o.tmpDir || "/tmp", socketPath = tmp + "/.java_pid" + pid, trigger = tmp + "/.attach_pid" + pid, created = false
+  var socket
+  try {
+    // Resolve the socket API before signaling any process.
+    var address = java.net.UnixDomainSocketAddress.of(socketPath)
+    if (!io.fileExists(socketPath)) {
+      if (o.initialize === false) throw new Error("Attach socket absent; initialization disabled")
+      var caught = new java.math.BigInteger(status.match(/^SigCgt:\s+([0-9a-f]+)/mi)[1], 16)
+      if (!caught.testBit(2)) throw new Error("Target does not catch SIGQUIT")
+      created = new java.io.File(trigger).createNewFile()
+      if (read(root + "/stat").replace(/^.*\) /, "").split(" ")[19] !== identity.replace(/^.*\) /, "").split(" ")[19]) throw new Error("Target identity changed")
+      var proc = new java.lang.ProcessBuilder(["/bin/kill", "-QUIT", pid]).start()
+      if (proc.waitFor() != 0) throw new Error("Cannot signal attach target")
+      var until = now() + Math.min(timeout, 10000)
+      while (!io.fileExists(socketPath) && now() < until) sleep(50, true)
+      if (!io.fileExists(socketPath)) throw new Error("Attach socket did not appear; check attach configuration and tmpDir")
+    }
+    var owner = java.nio.file.Files.getOwner(java.nio.file.Paths.get(socketPath)).getName()
+    if (String(owner) !== String(java.nio.file.Files.getOwner(java.nio.file.Paths.get(root)).getName())) throw new Error("Attach socket owner mismatch")
+    socket = java.nio.channels.SocketChannel.open(java.net.StandardProtocolFamily.UNIX)
+    socket.configureBlocking(false)
+    var deadline = now() + timeout
+    socket.connect(address)
+    while (!socket.finishConnect()) { if (now() > deadline) throw new Error("Attach connect timeout"); sleep(10, true) }
+    var b = java.nio.ByteBuffer.wrap(new java.lang.String("1\u0000jcmd\u0000" + command + "\u0000\u0000\u0000").getBytes("UTF-8"))
+    while (b.hasRemaining()) { if (now() > deadline) throw new Error("Attach write timeout"); socket.write(b) }
+    b = java.nio.ByteBuffer.allocate(8192)
+    while (true) {
+      var n = socket.read(b)
+      if (n < 0) break
+      if (n === 0) { if (now() > deadline) throw new Error("Attach response timeout; target operation may continue"); sleep(10, true); continue }
+      if (output.size() + n > limit) throw new Error("Diagnostic output limit exceeded")
+      output.write(b.array(), 0, n); b.clear(); deadline = now() + timeout
+    }
+    var text = String(output.toString("UTF-8")), newline = text.indexOf("\n")
+    if (newline < 0 || text.substring(0, newline).trim() !== "0") throw new Error("Attach failed: " + text)
+    return text.substring(newline + 1)
+  } finally { if (socket) socket.close(); if (created) new java.io.File(trigger).delete() }
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.diagnosticCapabilities(target, options) : Map</key>
+ * Reports helper runtime and target diagnostic help. Requires `self` or an explicit PID.
+ * Java 8 supports self management; the Linux socket fallback requires Java 16+.
+ * </odoc>
+ */
+OpenWrap.java.prototype.diagnosticCapabilities = function(target, options) {
+  target = this.__diagTarget(target)
+  var r = { target: target, helperJava: String(java.lang.System.getProperty("java.version")), commands: [], errors: [] }
+  var spec = String(java.lang.System.getProperty("java.specification.version"))
+  var major = Number(spec.indexOf("1.") === 0 ? spec.substring(2) : spec)
+  r.transports = { attachAPI: false, unixSocket: major >= 16 && String(java.lang.System.getProperty("os.name")) === "Linux", selfManagement: target === "self" }
+  try { java.lang.Class.forName("com.sun.tools.attach.VirtualMachine"); r.transports.attachAPI = true } catch(e) {}
+  if (target === "self") {
+    var server = java.lang.management.ManagementFactory.getPlatformMBeanServer()
+    r.management = {}
+    ;["java.lang:type=Memory", "com.sun.management:type=DiagnosticCommand", "com.sun.management:type=HotSpotDiagnostic"].forEach(n => r.management[n] = Boolean(server.isRegistered(new javax.management.ObjectName(n))))
+  }
+  try { r.help = this.jcmd(target, "help", options); r.commands = r.help.split("\n").map(s => s.trim()).filter(s => /^[A-Za-z]+\.[A-Za-z_]+$/.test(s)) } catch(e) { r.errors.push(String(e)) }
+  return r
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.collectOOM(target, options) : Map</key>
+ * Returns a lightweight timestamped snapshot with section sources and errors. Does not request GC or dumps.
+ * Target must be `self` or a PID. Linux evidence includes proc status/limits and resolved cgroup memory files.
+ * </odoc>
+ */
+OpenWrap.java.prototype.collectOOM = function(target, options) {
+  target = this.__diagTarget(target)
+  var r = { target: target, timestamp: new Date().toISOString(), sections: {}, errors: [] }
+  var section = function(name, source, fn) { try { r.sections[name] = { source: source, data: fn() } } catch(e) { r.errors.push({ section: name, source: source, error: String(e) }) } }
+  if (target === "self") {
+    section("memory", "ManagementFactory", function() {
+      var mf = java.lang.management.ManagementFactory, b = mf.getMemoryMXBean()
+      var usage = u => ({ used: Number(u.getUsed()), committed: Number(u.getCommitted()), max: Number(u.getMax()), init: Number(u.getInit()) })
+      var pools = [], gc = [], buffers = [], it = mf.getMemoryPoolMXBeans().iterator()
+      while (it.hasNext()) { var p = it.next(); pools.push({ name: String(p.getName()), usage: usage(p.getUsage()) }) }
+      it = mf.getGarbageCollectorMXBeans().iterator()
+      while (it.hasNext()) { var g = it.next(); gc.push({ name: String(g.getName()), count: Number(g.getCollectionCount()), timeMs: Number(g.getCollectionTime()) }) }
+      it = mf.getPlatformMXBeans(java.lang.Class.forName("java.lang.management.BufferPoolMXBean")).iterator()
+      while (it.hasNext()) { var bpool = it.next(); buffers.push({ name: String(bpool.getName()), count: Number(bpool.getCount()), used: Number(bpool.getMemoryUsed()), capacity: Number(bpool.getTotalCapacity()) }) }
+      return { heap: usage(b.getHeapMemoryUsage()), nonHeap: usage(b.getNonHeapMemoryUsage()), pools: pools, gc: gc, buffers: buffers, threads: Number(mf.getThreadMXBean().getThreadCount()), loadedClasses: Number(mf.getClassLoadingMXBean().getLoadedClassCount()) }
+    })
+  }
+  ;["VM.version", "VM.flags", "GC.heap_info"].forEach(cmd => section(cmd, "diagnosticCommand", () => ow.java.jcmd(target, cmd, options)))
+  var pid = target === "self" ? String(java.lang.management.ManagementFactory.getRuntimeMXBean().getName()).split("@")[0] : target
+  if (String(java.lang.System.getProperty("os.name")) === "Linux") {
+    ;["status", "limits", "stat"].forEach(name => section("proc." + name, "/proc/" + pid + "/" + name, () => io.readFileString("/proc/" + pid + "/" + name)))
+    section("cgroup", "target proc cgroup/mountinfo", function() {
+      var result = {}, groups = io.readFileString("/proc/" + pid + "/cgroup").trim().split("\n")
+      var mounts = io.readFileString("/proc/" + pid + "/mountinfo").trim().split("\n")
+      var unescape = s => s.replace(/\\([0-7]{3})/g, (_, n) => String.fromCharCode(parseInt(n, 8)))
+      groups.forEach(line => {
+        var g = line.split(":"), v2 = g[0] === "0" && g[1] === ""
+        if (!v2 && g[1].split(",").indexOf("memory") < 0) return
+        mounts.forEach(line => {
+          var pair = line.split(" - "), m = pair[0].split(" "), fs = pair[1].split(" ")
+          if (v2 ? fs[0] !== "cgroup2" : fs[0] !== "cgroup" || fs[2].split(",").indexOf("memory") < 0) return
+          var root = unescape(m[3]), group = g.slice(2).join(":"), rel
+          if (group === root) rel = ""
+          else if (root === "/") rel = group
+          else if (group.indexOf(root + "/") === 0) rel = group.substring(root.length)
+          else return
+          var base = "/proc/" + pid + "/root" + unescape(m[4]) + rel
+          result.version = v2 ? 2 : 1; result.path = base
+          var files = v2 ? ["memory.max", "memory.current", "memory.peak", "memory.events", "memory.stat"] : ["memory.limit_in_bytes", "memory.usage_in_bytes", "memory.max_usage_in_bytes", "memory.failcnt", "memory.stat"]
+          files.forEach(f => { if (io.fileExists(base + "/" + f)) result[f] = io.readFileString(base + "/" + f).trim() })
+        })
+      })
+      if (isUnDef(result.version)) throw new Error("Memory cgroup mount not resolved")
+      return result
+    })
+    if (target !== "self") section("hsperf", "HotSpot perfdata", function() {
+      var entries = ow.java.getLocalJavaPIDs()
+      var found = entries.filter(e => String(e.pid) === pid)
+      if (!found.length) throw new Error("Target perfdata unavailable")
+      return ow.java.parseHSPerf(found[0].path, true, { strict: true })
+    })
+  }
+  return r
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.classHistogram(target, options) : Map</key>
+ * Captures a histogram. Defaults to live objects and may trigger GC/pause; `live:false` includes unreachable objects.
+ * </odoc>
+ */
+OpenWrap.java.prototype.classHistogram = function(target, options) {
+  var o = options || {}, raw = this.jcmd(target, "GC.class_histogram" + (o.live === false ? " -all" : ""), o), rows = []
+  raw.split("\n").forEach(line => { var m = line.match(/^\s*(\d+):\s+(\d+)\s+(\d+)\s+(.+)$/); if (m) rows.push({ rank: Number(m[1]), count: Number(m[2]), bytes: Number(m[3]), className: m[4] }) })
+  return { target: target, live: o.live !== false, raw: raw, histogram: rows }
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.threadDump(target, options) : String</key>
+ * Returns a platform-thread dump. `file` requests a virtual-thread-capable JSON file on supporting JVMs.
+ * </odoc>
+ */
+OpenWrap.java.prototype.threadDump = function(target, options) {
+  var o = options || {}
+  if (isDef(o.file)) return this.jcmd(target, "Thread.dump_to_file -format=json " + this.__diagQuote(o.file), o)
+  if (target === "self") {
+    var threads = java.lang.management.ManagementFactory.getThreadMXBean().dumpAllThreads(true, true), out = []
+    for (var i = 0; i < threads.length; i++) {
+      var t = threads[i]
+      out.push('"' + t.getThreadName() + '" id=' + t.getThreadId() + ' ' + t.getThreadState())
+      var stack = t.getStackTrace()
+      for (var j = 0; j < stack.length; j++) out.push("    at " + stack[j])
+      if (t.getLockInfo() !== null) out.push("    waiting on " + t.getLockInfo())
+      var locks = t.getLockedSynchronizers()
+      for (var j = 0; j < locks.length; j++) out.push("    owns " + locks[j])
+      var monitors = t.getLockedMonitors()
+      for (var j = 0; j < monitors.length; j++) out.push("    monitor " + monitors[j])
+      out.push("")
+    }
+    return out.join("\n")
+  }
+  return this.jcmd(target, "Thread.print -l", o)
+}
+OpenWrap.java.prototype.__diagQuote = function(s) {
+  if (!isString(s) || /[\u0000\r\n"\\]/.test(s)) throw new Error("Invalid diagnostic file path")
+  return '"' + s + '"'
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.heapDump(target, file, options) : Map</key>
+ * Explicitly writes a heap dump in the target filesystem. Defaults to live objects; may pause and collect.
+ * `live:false` includes unreachable objects. `gzip` requests target-supported compression.
+ * Existing files are never overwritten. Use an absolute unique path.
+ * </odoc>
+ */
+OpenWrap.java.prototype.heapDump = function(target, file, options) {
+  target = this.__diagTarget(target)
+  var o = options || {}, quoted = this.__diagQuote(file)
+  if (!new java.io.File(file).isAbsolute()) throw new Error("Heap dump path must be absolute")
+  if (target === "self" && !o.gzip) {
+    var server = java.lang.management.ManagementFactory.getPlatformMBeanServer()
+    server.invoke(new javax.management.ObjectName("com.sun.management:type=HotSpotDiagnostic"), "dumpHeap", [file, java.lang.Boolean.valueOf(o.live !== false)], ["java.lang.String", "boolean"])
+    return { target: target, file: file, live: o.live !== false }
+  }
+  var help = this.jcmd(target, "help GC.heap_dump", o)
+  if (o.gzip && help.indexOf("-gz") < 0) throw new Error("Target does not support compressed heap dumps")
+  return { target: target, file: file, live: o.live !== false, raw: this.jcmd(target, "GC.heap_dump " + (o.live === false ? "-all " : "") + (o.gzip ? "-gz=1 " : "") + quoted, o) }
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.nativeMemory(target, options) : Map</key>
+ * Returns a native-memory summary. NMT generally needs startup enablement; this method does not enable it.
+ * </odoc>
+ */
+OpenWrap.java.prototype.nativeMemory = function(target, options) {
+  var raw = this.jcmd(target, "VM.native_memory summary", options)
+  return { target: target, enabled: !/not enabled/i.test(raw), raw: raw }
+}

@@ -1,0 +1,360 @@
+# Copyright 2026 Nuno Aguiar
+help:
+  text: Generate a portable Markdown ODoc reference wiki using streaming source reads and disk-spooled documentation bodies.
+  expects:
+  - name: dirs
+    desc: Comma-delimited source directories, relative to the invocation directory; recursively scans .js and .java files. Commas in paths are unsupported.
+    example: js,src
+    mandatory: true
+  - name: output
+    desc: Output directory (default odoc-reference). A manifest tracks owned pages; other files are preserved and conflicts are refused.
+    example: odoc-reference
+  - name: maxBlockMB
+    desc: Maximum ODoc block size in UTF-16 code units divided by 1048576 (default 8). Oversized or malformed blocks are reported and skipped; the process exits unsuccessfully after generating valid entries.
+    example: 8
+
+ojob:
+  sequential: true
+  logToConsole: false
+  catch: printErr(exception); exit(1)
+
+todo:
+- Generate ODoc Reference
+
+jobs:
+- name: Generate ODoc Reference
+  exec: |
+    (function() {
+      var Files = java.nio.file.Files
+      var cwd = new java.io.File('.').getCanonicalFile().toPath()
+      var output, stage, spool
+      var manifestName = '.odoc-reference.json'
+      var owner = 'genODocReference/v1'
+      var apis = Object.create(null), categories = Object.create(null)
+      var counts = { files: 0, entries: 0, variants: 0, apis: 0, errors: 0 }
+      var limit = Number(args.maxBlockMB === undefined ? 8 : args.maxBlockMB) * 1024 * 1024
+      var noLinks = java.lang.reflect.Array.newInstance(java.nio.file.LinkOption, 1)
+      noLinks[0] = java.nio.file.LinkOption.NOFOLLOW_LINKS
+      function exists(path) { return Files.exists(path, noLinks) }
+      function directory(path) { return Files.isDirectory(path, noLinks) }
+      function hash(text) { return sha256(text) }
+      function filename(kind, key) {
+        var slug = key.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || (kind === 'category' && !key ? 'globals' : 'entry')
+        return kind + '-' + slug.toLowerCase() + '-' + hash(key) + '.md'
+      }
+      function label(text) { return String(text).replace(/[\\`*_{}\[\]<>&#!|~]/g, function(c) { return '&#' + c.charCodeAt(0) + ';' }).replace(/\r?\n/g, ' ') }
+      function link(text, file) { return '[' + label(text) + '](' + file + ')' }
+      function sorted(map) { return Object.keys(map).sort() }
+      function relative(path) {
+        try { return String(cwd.relativize(path)).replace(/\\/g, '/') }
+        catch(e) { return String(path).replace(/\\/g, '/') }
+      }
+      function error(file, line, message) {
+        counts.errors++
+        printErr(file + (line ? ':' + line : '') + ': ' + message)
+      }
+      function writer(path) { return Files.newBufferedWriter(path, java.nio.charset.StandardCharsets.UTF_8) }
+      function write(path, text) { io.writeFileString(String(path), String(text), 'UTF-8') }
+      function copyText(path, out) {
+        var input = io.readFileStream(String(path))
+        try {
+          ioStreamRead(input, function(chunk) { out.write(chunk) }, 8192, true, 'UTF-8')
+        } finally { input.close() }
+      }
+      function category(key) {
+        if (!categories[key]) {
+          var parts = key ? key.split('.') : []
+          var parent = parts.length > 1 ? parts.slice(0, -1).join('.') : null
+          categories[key] = { file: filename('category', key), parent: parent, children: Object.create(null), apis: Object.create(null) }
+          if (parent !== null) category(parent).children[key] = true
+        }
+        return categories[key]
+      }
+      function parse(block) {
+        block = block.replace(/\r/g, '')
+        var markdown = /^<odoc\s+format\s*=\s*["'](?:markdown|md)["']\s*>/i.test(block)
+        var oldWhitespace = XML.ignoreWhitespace
+        try {
+          if (markdown) {
+            block = block.replace(/^[ \t]*\*(?: |(?=$))/mg, '')
+            XML.ignoreWhitespace = false
+          } else {
+            block = block.replace(/\\\n/mg, '%%br%%').replace(/([\n|%%br%%])[ |\t]+\*+[ |\t]/mg, '$1').replace(/\n+/mg, ' ')
+          }
+          var xml = new XMLList(block)
+          if (xml.key.length() !== 1) throw new Error('Expected exactly one key')
+          var signature = String(xml.key).replace(/%%br%%/g, '').trim()
+          var key = signature.replace(/[({\[:].*$/, '').trim()
+          if (!key) throw new Error('Empty lookup key')
+          var text = String(xml.text())
+          if (markdown) {
+            text = ''
+            var children = xml.children()
+            for (var i = 0; i < children.length(); i++) {
+              if (children[i].nodeKind() === 'text') text += String(children[i])
+            }
+            text = text.replace(/^(?:[ \t]*\n)+/, '').replace(/(?:\n[ \t]*)+$/, '')
+          } else text = text.replace(/%%br%%/g, '\n')
+          return { key: key, signature: signature, text: text, markdown: markdown }
+        } finally { XML.ignoreWhitespace = oldWhitespace }
+      }
+      function collect(block, file, line) {
+        try {
+          var entry = parse(block)
+          var key = entry.key
+          if (!apis[key]) {
+            var split = key.lastIndexOf('.')
+            var group = split < 0 ? '' : key.slice(0, split)
+            category(group).apis[key] = true
+            apis[key] = { file: filename('api', key), category: group, variants: Object.create(null) }
+            counts.apis++
+          }
+          var digest = hash(JSON.stringify([entry.signature, entry.markdown, entry.text]))
+          var variants = apis[key].variants
+          if (!variants[digest]) {
+            var body = spool.resolve(digest + '.txt')
+            // Bodies remain on disk, including while duplicate API pages are assembled.
+            write(body, entry.markdown ? entry.text : entry.text.split('\n').map(function(line) {
+              return line.replace(/[\\`*_{}\[\]<>&#!|~]/g, function(c) { return '&#' + c.charCodeAt(0) + ';' })
+            }).join('\n\n'))
+            variants[digest] = { signature: entry.signature, body: body, sources: [] }
+            counts.variants++
+          }
+          variants[digest].sources.push({ file: file, line: line })
+          counts.entries++
+        } catch(e) { error(file, line, 'Invalid ODoc: ' + e) }
+      }
+      function scan(path) {
+        var file = relative(path), reader
+        var pending = '', parts = [], size = 0, active = false, oversized = false
+        var line = 1, startLine = 1, cdata = false
+        function append(text) {
+          if (!active || oversized) return
+          size += text.length
+          if (size > limit) {
+            error(file, startLine, 'ODoc exceeds maxBlockMB=' + args.maxBlockMB)
+            oversized = true
+            parts = []
+          } else parts.push(text)
+        }
+        function advance(text) {
+          var i = -1
+          while ((i = text.indexOf('\n', i + 1)) >= 0) line++
+        }
+        try {
+          reader = io.readFileStream(String(path))
+          counts.files++
+          ioStreamRead(reader, function(chunk) {
+            pending += chunk
+            var tokens = /<odoc(?:\s+[^>]*?)?>|<\/odoc\s*>|<!\[CDATA\[|\]\]>/gi, token, position = 0
+            while ((token = tokens.exec(pending)) !== null) {
+              var before = pending.slice(position, token.index)
+              append(before)
+              advance(before)
+              if (/^<!\[CDATA\[$/i.test(token[0])) {
+                append(token[0])
+                if (active) cdata = true
+              } else if (token[0] === ']]>') {
+                append(token[0])
+                cdata = false
+              } else if (/^<\/odoc/i.test(token[0])) {
+                append(token[0])
+                if (active && !oversized) collect(parts.join(''), file, startLine)
+                active = false
+                cdata = false
+                parts = []
+              } else if (cdata) {
+                append(token[0])
+              } else {
+                if (active && !oversized) error(file, startLine, 'Unclosed ODoc before next opening tag')
+                active = true
+                oversized = false
+                parts = []
+                size = 0
+                startLine = line
+                append(token[0])
+              }
+              advance(token[0])
+              position = tokens.lastIndex
+            }
+            // Retain a possible split tag, never an entire source line.
+            var tail = pending.slice(position)
+            var cut = tail.lastIndexOf('<')
+            if (cut >= 0) {
+              var candidate = tail.slice(cut).toLowerCase()
+              var partial = '<odoc'.indexOf(candidate) === 0 || '</odoc'.indexOf(candidate) === 0 || '<![cdata['.indexOf(candidate) === 0
+              if (!partial && !/^<\/?odoc(?:\s|$)/.test(candidate)) cut = tail.length
+            } else cut = tail.length
+            var brackets = tail.match(/\]{1,2}$/)
+            if (brackets) cut = Math.min(cut, tail.length - brackets[0].length)
+            if (tail.length - cut > limit) {
+              error(file, line, 'Unterminated or oversized ODoc tag')
+              cut = tail.length
+            }
+            var consumed = tail.slice(0, cut)
+            append(consumed)
+            advance(consumed)
+            pending = tail.slice(cut)
+          }, 8192, true, 'UTF-8')
+          append(pending)
+          if (!active && /^<odoc(?:\s|$)/i.test(pending)) error(file, line, 'Unterminated ODoc opening tag')
+          if (active && !oversized) error(file, startLine, 'Unclosed ODoc at end of file')
+        } catch(e) { error(file, line, 'Cannot read source: ' + e) }
+        finally { if (reader) reader.close() }
+      }
+      function walk(root) {
+        // Iterative DFS holds directory iterators only for the current ancestry.
+        var stack = []
+        function push(path) {
+          try {
+            var stream = Files.newDirectoryStream(path)
+            stack.push({ stream: stream, iterator: stream.iterator(), path: path })
+          } catch(e) { error(relative(path), 0, 'Cannot read directory: ' + e) }
+        }
+        push(root)
+        try {
+          while (stack.length) {
+            var top = stack[stack.length - 1]
+            var more
+            try { more = top.iterator.hasNext() } catch(e) {
+              error(relative(top.path), 0, 'Cannot list directory: ' + e)
+              more = false
+            }
+            if (!more) { top.stream.close(); stack.pop(); continue }
+            var path = top.iterator.next()
+            if (Files.isSymbolicLink(path) || path.startsWith(output) || path.startsWith(stage)) continue
+            if (directory(path)) push(path)
+            else if (Files.isRegularFile(path, noLinks) && /\.(?:js|java)$/.test(String(path.getFileName()))) scan(path)
+          }
+        } finally { while (stack.length) stack.pop().stream.close() }
+      }
+      function breadcrumbs(group) {
+        var links = [link('Home', 'index.md'), link('All APIs', 'all-apis.md')]
+        if (!group) links.push(link('Globals', category('').file))
+        else {
+          var parts = group.split('.')
+          for (var i = 1; i <= parts.length; i++) {
+            var key = parts.slice(0, i).join('.')
+            links.push(link(key, category(key).file))
+          }
+        }
+        return links.join(' / ') + '\n\n'
+      }
+      function render() {
+        var pages = ['index.md', 'all-apis.md']
+        var incomplete = counts.errors ? '> Incomplete reference: ' + counts.errors + ' extraction error(s). See generator diagnostics.\n\n' : ''
+        var home = '# ODoc reference\n\n' + incomplete + link('All APIs', 'all-apis.md') + '\n\n## Categories\n\n'
+        sorted(categories).forEach(function(key) {
+          if (categories[key].parent === null) home += '- ' + link(key || 'Globals', categories[key].file) + '\n'
+        })
+        home += '\n' + counts.apis + ' APIs; ' + counts.entries + ' entries from ' + counts.files + ' source files.\n'
+        write(stage.resolve('index.md'), home)
+        var all = writer(stage.resolve('all-apis.md'))
+        try {
+          all.write('# All APIs\n\n' + link('Home', 'index.md') + '\n\n' + incomplete)
+          sorted(apis).forEach(function(key) { all.write('- ' + link(key, apis[key].file) + '\n') })
+        } finally { all.close() }
+        sorted(categories).forEach(function(key) {
+          var cat = categories[key], out = writer(stage.resolve(cat.file))
+          pages.push(cat.file)
+          try {
+            out.write('# ' + label(key || 'Globals') + '\n\n' + breadcrumbs(key))
+            if (Object.keys(cat.children).length) {
+              out.write('## Subcategories\n\n')
+              sorted(cat.children).forEach(function(child) { out.write('- ' + link(child, categories[child].file) + '\n') })
+              out.write('\n')
+            }
+            if (Object.keys(cat.apis).length) {
+              out.write('## APIs\n\n')
+              sorted(cat.apis).forEach(function(api) { out.write('- ' + link(api, apis[api].file) + '\n') })
+            }
+          } finally { out.close() }
+        })
+        sorted(apis).forEach(function(key) {
+          var api = apis[key], out = writer(stage.resolve(api.file))
+          pages.push(api.file)
+          try {
+            out.write('# ' + label(key) + '\n\n' + breadcrumbs(api.category))
+            var variants = Object.keys(api.variants).map(function(id) { return api.variants[id] })
+            variants.forEach(function(v) {
+              v.sources.sort(function(a, b) { return a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line })
+            })
+            variants.sort(function(a, b) {
+              var x = a.sources[0], y = b.sources[0]
+              return x.file < y.file ? -1 : x.file > y.file ? 1 : x.line - y.line
+            })
+            variants.forEach(function(v) {
+              out.write('## ' + label(v.signature) + '\n\n')
+              copyText(v.body, out)
+              out.write('\n\nSources:\n\n')
+              v.sources.forEach(function(s) { out.write('- ' + label(s.file) + ':' + s.line + '\n') })
+              out.write('\n')
+            })
+          } finally { out.close() }
+        })
+        return pages.sort()
+      }
+      function publish(pages) {
+        var manifestPath = output.resolve(manifestName), previous = { files: [] }
+        if (exists(manifestPath)) {
+          if (Files.isSymbolicLink(manifestPath) || !Files.isRegularFile(manifestPath, noLinks)) throw new Error('Unsafe manifest path')
+          previous = io.readFileJSON(String(manifestPath))
+          if (previous.generator !== owner || !Array.isArray(previous.files)) throw new Error('Unrecognized output manifest')
+          previous.files.forEach(function(file) {
+            if (typeof file !== 'string' || !/^(?:index|all-apis|(?:api|category)-[a-z0-9_-]+-[a-f0-9]{64})\.md$/.test(file)) throw new Error('Unsafe manifest filename')
+          })
+        }
+        var owned = Object.create(null)
+        previous.files.forEach(function(file) { owned[file] = true })
+        // Complete conflict checks before modifying any output file.
+        pages.concat(previous.files).forEach(function(file) {
+          var path = output.resolve(file)
+          if (exists(path) && (!owned[file] || Files.isSymbolicLink(path) || !Files.isRegularFile(path, noLinks))) throw new Error('Unowned or unsafe output conflict: ' + path)
+        })
+        var next = { generator: owner, complete: counts.errors === 0, counts: counts, files: pages }
+        write(stage.resolve(manifestName), JSON.stringify(next, null, 2) + '\n')
+        Files.createDirectories(output)
+        pages.forEach(function(file) {
+          Files.move(stage.resolve(file), output.resolve(file), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        })
+        var current = Object.create(null)
+        pages.forEach(function(file) { current[file] = true })
+        previous.files.forEach(function(file) { if (!current[file]) Files.deleteIfExists(output.resolve(file)) })
+        Files.move(stage.resolve(manifestName), manifestPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+      }
+      var failed = false
+      try {
+        if (typeof args.dirs !== 'string' || !args.dirs.trim()) throw new Error('dirs is required (comma-delimited source directories)')
+        if (!isFinite(limit) || limit <= 0 || limit > 1024 * 1024 * 1024) throw new Error('maxBlockMB must be greater than 0 and at most 1024')
+        args.maxBlockMB = limit / (1024 * 1024)
+        output = new java.io.File(String(args.output || 'odoc-reference')).getCanonicalFile().toPath()
+        if (exists(output) && !directory(output)) throw new Error('Output must be a directory')
+        var roots = args.dirs.split(',').map(function(dir) {
+          if (!dir.trim()) throw new Error('Empty source directory argument')
+          var file = new java.io.File(dir.trim()).getAbsoluteFile().toPath().normalize()
+          if (Files.isSymbolicLink(file)) throw new Error('Source root cannot be a symbolic link: ' + file)
+          var path = file.toRealPath()
+          if (!directory(path)) throw new Error('Source is not a directory: ' + path)
+          if (path.startsWith(output)) throw new Error('Source root cannot be inside output: ' + path)
+          return path
+        }).sort(function(a, b) { return String(a).length - String(b).length || String(a).localeCompare(String(b)) })
+        roots = roots.filter(function(path, i) {
+          for (var j = 0; j < i; j++) if (path.startsWith(roots[j])) return false
+          return true
+        })
+        // A sibling staging directory permits local moves and is excluded from traversal.
+        Files.createDirectories(output.getParent())
+        stage = new java.io.File(io.createTempDir('.odoc-reference-', String(output.getParent()))).toPath()
+        spool = Files.createDirectory(stage.resolve('spool'))
+        roots.forEach(walk)
+        publish(render())
+        print('ODoc reference: ' + counts.files + ' files, ' + counts.entries + ' entries, ' + counts.apis + ' APIs, ' + counts.errors + ' errors -> ' + output)
+        failed = counts.errors > 0
+      } catch(e) {
+        printErr('ODoc reference failed: ' + e)
+        failed = true
+      } finally {
+        if (stage) io.rm(String(stage))
+      }
+      if (failed) exit(1)
+    })()

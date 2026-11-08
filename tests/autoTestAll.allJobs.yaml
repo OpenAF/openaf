@@ -23,6 +23,7 @@ include:
 - autoTestAll.Channels.yaml
 - autoTestAll.Template.yaml
 - autoTestAll.oDoc.yaml
+- autoTestAll.ODocReference.yaml
 - autoTestAll.AI.yaml
 - autoTestAll.AIDecisions.yaml
 - autoTestAll.Python.yaml
