@@ -39,7 +39,7 @@ The parser does not create searchable fields for `<category>`, `<author>`, `<ver
 
 ## Opt in to Markdown
 
-Use Markdown when an entry contains more than one paragraph or includes examples. Keep simple, single-paragraph descriptions as plain text. Use blank lines between paragraphs, lists for options, backticks for parameter names and short expressions, and fenced blocks with a language label for standalone examples.
+Use Markdown when an entry contains more than one paragraph or includes examples. Keep simple, single-paragraph descriptions as plain text. Place the comment immediately above the corresponding function or, for generated methods, the registration block. Keep the existing help key and signature when converting an entry.
 
 Mark an individual entry with `format="markdown"` or its alias `format="md"`:
 
@@ -54,7 +54,7 @@ Mark an individual entry with `format="markdown"` or its alias `format="md"`:
  * - Returns a string.
  *
  * ```javascript
- * greeting("Ada");
+ * greeting("Ada")
  * // "Hello Ada"
  * ```
  * ]]>
@@ -62,7 +62,11 @@ Mark an individual entry with `format="markdown"` or its alias `format="md"`:
  */
 ````
 
-Markdown entries preserve ordinary newlines, blank lines, and indentation; trailing backslashes are unnecessary. CDATA allows literal `&` and XML/HTML examples. Without CDATA, the body must remain XML-compatible. Existing unmarked entries retain their original extraction and plain-text display.
+The `<key>` remains an XML element and supplies the searchable signature; Markdown belongs in the body after it. Use blank lines between paragraphs, lists for options, backticks for parameter names and short expressions, and language-labelled fenced blocks for standalone examples. The same comment structure works in Java source.
+
+Markdown entries preserve ordinary newlines, blank lines, and indentation; trailing backslashes are unnecessary. The parser removes the leading comment `*` and one following space, so add indentation after that prefix for nested lists or code. It trims blank lines at the edges of the body.
+
+CDATA is useful for examples containing literal `&`, `<`, or XML/HTML. Without it, escape XML-sensitive characters (for example, `&amp;` and `&lt;`); entities are decoded in the extracted text. CDATA cannot contain its closing delimiter `]]>`. Also avoid a literal `</odoc>` in the body: the source extractor treats it as the end of the entry, even inside CDATA. A `*/` in an example would end the surrounding JavaScript or Java comment. Rewrite or split such examples to keep the source and ODoc well formed. Existing unmarked entries retain their original extraction and plain-text display.
 
 Generated Markdown entries contain `{ k, t, format: "markdown" }`. `ODoc.add(key, signature, text, "markdown")` (or `"md"`) provides the same opt-in for programmatically created entries. Both aliases normalize to `format: "markdown"`. Local ZIP and web gzip storage retain the format marker.
 
@@ -77,6 +81,10 @@ if (results.length == 1 && isString(results[0].text)) {
 ```
 
 `withMD()` implements OpenAF's supported Markdown subset, rather than full CommonMark.
+
+### Check an entry
+
+Generate help from the edited source using the commands below, then inspect the raw result of `searchHelp()` for the expected key, `format: "markdown"`, line breaks, and example text. Also check `openaf -helpscript greeting` or console help against a build containing the generated database. Redirected output and browser help show the source, so check an ANSI-capable terminal when assessing rendered formatting. When adding or moving entries between modules, ensure every source file is included in the relevant generated help subject; the [build script](../buildos.js) explicitly merges some lazy-module entries.
 
 ## Generate local help
 
