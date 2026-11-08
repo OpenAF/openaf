@@ -49,7 +49,7 @@ These are the versions currently visible in the repo snapshot:
 | --- | --- |
 | jQuery | 3.7.1 |
 | Materialize | 2.2.2 |
-| Chart.js | 4.5.1 |
+| Chart.js | 4.6.1 |
 | Handlebars | 4.7.8 |
 
 Treat these as the baseline for generated offline UIs unless the repo snapshot changes.
