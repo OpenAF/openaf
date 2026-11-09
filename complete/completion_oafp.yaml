@@ -143,10 +143,10 @@ complete:
   - name: out=gb64json
     desc: Equivalent to out=base64 and base64gzip=true
   - name: out=grid
-    desc: A multiple output ascii grid (useful together with 'loop')
+    desc: A multi-widget terminal dashboard (charts, bars, sparklines, heatmaps, bullets, status matrices, timelines, tables, ...) laid out as a grid (useful together with 'loop')
     opts:
     - name: grid=
-      desc: A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).
+      desc: A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see cell fields below).
   - name: out=html
     desc: An HTML format
     opts:
@@ -506,6 +506,16 @@ complete:
     opts:
     - name: javasinception=
       desc: If true includes oafp itself in the local Java process list
+  - name: in=hprof
+    desc: Streaming HotSpot heap records; hprofmode=summary returns histogram metadata
+  - name: in=jcmd
+    desc: Explicit JVM diagnostic command with javapid and jcmdcommand
+  - name: in=javadiag
+    desc: Java capabilities, snapshots and explicit capture operations
+  - name: in=javastacks
+    desc: Full text or JSON thread dumps
+  - name: in=javaoom
+    desc: OOM messages and bounded surrounding log excerpts
   - name: in=javagc
     desc: The Java GC log lines text format
     opts:
@@ -791,7 +801,7 @@ complete:
 - name: '-v'
   desc: Changes the input to a map with the tool's version info
 - name: debug=
-  desc: If true prints debugging messages
+  desc: If true prints debugging messages and enables error stack traces (OAF_ERRSTACK)
 - name: arraytomap=
   desc: If true will try to convert the input array to a map (see arraytomapkey, arraytomapkeepkey)
 - name: arraytomapkeepkey=
@@ -903,6 +913,8 @@ complete:
     desc: A JSON/SLON configuration with order (defaults to 2) and/or precision (defaults to 5)
   - name: regressionforecast=
     desc: Optional path to an array of x values for which to forecast the corresponding y
+- name: removedupsmem=
+  desc: Streaming dedup memory budget as a percentage of JVM max heap (default 5, range 0–100). Zero uses a temporary disk index immediately.
 - name: removedups=
   desc: Removes duplicate array entries, retaining the first occurrence. Map key order is ignored recursively; array order and the distinction between arrays and maps are preserved.
 - name: removeempty=
@@ -1269,7 +1281,7 @@ complete:
 - name: jwtalg=
   desc: Specifies the algorithm used to sign the JWT (HS* or RSA by default). Depends on available algorithms on the current JVM.
 - name: grid=
-  desc: A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).
+  desc: A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see cell fields below).
 - name: httpdport=
   desc: The port to listen on (if not provided a free port is chosen and reported on stderr)
 - name: httpdhost=
@@ -1415,3 +1427,31 @@ complete:
     desc: Optional sBucket file source
   - name: secEnv=
     desc: A boolean flag to use environment variables as sBuckets
+- name: javapid=
+  desc: Explicit positive PID or self (collector JVM).
+- name: javadiagop=
+  desc: capabilities, snapshot (default), histogram, threads, nmt, heapdump, jfr, bundle.
+- name: javaoptions=
+  desc: OpenAF diagnostic/parser options; also accepts a JSON/SLON string.
+- name: javafile=
+  desc: Explicit target-filesystem destination for heapdump.
+- name: jcmdcommand=
+  desc: One explicit diagnostic command; out=jcmd accepts the input string.
+- name: hprofmode=
+  desc: records (default) or summary. Requires file.
+- name: javareport=
+  desc: Transform supplied evidence into a structured report.
+- name: javareportkind=
+  desc: 'Report label: gc, oom, profile, all (default).'
+- name: javareportformat=
+  desc: out=javareport renders Markdown by default; json selects JSON.
+- name: javatop=
+  desc: Maximum classes, stack groups and event examples; default 50.
+- name: javabundledir=
+  desc: out=javabundle creates a new local directory; in=javadiag javadiagop=bundle reopens it.
+- name: loopcount=
+  desc: Positive integer maximum loop passes.
+- name: loopduration=
+  desc: Positive maximum elapsed seconds; does not interrupt an active pass.
+- name: counterdelta=
+  desc: 'Transform options: identity, timestamp and counters (array of dotted paths).'

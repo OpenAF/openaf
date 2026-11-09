@@ -228,6 +228,11 @@ F_in__in_httpd_inhttpdkeypass_=1
 F_in__in_ini=0
 F_in__in_javas=0
 F_in__in_javas_javasinception_=1
+F_in__in_hprof=0
+F_in__in_jcmd=0
+F_in__in_javadiag=0
+F_in__in_javastacks=0
+F_in__in_javaoom=0
 F_in__in_javagc=0
 F_in__in_javagc_javagcjoin_=1
 F_in__in_javathread=0
@@ -413,6 +418,7 @@ F_regression__regressionpath_=0
 F_regression__regressionx_=0
 F_regression__regressionoptions_=0
 F_regression__regressionforecast_=0
+F_removedupsmem_=1
 F_removedups_=1
 F_removeempty_=1
 F_removenulls_=1
@@ -666,6 +672,20 @@ F_secKey__secPass_=0
 F_secKey__secMainPass_=0
 F_secKey__secFile_=0
 F_secKey__secEnv_=0
+F_javapid_=1
+F_javadiagop_=1
+F_javaoptions_=1
+F_javafile_=1
+F_jcmdcommand_=1
+F_hprofmode_=1
+F_javareport_=1
+F_javareportkind_=1
+F_javareportformat_=1
+F_javatop_=1
+F_javabundledir_=1
+F_loopcount_=1
+F_loopduration_=1
+F_counterdelta_=1
 
 # Iterate over the arguments
 FFOUND=0
@@ -908,6 +928,11 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=ini" ]; then FFOUND=1; F_in__in_ini=1; F_in_=0; fi
     if [ "$arg" = "in=javas" ]; then FFOUND=1; F_in__in_javas=1; F_in_=0; fi
     if [ "${arg#javasinception=}" != "$arg" ]; then FFOUND=1; F_in__in_javas_javasinception_=0; fi
+    if [ "$arg" = "in=hprof" ]; then FFOUND=1; F_in__in_hprof=1; F_in_=0; fi
+    if [ "$arg" = "in=jcmd" ]; then FFOUND=1; F_in__in_jcmd=1; F_in_=0; fi
+    if [ "$arg" = "in=javadiag" ]; then FFOUND=1; F_in__in_javadiag=1; F_in_=0; fi
+    if [ "$arg" = "in=javastacks" ]; then FFOUND=1; F_in__in_javastacks=1; F_in_=0; fi
+    if [ "$arg" = "in=javaoom" ]; then FFOUND=1; F_in__in_javaoom=1; F_in_=0; fi
     if [ "$arg" = "in=javagc" ]; then FFOUND=1; F_in__in_javagc=1; F_in_=0; fi
     if [ "${arg#javagcjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_javagc_javagcjoin_=0; fi
     if [ "$arg" = "in=javathread" ]; then FFOUND=1; F_in__in_javathread=1; F_in_=0; fi
@@ -1156,6 +1181,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "regressionx=" ]; then FFOUND=1; F_regression__regressionx_=1; F_regression_=0; fi
     if [ "$arg" = "regressionoptions=" ]; then FFOUND=1; F_regression__regressionoptions_=1; F_regression_=0; fi
     if [ "$arg" = "regressionforecast=" ]; then FFOUND=1; F_regression__regressionforecast_=1; F_regression_=0; fi
+    # removedupsmem= single option
+    if [ "$arg" = "removedupsmem=" ]; then FFOUND=1; F_removedupsmem_=0; fi
     # removedups= single option
     if [ "$arg" = "removedups=" ]; then FFOUND=1; F_removedups_=0; fi
     # removeempty= single option
@@ -1630,6 +1657,34 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "secMainPass=" ]; then FFOUND=1; F_secKey__secMainPass_=1; F_secKey_=0; fi
     if [ "$arg" = "secFile=" ]; then FFOUND=1; F_secKey__secFile_=1; F_secKey_=0; fi
     if [ "$arg" = "secEnv=" ]; then FFOUND=1; F_secKey__secEnv_=1; F_secKey_=0; fi
+    # javapid= single option
+    if [ "$arg" = "javapid=" ]; then FFOUND=1; F_javapid_=0; fi
+    # javadiagop= single option
+    if [ "$arg" = "javadiagop=" ]; then FFOUND=1; F_javadiagop_=0; fi
+    # javaoptions= single option
+    if [ "$arg" = "javaoptions=" ]; then FFOUND=1; F_javaoptions_=0; fi
+    # javafile= single option
+    if [ "$arg" = "javafile=" ]; then FFOUND=1; F_javafile_=0; fi
+    # jcmdcommand= single option
+    if [ "$arg" = "jcmdcommand=" ]; then FFOUND=1; F_jcmdcommand_=0; fi
+    # hprofmode= single option
+    if [ "$arg" = "hprofmode=" ]; then FFOUND=1; F_hprofmode_=0; fi
+    # javareport= single option
+    if [ "$arg" = "javareport=" ]; then FFOUND=1; F_javareport_=0; fi
+    # javareportkind= single option
+    if [ "$arg" = "javareportkind=" ]; then FFOUND=1; F_javareportkind_=0; fi
+    # javareportformat= single option
+    if [ "$arg" = "javareportformat=" ]; then FFOUND=1; F_javareportformat_=0; fi
+    # javatop= single option
+    if [ "$arg" = "javatop=" ]; then FFOUND=1; F_javatop_=0; fi
+    # javabundledir= single option
+    if [ "$arg" = "javabundledir=" ]; then FFOUND=1; F_javabundledir_=0; fi
+    # loopcount= single option
+    if [ "$arg" = "loopcount=" ]; then FFOUND=1; F_loopcount_=0; fi
+    # loopduration= single option
+    if [ "$arg" = "loopduration=" ]; then FFOUND=1; F_loopduration_=0; fi
+    # counterdelta= single option
+    if [ "$arg" = "counterdelta=" ]; then FFOUND=1; F_counterdelta_=0; fi
   done
 fi
 
@@ -1684,7 +1739,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_out_ -eq 1 ]; then
   printf '%s\t%s\n' 'out=dsv' 'A delimiter-separated values format with configurable separator, quoting and headers (for lists or maps; see DSV output options)'
   printf '%s\t%s\n' 'out=envs' 'Tries to output the input data as OS environment variables setting commands'
   printf '%s\t%s\n' 'out=gb64json' 'Equivalent to out=base64 and base64gzip=true'
-  printf '%s\t%s\n' 'out=grid' 'A multiple output ascii grid (useful together with '\''loop'\'')'
+  printf '%s\t%s\n' 'out=grid' 'A multi-widget terminal dashboard (charts, bars, sparklines, heatmaps, bullets, status matrices, timelines, tables, ...) laid out as a grid (useful together with '\''loop'\'')'
   printf '%s\t%s\n' 'out=html' 'An HTML format'
   printf '%s\t%s\n' 'out=http' 'Sends the output as the body of an HTTP request (POST, PUT, PATCH or DELETE)'
   printf '%s\t%s\n' 'out=httpd' 'Serves the output over a local HTTP server (e.g. a live JSON endpoint or an OpenMetrics exporter with loop)'
@@ -1851,7 +1906,7 @@ if [ $F_out__out_envs -eq 1 ]; then
 fi
 if [ $F_out__out_grid -eq 1 ]; then
   if [ $F_out__out_grid_grid_ -eq 1 ]; then
-    printf '%s\t%s\n' 'grid=' 'A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).'
+    printf '%s\t%s\n' 'grid=' 'A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see cell fields below).'
   fi
 fi
 if [ $F_out__out_html -eq 1 ]; then
@@ -2091,6 +2146,11 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_in_ -eq 1 ]; then
   printf '%s\t%s\n' 'in=httpd' 'Receives the input from an HTTP request sent to a temporary local HTTP server (e.g. a webhook)'
   printf '%s\t%s\n' 'in=ini' 'INI/Properties format'
   printf '%s\t%s\n' 'in=javas' 'Tries to list java processes running locally (javasinception=true to include itself). Adds the hsperf file path when the process id matches ow.java.getLocalJavaPIDs()'
+  printf '%s\t%s\n' 'in=hprof' 'Streaming HotSpot heap records; hprofmode=summary returns histogram metadata'
+  printf '%s\t%s\n' 'in=jcmd' 'Explicit JVM diagnostic command with javapid and jcmdcommand'
+  printf '%s\t%s\n' 'in=javadiag' 'Java capabilities, snapshots and explicit capture operations'
+  printf '%s\t%s\n' 'in=javastacks' 'Full text or JSON thread dumps'
+  printf '%s\t%s\n' 'in=javaoom' 'OOM messages and bounded surrounding log excerpts'
   printf '%s\t%s\n' 'in=javagc' 'The Java GC log lines text format'
   printf '%s\t%s\n' 'in=javathread' 'The Java Thread stack dump lines text format'
   printf '%s\t%s\n' 'in=jfr' 'The Java Flight Recorder format'
@@ -2637,7 +2697,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F__v -eq 1 ]; then
 fi
 # Print completion for debug=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_debug_ -eq 1 ]; then
-  printf '%s\t%s\n' 'debug=' 'If true prints debugging messages'
+  printf '%s\t%s\n' 'debug=' 'If true prints debugging messages and enables error stack traces (OAF_ERRSTACK)'
 fi
 # Print completion for arraytomap=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_arraytomap_ -eq 1 ]; then
@@ -2787,6 +2847,10 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_regression_ -eq 1 ]; then
   printf '%s\t%s\n' 'regressionx=' 'Optional path to the array of x values for the regression formulas (defaults to 1, 2, 3, ...)'
   printf '%s\t%s\n' 'regressionoptions=' 'A JSON/SLON configuration with order (defaults to 2) and/or precision (defaults to 5)'
   printf '%s\t%s\n' 'regressionforecast=' 'Optional path to an array of x values for which to forecast the corresponding y'
+fi
+# Print completion for removedupsmem=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_removedupsmem_ -eq 1 ]; then
+  printf '%s\t%s\n' 'removedupsmem=' 'Streaming dedup memory budget as a percentage of JVM max heap (default 5, range 0–100). Zero uses a temporary disk index immediately.'
 fi
 # Print completion for removedups=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_removedups_ -eq 1 ]; then
@@ -3489,7 +3553,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jwtalg_ -eq 1 ]; then
 fi
 # Print completion for grid=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_grid_ -eq 1 ]; then
-  printf '%s\t%s\n' 'grid=' 'A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see column cell options below).'
+  printf '%s\t%s\n' 'grid=' 'A JSON/SLON configuration structured as an array of row arrays. Each row array contains one map per column cell (see cell fields below).'
 fi
 # Print completion for httpdport=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_httpdport_ -eq 1 ]; then
@@ -3732,6 +3796,62 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_secKey_ -eq 1 ]; then
   printf '%s\t%s\n' 'secMainPass=' 'sBucket repository password'
   printf '%s\t%s\n' 'secFile=' 'Optional sBucket file source'
   printf '%s\t%s\n' 'secEnv=' 'A boolean flag to use environment variables as sBuckets'
+fi
+# Print completion for javapid=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javapid_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javapid=' 'Explicit positive PID or self (collector JVM).'
+fi
+# Print completion for javadiagop=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javadiagop_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javadiagop=' 'capabilities, snapshot (default), histogram, threads, nmt, heapdump, jfr, bundle.'
+fi
+# Print completion for javaoptions=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javaoptions_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javaoptions=' 'OpenAF diagnostic/parser options; also accepts a JSON/SLON string.'
+fi
+# Print completion for javafile=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javafile_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javafile=' 'Explicit target-filesystem destination for heapdump.'
+fi
+# Print completion for jcmdcommand=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jcmdcommand_ -eq 1 ]; then
+  printf '%s\t%s\n' 'jcmdcommand=' 'One explicit diagnostic command; out=jcmd accepts the input string.'
+fi
+# Print completion for hprofmode=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_hprofmode_ -eq 1 ]; then
+  printf '%s\t%s\n' 'hprofmode=' 'records (default) or summary. Requires file.'
+fi
+# Print completion for javareport=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javareport_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javareport=' 'Transform supplied evidence into a structured report.'
+fi
+# Print completion for javareportkind=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javareportkind_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javareportkind=' 'Report label: gc, oom, profile, all (default).'
+fi
+# Print completion for javareportformat=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javareportformat_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javareportformat=' 'out=javareport renders Markdown by default; json selects JSON.'
+fi
+# Print completion for javatop=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javatop_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javatop=' 'Maximum classes, stack groups and event examples; default 50.'
+fi
+# Print completion for javabundledir=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javabundledir_ -eq 1 ]; then
+  printf '%s\t%s\n' 'javabundledir=' 'out=javabundle creates a new local directory; in=javadiag javadiagop=bundle reopens it.'
+fi
+# Print completion for loopcount=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_loopcount_ -eq 1 ]; then
+  printf '%s\t%s\n' 'loopcount=' 'Positive integer maximum loop passes.'
+fi
+# Print completion for loopduration=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_loopduration_ -eq 1 ]; then
+  printf '%s\t%s\n' 'loopduration=' 'Positive maximum elapsed seconds; does not interrupt an active pass.'
+fi
+# Print completion for counterdelta=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_counterdelta_ -eq 1 ]; then
+  printf '%s\t%s\n' 'counterdelta=' 'Transform options: identity, timestamp and counters (array of dotted paths).'
 fi
 
 # end
