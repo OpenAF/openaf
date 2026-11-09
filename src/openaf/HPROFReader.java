@@ -157,25 +157,42 @@ public final class HPROFReader {
                                 r.put("id",c);
                                 u(4);
                                 String parent=id();
-                                skip(ids*5L);
+                                Map<String,Object> classRefs=new LinkedHashMap<String,Object>();
+                                classRefs.put("<super>",parent);
+                                classRefs.put("<classLoader>",id());
+                                classRefs.put("<signers>",id());
+                                classRefs.put("<protectionDomain>",id());
+                                skip(ids*2L);
+                                r.put("classReferences",classRefs);
                                 r.put("instanceSize",u(4));
                                 int n=(int)u(2);
                                 for(int j=0;j<n;j++) {
-                                    u(2);
-                                    value((int)u(1));
+                                    long entry=u(2);
+                                    int t=(int)u(1);
+                                    Object v=value(t);
+                                    if(t==2)classRefs.put("<constantPool:"+entry+">",v);
                                 }
                                 n=(int)u(2);
                                 Map<String,Object> statics=new LinkedHashMap<String,Object>();
+                                List<Map<String,Object>> staticDetails=new ArrayList<Map<String,Object>>();
                                 for(int j=0;j<n;j++) {
                                     String name=id();
                                     int t=(int)u(1);
                                     Object v=value(t);
-                                    if(pass==1&&values)statics.put(strings.get(name),v);
+                                    if(pass==1&&values) {
+                                        statics.put(strings.get(name),v);
+                                        Map<String,Object> detail=new LinkedHashMap<String,Object>();
+                                        detail.put("name",strings.get(name));
+                                        detail.put("declaringClass",strings.get(classes.get(c)));
+                                        detail.put("valueType",t);
+                                        detail.put("value",v);
+                                        staticDetails.add(detail);
+                                    }
                                 }
                                 n=(int)u(2);
                                 List<Object[]> fs=new ArrayList<Object[]>();
                                 for(int j=0;j<n;j++)fs.add(new Object[] {
-                                    id(),(int)u(1)
+                                    id(),(int)u(1),c
                                 }
                                 );
                                 if(pass==0) {
@@ -183,7 +200,10 @@ public final class HPROFReader {
                                     supers.put(c,parent);
                                 }
                                 r.put("name",strings.get(classes.get(c)));
-                                if(values)r.put("statics",statics);
+                                if(values) {
+                                    r.put("statics",statics);
+                                    r.put("staticDetails",staticDetails);
+                                }
                             }
                             else if(sub==33) {
                                 r=row("instance");
@@ -196,12 +216,22 @@ public final class HPROFReader {
                                 r.put("payloadBytes",n);
                                 if(pass==1&&values) {
                                     Map<String,Object> vals=new LinkedHashMap<String,Object>();
+                                    List<Map<String,Object>> details=new ArrayList<Map<String,Object>>();
                                     for(Object[] f:layout(c)) {
                                         String name=strings.get((String)f[0]);
-                                        vals.put((String)f[0]+":"+name,value((Integer)f[1]));
+                                        Object v=value((Integer)f[1]);
+                                        vals.put((String)f[0]+":"+name,v);
+                                        Map<String,Object> detail=new LinkedHashMap<String,Object>();
+                                        detail.put("name",name);
+                                        detail.put("declaringClass",strings.get(classes.get((String)f[2])));
+                                        detail.put("valueType",f[1]);
+                                        detail.put("value",v);
+                                        details.add(detail);
                                         if(offset>stop)fail("field layout exceeds instance");
                                     }
                                     r.put("fields",vals);
+                                    r.put("fieldDetails",details);
+                                    r.put("unparsedFieldBytes",stop-offset);
                                 }
                                 skip(stop-offset);
                             }
@@ -221,6 +251,7 @@ public final class HPROFReader {
                                     t=(int)u(1);
                                     r.put("elementType",t);
                                 }
+                                r.put("dataOffset",offset);
                                 long bytes=n*size(t);
                                 r.put("payloadBytes",bytes);
                                 int take=pass==1&&values?(int)Math.min(n,arrayLimit):0;

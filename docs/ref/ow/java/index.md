@@ -364,6 +364,75 @@ Sources:
 
 - js/owrap.java.js:3098
 
+<a id="api-ow-java-hproffind-806aae89"></a>
+
+## ow.java.hprofFind
+
+### ow.java.hprofFind(directory, options) : Map
+
+Searches indexed objects with pagination. Options: exact `className`, `stringContains`, `afterId`,
+`limit` (50, max 10000), `maxScanned` (100000), `stringLimit` (4096), `utf16ByteOrder`.
+String matching examines a bounded prefix. Partial/undecodable strings are reported separately.
+
+Sources:
+
+- js/owrap.java.js:3278
+
+<a id="api-ow-java-hprofindex-f8e72306"></a>
+
+## ow.java.hprofIndex
+
+### ow.java.hprofIndex(file, directory, options) : Map
+
+Builds a new disk-backed H2 object/reference index and a decompressed heap copy. Refuses an existing directory.
+Options: `maxDumpBytes` (1 TiB), `maxMetadata` (1000000), `maxMetadataBytes` (256 MiB).
+An interrupted build remains incomplete and cannot be queried. Indexes contain the heap's sensitive data.
+
+Sources:
+
+- js/owrap.java.js:3239
+
+<a id="api-ow-java-hprofobject-f064bda2"></a>
+
+## ow.java.hprofObject
+
+### ow.java.hprofObject(directory, objectId, options) : Map
+
+Inspects an indexed object, its declared fields and a bounded array/String sample.
+Options: `arrayOffset` (0), `arrayLimit` (32, max 100000), `stringLimit` (4096, max 1000000),
+`utf16ByteOrder` (`little` or `big`, only needed when StringUTF16 byte order is absent in the dump).
+
+Sources:
+
+- js/owrap.java.js:3261
+
+<a id="api-ow-java-hprofpath-907e3444"></a>
+
+## ow.java.hprofPath
+
+### ow.java.hprofPath(directory, objectId, options) : Map
+
+Finds one shortest path from an HPROF GC root using a disk-backed reverse BFS. Excludes Reference.referent
+by default. Options: `maxDepth` (64), `maxVisited` (100000), `maxEdges` (1000000), `timeoutMs` (30000),
+`includeWeak` (false). Returns `found`, `path`, `truncated` and `limitReached`; no retained-size/dominator claim.
+
+Sources:
+
+- js/owrap.java.js:3312
+
+<a id="api-ow-java-hprofreferences-85d7e258"></a>
+
+## ow.java.hprofReferences
+
+### ow.java.hprofReferences(directory, objectId, options) : Map
+
+Lists references with `direction` (`incoming`, default, or `outgoing`), `offset` (0), `limit` (50)
+and `includeWeak` (false). Weak, soft and phantom Reference.referent edges are excluded by default.
+
+Sources:
+
+- js/owrap.java.js:3296
+
 <a id="api-ow-java-hprofsummary-94f4fd71"></a>
 
 ## ow.java.hprofSummary

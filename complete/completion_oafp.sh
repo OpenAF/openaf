@@ -678,6 +678,8 @@ F_javaoptions_=1
 F_javafile_=1
 F_jcmdcommand_=1
 F_hprofmode_=1
+F_hprofindex_=1
+F_hprofid_=1
 F_javareport_=1
 F_javareportkind_=1
 F_javareportformat_=1
@@ -1669,6 +1671,10 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "jcmdcommand=" ]; then FFOUND=1; F_jcmdcommand_=0; fi
     # hprofmode= single option
     if [ "$arg" = "hprofmode=" ]; then FFOUND=1; F_hprofmode_=0; fi
+    # hprofindex= single option
+    if [ "$arg" = "hprofindex=" ]; then FFOUND=1; F_hprofindex_=0; fi
+    # hprofid= single option
+    if [ "$arg" = "hprofid=" ]; then FFOUND=1; F_hprofid_=0; fi
     # javareport= single option
     if [ "$arg" = "javareport=" ]; then FFOUND=1; F_javareport_=0; fi
     # javareportkind= single option
@@ -3819,7 +3825,15 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_jcmdcommand_ -eq 1 ]; then
 fi
 # Print completion for hprofmode=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_hprofmode_ -eq 1 ]; then
-  printf '%s\t%s\n' 'hprofmode=' 'records (default) or summary. Requires file.'
+  printf '%s\t%s\n' 'hprofmode=' 'records (default), summary, index, object, find, refs or path. records/summary/index require file.'
+fi
+# Print completion for hprofindex=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_hprofindex_ -eq 1 ]; then
+  printf '%s\t%s\n' 'hprofindex=' 'New directory for index mode; existing disk-backed HPROF index directory for queries.'
+fi
+# Print completion for hprofid=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_hprofid_ -eq 1 ]; then
+  printf '%s\t%s\n' 'hprofid=' 'Hexadecimal object ID for object, refs and path modes.'
 fi
 # Print completion for javareport=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_javareport_ -eq 1 ]; then

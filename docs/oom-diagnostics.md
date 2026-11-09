@@ -79,3 +79,32 @@ Linux socket fallback now resolves NSpid and the target temporary directory thro
 JFR options additionally include `exactLongs`, `arrayLimit` (256 default), and `maxDepth` (32 default). Depth truncation is represented explicitly. Array output is capped; use a larger explicit limit when complete arrays are needed.
 
 Use `isolated:true` to execute external diagnostic calls in a disposable modern OpenAF worker JVM, with bounded output and timeout. The worker requires a rebuilt runtime containing these APIs; `workerCommand` can explicitly select another OpenAF launcher argument array. A worker deadline does not cancel commands already executing in the target. Do not assume these features are installed from checkout documentation alone.
+
+## Disk-backed object and reference queries
+
+```javascript
+ow.java.hprofIndex("heap.hprof.gz", "/diagnostics/incident-index")
+ow.java.hprofFind("/diagnostics/incident-index", {
+  className: "java/lang/String", stringContains: "__conversations", limit: 20
+})
+ow.java.hprofObject("/diagnostics/incident-index", "0x1234", { arrayOffset: 0, arrayLimit: 32 })
+ow.java.hprofReferences("/diagnostics/incident-index", "0x1234", { direction: "incoming" })
+ow.java.hprofPath("/diagnostics/incident-index", "0x1234", {
+  maxDepth: 64, maxVisited: 100000, maxEdges: 1000000, timeoutMs: 30000
+})
+```
+
+`HPROFIndex` uses the bundled H2 database with an 8 MiB page cache, bounded insert batches and disk-backed sorting/traversal. No full object graph is kept in Java collections. A new directory is required; it holds a decompressed heap copy, its SHA-256 and database. Budget disk for both the dump and database/index work. `maxDumpBytes` defaults to 1 TiB; parser metadata limits remain configurable. Failed builds remain incomplete and are rejected on open. All index contents have the same sensitivity as the original heap. Do not alter the indexed heap copy. This is an offline API; collect remotely through existing SSH/container access, then analyze there or copy the dump first.
+
+Indexing reads complete object arrays independently of `parseHPROF`'s sample limit. Reference edges include instance fields (with declaring classes), static fields, class pointers, superclass, loader, signers, protection domain and constant-pool references. Field shadowing remains distinguishable. Java strings support legacy char arrays and modern compact byte arrays with bounded output. Modern UTF-16 byte order comes from target StringUTF16 metadata or explicit `utf16ByteOrder` (`little`/`big`); unknown layouts are reported, never guessed. `stringLimit` defaults to 4096 UTF-16 code units. `hprofFind` string matching searches this prefix and reports partial/undecodable strings. Exact class-name searches include class records as well as instances. Use `afterId`/`nextCursor` for find pagination and `offset`/`nextOffset` for references.
+
+`hprofPath` finds one shortest root path with a disk-backed queue and visited set. It excludes Reference.referent edges unless `includeWeak:true` is requested. A bounded search reports `truncated` and `limitReached`; a missing path under a limit does not establish unreachability. `timeoutMs` is cooperative between traversal steps, not a hard deadline for individual SQL operations. This is reachability analysis, not a dominator calculation or retained-size measurement. A separate scratch database is removed after traversal. Paths depend on the GC roots and references present in the dump.
+
+The parser's opt-in `values:true` records now also provide `fieldDetails`/`staticDetails` with value types and declaring classes, preserving shadowed fields, plus array `dataOffset` and class references. Existing fields and samples remain available.
+
+```sh
+javac --release 8 -d /tmp/oom-tests src/openaf/HPROFReader.java src/openaf/HPROFIndex.java tests/java/HPROFIndexTest.java
+java -Xmx96m -cp '/tmp/oom-tests:lib/*' HPROFIndexTest
+```
+
+Disk-index queries run in a modern collector: the bundled H2 driver requires Java 11 or later, and this OpenAF distribution requires Java 21 or later. Compiling the parser/index sources with `--release 8` does not make the bundled H2 driver executable on Java 8. Dumps can still come from older supported HotSpot targets.

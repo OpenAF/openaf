@@ -26,6 +26,11 @@ jobs:
      to: OpenAF Test
      exec: args.func = require("autoTestAll.OOM.js").testOOM;
 
+   - name: Java::HPROFIndex
+     from: Java::Init
+     to: OpenAF Test
+     exec: args.func = require("autoTestAll.OOM.js").testHPROFIndex
+
    - name: Java::HSPerf
      from: Java::Init
      to: OpenAF Test
@@ -63,6 +68,7 @@ jobs:
 
 todo:
    - Java::OOM
+   - Java::HPROFIndex
    # Java tests
    # ------------
    - Java::Init

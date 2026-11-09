@@ -3227,3 +3227,100 @@ OpenWrap.java.prototype.__diagWorker = function(target, command, options) {
     io.rm(output); io.rm(error)
   }
 }
+
+// Validate graph query options before crossing the Java API boundary.
+OpenWrap.java.prototype.__hprofLimit = function(value, fallback, max, name) {
+  var n = isUnDef(value) ? fallback : Number(value)
+  if (!isFinite(n) || n < 1 || n > max || Math.floor(n) !== n) throw new Error("Invalid " + name)
+  return n
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.hprofIndex(file, directory, options) : Map</key>
+ * Builds a new disk-backed H2 object/reference index and a decompressed heap copy. Refuses an existing directory.
+ * Options: `maxDumpBytes` (1 TiB), `maxMetadata` (1000000), `maxMetadataBytes` (256 MiB).
+ * An interrupted build remains incomplete and cannot be queried. Indexes contain the heap's sensitive data.
+ * </odoc>
+ */
+OpenWrap.java.prototype.hprofIndex = function(file, directory, options) {
+  var o = options || {}
+  return this.__diagMap(Packages.openaf.HPROFIndex.build(String(file), String(directory),
+    this.__hprofLimit(o.maxDumpBytes, 1099511627776, 9007199254740991, "maxDumpBytes"),
+    this.__hprofLimit(o.maxMetadata, 1000000, 2147483647, "maxMetadata"),
+    this.__hprofLimit(o.maxMetadataBytes, 268435456, 9007199254740991, "maxMetadataBytes")))
+}
+
+// Close database and heap handles even when a query or conversion fails.
+OpenWrap.java.prototype.__hprofQuery = function(directory, fn) {
+  var index = new Packages.openaf.HPROFIndex(String(directory))
+  try { return this.__diagMap(fn(index)) } finally { index.close() }
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.hprofObject(directory, objectId, options) : Map</key>
+ * Inspects an indexed object, its declared fields and a bounded array/String sample.
+ * Options: `arrayOffset` (0), `arrayLimit` (32, max 100000), `stringLimit` (4096, max 1000000),
+ * `utf16ByteOrder` (`little` or `big`, only needed when StringUTF16 byte order is absent in the dump).
+ * </odoc>
+ */
+OpenWrap.java.prototype.hprofObject = function(directory, objectId, options) {
+  var o = options || {}, offset = isUnDef(o.arrayOffset) ? 0 : Number(o.arrayOffset), self = this
+  if (!isFinite(offset) || offset < 0 || Math.floor(offset) !== offset || offset > 9007199254740991) throw new Error("Invalid arrayOffset")
+  return this.__hprofQuery(directory, function(index) {
+    return index.object(String(objectId), offset, self.__hprofLimit(o.arrayLimit, 32, 100000, "arrayLimit"),
+      self.__hprofLimit(o.stringLimit, 4096, 1000000, "stringLimit"), isUnDef(o.utf16ByteOrder) ? null : String(o.utf16ByteOrder))
+  })
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.hprofFind(directory, options) : Map</key>
+ * Searches indexed objects with pagination. Options: exact `className`, `stringContains`, `afterId`,
+ * `limit` (50, max 10000), `maxScanned` (100000), `stringLimit` (4096), `utf16ByteOrder`.
+ * String matching examines a bounded prefix. Partial/undecodable strings are reported separately.
+ * </odoc>
+ */
+OpenWrap.java.prototype.hprofFind = function(directory, options) {
+  var o = options || {}, self = this
+  return this.__hprofQuery(directory, function(index) {
+    return index.find(isUnDef(o.className) ? null : String(o.className), isUnDef(o.stringContains) ? null : String(o.stringContains),
+      isUnDef(o.afterId) ? null : String(o.afterId), self.__hprofLimit(o.limit, 50, 10000, "limit"),
+      self.__hprofLimit(o.maxScanned, 100000, 10000000, "maxScanned"), self.__hprofLimit(o.stringLimit, 4096, 1000000, "stringLimit"),
+      isUnDef(o.utf16ByteOrder) ? null : String(o.utf16ByteOrder))
+  })
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.hprofReferences(directory, objectId, options) : Map</key>
+ * Lists references with `direction` (`incoming`, default, or `outgoing`), `offset` (0), `limit` (50)
+ * and `includeWeak` (false). Weak, soft and phantom Reference.referent edges are excluded by default.
+ * </odoc>
+ */
+OpenWrap.java.prototype.hprofReferences = function(directory, objectId, options) {
+  var o = options || {}, direction = o.direction || "incoming", offset = isUnDef(o.offset) ? 0 : Number(o.offset), self = this
+  if (["incoming", "outgoing"].indexOf(direction) < 0) throw new Error("Invalid reference direction")
+  if (!isFinite(offset) || offset < 0 || Math.floor(offset) !== offset || offset > 9007199254740991) throw new Error("Invalid offset")
+  return this.__hprofQuery(directory, function(index) {
+    return index.references(String(objectId), direction === "incoming", offset, self.__hprofLimit(o.limit, 50, 10000, "limit"), o.includeWeak === true)
+  })
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.hprofPath(directory, objectId, options) : Map</key>
+ * Finds one shortest path from an HPROF GC root using a disk-backed reverse BFS. Excludes Reference.referent
+ * by default. Options: `maxDepth` (64), `maxVisited` (100000), `maxEdges` (1000000), `timeoutMs` (30000),
+ * `includeWeak` (false). Returns `found`, `path`, `truncated` and `limitReached`; no retained-size/dominator claim.
+ * </odoc>
+ */
+OpenWrap.java.prototype.hprofPath = function(directory, objectId, options) {
+  var o = options || {}, self = this
+  return this.__hprofQuery(directory, function(index) {
+    return index.path(String(objectId), self.__hprofLimit(o.maxDepth, 64, 10000, "maxDepth"),
+      self.__hprofLimit(o.maxVisited, 100000, 10000000, "maxVisited"), self.__hprofLimit(o.maxEdges, 1000000, 9007199254740991, "maxEdges"),
+      self.__hprofLimit(o.timeoutMs, 30000, 86400000, "timeoutMs"), o.includeWeak === true)
+  })
+}

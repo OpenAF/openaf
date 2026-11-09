@@ -1438,7 +1438,11 @@ complete:
 - name: jcmdcommand=
   desc: One explicit diagnostic command; out=jcmd accepts the input string.
 - name: hprofmode=
-  desc: records (default) or summary. Requires file.
+  desc: records (default), summary, index, object, find, refs or path. records/summary/index require file.
+- name: hprofindex=
+  desc: New directory for index mode; existing disk-backed HPROF index directory for queries.
+- name: hprofid=
+  desc: Hexadecimal object ID for object, refs and path modes.
 - name: javareport=
   desc: Transform supplied evidence into a structured report.
 - name: javareportkind=
