@@ -93,7 +93,7 @@ import java.lang.String;
  * 
  */
 public class AFBase extends ScriptableObject {
-	private static final Pattern VISIBLE_LENGTH_ANSI_RE = Pattern.compile("\u001B(?:\\[[0-9;?]*[ -/]*[@-~]|\\][^\\u0007\\u001B]*(?:\\u0007|\\u001B\\\\))");
+	private static final Pattern VISIBLE_LENGTH_ANSI_RE = Pattern.compile("\u001B(?:\\[[0-?]*[ -/]*[@-~]|\\][^\\u0007\\u001B]*(?:\\u0007|\\u001B\\\\))");
 
 	/**
 	 * 

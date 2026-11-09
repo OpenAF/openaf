@@ -169,6 +169,19 @@ jobs:
        zip.streamPutFileStream(global.path + "/openaf.jar.orig", "ojob.saved.json", is)
        is.close()
 
+   # ----------------------------
+   - name : Generate ODoc reference
+     deps :
+     - Repack OpenAFOS
+     exec : |
+       log("Generating ODoc reference...")
+       var result = $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "--ojob", "-e",
+          global.path + "/genODocReference.yaml dirs=js,src output=docs/ref"]).pwd(global.path).get(0)
+       if (result.exitcode != 0) {
+         logErr("Generating ODoc reference failed: " + result.stderr + result.stdout)
+         exit(1)
+       }
+
    # --------------------
    - name : Check pom.xml
      to   :
@@ -180,6 +193,7 @@ todo:
 - Prepare ojob saved
 - Prepare ojob doc
 - Prepare shell complete
+- Generate ODoc reference
 - Build OpenAFOS
 - Repack OpenAFOS
 - Copy OpenAF

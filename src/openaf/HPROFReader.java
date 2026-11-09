@@ -88,6 +88,11 @@ public final class HPROFReader {
         return out;
     }
     public Map<String,Object> read(String file, Visitor visitor, boolean values, int arrayLimit, int maxMetadata) throws IOException {
+        return read(file, visitor, values, arrayLimit, maxMetadata, 268435456L);
+    }
+    public Map<String,Object> read(String file, Visitor visitor, boolean values, int arrayLimit, int maxMetadata, long maxMetadataBytes) throws IOException {
+        if(maxMetadataBytes<1)throw new IllegalArgumentException("Invalid metadata byte limit");
+        long metadataBytes=0;
         if(arrayLimit<0||maxMetadata<1)throw new IllegalArgumentException("Invalid HPROF limits");
         metadataLimit=maxMetadata;
         Map<String,Object> result=new LinkedHashMap<String,Object>();
@@ -129,6 +134,8 @@ public final class HPROFReader {
                         String key=id();
                         long n=end-offset;
                         if(n>16777216)fail("string too large");
+                        metadataBytes+=n;
+                        if(metadataBytes>maxMetadataBytes)fail("metadata string byte limit exceeded");
                         byte[] data=new byte[(int)n];
                         in.readFully(data);
                         offset+=n;

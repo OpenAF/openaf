@@ -29,6 +29,111 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testStringHex;
 
+   - name: Format::AnsiClipClusters
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testAnsiClipClusters
+
+   - name: Format::VizCanvasUnicode
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizCanvasUnicode
+
+   - name: Format::TermCapabilitiesOverrides
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testTermCapabilitiesOverrides
+
+   - name: Format::VizRasterEncoders
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizRasterEncoders
+
+   - name: Format::PrintPieDonut
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintPieDonut
+
+   - name: Format::PrintStackedDistributions
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintStackedDistributions
+
+   - name: Format::DashboardCategoryWidgets
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testDashboardCategoryWidgets
+
+   - name: Format::VizLiveCategoryFrames
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizLiveCategoryFrames
+
+   - name: Format::VizCategoryBenchmark
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizCategoryBenchmark
+
+   - name: Format::PrintDivergingBars
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintDivergingBars
+
+   - name: Format::PrintTreemap
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPrintTreemap
+
+   - name: Format::SparklineEnhancements
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testSparklineEnhancements
+
+   - name: Format::Phase5DashboardWidgets
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testPhase5DashboardWidgets
+
+   - name: Format::VizWatchResize
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizWatchResize
+
+   - name: Format::VizFrameTerminalState
+     from: Format::Init
+     to: OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testVizFrameTerminalState
+
    # Format tests
    # --------------
    - name: Format::Init
@@ -406,6 +511,21 @@ todo:
    # ------------
    
    - Format::Load Format
+   - Format::VizFrameTerminalState
+   - Format::VizWatchResize
+   - Format::PrintDivergingBars
+   - Format::PrintTreemap
+   - Format::SparklineEnhancements
+   - Format::Phase5DashboardWidgets
+   - Format::AnsiClipClusters
+   - Format::VizCanvasUnicode
+   - Format::TermCapabilitiesOverrides
+   - Format::VizRasterEncoders
+   - Format::PrintPieDonut
+   - Format::PrintStackedDistributions
+   - Format::DashboardCategoryWidgets
+   - Format::VizLiveCategoryFrames
+   - Format::VizCategoryBenchmark
    - Format::String hex
    - Format::Add number separator
    - Format::Number abbreviation

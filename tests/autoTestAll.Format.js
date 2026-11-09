@@ -1033,4 +1033,318 @@
         ow.test.assert( ow.format.fromTimeAbbreviation( ow.format.elapsedTime4ms(365*24*60*60*1000, { abrev: true }) ), 31968000000, "Problem with years abbreviation" )
         ow.test.assert( ow.format.fromTimeAbbreviation( "1w" ) / 7 / 24 / 60 / 60 / 1000, 1, "Problem with weeks abbreviation ")
     }
+
+    // Explicit snapshots keep these render tests independent of the host terminal.
+    function vizOpts(extra) {
+      return merge({ palette: "none", capabilities: { width: 80, height: 24, unicode: true, ansi: true, colorMode: "none" } }, extra || {})
+    }
+    function vizBounds(text, w, h) {
+      ow.test.assert(text.split("\n").length <= h, true, "Height budget")
+      text.split("\n").forEach(function(line) {
+        ow.test.assert(visibleLength(line) <= w, true, "Column budget")
+        ow.test.assert(/\x1b(?!\[[0-9;:]*m|\]8;)/.test(line), false, "Only complete styling escapes")
+      })
+    }
+    function vizThrows(fn) {
+      var threw = false
+      try { fn() } catch(e) { threw = true }
+      ow.test.assert(threw, true, "Invalid data must throw")
+    }
+    exports.testAnsiClipClusters = function() {
+      var S = ow.format.string
+      ;["😀", "e\u0301", "👨‍👩‍👧‍👦", "🇵🇹", "👍🏽", "🏴\uDB40\uDC67\uDB40\uDC62\uDB40\uDC7F"].forEach(function(cluster) {
+        var width = visibleLength(cluster)
+        ow.test.assert(S.ansiClip(cluster + "xyz", width, ""), cluster, "Whole grapheme")
+      })
+      ow.test.assert(S.ansiClip("abc", 0), "", "Zero width")
+      ow.test.assert(S.ansiClip("a\nb",10,""),"a\nb","Retain legacy line breaks")
+      ow.test.assert(S.ansiClip("\x1b[2Kabc",2,""),"\x1b[2Kab","Retain complete CSI controls")
+      ow.test.assert(visibleLength("\x1b[38:2::255:0:0mX\x1b[0m"),1,"Colon SGR display width")
+      ow.test.assert(af.visibleLength("\x1b[38:2::255:0:0mX\x1b[0m"),1,"Java colon SGR display width")
+      ow.test.assert(ansiLength("\x1b[38:2::255:0:0mX\x1b[0m",true,true),1,"ANSI length compatibility")
+      ow.test.assert(visibleLength(S.ansiClip("\x1b[38:2::255:0:0mABC\x1b[0m",2,"")),2,"Colon SGR clipping")
+      ow.test.assert(S.ansiClip("abc", 1, "long").length <= 1, true, "Ellipsis budget")
+      var clipped = S.ansiClip("\x1b[31;44mabcdef", 3, "")
+      ow.test.assert(visibleLength(clipped), 3, "Styled clipping")
+      ow.test.assert(clipped.endsWith("\x1b[0m"), true, "Close foreground/background")
+      ow.test.assert(S.ansiClip("\x1b[31mx", 3, "").endsWith("\x1b[0m"), true, "Close untruncated styling")
+      var link = S.ansiClip("\x1b]8;;https://example.test\x1b\\hello\x1b]8;;\x1b\\", 2, "")
+      ow.test.assert(link.endsWith("\x1b]8;;\x1b\\"), true, "Close hyperlink")
+    }
+    exports.testVizCanvasUnicode = function() {
+      var c = ow.format.viz.createCanvas({ width: 6, height: 2 })
+      c.write(0, 0, "界e\u0301😀")
+      ow.test.assert(visibleLength(c.render().split("\n")[0]), 6, "Canvas columns")
+      c.write(0, 1, "x")
+      ow.test.assert(c.render().split("\n")[0].indexOf("界"), -1, "Clear bisected wide glyph")
+      c.write(1, 5, "😀")
+      ow.test.assert(c.render().split("\n")[1], "      ", "Wide glyph cannot straddle boundary")
+      var fill = ow.format.viz.layout.padLines("", 3, 1, "\x1b[31m ")
+      ow.test.assert(fill.endsWith("\x1b[0m"),true,"Styled fill closes state")
+      var p = ow.format.viz.layout.padLines("\x1b[31m界abc", 4, 2)
+      p.split("\n").forEach(function(l) { ow.test.assert(visibleLength(l), 4, "Exact layout width") })
+    }
+    exports.testTermCapabilitiesOverrides = function() {
+      var base = ow.format.term.getCapabilities({ refresh: true })
+      var modified = ow.format.term.getCapabilities({ width: 17, height: 9, unicode: false, ansi: false })
+      ow.test.assert(modified.width, 17, "Local width")
+      ow.test.assert(modified.colorMode, "none", "ANSI disable")
+      ow.test.assert(ow.format.term.getCapabilities().width, base.width, "Cache isolation")
+    }
+    exports.testVizRasterEncoders = function() {
+      var items = [{ color: OpenWrap.format.__colors.parseColor("BLUE"), share: 1 }]
+      var bits = [[1,8],[2,16],[4,32],[64,128]]
+      for (var y = 0; y < 4; y++) for (var x = 0; x < 2; x++) {
+        var r = ow.format.viz._createRaster(1, 1, "braille")
+        r.set(x, y, 0)
+        var line = r.render(items, { colorMode: "16" })[0].replace(/\x1b\[[0-9;]*m/g, "")
+        ow.test.assert(line.charCodeAt(0), 0x2800 + bits[y][x], "Braille mapping")
+      }
+      var r = ow.format.viz._createRaster(1, 1, "halfblock")
+      r.set(0, 0, 0)
+      ow.test.assert(r.render(items, { colorMode: "16" })[0].indexOf("▀") >= 0, true, "Upper half")
+      r.set(0, 1, 0)
+      ow.test.assert(r.render(items, { colorMode: "16" })[0].indexOf("█") >= 0, true, "Both halves")
+      var two=[{color:OpenWrap.format.__colors.parseColor("RED"),share:0.5},{color:OpenWrap.format.__colors.parseColor("BLUE"),share:0.5}]
+      r.set(0,0,0);r.set(0,1,1)
+      ow.test.assert(r.render(two,{colorMode:"16"})[0].indexOf("\x1b[31;44m▀")>=0,true,"Independent upper foreground/lower background")
+      r.set(0,0,-1)
+      ow.test.assert(r.render(two,{colorMode:"16"})[0].indexOf("\x1b[34;49m▄")>=0,true,"Boundary uses terminal default background")
+      var braille=ow.format.viz._createRaster(1,1,"braille")
+      for(var y=0;y<4;y++){braille.set(0,y,0);braille.set(1,y,1)}
+      ow.test.assert(braille.render(two,{colorMode:"16"})[0].indexOf("\x1b[31;49m⣿")>=0,true,"Full mask and stable boundary tie")
+    }
+    exports.testPrintPieDonut = function() {
+      var cases = [[100], [50,50], [50,30,20], [0,1,0], [1e-10,1], [1e308,1e308], [], [0,0]]
+      ;["printPie", "printDonut"].forEach(function(name) {
+        cases.forEach(function(values) {
+          ;["ascii", "braille", "halfblock"].forEach(function(mode) {
+            ;["none", "16", "256", "truecolor"].forEach(function(palette) {
+              var opts = vizOpts({ width: 32, height: 10, mode: mode, palette: palette, centerText: "65%", size: "medium" })
+              var text = ow.format[name](values, opts)
+              vizBounds(text, 32, 10)
+              ow.test.assert(text, ow.format[name](values, opts), "Deterministic frame")
+              if (palette == "none") ow.test.assert(text.indexOf("\x1b"), -1, "No ANSI")
+            })
+          })
+        })
+        ;[[-1], [NaN], [Infinity], [null], ["2"], [{value:1,color:"invalid"}]].forEach(function(v) {
+          vizThrows(function() { ow.format[name](v, vizOpts()) })
+        })
+        for (var w = 0; w < 12; w++) vizBounds(ow.format[name]([50,30,20], vizOpts({ width:w, height:3 })), w, 3)
+      })
+      var opts = vizOpts({ mode:"ascii", legend:"none", width:12, height:5 })
+      ;["printPie","printDonut"].forEach(function(name){
+        var full=ow.format[name]([1],vizOpts({size:"small",mode:"ascii",legend:"none",width:24,height:12}))
+        ow.test.assert(full.split("\n").length,12,"Explicit height overrides small preset")
+        full.split("\n").forEach(function(l){ow.test.assert(visibleLength(l),24,"Explicit width overrides small preset")})
+        ow.test.assert(ow.format[name]([1],vizOpts({size:"small",mode:"ascii",legend:"none",width:24})),full,"Width derives height from aspect")
+        ow.test.assert(ow.format[name]([1],vizOpts({size:"small",mode:"ascii",legend:"none",height:12})),full,"Height derives width from aspect")
+      })
+      var overflow = ow.format.printDonut([1],vizOpts({width:12,height:5,innerRadius:0.1,centerText:"oversized",legend:"none"}))
+      ow.test.assert(overflow.indexOf("oversized")>=0,true,"Overflow label has a safe textual fallback")
+      var textDonut = ow.format.printDonut([1],vizOpts({size:"medium",innerRadius:0.7,centerText:"65%",legend:"none"}))
+      ow.test.assert(textDonut.indexOf("65%")>=0,true,"Centre label fits hole")
+      vizBounds(ow.format.printDonut([1],vizOpts({innerRadius:0.1,centerText:"too wide",centerTextOverflow:"clip",width:12,height:5,legend:"none"})),12,5)
+      ;["16","256","truecolor"].forEach(function(palette){
+        var frame=ow.format.printPie([50,50],vizOpts({palette:palette,mode:"halfblock",legend:"none"}))
+        if (isUnDef(getEnv("NO_COLOR"))) ow.test.assert(frame.indexOf("\x1b[")>=0,true,"Enabled colour emits ANSI")
+      })
+      ow.test.assert(ow.format.printPie([100], opts), "   AAAAAA   \n AAAAAAAAAA \n AAAAAAAAAA \n AAAAAAAAAA \n   AAAAAA   ", "Single-slice ASCII golden")
+      var a = ow.format.printPie([1,1], opts)
+      ow.test.assert(a != ow.format.printPie([1,1], merge(opts, {startAngle:0})), true, "Rotation changes sectors")
+      ow.test.assert(ow.format.printDonut([1,1], merge(opts, {innerRadius:0})), a, "Shared geometry")
+      vizThrows(function() { ow.format.printDonut([1], vizOpts({innerRadius:1})) })
+      var grouped = ow.format.printPie(Array.from({length:15}, function() {return 1}), vizOpts({width:50,height:20}))
+      ow.test.assert(grouped.indexOf("Other (4)") >= 0, true, "Visible aggregation")
+      var large=ow.format.printPie(Array.from({length:13},function(){return 1e308}),vizOpts({width:100,height:10,maxCategories:2,showValue:true}))
+      ow.test.assert(large.indexOf("sum >")>=0,true,"Aggregated overflow is explicit")
+      ;[-1,NaN,Infinity,1.5].forEach(function(width){vizThrows(function(){ow.format.printPie([1],vizOpts({width:width}))})})
+      var before = [{label:"A",value:1},{label:"A",value:2}]
+      var saved = stringify(before)
+      ow.format.printPie(before, vizOpts())
+      ow.test.assert(stringify(before), saved, "Input immutable")
+    }
+    exports.testPrintStackedDistributions = function() {
+      var o = vizOpts({ width:10, showPercent:false })
+      ow.test.assert(ow.format.printStackedBar([1,2],merge(o,{width:1})),"B","Tiny bar uses largest remainder")
+      var compact = ow.format.printStackedBar([50,30,20],vizOpts({width:40}))
+      ow.test.assert(visibleLength(compact),40,"Compact bar exact width")
+      ow.test.assert(compact.indexOf("A:50%")>0,true,"Bar and percentages share one line")
+      ow.test.assert(ow.format.printStackedBar([50,30,20], o), "AAAAABBBCC", "Exact Hamilton allocation")
+      ow.test.assert(ow.format.printStackedBar([1,1,1], merge(o,{width:5})), "AABBC", "Stable ties")
+      ow.test.assert(ow.format.printStackedBar([5], merge(o,{normalize:false,max:10})), "AAAAA     ", "Unused absolute range")
+      vizThrows(function(){ ow.format.printStackedBar([11],merge(o,{normalize:false,max:10})) })
+      var columns = [{label:"one",values:{A:50,B:50}}, {label:"two",values:{B:25,C:75}}]
+      vizBounds(ow.format.printStackedColumns(columns,vizOpts({width:20,height:8})),20,8)
+      vizThrows(function(){ow.format.printStackedColumns(columns,vizOpts({width:1}))})
+      ;["none","16","256","truecolor"].forEach(function(palette){
+        for(var w=1;w<50;w++) vizBounds(ow.format.printStackedBar([0.01,0,3,5,8],vizOpts({width:w,palette:palette})),w,1)
+      })
+    }
+    exports.testDashboardCategoryWidgets = function() {
+      var types = ["pie","donut","stackedBar","stackedColumns"]
+      var widgets = types.map(function(t){return {type:t,title:"界😀",data:t=="stackedColumns"?[{label:"x",values:[50,30,20]}]:[50,30,20]}})
+      var dashboard = ow.format.printDashboard([widgets],vizOpts({width:100,height:12,borderStyle:"rect"}))
+      vizBounds(dashboard,100,12)
+      ow.test.assert(dashboard.indexOf("Err:"),-1,"All category widgets integrated")
+      dashboard.split("\n").forEach(function(l){ow.test.assert(visibleLength(l),100,"Dashboard width")})
+      var grid = ow.format.string.grid([[{type:"pie",obj:[50,30,20],options:vizOpts()},{type:"donut",obj:[1,1],options:vizOpts()}]],8,60," ",true)
+      ow.test.assert(grid.indexOf("Err:"),-1,"Grid widgets")
+
+      var compact=ow.format.printDashboard([{type:"pie",data:[1],options:{size:"small",mode:"ascii",legend:"none"}}],vizOpts({width:40,height:12,border:false}))
+      ow.test.assert(compact.split("\n").filter(function(l){return l.indexOf("A")>=0}).length,5,"Dashboard budget preserves preset")
+      var expanded=ow.format.printDashboard([{type:"pie",data:[1],options:{size:"small",mode:"ascii",legend:"none",width:24,height:12}}],vizOpts({width:40,height:12,border:false}))
+      ow.test.assert(expanded.split("\n").filter(function(l){return l.indexOf("A")>=0}).length,12,"Widget explicit dimensions override preset")
+      var diff = ow.format.viz.diffFrames("a\nb\nc","x")
+      ow.test.assert(diff.patch.indexOf("undefined"),-1,"Pure cursor patch")
+      ow.test.assert(diff.patch.endsWith("\x1b[2A\r"),true,"Shrink restores origin")
+    }
+    exports.testVizLiveCategoryFrames = function() {
+      var caps = {width:32,height:8,ansi:false,unicode:false,colorMode:"none"}, sizes = []
+      var ctrl
+      try {
+        ctrl = ow.format.viz.live(function(ctx) {
+          sizes.push(ctx.size.width)
+          return ow.format.printDonut([50,30,20],{width:ctx.size.width,height:ctx.size.height,capabilities:ctx.capabilities,palette:"none"})
+        },{autoStart:false,watchResize:false,capabilities:caps})
+        ctrl.update()
+        caps.width = 20
+        ctrl.update()
+        ow.test.assert(sizes,[32,20],"Fresh resize context")
+        ow.test.assert(ctrl.stats().rendered,2,"Frames rendered")
+        ow.test.assert(ctrl.stats().errors,0,"No live errors")
+      } finally {
+        if (ctrl) ctrl.stop()
+      }
+    }
+    exports.testVizCategoryBenchmark = function() {
+      var r = ow.format.viz.benchmarkRender(function() {
+        return ow.format.printPie([50,30,20], vizOpts({size:"medium",legend:"none"}))
+      },{iterations:5})
+      ow.test.assert(r.iterations,5,"Benchmark sample count")
+      ow.test.assert(r.p95Ms >= r.p50Ms,true,"Ordered render timings")
+    }
+
+    exports.testPrintDivergingBars = function() {
+      var o = vizOpts({width:11,labels:false,showValue:false,unicode:false})
+      ow.test.assert(ow.format.printDivergingBars([-10,0,10],o),"-----|     \n     |     \n     |+++++","Signed axis golden")
+      var inputs = [[-10,5],{decrease:-10,increase:5},[{label:"界",value:-1},{label:"up",value:2}],[0,0],[],[-1e308,1e308]]
+      inputs.forEach(function(v) {
+        for(var w=0;w<45;w++) vizBounds(ow.format.printDivergingBars(v,vizOpts({width:w,height:4})),w,4)
+      })
+      ow.test.assert(ow.format.printDivergingBars([-1,2],vizOpts({width:40,height:1})).indexOf("(2 rows)")==0,true,"Announce omitted signed rows")
+      var asymmetric=ow.format.printDivergingBars([-10,30],merge(o,{symmetric:false}))
+      ow.test.assert(asymmetric.split("\n")[0].indexOf("|"),3,"Proportional asymmetric axis")
+      ;[[NaN],[Infinity],["1"],[null]].forEach(function(v){vizThrows(function(){ow.format.printDivergingBars(v,o)})})
+      vizThrows(function(){ow.format.printDivergingBars([-1,1],merge(o,{min:0}))})
+      var v=[{label:"same",value:-5},{label:"same",value:5}], saved=stringify(v)
+      ow.format.printDivergingBars(v,vizOpts())
+      ow.test.assert(stringify(v),saved,"Signed input immutable")
+    }
+    exports.testPrintTreemap = function() {
+      var o=vizOpts({width:8,height:4,labels:false,legend:"none"})
+      ow.test.assert(ow.format.printTreemap([1,1],o),"AAAABBBB\nAAAABBBB\nAAAABBBB\nAAAABBBB","Balanced slicing golden")
+      ow.test.assert(ow.format.printTreemap([1],o),repeat(4,"AAAAAAAA\n").slice(0,-1),"Single category fills map")
+      var sample=[{label:"Large 界",value:100},{label:"Tiny",value:1e-20},{label:"Zero",value:0}]
+      var tiny=ow.format.printTreemap(sample,vizOpts({width:35,height:8,legend:"right"}))
+      ow.test.assert(tiny.indexOf("*")>=0,true,"Tiny rectangles reported")
+      ow.test.assert(tiny.indexOf("<0.1%")>=0,true,"Positive tiny proportions not reported as zero")
+      ;["none","16","256","truecolor"].forEach(function(palette){
+        for(var w=0;w<22;w++) {
+          var opts=vizOpts({width:w,height:7,palette:palette,legend:"bottom"})
+          var a=ow.format.printTreemap([50,30,20],opts)
+          vizBounds(a,w,7)
+          ow.test.assert(a,ow.format.printTreemap([50,30,20],opts),"Stable rectangles")
+        }
+      })
+      ow.test.assert(ow.format.printTreemap([],o),"(empty)","Empty map")
+      ow.test.assert(ow.format.printTreemap([0],o).indexOf("no data")>=0,true,"Zero map")
+      vizThrows(function(){ow.format.printTreemap([-1],o)})
+      vizThrows(function(){ow.format.printTreemap([1],merge(o,{cellAspect:0}))})
+    }
+    exports.testSparklineEnhancements = function() {
+      var o=vizOpts({width:20,min:0,max:10,unicode:false})
+      ow.test.assert(ow.format.printSparkline([0,5,10],o),"_=#","Fixed-range ASCII")
+      ow.test.assert(ow.format.printSparkline([0,null,10],o),"_ #","Missing gap")
+      ow.test.assert(ow.format.printSparkline([0,null,10],merge(o,{missing:"skip"})),"_#","Missing skip")
+      ow.test.assert(ow.format.printSparkline([0,5,10],merge(o,{markMin:true,markMax:true,trend:true})),"v=^ +","Markers and trend")
+      vizThrows(function(){ow.format.printSparkline([1,null],merge(o,{missing:"error"}))})
+      vizThrows(function(){ow.format.printSparkline([Infinity],o)})
+      vizThrows(function(){ow.format.printSparkline([1],merge(o,{min:2,max:1}))})
+      var colored=vizOpts({width:30,palette:"truecolor",thresholds:[{value:5,color:"RED"}],highlightLast:"GREEN",colorScale:{min:0,max:10,colors:["BLUE","YELLOW"]}})
+      var a=ow.format.printSparkline([0,5,10],colored)
+      if(isUnDef(getEnv("NO_COLOR"))) {
+        ow.test.assert(a.indexOf("38;2;205;49;49")>=0,true,"Threshold colour")
+        ow.test.assert(a.indexOf("38;2;13;188;121")>=0,true,"Last value takes precedence")
+      }
+      for(var w=0;w<20;w++) vizBounds(ow.format.printSparkline([{name:"界",data:[-1e308,null,1e308]}],merge(o,{width:w,label:"😀",trend:true,showMinMax:true})),w,1)
+      var legacy=ow.format.printSparkline([1,5,3,8],{width:3,palette:"none"})
+      ow.test.assert(legacy,ow.format.printSparkline([1,5,3,8],vizOpts({width:3})),"Capabilities preserve legacy sampling")
+    }
+    exports.testPhase5DashboardWidgets = function() {
+      var d=ow.format.printDashboard([[{type:"divergingBars",data:{down:-10,up:20}},{type:"treemap",data:{A:50,B:30,C:20}}]],vizOpts({width:70,height:10,borderStyle:"rect"}))
+      vizBounds(d,70,10)
+      ow.test.assert(d.indexOf("Err:"),-1,"Phase 5 widgets")
+      var grid=ow.format.string.grid([[{type:"treemap",obj:[50,30,20],options:vizOpts()},{type:"divergingBars",obj:[-10,20],options:vizOpts()}]],8,60," ",true)
+      ow.test.assert(grid.indexOf("Err:"),-1,"Phase 5 grid integration")
+    }
+
+    exports.testVizWatchResize = function() {
+      var queue=new java.util.concurrent.LinkedBlockingQueue(), width=new java.util.concurrent.atomic.AtomicInteger(40), reads=new java.util.concurrent.atomic.AtomicInteger(0), shared={width:40,height:10}
+      var watch=ow.format.viz.watchResize(function(next,prev){ queue.offer(String(prev.width)+">"+String(next.width)) },{
+        interval:10,getCapabilities:function(){reads.incrementAndGet();shared.width=Number(width.get());return shared}
+      })
+      try {
+        width.set(24)
+        var event=queue.poll(2,java.util.concurrent.TimeUnit.SECONDS)
+        ow.test.assert(String(event),"40>24","Resize callback previous/next dimensions")
+      } finally {watch.stop()}
+      var n=Number(reads.get())
+      sleep(50,true)
+      ow.test.assert(Number(reads.get()),n,"Stopped resize timer performs no reads")
+    }
+    exports.testVizFrameTerminalState = function() {
+      var rows=[], row=0, col=0, fg="default", bg="default"
+      function consume(frame) {
+        for(var i=0;i<frame.length;) {
+          var c=/^\x1b\[([0-9;]*)([A-Za-z])/.exec(frame.slice(i))
+          if(c) {
+            var p=c[1].split(";").map(Number)
+            if(c[2]=="A") row=Math.max(0,row-(p[0]||1))
+            else if(c[2]=="K" && p[0]==2) rows[row]=[]
+            else if(c[2]=="m") {
+              for(var j=0;j<p.length;j++) {
+                if(p[j]==0){fg="default";bg="default"}
+                else if(p[j]==39) fg="default"
+                else if(p[j]==49) bg="default"
+                else if(p[j]>=30&&p[j]<=37) fg=String(p[j])
+                else if(p[j]>=40&&p[j]<=47) bg=String(p[j])
+              }
+            }
+            i+=c[0].length
+          } else if(frame.charAt(i)=="\r") {col=0;i++}
+          else if(frame.charAt(i)=="\n") {row++;i++}
+          else {
+            var t=ow.format.string._nextWrapToken(frame,i)
+            if(!rows[row]) rows[row]=[]
+            rows[row][col]={text:t.token,fg:fg,bg:bg}
+            for(var j=1;j<t.width;j++) rows[row][col+j]={text:"",fg:fg,bg:bg}
+            col+=t.width;i=t.next
+          }
+        }
+      }
+      consume("\x1b[31;44mOLD\x1b[0m\r\nremoved\r\nalso removed")
+      var next="\x1b[32;45m界\x1b[0m x"
+      consume(ow.format.viz.diffFrames("\x1b[31;44mOLD\x1b[0m\nremoved\nalso removed",next).patch)
+      ow.test.assert(row,0,"Shrinking frame returns cursor to the final new row")
+      ow.test.assert(rows[0].map(function(c){return c.text}).join(""),"界 x","Wide next frame")
+      ow.test.assert(rows[0][0].fg,"32","Changed foreground")
+      ow.test.assert(rows[0][0].bg,"45","Changed background")
+      ow.test.assert(rows[0][3].bg,"default","No background leak to adjacent text")
+      ow.test.assert(rows[1].length+rows[2].length,0,"Removed rows cleared")
+      consume(ow.format.viz.diffFrames(next,"a\nb").patch)
+      ow.test.assert(row,1,"Growing frame cursor origin")
+      ow.test.assert(rows[0][0].text+rows[1][0].text,"ab","Growing frame content")
+    }
 })();

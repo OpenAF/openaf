@@ -91,3 +91,7 @@ Python `_oaf`, `_g`, `_s` provide callbacks; `oaf --oafpy > oaf.py` enables inve
 Exception flags default to false; true also throws on stderr. Verify installed runtime support for
 persistence, forwarded flags and explicit argv, since older JARs differ. The optional
 [Python skill](../openaf-python/SKILL.md) has a runnable round trip and mode-specific details.
+
+## JVM incident evidence
+
+For Java GC/OOM/profiling read `docs/oom-diagnostics.md` and the adjacent ODoc in `js/owrap.java.js`. Select the target explicitly; self is the collector JVM. Detect commands before capture, and distinguish installed runtime capabilities from source. HPROF payload bytes are not retained sizes; optional JFR filtering/bounds preserve evidence limitations. Linux namespace socket resolution and explicit nsenter transport need appropriate UID/filesystem access; never infer target-command cancellation from a helper timeout. The sibling oafp diagnostics skill covers report/bundle and Kubernetes/gcutils recipes.

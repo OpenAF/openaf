@@ -140,6 +140,19 @@ public final class Terminal {
         return new Size(0, 0);
     }
     public String getOutputEncoding() { return delegate.outputEncoding().name(); }
+    /** Tests stdout independently of stdin without opening or altering a terminal. */
+    public static boolean isOutputTTY() {
+        try {
+            if (System.getProperty("os.name", "").startsWith("Windows")) {
+                Kernel32.CONSOLE_SCREEN_BUFFER_INFO info = new Kernel32.CONSOLE_SCREEN_BUFFER_INFO();
+                return Kernel32.GetConsoleScreenBufferInfo(Kernel32.GetStdHandle(Kernel32.STD_OUTPUT_HANDLE), info) != 0;
+            }
+            return CLibrary.isatty(1) == 1;
+        } catch (LinkageError | RuntimeException unavailable) {
+            return System.console() != null;
+        }
+    }
+
     public boolean isSupported() { return !delegate.getType().startsWith("dumb"); }
     public boolean isAnsiSupported() { return isSupported() || "dumb-color".equals(delegate.getType()); }
     public boolean isEchoEnabled() { return delegate.echo(); }

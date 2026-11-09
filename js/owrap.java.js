@@ -582,13 +582,18 @@ OpenWrap.java.prototype.pidCheckJFR = function(aPid) {
  * If includeDesc is true it will include a field (__desc_) for each field added with the description of the field.
  * </odoc>
  */
-OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
+OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc, options) {
     includeDesc = _$(includeDesc, "includeDesc").isBoolean().default(false)
 
+    var options = options || {}, emitted = 0
+    ;["maxEvents", "arrayLimit", "maxDepth"].forEach(k => {
+      if (isDef(options[k]) && (!isFinite(Number(options[k])) || Number(options[k]) < 1 || Number(options[k]) % 1 !== 0)) throw new Error("Invalid JFR " + k)
+    })
     // Check for Java >= 14
     ow.loadFormat()
-    var jver = ow.format.getJavaVersion()
-    if (ow.format.semver(jver).getMajor() < 14) throw "Parsing Java Flight Recorder files is only available on Java 14 or later."
+    var jver = String(java.lang.System.getProperty("java.specification.version"))
+    var major = Number(jver.indexOf("1.") === 0 ? jver.substring(2) : jver)
+    if (major < 14) throw "Parsing Java Flight Recorder files is only available on Java 14 or later."
 
     // Instantiate the Java Flight Recorder file
     var jfr = new java.nio.file.Path.of(aFile)
@@ -607,7 +612,9 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
   
     // Helper function for parsing the fields
     // Receives the event and the field
-    var fnRec = (ev, f) => {
+    var fnRec = (ev, f, depth) => {
+      depth = depth || 0
+      if (depth >= Number(options.maxDepth || 32)) return {truncated:true,reason:"maxDepth"}
       var value, t
       
       // Check if the field has a type name
@@ -625,7 +632,7 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
         case "double": value = Number(ev.getDouble(f.getName())); break
         case "float": value = Number(ev.getFloat(f.getName())); break
         case "int": value = Number(ev.getInt(f.getName())); break
-        case "long": value = Number(ev.getLong(f.getName())); break
+        case "long": value = options.exactLongs ? String(ev.getLong(f.getName())) : Number(ev.getLong(f.getName())); break
         case "short": value = Number(ev.getShort(f.getName())); break
         case "java.lang.Long": value = Number(ev.getLong(f.getName())); break
         case "java.lang.Integer": value = Number(ev.getInt(f.getName())); break
@@ -641,10 +648,10 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
             // Check if the field is an array
             if (f.isArray()) {
               // Parse the array in parallel
-              value = pForEach(af.fromJavaArray(evf), ae => {
+              value = pForEach(af.fromJavaArray(evf).slice(0, Number(options.arrayLimit || 256)), ae => {
                 // Parse the fields of the array
                 return af.fromJavaArray(ae.getFields()).reduce((acc, field) => {
-                  acc[field.getName()] = fnRec(ae, field)
+                  acc[field.getName()] = fnRec(ae, field, depth + 1)
                   if (includeDesc) acc["__desc_" + field.getName()] = field.getLabel() + (field.getDescription() == null ? "" : " - " + field.getDescription())
                   return acc
                 }, {})
@@ -653,7 +660,7 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
               if (!isNull(evf) && isDef(evf.getFields)) {
                 // Parse the fields of the event
                 value = af.fromJavaArray(evf.getFields()).reduce((acc, field) => {
-                  acc[field.getName()] = fnRec(evf, field)
+                  acc[field.getName()] = fnRec(evf, field, depth + 1)
                   if (includeDesc) acc["__desc_" + field.getName()] = field.getLabel() + (field.getDescription() == null ? "" : " - " + field.getDescription())
                   return acc
                 }, {})
@@ -670,6 +677,12 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
       while (jfrp.hasMoreEvents()) {
         // Read the next event
         var event = jfrp.readEvent()
+        var eventName = String(event.getEventType().getName())
+        if (isArray(options.events) && options.events.indexOf(eventName) < 0) continue
+        var eventTime = Number(event.getStartTime().toEpochMilli())
+        if (isDef(options.startTime) && eventTime < new Date(options.startTime).getTime()) continue
+        if (isDef(options.endTime) && eventTime > new Date(options.endTime).getTime()) continue
+        if (isDef(options.maxEvents) && emitted >= Number(options.maxEvents)) break
         var fields = {}
   
         // Parse the fields of the event
@@ -685,7 +698,7 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
         })
   
         // Call the function with the event
-        aFnRec({
+        var keepReading = aFnRec({
             startTime: ow.format.fromISODate(String(event.getStartTime().toString())),
             endTime: ow.format.fromISODate(String(event.getEndTime().toString())),
             duration: String(event.getDuration()),
@@ -696,11 +709,13 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
               javaid: Number(event.getThread().getJavaThreadId()),
               osName: String(event.getThread().getOSName()),
               osid: Number(event.getThread().getOSThreadId()),
-              virtual: Boolean(event.getThread().isVirtual()),
+              virtual: isDef(event.getThread().isVirtual) ? Boolean(event.getThread().isVirtual()) : false,
               threadGroup: isNull(event.getThread().getThreadGroup()) ? "n/a" : String(event.getThread().getThreadGroup().getName())
             },
             fields: fields
         })
+        emitted++
+        if (keepReading === false) break
       }
     } finally {
       jfrp.close()
@@ -2811,7 +2826,7 @@ OpenWrap.java.prototype.__diagMap = function(v) {
  * <odoc format="markdown">
  * <key>ow.java.parseHPROF(file, callback, options) : Map</key>
  * Streams HotSpot HPROF records through `callback`; return false to stop. Reads plain or gzip files in two passes.
- * Options: `values` (false), `arrayLimit` (32), `maxMetadata` (1000000), `type`, `className`, `objectId`.
+ * Options: `values` (false), `arrayLimit` (32), `maxMetadata` (1000000), `maxMetadataBytes` (268435456 string bytes), `type`, `className`, `objectId`.
  * IDs and long field values are strings. Payload bytes are serialized sizes, not retained sizes.
  * </odoc>
  */
@@ -2826,7 +2841,7 @@ OpenWrap.java.prototype.parseHPROF = function(file, callback, options) {
     if (isDef(o.objectId) && r.id != o.objectId) return true
     return callback(r) !== false
   } })
-  return this.__diagMap(new Packages.openaf.HPROFReader().read(file, visitor, o.values === true, isDef(o.arrayLimit) ? o.arrayLimit : 32, isDef(o.maxMetadata) ? o.maxMetadata : 1000000))
+  return this.__diagMap(new Packages.openaf.HPROFReader().read(file, visitor, o.values === true, isDef(o.arrayLimit) ? o.arrayLimit : 32, isDef(o.maxMetadata) ? o.maxMetadata : 1000000, isDef(o.maxMetadataBytes) ? o.maxMetadataBytes : 268435456))
 }
 
 /**
@@ -2838,7 +2853,7 @@ OpenWrap.java.prototype.parseHPROF = function(file, callback, options) {
  */
 OpenWrap.java.prototype.hprofSummary = function(file, options) {
   var o = options || {}
-  return this.__diagMap(new Packages.openaf.HPROFReader().read(file, null, false, 0, isDef(o.maxMetadata) ? o.maxMetadata : 1000000))
+  return this.__diagMap(new Packages.openaf.HPROFReader().read(file, null, false, 0, isDef(o.maxMetadata) ? o.maxMetadata : 1000000, isDef(o.maxMetadataBytes) ? o.maxMetadataBytes : 268435456))
 }
 
 OpenWrap.java.prototype.__diagTarget = function(target) {
@@ -2859,6 +2874,8 @@ OpenWrap.java.prototype.__diagTarget = function(target) {
 // Keep jcmd's historical string interface while making reduced Linux runtimes useful.
 OpenWrap.java.prototype.jcmd = function(pid, command, options) {
   pid = this.__diagTarget(pid)
+  if (options && options.isolated === true && pid !== "self") return this.__diagWorker(pid, command, options)
+  if (options && options.transport === "nsenter") return this.__diagNamespaceCommand(pid, command, options)
   command = isDef(command) ? command : "help"
   if (!isString(command) || !command.length || command.indexOf("\u0000") >= 0) throw new Error("Invalid diagnostic command")
   var o = options || {}, vm, stream, output = new java.io.ByteArrayOutputStream(), submitted = false
@@ -2900,7 +2917,12 @@ OpenWrap.java.prototype.jcmd = function(pid, command, options) {
   if (status.match(/^Uid:\s+(\d+)/m)[1] != own.match(/^Uid:\s+(\d+)/m)[1]) throw new Error("Target must have the same owner")
   var identity = read(root + "/stat")
   if (read(root + "/maps").indexOf("libjvm") < 0) throw new Error("Cannot verify HotSpot target")
-  var tmp = o.tmpDir || "/tmp", socketPath = tmp + "/.java_pid" + pid, trigger = tmp + "/.attach_pid" + pid, created = false
+  var namespaceMatch = status.match(/^NSpid:\s+(.+)$/m)
+  var namespacePid = namespaceMatch ? namespaceMatch[1].trim().split(/\s+/).pop() : pid
+  var tmp = o.tmpDir || "/tmp"
+  if (!new java.io.File(tmp).isAbsolute()) throw new Error("tmpDir must be absolute")
+  var targetTmp = namespacePid !== pid ? root + "/root" + tmp : tmp
+  var socketPath = targetTmp + "/.java_pid" + namespacePid, trigger = targetTmp + "/.attach_pid" + namespacePid, created = false
   var socket
   try {
     // Resolve the socket API before signaling any process.
@@ -2990,6 +3012,9 @@ OpenWrap.java.prototype.collectOOM = function(target, options) {
   ;["VM.version", "VM.flags", "GC.heap_info"].forEach(cmd => section(cmd, "diagnosticCommand", () => ow.java.jcmd(target, cmd, options)))
   var pid = target === "self" ? String(java.lang.management.ManagementFactory.getRuntimeMXBean().getName()).split("@")[0] : target
   if (String(java.lang.System.getProperty("os.name")) === "Linux") {
+    section("identity", "proc start ticks and boot ID", function() {
+      return {pid:pid, startTicks:io.readFileString("/proc/" + pid + "/stat").replace(/^.*\) /, "").split(" ")[19], bootId:io.readFileString("/proc/sys/kernel/random/boot_id").trim()}
+    })
     ;["status", "limits", "stat"].forEach(name => section("proc." + name, "/proc/" + pid + "/" + name, () => io.readFileString("/proc/" + pid + "/" + name)))
     section("cgroup", "target proc cgroup/mountinfo", function() {
       var result = {}, groups = io.readFileString("/proc/" + pid + "/cgroup").trim().split("\n")
@@ -3008,7 +3033,7 @@ OpenWrap.java.prototype.collectOOM = function(target, options) {
           else return
           var base = "/proc/" + pid + "/root" + unescape(m[4]) + rel
           result.version = v2 ? 2 : 1; result.path = base
-          var files = v2 ? ["memory.max", "memory.current", "memory.peak", "memory.events", "memory.stat"] : ["memory.limit_in_bytes", "memory.usage_in_bytes", "memory.max_usage_in_bytes", "memory.failcnt", "memory.stat"]
+          var files = v2 ? ["memory.max", "memory.current", "memory.peak", "memory.events", "memory.stat", "cpu.max", "cpu.stat", "cpu.pressure", "memory.pressure"] : ["memory.limit_in_bytes", "memory.usage_in_bytes", "memory.max_usage_in_bytes", "memory.failcnt", "memory.stat"]
           files.forEach(f => { if (io.fileExists(base + "/" + f)) result[f] = io.readFileString(base + "/" + f).trim() })
         })
       })
@@ -3100,4 +3125,105 @@ OpenWrap.java.prototype.heapDump = function(target, file, options) {
 OpenWrap.java.prototype.nativeMemory = function(target, options) {
   var raw = this.jcmd(target, "VM.native_memory summary", options)
   return { target: target, enabled: !/not enabled/i.test(raw), raw: raw }
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.diagnosticResult(target, command, options) : Map</key>
+ * Collects diagnostic text with timing and an explicit uncertain outcome on failure.
+ * Does not retry. A timeout never guarantees cancellation in the target JVM.
+ * </odoc>
+ */
+OpenWrap.java.prototype.diagnosticResult = function(target, command, options) {
+  var start = now(), r = {target:String(target), command:command, timestamp:new Date().toISOString(), status:"error"}
+  try { r.text = this.jcmd(target, command, options); r.status = "ok" }
+  catch(e) { r.error = String(e); r.outcome = "unknown" }
+  r.durationMs = now() - start
+  return r
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.java.__diagNamespaceCommand(target, command, options) : String</key>
+ * Explicit nsenter transport. nsenterHelper is an argument array naming an already installed
+ * modern OpenAF launcher and java-diagnostic-helper.js inside the target mount namespace.
+ * Uses existing caller privileges and target UID/GID. Never retries submitted commands.
+ * </odoc>
+ */
+OpenWrap.java.prototype.__diagNamespaceCommand = function(target, command, options) {
+  if (target === "self" || String(java.lang.System.getProperty("os.name")) !== "Linux") throw new Error("nsenter requires an external Linux PID")
+  var o = options || {}, helper = o.nsenterHelper
+  if (!isArray(helper) || !helper.length || helper.some(v => !isString(v) || /[\u0000\r\n]/.test(v))) throw new Error("nsenterHelper argument array is required")
+  var root = "/proc/" + target, status = io.readFileString(root + "/status"), identity = io.readFileString(root + "/stat")
+  var ns = status.match(/^NSpid:\s+(.+)$/m), uid = status.match(/^Uid:\s+(\d+)/m), gid = status.match(/^Gid:\s+(\d+)/m)
+  if (!ns || !uid || !gid) throw new Error("Cannot resolve target namespace identity")
+  var pid = ns[1].trim().split(/\s+/).pop(), timeout = Number(o.timeoutMs || 30000), limit = Number(o.maxOutputBytes || 16777216)
+  if (!isFinite(timeout) || timeout <= 0 || !isFinite(limit) || limit <= 0) throw new Error("Invalid diagnostic limits")
+  var executable = o.nsenterPath || "/usr/bin/nsenter"
+  if (!new java.io.File(executable).isAbsolute()) throw new Error("nsenterPath must be absolute")
+  var args = [executable, "--target", String(target), "--mount", "--pid", "--setuid", uid[1], "--setgid", gid[1], "--"].concat(helper)
+  var output = io.createTempFile("java-diag-", ".out"), error = io.createTempFile("java-diag-", ".err"), process
+  try {
+    var commandArgs = new java.util.ArrayList()
+    args.forEach(v => commandArgs.add(new java.lang.String(String(v))))
+    var builder = new java.lang.ProcessBuilder(commandArgs)
+    builder.redirectOutput(new java.io.File(output)); builder.redirectError(new java.io.File(error))
+    builder.environment().put("OPENAF_DIAGNOSTIC_REQUEST", stringify({target:pid,command:command,options:{transport:"auto",timeoutMs:timeout,maxOutputBytes:limit,initialize:o.initialize,tmpDir:o.tmpDir}}))
+    if (io.readFileString(root + "/stat").replace(/^.*\) /, "").split(" ")[19] !== identity.replace(/^.*\) /, "").split(" ")[19]) throw new Error("Target identity changed")
+    process = builder.start()
+    var deadline = now() + timeout
+    while (process.isAlive()) {
+      if (now() >= deadline || new java.io.File(output).length() + new java.io.File(error).length() > limit) {
+        process.destroyForcibly()
+        throw new Error("Namespace helper deadline/output limit exceeded; target outcome unknown")
+      }
+      sleep(20, true)
+    }
+    if (new java.io.File(output).length() + new java.io.File(error).length() > limit) throw new Error("Namespace helper output limit exceeded")
+    if (process.exitValue() !== 0) throw new Error("Namespace helper failed: " + io.readFileString(error).substring(0, 4096))
+    var result = jsonParse(io.readFileString(output))
+    if (result.status !== "ok") throw new Error("Namespace diagnostic failed: " + result.error)
+    return result.text
+  } finally {
+    if (process && process.isAlive()) process.destroyForcibly()
+    io.rm(output); io.rm(error)
+  }
+}
+
+// Bound Attach API waits in a child JVM. Killing the child cannot cancel target execution.
+OpenWrap.java.prototype.__diagWorker = function(target, command, options) {
+  var o = options || {}, timeout = Number(o.timeoutMs || 30000), limit = Number(o.maxOutputBytes || 16777216)
+  if (!isFinite(timeout) || timeout <= 0 || !isFinite(limit) || limit <= 0) throw new Error("Invalid diagnostic limits")
+  var output = io.createTempFile("java-worker-", ".out"), error = io.createTempFile("java-worker-", ".err"), child
+  var childOptions = Object.assign({}, o); childOptions.isolated = false
+  var script = 'ow.loadJava(); var r=jsonParse(getEnv("OPENAF_DIAGNOSTIC_REQUEST")); try { print(stringify({status:"ok",text:ow.java.jcmd(r.target,r.command,r.options)})) } catch(e) { print(stringify({status:"error",error:String(e)})) }'
+  var executable = String(java.lang.System.getProperty("java.home")) + "/bin/java"
+  var args = [executable]
+  if (Number(String(java.lang.System.getProperty("java.specification.version")).split(".")[0]) >= 9) args.push("--add-exports=jdk.attach/sun.tools.attach=ALL-UNNAMED")
+  args = args.concat(["-jar", getOpenAFPath() + "/openaf.jar", "-c", script])
+  if (isArray(o.workerCommand)) args = o.workerCommand.concat(["-c", script])
+  try {
+    var commandArgs = new java.util.ArrayList()
+    args.forEach(v => commandArgs.add(new java.lang.String(String(v))))
+    var builder = new java.lang.ProcessBuilder(commandArgs)
+    builder.redirectOutput(new java.io.File(output)); builder.redirectError(new java.io.File(error))
+    builder.environment().put("OPENAF_DIAGNOSTIC_REQUEST", stringify({target:String(target),command:command,options:childOptions}))
+    child = builder.start()
+    var deadline = now() + timeout
+    while (child.isAlive()) {
+      if (now() >= deadline || new java.io.File(output).length() + new java.io.File(error).length() > limit) {
+        child.destroyForcibly()
+        throw new Error("Diagnostic worker deadline/output limit exceeded; target operation may continue")
+      }
+      sleep(20, true)
+    }
+    if (new java.io.File(output).length() + new java.io.File(error).length() > limit) throw new Error("Diagnostic worker output limit exceeded")
+    if (child.exitValue() !== 0) throw new Error("Diagnostic worker failed: " + io.readFileString(error).substring(0,4096))
+    var result = jsonParse(io.readFileString(output))
+    if (result.status !== "ok") throw new Error(result.error)
+    return result.text
+  } finally {
+    if (child && child.isAlive()) child.destroyForcibly()
+    io.rm(output); io.rm(error)
+  }
 }

@@ -19,6 +19,8 @@ import jline.Terminal;
 class TerminalSizeProbe {
     public static void main(String[] args) throws Exception {
         Terminal t = Terminal.system();
+        boolean expectedTTY = !Boolean.parseBoolean(args[4]);
+        if (Terminal.isOutputTTY() != expectedTTY) throw new AssertionError("stdout TTY detection");
         for (int i = 0; i < 2; i++) {
             int w = Integer.parseInt(args[i * 2]), h = Integer.parseInt(args[i * 2 + 1]);
             if (t.getWidth() != w || t.getHeight() != h)
@@ -39,7 +41,7 @@ def run(source, jar, piped_input, redirected_output):
     resize(140, 40)
     expected = ['80', '24', '80', '24'] if redirected_output else ['140', '40', '112', '32']
     proc = subprocess.Popen(['java', '--enable-native-access=ALL-UNNAMED', '-cp', jar + os.pathsep + str(Path(jar).parent / 'lib' / '*'),
-                             str(source), *expected],
+                             str(source), *expected, str(redirected_output).lower()],
                             stdin=subprocess.PIPE if piped_input else slave,
                             stdout=subprocess.PIPE if redirected_output else slave,
                             stderr=subprocess.PIPE)

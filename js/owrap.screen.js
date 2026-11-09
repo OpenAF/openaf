@@ -58,155 +58,25 @@ OpenWrap.screen.prototype.capabilities = function(options) {
   };
 };
 
-OpenWrap.screen.__namedColors = {
-  black:   { ansi16: 30, idx256: 0,   rgb: [0, 0, 0],       css: "#000000" },
-  red:     { ansi16: 31, idx256: 1,   rgb: [205, 49, 49],   css: "#cd3131" },
-  green:   { ansi16: 32, idx256: 2,   rgb: [13, 188, 121],  css: "#0dbc79" },
-  yellow:  { ansi16: 33, idx256: 3,   rgb: [229, 229, 16],  css: "#e5e510" },
-  blue:    { ansi16: 34, idx256: 4,   rgb: [36, 114, 200],  css: "#2472c8" },
-  magenta: { ansi16: 35, idx256: 5,   rgb: [188, 63, 188],  css: "#bc3fbc" },
-  cyan:    { ansi16: 36, idx256: 6,   rgb: [17, 168, 205],  css: "#11a8cd" },
-  white:   { ansi16: 37, idx256: 7,   rgb: [229, 229, 229], css: "#e5e5e5" },
-  gray:    { ansi16: 90, idx256: 244, rgb: [128, 128, 128], css: "#808080" },
-  grey:    { ansi16: 90, idx256: 244, rgb: [128, 128, 128], css: "#808080" },
-  bright_black:   { ansi16: 90, idx256: 8,  rgb: [102, 102, 102], css: "#666666" },
-  bright_red:     { ansi16: 91, idx256: 9,  rgb: [241, 76, 76],   css: "#f14c4c" },
-  bright_green:   { ansi16: 92, idx256: 10, rgb: [35, 209, 139],  css: "#23d18b" },
-  bright_yellow:  { ansi16: 93, idx256: 11, rgb: [245, 245, 67],  css: "#f5f543" },
-  bright_blue:    { ansi16: 94, idx256: 12, rgb: [59, 142, 234],  css: "#3b8eea" },
-  bright_magenta: { ansi16: 95, idx256: 13, rgb: [214, 112, 214], css: "#d670d6" },
-  bright_cyan:    { ansi16: 96, idx256: 14, rgb: [41, 184, 219],  css: "#29b8db" },
-  bright_white:   { ansi16: 97, idx256: 15, rgb: [255, 255, 255], css: "#ffffff" },
-  orange:  { ansi16: 33, idx256: 208, rgb: [255, 135, 0],   css: "#ff8700" },
-  purple:  { ansi16: 35, idx256: 135, rgb: [175, 95, 255],  css: "#af5fff" },
-  pink:    { ansi16: 95, idx256: 211, rgb: [255, 135, 175], css: "#ff87af" },
-  teal:    { ansi16: 36, idx256: 37,  rgb: [0, 175, 175],   css: "#00afaf" },
-  gold:    { ansi16: 93, idx256: 220, rgb: [255, 215, 0],   css: "#ffd700" },
-  indigo:  { ansi16: 34, idx256: 63,  rgb: [95, 95, 255],   css: "#5f5fff" },
-  lime:    { ansi16: 92, idx256: 118, rgb: [135, 255, 0],   css: "#87ff00" },
-  coral:   { ansi16: 91, idx256: 209, rgb: [255, 135, 95],  css: "#ff875f" },
-  slate:   { ansi16: 90, idx256: 60,  rgb: [95, 95, 135],   css: "#5f5f87" },
-  sky:     { ansi16: 96, idx256: 117, rgb: [135, 215, 255], css: "#87d7ff" }
-};
+ow.loadFormat()
 
-OpenWrap.screen.__rgbTo256 = function(r, g, b) {
-  r = Math.max(0, Math.min(255, Math.round(Number(r) || 0)));
-  g = Math.max(0, Math.min(255, Math.round(Number(g) || 0)));
-  b = Math.max(0, Math.min(255, Math.round(Number(b) || 0)));
-  if (r === g && g === b) {
-    if (r < 8) return 16;
-    if (r > 248) return 231;
-    return Math.round(((r - 8) / 247) * 24) + 232;
-  }
-  var cr = Math.round((r / 255) * 5), cg = Math.round((g / 255) * 5), cb = Math.round((b / 255) * 5);
-  return 16 + (36 * cr) + (6 * cg) + cb;
-};
-
-OpenWrap.screen.__rgbTo16 = function(r, g, b) {
-  var best = 37, bestDist = Infinity;
-  var names = Object.keys(OpenWrap.screen.__namedColors);
-  for (var i = 0; i < 16 && i < names.length; i++) {
-    var entry = OpenWrap.screen.__namedColors[names[i]];
-    var dr = r - entry.rgb[0], dg = g - entry.rgb[1], db = b - entry.rgb[2];
-    var dist = dr * dr + dg * dg + db * db;
-    if (dist < bestDist) { bestDist = dist; best = entry.ansi16; }
-  }
-  return best;
-};
-
-OpenWrap.screen.__256ToRgb = function(idx) {
-  idx = Math.max(0, Math.min(255, Math.round(Number(idx) || 0)));
-  if (idx < 16) {
-    var keys = ["black","red","green","yellow","blue","magenta","cyan","white","bright_black","bright_red","bright_green","bright_yellow","bright_blue","bright_magenta","bright_cyan","bright_white"];
-    return OpenWrap.screen.__namedColors[keys[idx]].rgb.slice();
-  }
-  if (idx >= 232) {
-    var v = 8 + (idx - 232) * 10;
-    return [v, v, v];
-  }
-  var n = idx - 16;
-  var steps = [0, 95, 135, 175, 215, 255];
-  return [steps[Math.floor(n / 36) % 6], steps[Math.floor(n / 6) % 6], steps[n % 6]];
-};
-
-/** <odoc>
+// Keep the established screen API while sharing the pure implementation.
+OpenWrap.screen.__namedColors = OpenWrap.format.__colors.__namedColors
+OpenWrap.screen.__rgbTo256 = OpenWrap.format.__colors.__rgbTo256
+OpenWrap.screen.__rgbTo16 = OpenWrap.format.__colors.__rgbTo16
+OpenWrap.screen.__256ToRgb = OpenWrap.format.__colors.__256ToRgb
+/** <odoc format="markdown">
  * <key>ow.screen.parseColor(aSpec) : Map</key>
- * Parses a color specification (named color, 0-255 number, "FG(n)", "BG(n)", "#rgb", "#rrggbb",
- * "rgb(r,g,b)", or [r,g,b]) into a normalized descriptor with { type, r, g, b, idx256, ansi16, css }.
- * Returns null if invalid or empty.
+ * Parses named, indexed or RGB colours. Returns null for invalid colours.
  * </odoc> */
-OpenWrap.screen.prototype.parseColor = function(spec) {
-  if (isUnDef(spec) || spec === null || spec === "") return null;
-  if (typeof spec == "number" && isFinite(spec) && spec >= 0 && spec <= 255) {
-    var idx = Math.round(spec), rgb = OpenWrap.screen.__256ToRgb(idx);
-    return {
-      type: "256", r: rgb[0], g: rgb[1], b: rgb[2], idx256: idx,
-      ansi16: OpenWrap.screen.__rgbTo16(rgb[0], rgb[1], rgb[2]),
-      css: "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")"
-    };
-  }
-  if (Array.isArray(spec) && spec.length === 3 && spec.every(function(x) { return typeof x == "number" && isFinite(x) && x >= 0 && x <= 255; })) {
-    var r = Math.round(spec[0]), g = Math.round(spec[1]), b = Math.round(spec[2]);
-    return {
-      type: "rgb", r: r, g: g, b: b,
-      idx256: OpenWrap.screen.__rgbTo256(r, g, b),
-      ansi16: OpenWrap.screen.__rgbTo16(r, g, b),
-      css: "rgb(" + r + "," + g + "," + b + ")"
-    };
-  }
-  if (typeof spec != "string") return null;
-  var s = spec.trim();
-  if (!s || s.toLowerCase() == "default" || s.toLowerCase() == "none") return null;
-  var lower = s.toLowerCase().replace(/[\s-]+/g, "_");
-  if (lower.indexOf("fg_") === 0) lower = lower.substring(3);
-  else if (lower.indexOf("bg_") === 0) lower = lower.substring(3);
-  if (Object.prototype.hasOwnProperty.call(OpenWrap.screen.__namedColors, lower)) {
-    var c = OpenWrap.screen.__namedColors[lower];
-    return { type: "named", name: lower, r: c.rgb[0], g: c.rgb[1], b: c.rgb[2], idx256: c.idx256, ansi16: c.ansi16, css: c.css };
-  }
-  var m;
-  if ((m = /^#([0-9a-fA-F]{3})$/.exec(s))) {
-    var r1 = parseInt(m[1][0] + m[1][0], 16), g1 = parseInt(m[1][1] + m[1][1], 16), b1 = parseInt(m[1][2] + m[1][2], 16);
-    return { type: "rgb", r: r1, g: g1, b: b1, idx256: OpenWrap.screen.__rgbTo256(r1, g1, b1), ansi16: OpenWrap.screen.__rgbTo16(r1, g1, b1), css: "rgb(" + r1 + "," + g1 + "," + b1 + ")" };
-  }
-  if ((m = /^#([0-9a-fA-F]{6})$/.exec(s))) {
-    var r2 = parseInt(m[1].substring(0, 2), 16), g2 = parseInt(m[1].substring(2, 4), 16), b2 = parseInt(m[1].substring(4, 6), 16);
-    return { type: "rgb", r: r2, g: g2, b: b2, idx256: OpenWrap.screen.__rgbTo256(r2, g2, b2), ansi16: OpenWrap.screen.__rgbTo16(r2, g2, b2), css: "#" + m[1].toLowerCase() };
-  }
-  if ((m = /^(?:(?:fg_|bg_)?rgb)\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i.exec(s))) {
-    var r3 = Number(m[1]), g3 = Number(m[2]), b3 = Number(m[3]);
-    if (r3 <= 255 && g3 <= 255 && b3 <= 255) {
-      return { type: "rgb", r: r3, g: g3, b: b3, idx256: OpenWrap.screen.__rgbTo256(r3, g3, b3), ansi16: OpenWrap.screen.__rgbTo16(r3, g3, b3), css: "rgb(" + r3 + "," + g3 + "," + b3 + ")" };
-    }
-  }
-  if ((m = /^(?:(?:fg|bg|color)\(\s*(\d{1,3})\s*\)|(\d{1,3}))$/i.exec(s))) {
-    var idx2 = Number(m[1] || m[2]);
-    if (idx2 >= 0 && idx2 <= 255) return this.parseColor(idx2);
-  }
-  return null;
-};
-
-/** <odoc>
+OpenWrap.screen.prototype.parseColor = function(spec) { return OpenWrap.format.__colors.parseColor(spec) }
+/** <odoc format="markdown">
  * <key>ow.screen.colorSeq(aSpec, isBackground, aColorMode) : String</key>
- * Returns the SGR parameter sequence (e.g. "38;2;80;180;255" or "38;5;39" or "36") for a color
- * specification given the target colorMode ("truecolor", "256", "16", "none").
+ * Returns SGR colour parameters for the requested colour depth.
  * </odoc> */
-OpenWrap.screen.prototype.colorSeq = function(spec, isBg, colorMode) {
-  var mode = colorMode || this.capabilities().colorMode;
-  if (mode == "none") return "";
-  var c = (isMap(spec) && isNumber(spec.idx256)) ? spec : this.parseColor(spec);
-  if (!c) return "";
-  if (mode == "truecolor" && (c.type == "rgb" || c.type == "named")) {
-    return (isBg ? "48;2;" : "38;2;") + c.r + ";" + c.g + ";" + c.b;
-  }
-  if (mode == "truecolor" || mode == "256") {
-    if (c.type == "named" && c.idx256 < 16 && mode == "16") {
-      return String(isBg ? c.ansi16 + 10 : c.ansi16);
-    }
-    return (isBg ? "48;5;" : "38;5;") + c.idx256;
-  }
-  return String(isBg ? c.ansi16 + 10 : c.ansi16);
-};
+OpenWrap.screen.prototype.colorSeq = function(spec, bg, mode) {
+  return OpenWrap.format.__colors.colorSeq(spec, bg, mode || this.capabilities().colorMode)
+}
 
 /** <odoc>
  * <key>ow.screen.parseStyle(aStyle) : Map</key>
@@ -364,26 +234,8 @@ OpenWrap.screen.prototype.width = function(text) {
  * Clips aText to at most aWidth visible columns without splitting UTF-8 grapheme clusters or ANSI escapes.
  * </odoc> */
 OpenWrap.screen.prototype.clip = function(text, width, ellipsis) {
-  var s = String(isDef(text) && text !== null ? text : "");
-  var maxW = Math.max(0, Number(width) || 0);
-  var ell = isDef(ellipsis) ? String(ellipsis) : "";
-  if (visibleLength(s) <= maxW) return s;
-  var limit = Math.max(0, maxW - visibleLength(ell)), out = "", w = 0, hasEsc = false, idx = 0;
-  while (idx < s.length) {
-    var part = ow.format.string._nextWrapToken(s, idx);
-    if (!part || part.next <= idx) break;
-    if (/^\x1b\[/.test(part.token)) {
-      out += part.token;
-      hasEsc = true;
-      idx = part.next;
-      continue;
-    }
-    if (w + part.width > limit) break;
-    out += part.token;
-    w += part.width;
-    idx = part.next;
-  }
-  return out + ell + (hasEsc ? "\x1b[0m" : "");
+  return ow.format.string.ansiClip(String(isDef(text) && text !== null ? text : ""),
+    Math.max(0, Number(width) || 0), isDef(ellipsis) ? String(ellipsis) : "")
 };
 
 /** <odoc>

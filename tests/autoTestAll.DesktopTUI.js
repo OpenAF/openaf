@@ -167,6 +167,8 @@
   };
   exports.testScreenStylingAlignAndUTF8 = function() {
     ow.loadScreen();
+    eq(ow.screen.clip("👨‍👩‍👧‍👦abc", 2), "👨‍👩‍👧‍👦", "Shared cluster clipping");
+    eq(ow.screen.clip("x", 0), "", "Zero width clipping");
     // 1. Colors: 16, 256, and truecolor RGB/hex
     var c256 = ow.screen.parseColor(208);
     eq(c256.idx256, 208, "256 color index parsed");

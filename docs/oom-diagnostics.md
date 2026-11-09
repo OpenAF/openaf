@@ -65,3 +65,17 @@ java -cp /tmp/oom-tests HPROFReaderTest
 ```
 
 The Java oJob suite includes the self snapshot/thread/target-validation test. Java 8 source compatibility is distinct from execution on an actual Java 8 OpenAF distribution.
+
+## oafp integration
+
+The sibling oafp Java diagnostics guide documents `in=javadiag`, `in=jcmd`, `in=hprof`, full-stack parsing, OOM extraction, local bundles and report outputs. Collection requires an explicit PID; report outputs analyze supplied evidence.
+
+`ow.java.diagnosticResult(target, command, options)` adds timestamp, duration and status around the existing string API. Failures have an unknown target outcome and are never retried. It does not add a hard Attach API deadline.
+
+`parseJFR(file, callback, includeDesc, options)` now accepts `events` (exact event names), `startTime`, `endTime` and `maxEvents`; return false from callback to stop. Filtering occurs before field conversion. Optional virtual-thread methods are guarded. Legacy three-argument calls preserve their behavior.
+
+Linux socket fallback now resolves NSpid and the target temporary directory through `/proc/PID/root` when namespace PIDs differ. Explicit `transport:"nsenter"` accepts `nsenterPath` and an `nsenterHelper` argument array naming a preinstalled modern OpenAF launcher plus `js/java-diagnostic-helper.js` in the target mount namespace. It enters mount/PID namespaces with target UID/GID using existing caller privileges. Helper output and runtime are bounded; terminating the helper does not cancel the target command. No automatic escalation or retries occur. Live container validation remains outstanding.
+
+JFR options additionally include `exactLongs`, `arrayLimit` (256 default), and `maxDepth` (32 default). Depth truncation is represented explicitly. Array output is capped; use a larger explicit limit when complete arrays are needed.
+
+Use `isolated:true` to execute external diagnostic calls in a disposable modern OpenAF worker JVM, with bounded output and timeout. The worker requires a rebuilt runtime containing these APIs; `workerCommand` can explicitly select another OpenAF launcher argument array. A worker deadline does not cancel commands already executing in the target. Do not assume these features are installed from checkout documentation alone.

@@ -1256,6 +1256,10 @@
 
         [ "ollama", "anthropic" ].forEach(provider => {
             var g = provider == "ollama" ? new ow.ai.gpt(provider, { url: "http://127.0.0.1:11434", model: "llama-test" }) : new ow.ai.gpt(provider, { key: "test-key" });
+            // Test the unsupported-capability boundary, not a provider-name assumption:
+            // these providers can now implement structuredSchemaPrompt themselves.
+            g.model.structuredSchemaPrompt = __
+            g.model.rawResponse = __
             var threw = false;
             try {
                 g.jsonSchemaPrompt("test", { name: "T", schema: {} });
