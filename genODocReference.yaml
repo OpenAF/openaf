@@ -42,8 +42,33 @@ jobs:
         var slug = key.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || (kind === 'category' && !key ? 'globals' : 'entry')
         return kind + '-' + slug.toLowerCase() + '-' + hash(key) + '.md'
       }
+      function anchor(key) { return 'api-' + (key.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'entry').toLowerCase() + '-' + hash(key).slice(0, 8) }
       function label(text) { return String(text).replace(/[\\`*_{}\[\]<>&#!|~]/g, function(c) { return '&#' + c.charCodeAt(0) + ';' }).replace(/\r?\n/g, ' ') }
-      function link(text, file) { return '[' + label(text) + '](' + file + ')' }
+      function rel(from, to) {
+        var f = from.split('/'), t = to.split('/')
+        f.pop()
+        while (f.length && t.length > 1 && f[0] === t[0]) { f.shift(); t.shift() }
+        return f.map(function() { return '..' }).concat(t).join('/')
+      }
+      function link(text, file, from) { return '[' + label(text) + '](' + rel(from || 'index.md', file) + ')' }
+      function segment(key) {
+        var last = key ? key.split('.').pop() : 'globals'
+        return last.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).toLowerCase() || 'entry'
+      }
+      function layout() {
+        function assign(keys, base) {
+          var seen = Object.create(null)
+          keys.forEach(function(k) { var g = segment(k); seen[g] = (seen[g] || 0) + 1 })
+          keys.forEach(function(k) {
+            var g = segment(k)
+            if (seen[g] > 1) g += '-' + hash(k).slice(0, 8)
+            var dir = base + g
+            categories[k].file = dir + '/index.md'
+            assign(sorted(categories[k].children), dir + '/')
+          })
+        }
+        assign(sorted(categories).filter(function(k) { return categories[k].parent === null }), '')
+      }
       function sorted(map) { return Object.keys(map).sort() }
       function relative(path) {
         try { return String(cwd.relativize(path)).replace(/\\/g, '/') }
@@ -65,7 +90,7 @@ jobs:
         if (!categories[key]) {
           var parts = key ? key.split('.') : []
           var parent = parts.length > 1 ? parts.slice(0, -1).join('.') : null
-          categories[key] = { file: filename('category', key), parent: parent, children: Object.create(null), apis: Object.create(null) }
+          categories[key] = { file: null, parent: parent, children: Object.create(null), apis: Object.create(null) }
           if (parent !== null) category(parent).children[key] = true
         }
         return categories[key]
@@ -106,7 +131,7 @@ jobs:
             var split = key.lastIndexOf('.')
             var group = split < 0 ? '' : key.slice(0, split)
             category(group).apis[key] = true
-            apis[key] = { file: filename('api', key), category: group, variants: Object.create(null) }
+            apis[key] = { anchor: anchor(key), category: group, variants: Object.create(null) }
             counts.apis++
           }
           var digest = hash(JSON.stringify([entry.signature, entry.markdown, entry.text]))
@@ -228,19 +253,20 @@ jobs:
           }
         } finally { while (stack.length) stack.pop().stream.close() }
       }
-      function breadcrumbs(group) {
-        var links = [link('Home', 'index.md'), link('All APIs', 'all-apis.md')]
-        if (!group) links.push(link('Globals', category('').file))
+      function breadcrumbs(group, from) {
+        var links = [link('Home', 'index.md', from), link('All APIs', 'all-apis.md', from)]
+        if (!group) links.push(link('Globals', category('').file, from))
         else {
           var parts = group.split('.')
           for (var i = 1; i <= parts.length; i++) {
             var key = parts.slice(0, i).join('.')
-            links.push(link(key, category(key).file))
+            links.push(link(key, category(key).file, from))
           }
         }
         return links.join(' / ') + '\n\n'
       }
       function render() {
+        layout()
         var pages = ['index.md', 'all-apis.md']
         var incomplete = counts.errors ? '> Incomplete reference: ' + counts.errors + ' extraction error(s). See generator diagnostics.\n\n' : ''
         var home = '# ODoc reference\n\n' + incomplete + link('All APIs', 'all-apis.md') + '\n\n## Categories\n\n'
@@ -252,43 +278,38 @@ jobs:
         var all = writer(stage.resolve('all-apis.md'))
         try {
           all.write('# All APIs\n\n' + link('Home', 'index.md') + '\n\n' + incomplete)
-          sorted(apis).forEach(function(key) { all.write('- ' + link(key, apis[key].file) + '\n') })
+          sorted(apis).forEach(function(key) { all.write('- ' + link(key, categories[apis[key].category].file + '#' + apis[key].anchor, 'all-apis.md') + '\n') })
         } finally { all.close() }
         sorted(categories).forEach(function(key) {
-          var cat = categories[key], out = writer(stage.resolve(cat.file))
+          var cat = categories[key]
+          Files.createDirectories(stage.resolve(cat.file).getParent())
+          var out = writer(stage.resolve(cat.file))
           pages.push(cat.file)
           try {
-            out.write('# ' + label(key || 'Globals') + '\n\n' + breadcrumbs(key))
+            out.write('# ' + label(key || 'Globals') + '\n\n' + breadcrumbs(key, cat.file))
             if (Object.keys(cat.children).length) {
               out.write('## Subcategories\n\n')
-              sorted(cat.children).forEach(function(child) { out.write('- ' + link(child, categories[child].file) + '\n') })
+              sorted(cat.children).forEach(function(child) { out.write('- ' + link(child, categories[child].file, cat.file) + '\n') })
               out.write('\n')
             }
-            if (Object.keys(cat.apis).length) {
-              out.write('## APIs\n\n')
-              sorted(cat.apis).forEach(function(api) { out.write('- ' + link(api, apis[api].file) + '\n') })
-            }
-          } finally { out.close() }
-        })
-        sorted(apis).forEach(function(key) {
-          var api = apis[key], out = writer(stage.resolve(api.file))
-          pages.push(api.file)
-          try {
-            out.write('# ' + label(key) + '\n\n' + breadcrumbs(api.category))
-            var variants = Object.keys(api.variants).map(function(id) { return api.variants[id] })
-            variants.forEach(function(v) {
-              v.sources.sort(function(a, b) { return a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line })
-            })
-            variants.sort(function(a, b) {
-              var x = a.sources[0], y = b.sources[0]
-              return x.file < y.file ? -1 : x.file > y.file ? 1 : x.line - y.line
-            })
-            variants.forEach(function(v) {
-              out.write('## ' + label(v.signature) + '\n\n')
-              copyText(v.body, out)
-              out.write('\n\nSources:\n\n')
-              v.sources.forEach(function(s) { out.write('- ' + label(s.file) + ':' + s.line + '\n') })
-              out.write('\n')
+            sorted(cat.apis).forEach(function(key) {
+              var api = apis[key]
+              out.write('<a id="' + api.anchor + '"></a>\n\n## ' + label(key) + '\n\n')
+              var variants = Object.keys(api.variants).map(function(id) { return api.variants[id] })
+              variants.forEach(function(v) {
+                v.sources.sort(function(a, b) { return a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line })
+              })
+              variants.sort(function(a, b) {
+                var x = a.sources[0], y = b.sources[0]
+                return x.file < y.file ? -1 : x.file > y.file ? 1 : x.line - y.line
+              })
+              variants.forEach(function(v) {
+                out.write('### ' + label(v.signature) + '\n\n')
+                copyText(v.body, out)
+                out.write('\n\nSources:\n\n')
+                v.sources.forEach(function(s) { out.write('- ' + label(s.file) + ':' + s.line + '\n') })
+                out.write('\n')
+              })
             })
           } finally { out.close() }
         })
@@ -301,7 +322,7 @@ jobs:
           previous = io.readFileJSON(String(manifestPath))
           if (previous.generator !== owner || !Array.isArray(previous.files)) throw new Error('Unrecognized output manifest')
           previous.files.forEach(function(file) {
-            if (typeof file !== 'string' || !/^(?:index|all-apis|(?:api|category)-[a-z0-9_-]+-[a-f0-9]{64})\.md$/.test(file)) throw new Error('Unsafe manifest filename')
+            if (typeof file !== 'string' || !/^(?:index|all-apis|(?:api|category)-[a-z0-9_-]+-[a-f0-9]{64}|(?:[a-z0-9_-]+\/)+index)\.md$/.test(file)) throw new Error('Unsafe manifest filename')
           })
         }
         var owned = Object.create(null)
@@ -315,11 +336,18 @@ jobs:
         write(stage.resolve(manifestName), JSON.stringify(next, null, 2) + '\n')
         Files.createDirectories(output)
         pages.forEach(function(file) {
+          Files.createDirectories(output.resolve(file).getParent())
           Files.move(stage.resolve(file), output.resolve(file), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         })
         var current = Object.create(null)
         pages.forEach(function(file) { current[file] = true })
-        previous.files.forEach(function(file) { if (!current[file]) Files.deleteIfExists(output.resolve(file)) })
+        previous.files.forEach(function(file) { if (!current[file]) {
+          var old = output.resolve(file)
+          Files.deleteIfExists(old)
+          for (var d = old.getParent(); d && !d.equals(output) && d.startsWith(output); d = d.getParent()) {
+            try { Files.delete(d) } catch(e) { break }
+          }
+        } })
         Files.move(stage.resolve(manifestName), manifestPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
       }
       var failed = false
