@@ -411,7 +411,7 @@ Tries to convert aMap into a similiar XML strucuture returned as string. Note th
 
 Sources:
 
-- js/openaf.js:13980
+- js/openaf.js:14234
 
 <a id="api-af-fromstring2bytes-ce6e043a"></a>
 
@@ -460,7 +460,7 @@ Tries to parse aTOML into a javascript object
 
 Sources:
 
-- js/openaf.js:13168
+- js/openaf.js:13422
 
 <a id="api-af-fromtoonjava-8f35360a"></a>
 
@@ -496,7 +496,7 @@ Tries to convert a XML object into a javascript object. Tag attributes will be i
 
 Sources:
 
-- js/openaf.js:13903
+- js/openaf.js:14157
 
 <a id="api-af-get2fatoken-66496fde"></a>
 
@@ -680,7 +680,7 @@ Returns aValue if it is defined or aDefault otherwise.
 
 Sources:
 
-- js/openaf.js:13204
+- js/openaf.js:13458
 
 <a id="api-af-p-0acd93a2"></a>
 
@@ -826,7 +826,7 @@ myOpen; // AF Class
 
 Sources:
 
-- js/openaf.js:12781
+- js/openaf.js:13035
 
 <a id="api-af-securerandom-5e705186"></a>
 
@@ -959,7 +959,7 @@ Tries to convert aObj into a TOML string.
 
 Sources:
 
-- js/openaf.js:13189
+- js/openaf.js:13443
 
 <a id="api-af-totoonjava-ac6d392a"></a>
 

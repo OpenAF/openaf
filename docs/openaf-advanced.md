@@ -797,6 +797,13 @@ var client = $mcp({
 });
 ```
 
+For automatic interactive OAuth, omit `clientId` and `grantType` and configure
+`auth: { type: "oauth2", tokenStore: { type: "sec", profile: "my-account" } }`.
+OpenAF discovers endpoints and required scopes, obtains a client identity through
+metadata documents or dynamic registration, reserves a local callback, and opens
+browser consent. The server must support an available registration mechanism.
+See [automatic MCP OAuth](mcp-oauth.md#automatic-mcp-oauth) for defaults and overrides.
+
 OAuth2 token URLs can also be auto-discovered from the MCP server's OAuth 2.0 Protected Resource Metadata when `tokenURL`/`authURL` are omitted.
 
 To retain OAuth credentials across sessions, opt in with `auth.tokenStore: { type: "sec", profile: "alice" }`. The built-in adapter uses an encrypted SBucket and coordinates token refresh across local processes. Custom synchronous stores are also supported. See [persistent OAuth, callback login and token stores](mcp-oauth.md) for configuration, failure behavior and storage limitations.

@@ -12,7 +12,7 @@ Interactevly asks to enter a text and then uses af.encrypt to print to stdout th
 
 Sources:
 
-- js/openaf.js:14036
+- js/openaf.js:14290
 
 <a id="api-af-endopenafandstart-0e9dd474"></a>
 
@@ -24,7 +24,7 @@ Calls endOpenAFAndStart to start a detached process and then end the current Ope
 
 Sources:
 
-- js/openaf.js:14044
+- js/openaf.js:14298
 
 <a id="api-af-endopenafandstartopenaf-4fd97509"></a>
 
@@ -36,7 +36,7 @@ Calls endOpenAFAndStartOpenAF to detach and start another OpenAF with current ar
 
 Sources:
 
-- js/openaf.js:14057
+- js/openaf.js:14311
 
 <a id="api-af-fromjsslon-ae7a936f"></a>
 
@@ -48,7 +48,7 @@ Tries to convert the provided aString into an object. The string might be JSON o
 
 Sources:
 
-- js/openaf.js:13504
+- js/openaf.js:13758
 
 <a id="api-af-fromjavaarray-86d677ec"></a>
 
@@ -60,7 +60,7 @@ Tries to convert aJavaArray into a native an array.
 
 Sources:
 
-- js/openaf.js:12820
+- js/openaf.js:13074
 
 <a id="api-af-fromnlinq-bf5fb938"></a>
 
@@ -72,7 +72,7 @@ Converts a nLinq chained command line string representation into a suitable map 
 
 Sources:
 
-- js/openaf.js:13526
+- js/openaf.js:13780
 
 <a id="api-af-fromslon-e259cf93"></a>
 
@@ -84,7 +84,7 @@ Converts a SLON (https://github.com/nmaguiar/slon) string representation into th
 
 Sources:
 
-- js/openaf.js:13491
+- js/openaf.js:13745
 
 <a id="api-af-fromsql-8a7ad674"></a>
 
@@ -96,7 +96,7 @@ Converts a SQL expression into an ASP map.
 
 Sources:
 
-- js/openaf.js:13539
+- js/openaf.js:13793
 
 <a id="api-af-fromsql2nlinq-5ad93570"></a>
 
@@ -108,7 +108,7 @@ Converts a SQL expression into a suitable map to be used with $from.query.
 
 Sources:
 
-- js/openaf.js:13552
+- js/openaf.js:13806
 
 <a id="api-af-fromtoon-102660d7"></a>
 
@@ -120,7 +120,7 @@ Tries to parse aTOONStr into a javascript object. If alternative = true (or, if 
 
 Sources:
 
-- js/openaf.js:13127
+- js/openaf.js:13381
 
 <a id="api-af-fromyaml-ba596bc7"></a>
 
@@ -132,7 +132,7 @@ Tries to parse aYaml into a javascript map.
 
 Sources:
 
-- js/openaf.js:13144
+- js/openaf.js:13398
 
 <a id="api-af-getencoding-0ac20bfd"></a>
 
@@ -144,7 +144,7 @@ Given anArrayOfBytesORString will try to detect which encode is used and returns
 
 Sources:
 
-- js/openaf.js:12868
+- js/openaf.js:13122
 
 <a id="api-af-printstacktrace-d9733d50"></a>
 
@@ -156,7 +156,7 @@ Executes aFunction but if it throws an exception and the exception is a Java exc
 
 Sources:
 
-- js/openaf.js:12851
+- js/openaf.js:13105
 
 <a id="api-af-protectsystemexit-409f8373"></a>
 
@@ -168,7 +168,7 @@ Protects the current execution against a exit instruction if shouldProtect = tru
 
 Sources:
 
-- js/openaf.js:14069
+- js/openaf.js:14323
 
 <a id="api-af-setinteractiveterminal-2ab01206"></a>
 
@@ -180,7 +180,7 @@ Sets the current terminal to be interactive (no echo, no buffering).
 
 Sources:
 
-- js/openaf.js:12895
+- js/openaf.js:13149
 
 <a id="api-af-swap-509de2bd"></a>
 
@@ -192,7 +192,7 @@ Swaps the elements at anIndex1 and anIndex2 in anArray. Returns the new array wi
 
 Sources:
 
-- js/openaf.js:12834
+- js/openaf.js:13088
 
 <a id="api-af-tocslon-9b8af4ae"></a>
 
@@ -204,7 +204,7 @@ Converts aObject map/array into SLON representation with ansi colors (see more i
 
 Sources:
 
-- js/openaf.js:13480
+- js/openaf.js:13734
 
 <a id="api-af-tokyaml-479d16ab"></a>
 
@@ -224,7 +224,7 @@ If `sanitize` is true, Java objects are stringified. Toggle color with `shouldCo
 
 Sources:
 
-- js/openaf.js:12971
+- js/openaf.js:13225
 
 <a id="api-af-toslon-e640284d"></a>
 
@@ -236,7 +236,7 @@ Converts aObject map/array into SLON representation (see more in help for ow.for
 
 Sources:
 
-- js/openaf.js:13469
+- js/openaf.js:13723
 
 <a id="api-af-totoon-08ce2b27"></a>
 
@@ -248,7 +248,7 @@ Tries to convert aObj into a TOON string. If alternative = true (or, if unset, d
 
 Sources:
 
-- js/openaf.js:13110
+- js/openaf.js:13364
 
 <a id="api-af-toyaml-816b7146"></a>
 
@@ -260,7 +260,7 @@ Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array
 
 Sources:
 
-- js/openaf.js:12909
+- js/openaf.js:13163
 
 <a id="api-af-unsetinteractiveterminal-d381612c"></a>
 
@@ -272,5 +272,5 @@ Unsets the current terminal to be interactive (no echo, no buffering).
 
 Sources:
 
-- js/openaf.js:12902
+- js/openaf.js:13156
 

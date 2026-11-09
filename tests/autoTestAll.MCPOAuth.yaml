@@ -1,6 +1,39 @@
 include:
 - autoTestAll.common.yaml
 jobs:
+- name: MCPOAuth::AutomaticOAuthClientMetadataDocument
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthClientMetadataDocument
+- name: MCPOAuth::AutomaticOAuthConcurrentRegistration
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthConcurrentRegistration
+- name: MCPOAuth::AutomaticOAuthMemoryAndMetadataValidation
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthMemoryAndMetadataValidation
+- name: MCPOAuth::AutomaticOAuthExpiredSecretAndStorageFailure
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthExpiredSecretAndStorageFailure
+- name: MCPOAuth::AutomaticOAuthDiscoveryFallbackAndBinding
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthDiscoveryFallbackAndBinding
+- name: MCPOAuth::AutomaticOAuthOccupiedSavedCallback
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthOccupiedSavedCallback
+- name: MCPOAuth::AutomaticOAuthDenialRetainsRegistration
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthDenialRetainsRegistration
+- name: MCPOAuth::MinimalOAuthConfiguration
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testMinimalOAuthConfiguration
+- name: MCPOAuth::AutomaticOAuthFailureAndNoninteractive
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthFailureAndNoninteractive
+- name: MCPOAuth::AutomaticOAuthConfidentialClients
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthConfidentialClients
+- name: MCPOAuth::AutomaticOAuthRegistration
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.MCPOAuth.js").testAutomaticOAuthRegistration
 - name: MCPOAuth::PersistentOAuthCallbackAndRefresh
   to: OpenAF Test
   exec: args.func = require("autoTestAll.MCPOAuth.js").testPersistentOAuthCallbackAndRefresh
@@ -53,6 +86,17 @@ jobs:
   to: OpenAF Test
   exec: args.func = require("autoTestAll.MCPOAuth.js").testOAuthSameClientLockTimeout
 todo:
+- MCPOAuth::AutomaticOAuthClientMetadataDocument
+- MCPOAuth::AutomaticOAuthConcurrentRegistration
+- MCPOAuth::AutomaticOAuthMemoryAndMetadataValidation
+- MCPOAuth::AutomaticOAuthExpiredSecretAndStorageFailure
+- MCPOAuth::AutomaticOAuthDiscoveryFallbackAndBinding
+- MCPOAuth::AutomaticOAuthOccupiedSavedCallback
+- MCPOAuth::AutomaticOAuthDenialRetainsRegistration
+- MCPOAuth::MinimalOAuthConfiguration
+- MCPOAuth::AutomaticOAuthFailureAndNoninteractive
+- MCPOAuth::AutomaticOAuthConfidentialClients
+- MCPOAuth::AutomaticOAuthRegistration
 - MCPOAuth::PersistentOAuthCallbackAndRefresh
 - MCPOAuth::OAuthConcurrentProcessRefresh
 - MCPOAuth::OAuthOccupiedCallbackPort

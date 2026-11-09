@@ -16,7 +16,7 @@ Adds a new HTTP aCodeNum number that will be referenced by the name aCodeRef.
 
 Sources:
 
-- js/owrap.server.js:4824
+- js/owrap.server.js:4839
 
 <a id="api-ow-server-httpd-addmimetype-719c2762"></a>
 
@@ -28,7 +28,7 @@ Adds a new aMimeType for the corresponding anExtension.
 
 Sources:
 
-- js/owrap.server.js:4814
+- js/owrap.server.js:4829
 
 <a id="api-ow-server-httpd-authbasic-bc6ae650"></a>
 
@@ -67,7 +67,7 @@ function(req) {
 
 Sources:
 
-- js/owrap.server.js:4759
+- js/owrap.server.js:4774
 
 <a id="api-ow-server-httpd-authoauth-a134965f"></a>
 
@@ -93,7 +93,7 @@ provides the OAuth configurations to follow:
 
 Sources:
 
-- js/owrap.server.js:4612
+- js/owrap.server.js:4627
 
 <a id="api-ow-server-httpd-getfromopenaf-c36927b5"></a>
 
@@ -105,7 +105,7 @@ Retrieves aResource, as anArrayOfBytes, from the openaf.jar. This resource can b
 
 Sources:
 
-- js/owrap.server.js:3784
+- js/owrap.server.js:3799
 
 <a id="api-ow-server-httpd-getfromzip-76497641"></a>
 
@@ -117,7 +117,7 @@ Retrieves aResource, as anArrayOfBytes, from aZipFile. This resource can be inBy
 
 Sources:
 
-- js/owrap.server.js:3795
+- js/owrap.server.js:3810
 
 <a id="api-ow-server-httpd-geths-24c1be0c"></a>
 
@@ -129,7 +129,7 @@ Returns the HTTPd object created, if any, for aPort.
 
 Sources:
 
-- js/owrap.server.js:3747
+- js/owrap.server.js:3762
 
 <a id="api-ow-server-httpd-getmimetype-6cad4947"></a>
 
@@ -141,7 +141,7 @@ Tries to determine the mime type of aFilename and returns it. If not determined 
 
 Sources:
 
-- js/owrap.server.js:4596
+- js/owrap.server.js:4611
 
 <a id="api-ow-server-httpd-maprouteswithlibs-2a37582f"></a>
 
@@ -153,7 +153,7 @@ Helper to use with ow.server.httpd.route to automatically add routes for JQuery,
 
 Sources:
 
-- js/owrap.server.js:3949
+- js/owrap.server.js:3964
 
 <a id="api-ow-server-httpd-mapwithexistingroutes-cc72e253"></a>
 
@@ -165,7 +165,7 @@ Builds a map of routes taking into account the already defined routes for aHTTPd
 
 Sources:
 
-- js/owrap.server.js:3914
+- js/owrap.server.js:3929
 
 <a id="api-ow-server-httpd-oauth2-583f7769"></a>
 
@@ -173,7 +173,7 @@ Sources:
 
 ### ow.server.httpd.oauth2(aOptions) : Object
 
-Creates a localhost OAuth2 authorization-code client. Requires authURL, tokenURL, clientId and an HTTP loopback redirectURI with an explicit port. authenticate() returns tokens, reusing or refreshing cached credentials; getAuthStatus() returns non-secret status; clearAuth() removes credentials; cancel() stops a pending login. Uses fresh state and S256 PKCE. Optional clientSecret, scope, audience, resource, extraAuthParams and extraParams configure the provider. authURL and tokenURL must use HTTPS unless they are loopback addresses or allowHTTP is true. interactive defaults to true, disableOpenBrowser to false, loginTimeoutMs to 300000, tokenTimeoutMs to 60000 and refreshWindowMs to 30000. onAuthorizationURL(url) receives the login URL after the listener is ready. tokenStore defaults to &#123;type:"sec", repo:"oauth2", profile:"default"&#125;; false disables persistence. Store options match $mcp's tokenStore (including synchronous custom stores). Tokens and expiry/identity metadata are encrypted using $sec; client secrets, codes, state and PKCE material are never persisted.
+Creates a localhost OAuth2 authorization-code client. Requires authURL, tokenURL, clientId and an HTTP loopback redirectURI with an explicit port. authenticate() returns tokens, reusing or refreshing cached credentials; getAuthStatus() returns non-secret status; clearAuth() removes credentials; cancel() stops a pending login. Uses fresh state and S256 PKCE. tokenEndpointAuthMethod supports none, client&#95;secret&#95;basic and client&#95;secret&#95;post (the legacy default when clientSecret is present). Optional clientSecret, scope, audience, resource, extraAuthParams and extraParams configure the provider. authURL and tokenURL must use HTTPS unless they are loopback addresses or allowHTTP is true. interactive defaults to true, disableOpenBrowser to false, loginTimeoutMs to 300000, tokenTimeoutMs to 60000 and refreshWindowMs to 30000. onAuthorizationURL(url) receives the login URL after the listener is ready. tokenStore defaults to &#123;type:"sec", repo:"oauth2", profile:"default"&#125;; false disables persistence. Store options match $mcp's tokenStore (including synchronous custom stores). Tokens and expiry/identity metadata are encrypted using $sec; client secrets, codes, state and PKCE material are never persisted.
 
 Sources:
 
@@ -189,7 +189,7 @@ Builds the map response for a HTTP server request using aObject (map, array, str
 
 Sources:
 
-- js/owrap.server.js:4886
+- js/owrap.server.js:4901
 
 <a id="api-ow-server-httpd-replybrowse-20f2869b"></a>
 
@@ -208,7 +208,7 @@ provide the following functions:
 
 Sources:
 
-- js/owrap.server.js:4284
+- js/owrap.server.js:4299
 
 <a id="api-ow-server-httpd-replyfile-c734dae2"></a>
 
@@ -228,7 +228,7 @@ ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {
 
 Sources:
 
-- js/owrap.server.js:4064
+- js/owrap.server.js:4079
 
 <a id="api-ow-server-httpd-replyfilemd-1aa9a8d8"></a>
 
@@ -254,7 +254,7 @@ function(req) {
 
 Sources:
 
-- js/owrap.server.js:4124
+- js/owrap.server.js:4139
 
 <a id="api-ow-server-httpd-replyfn-a845b4b9"></a>
 
@@ -266,7 +266,7 @@ Provides a helper function to call aFunctionName over aInstance (default this) g
 
 Sources:
 
-- js/owrap.server.js:4252
+- js/owrap.server.js:4267
 
 <a id="api-ow-server-httpd-replyjsmap-6f700d10"></a>
 
@@ -286,7 +286,7 @@ r => hs.replyOKText("nothing here...")
 
 Sources:
 
-- js/owrap.server.js:4201
+- js/owrap.server.js:4216
 
 <a id="api-ow-server-httpd-replyjsonrpc-5f12c46e"></a>
 
@@ -315,7 +315,7 @@ modern is false/omitted) are handled exactly as before -- zero behavior change.
 
 Sources:
 
-- js/owrap.server.js:4322
+- js/owrap.server.js:4337
 
 <a id="api-ow-server-httpd-replymcp-54fad509"></a>
 
@@ -348,7 +348,7 @@ left fully unchanged.
 
 Sources:
 
-- js/owrap.server.js:4461
+- js/owrap.server.js:4476
 
 <a id="api-ow-server-httpd-replyredirect-606665d3"></a>
 
@@ -360,7 +360,7 @@ Provides a helper aHTTPd reply that will redirect the request to the newLocation
 
 Sources:
 
-- js/owrap.server.js:4239
+- js/owrap.server.js:4254
 
 <a id="api-ow-server-httpd-resetroutes-16cf0c36"></a>
 
@@ -372,7 +372,7 @@ Given aHTTPd it will reset all internal mapped routes to a reply HTTP code 401 t
 
 Sources:
 
-- js/owrap.server.js:3767
+- js/owrap.server.js:3782
 
 <a id="api-ow-server-httpd-route-48eabfdf"></a>
 
@@ -403,7 +403,7 @@ ow.server.daemon();
 
 Sources:
 
-- js/owrap.server.js:3806
+- js/owrap.server.js:3821
 
 <a id="api-ow-server-httpd-setwebsocketroute-683a552a"></a>
 
@@ -415,7 +415,7 @@ Using aHTTPd sets aURI to act as a websocket server.
 
 Sources:
 
-- js/owrap.server.js:3757
+- js/owrap.server.js:3772
 
 <a id="api-ow-server-httpd-start-d9a26b88"></a>
 
@@ -443,7 +443,7 @@ the timeout for the server to wait for a request before closing the connection.
 
 Sources:
 
-- js/owrap.server.js:3664
+- js/owrap.server.js:3679
 
 <a id="api-ow-server-httpd-stop-ce3ac0b9"></a>
 
@@ -455,5 +455,5 @@ Will stop the aHTTPd server running.  (available after ow.loadServer())
 
 Sources:
 
-- js/owrap.server.js:3934
+- js/owrap.server.js:3949
 

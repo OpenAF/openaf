@@ -12,7 +12,7 @@ Builds an object to allow access through ftp/ftps. aMap should be a ftp/ftps str
 
 Sources:
 
-- js/openaf.js:17646
+- js/openaf.js:17900
 
 <a id="api-ftp-binary-73e43c21"></a>
 
@@ -24,7 +24,7 @@ Sets the file transfer mode between binary and ascii.
 
 Sources:
 
-- js/openaf.js:17736
+- js/openaf.js:17990
 
 <a id="api-ftp-cd-48310c73"></a>
 
@@ -36,7 +36,7 @@ Changes the current remote working directory.
 
 Sources:
 
-- js/openaf.js:17691
+- js/openaf.js:17945
 
 <a id="api-ftp-close-c16b6a1f"></a>
 
@@ -48,7 +48,7 @@ Closes a remote host connection defined by aMap.
 
 Sources:
 
-- js/openaf.js:17825
+- js/openaf.js:18079
 
 <a id="api-ftp-getfile-9d8aa609"></a>
 
@@ -60,7 +60,7 @@ Gets aSource filepath and stores it locally on aTarget from a remote host define
 
 Sources:
 
-- js/openaf.js:17758
+- js/openaf.js:18012
 
 <a id="api-ftp-listfiles-0de5bc07"></a>
 
@@ -72,7 +72,7 @@ Returns an array of maps with the listing of aRemotePath provided.
 
 Sources:
 
-- js/openaf.js:17791
+- js/openaf.js:18045
 
 <a id="api-ftp-mkdir-0110f1c5"></a>
 
@@ -84,7 +84,7 @@ Creates aDirectory via FTP/FTPS on a remote host defined by aMap.
 
 Sources:
 
-- js/openaf.js:17747
+- js/openaf.js:18001
 
 <a id="api-ftp-passive-5ce204ca"></a>
 
@@ -96,7 +96,7 @@ Sets the passive mode for the ftp/ftps connection.
 
 Sources:
 
-- js/openaf.js:17725
+- js/openaf.js:17979
 
 <a id="api-ftp-putfile-835fb790"></a>
 
@@ -108,7 +108,7 @@ Puts aSource local filepath or Java stream and stores it remotely in aTarget on 
 
 Sources:
 
-- js/openaf.js:17769
+- js/openaf.js:18023
 
 <a id="api-ftp-pwd-7fd2b55d"></a>
 
@@ -120,7 +120,7 @@ Returns the current remote working directory.
 
 Sources:
 
-- js/openaf.js:17702
+- js/openaf.js:17956
 
 <a id="api-ftp-rename-820e146f"></a>
 
@@ -132,7 +132,7 @@ Renames aSource filepath to aTarget filepath on a remote host defined by aMap.
 
 Sources:
 
-- js/openaf.js:17780
+- js/openaf.js:18034
 
 <a id="api-ftp-rm-092511f1"></a>
 
@@ -144,7 +144,7 @@ Remove aFilePath from a remote host defined by aMap.
 
 Sources:
 
-- js/openaf.js:17803
+- js/openaf.js:18057
 
 <a id="api-ftp-rmdir-b43cfc86"></a>
 
@@ -156,7 +156,7 @@ Removes a directory from a remote host defined by aMap.
 
 Sources:
 
-- js/openaf.js:17814
+- js/openaf.js:18068
 
 <a id="api-ftp-timeout-c64bd218"></a>
 
@@ -168,5 +168,5 @@ Sets aTimeout in ms for the ftp/ftps connection to a remote host defined by aMap
 
 Sources:
 
-- js/openaf.js:17714
+- js/openaf.js:17968
 

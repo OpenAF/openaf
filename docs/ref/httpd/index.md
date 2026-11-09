@@ -79,7 +79,7 @@ hs.add("/example", function(req) { return hs.replyOKText(beautifier(req)); });
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:754
+- src/openaf/plugins/HTTPServer.java:757
 
 <a id="api-httpd-addecho-5220316d"></a>
 
@@ -91,7 +91,7 @@ Adds a echo responder to the provided URI. Useful for debugging http requests to
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:641
+- src/openaf/plugins/HTTPServer.java:644
 
 <a id="api-httpd-addfilebrowse-51640f44"></a>
 
@@ -103,7 +103,7 @@ Adds a responder to the provided URI that provides a very basic file browse to t
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:865
+- src/openaf/plugins/HTTPServer.java:868
 
 <a id="api-httpd-addsession-5aac016a"></a>
 
@@ -115,7 +115,7 @@ Provides a simple session track mechanism adding the session ID provided. See HT
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1238
+- src/openaf/plugins/HTTPServer.java:1241
 
 <a id="api-httpd-addstatus-3961111e"></a>
 
@@ -127,7 +127,7 @@ Adds a status responder to the provided URI. Useful for debugging proposes
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:705
+- src/openaf/plugins/HTTPServer.java:708
 
 <a id="api-httpd-addxdtserver-d8013d10"></a>
 
@@ -163,7 +163,7 @@ hs.addXDTServer('/xdt',
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:989
+- src/openaf/plugins/HTTPServer.java:992
 
 <a id="api-httpd-delsession-fcee2470"></a>
 
@@ -175,7 +175,7 @@ Removes the provided session ID data from memory.
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1271
+- src/openaf/plugins/HTTPServer.java:1274
 
 <a id="api-httpd-getimpl-82e8db74"></a>
 
@@ -187,7 +187,7 @@ Returns the implementation used by the HTTP server instance. Possible values are
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:535
+- src/openaf/plugins/HTTPServer.java:538
 
 <a id="api-httpd-getport-e0c13304"></a>
 
@@ -199,7 +199,7 @@ Returns the listen port of the HTTP server instance.
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:553
+- src/openaf/plugins/HTTPServer.java:556
 
 <a id="api-httpd-getsession-86c635ff"></a>
 
@@ -211,7 +211,7 @@ Retrieves the current data stored for the provided session ID.
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1249
+- src/openaf/plugins/HTTPServer.java:1252
 
 <a id="api-httpd-hassession-0eb96442"></a>
 
@@ -223,7 +223,7 @@ Returns true if the provided session ID was add to memory. False otherwise.
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1282
+- src/openaf/plugins/HTTPServer.java:1285
 
 <a id="api-httpd-reply-f61efe73"></a>
 
@@ -235,7 +235,7 @@ Builds a response object suitable to provide a reply to a HTTP request for a fun
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1158
+- src/openaf/plugins/HTTPServer.java:1161
 
 <a id="api-httpd-replybytes-51d5b85b"></a>
 
@@ -247,7 +247,7 @@ Builds a response object suitable to provide a reply to a HTTP request for a fun
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1183
+- src/openaf/plugins/HTTPServer.java:1186
 
 <a id="api-httpd-replyokbin-87ee2209"></a>
 
@@ -259,7 +259,7 @@ Builds a response object suitable to provide a reply to a HTTP request for a fun
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1136
+- src/openaf/plugins/HTTPServer.java:1139
 
 <a id="api-httpd-replyokhtml-1d0ee5f5"></a>
 
@@ -271,7 +271,7 @@ Builds a response object suitable to provide a reply to a HTTP request for a fun
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1092
+- src/openaf/plugins/HTTPServer.java:1095
 
 <a id="api-httpd-replyokjson-3a6522c3"></a>
 
@@ -283,7 +283,7 @@ Builds a response object suitable to provide a reply to a HTTP request for a fun
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1114
+- src/openaf/plugins/HTTPServer.java:1117
 
 <a id="api-httpd-replyoktext-ebfde0d2"></a>
 
@@ -295,7 +295,7 @@ Builds a response object suitable to provide a reply to a HTTP request for a fun
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1048
+- src/openaf/plugins/HTTPServer.java:1051
 
 <a id="api-httpd-replyokxml-17cc63bf"></a>
 
@@ -307,7 +307,7 @@ Builds a response object suitable to provide a reply to a HTTP request for a fun
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1070
+- src/openaf/plugins/HTTPServer.java:1073
 
 <a id="api-httpd-replystream-e3afb5ca"></a>
 
@@ -319,7 +319,7 @@ Builds a response object suitable to provide a reply to a HTTP request for a fun
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1211
+- src/openaf/plugins/HTTPServer.java:1214
 
 <a id="api-httpd-setdefault-74e1d254"></a>
 
@@ -337,7 +337,7 @@ hs.setDefault("/echo");
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:805
+- src/openaf/plugins/HTTPServer.java:808
 
 <a id="api-httpd-setsession-47401fa7"></a>
 
@@ -349,7 +349,7 @@ Sets the provided anObject as the session data for the session ID provided.
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:1260
+- src/openaf/plugins/HTTPServer.java:1263
 
 <a id="api-httpd-stop-895f3d39"></a>
 
@@ -361,5 +361,5 @@ Tries to stop the currently running HTTP server instance.
 
 Sources:
 
-- src/openaf/plugins/HTTPServer.java:564
+- src/openaf/plugins/HTTPServer.java:567
 

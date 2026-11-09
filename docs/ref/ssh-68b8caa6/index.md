@@ -12,7 +12,7 @@ Builds an object to allow access through ssh. aMap should be a ssh string with t
 
 Sources:
 
-- js/openaf.js:17268
+- js/openaf.js:17522
 
 <a id="api-ssh-cb-cc6e1639"></a>
 
@@ -24,7 +24,7 @@ Sets aCallback function to execute during the execution of commands on a remote 
 
 Sources:
 
-- js/openaf.js:17351
+- js/openaf.js:17605
 
 <a id="api-ssh-close-94c0a898"></a>
 
@@ -36,7 +36,7 @@ Closes a remote host connection defined by aMap (host, port, login, pass, id, co
 
 Sources:
 
-- js/openaf.js:17475
+- js/openaf.js:17729
 
 <a id="api-ssh-deltunnellocal-76f16583"></a>
 
@@ -48,7 +48,7 @@ Deletes a local tunnel mapping aLocalInterface:aLocalPort
 
 Sources:
 
-- js/openaf.js:17532
+- js/openaf.js:17786
 
 <a id="api-ssh-deltunnelremote-0347735e"></a>
 
@@ -60,7 +60,7 @@ Deletes a remote tunnel mapping aRemoteInterface:aRemotePort
 
 Sources:
 
-- js/openaf.js:17543
+- js/openaf.js:17797
 
 <a id="api-ssh-exec-39ba05b0"></a>
 
@@ -72,7 +72,7 @@ Executes a list of commands previously set on a remote host connection defined b
 
 Sources:
 
-- js/openaf.js:17605
+- js/openaf.js:17859
 
 <a id="api-ssh-exit-df7ed379"></a>
 
@@ -84,7 +84,7 @@ Sets a callback aFunc to execute upon a command execution s a remote host connec
 
 Sources:
 
-- js/openaf.js:17632
+- js/openaf.js:17886
 
 <a id="api-ssh-get-af4af1de"></a>
 
@@ -96,7 +96,7 @@ Executes a list of commands previously set on a remote host connection defined b
 
 Sources:
 
-- js/openaf.js:17554
+- js/openaf.js:17808
 
 <a id="api-ssh-getfile-f36e6c05"></a>
 
@@ -108,7 +108,7 @@ Gets aSource filepath and stores it locally on aTarget from a remote host define
 
 Sources:
 
-- js/openaf.js:17386
+- js/openaf.js:17640
 
 <a id="api-ssh-getjson-e028b44b"></a>
 
@@ -120,7 +120,7 @@ Executes a list of commands previously set on a remote host connection defined b
 
 Sources:
 
-- js/openaf.js:17581
+- js/openaf.js:17835
 
 <a id="api-ssh-listfiles-0772e499"></a>
 
@@ -132,7 +132,7 @@ Returns an array of maps with the listing of aRemotePath provided.
 
 Sources:
 
-- js/openaf.js:17419
+- js/openaf.js:17673
 
 <a id="api-ssh-mkdir-b76e25c3"></a>
 
@@ -144,7 +144,7 @@ Creates aDirectory via SFTP on a remote host defined by aMap (host, port, login,
 
 Sources:
 
-- js/openaf.js:17375
+- js/openaf.js:17629
 
 <a id="api-ssh-prefix-539d8e2f"></a>
 
@@ -156,7 +156,7 @@ When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefi
 
 Sources:
 
-- js/openaf.js:17362
+- js/openaf.js:17616
 
 <a id="api-ssh-pty-fb9c9c8c"></a>
 
@@ -168,7 +168,7 @@ Sets the flag to use or not a pty term allocation on the ssh connection to a rem
 
 Sources:
 
-- js/openaf.js:17453
+- js/openaf.js:17707
 
 <a id="api-ssh-putfile-f182e86f"></a>
 
@@ -180,7 +180,7 @@ Puts aSource local filepath and stores it remotely in aTarget on a remote host d
 
 Sources:
 
-- js/openaf.js:17397
+- js/openaf.js:17651
 
 <a id="api-ssh-pwd-31100b8c"></a>
 
@@ -192,7 +192,7 @@ Sets aPwd directory for getting and sending files to a remote host defined by aM
 
 Sources:
 
-- js/openaf.js:17329
+- js/openaf.js:17583
 
 <a id="api-ssh-rename-000898c2"></a>
 
@@ -204,7 +204,7 @@ Renames aSource filepath to aTarget filepath on a remote host defined by aMap (h
 
 Sources:
 
-- js/openaf.js:17408
+- js/openaf.js:17662
 
 <a id="api-ssh-rm-7d48366e"></a>
 
@@ -216,7 +216,7 @@ Remove aFilePath from a remote host defined by aMap (host, port, login, pass, id
 
 Sources:
 
-- js/openaf.js:17431
+- js/openaf.js:17685
 
 <a id="api-ssh-rmdir-6c576ffe"></a>
 
@@ -228,7 +228,7 @@ Removes a directory from a remote host defined by aMap (host, port, login, pass,
 
 Sources:
 
-- js/openaf.js:17442
+- js/openaf.js:17696
 
 <a id="api-ssh-sh-1095b09c"></a>
 
@@ -240,7 +240,7 @@ Sets aCmd to be executed with an optional aIn (stdin) on the remote host defined
 
 Sources:
 
-- js/openaf.js:17318
+- js/openaf.js:17572
 
 <a id="api-ssh-timeout-1b76bfc9"></a>
 
@@ -252,7 +252,7 @@ Sets aTimeout in ms for the ssh/sftp connection to a remote host defined by aMap
 
 Sources:
 
-- js/openaf.js:17340
+- js/openaf.js:17594
 
 <a id="api-ssh-tunnellocal-56ed1286"></a>
 
@@ -264,7 +264,7 @@ Creates a local tunnel mapping aLocalPort to aRemoteHost:aRemotePort using the s
 
 Sources:
 
-- js/openaf.js:17488
+- js/openaf.js:17742
 
 <a id="api-ssh-tunnellocalbind-452f43aa"></a>
 
@@ -276,7 +276,7 @@ Creates a local tunnel mapping aLocalInterface:aLocalPort to aRemoteHost:aRemote
 
 Sources:
 
-- js/openaf.js:17499
+- js/openaf.js:17753
 
 <a id="api-ssh-tunnelremote-44e4710d"></a>
 
@@ -288,7 +288,7 @@ Creates a remote tunnel mapping aRemotePort to aLocalAddress:aLocalPort using th
 
 Sources:
 
-- js/openaf.js:17510
+- js/openaf.js:17764
 
 <a id="api-ssh-tunnelremotebind-1f6a785a"></a>
 
@@ -300,5 +300,5 @@ Creates a remote tunnel mapping aRemoteInterface:aRemotePort to aLocalAddress:aL
 
 Sources:
 
-- js/openaf.js:17521
+- js/openaf.js:17775
 

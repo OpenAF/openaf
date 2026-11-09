@@ -3369,7 +3369,8 @@ OpenWrap.server.prototype.httpd = {
    * Creates a localhost OAuth2 authorization-code client. Requires authURL, tokenURL, clientId and an HTTP
    * loopback redirectURI with an explicit port. authenticate() returns tokens, reusing or refreshing cached
    * credentials; getAuthStatus() returns non-secret status; clearAuth() removes credentials; cancel() stops
-   * a pending login. Uses fresh state and S256 PKCE. Optional clientSecret, scope, audience, resource,
+   * a pending login. Uses fresh state and S256 PKCE. tokenEndpointAuthMethod supports none,
+   * client_secret_basic and client_secret_post (the legacy default when clientSecret is present). Optional clientSecret, scope, audience, resource,
    * extraAuthParams and extraParams configure the provider. authURL and tokenURL must use HTTPS unless they are
    * loopback addresses or allowHTTP is true. interactive defaults to true, disableOpenBrowser
    * to false, loginTimeoutMs to 300000, tokenTimeoutMs to 60000 and refreshWindowMs to 30000.
@@ -3411,6 +3412,9 @@ OpenWrap.server.prototype.httpd = {
           throw new Error("OAuth " + name + " requires an HTTPS endpoint (plain HTTP is only allowed for loopback hosts or with allowHTTP=true)");
         }
       });
+      var method = aOptions.tokenEndpointAuthMethod
+      if (isDef(method) && ["none", "client_secret_basic", "client_secret_post"].indexOf(method) < 0) throw new Error("Unsupported OAuth client authentication method")
+      if ((method == "client_secret_basic" || method == "client_secret_post") && (!isString(aOptions.clientSecret) || !aOptions.clientSecret.length)) throw new Error("OAuth client authentication requires a client secret")
       var uri;
       try { uri = new java.net.URI(aOptions.redirectURI); } catch(e) {}
       if (isUnDef(uri) || String(uri.getScheme()) !== "http" ||
@@ -3552,7 +3556,11 @@ OpenWrap.server.prototype.httpd = {
           // start() reuses registered ports. This listener must be exclusively owned.
           if (isDef(httpd.getHS(Number(uri.getPort())))) throw new Error("Port in use");
           plugin("HTTPServer");
-          attempt.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java");
+          if (isDef(aOptions.__callbackReservation)) {
+            attempt.server = aOptions.__callbackReservation
+            aOptions.__callbackReservation = __
+            if (Number(attempt.server.getPort()) != Number(uri.getPort())) throw new Error("Callback reservation mismatch")
+          } else attempt.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java");
         } catch(e) { throw new Error("OAuth callback port unavailable"); }
         pending = attempt;
         var routes = {}, headers = { "Cache-Control": "no-store" };
@@ -3600,13 +3608,20 @@ OpenWrap.server.prototype.httpd = {
     var exchange = function(params) {
       params = merge(aOptions.extraParams || {}, params);
       params.client_id = aOptions.clientId;
-      if (isDef(aOptions.clientSecret)) params.client_secret = aOptions.clientSecret;
+      if (isDef(aOptions.clientSecret) && ["none", "client_secret_basic"].indexOf(aOptions.tokenEndpointAuthMethod) < 0) params.client_secret = aOptions.clientSecret;
       ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; });
       var connection = ow.loadObj().rest.connectionFactory(), response, code;
       try {
         connection.setThrowExceptions(false);
         var timeout = positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000);
-        response = $rest({ httpClient: connection, urlEncode: true, timeout: timeout,
+        connection.client = connection.client.newBuilder().followRedirects(false).followSslRedirects(false)
+          .callTimeout(timeout, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+        var tokenHeaders = {}
+        if (aOptions.tokenEndpointAuthMethod == "client_secret_basic") {
+          var enc = function(v) { return String(java.net.URLEncoder.encode(String(v), "UTF-8")) }
+          tokenHeaders.Authorization = "Basic " + af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(enc(aOptions.clientId) + ":" + enc(aOptions.clientSecret))))
+        }
+        response = $rest({ httpClient: connection, requestHeaders: tokenHeaders, urlEncode: true, timeout: timeout,
           readTimeout: timeout, callTimeout: timeout }).post(aOptions.tokenURL, params);
         code = connection.responseCode();
       } catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }

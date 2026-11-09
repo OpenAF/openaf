@@ -30,7 +30,7 @@ ow.server.socket.start(12345, (clt, srv) => {
 
 Sources:
 
-- js/owrap.server.js:4926
+- js/owrap.server.js:4941
 
 <a id="api-ow-server-socket-stop-b666e88f"></a>
 
@@ -42,5 +42,5 @@ Stops a thread socket server on aPort previously started by ow.server.socket.sta
 
 Sources:
 
-- js/owrap.server.js:4976
+- js/owrap.server.js:4991
 

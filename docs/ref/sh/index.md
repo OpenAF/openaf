@@ -12,7 +12,7 @@ When executing aCmd (with .get) use aCallbackFunc function.
 
 Sources:
 
-- js/openaf.js:17023
+- js/openaf.js:17277
 
 <a id="api-sh-cp-f61de09e"></a>
 
@@ -24,7 +24,7 @@ Immediately copies aSource to aTarget before executing aCmd (with .exec).
 
 Sources:
 
-- js/openaf.js:17095
+- js/openaf.js:17349
 
 <a id="api-sh-dontwait-3f2ef162"></a>
 
@@ -36,7 +36,7 @@ If aBooleanValue = true the execution won't wait for output (default: false).
 
 Sources:
 
-- js/openaf.js:16975
+- js/openaf.js:17229
 
 <a id="api-sh-envs-4fd12271"></a>
 
@@ -48,7 +48,7 @@ Uses aMap of strings as the environment variables map. If includeExisting = true
 
 Sources:
 
-- js/openaf.js:16987
+- js/openaf.js:17241
 
 <a id="api-sh-exec-cf084c05"></a>
 
@@ -60,7 +60,7 @@ Immediately copies the result of executing aCmd string or array (and any other c
 
 Sources:
 
-- js/openaf.js:17228
+- js/openaf.js:17482
 
 <a id="api-sh-exit-b8551bd1"></a>
 
@@ -72,7 +72,7 @@ Sets aFunc function to execute after the execution of aCmd (with .exec).
 
 Sources:
 
-- js/openaf.js:17253
+- js/openaf.js:17507
 
 <a id="api-sh-exitcb-ecc9ee20"></a>
 
@@ -84,7 +84,7 @@ When executing aCmd if aFunction is provided it will be called to determine if t
 
 Sources:
 
-- js/openaf.js:17034
+- js/openaf.js:17288
 
 <a id="api-sh-get-777fdb80"></a>
 
@@ -96,7 +96,7 @@ Immediately copies the result of executing aCmd string or array (and any other c
 
 Sources:
 
-- js/openaf.js:17128
+- js/openaf.js:17382
 
 <a id="api-sh-getjsslon-78f9bad8"></a>
 
@@ -108,7 +108,7 @@ Immediately copies the result of executing aCmd string or array (and any other c
 
 Sources:
 
-- js/openaf.js:17182
+- js/openaf.js:17436
 
 <a id="api-sh-getjson-23f5f3a4"></a>
 
@@ -120,7 +120,7 @@ Immediately copies the result of executing aCmd string or array (and any other c
 
 Sources:
 
-- js/openaf.js:17159
+- js/openaf.js:17413
 
 <a id="api-sh-getyaml-9f76e168"></a>
 
@@ -132,7 +132,7 @@ Immediately copies the result of executing aCmd string or array (and any other c
 
 Sources:
 
-- js/openaf.js:17205
+- js/openaf.js:17459
 
 <a id="api-sh-mkdir-f933197f"></a>
 
@@ -144,7 +144,7 @@ Immediately creates aDir before executing aCmd (with .exec).
 
 Sources:
 
-- js/openaf.js:17073
+- js/openaf.js:17327
 
 <a id="api-sh-mv-b2ef4658"></a>
 
@@ -156,7 +156,7 @@ Immediately moves aSource to aTarget before executing aCmd (with .exec).
 
 Sources:
 
-- js/openaf.js:17084
+- js/openaf.js:17338
 
 <a id="api-sh-prefix-a2e0f5ce"></a>
 
@@ -168,7 +168,7 @@ When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefi
 
 Sources:
 
-- js/openaf.js:17046
+- js/openaf.js:17300
 
 <a id="api-sh-pwd-e3250be2"></a>
 
@@ -180,7 +180,7 @@ When executing aCmd (with .exec) use aPwd as the current working directory.
 
 Sources:
 
-- js/openaf.js:17012
+- js/openaf.js:17266
 
 <a id="api-sh-rename-fb712f14"></a>
 
@@ -192,7 +192,7 @@ Immediately renames aSource to aTarget before executing aCmd (with .exec).
 
 Sources:
 
-- js/openaf.js:17106
+- js/openaf.js:17360
 
 <a id="api-sh-rm-a41da627"></a>
 
@@ -204,7 +204,7 @@ Immediately removes aFilePath before executing aCmd (with .exec).
 
 Sources:
 
-- js/openaf.js:17117
+- js/openaf.js:17371
 
 <a id="api-sh-sh-aeaa2bef"></a>
 
@@ -216,7 +216,7 @@ When executing aCmd (with .exec) sets additional aCmds (with the optional corres
 
 Sources:
 
-- js/openaf.js:17001
+- js/openaf.js:17255
 
 <a id="api-sh-timeout-25d8e09e"></a>
 
@@ -228,7 +228,7 @@ When executing aCmd (with .exec) uses aTimeout.
 
 Sources:
 
-- js/openaf.js:17062
+- js/openaf.js:17316
 
 <a id="api-sh-useencoding-911029a4"></a>
 
@@ -240,5 +240,5 @@ Forces the aEncoding to be used.
 
 Sources:
 
-- js/openaf.js:16964
+- js/openaf.js:17218
 

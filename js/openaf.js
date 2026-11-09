@@ -10218,14 +10218,18 @@ const $jsonrpc = function (aOptions) {
  *   - `type` (string): "bearer" (static token) or "oauth2" (automatic token retrieval/refresh)
  * - `token` (string): Bearer token when type is "bearer"
  *   - `tokenType` (string): Authorization scheme prefix (default: "Bearer")
- * - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow
+ * - For oauth2: missing clientId/grantType selects automatic authorization_code login with dynamic registration and a reserved loopback callback. Explicit clientId retains the client_credentials default.
+ * - `registration`: false disables DCR; a map accepts clientName, applicationType, initialAccessToken and timeoutMs (60000).
+ * - `clientMetadataURL`: user-hosted HTTPS public-client metadata document, preferred when supported.
+ * - `tokenEndpointAuthMethod`: none (automatic default), client_secret_basic, or client_secret_post.
+ * - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType, extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow
  *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata (the metadata issuer must match and discovered endpoints must use HTTPS unless they are loopback addresses or allowHTTP is true)
  * - `interactive` (boolean): false prohibits browser login and code prompts; omitted preserves existing behavior
- *   - `callback` (boolean): opt-in loopback login through `ow.server.httpd.oauth2` at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000
+ *   - `callback` (boolean): default true for automatic OAuth, otherwise opt-in loopback login through `ow.server.httpd.oauth2` at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000
  * - `tokenStore` (map): opt-in {type: "sec", profile: "default"}; optional repo (default mcp-oauth2), bucket, key, file, lockSecret, mainSecret, lockTimeoutMs (60000). Or a synchronous custom load/save/clear/withLock store.
  *   - `sendResource` (boolean): false omits the OAuth resource parameter; default true
  * - `disableOpenBrowser` (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)
- * - authenticate() / getAuthStatus() / clearAuth(): authenticate, inspect non-secret status, or clear local tokens
+ * - authenticate() / getAuthStatus() / clearAuth(): authenticate, inspect non-secret status (including clientAvailable/registrationMethod), or clear local tokens. clearAuth({registration:true}) also forgets local registration.
  *
  * Type-specific details:
  *
@@ -10395,6 +10399,11 @@ const $mcp = function(aOptions) {
 	// Optional client capabilities are added by handler registration below; none are enabled by default.
 	aOptions.capabilities = _$(aOptions.capabilities, "aOptions.capabilities").isMap().default({})
 
+  // Missing client identity selects delegated browser login; explicit clients retain legacy defaults.
+  const _automaticOAuth = String(aOptions.auth.type).toLowerCase() == "oauth2" && ["remote", "http", "sse"].indexOf(aOptions.type) >= 0 && isUnDef(aOptions.auth.clientId)
+  if (_automaticOAuth && isUnDef(aOptions.auth.grantType)) aOptions.auth.grantType = "authorization_code"
+  if (_automaticOAuth && aOptions.auth.grantType == "authorization_code" && isUnDef(aOptions.auth.callback)) aOptions.auth.callback = true
+
 	const _toolBlacklist = Object.create(null)
 	aOptions.blacklist.forEach(toolName => {
 		toolName = _$(toolName, "aOptions.blacklist[]").isString().$_()
@@ -10476,22 +10485,54 @@ const $mcp = function(aOptions) {
 		if (isUnDef(_path) || _path == "/") _path = ""
 		return String(new java.net.URI(_scheme, _uri.getUserInfo(), _host, _uri.getPort(), "/.well-known/" + aSuffix + _path, null, null).toString())
 	}
-	const _fetchJSON = aURL => {
-		var _http = ow.loadObj().rest.connectionFactory()
-		try {
-			var _res = $rest({
-				httpClient: _http,
-				requestHeaders: { Accept: "application/json" }
-			}).get(aURL)
-			return {
-				body: _res,
-				headers: _http.responseHeaders(),
-				status: _http.responseCode()
-			}
-		} finally {
-			try { _http.close() } catch(e) {}
-		}
-	}
+  const _validateOAuthURL = (url, label) => {
+    var uri
+    try { uri = new java.net.URI(String(url)) } catch(e) { throw new Error("Invalid OAuth " + label + " URL") }
+    var scheme = String(uri.getScheme()), host = String(uri.getHost())
+    if (uri.getHost() === null || uri.getRawUserInfo() !== null || uri.getRawFragment() !== null ||
+        (scheme != "https" && !(scheme == "http" && (aOptions.auth.allowHTTP === true ||
+        ["127.0.0.1", "localhost", "::1", "[::1]"].indexOf(host) >= 0)))) {
+      throw new Error("OAuth " + label + " requires HTTPS (HTTP is allowed for loopback hosts or auth.allowHTTP=true)")
+    }
+    return uri
+  }
+  const _fetchJSON = aURL => {
+    _validateOAuthURL(aURL, "metadata")
+    var http = ow.loadObj().rest.connectionFactory()
+    var limit = aOptions.timeout
+    http.client = http.client.newBuilder().followRedirects(false).followSslRedirects(false)
+      .callTimeout(limit, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+    try {
+      http.setThrowExceptions(false)
+      return { body: $rest({ httpClient: http, requestHeaders: { Accept: "application/json" } }).get(aURL),
+        headers: http.responseHeaders(), status: http.responseCode() }
+    } catch(e) { throw new Error("OAuth metadata request failed; check connectivity and provider configuration") }
+    finally { try { http.close() } catch(ignore) {} }
+  }
+  const _oauthHeader = (headers, name) => {
+    var key = Object.keys(headers || {}).filter(k => String(k).toLowerCase() == name)[0]
+    var value = isDef(key) ? headers[key] : __
+    return isArray(value) ? value.join(", ") : value
+  }
+  const _oauthChallenge = () => {
+    var response = _fetchJSON(aOptions.url)
+    if (response.status != 401) return {}
+    var header = String(_oauthHeader(response.headers, "www-authenticate") || "")
+    var bearer = /(?:^|,)\s*Bearer\s+(.+?)(?=,\s*[A-Za-z]+\s+[^=]|$)/i.exec(header)
+    var params = {}, text = bearer ? bearer[1] : "", pattern = /([a-z_]+)\s*=\s*(?:"((?:\\.|[^"\\])*)"|([^,\s]+))/gi, match
+    while ((match = pattern.exec(text)) !== null) params[String(match[1]).toLowerCase()] = isDef(match[2]) ? match[2].replace(/\\(.)/g, "$1") : match[3]
+    return params
+  }
+  const _firstOAuthMetadata = urls => {
+    for (var i = 0; i < urls.length; i++) {
+      var response = _fetchJSON(urls[i])
+      if (response.status == 404 || response.status == 405) continue
+      if (response.status < 200 || response.status >= 300 || !isMap(response.body)) throw new Error("OAuth metadata endpoint returned an invalid response")
+      return { url: urls[i], body: response.body }
+    }
+    throw new Error("OAuth metadata not found; configure explicit metadata URLs")
+  }
+
 	const _getOAuthResource = () => {
 		if (aOptions.auth.sendResource === false) return __
 		if (isDef(_auth.resource)) return _auth.resource
@@ -10510,42 +10551,35 @@ const $mcp = function(aOptions) {
 	}
 	const _discoverOAuthMetadata = () => {
 		if (isDef(_auth.authorizationServerMetadata)) return _auth.authorizationServerMetadata
-		if (isDef(aOptions.auth.tokenURL) && isDef(aOptions.auth.authURL)) return __
-		var _resource = _getOAuthResource()
-		var _resourceMetadataURL = _$(aOptions.auth.protectedResourceMetadataURL, "aOptions.auth.protectedResourceMetadataURL").isString().default(
-			_buildWellKnownURL(_resource, "oauth-protected-resource")
-		)
-		var _resourceMetadata = _fetchJSON(_resourceMetadataURL).body
-		if (!isMap(_resourceMetadata)) {
-			throw new Error("OAuth protected resource metadata response is invalid for " + _resourceMetadataURL)
-		}
-		if (!isArray(_resourceMetadata.authorization_servers) || _resourceMetadata.authorization_servers.length == 0) {
-			throw new Error("OAuth protected resource metadata doesn't contain authorization_servers")
-		}
-		var _issuer = _$(aOptions.auth.authorizationServer, "aOptions.auth.authorizationServer").isString().default(
-			_$(aOptions.auth.authorizationServerIssuer, "aOptions.auth.authorizationServerIssuer").isString().default(_resourceMetadata.authorization_servers[0])
-		)
-		var _authServerMetadataURL = _$(aOptions.auth.authorizationServerMetadataURL, "aOptions.auth.authorizationServerMetadataURL").isString().default(
-			_buildWellKnownURL(_issuer, "oauth-authorization-server")
-		)
-		var _authServerMetadata = _fetchJSON(_authServerMetadataURL).body
-		if (!isMap(_authServerMetadata)) {
-			throw new Error("OAuth authorization server metadata response is invalid for " + _authServerMetadataURL)
-		}
-		// RFC 8414 section 3.3: the metadata issuer must match the issuer it was requested for
-		if (isDef(_authServerMetadata.issuer) && String(_authServerMetadata.issuer).replace(/\/+$/, "") != String(_issuer).replace(/\/+$/, "")) {
-			throw new Error("OAuth authorization server metadata issuer '" + _authServerMetadata.issuer + "' doesn't match '" + _issuer + "'")
-		}
-		// Discovered endpoints come from the (possibly untrusted) server: don't send secrets in clear text to remote hosts
-		;["authorization_endpoint", "token_endpoint", "registration_endpoint"].forEach(k => {
-			if (!isString(_authServerMetadata[k]) || aOptions.auth.allowHTTP === true) return
-			var _u
-			try { _u = new java.net.URI(_authServerMetadata[k]) } catch(e) { throw new Error("OAuth discovered " + k + " is not a valid URL") }
-			var _sch = String(_u.getScheme()).toLowerCase()
-			if (_sch == "https") return
-			if (_sch == "http" && ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(_u.getHost()).toLowerCase()) >= 0) return
-			throw new Error("OAuth discovered " + k + " must use HTTPS (set auth.allowHTTP=true to override): " + _authServerMetadata[k])
-		})
+		if (!_automaticOAuth && isDef(aOptions.auth.tokenURL) && isDef(aOptions.auth.authURL)) return __
+		var _resource = _getOAuthResource() || _canonicalizeResourceURI(aOptions.url)
+    var challenge = _automaticOAuth && isUnDef(aOptions.auth.protectedResourceMetadataURL) ? _oauthChallenge() : {}
+    if (isUnDef(aOptions.auth.scope) && isString(challenge.scope) && challenge.scope.length) aOptions.auth.scope = challenge.scope
+    var root = new java.net.URI(_resource)
+    var origin = String(new java.net.URI(root.getScheme(), null, root.getHost(), root.getPort(), null, null, null))
+    var resourceURLs = isString(aOptions.auth.protectedResourceMetadataURL) ? [aOptions.auth.protectedResourceMetadataURL] :
+      (isString(challenge.resource_metadata) ? [challenge.resource_metadata] :
+        [_buildWellKnownURL(_resource, "oauth-protected-resource"), origin + "/.well-known/oauth-protected-resource"])
+    var resourceResult = _firstOAuthMetadata(resourceURLs)
+    var _resourceMetadataURL = resourceResult.url, _resourceMetadata = resourceResult.body
+    if (isDef(_resourceMetadata.resource) && _canonicalizeResourceURI(_resourceMetadata.resource) != _canonicalizeResourceURI(_resource)) throw new Error("OAuth protected resource metadata resource mismatch")
+    if (_automaticOAuth && !isString(_resourceMetadata.resource)) throw new Error("OAuth protected resource metadata requires resource")
+    if (!isArray(_resourceMetadata.authorization_servers) || !_resourceMetadata.authorization_servers.length) throw new Error("OAuth protected resource metadata doesn't contain authorization_servers")
+    var _issuer = aOptions.auth.authorizationServer || aOptions.auth.authorizationServerIssuer || _resourceMetadata.authorization_servers[0]
+    _validateOAuthURL(_issuer, "issuer")
+    var issuerURI = new java.net.URI(_issuer)
+    var issuerPath = String(issuerURI.getPath() || "").replace(/\/$/, "")
+    var issuerOrigin = String(new java.net.URI(issuerURI.getScheme(), null, issuerURI.getHost(), issuerURI.getPort(), null, null, null))
+    var metadataURLs = isString(aOptions.auth.authorizationServerMetadataURL) ? [aOptions.auth.authorizationServerMetadataURL] :
+      [_buildWellKnownURL(_issuer, "oauth-authorization-server"), _buildWellKnownURL(_issuer, "openid-configuration")]
+    if (issuerPath.length) metadataURLs.push(issuerOrigin + issuerPath + "/.well-known/openid-configuration")
+    var serverResult = _firstOAuthMetadata(metadataURLs)
+    var _authServerMetadataURL = serverResult.url, _authServerMetadata = serverResult.body
+    if ((_automaticOAuth || isDef(_authServerMetadata.issuer)) && _authServerMetadata.issuer !== _issuer) throw new Error("OAuth authorization server metadata issuer mismatch")
+    ;["authorization_endpoint", "token_endpoint", "registration_endpoint"].forEach(k => {
+      if (isDef(_authServerMetadata[k])) _validateOAuthURL(_authServerMetadata[k], k)
+    })
+
 		_auth.protectedResourceMetadataURL = _resourceMetadataURL
 		_auth.protectedResourceMetadata = _resourceMetadata
 		_auth.authorizationServerIssuer = _issuer
@@ -10582,6 +10616,160 @@ const $mcp = function(aOptions) {
 
     var _oauthPending, _authStore, _authStoreKey, _authStoreHasRecord, _authStoreFailed = false;
     const _authLockName = "mcp-oauth-" + genUUID();
+    var _registration, _registrationKey, _registrationStore, _registrationIdentity, _registrationFailed = false
+    var _callbackReservation, _oauthDestroyed = false
+    const _requestedRedirectURI = aOptions.auth.redirectURI
+    const _requestedAuthMethod = aOptions.auth.tokenEndpointAuthMethod
+    const _releaseCallback = () => {
+      if (isDef(_callbackReservation)) {
+        try { ow.server.httpd.stop(_callbackReservation) } finally { _callbackReservation = __ }
+      }
+    }
+    const _validateCallback = redirect => {
+      var uri
+      try { uri = new java.net.URI(String(redirect)) } catch(e) { throw new Error("Invalid OAuth callback URI") }
+      if (String(uri.getScheme()) != "http" || ["127.0.0.1", "localhost", "::1", "[::1]"].indexOf(String(uri.getHost())) < 0 ||
+          uri.getPort() <= 0 || uri.getPort() > 65535 || uri.getRawQuery() !== null || uri.getRawFragment() !== null || uri.getRawUserInfo() !== null) {
+        throw new Error("OAuth callback requires an HTTP loopback URI with an explicit port")
+      }
+      return uri
+    }
+    const _reserveCallback = redirect => {
+      if (isDef(_callbackReservation)) return redirect
+      ow.loadServer()
+      plugin("HTTPServer")
+      var uri = isDef(redirect) ? _validateCallback(redirect) : __
+      try {
+        _callbackReservation = new HTTPd(isDef(uri) ? Number(uri.getPort()) : 0,
+          isDef(uri) ? String(uri.getHost()).replace(/^\[|\]$/g, "").replace(/^localhost$/, "127.0.0.1") : "127.0.0.1", __, __, __, __, 30000, "java")
+      } catch(e) { throw new Error("OAuth callback port unavailable; close the conflicting listener or clear the registration") }
+      return isDef(redirect) ? redirect : "http://127.0.0.1:" + _callbackReservation.getPort() + "/oauth/callback"
+    }
+    const _withRegistrationLock = fn => {
+      if (isUnDef(_registrationStore)) return fn()
+      var entered = 0, active = true, result, callbackError
+      try {
+        _registrationStore.withLock(_registrationKey, () => {
+          if (!active || ++entered != 1) throw new Error("OAuth registration withLock must invoke its callback synchronously once")
+          try { result = fn() } catch(e) { callbackError = e; throw e }
+        })
+      } catch(e) {
+        if (isDef(callbackError)) throw callbackError
+        throw new Error("OAuth registration storage lock failed or timed out")
+      } finally { active = false }
+      if (isDef(callbackError)) throw callbackError
+      if (entered != 1) throw new Error("OAuth registration withLock must invoke its callback synchronously once")
+      return result
+    }
+    const _resolveOAuthClient = (readOnly, clearing) => {
+      if (!_automaticOAuth || aOptions.auth.grantType != "authorization_code") return
+      if (_registrationFailed && !clearing) throw new Error("OAuth registration failed; clearAuth({registration:true}) or recreate the client before retrying")
+      var metadata = _discoverOAuthMetadata(), cfg = aOptions.auth.tokenStore
+      var options = isMap(aOptions.auth.registration) ? aOptions.auth.registration : {}
+      var identity = _registrationIdentity || sha256(stringify(sortMapKeys({ version: 1,
+        issuer: _auth.authorizationServerIssuer, url: aOptions.url,
+        profile: isMap(cfg) ? cfg.profile || cfg.key || "default" : "default",
+        redirectURI: _requestedRedirectURI, scope: aOptions.auth.scope,
+        metadataURL: aOptions.auth.clientMetadataURL, clientName: options.clientName,
+        applicationType: options.applicationType, method: _requestedAuthMethod }, true), __, ""))
+      _registrationIdentity = identity
+      _registrationKey = "oauth2-registration-v1-" + identity
+      if (isDef(cfg)) {
+        _$(cfg, "auth.tokenStore").isMap().$_()
+        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type")
+        if (["load", "save", "clear", "withLock"].some(k => isDef(cfg[k]))) {
+          ;["load", "save", "clear", "withLock"].forEach(k => _$(cfg[k], "auth.tokenStore." + k).isFunction().$_())
+          _registrationStore = cfg
+        } else _registrationStore = _secTokenStore(cfg)
+      }
+      _withRegistrationLock(() => {
+        if (isDef(_registrationStore)) {
+          try { _registration = _registrationStore.load(_registrationKey) }
+          catch(e) { throw new Error("OAuth registration storage read failed") }
+        }
+        if (isDef(_registration) && (!isMap(_registration) || _registration.version != 1 || _registration.identity != identity ||
+            !isString(_registration.clientId) || !_registration.clientId.length || !isString(_registration.redirectURI) ||
+            ["none", "client_secret_basic", "client_secret_post"].indexOf(_registration.method) < 0 ||
+            (_registration.method != "none" && (!isString(_registration.clientSecret) || !_registration.clientSecret.length)))) {
+          if (!clearing) throw new Error("OAuth registration profile is invalid; clearAuth({registration:true})")
+        }
+        if (isUnDef(_registration)) {
+          if (readOnly) {
+            aOptions.auth.clientId = __
+            aOptions.auth.clientSecret = __
+            _resetAuth()
+            return
+          }
+          if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled")
+          var redirect = _requestedRedirectURI, clientId, secret, expires, kind = "dynamic"
+          var method = _requestedAuthMethod || "none"
+          if (isArray(metadata.token_endpoint_auth_methods_supported) && metadata.token_endpoint_auth_methods_supported.indexOf(method) < 0) throw new Error("OAuth server does not support the requested client authentication method")
+          if (isArray(metadata.code_challenge_methods_supported) && metadata.code_challenge_methods_supported.indexOf("S256") < 0) throw new Error("OAuth server does not support PKCE S256")
+          if (["none", "client_secret_basic", "client_secret_post"].indexOf(method) < 0) throw new Error("Unsupported OAuth client authentication method")
+          if (isString(aOptions.auth.clientMetadataURL) && metadata.client_id_metadata_document_supported === true) {
+            var uri = _validateOAuthURL(aOptions.auth.clientMetadataURL, "client metadata")
+            if (String(uri.getScheme()) != "https" || !String(uri.getPath()).length || String(uri.getPath()) == "/" || uri.getRawQuery() !== null) throw new Error("OAuth client metadata requires an HTTPS URL with a path")
+            var documentResponse = _fetchJSON(aOptions.auth.clientMetadataURL), doc = documentResponse.body
+            if (documentResponse.status != 200 || !isMap(doc) || doc.client_id != aOptions.auth.clientMetadataURL || !isString(doc.client_name) || !doc.client_name.length || !isArray(doc.redirect_uris)) throw new Error("Invalid OAuth client metadata document")
+            if (isUnDef(redirect)) {
+              redirect = doc.redirect_uris.filter(v => { try { _validateCallback(v); return true } catch(e) { return false } })[0]
+            }
+            _validateCallback(redirect)
+            if (doc.redirect_uris.indexOf(redirect) < 0 || method != "none" || (isDef(doc.token_endpoint_auth_method) && doc.token_endpoint_auth_method != "none")) throw new Error("OAuth client metadata is incompatible with callback or authentication method")
+            clientId = aOptions.auth.clientMetadataURL
+            kind = "metadata"
+          } else {
+            if (aOptions.auth.registration === false || !isString(metadata.registration_endpoint)) throw new Error("OAuth clientId required; server does not support automatic registration")
+            _validateOAuthURL(metadata.registration_endpoint, "registration")
+            if (aOptions.auth.callback === true) redirect = _reserveCallback(redirect)
+            _validateCallback(redirect)
+            var payload = { client_name: options.clientName || "OpenAF", redirect_uris: [redirect],
+              application_type: options.applicationType || "native", grant_types: ["authorization_code", "refresh_token"],
+              response_types: ["code"], token_endpoint_auth_method: method }
+            if (isDef(aOptions.auth.scope)) payload.scope = aOptions.auth.scope
+            var limit = isDef(options.timeoutMs) ? options.timeoutMs : 60000
+            if (!isNumber(limit) || !isFinite(limit) || limit <= 0) throw new Error("OAuth registration timeout must be positive")
+            var connection = ow.loadObj().rest.connectionFactory(), response, status
+            try {
+              connection.client = connection.client.newBuilder().followRedirects(false).followSslRedirects(false)
+                .callTimeout(limit, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+              connection.setThrowExceptions(false)
+              var headers = { Accept: "application/json" }
+              if (isString(options.initialAccessToken)) headers.Authorization = "Bearer " + options.initialAccessToken
+              // A lost response may already have created a client: never repeat this POST automatically.
+              _registrationFailed = true
+              response = $rest({ httpClient: connection, requestHeaders: headers }).post(metadata.registration_endpoint, payload)
+              status = connection.responseCode()
+            } catch(e) { throw new Error("OAuth client registration request failed; reset the registration before retrying") }
+            finally { try { connection.close() } catch(ignore) {} }
+            if (status != 201 || !isMap(response) || !isString(response.client_id) || !response.client_id.length) throw new Error("OAuth client registration failed; provider did not return a client identity")
+            if (isDef(response.token_endpoint_auth_method) && response.token_endpoint_auth_method != method) throw new Error("OAuth registration returned an incompatible authentication method")
+            if (method != "none" && (!isString(response.client_secret) || !response.client_secret.length)) throw new Error("OAuth registration did not return a client secret")
+            if (isDef(response.redirect_uris) && (!isArray(response.redirect_uris) || response.redirect_uris.indexOf(redirect) < 0)) throw new Error("OAuth registration rejected the callback URI")
+            if (isDef(response.client_secret_expires_at) && (!isNumber(response.client_secret_expires_at) || !isFinite(response.client_secret_expires_at) || response.client_secret_expires_at < 0)) throw new Error("OAuth registration returned invalid secret expiry")
+            clientId = response.client_id
+            secret = method == "none" ? __ : response.client_secret
+            expires = response.client_secret_expires_at
+          }
+          var record = { version: 1, identity: identity, clientId: clientId, clientSecret: secret,
+            redirectURI: redirect, method: method, kind: kind, secretExpiresAt: expires }
+          if (isDef(_registrationStore)) {
+            try { _registrationStore.save(_registrationKey, record) }
+            catch(e) { _registrationFailed = true; throw new Error("OAuth registration storage write failed; reset the registration before retrying") }
+          }
+          _registration = record
+          _registrationFailed = false
+        }
+        if (!clearing) {
+          _validateCallback(_registration.redirectURI)
+          if (isNumber(_registration.secretExpiresAt) && _registration.secretExpiresAt > 0 && _registration.secretExpiresAt * 1000 <= now()) throw new Error("OAuth client secret expired; clearAuth({registration:true}) before retrying")
+        }
+        aOptions.auth.clientId = _registration.clientId
+        aOptions.auth.clientSecret = _registration.clientSecret
+        aOptions.auth.redirectURI = _registration.redirectURI
+        aOptions.auth.tokenEndpointAuthMethod = _registration.method
+      })
+    }
     const _authFingerprint = () => {
         // Resolve both endpoints before selecting the entry: login must not change its identity.
         _getResolvedTokenURL();
@@ -10589,6 +10777,7 @@ const $mcp = function(aOptions) {
         var scope = String(aOptions.auth.scope || "").split(/\s+/).filter(v => v.length > 0).sort();
         return sha256(stringify(sortMapKeys({
             version: 1, url: aOptions.url, clientId: aOptions.auth.clientId,
+            tokenEndpointAuthMethod: aOptions.auth.tokenEndpointAuthMethod,
             tokenURL: _getResolvedTokenURL(), authURL: aOptions.auth.authURL || _auth.discoveredAuthURL,
             issuer: _auth.authorizationServerIssuer || aOptions.auth.authorizationServer || aOptions.auth.authorizationServerIssuer,
             scope: scope.filter((v, i) => i == 0 || v != scope[i - 1]),
@@ -10607,6 +10796,8 @@ const $mcp = function(aOptions) {
     const _authStatus = () => ({
         authenticated: isString(_auth.token) && _auth.expiresAt > now() && !_authStoreFailed,
         expiresAt: _auth.expiresAt, refreshable: isString(_auth.refreshToken),
+        clientAvailable: isString(aOptions.auth.clientId),
+        registrationMethod: isDef(_registration) ? _registration.kind : (isString(aOptions.auth.clientId) ? "explicit" : __),
         persistent: isMap(aOptions.auth.tokenStore)
     });
     const _deleteAuth = () => {
@@ -10748,6 +10939,9 @@ const $mcp = function(aOptions) {
             return { Authorization: (aOptions.auth.tokenType || "Bearer") + " " + token };
         }
         if (type != "oauth2") throw new Error("Unsupported MCP authentication type");
+        var method = aOptions.auth.tokenEndpointAuthMethod
+        if (isDef(method) && ["none", "client_secret_basic", "client_secret_post"].indexOf(method) < 0) throw new Error("Unsupported OAuth client authentication method")
+        if ((method == "client_secret_basic" || method == "client_secret_post") && (!isString(aOptions.auth.clientSecret) || !aOptions.auth.clientSecret.length)) throw new Error("OAuth client authentication requires a client secret")
         var windowMs = _$(aOptions.auth.refreshWindowMs, "auth.refreshWindowMs").isNumber().default(30000);
         if (isUnDef(_auth.token) || _auth.expiresAt <= now() + windowMs) {
             var tokenURL = _getResolvedTokenURL();
@@ -10760,13 +10954,17 @@ const $mcp = function(aOptions) {
                 if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
                 ow.loadServer();
                 // MCP owns the storage transaction, refresh and identity. The helper owns this login only.
-                _oauthPending = ow.server.httpd.oauth2(merge(aOptions.auth, {
+                if (_automaticOAuth) _reserveCallback(aOptions.auth.redirectURI)
+                var loginOptions = merge(aOptions.auth, {
                     authURL: _getResolvedAuthURL(), tokenURL: tokenURL, resource: resource, tokenStore: false
-                }));
+                })
+                loginOptions.__callbackReservation = _callbackReservation
+                _oauthPending = ow.server.httpd.oauth2(loginOptions)
                 params = { grant_type: "authorization_code" };
                 try { res = _oauthPending.authenticate(); }
                 catch(e) {
                     if (e.oauthError == "invalid_grant" || e.oauthError == "interaction_required") res = { error: e.oauthError };
+                    else if (e.oauthError == "invalid_client") throw new Error("OAuth client credentials rejected; check explicit credentials or clearAuth({registration:true}) before retrying")
                     else throw e;
                 } finally { _oauthPending = __; _auth.authorizationCode = __; _auth.pkceVerifier = __; }
             } else {
@@ -10777,7 +10975,7 @@ const $mcp = function(aOptions) {
                     redirect_uri: aOptions.auth.redirectURI, code_verifier: _getPKCEVerifier()
                 };
                 else params = { grant_type: grant, client_id: clientId };
-                if (isDef(aOptions.auth.clientSecret)) params.client_secret = aOptions.auth.clientSecret;
+                if (isDef(aOptions.auth.clientSecret) && ["none", "client_secret_basic"].indexOf(aOptions.auth.tokenEndpointAuthMethod) < 0) params.client_secret = aOptions.auth.clientSecret;
                 if (isDef(scope)) params.scope = scope;
                 if (isDef(audience)) params.audience = audience;
                 if (isDef(resource)) params.resource = resource;
@@ -10785,8 +10983,14 @@ const $mcp = function(aOptions) {
                 var tokenHttp = ow.loadObj().rest.connectionFactory();
                 try {
                     tokenHttp.setThrowExceptions(false);
+                    tokenHttp.client = tokenHttp.client.newBuilder().followRedirects(false).followSslRedirects(false)
+                        .callTimeout(aOptions.auth.tokenTimeoutMs || 60000, java.util.concurrent.TimeUnit.MILLISECONDS).build()
                     var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000);
-                    res = $rest({ httpClient: tokenHttp, urlEncode: true, timeout: tokenTimeout,
+                    var tokenHeaders = {}
+                    if (aOptions.auth.tokenEndpointAuthMethod == "client_secret_basic") {
+                        tokenHeaders.Authorization = "Basic " + af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(_urlEnc(clientId) + ":" + _urlEnc(aOptions.auth.clientSecret))))
+                    }
+                    res = $rest({ httpClient: tokenHttp, requestHeaders: tokenHeaders, urlEncode: true, timeout: tokenTimeout,
                         readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params);
                     if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {};
                 }
@@ -10797,6 +11001,7 @@ const $mcp = function(aOptions) {
                 }
             }
             if (!isMap(res) || !isString(res.access_token) || res.access_token.length == 0) {
+                if (isMap(res) && res.error == "invalid_client") throw new Error("OAuth client credentials rejected; check explicit credentials or clearAuth({registration:true}) before retrying")
                 if (isMap(res) && (res.error == "invalid_grant" || res.error == "interaction_required")) {
                     _resetAuth();
                     _deleteAuth();
@@ -10814,7 +11019,27 @@ const $mcp = function(aOptions) {
         }
         return { Authorization: _auth.tokenType + " " + _auth.token };
     };
-    const _getAuthHeaders = () => _withAuthStore(() => _getOAuthHeaders(false));
+    const _withOAuthOperation = fn => {
+      var lock = $lock(_authLockName), result
+      var cfg = aOptions.auth.tokenStore
+      if (isMap(cfg)) {
+        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000)
+        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive")
+        if (!lock.tryLock(() => { result = fn() }, timeout)) throw new Error("OAuth credential storage lock timed out")
+        return result
+      }
+      lock.lock()
+      try { return fn() } finally { lock.unlock() }
+    }
+    const _getAuthHeaders = () => _withOAuthOperation(() => {
+      try {
+        if (_oauthDestroyed) throw new Error("MCP client destroyed")
+        _resolveOAuthClient()
+        if (_oauthDestroyed) throw new Error("OAuth login cancelled")
+        return _withAuthStore(() => _getOAuthHeaders(false))
+      }
+      finally { _releaseCallback() }
+    });
 
 	const _clientCapabilities = version => {
 		var caps = clone(aOptions.capabilities)
@@ -11189,7 +11414,14 @@ const $mcp = function(aOptions) {
 		if (message.method == "notifications/resources/updated" && isMap(message.params) && isFunction(_subscriptions[message.params.uri])) _subscriptions[message.params.uri](message.params, message)
 		if (isFunction(_originalNotification)) _originalNotification(message)
 	}
-	aOptions.getReplyOptions = () => ({ restOptions: { requestHeaders: _getAuthHeaders() } })
+	aOptions.getReplyOptions = () => {
+      // Session cleanup may use the last credential, but must never start another login.
+      var headers
+      if (!_oauthDestroyed) headers = _getAuthHeaders()
+      else if (isString(_auth.token)) headers = { Authorization: _auth.tokenType + " " + _auth.token }
+      else if (isString(aOptions.auth.token)) headers = { Authorization: (aOptions.auth.tokenType || "Bearer") + " " + aOptions.auth.token }
+      return { restOptions: { requestHeaders: headers } }
+    }
 	// Advertise implemented optional capabilities only after explicit handler registration.
 	delete aOptions.capabilities.sampling
 	delete aOptions.capabilities.elicitation
@@ -11754,21 +11986,43 @@ const $mcp = function(aOptions) {
 		},
         // Explicit operator authentication; never returns credentials.
         authenticate: () => { _getAuthHeaders(); return _authStatus(); },
-        getAuthStatus: () => _withAuthStore(() => _authStatus()),
-        clearAuth: () => _withAuthStore(() => {
-            _resetAuth();
-            _deleteAuth();
-            _authStoreFailed = false;
-            return _authStatus();
-        }, true),
+        getAuthStatus: () => _withOAuthOperation(() => { _resolveOAuthClient(true); return _automaticOAuth && isUnDef(_registration) ? _authStatus() : _withAuthStore(() => _authStatus()); }),
+        clearAuth: (options) => _withOAuthOperation(() => {
+            _resolveOAuthClient(true, true)
+            var result = _automaticOAuth && isUnDef(_registration) ? _authStatus() : _withAuthStore(() => {
+                _resetAuth()
+                _deleteAuth()
+                _authStoreFailed = false
+                return _authStatus()
+            }, true)
+            if (isMap(options) && options.registration === true && _automaticOAuth) {
+                _withRegistrationLock(() => {
+                    if (isDef(_registrationStore)) {
+                        try { _registrationStore.clear(_registrationKey) }
+                        catch(e) { throw new Error("OAuth registration storage delete failed") }
+                    }
+                    _registration = __
+                    _registrationFailed = false
+                    aOptions.auth.clientId = __
+                    aOptions.auth.clientSecret = __
+                    aOptions.auth.redirectURI = _requestedRedirectURI
+                    aOptions.auth.tokenEndpointAuthMethod = _requestedAuthMethod
+                })
+                _releaseCallback()
+                return _authStatus()
+            }
+            return result
+        }),
 
 		exec: (method, params, execOptions) => {
 			return _execWithAuth(method, params, false, execOptions)
 		},
 		destroy: () => {
+            _oauthDestroyed = true
             if (isDef(_oauthPending)) {
                 _oauthPending.cancel();
             }
+            _releaseCallback()
 			Object.keys(_subscriptions).forEach(k => delete _subscriptions[k])
 			_jsonrpc.destroy()
 		}

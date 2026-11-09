@@ -366,7 +366,7 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSConstructor
 	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout, String aImpl) throws IOException {
-		if (port <= 0) {
+		if (port <= 0 && (!"java".equals(aImpl) || (keyStorePath != null && !keyStorePath.equals("undefined")))) {
 			port = findRandomOpenPortOnAllLocalInterfaces();
 		}
 
@@ -389,7 +389,8 @@ public class HTTPServer extends ScriptableObject {
 		
 		if (USE_JAVA_HTTP_SERVER) {
 			// Use Java built-in HTTP server implementation
-			initializeJavaHttpServer(port, host, keyStorePath, password, errorFunction);
+			initializeJavaHttpServer(Math.max(0, port), host, keyStorePath, password, errorFunction);
+            port = serverport;
 		} else {
 			// Use existing NWU implementation
 			initializeNWUHttpServer(port, host, keyStorePath, password, errorFunction, ws, timeout);
@@ -410,6 +411,7 @@ public class HTTPServer extends ScriptableObject {
 			password != null && !(password instanceof Undefined)) {
 			// HTTPS server
 			javaHttpsServer = HttpsServer.create(address, 0);
+            serverport = javaHttpsServer.getAddress().getPort();
 			
 			try {
 				// Create SSL context
@@ -448,6 +450,7 @@ public class HTTPServer extends ScriptableObject {
 		} else {
 			// HTTP server
 			javaHttpServer = HttpServer.create(address, 0);
+            serverport = javaHttpServer.getAddress().getPort();
 			javaExecutor = Executors.newCachedThreadPool();
 			javaHttpServer.setExecutor(javaExecutor);
 			javaHttpServer.start();

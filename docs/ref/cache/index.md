@@ -12,7 +12,7 @@ Changes the behaviour of the cache to either use the default value (aDefault) if
 
 Sources:
 
-- js/openaf.js:12197
+- js/openaf.js:12451
 
 <a id="api-cache-bypopularity-0e069639"></a>
 
@@ -24,7 +24,7 @@ Changes the behaviour of the cache to use the most popular entries and prefer to
 
 Sources:
 
-- js/openaf.js:12186
+- js/openaf.js:12440
 
 <a id="api-cache-ch-10dae75b"></a>
 
@@ -36,7 +36,7 @@ Uses a pre-existing channel (e.g. aChannelName) as the cache channel.
 
 Sources:
 
-- js/openaf.js:12157
+- js/openaf.js:12411
 
 <a id="api-cache-fn-ebd23afc"></a>
 
@@ -48,7 +48,7 @@ Defines the aFunction use to get aKey. The returned object will be cached.
 
 Sources:
 
-- js/openaf.js:12143
+- js/openaf.js:12397
 
 <a id="api-cache-get-9bf85ff6"></a>
 
@@ -71,7 +71,7 @@ $cache("numbers").destroy();
 
 Sources:
 
-- js/openaf.js:12229
+- js/openaf.js:12483
 
 <a id="api-cache-infile-d0aeff45"></a>
 
@@ -83,7 +83,7 @@ Creates a mvs channel to hold the cache data in aFile. Note: don't use $cache.ch
 
 Sources:
 
-- js/openaf.js:12171
+- js/openaf.js:12425
 
 <a id="api-cache-maxsize-26dd2668"></a>
 
@@ -95,7 +95,7 @@ Establishes the max number of entries cached at any given point in time.
 
 Sources:
 
-- js/openaf.js:12164
+- js/openaf.js:12418
 
 <a id="api-cache-ttl-c30f4193"></a>
 
@@ -107,5 +107,5 @@ Defines the time-to-live (aTTL) to consider a cached result as valid.
 
 Sources:
 
-- js/openaf.js:12150
+- js/openaf.js:12404
 
