@@ -38,7 +38,17 @@ jobs:
   to: OpenAF Test
   exec: args.func = args.tests.testMultilinePrompts;
 
+- name: Console::polling prompts
+  from: Console::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testPollingPrompts
+- name: Console::native polling line
+  from: Console::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testNativePollingLine
 todo:
+- Console::polling prompts
+- Console::native polling line
 - Console::multiline prompts
 - Console::prompt family
 - Console::injected prompts

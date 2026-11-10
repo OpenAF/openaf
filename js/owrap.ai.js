@@ -5191,7 +5191,7 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
 
 /**
  * <odoc format="markdown">
- * <key>$gpt(aModel) : $gpt</key>
+ * <key>$gpt(aModel, aEmbeddingConfig) : $gpt</key>
  * <![CDATA[
  * Creates a GPT AI model from `aModel` (e.g. type "openai", "gemini", "ollama" or "anthropic").
  *
@@ -5225,6 +5225,10 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" }
  * - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" }
  *
+ * `aEmbeddingConfig` optionally supplies an independent embeddings provider map; otherwise `OAF_EMBED_MODEL` is read as JSON/SLON.
+ * Clients initialize on first use. Embeddings-only use does not require chat configuration.
+ * Example: `$llm(__, { type: "ollama", model: "embeddinggemma-2" }).getEmbeddings("hello")`.
+ *
  * If `aModel` is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
  *
  * The returned object also exposes helper methods to inspect vendor usage information: `getLastStats`/`lastStats` (map with the latest statistics), `promptWithStats`,
@@ -5232,13 +5236,34 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * ]]>
  * </odoc>
  */
-global.$gpt = function(aModel) {
-    if (isUnDef(aModel) && isDef(getEnv("OAF_MODEL"))) aModel = af.fromJSSLON(getEnv("OAF_MODEL"))
-    _$(aModel, "options").isMap().$_()
-    var type = _$(aModel.type, "type").isString().$_()
-
-    var _dbtbls = [], _dbname
-    var _g = new ow.ai.gpt(type, aModel)
+global.$gpt = function(aModel, aEmbeddingConfig) {
+    var _dbtbls = [], _dbname, _chat, _embed, _lastClient
+    var _getChat = () => {
+        if (isUnDef(_chat)) {
+            var cfg = aModel
+            if (isUnDef(cfg) && isDef(getEnv("OAF_MODEL"))) cfg = af.fromJSSLON(getEnv("OAF_MODEL"))
+            if (isUnDef(cfg)) throw "Chat configuration required: provide aModel or OAF_MODEL"
+            _$(cfg, "options").isMap().$_()
+            _chat = new ow.ai.gpt(_$(cfg.type, "type").isString().$_(), cfg)
+        }
+        _lastClient = _chat
+        return _chat
+    }
+    var _getEmbed = () => {
+        if (isUnDef(_embed)) {
+            var cfg = aEmbeddingConfig
+            if (isUnDef(cfg) && isDef(getEnv("OAF_EMBED_MODEL"))) cfg = af.fromJSSLON(getEnv("OAF_EMBED_MODEL"))
+            if (isUnDef(cfg)) return { client: _getChat() }
+            _$(cfg, "embedding options").isMap().$_()
+            _embed = { client: new ow.ai.gpt(_$(cfg.type, "embedding type").isString().$_(), cfg), model: cfg.model }
+        }
+        return _embed
+    }
+    var _embeddings = (input, dimensions, model) => {
+        var target = _getEmbed()
+        _lastClient = target.client
+        return target.client.getEmbeddings(input, dimensions, isDef(model) ? model : target.model)
+    }
     var _r = {
         /**
          * <odoc>
@@ -5246,32 +5271,32 @@ global.$gpt = function(aModel) {
          * Returns a stateless versioned decision envelope. Also exposed through $llm. See ow.ai.gpt.decide and docs/llm-decisions.md.
          * </odoc>
          */
-        decide: (state, questions, options) => _g.decide(state, questions, options),
+        decide: (state, questions, options) => _getChat().decide(state, questions, options),
         /**
          * <odoc>
          * <key>$gpt.rawDecide(aState, aQuestions, aOptions) : Map</key>
          * Returns execution metadata and the raw provider payload from one stateless request.
          * </odoc>
          */
-        rawDecide: (state, questions, options) => _g.rawDecide(state, questions, options),
+        rawDecide: (state, questions, options) => _getChat().rawDecide(state, questions, options),
         /**
          * <odoc>
          * <key>$gpt.decideWithStats(aState, aQuestions, aOptions) : Map</key>
          * Returns { response, stats } from one stateless decision execution.
          * </odoc>
          */
-        decideWithStats: (state, questions, options) => _g.decideWithStats(state, questions, options),
+        decideWithStats: (state, questions, options) => _getChat().decideWithStats(state, questions, options),
         /**
          * <odoc>
          * <key>$gpt.getCapabilities() : Map</key>
          * Reports decision adapter support and runtime availability without a network request.
          * </odoc>
          */
-        getCapabilities: () => _g.getCapabilities(),
-        getGPT: () => _g,
-        getAPI: () => _g,
+        getCapabilities: () => _getChat().getCapabilities(),
+        getGPT: () => _getChat(),
+        getAPI: () => _getChat(),
         getModels: () => {
-            return _g.getModels()
+            return _getChat().getModels()
         },
         /**
          * <odoc>
@@ -5280,7 +5305,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         getModelInfo: (aModelId) => {
-            return _g.getModelInfo(aModelId)
+            return _getChat().getModelInfo(aModelId)
         },
         /**
          * <odoc>
@@ -5288,14 +5313,14 @@ global.$gpt = function(aModel) {
          * Returns the latest usage statistics reported by the underlying LLM vendor for the last prompt request.
          * </odoc>
          */
-        getLastStats: () => _g.getLastStats(),
+        getLastStats: () => isDef(_lastClient) ? _lastClient.getLastStats() : {},
         /**
          * <odoc>
          * <key>$gpt.lastStats() : Map</key>
          * Alias for $gpt.getLastStats.
          * </odoc>
          */
-        lastStats: () => _g.getLastStats(),
+        lastStats: () => _r.getLastStats(),
         /**
          * <odoc>
          * <key>$gpt.setDebugCh(aChName) : $gpt</key>
@@ -5303,7 +5328,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         setDebugCh: (aChName) => {
-            _g.setDebugCh(aChName)
+            _getChat().setDebugCh(aChName)
             return _r
         },
         /**
@@ -5313,7 +5338,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         prompt: (aPrompt, aRole, aModel, aTemperature, tools) => {
-            return _g.prompt(aPrompt, aRole, aModel, aTemperature, tools)
+            return _getChat().prompt(aPrompt, aRole, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5322,7 +5347,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptStream: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
-            return _g.promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+            return _getChat().promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
         },
         /**
          * <odoc>
@@ -5331,7 +5356,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         rawPromptStream: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
-            return _g.rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+            return _getChat().rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
         },
         /**
          * <odoc>
@@ -5340,8 +5365,8 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptStreamWithStats: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
-            var response = _g.promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
-            return { response: response, stats: _g.getLastStats() }
+            var response = _getChat().promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+            return { response: response, stats: _getChat().getLastStats() }
         },
         /**
          * <odoc>
@@ -5350,8 +5375,8 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         rawPromptStreamWithStats: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
-            var response = _g.rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
-            return { response: response, stats: _g.getLastStats() }
+            var response = _getChat().rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+            return { response: response, stats: _getChat().getLastStats() }
         },
         /**
          * <odoc>
@@ -5360,7 +5385,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptStreamJSON: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
-            return _g.promptStreamJSON(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
+            return _getChat().promptStreamJSON(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
         },
         /**
          * <odoc>
@@ -5369,7 +5394,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptStreamJSONWithStats: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
-            return _g.promptStreamJSONWithStats(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
+            return _getChat().promptStreamJSONWithStats(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
         },
         /**
          * <odoc>
@@ -5378,7 +5403,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptStreamJSONWithStatsRaw: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
-            return _g.promptStreamJSONWithStatsRaw(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
+            return _getChat().promptStreamJSONWithStatsRaw(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
         },
         /**
          * <odoc>
@@ -5387,8 +5412,8 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptWithStats: (aPrompt, aRole, aModel, aTemperature, tools) => {
-            var response = _g.prompt(aPrompt, aRole, aModel, aTemperature, tools)
-            return { response: response, stats: _g.getLastStats() }
+            var response = _getChat().prompt(aPrompt, aRole, aModel, aTemperature, tools)
+            return { response: response, stats: _getChat().getLastStats() }
         },
         /**
          * <odoc>
@@ -5397,8 +5422,8 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         rawPromptWithStats: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
-            var response = _g.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
-            return { response: response, stats: _g.getLastStats() }
+            var response = _getChat().rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
+            return { response: response, stats: _getChat().getLastStats() }
         },
         /**
          * <odoc>
@@ -5407,7 +5432,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) => {
-            return _g.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag)
+            return _getChat().promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag)
         },
         /**
          * <odoc>
@@ -5417,7 +5442,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptImgGen: (aPrompt, aModel, aPath) => {
-            return _g.promptImgGen(aPrompt, aModel, aPath)
+            return _getChat().promptImgGen(aPrompt, aModel, aPath)
         },
         /**
          * <odoc>
@@ -5426,7 +5451,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptMD: (aPrompt, aRole, aModel, aTemperature, tools) => {
-            return ow.loadFormat().withMD(_g.prompt(aPrompt, aRole, aModel, aTemperature, tools))
+            return ow.loadFormat().withMD(_getChat().prompt(aPrompt, aRole, aModel, aTemperature, tools))
         },
         /**
          * <odoc>
@@ -5435,7 +5460,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptBool: (aPrompt, aRole, aModel, aTemperature, tools) => {
-            return _g.booleanPrompt(aPrompt, aRole, aModel, aTemperature, tools)
+            return _getChat().booleanPrompt(aPrompt, aRole, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5444,7 +5469,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptSQL: (aPrompt, aTableDefs, aDBName, aModel, aTemperature, tools) => {
-            return _g.sqlPrompt(aPrompt, _dbtbls, _dbname, aModel, aTemperature, tools)
+            return _getChat().sqlPrompt(aPrompt, _dbtbls, _dbname, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5453,7 +5478,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptPath: (aPrompt, aJSONSchemaDef, aModel, aTemperature, tools) => {
-            return _g.pathPrompt(aPrompt, aJSONSchemaDef, aModel, aTemperature, tools)
+            return _getChat().pathPrompt(aPrompt, aJSONSchemaDef, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5462,7 +5487,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptJSON: (aPrompt, aModel, aTemperature, tools) => {
-            return _g.jsonPrompt(aPrompt, aModel, aTemperature, tools)
+            return _getChat().jsonPrompt(aPrompt, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5471,7 +5496,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptJSONWithStats: (aPrompt, aModel, aTemperature, tools) => {
-            return _g.jsonPromptWithStats(aPrompt, aModel, aTemperature, tools)
+            return _getChat().jsonPromptWithStats(aPrompt, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5480,7 +5505,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         promptJSONWithStatsRaw: (aPrompt, aModel, aTemperature, tools) => {
-            return _g.jsonPromptWithStatsRaw(aPrompt, aModel, aTemperature, tools)
+            return _getChat().jsonPromptWithStatsRaw(aPrompt, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5489,7 +5514,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         iniPrompt: (aPrompt, aRole, aModel, aTemperature, tools) => {
-            return _g.cleanPrompt().prompt(aPrompt, aRole, aModel, aTemperature, tools)
+            return _getChat().cleanPrompt().prompt(aPrompt, aRole, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5498,15 +5523,15 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         sysPrompt: (aPrompt, aModel, aTemperature) => { 
-            _g.addSystemPrompt(aPrompt)
+            _getChat().addSystemPrompt(aPrompt)
             return _r
         },
         devPrompt: (aPrompt, aModel, aTemperature) => {
-            _g.addDeveloperPrompt(aPrompt)
+            _getChat().addDeveloperPrompt(aPrompt)
             return _r
         },
         withInstructions: (aPrompt, aModel, aTemperature) => {
-            _g.addSystemPrompt(aPrompt)
+            _getChat().addSystemPrompt(aPrompt)
             return _r
         },
         /**
@@ -5519,7 +5544,7 @@ global.$gpt = function(aModel) {
             _$(anObject, "anObject").$_()
             _$(aContext, "aContext").isString().$_()
 
-            _g.addSystemPrompt("with " + aContext + ": " + stringify(anObject, __, ""))
+            _getChat().addSystemPrompt("with " + aContext + ": " + stringify(anObject, __, ""))
 
             return _r
         },
@@ -5530,7 +5555,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         withTool: (aName, aDesc, aParams, aFn) => {
-            _g.model.setTool(aName, aDesc, aParams, aFn)
+            _getChat().model.setTool(aName, aDesc, aParams, aFn)
             return _r
         },
         /**
@@ -5596,7 +5621,7 @@ global.$gpt = function(aModel) {
                     }
                 }
 
-                _g.model.setTool(tool.name, tool.description, gptParams, mcpToolFn)
+                _getChat().model.setTool(tool.name, tool.description, gptParams, mcpToolFn)
             })
 
             return _r
@@ -5678,7 +5703,7 @@ global.$gpt = function(aModel) {
                     }
                 }
 
-                _g.model.setTool(agent.id, description, gptParams, a2aToolFn)
+                _getChat().model.setTool(agent.id, description, gptParams, a2aToolFn)
             })
 
             return _r
@@ -5709,8 +5734,8 @@ global.$gpt = function(aModel) {
             _$(anAssert, "anAssert").isString().$_()
 
             switch(anAssert.toLowerCase()) {
-            case "isArray": _g.addSystemPrompt("The JSON result should have '" + aPath + "' as an array."); break
-            case "isMap"  : _g.addSystemPrompt("The JSON result should have '" + aPath + "' as a map."); break
+            case "isArray": _getChat().addSystemPrompt("The JSON result should have '" + aPath + "' as an array."); break
+            case "isMap"  : _getChat().addSystemPrompt("The JSON result should have '" + aPath + "' as a map."); break
             }
 
             return _r
@@ -5724,7 +5749,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
-            return _g.getEmbeddings(aInput, aDimensions, aEmbeddingModel)
+            return _embeddings(aInput, aDimensions, aEmbeddingModel)
         },
         /**
          * <odoc>
@@ -5735,8 +5760,8 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         getEmbeddingsWithStats: (aInput, aDimensions, aEmbeddingModel) => {
-            var response = _g.getEmbeddings(aInput, aDimensions, aEmbeddingModel)
-            return { response: response, stats: _g.getLastStats() }
+            var response = _embeddings(aInput, aDimensions, aEmbeddingModel)
+            return { response: response, stats: _lastClient.getLastStats() }
         },
         /**
          * <odoc>
@@ -5744,14 +5769,14 @@ global.$gpt = function(aModel) {
          * Exports the current conversation in a standard portable format that can be imported into a different provider via importConversation().
          * </odoc>
          */
-        exportConversation: () => _g.exportConversation(),
+        exportConversation: () => _getChat().exportConversation(),
         /**
          * <odoc>
          * <key>$gpt.importConversation(aExport) : $gpt</key>
          * Imports a portable conversation previously exported via exportConversation() into this provider instance.
          * </odoc>
          */
-        importConversation: (aExport) => { _g.importConversation(aExport); return _r },
+        importConversation: (aExport) => { _getChat().importConversation(aExport); return _r },
         /**
          * <odoc format="markdown">
  * <key>$gpt.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools) : Object</key>
@@ -5774,7 +5799,7 @@ global.$gpt = function(aModel) {
  * </odoc>
          */
         jsonSchemaPrompt: (aPrompt, aResponseSchema, aModel, aTemperature, tools) => {
-            return _g.jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools)
+            return _getChat().jsonSchemaPrompt(aPrompt, aResponseSchema, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5785,7 +5810,7 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         jsonSchemaPromptWithStats: (aPrompt, aResponseSchema, aModel, aTemperature, tools) => {
-            return _g.jsonSchemaPromptWithStats(aPrompt, aResponseSchema, aModel, aTemperature, tools)
+            return _getChat().jsonSchemaPromptWithStats(aPrompt, aResponseSchema, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -5794,7 +5819,9 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         close: () => { 
-            _g = __
+            _chat = __
+            _embed = __
+            _lastClient = __
         }
     }
 

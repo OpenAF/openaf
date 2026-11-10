@@ -831,3 +831,196 @@ OpenWrap.screen.prototype.run = function(viewOrWinOpts, onMessage, desktopOpts) 
   d.wait();
   return win;
 };
+
+/** <odoc format="markdown">
+ * <key>ow.screen.interact(aOptions) : Map</key>
+ * Runs a persistent `console`, `tui` or `javafx` view. Options include `view`,
+ * `state`, `bindings` (event keys such as `action:save`, `change:name`, `init`,
+ * `timer`), `reducer`, `interval` in milliseconds and `concurrency` (default 4).
+ * Bindings are job names or `{job, args}` maps. Handlers receive independent
+ * `event`, `values` and `state` snapshots. The reducer receives current `state`,
+ * `event`, `result` and `error`, returning `state`, optional `view` and `close`.
+ * `consoleUI` and `terminalUI` can provide borrowed console/TUI terminal adapters.
+ * Closing drains handlers. Jobs must coordinate their own external side effects.
+ * </odoc> */
+OpenWrap.screen.prototype.interact = function(options) {
+  var o = options || {}, mode = o.mode || "console", state = clone(o.state || {}), view = clone(o.view)
+  var limit = _$(o.concurrency).isNumber().default(4), bindings = o.bindings || {}
+  if (["console", "tui", "javafx"].indexOf(mode) < 0 || !isFinite(limit) || limit < 1 || Math.floor(limit) != limit) throw "Invalid interaction mode or concurrency"
+  if (!isString(o.reducer)) throw "Interaction requires a reducer job"
+  if (isDef(o.interval) && (!isNumber(o.interval) || !isFinite(o.interval) || o.interval < 1)) throw "Invalid interaction interval"
+  ow.loadDesktop()
+  var d = new OpenWrap.desktop({ provider: mode == "console" ? "tui" : mode })
+  loadCompiledLib("owrap_desktop_ui_js")
+  if (mode == "tui" && o.terminalUI) d.registerProvider(OpenWrap.desktop.__tui(o.terminalUI))
+  view = OpenWrap.desktop.__view(d, view)
+  var events = new java.util.concurrent.LinkedBlockingQueue(256), results = new java.util.concurrent.LinkedBlockingQueue()
+  var active = 0, closing = false, revision = 0, timerBusy = false, win, failure, ui, dirty = true, initialized = false
+  var values = {}, pending = {}, nextTick = now() + (o.interval || 0)
+  function fields() {
+    var out = []
+    view.items.forEach(function(i) { if (i.type == "row") i.items.forEach(function(c) { out.push(c) }); else out.push(i) })
+    return out
+  }
+  function syncValues() {
+    values = {}
+    fields().forEach(function(i) { if (["input", "select", "checkbox"].indexOf(i.type) >= 0) values[i.id] = String(i.value) })
+  }
+  function enqueue(type, id, vals) {
+    events.offer(JSON.stringify({ type: type, id: id || "", values: clone(vals || values), revision: revision }))
+  }
+  function settle(promise) {
+    var deadline = now() + 35000
+    while (promise.state.get() != promise.states.FULFILLED && promise.state.get() != promise.states.FAILED && now() < deadline) sleep(10, true)
+    if (promise.state.get() == promise.states.FAILED) throw promise.reason
+    if (promise.state.get() != promise.states.FULFILLED) throw "Interaction desktop command timed out"
+  }
+  function invoke(name, input, id) {
+    var definition = ow.oJob.getJobsCh().get({ name: name })
+    if (isUnDef(definition)) throw "Job not found: " + name
+    // oJob normally records uncaught job failures without propagating them.
+    // Preserve explicit job catch policies, otherwise surface failures to the reducer.
+    var todo = { name: name, catch: isDef(definition.catch) ? definition.catch : "throw exception" }
+    return $job(todo, input, id, false)
+  }
+  function launch(e) {
+    var key = e.type + (e.id ? ":" + e.id : ""), b = bindings[key]
+    if (isUnDef(b)) { if (e.type == "timer") timerBusy = false; return }
+    if (isString(b)) b = { job: b }
+    if (!isMap(b) || !isString(b.job)) throw "Invalid interaction binding: " + key
+    active++
+    if (e.type == "timer") timerBusy = true
+    var input = merge(clone(b.args || {}), { event: clone(e), values: clone(e.values), state: clone(state) })
+    var id = "|interact-" + genUUID()
+    $do(function() {
+      var r = { event: e }
+      try { r.result = invoke(b.job, input, id) } catch (err) { r.error = String(err) }
+      try { results.offer(JSON.stringify(r)) } catch (err) { results.offer(JSON.stringify({ event: e, error: "Handler result is not JSON: " + String(err) })) }
+    })
+  }
+  function pump() {
+    var raw
+    while ((raw = results.poll()) != null) {
+      active--
+      var r = JSON.parse(String(raw))
+      if (r.event.type == "timer") timerBusy = false
+      if (!failure) try {
+        var update = invoke(o.reducer, { state: clone(state), event: r.event, result: r.result, error: r.error }, "|interact-" + genUUID())
+        if (!isMap(update)) throw "Reducer must return arguments"
+        if (isDef(update.state)) state = clone(update.state)
+        if (update.close) closing = true
+        if (isDef(update.view) && !closing) {
+          view = OpenWrap.desktop.__view(d, update.view)
+          revision++
+          dirty = true
+          syncValues()
+          if (win) settle(win.setView(view))
+        }
+      } catch (err) { failure = err; closing = true }
+    }
+    if (closing) return
+    if (initialized && o.interval && now() >= nextTick) {
+      nextTick = now() + o.interval
+      if (!timerBusy) { enqueue("timer"); timerBusy = true }
+    }
+    while ((raw = events.poll()) != null) {
+      var e = JSON.parse(String(raw)), key = e.type + ":" + e.id
+      if (e.revision != revision) { if (e.type == "timer") timerBusy = false; continue }
+      if (e.type == "action" || e.type == "change") values = clone(e.values)
+      if (active < limit) launch(e)
+      else if (e.type == "change" || e.type == "timer") pending[key] = e
+    }
+    Object.keys(pending).forEach(function(k) { if (active < limit) { var e = pending[k]; delete pending[k]; if (e.revision == revision) launch(e); else if (e.type == "timer") timerBusy = false } })
+  }
+  // Shared ask helpers own input editing; their idle hook keeps orchestration
+  // responsive without writing view updates over an active prompt.
+  var promptOptions = { onIdle: function() { pump(); return !closing }, pollInterval: 50 }
+  function line(prompt, secret) {
+    return ask(prompt, secret ? "*" : __, ui, true, ui.write, promptOptions)
+  }
+  function consoleContent() {
+    return fields().map(function(i) {
+      if (i.type == "text") return ow.screen.style(i.text || "", i.style)
+      if (i.type == "divider") return ow.screen.hr(60)
+      if (i.type == "spacer") return repeat(i.lines || 1, "\n")
+      if (i.type == "progress") return ow.screen.progress(i.value, isDef(i.max) ? i.max : 100, i.min || 0, 50, { label: i.label })
+      if (i.type == "table") {
+        var columns = i.columns || (i.rows.length ? Object.keys(i.rows[0]) : [])
+        return (i.title ? i.title + "\n" : "") + [columns.join(" | ")].concat(i.rows.map(function(r) { return columns.map(function(c) { return isDef(r[c]) ? String(r[c]) : "" }).join(" | ") })).join("\n")
+      }
+      if (i.type == "sparkline") return (i.label || "") + ": " + i.values.join(" ")
+      return ""
+    }).filter(function(t) { return t !== "" }).join("\n")
+  }
+  function consoleLoop() {
+    while (!closing) {
+      pump()
+      var controls = fields().filter(function(i) { return !i.disabled && ["button", "input", "select", "checkbox"].indexOf(i.type) >= 0 })
+      if (dirty) {
+        ui.write(ow.screen.box(consoleContent(), { title: o.title || "Interaction" }))
+        controls.forEach(function(i, n) { ui.write((n + 1) + ". " + (i.label || i.id)) })
+        dirty = false
+      }
+      var promptRevision = revision, answer = line("Action (q to close): ")
+      if (answer == "q" || answer == null) { closing = true; continue }
+      if (promptRevision != revision) { dirty = true; continue }
+      var item = controls[Number(answer) - 1]
+      if (!item) continue
+      if (active >= limit) { ui.write("All handlers are busy. Try again shortly."); continue }
+      if (item.type != "button") {
+        var value = __
+        if (item.type == "checkbox" || item.type == "select") {
+          var choices = item.type == "checkbox" ? ["No", "Yes"] : item.options
+          var selected = askChoose(item.label || item.id, choices, __, __, ui, promptOptions)
+          if (isDef(selected)) value = item.type == "checkbox" ? (selected == 1 ? "true" : "false") : choices[selected]
+        } else value = line((item.label || item.id) + ": ", item.password)
+        if (closing) continue
+        if (promptRevision != revision) { dirty = true; continue }
+        if (!isString(value) || value.length > 4096 || /[\x00-\x1f\x7f-\x9f]/.test(value)) continue
+        values[item.id] = value
+      }
+      enqueue(item.type == "button" ? "action" : "change", item.id)
+    }
+  }
+  syncValues()
+  try {
+    enqueue("init")
+    while (!closing && (active || !events.isEmpty())) { pump(); sleep(10, true) }
+    initialized = true
+    nextTick = now() + (o.interval || 0)
+    if (mode != "console" && !closing) {
+      win = d.window({ title: o.title || "OpenAF Interaction", view: view })
+      win.on("message", function(e) {
+        // Desktop view revisions start at one; retain the revision of each event.
+        var eventRevision = e.viewRevision - 1 + initialRevision
+        events.offer(JSON.stringify({ type: e.message.type, id: e.message.payload.id, values: e.message.payload.values, revision: eventRevision }))
+      })
+      win.on("closed", function() { closing = true })
+      win.on("error", function(e) { failure = new Error(JSON.stringify(e.error || e)); closing = true })
+      d.on("error", function(e) { failure = new Error(JSON.stringify(e.error || e)); closing = true })
+      var initialRevision = revision
+      settle(win.show())
+      // Graphical view updates use the bridge, which connects after window.show.
+      if (!d.info().capabilities.nativeViews) {
+        var readyDeadline = now() + 10000
+        while (!closing && !(win.__socket && win.__socket.isOpen()) && now() < readyDeadline) sleep(10, true)
+        if (!closing && !(win.__socket && win.__socket.isOpen())) throw "Interaction frontend connection timed out"
+      }
+      nextTick = now() + (o.interval || 0)
+    }
+    if (mode == "console" && !closing) {
+      ui = o.consoleUI || askConsole()
+      consoleLoop()
+    } else while (!closing) { pump(); sleep(20, true) }
+  } finally {
+    closing = true
+    try {
+      if (win) { win.close(); d.wait() }
+    } finally {
+      if (ui && !o.consoleUI) ui.close()
+      while (active) { pump(); sleep(10, true) }
+    }
+  }
+  if (failure) throw failure
+  return { state: state, outcome: "closed" }
+}

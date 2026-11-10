@@ -13948,14 +13948,14 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
  
 /**
  * <odoc>
- * <key>$llm(aModel) : $llm</key>
+ * <key>$llm(aModel, aEmbeddingConfig) : $llm</key>
  * Shortcut for $gpt on the owrap.AI library.
  * </odoc>
  */
-const $llm = function(aModel) {
-        if (global.$gpt) return $gpt(aModel)
+const $llm = function(aModel, aEmbeddingConfig) {
+        if (global.$gpt) return $gpt(aModel, aEmbeddingConfig)
         ow.loadAI()
-        return $gpt(aModel)
+        return $gpt(aModel, aEmbeddingConfig)
 }
 
 /**
@@ -15369,24 +15369,110 @@ const __askRows = (text, con) => {
 		.columnSplitLength(width, false, false).size()))
 }
 
+// Shared prompt polling. Callbacks run on the reader thread and may return false
+// to cancel. Existing calls without options keep their original input path.
+const __askOptions = options => {
+  if (isUnDef(options)) return __
+  _$(options, "prompt options").isMap().$_()
+  if (isUnDef(options.onIdle)) return __
+  _$(options.onIdle, "onIdle").isFunction().$_()
+  var interval = _$(options.pollInterval, "pollInterval").isNumber().default(50)
+  if (!isFinite(interval) || interval < 1 || interval > 2147483647) throw "Invalid prompt polling interval"
+  return { onIdle: options.onIdle, pollInterval: interval }
+}
+
+const __askPollChar = (ui, options) => {
+  var term = !isFunction(ui.read) ? ui.console.getConsoleReader().getTerminal().unwrap() : __
+  var readCode = timeout => term ? Number(term.reader().read(timeout)) : Number(ui.read(timeout))
+  var read = () => {
+    while (true) {
+      if (options.onIdle() === false) return "\u0003"
+      var code = readCode(options.pollInterval)
+      if (code == -1) return "\uffff"
+      if (code != -2) return String.fromCharCode(code)
+    }
+  }
+  if (term) {
+    var attrs = term.enterRawMode()
+    try { return read() } finally { term.setAttributes(attrs) }
+  }
+  return isFunction(ui.raw) ? ui.raw(read) : read()
+}
+
+// Adapter for borrowed key-only UIs. Native consoles use JLine instead, retaining
+// completion, history, masking and full cursor editing.
+const __askUILine = (prompt, mask, ui, options) => {
+  ow.loadScreen()
+  if (mask === "") mask = __
+  var run = () => {
+    var chars = [], cursor = 0, lastWidth = 0
+    var masked = () => isUnDef(mask) ? chars.join("") : mask == "\u0000" ? "" : repeat(chars.length, String(mask).charAt(0))
+    var draw = () => {
+      var text = masked(), width = ow.screen.width(text)
+      var prefix = isUnDef(mask) ? chars.slice(0, cursor).join("") : mask == "\u0000" ? "" : repeat(cursor, String(mask).charAt(0))
+      ui.write("\r" + prompt + text + repeat(Math.max(0, lastWidth - width), " ") + repeat(Math.max(lastWidth, width) - ow.screen.width(prefix), "\b"), false)
+      lastWidth = width
+    }
+    ui.write(prompt, false)
+    while (true) {
+      if (options.onIdle() === false) { ui.write(""); return null }
+      var key = askKey(ui, options.pollInterval)
+      if (isUnDef(key)) continue
+      if (key == "eof" || key == "ctrl-c") { ui.write(""); return null }
+      if (key == "enter") { ui.write(""); return chars.join("") }
+      if (key == "left") cursor = Math.max(0, cursor - 1)
+      else if (key == "right") cursor = Math.min(chars.length, cursor + 1)
+      else if (key == "home" || key == "ctrl-a") cursor = 0
+      else if (key == "end" || key == "ctrl-e") cursor = chars.length
+      else if (key == "backspace" && cursor > 0) { chars.splice(--cursor, 1) }
+      else if (key == "delete") chars.splice(cursor, 1)
+      else if (key == "ctrl-u") { chars = chars.slice(cursor); cursor = 0 }
+      else if (isString(key) && (key.length == 1 || key.length == 2 && key.charCodeAt(0) >= 0xD800 && key.charCodeAt(0) <= 0xDBFF) && ow.screen.width(key) >= 0 && !/[\x00-\x1f\x7f]/.test(key)) {
+        chars.splice(cursor++, 0, key)
+        // Keep combining characters attached to their preceding grapheme.
+        var prefix = ow.screen.graphemes(chars.slice(0, cursor).join(""))
+        chars = prefix.concat(chars.slice(cursor))
+        cursor = prefix.length
+      } else continue
+      draw()
+    }
+  }
+  return isFunction(ui.raw) ? ui.raw(run) : run()
+}
+
 /**
  * <odoc>
  * <key>ask(aPrompt, aMask, aConsole, noAnsi, aWrite) : String</key>
  * Stops for user interaction prompting aPrompt waiting for an entire line of characters and, optionally, masking the user input with aMask (e.g. "*").
- * Returns the user input.
+ * Returns the user input. An optional sixth aOptions map accepts onIdle and
+ * pollInterval (milliseconds, default 50). onIdle runs on the input thread;
+ * returning false cancels with null. aConsole also accepts an askConsole UI map.
+ * Native line editing/history are preserved; masked input is not added to history.
  * </odoc>
  */
-const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
+const ask = (aPrompt, aMask, _con, noAnsi, aWrite, aOptions) => {
+  var polling = __askOptions(aOptions), ui = _con && (isFunction(_con.read) || isDef(_con.console)) ? _con : __
+  if (ui) { _con = ui.console; aWrite = aWrite || ui.write; if (isUnDef(noAnsi)) noAnsi = !ui.ansi }
+  if (polling && ui && isUnDef(_con)) return __askUILine(_$(aPrompt).isString().default("> "), aMask, ui, polling)
 	aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
+  var read = prompt => {
+    if (!polling) return _con.readLinePrompt(prompt, aMask)
+    try { return _con.readLinePromptPolling(prompt, aMask, polling.onIdle, polling.pollInterval) }
+    catch(e) {
+      if (e.javaException && e.javaException instanceof Packages.jline.console.UserInterruptException) return null
+      throw e
+    }
+  }
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
 		var _prompt = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt)
-		var _v = _con.readLinePrompt(_prompt, aMask)
+		var _v = read(_prompt)
+    if (_v == null) return null
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
 		;(aWrite || printErr)("\x1b[" + __askRows(_prompt + (_v == null || aMask == String.fromCharCode(0) ? "" : _m), _con) + "A\x1b[0G\x1b[0J" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
-		return _con.readLinePrompt(aPrompt, aMask)
+		return read(aPrompt)
 	}
 }
 
@@ -15395,12 +15481,13 @@ const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
  * <key>askEncrypt(aPrompt, aConsole, noAnsi, aWrite) : String</key>
  * Similar to ask but the return user input will be encrypted.
  * If an empty string is entered by the user the function will return undefined.
+ * An optional fifth aOptions forwards onIdle/pollInterval to ask; cancellation returns undefined.
  * </odoc>
  */
-const askEncrypt = (aPrompt, _con, noAnsi, aWrite) => {
+const askEncrypt = (aPrompt, _con, noAnsi, aWrite, aOptions) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
-	var v = ask(aPrompt, String.fromCharCode(0), _con, noAnsi, aWrite);
-	if (isString(v) && v == "") return __;
+	var v = ask(aPrompt, String.fromCharCode(0), _con, noAnsi, aWrite, aOptions);
+	if (v == null || isString(v) && v == "") return __;
 	return af.encrypt(v);
 }
 
@@ -15408,10 +15495,26 @@ const askEncrypt = (aPrompt, _con, noAnsi, aWrite) => {
  * <odoc>
  * <key>ask1(aPrompt, allowed, aConsole, aWrite) : String</key>
  * Stops for user interaction prompting aPrompt waiting for a single character within the allowed string (a set of characters).
+ * An optional fifth aOptions accepts onIdle/pollInterval; cancellation returns null.
  * Returns the user input.
  * </odoc>
  */
-const ask1 = (aPrompt, allowed, _con, aWrite) => {
+const ask1 = (aPrompt, allowed, _con, aWrite, aOptions) => {
+  var polling = __askOptions(aOptions), ui = _con && (isFunction(_con.read) || isDef(_con.console)) ? _con : __
+  if (polling && !ui && isDef(_con)) ui = { console: _con, write: aWrite || printnl }
+  if (polling && !ui) {
+    var ownedUI = askConsole()
+    try { return ask1(aPrompt, allowed, ownedUI, aWrite, aOptions) } finally { ownedUI.close() }
+  }
+  if (ui) { _con = ui.console; aWrite = aWrite || ui.write }
+  if (polling) {
+    if (isDef(aPrompt)) (aWrite || printnl)(aPrompt, false)
+    while (true) {
+      var ch = __askPollChar(ui, polling)
+      if (ch == "\u0003" || ch == "\uffff") return null
+      if (!allowed || allowed.indexOf(ch) >= 0) return ch
+    }
+  }
 	if (isDef(aPrompt)) { if (aWrite) aWrite(aPrompt, false); else printnl(aPrompt); }
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	return _con.readChar(allowed);
@@ -15420,12 +15523,13 @@ const ask1 = (aPrompt, allowed, _con, aWrite) => {
 /**
  * <odoc>
  * <key>askN(aPromptFn, aStopFn, aConsole) : String</key>
+ * An optional fourth aOptions forwards onIdle/pollInterval to each line prompt.
  * Stops for a multi-line user interaction prompting, for each line, the result of calling aPromptFn that receives the current user input 
  * (if a string is provided it will default to a function that returns that string). The interaction will stop when aStopFn function, that receives the current
  * user input as an argument, returns true (if the function is not provided it will default to 3 new lines).
  * </odoc>
  */
-const askN = (aPromptFn, aStopFn, _con) => {
+const askN = (aPromptFn, aStopFn, _con, aOptions) => {
 	aStopFn = _$(aStopFn, "aStopFn").isFunction().default(text => {
 		return text.match(/\n\n\n$/);
 	});
@@ -15433,7 +15537,7 @@ const askN = (aPromptFn, aStopFn, _con) => {
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	var r = "";
 	do {
-		var l = _con.readLinePrompt(aPromptFn(r));
+		var l = isDef(aOptions) ? ask(aPromptFn(r), __, _con, true, __, aOptions) : _con.readLinePrompt(aPromptFn(r));
 		if (l == null) return r;
 		r += l + "\n";
 	} while (!aStopFn(r));
@@ -15443,16 +15547,17 @@ const askN = (aPromptFn, aStopFn, _con) => {
 /**
  * <odoc>
  * <key>askDef(aInit, aQuestion, isSecret, isVoidable, aUI) : String</key>
+ * An optional sixth aOptions forwards onIdle/pollInterval to the input helper.
  * If aInit is not defined will ask aQuestion (if isSecret = true it will askEncrypt) and return
  * the value. If isVoidable = true and no answer is provided it will return undefined.
  * </odoc>
  */
-const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI) => {
+const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI, aOptions) => {
 	aQuestion = _$(aQuestion, "aQuestion").isString().default("Question: ");
 	if (isUnDef(aInit)) {
 		var r;
-		if (isSecret) r = askEncrypt(aQuestion, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write);
-		else r = ask(aQuestion, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write);
+		if (isSecret) r = askEncrypt(aQuestion, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions);
+		else r = ask(aQuestion, __, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions);
 		if (isVoidable && isString(r) && r.length == 0) r = __;
 		return r; 
 	} else {
@@ -15466,9 +15571,16 @@ const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI) => {
  * Stops for user interaction prompting aPrompt waiting for a single character to choose from the provided anArray of options. Optionally
  * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.\
  * Optional aUI is the console/write/ansi map returned by askConsole (or a compatible injected UI).
+ * An optional sixth aOptions accepts onIdle and pollInterval as in ask; cancellation returns undefined.
  * </odoc>
  */
-const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
+const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI, aOptions) => {
+  var polling = __askOptions(aOptions)
+  if (polling && !aUI) {
+    var ownedUI = askConsole()
+    try { return askChoose(aPrompt, anArray, aMaxDisplay, aHelpText, ownedUI, aOptions) } finally { ownedUI.close() }
+  }
+
 	_$(aPrompt, "aPrompt").isString().$_()
 	_$(anArray, "anArray").isArray().$_()
 	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
@@ -15481,7 +15593,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 	if (aUI && !aUI.ansi) {
 		while (true) {
 			anArray.forEach((text, i) => _write((i + 1) + ". " + text))
-			var answer = ask(aPrompt + " [number, blank to cancel]: ", __, aUI.console, true, _write)
+			var answer = ask(aPrompt + " [number, blank to cancel]: ", __, aUI, true, _write, aOptions)
 			if (answer == null || answer === "") return __
 			if (/^\d+$/.test(answer) && Number(answer) >= 1 && Number(answer) <= anArray.length) return Number(answer) - 1
 		}
@@ -15536,22 +15648,23 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 			_display(_o)
 		}
 
+		var readChar = () => polling ? __askPollChar(aUI, polling) : _con.readChar("")
 		let c = 0
 		try {
 		do {
 			_print()
-			var _c = _con.readChar("")
+			var _c = readChar()
 			c = String(_c).charCodeAt(0)
 			if (c == 3 || c == 65535) { cancelled = true; break }
 			if (c == 27) {
-				c = String(_con.readChar("")).charCodeAt(0)
+				c = String(readChar()).charCodeAt(0)
 				if (c == 27) {
 					cancelled = true
 					break
 				} else {
 					filter = ""
 					if (c == 91 || c == 79) {
-						c = String(_con.readChar("")).charCodeAt(0)
+						c = String(readChar()).charCodeAt(0)
 						if (c == 66) option = (option + 1) % anArray.length
 						if (c == 65) option = (option - 1 + anArray.length) % anArray.length
 					}
@@ -15589,9 +15702,16 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
  * <key>askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText, aUI) : Array</key>
  * Stops for user interaction prompting aPrompt waiting for a single character to choose multiple from the provided anArray of options. Optionally
  * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns an array with the chosen options.
+ * An optional sixth aOptions accepts onIdle and pollInterval as in ask; cancellation returns undefined.
  * </odoc>
  */
-const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
+const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI, aOptions) => {
+  var polling = __askOptions(aOptions)
+  if (polling && !aUI) {
+    var ownedUI = askConsole()
+    try { return askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText, ownedUI, aOptions) } finally { ownedUI.close() }
+  }
+
 	_$(aPrompt, "aPrompt").isString().$_()
 	_$(anArray, "anArray").isArray().$_()
 	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
@@ -15604,7 +15724,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
   if (aUI && !aUI.ansi) {
     while (true) {
       anArray.forEach((text, i) => _write((i + 1) + ". " + text));
-      var answer = ask(aPrompt + " [comma-separated numbers, blank for none]: ", __, aUI.console, true, _write);
+      var answer = ask(aPrompt + " [comma-separated numbers, blank for none]: ", __, aUI, true, _write, aOptions);
       if (answer == null) return __;
       if (answer.trim() === "") return [];
       var parts = answer.split(",").map(v => v.trim());
@@ -15670,22 +15790,23 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 			_write(_o)
 		}
 
+		var readChar = () => polling ? __askPollChar(aUI, polling) : _con.readChar("")
 		let c = 0
 		try {
 		do {
 			_print()
-			var _c = _con.readChar("")
+			var _c = readChar()
 			c = String(_c).charCodeAt(0)
 			if (c == 3 || c == 65535) { cancelled = true; break; }
 			if (c == 27) {
-				c = String(_con.readChar("")).charCodeAt(0)
+				c = String(readChar()).charCodeAt(0)
 				if (c == 27) {
 					cancelled = true
 					break
 				} else {
 					filter = ""
 					if (c == 91 || c == 79) {
-						c = String(_con.readChar("")).charCodeAt(0)
+						c = String(readChar()).charCodeAt(0)
 						if (c == 66) option = (option + 1) % anArray.length
 						if (c == 65) option = (option - 1 + anArray.length) % anArray.length
 					}
@@ -15752,9 +15873,10 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
  * - "choose" (requires options)
  * - "multiple" (requires options)
  * ]]>
+ * An optional third aOptions forwards onIdle/pollInterval to each input helper.
  * </odoc>
  */
-const askStruct = (ar, aUI) => {
+const askStruct = (ar, aUI, aOptions) => {
 	if (isArray(ar)) {
 		var _r = ar.map(t => {
 			_$(t.name, "name").isString().$_()
@@ -15766,13 +15888,13 @@ const askStruct = (ar, aUI) => {
 			if (isString(t.help)) t.help = ansiColor("FAINT,ITALIC", t.help)
 
 			switch(t.type) {
-			case 'secret'  : __r.answer = askEncrypt(t.prompt, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write); break
-			case 'char'    : __r.answer = ask1(t.prompt, t.options, aUI && aUI.console, aUI && aUI.write); break
-			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help, aUI)]; break
-			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help, aUI); break
+			case 'secret'  : __r.answer = askEncrypt(t.prompt, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions); break
+			case 'char'    : __r.answer = ask1(t.prompt, t.options, aUI, aUI && aUI.write, aOptions); break
+			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help, aUI, aOptions)]; break
+			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help, aUI, aOptions); break
 			case "question": 
 			case '?'       : 
-			default        : __r.answer = ask(t.prompt, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write)
+			default        : __r.answer = ask(t.prompt, __, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions)
 			}
 			if (isDef(t.output) && t.output == "index") {
 				if (isArray(__r.answer)) {

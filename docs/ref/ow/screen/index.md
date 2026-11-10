@@ -134,6 +134,25 @@ Sources:
 
 - js/owrap.screen.js:386
 
+<a id="api-ow-screen-interact-516c9091"></a>
+
+## ow.screen.interact
+
+### ow.screen.interact(aOptions) : Map
+
+Runs a persistent `console`, `tui` or `javafx` view. Options include `view`,
+`state`, `bindings` (event keys such as `action:save`, `change:name`, `init`,
+`timer`), `reducer`, `interval` in milliseconds and `concurrency` (default 4).
+Bindings are job names or `{job, args}` maps. Handlers receive independent
+`event`, `values` and `state` snapshots. The reducer receives current `state`,
+`event`, `result` and `error`, returning `state`, optional `view` and `close`.
+`consoleUI` and `terminalUI` can provide borrowed console/TUI terminal adapters.
+Closing drains handlers. Jobs must coordinate their own external side effects.
+
+Sources:
+
+- js/owrap.screen.js:835
+
 <a id="api-ow-screen-keybar-dbf5679b"></a>
 
 ## ow.screen.keybar

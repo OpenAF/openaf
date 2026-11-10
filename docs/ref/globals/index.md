@@ -91,7 +91,7 @@ Creates an atomic object of `aType` (defaults to long) to be get/set atomically 
 
 Sources:
 
-- js/openaf.js:16608
+- js/openaf.js:16730
 
 <a id="api-await-a5b9c25f"></a>
 
@@ -103,7 +103,7 @@ Wrapper around the Java wait/notify mechanism. For the provided name will reture
 
 Sources:
 
-- js/openaf.js:17003
+- js/openaf.js:17125
 
 <a id="api-ch-98a1b084"></a>
 
@@ -151,7 +151,7 @@ Inter-channel HTTP REST:
 
 Sources:
 
-- js/openaf.js:15906
+- js/openaf.js:16028
 
 <a id="api-channels-efe21d2e"></a>
 
@@ -200,7 +200,7 @@ Inter-channel HTTP REST:
 
 Sources:
 
-- js/openaf.js:15791
+- js/openaf.js:15913
 
 <a id="api-csv-2b66fcda"></a>
 
@@ -221,7 +221,7 @@ $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray(
 
 Sources:
 
-- js/openaf.js:18093
+- js/openaf.js:18215
 
 <a id="api-do-426a9998"></a>
 
@@ -233,7 +233,7 @@ Instantiates and returns a oPromise. If you provide aFunction, this aFunction wi
 
 Sources:
 
-- js/openaf.js:17101
+- js/openaf.js:17223
 
 <a id="api-doa2b-872aa422"></a>
 
@@ -245,7 +245,7 @@ Will call aAFunction with a function as argument that should be used to "send" v
 
 Sources:
 
-- js/openaf.js:17042
+- js/openaf.js:17164
 
 <a id="api-doall-f50c55aa"></a>
 
@@ -257,7 +257,7 @@ Returns an oPromise that will be resolved when all oPromise part of the anArray 
 
 Sources:
 
-- js/openaf.js:17133
+- js/openaf.js:17255
 
 <a id="api-dofirst-6e3ae5c8"></a>
 
@@ -269,7 +269,7 @@ Returns an oPromise that will be resolved when any oPromise part of the anArray 
 
 Sources:
 
-- js/openaf.js:17144
+- js/openaf.js:17266
 
 <a id="api-dov-e673d541"></a>
 
@@ -281,7 +281,7 @@ Equivalent to $do but using virtual threads (if available) to execute the aFunct
 
 Sources:
 
-- js/openaf.js:17119
+- js/openaf.js:17241
 
 <a id="api-dowait-16fbe1be"></a>
 
@@ -293,7 +293,7 @@ Blocks until aPromise is fullfilled or rejected. Optionally you can specify aWai
 
 Sources:
 
-- js/openaf.js:17155
+- js/openaf.js:17277
 
 <a id="api-err-4a701167"></a>
 
@@ -305,7 +305,7 @@ Prints the exception stack trace and the code where it was thrown. If rethrow is
 
 Sources:
 
-- js/openaf.js:18663
+- js/openaf.js:18785
 
 <a id="api-f-dda9a73f"></a>
 
@@ -451,7 +451,7 @@ Returns a value previously set with $set with aKey.
 
 Sources:
 
-- js/openaf.js:18266
+- js/openaf.js:18388
 
 <a id="api-gpt-903f1f26"></a>
 
@@ -964,7 +964,7 @@ $output("# Results\n\n**Complete**", { __format: "md" });
 
 Sources:
 
-- js/openaf.js:18310
+- js/openaf.js:18432
 
 <a id="api-path-78ad0d4d"></a>
 
@@ -1155,7 +1155,7 @@ Tries to execute aFunction and return the corresponding returned result. If aNum
 
 Sources:
 
-- js/openaf.js:16685
+- js/openaf.js:16807
 
 <a id="api-set-e3b59d79"></a>
 
@@ -1167,7 +1167,7 @@ Sets aValue with aKey so it can be retrieved with $get later.
 
 Sources:
 
-- js/openaf.js:18249
+- js/openaf.js:18371
 
 <a id="api-sql-3f61f134"></a>
 
@@ -1249,7 +1249,7 @@ Returns a function that tries to execute aFunc and throws and exception if the r
 
 Sources:
 
-- js/openaf.js:16668
+- js/openaf.js:16790
 
 <a id="api-unset-0dc709e5"></a>
 
@@ -1261,7 +1261,7 @@ Unset a previously set value with aKey.
 
 Sources:
 
-- js/openaf.js:18284
+- js/openaf.js:18406
 
 <a id="api-odoc-1868dc1d"></a>
 
@@ -1480,11 +1480,11 @@ Sources:
 
 ### ask(aPrompt, aMask, aConsole, noAnsi, aWrite) : String
 
-Stops for user interaction prompting aPrompt waiting for an entire line of characters and, optionally, masking the user input with aMask (e.g. "&#42;"). Returns the user input.
+Stops for user interaction prompting aPrompt waiting for an entire line of characters and, optionally, masking the user input with aMask (e.g. "&#42;"). Returns the user input. An optional sixth aOptions map accepts onIdle and pollInterval (milliseconds, default 50). onIdle runs on the input thread; returning false cancels with null. aConsole also accepts an askConsole UI map. Native line editing/history are preserved; masked input is not added to history.
 
 Sources:
 
-- js/openaf.js:15373
+- js/openaf.js:15444
 
 <a id="api-ask1-49aec0bc"></a>
 
@@ -1492,11 +1492,11 @@ Sources:
 
 ### ask1(aPrompt, allowed, aConsole, aWrite) : String
 
-Stops for user interaction prompting aPrompt waiting for a single character within the allowed string (a set of characters). Returns the user input.
+Stops for user interaction prompting aPrompt waiting for a single character within the allowed string (a set of characters). An optional fifth aOptions accepts onIdle/pollInterval; cancellation returns null. Returns the user input.
 
 Sources:
 
-- js/openaf.js:15408
+- js/openaf.js:15495
 
 <a id="api-askchoose-9faf557a"></a>
 
@@ -1506,11 +1506,11 @@ Sources:
 
 Stops for user interaction prompting aPrompt waiting for a single character to choose from the provided anArray of options. Optionally you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.
 
-Optional aUI is the console/write/ansi map returned by askConsole (or a compatible injected UI).
+Optional aUI is the console/write/ansi map returned by askConsole (or a compatible injected UI). An optional sixth aOptions accepts onIdle and pollInterval as in ask; cancellation returns undefined.
 
 Sources:
 
-- js/openaf.js:15464
+- js/openaf.js:15569
 
 <a id="api-askchoosemultiple-e8bc7b16"></a>
 
@@ -1518,11 +1518,11 @@ Sources:
 
 ### askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText, aUI) : Array
 
-Stops for user interaction prompting aPrompt waiting for a single character to choose multiple from the provided anArray of options. Optionally you can provide aMaxDisplay to limit the number of options displayed at a time. Returns an array with the chosen options.
+Stops for user interaction prompting aPrompt waiting for a single character to choose multiple from the provided anArray of options. Optionally you can provide aMaxDisplay to limit the number of options displayed at a time. Returns an array with the chosen options. An optional sixth aOptions accepts onIdle and pollInterval as in ask; cancellation returns undefined.
 
 Sources:
 
-- js/openaf.js:15588
+- js/openaf.js:15701
 
 <a id="api-askconsole-347dd601"></a>
 
@@ -1542,11 +1542,11 @@ Sources:
 
 ### askDef(aInit, aQuestion, isSecret, isVoidable, aUI) : String
 
-If aInit is not defined will ask aQuestion (if isSecret = true it will askEncrypt) and return the value. If isVoidable = true and no answer is provided it will return undefined.
+An optional sixth aOptions forwards onIdle/pollInterval to the input helper. If aInit is not defined will ask aQuestion (if isSecret = true it will askEncrypt) and return the value. If isVoidable = true and no answer is provided it will return undefined.
 
 Sources:
 
-- js/openaf.js:15444
+- js/openaf.js:15548
 
 <a id="api-askencrypt-68348c61"></a>
 
@@ -1554,11 +1554,11 @@ Sources:
 
 ### askEncrypt(aPrompt, aConsole, noAnsi, aWrite) : String
 
-Similar to ask but the return user input will be encrypted. If an empty string is entered by the user the function will return undefined.
+Similar to ask but the return user input will be encrypted. If an empty string is entered by the user the function will return undefined. An optional fifth aOptions forwards onIdle/pollInterval to ask; cancellation returns undefined.
 
 Sources:
 
-- js/openaf.js:15394
+- js/openaf.js:15480
 
 <a id="api-askkey-026b3a72"></a>
 
@@ -1578,11 +1578,11 @@ Sources:
 
 ### askN(aPromptFn, aStopFn, aConsole) : String
 
-Stops for a multi-line user interaction prompting, for each line, the result of calling aPromptFn that receives the current user input  (if a string is provided it will default to a function that returns that string). The interaction will stop when aStopFn function, that receives the current user input as an argument, returns true (if the function is not provided it will default to 3 new lines).
+An optional fourth aOptions forwards onIdle/pollInterval to each line prompt. Stops for a multi-line user interaction prompting, for each line, the result of calling aPromptFn that receives the current user input  (if a string is provided it will default to a function that returns that string). The interaction will stop when aStopFn function, that receives the current user input as an argument, returns true (if the function is not provided it will default to 3 new lines).
 
 Sources:
 
-- js/openaf.js:15421
+- js/openaf.js:15524
 
 <a id="api-askstruct-1604e2eb"></a>
 
@@ -1612,9 +1612,11 @@ The type can be:
 - "choose" (requires options)
 - "multiple" (requires options)
 
+An optional third aOptions forwards onIdle/pollInterval to each input helper.
+
 Sources:
 
-- js/openaf.js:15730
+- js/openaf.js:15851
 
 <a id="api-bcrypt-d8123d5b"></a>
 
@@ -2274,7 +2276,7 @@ Ensures that aOPackName is installed. Optionally you can provide a minimal opack
 
 Sources:
 
-- js/openaf.js:16563
+- js/openaf.js:16685
 
 <a id="api-index-1bc04b52"></a>
 
@@ -2682,8 +2684,8 @@ Mimics, using Java, the javascript match function. Supported mods are "g", "m" a
 
 Sources:
 
-- js/openaf.js:16458
-- js/openaf.js:16489
+- js/openaf.js:16580
+- js/openaf.js:16611
 
 ### javaRegExp(text).matchAll(regExp, mods) : Array
 
@@ -2691,7 +2693,7 @@ Mimics, using Java, the javascript match function with the "g" modifier. Support
 
 Sources:
 
-- js/openaf.js:16476
+- js/openaf.js:16598
 
 ### javaRegExp(text).replaceAll(regExp, mods) : Array
 
@@ -2699,7 +2701,7 @@ Mimics, using Java, the javascript replace function with the "g" modifier. Suppo
 
 Sources:
 
-- js/openaf.js:16504
+- js/openaf.js:16626
 
 ### javaRegExp().preCompile(regExp, mods)
 
@@ -2707,7 +2709,7 @@ Pre-compiles the regExp with the corresponding mods to be used by match, matchAl
 
 Sources:
 
-- js/openaf.js:16515
+- js/openaf.js:16637
 
 ### javaRegExp().removePreCompiled(regExp, mods)
 
@@ -2715,7 +2717,7 @@ Removes a previously added pre compiled combination of regExp and mods.
 
 Sources:
 
-- js/openaf.js:16525
+- js/openaf.js:16647
 
 ### javaRegExp(text).split(regExp, mods) : Array
 
@@ -2723,7 +2725,7 @@ Returns an array of the result of spliting text using the provided regExp and mo
 
 Sources:
 
-- js/openaf.js:16534
+- js/openaf.js:16656
 
 ### javaRegExp(text).test(regExp, mods) : boolean
 
@@ -2731,7 +2733,7 @@ Mimics, using Java, the javascript RegExp test function. Supported mods are "g",
 
 Sources:
 
-- js/openaf.js:16549
+- js/openaf.js:16671
 
 <a id="api-joniregexp-c4f214d3"></a>
 
@@ -2743,7 +2745,7 @@ Compiles an Oniguruma (Ruby syntax) pattern once. Options are ignoreCase, dotAll
 
 Sources:
 
-- js/openaf.js:16349
+- js/openaf.js:16471
 
 <a id="api-jsonparse-2f1285ac"></a>
 
@@ -3359,7 +3361,7 @@ Custom Promise-like implementation. If you provide aFunction, this aFunction wil
 
 Sources:
 
-- js/openaf.js:16043
+- js/openaf.js:16165
 
 <a id="api-objorstr-8199ad59"></a>
 

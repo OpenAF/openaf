@@ -12,7 +12,7 @@ Creates a new instance of the object Console.
 
 Sources:
 
-- src/openaf/plugins/Console.java:36
+- src/openaf/plugins/Console.java:38
 
 <a id="api-console-getconsolereader-8137a37f"></a>
 
@@ -24,7 +24,7 @@ Returns the internal ConsoleReader java object.
 
 Sources:
 
-- src/openaf/plugins/Console.java:155
+- src/openaf/plugins/Console.java:173
 
 <a id="api-console-isansisupported-aad8c0b4"></a>
 
@@ -36,7 +36,7 @@ Determines if the console is able to support ansi (returns true) or not (returns
 
 Sources:
 
-- src/openaf/plugins/Console.java:166
+- src/openaf/plugins/Console.java:184
 
 <a id="api-console-readchar-d3d311cc"></a>
 
@@ -48,7 +48,7 @@ Read a character from the console. If allowed is provided only the characters on
 
 Sources:
 
-- src/openaf/plugins/Console.java:113
+- src/openaf/plugins/Console.java:131
 
 <a id="api-console-readcharb-cec2477f"></a>
 
@@ -60,7 +60,7 @@ Low level character read from console with waiting. Will return -1 - EOF or -2 -
 
 Sources:
 
-- src/openaf/plugins/Console.java:144
+- src/openaf/plugins/Console.java:162
 
 <a id="api-console-readcharnb-a1c12e34"></a>
 
@@ -72,7 +72,7 @@ Low level character read from the console with no waiting. Will return -1 for EO
 
 Sources:
 
-- src/openaf/plugins/Console.java:132
+- src/openaf/plugins/Console.java:150
 
 <a id="api-console-readline-8c89d178"></a>
 
@@ -84,7 +84,7 @@ Read a line from the console. Will provide a mask for introduction of passwords 
 
 Sources:
 
-- src/openaf/plugins/Console.java:92
+- src/openaf/plugins/Console.java:110
 
 <a id="api-console-readlineprompt-725e0a39"></a>
 
@@ -96,5 +96,17 @@ Read a line from the console providing aPrompt. Will provide a mask for introduc
 
 Sources:
 
-- src/openaf/plugins/Console.java:68
+- src/openaf/plugins/Console.java:70
+
+<a id="api-console-readlinepromptpolling-1dda471b"></a>
+
+## Console.readLinePromptPolling
+
+### Console.readLinePromptPolling(aPrompt, aMaskchar, aOnIdle, aPollInterval) : String
+
+Reads with normal line editing while calling aOnIdle on the reading thread. Returning false cancels with null. aPollInterval is a positive millisecond interval. Exceptions propagate after terminal restoration; no background reader is started.
+
+Sources:
+
+- src/openaf/plugins/Console.java:93
 
