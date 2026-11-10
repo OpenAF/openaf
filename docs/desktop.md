@@ -191,7 +191,7 @@ without HTTP, JavaFX, a helper process, or extra libraries.
 The deliberately small version 1 view is `{version:1, items:[...]}`; version may
 be omitted. View-level layout and styling options include `title`, `subtitle`,
 `align` (`"left"`, `"center"`, `"right"`), `spacing` (0–8 blank lines between items),
-`padding`, `margin`, `border` (`true`, `"rounded"`, `"single"`, `"double"`, `"heavy"`, `"ascii"`, `"none"`),
+`padding`, `margin`, `border` (`true`, `"rounded"`, `"single"`, `"double"`, `"heavy"`, `"left"`, `"ascii"`, `"none"`),
 `borderStyle`, `theme` (`"default"`, `"ocean"`, `"light"`, `"monochrome"`, or a custom theme map),
 and `style`.
 
@@ -201,19 +201,23 @@ characters; reserved prototype identifiers are rejected) and one of:
 | Type | Fields | Behavior |
 | --- | --- | --- |
 | `text` | `text`, optional `title` | Plain text, including newlines; no HTML/ANSI execution |
-| `button` | `label` | Emits `action` when activated |
-| `input` | `label`, `value` (default empty), optional `placeholder` | Single-line text; emits `change` on commit |
+| `button` | `label`, optional `variant` (`"default"`\|`"primary"`\|`"success"`\|`"warning"`\|`"error"`) | Emits `action` when activated |
+| `input` | `label`, `value` (default empty), optional `placeholder`, `password`, `fieldWidth` | Single-line text; emits `change` on commit |
 | `select` | `label`, `options`, `value` (default first option) | String choices; emits `change` when selected |
+| `checkbox` | `label`, `value` (`"true"`\|`"false"` or boolean, default `"false"`) | Boolean toggle; emits `change` when toggled |
 | `divider` | optional `label`, `char` | Horizontal rule / section divider |
 | `spacer` | optional `lines` (1–32, default 1) | Vertical spacing lines |
-| `progress` | `value`, optional `label`, `min`, `max`, `showPercent` | Read-only progress bar |
+| `progress` | `value`, optional `label`, `min`, `max`, `showPercent`, `smooth`, `barStyle` | Read-only smooth progress bar |
+| `table` | `rows` (array of scalar maps), optional `columns`, `title` | Read-only structured data table |
+| `sparkline` | `values` (array of finite numbers), optional `label`, `min`, `max`, `trend` | Read-only inline sparkline |
+| `row` | `items` (1–16 child items), optional `gap` (0–8) | Horizontal multi-column container |
 
 Each item also accepts optional layout and styling properties: `align` (`"left"`, `"center"`, `"right"`),
 `style`, `labelStyle`, `focusStyle` (strings such as `"BOLD,ITALIC,UNDERLINE,FG(39)"` or maps with
 `fg`, `bg`, `bold`, `italic`, `underline`, `doubleUnderline`, `dim`/`faint`, `strikethrough`, `reverse`/`invert`, `blink`, `hidden`,
 supporting named colors, 256-color indices `0..255`, `#rgb`/`#rrggbb` hex, and `rgb(r,g,b)` truecolor),
-`padding`, `margin`, `spacing`, `width`, `border`, `borderStyle`, and `disabled`.
-For standalone terminal styling, UTF-8 alignment, and box drawing, use `ow.loadScreen()` (`ow.screen`).
+`padding`, `margin`, `spacing`, `width`, `span` (1–12 proportional width inside a `row`), `border`, `borderStyle`, `shadow`, and `disabled`.
+For standalone terminal styling, UTF-8 alignment, keybinding bars (`ow.screen.keybar`), and box drawing, use `ow.loadScreen()` (`ow.screen`).
 
 Views contain at most 128 items and 64 KiB of UTF-8 JSON. Text is limited to 8192
 characters, labels and select options to 256, input values to 4096. Select options
@@ -223,14 +227,14 @@ TUI additionally strips control codes from displayed labels, titles, and text.
 
 Events use `win.on("message", fn)` and contain
 `{message:{type:"action"|"change", payload:{id:"controlId", values:{...}}}}`.
-`values` contains the current values of every input/select. The facade validates
+`values` contains the current values of every input/select/checkbox. The facade validates
 IDs, control types, complete value sets, lengths, and select choices before
 calling application code. View revisions retire input racing a replacement; stale
 input is discarded rather than interpreted against the new controls. Input commits on Enter in TUI and on the browser's
 normal change/blur event in GUI. Buttons activate with Enter or mouse click.
 
 `win.setView(nextView)` replaces the entire view asynchronously, including values,
-and resets TUI focus/scroll. `win.send("view", nextView)` is equivalent. Preserve
+while preserving focus, scroll position, and input cursors if the previously focused control `id` still exists in `nextView` (otherwise resetting focus/scroll to the top). `win.send("view", nextView)` is equivalent. Preserve
 values from the event snapshot when building a replacement if edits should remain.
 No implicit DOM patches or application JavaScript run. Other `send` message types
 and a custom `messaging` option are rejected for view windows; HTML windows retain

@@ -32,11 +32,11 @@ Sources:
 
 ### ow.screen.borderChars(aStyle, aUnicode) : Map
 
-Returns the box-drawing characters for aStyle ("rounded", "single", "double", "heavy", "ascii", "none"). Automatically falls back to "ascii" when aUnicode is false.
+Returns the box-drawing characters for aStyle ("rounded", "single", "double", "heavy", "left", "ascii", "none"). Automatically falls back to "ascii" when aUnicode is false.
 
 Sources:
 
-- js/owrap.screen.js:371
+- js/owrap.screen.js:372
 
 <a id="api-ow-screen-box-21920b6c"></a>
 
@@ -44,11 +44,11 @@ Sources:
 
 ### ow.screen.box(aContent, aOptions) : String
 
-Renders a bordered box/panel around aContent (string or array of lines). Options: width, height, title, titleAlign ("left", "center", "right"), footer, footerAlign, align ("left", "center", "right"), padding (number or &#123;top,bottom,left,right&#125;), borderStyle ("rounded", "single", "double", "heavy", "ascii", "none"), borderColor/borderStyleSpec, titleStyle, style.
+Renders a bordered box/panel around aContent (string or array of lines). Options: width, height, title, titleAlign ("left", "center", "right"), footer, footerAlign, align ("left", "center", "right"), padding (number or &#123;top,bottom,left,right&#125;), borderStyle ("rounded", "single", "double", "heavy", "left", "ascii", "none"), borderColor/borderStyleSpec, titleStyle, style, bgStyle, shadow (boolean).
 
 Sources:
 
-- js/owrap.screen.js:407
+- js/owrap.screen.js:411
 
 <a id="api-ow-screen-capabilities-78b110c3"></a>
 
@@ -108,7 +108,7 @@ Returns a resolved TUI theme map for the given theme name ("default", "ocean", "
 
 Sources:
 
-- js/owrap.screen.js:652
+- js/owrap.screen.js:717
 
 <a id="api-ow-screen-graphemes-0c2220d6"></a>
 
@@ -132,7 +132,19 @@ Renders a horizontal rule / divider of aWidth columns with optional label, align
 
 Sources:
 
-- js/owrap.screen.js:382
+- js/owrap.screen.js:386
+
+<a id="api-ow-screen-keybar-dbf5679b"></a>
+
+## ow.screen.keybar
+
+### ow.screen.keybar(aBindings, aWidth, aOptions) : String
+
+Renders a Textual-style keybinding footer/status bar from an array of &#123; key, label &#125; maps (or &#91;key, label&#93; pairs), styling keys as high-contrast badges and descriptions with the status bar style.
+
+Sources:
+
+- js/owrap.screen.js:791
 
 <a id="api-ow-screen-parsecolor-0c0e8930"></a>
 
@@ -164,11 +176,11 @@ Sources:
 
 ### ow.screen.progress(aValue, aMax, aMin, aWidth, aOptions) : String
 
-Renders a smooth Unicode/ASCII progress bar with optional percentage/label and 16/256/truecolor styling.
+Renders a smooth Unicode/ASCII progress bar with optional percentage/label and 16/256/truecolor styling. Options include: label, showPercent, smooth (default true, uses 1/8th sub-cell blocks), barStyle ("bracket" default, "thin" for ━/─ without brackets, "bar" for █/░ without brackets), theme, filledStyle, emptyStyle, labelStyle, percentStyle.
 
 Sources:
 
-- js/owrap.screen.js:672
+- js/owrap.screen.js:737
 
 <a id="api-ow-screen-run-7766dbe2"></a>
 
@@ -180,7 +192,7 @@ Convenience helper to launch an interactive TUI view session using ow.desktop(&#
 
 Sources:
 
-- js/owrap.screen.js:701
+- js/owrap.screen.js:819
 
 <a id="api-ow-screen-sanitize-be0f3907"></a>
 

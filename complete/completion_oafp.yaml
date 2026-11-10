@@ -1459,3 +1459,5 @@ complete:
   desc: Positive maximum elapsed seconds; does not interrupt an active pass.
 - name: counterdelta=
   desc: 'Transform options: identity, timestamp and counters (array of dotted paths).'
+- name: inparams=
+  desc: Resolve supported input parameters from one request map; explicit invocation values win. Defaults to false.

@@ -688,6 +688,7 @@ F_javabundledir_=1
 F_loopcount_=1
 F_loopduration_=1
 F_counterdelta_=1
+F_inparams_=1
 
 # Iterate over the arguments
 FFOUND=0
@@ -1691,6 +1692,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "loopduration=" ]; then FFOUND=1; F_loopduration_=0; fi
     # counterdelta= single option
     if [ "$arg" = "counterdelta=" ]; then FFOUND=1; F_counterdelta_=0; fi
+    # inparams= single option
+    if [ "$arg" = "inparams=" ]; then FFOUND=1; F_inparams_=0; fi
   done
 fi
 
@@ -3866,6 +3869,10 @@ fi
 # Print completion for counterdelta=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_counterdelta_ -eq 1 ]; then
   printf '%s\t%s\n' 'counterdelta=' 'Transform options: identity, timestamp and counters (array of dotted paths).'
+fi
+# Print completion for inparams=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inparams_ -eq 1 ]; then
+  printf '%s\t%s\n' 'inparams=' 'Resolve supported input parameters from one request map; explicit invocation values win. Defaults to false.'
 fi
 
 # end

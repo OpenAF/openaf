@@ -1575,6 +1575,7 @@
 - [ow.screen.getTheme](ow/screen/index.md#api-ow-screen-gettheme-9ef938fc)
 - [ow.screen.graphemes](ow/screen/index.md#api-ow-screen-graphemes-0c2220d6)
 - [ow.screen.hr](ow/screen/index.md#api-ow-screen-hr-89bfa50b)
+- [ow.screen.keybar](ow/screen/index.md#api-ow-screen-keybar-dbf5679b)
 - [ow.screen.parseColor](ow/screen/index.md#api-ow-screen-parsecolor-0c0e8930)
 - [ow.screen.parseStyle](ow/screen/index.md#api-ow-screen-parsestyle-c85bfb33)
 - [ow.screen.progress](ow/screen/index.md#api-ow-screen-progress-5c9e3e87)

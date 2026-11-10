@@ -364,18 +364,22 @@ OpenWrap.screen.__borders = {
   single:  { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", lt: "├", rt: "┤" },
   double:  { tl: "╔", tr: "╗", bl: "╚", br: "╝", h: "═", v: "║", lt: "╠", rt: "╣" },
   heavy:   { tl: "┏", tr: "┓", bl: "┗", br: "┛", h: "━", v: "┃", lt: "┣", rt: "┫" },
+  left:    { tl: "▊", tr: " ", bl: "▊", br: " ", h: " ", v: "▊", vr: " ", lt: "▊", rt: " " },
   ascii:   { tl: "+", tr: "+", bl: "+", br: "+", h: "-", v: "|", lt: "+", rt: "+" },
   none:    { tl: " ", tr: " ", bl: " ", br: " ", h: " ", v: " ", lt: " ", rt: " " }
 };
 
 /** <odoc>
  * <key>ow.screen.borderChars(aStyle, aUnicode) : Map</key>
- * Returns the box-drawing characters for aStyle ("rounded", "single", "double", "heavy", "ascii", "none").
+ * Returns the box-drawing characters for aStyle ("rounded", "single", "double", "heavy", "left", "ascii", "none").
  * Automatically falls back to "ascii" when aUnicode is false.
  * </odoc> */
 OpenWrap.screen.prototype.borderChars = function(style, unicode) {
   var st = String(style || this.__options.borderStyle || "rounded").toLowerCase();
-  if (unicode === false && st != "none") st = "ascii";
+  if (unicode === false && st != "none") {
+    if (st == "left") return { tl: "|", tr: " ", bl: "|", br: " ", h: " ", v: "|", vr: " ", lt: "|", rt: " " };
+    st = "ascii";
+  }
   return OpenWrap.screen.__borders[st] || OpenWrap.screen.__borders.rounded;
 };
 
@@ -409,18 +413,24 @@ OpenWrap.screen.prototype.hr = function(width, options) {
  * Renders a bordered box/panel around aContent (string or array of lines).
  * Options: width, height, title, titleAlign ("left", "center", "right"), footer, footerAlign,
  * align ("left", "center", "right"), padding (number or {top,bottom,left,right}), borderStyle
- * ("rounded", "single", "double", "heavy", "ascii", "none"), borderColor/borderStyleSpec, titleStyle, style.
+ * ("rounded", "single", "double", "heavy", "left", "ascii", "none"), borderColor/borderStyleSpec,
+ * titleStyle, style, bgStyle, shadow (boolean).
  * </odoc> */
 OpenWrap.screen.prototype.box = function(content, options) {
   var opts = isMap(options) ? options : {};
   var caps = this.capabilities(opts);
-  var bchars = this.borderChars(opts.borderStyle || "rounded", caps.unicode);
+  var bStyleName = String(opts.borderStyle || "rounded").toLowerCase();
+  var isLeftAccent = bStyleName == "left";
+  var hasShadow = Boolean(opts.shadow);
+  var bchars = this.borderChars(bStyleName, caps.unicode);
   var pad = typeof opts.padding == "number" ? { top: 0, bottom: 0, left: opts.padding, right: opts.padding } :
             isMap(opts.padding) ? { top: Number(opts.padding.top || 0), bottom: Number(opts.padding.bottom || 0), left: Number(opts.padding.left || 0), right: Number(opts.padding.right || 0) } :
             { top: 0, bottom: 0, left: 1, right: 1 };
   var rawLines = Array.isArray(content) ? content : String(isDef(content) ? content : "").split(/\r?\n/);
   var totalW = Math.max(4, Number(opts.width || caps.width || 80));
-  var innerW = Math.max(1, totalW - 2 - pad.left - pad.right);
+  var boxW = hasShadow && totalW >= 5 ? totalW - 1 : totalW;
+  var borderCols = isLeftAccent ? 1 : 2;
+  var innerW = Math.max(1, boxW - borderCols - pad.left - pad.right);
   var self = this;
   var wrapped = [];
   rawLines.forEach(function(l) {
@@ -428,12 +438,12 @@ OpenWrap.screen.prototype.box = function(content, options) {
   });
   var bStyle = opts.borderColor || opts.borderStyleSpec || "FAINT";
   var tStyle = opts.titleStyle || "BOLD";
-  var cStyle = opts.style || null;
+  var cStyle = opts.style || opts.bgStyle || null;
   var align = opts.align || "left";
   var mode = caps.colorMode;
 
   function buildEdge(leftCh, rightCh, fillCh, label, labelAlign, lStyle) {
-    var edgeW = totalW - 2;
+    var edgeW = boxW - 2;
     if (!label) return self.style(leftCh + repeat(edgeW, fillCh) + rightCh, bStyle, { colorMode: mode });
     var cleanLbl = " " + self.clip(self.sanitize(label, false), Math.max(1, edgeW - 2), "") + " ";
     var lblW = visibleLength(cleanLbl);
@@ -447,15 +457,26 @@ OpenWrap.screen.prototype.box = function(content, options) {
   }
 
   var out = [];
-  out.push(buildEdge(bchars.tl, bchars.tr, bchars.h, opts.title, opts.titleAlign || "left", tStyle));
   var vLeft = this.style(bchars.v, bStyle, { colorMode: mode });
-  var vRight = this.style(bchars.v, bStyle, { colorMode: mode });
+  var vRight = isLeftAccent ? "" : this.style(isDef(bchars.vr) ? bchars.vr : bchars.v, bStyle, { colorMode: mode });
   var padL = repeat(pad.left, " "), padR = repeat(pad.right, " ");
+
+  if (isLeftAccent) {
+    if (opts.title) {
+      var cleanT = this.clip(this.sanitize(opts.title, false), innerW, "");
+      var tRow = padL + this.alignLine(this.style(cleanT, tStyle, { colorMode: mode }), innerW, opts.titleAlign || align, " ", null, { colorMode: mode }) + padR;
+      out.push(vLeft + (cStyle ? this.style(tRow, cStyle, { colorMode: mode }) : tRow));
+    }
+  } else {
+    out.push(buildEdge(bchars.tl, bchars.tr, bchars.h, opts.title, opts.titleAlign || "left", tStyle));
+  }
+
   for (var pt = 0; pt < pad.top; pt++) {
     var emptyRow = padL + repeat(innerW, " ") + padR;
     out.push(vLeft + (cStyle ? this.style(emptyRow, cStyle, { colorMode: mode }) : emptyRow) + vRight);
   }
-  var targetRows = isNumber(opts.height) ? Math.max(1, opts.height - 2 - pad.top - pad.bottom) : wrapped.length;
+  var chromeRows = (isLeftAccent ? (opts.title ? 1 : 0) + (opts.footer ? 1 : 0) : 2) + (hasShadow ? 1 : 0);
+  var targetRows = isNumber(opts.height) ? Math.max(1, opts.height - chromeRows - pad.top - pad.bottom) : wrapped.length;
   for (var i = 0; i < targetRows; i++) {
     var line = i < wrapped.length ? wrapped[i] : "";
     var aligned = padL + this.alignLine(line, innerW, align, " ", null, { colorMode: mode }) + padR;
@@ -465,13 +486,35 @@ OpenWrap.screen.prototype.box = function(content, options) {
     var emptyRowB = padL + repeat(innerW, " ") + padR;
     out.push(vLeft + (cStyle ? this.style(emptyRowB, cStyle, { colorMode: mode }) : emptyRowB) + vRight);
   }
-  out.push(buildEdge(bchars.bl, bchars.br, bchars.h, opts.footer, opts.footerAlign || "right", opts.footerStyle || bStyle));
+
+  if (isLeftAccent) {
+    if (opts.footer) {
+      var cleanF = this.clip(this.sanitize(opts.footer, false), innerW, "");
+      var fRow = padL + this.alignLine(this.style(cleanF, opts.footerStyle || bStyle, { colorMode: mode }), innerW, opts.footerAlign || "right", " ", null, { colorMode: mode }) + padR;
+      out.push(vLeft + (cStyle ? this.style(fRow, cStyle, { colorMode: mode }) : fRow));
+    }
+  } else {
+    out.push(buildEdge(bchars.bl, bchars.br, bchars.h, opts.footer, opts.footerAlign || "right", opts.footerStyle || bStyle));
+  }
+
+  if (hasShadow && totalW >= 5) {
+    var shStyle = opts.shadowStyle || "FAINT";
+    var shTop = this.style(" ", shStyle, { colorMode: mode });
+    var shSide = this.style(caps.unicode ? "█" : "#", shStyle, { colorMode: mode });
+    var shBot = " " + this.style(repeat(boxW, caps.unicode ? "▀" : "#"), shStyle, { colorMode: mode });
+    out = out.map(function(row, idx) {
+      return row + (idx === 0 ? shTop : shSide);
+    });
+    out.push(shBot);
+  }
   return out.join("\n");
 };
 
 OpenWrap.screen.__themes = {
   default: {
     none: {
+      surface: {},
+      panel: {},
       tabBar: { bold: true },
       tabActive: { bold: true, reverse: true },
       tabInactive: {},
@@ -492,6 +535,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: {},
       badge: { bold: true, reverse: true },
       statusBar: { reverse: true },
+      keyPill: { bold: true, reverse: true },
+      keyLabel: { reverse: true },
       scrollbarThumb: { bold: true },
       scrollbarTrack: {},
       accent: { bold: true },
@@ -500,6 +545,8 @@ OpenWrap.screen.__themes = {
       negative: { bold: true }
     },
     "16": {
+      surface: { fg: "white", bg: "black" },
+      panel: { fg: "white", bg: "black" },
       tabBar: { fg: "white", bg: "black" },
       tabActive: { fg: "black", bg: "cyan", bold: true },
       tabInactive: { fg: "white", dim: true },
@@ -520,6 +567,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: "white", dim: true },
       badge: { fg: "black", bg: "cyan", bold: true },
       statusBar: { fg: "black", bg: "white" },
+      keyPill: { fg: "black", bg: "cyan", bold: true },
+      keyLabel: { fg: "black", bg: "white" },
       scrollbarThumb: { fg: "cyan", bold: true },
       scrollbarTrack: { fg: "white", dim: true },
       accent: { fg: "cyan", bold: true },
@@ -528,6 +577,8 @@ OpenWrap.screen.__themes = {
       negative: { fg: "red", bold: true }
     },
     "256": {
+      surface: { fg: 252, bg: 234 },
+      panel: { fg: 252, bg: 236 },
       tabBar: { fg: 252, bg: 236 },
       tabActive: { fg: 232, bg: 39, bold: true },
       tabInactive: { fg: 246, bg: 236 },
@@ -548,6 +599,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: 239 },
       badge: { fg: 232, bg: 39, bold: true },
       statusBar: { fg: 252, bg: 236 },
+      keyPill: { fg: 232, bg: 39, bold: true },
+      keyLabel: { fg: 252, bg: 236 },
       scrollbarThumb: { fg: 39, bold: true },
       scrollbarTrack: { fg: 238 },
       accent: { fg: 39, bold: true },
@@ -556,6 +609,8 @@ OpenWrap.screen.__themes = {
       negative: { fg: 196, bold: true }
     },
     truecolor: {
+      surface: { fg: "#cdd6f4", bg: "#181825" },
+      panel: { fg: "#cdd6f4", bg: "#1e1e2e" },
       tabBar: { fg: "#cdd6f4", bg: "#1e1e2e" },
       tabActive: { fg: "#11111b", bg: "#89b4fa", bold: true },
       tabInactive: { fg: "#9399b2", bg: "#1e1e2e" },
@@ -576,6 +631,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: "#45475a" },
       badge: { fg: "#11111b", bg: "#89b4fa", bold: true },
       statusBar: { fg: "#cdd6f4", bg: "#1e1e2e" },
+      keyPill: { fg: "#11111b", bg: "#89b4fa", bold: true },
+      keyLabel: { fg: "#cdd6f4", bg: "#1e1e2e" },
       scrollbarThumb: { fg: "#89b4fa", bold: true },
       scrollbarTrack: { fg: "#313244" },
       accent: { fg: "#89b4fa", bold: true },
@@ -586,6 +643,8 @@ OpenWrap.screen.__themes = {
   },
   ocean: {
     truecolor: {
+      surface: { fg: "#f0f9ff", bg: "#082f49" },
+      panel: { fg: "#f0f9ff", bg: "#0c4a6e" },
       tabBar: { fg: "#e0f2fe", bg: "#0c4a6e" },
       tabActive: { fg: "#082f49", bg: "#38bdf8", bold: true },
       tabInactive: { fg: "#7dd3fc", bg: "#0c4a6e" },
@@ -606,6 +665,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: "#0369a1" },
       badge: { fg: "#082f49", bg: "#38bdf8", bold: true },
       statusBar: { fg: "#e0f2fe", bg: "#0c4a6e" },
+      keyPill: { fg: "#082f49", bg: "#38bdf8", bold: true },
+      keyLabel: { fg: "#e0f2fe", bg: "#0c4a6e" },
       scrollbarThumb: { fg: "#38bdf8", bold: true },
       scrollbarTrack: { fg: "#075985" },
       accent: { fg: "#38bdf8", bold: true },
@@ -616,6 +677,8 @@ OpenWrap.screen.__themes = {
   },
   light: {
     truecolor: {
+      surface: { fg: "#0f172a", bg: "#f8fafc" },
+      panel: { fg: "#0f172a", bg: "#f1f5f9" },
       tabBar: { fg: "#1e293b", bg: "#e2e8f0" },
       tabActive: { fg: "#ffffff", bg: "#2563eb", bold: true },
       tabInactive: { fg: "#475569", bg: "#e2e8f0" },
@@ -636,6 +699,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: "#cbd5e1" },
       badge: { fg: "#ffffff", bg: "#2563eb", bold: true },
       statusBar: { fg: "#1e293b", bg: "#e2e8f0" },
+      keyPill: { fg: "#ffffff", bg: "#2563eb", bold: true },
+      keyLabel: { fg: "#1e293b", bg: "#e2e8f0" },
       scrollbarThumb: { fg: "#2563eb", bold: true },
       scrollbarTrack: { fg: "#cbd5e1" },
       accent: { fg: "#2563eb", bold: true },
@@ -672,6 +737,9 @@ OpenWrap.screen.prototype.getTheme = function(theme, colorMode, overrides) {
 /** <odoc>
  * <key>ow.screen.progress(aValue, aMax, aMin, aWidth, aOptions) : String</key>
  * Renders a smooth Unicode/ASCII progress bar with optional percentage/label and 16/256/truecolor styling.
+ * Options include: label, showPercent, smooth (default true, uses 1/8th sub-cell blocks),
+ * barStyle ("bracket" default, "thin" for ━/─ without brackets, "bar" for █/░ without brackets),
+ * theme, filledStyle, emptyStyle, labelStyle, percentStyle.
  * </odoc> */
 OpenWrap.screen.prototype.progress = function(value, max, min, width, options) {
   var opts = isMap(options) ? options : {};
@@ -686,16 +754,66 @@ OpenWrap.screen.prototype.progress = function(value, max, min, width, options) {
   var showPct = opts.showPercent !== false;
   var suffix = showPct ? " " + ow.format.string.leftPad(String(pct), 3, " ") + "%" : "";
   var prefix = isDef(opts.label) && String(opts.label).length > 0 ? this.sanitize(opts.label, false) + ": " : "";
+  var barStyle = String(opts.barStyle || "bracket").toLowerCase();
+  var hasBrackets = barStyle != "thin" && barStyle != "bar";
   var totalW = Math.max(10, Number(width || caps.width || 40));
-  var barW = Math.max(4, totalW - visibleLength(prefix) - visibleLength(suffix) - 2);
-  var filled = Math.round(ratio * barW), empty = Math.max(0, barW - filled);
-  var fChar = caps.unicode ? "█" : "#";
-  var eChar = caps.unicode ? "░" : "-";
-  var fStr = this.style(repeat(filled, fChar), isDef(opts.filledStyle) ? opts.filledStyle : th.progressFilled, { colorMode: caps.colorMode });
-  var eStr = this.style(repeat(empty, eChar), isDef(opts.emptyStyle) ? opts.emptyStyle : th.progressEmpty, { colorMode: caps.colorMode });
+  var barW = Math.max(4, totalW - visibleLength(prefix) - visibleLength(suffix) - (hasBrackets ? 2 : 0));
+  var filledStyle = isDef(opts.filledStyle) ? opts.filledStyle : th.progressFilled;
+  var emptyStyle = isDef(opts.emptyStyle) ? opts.emptyStyle : th.progressEmpty;
+  var fStr = "", eStr = "";
+
+  if (barStyle == "thin") {
+    var fThin = Math.round(ratio * barW), eThin = Math.max(0, barW - fThin);
+    fStr = this.style(repeat(fThin, caps.unicode ? "━" : "="), filledStyle, { colorMode: caps.colorMode });
+    eStr = this.style(repeat(eThin, caps.unicode ? "─" : "-"), emptyStyle, { colorMode: caps.colorMode });
+  } else if (caps.unicode && opts.smooth !== false) {
+    var subBlocks = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"];
+    var eighths = Math.round(ratio * barW * 8);
+    var fullCells = Math.floor(eighths / 8);
+    var remEighths = eighths - fullCells * 8;
+    var partChar = remEighths > 0 ? subBlocks[remEighths] : "";
+    var emptyCells = Math.max(0, barW - fullCells - (partChar ? 1 : 0));
+    fStr = this.style(repeat(fullCells, "█") + partChar, filledStyle, { colorMode: caps.colorMode });
+    eStr = this.style(repeat(emptyCells, "░"), emptyStyle, { colorMode: caps.colorMode });
+  } else {
+    var filled = Math.round(ratio * barW), empty = Math.max(0, barW - filled);
+    var fChar = caps.unicode ? "█" : "#";
+    var eChar = caps.unicode ? "░" : "-";
+    fStr = this.style(repeat(filled, fChar), filledStyle, { colorMode: caps.colorMode });
+    eStr = this.style(repeat(empty, eChar), emptyStyle, { colorMode: caps.colorMode });
+  }
+
   var lblStr = prefix ? this.style(prefix, isDef(opts.labelStyle) ? opts.labelStyle : th.label, { colorMode: caps.colorMode }) : "";
   var pctStr = suffix ? this.style(suffix, isDef(opts.percentStyle) ? opts.percentStyle : th.muted, { colorMode: caps.colorMode }) : "";
-  return lblStr + "[" + fStr + eStr + "]" + pctStr;
+  return lblStr + (hasBrackets ? "[" : "") + fStr + eStr + (hasBrackets ? "]" : "") + pctStr;
+};
+
+/** <odoc>
+ * <key>ow.screen.keybar(aBindings, aWidth, aOptions) : String</key>
+ * Renders a Textual-style keybinding footer/status bar from an array of { key, label } maps
+ * (or [key, label] pairs), styling keys as high-contrast badges and descriptions with the status bar style.
+ * </odoc> */
+OpenWrap.screen.prototype.keybar = function(bindings, width, options) {
+  var opts = isMap(options) ? options : {};
+  var caps = this.capabilities(opts);
+  var th = this.getTheme(opts.theme, caps.colorMode);
+  var w = Math.max(1, Number(width || caps.width || 80));
+  var keyStyle = isDef(opts.keyStyle) ? opts.keyStyle : (th.keyPill || th.badge);
+  var labelStyle = isDef(opts.labelStyle) ? opts.labelStyle : (th.keyLabel || th.statusBar);
+  var barStyle = isDef(opts.style) ? opts.style : th.statusBar;
+  var sep = isDef(opts.sep) ? String(opts.sep) : "  ";
+  var self = this;
+  var list = Array.isArray(bindings) ? bindings : [];
+  var segments = list.map(function(b) {
+    var k = Array.isArray(b) ? b[0] : (isMap(b) ? b.key : "");
+    var l = Array.isArray(b) ? b[1] : (isMap(b) ? b.label : "");
+    var kClean = " " + self.sanitize(k, false) + " ";
+    var lClean = " " + self.sanitize(l, false);
+    return self.style(kClean, keyStyle, { colorMode: caps.colorMode }) +
+           self.style(lClean, labelStyle, { colorMode: caps.colorMode });
+  });
+  var joined = segments.join(self.style(sep, barStyle, { colorMode: caps.colorMode }));
+  return this.alignLine(joined, w, opts.align || "left", " ", barStyle, { colorMode: caps.colorMode });
 };
 
 /** <odoc>

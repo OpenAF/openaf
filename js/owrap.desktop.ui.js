@@ -40,6 +40,7 @@ OpenWrap.desktop.__view = function(desktop, value) {
     checkAlign(v.align);
   }
 
+  var borderNames = ["rounded", "single", "double", "heavy", "left", "ascii", "none"];
   fields(view, ["version", "title", "subtitle", "align", "spacing", "padding", "margin", "border", "borderStyle", "theme", "style", "items"]);
   if (isDef(view.version) && view.version !== 1) fail("Unsupported view version");
   view.version = 1;
@@ -49,28 +50,35 @@ OpenWrap.desktop.__view = function(desktop, value) {
   checkInt(view.spacing, 0, 8, "spacing");
   checkBoxSpacing(view.padding, "padding", 16);
   checkBoxSpacing(view.margin, "margin", 16);
-  if (isDef(view.border) && typeof view.border != "boolean" && ["rounded", "single", "double", "heavy", "ascii", "none"].indexOf(view.border) < 0) fail("Invalid view border");
-  if (isDef(view.borderStyle) && ["rounded", "single", "double", "heavy", "ascii", "none"].indexOf(view.borderStyle) < 0) fail("Invalid view borderStyle");
+  if (isDef(view.border) && typeof view.border != "boolean" && borderNames.indexOf(view.border) < 0) fail("Invalid view border");
+  if (isDef(view.borderStyle) && borderNames.indexOf(view.borderStyle) < 0) fail("Invalid view borderStyle");
   if (isDef(view.theme) && typeof view.theme != "string" && !isMap(view.theme)) fail("Invalid view theme");
   if (typeof view.theme == "string" && !string(view.theme, 64)) fail("Invalid view theme");
   checkStyle(view.style, "view.style");
 
   if (!Array.isArray(view.items) || view.items.length > 128) fail("view.items must contain at most 128 items");
-  var commonProps = ["id", "type", "align", "style", "labelStyle", "focusStyle", "padding", "margin", "spacing", "width", "border", "borderStyle", "disabled"];
-  view.items.forEach(function(item) {
+  var commonProps = ["id", "type", "align", "style", "labelStyle", "focusStyle", "padding", "margin", "spacing", "width", "span", "border", "borderStyle", "disabled", "shadow"];
+  var totalItems = 0;
+
+  function validateItem(item, inRow) {
     if (!isMap(item)) fail("View items must be maps");
+    if (++totalItems > 128) fail("view.items must contain at most 128 items");
     if (!string(item.id, 64) || !/^[A-Za-z][A-Za-z0-9_-]*$/.test(item.id) || ["constructor", "prototype", "__proto__"].indexOf(item.id) >= 0 || ids[item.id]) fail("View IDs must be unique safe identifiers");
     ids[item.id] = true;
-    var types = ["text", "button", "input", "select", "divider", "spacer", "progress"];
-    if (types.indexOf(item.type) < 0) fail("Unsupported view item type");
+    var types = ["text", "button", "input", "select", "checkbox", "divider", "spacer", "progress", "table", "sparkline", "row"];
+    if (types.indexOf(item.type) < 0 || (inRow && item.type == "row")) fail("Unsupported view item type");
     var typeSpecific = {
       text: ["text", "title"],
-      button: ["label"],
-      input: ["label", "value", "placeholder"],
+      button: ["label", "variant"],
+      input: ["label", "value", "placeholder", "password", "fieldWidth"],
       select: ["label", "value", "options"],
+      checkbox: ["label", "value"],
       divider: ["label", "char"],
       spacer: ["lines"],
-      progress: ["label", "value", "min", "max", "showPercent"]
+      progress: ["label", "value", "min", "max", "showPercent", "barStyle", "smooth"],
+      table: ["title", "columns", "rows"],
+      sparkline: ["label", "values", "min", "max", "trend"],
+      row: ["items", "gap"]
     }[item.type];
     fields(item, commonProps.concat(typeSpecific));
     checkAlign(item.align);
@@ -81,10 +89,18 @@ OpenWrap.desktop.__view = function(desktop, value) {
     checkBoxSpacing(item.margin, item.id + ".margin", 16);
     checkInt(item.spacing, 0, 8, item.id + ".spacing");
     checkInt(item.width, 1, 1000, item.id + ".width");
-    if (isDef(item.border) && typeof item.border != "boolean" && ["rounded", "single", "double", "heavy", "ascii", "none"].indexOf(item.border) < 0) fail("Invalid item border");
-    if (isDef(item.borderStyle) && ["rounded", "single", "double", "heavy", "ascii", "none"].indexOf(item.borderStyle) < 0) fail("Invalid item borderStyle");
+    checkInt(item.span, 1, 12, item.id + ".span");
+    if (isDef(item.border) && typeof item.border != "boolean" && borderNames.indexOf(item.border) < 0) fail("Invalid item border");
+    if (isDef(item.borderStyle) && borderNames.indexOf(item.borderStyle) < 0) fail("Invalid item borderStyle");
     if (isDef(item.disabled) && typeof item.disabled != "boolean") fail("disabled must be boolean");
+    if (isDef(item.shadow) && typeof item.shadow != "boolean") fail("shadow must be boolean");
 
+    if (item.type == "row") {
+      checkInt(item.gap, 0, 8, item.id + ".gap");
+      if (!Array.isArray(item.items) || item.items.length < 1 || item.items.length > 16) fail("Row requires 1..16 child items");
+      item.items.forEach(function(child) { validateItem(child, true); });
+      return;
+    }
     if (item.type == "text") {
       if (!string(item.text, 8192)) fail("Text requires a string of at most 8192 characters");
       if (isDef(item.title) && (!string(item.title, 256) || /[\x00-\x1f\x7f-\x9f]/.test(item.title))) fail("Invalid text title");
@@ -100,30 +116,78 @@ OpenWrap.desktop.__view = function(desktop, value) {
       if (isDef(item.min) && (typeof item.min != "number" || !isFinite(item.min))) fail("Progress min must be a finite number");
       if (isDef(item.max) && (typeof item.max != "number" || !isFinite(item.max))) fail("Progress max must be a finite number");
       if (isDef(item.showPercent) && typeof item.showPercent != "boolean") fail("Progress showPercent must be boolean");
+      if (isDef(item.smooth) && typeof item.smooth != "boolean") fail("Progress smooth must be boolean");
+      if (isDef(item.barStyle) && ["bracket", "thin", "bar"].indexOf(item.barStyle) < 0) fail("Invalid progress barStyle");
+    } else if (item.type == "table") {
+      if (isDef(item.title) && (!string(item.title, 256) || /[\x00-\x1f\x7f-\x9f]/.test(item.title))) fail("Invalid table title");
+      if (isDef(item.columns)) {
+        if (!Array.isArray(item.columns) || item.columns.length < 1 || item.columns.length > 32 || item.columns.some(function(c) { return !string(c, 128) || /[\x00-\x1f\x7f-\x9f]/.test(c); })) fail("Invalid table columns");
+      }
+      if (!Array.isArray(item.rows) || item.rows.length > 256) fail("Table rows must be an array of at most 256 maps");
+      item.rows.forEach(function(r) {
+        if (!isMap(r)) fail("Table rows must be maps");
+        Object.keys(r).forEach(function(k) {
+          var v = r[k];
+          if (v !== null && isDef(v) && typeof v != "string" && typeof v != "number" && typeof v != "boolean") fail("Table cell values must be scalar");
+          if (typeof v == "string" && (v.length > 1024 || /[\x00-\x1f\x7f-\x9f]/.test(v))) fail("Invalid table cell string");
+        });
+      });
+    } else if (item.type == "sparkline") {
+      if (isDef(item.label) && (!string(item.label, 256) || /[\x00-\x1f\x7f-\x9f]/.test(item.label))) fail("Invalid sparkline label");
+      if (!Array.isArray(item.values) || item.values.length < 1 || item.values.length > 256 || item.values.some(function(n) { return typeof n != "number" || !isFinite(n); })) fail("Sparkline values must be 1..256 finite numbers");
+      if (isDef(item.min) && (typeof item.min != "number" || !isFinite(item.min))) fail("Invalid sparkline min");
+      if (isDef(item.max) && (typeof item.max != "number" || !isFinite(item.max))) fail("Invalid sparkline max");
+      if (isDef(item.trend) && typeof item.trend != "boolean") fail("Sparkline trend must be boolean");
     } else {
-      if (!string(item.label, 256)) fail("Controls require a label of at most 256 characters");
+      if (!string(item.label, 256) || /[\x00-\x1f\x7f-\x9f]/.test(item.label)) fail("Controls require a label of at most 256 characters");
+    }
+    if (item.type == "button" && isDef(item.variant) && ["default", "primary", "success", "warning", "error"].indexOf(item.variant) < 0) {
+      fail("Invalid button variant");
     }
     if (item.type == "input") {
       if (isDef(item.placeholder) && (!string(item.placeholder, 256) || /[\x00-\x1f\x7f-\x9f]/.test(item.placeholder))) fail("Invalid input placeholder");
+      if (isDef(item.password) && typeof item.password != "boolean") fail("input password must be boolean");
+      checkInt(item.fieldWidth, 4, 256, item.id + ".fieldWidth");
+    }
+    if (item.type == "checkbox") {
+      if (isUnDef(item.value)) item.value = "false";
+      else if (typeof item.value == "boolean") item.value = item.value ? "true" : "false";
+      if (item.value !== "true" && item.value !== "false") fail("Checkbox value must be boolean or 'true'/'false'");
     }
     if (item.type == "input" || item.type == "select") {
       if (isUnDef(item.value)) item.value = item.type == "select" && Array.isArray(item.options) ? item.options[0] : "";
       if (!string(item.value, 4096) || /[\x00-\x1f\x7f-\x9f]/.test(item.value)) fail("Control values must be single-line strings of at most 4096 characters");
     }
     if (item.type == "select" && (!Array.isArray(item.options) || item.options.length < 1 || item.options.length > 128 || item.options.some(function(v, i) { return !string(v, 256) || /[\x00-\x1f\x7f-\x9f]/.test(v) || item.options.indexOf(v) != i; }) || item.options.indexOf(item.value) < 0)) fail("Select requires unique string options and a matching value");
-  });
+  }
+
+  view.items.forEach(function(item) { validateItem(item, false); });
   return desktop.__copy(view, 65536);
 };
 
+OpenWrap.desktop.__viewFlatItems = function(view) {
+  var out = [];
+  if (!view || !Array.isArray(view.items)) return out;
+  view.items.forEach(function(item) {
+    out.push(item);
+    if (item && item.type == "row" && Array.isArray(item.items)) {
+      item.items.forEach(function(child) { out.push(child); });
+    }
+  });
+  return out;
+};
+
 OpenWrap.desktop.__viewEvent = function(desktop, view, message) {
-  var m = desktop.__copy(message, 65536), p = m.payload, controls = view.items.filter(function(i) { return i.type == "input" || i.type == "select"; });
-  var item = p && view.items.filter(function(i) { return i.id == p.id; })[0];
+  var m = desktop.__copy(message, 65536), p = m.payload;
+  var flat = OpenWrap.desktop.__viewFlatItems(view);
+  var controls = flat.filter(function(i) { return i.type == "input" || i.type == "select" || i.type == "checkbox"; });
+  var item = p && flat.filter(function(i) { return i.id == p.id; })[0];
   function fail() { throw desktop.__error("INVALID_ARGUMENT", "Invalid declarative view event"); }
-  if (!isMap(p) || Object.keys(p).sort().join(",") != "id,values" || !isMap(p.values) || !item || item.disabled || (m.type == "action" ? item.type != "button" : m.type != "change" || ["input", "select"].indexOf(item.type) < 0)) fail();
+  if (!isMap(p) || Object.keys(p).sort().join(",") != "id,values" || !isMap(p.values) || !item || item.disabled || (m.type == "action" ? item.type != "button" : m.type != "change" || ["input", "select", "checkbox"].indexOf(item.type) < 0)) fail();
   if (Object.keys(p.values).length != controls.length) fail();
   controls.forEach(function(c) {
     var v = p.values[c.id];
-    if (!Object.prototype.hasOwnProperty.call(p.values, c.id) || typeof v != "string" || v.length > 4096 || /[\x00-\x1f\x7f-\x9f]/.test(v) || (c.type == "select" && c.options.indexOf(v) < 0)) fail();
+    if (!Object.prototype.hasOwnProperty.call(p.values, c.id) || typeof v != "string" || v.length > 4096 || /[\x00-\x1f\x7f-\x9f]/.test(v) || (c.type == "select" && c.options.indexOf(v) < 0) || (c.type == "checkbox" && v !== "true" && v !== "false")) fail();
   });
 };
 
@@ -149,7 +213,164 @@ OpenWrap.desktop.__viewHTML = function(view) {
       else if (typeof st.background == "string") el.style.backgroundColor = st.background;
       if (st.align && ["left", "center", "right"].indexOf(st.align) >= 0) el.style.textAlign = st.align;
     }
+    function buildItemNode(item) {
+      var row = document.createElement("div"), element;
+      row.style.margin = "0.7em 0";
+      applyStyle(row, item.style, item.align || current.align);
+      if (item.border && item.border !== "none") {
+        if (item.border == "left" || item.borderStyle == "left") {
+          row.style.borderLeft = "4px solid #38bdf8";
+          row.style.padding = "0.4em 0.75em";
+        } else {
+          row.style.border = "1px solid #888";
+          row.style.borderRadius = item.border == "rounded" ? "6px" : "2px";
+          row.style.padding = "0.5em 0.75em";
+        }
+      }
+      if (item.type == "row") {
+        row.style.display = "flex";
+        row.style.gap = ((item.gap || 2) * 0.5) + "em";
+        row.style.alignItems = "flex-start";
+        row.style.flexWrap = "wrap";
+        item.items.forEach(function(child) {
+          var cNode = buildItemNode(child);
+          cNode.style.flex = String(child.span || 1);
+          cNode.style.minWidth = "140px";
+          row.appendChild(cNode);
+        });
+        row.id = item.id;
+        return row;
+      }
+      if (item.type == "text") {
+        if (item.title) {
+          var tt = document.createElement("div");
+          tt.style.fontWeight = "bold";
+          tt.style.marginBottom = "0.25em";
+          tt.textContent = item.title;
+          row.appendChild(tt);
+        }
+        element = document.createElement("div");
+        element.style.whiteSpace = "pre-wrap";
+        element.textContent = item.text;
+      } else if (item.type == "divider") {
+        element = document.createElement("hr");
+        element.style.border = "none";
+        element.style.borderTop = "1px solid #999";
+        if (item.label) {
+          element = document.createElement("div");
+          element.style.borderBottom = "1px solid #999";
+          element.style.fontWeight = "bold";
+          element.textContent = item.label;
+        }
+      } else if (item.type == "spacer") {
+        element = document.createElement("div");
+        element.style.height = ((item.lines || 1) * 1.2) + "em";
+      } else if (item.type == "progress") {
+        if (item.label) {
+          var pl = document.createElement("label");
+          pl.textContent = item.label + " ";
+          row.appendChild(pl);
+        }
+        element = document.createElement("progress");
+        var min = typeof item.min == "number" ? item.min : 0;
+        var max = typeof item.max == "number" ? item.max : 100;
+        element.max = Math.max(1, max - min);
+        element.value = Math.max(0, Math.min(element.max, item.value - min));
+      } else if (item.type == "table") {
+        if (item.title) {
+          var tblTitle = document.createElement("div");
+          tblTitle.style.fontWeight = "bold";
+          tblTitle.style.marginBottom = "0.25em";
+          tblTitle.textContent = item.title;
+          row.appendChild(tblTitle);
+        }
+        element = document.createElement("table");
+        element.style.borderCollapse = "collapse";
+        element.style.width = "100%";
+        var cols = Array.isArray(item.columns) && item.columns.length > 0 ? item.columns : (item.rows && item.rows[0] ? Object.keys(item.rows[0]) : []);
+        if (cols.length > 0) {
+          var thead = document.createElement("thead"), trH = document.createElement("tr");
+          cols.forEach(function(c) {
+            var thEl = document.createElement("th");
+            thEl.style.borderBottom = "2px solid #888";
+            thEl.style.textAlign = "left";
+            thEl.style.padding = "0.3em 0.5em";
+            thEl.textContent = String(c);
+            trH.appendChild(thEl);
+          });
+          thead.appendChild(trH);
+          element.appendChild(thead);
+        }
+        var tbody = document.createElement("tbody");
+        (item.rows || []).forEach(function(r) {
+          var trB = document.createElement("tr");
+          cols.forEach(function(c) {
+            var tdEl = document.createElement("td");
+            tdEl.style.borderBottom = "1px solid #ccc";
+            tdEl.style.padding = "0.3em 0.5em";
+            tdEl.textContent = r[c] === null || typeof r[c] == "undefined" ? "" : String(r[c]);
+            trB.appendChild(tdEl);
+          });
+          tbody.appendChild(trB);
+        });
+        element.appendChild(tbody);
+      } else if (item.type == "sparkline") {
+        element = document.createElement("div");
+        var blocks = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
+        var vals = item.values || [0];
+        var sMin = typeof item.min == "number" ? item.min : Math.min.apply(null, vals);
+        var sMax = typeof item.max == "number" ? item.max : Math.max.apply(null, vals);
+        var sSpan = (sMax - sMin) || 1;
+        var spark = vals.map(function(v) {
+          var idx = Math.max(0, Math.min(7, Math.round(((v - sMin) / sSpan) * 7)));
+          return blocks[idx];
+        }).join("");
+        element.textContent = (item.label ? item.label + ": " : "") + spark;
+      } else if (item.type == "button") {
+        element = document.createElement("button");
+        element.textContent = item.label;
+        if (item.disabled) element.disabled = true;
+        element.onclick = function() { if (!item.disabled) event("action", item.id); };
+      } else if (item.type == "checkbox") {
+        var cbLabel = document.createElement("label");
+        element = document.createElement("input");
+        element.type = "checkbox";
+        element.checked = item.value === "true";
+        if (item.disabled) element.disabled = true;
+        controls[item.id] = { get value() { return element.checked ? "true" : "false"; } };
+        element.onchange = function() { if (!item.disabled) event("change", item.id); };
+        element.id = item.id;
+        cbLabel.appendChild(element);
+        var cbSpan = document.createElement("span");
+        cbSpan.textContent = " " + item.label;
+        applyStyle(cbSpan, item.labelStyle);
+        cbLabel.appendChild(cbSpan);
+        row.appendChild(cbLabel);
+        return row;
+      } else {
+        var label = document.createElement("label");
+        label.textContent = item.label + " ";
+        applyStyle(label, item.labelStyle);
+        row.appendChild(label);
+        element = document.createElement(item.type == "select" ? "select" : "input");
+        if (item.type == "select") {
+          item.options.forEach(function(v) { var opt = document.createElement("option"); opt.value = v; opt.textContent = v; element.appendChild(opt); });
+        } else {
+          element.type = item.password ? "password" : "text";
+          element.maxLength = 4096;
+          if (item.placeholder) element.placeholder = item.placeholder;
+        }
+        if (item.disabled) element.disabled = true;
+        element.value = item.value;
+        controls[item.id] = element;
+        element.onchange = function() { if (!item.disabled) event("change", item.id); };
+      }
+      element.id = item.id;
+      row.appendChild(element);
+      return row;
+    }
     function render(next) {
+      var activeId = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
       current = next; controls = {}; root.textContent = "";
       applyStyle(root, current.style, current.align);
       if (current.title) {
@@ -166,76 +387,12 @@ OpenWrap.desktop.__viewHTML = function(view) {
         root.appendChild(sub);
       }
       current.items.forEach(function(item) {
-        var row = document.createElement("div"), element;
-        row.style.margin = "0.7em 0";
-        applyStyle(row, item.style, item.align || current.align);
-        if (item.border) {
-          row.style.border = "1px solid #888";
-          row.style.borderRadius = item.border == "rounded" ? "6px" : "2px";
-          row.style.padding = "0.5em 0.75em";
-        }
-        if (item.type == "text") {
-          if (item.title) {
-            var tt = document.createElement("div");
-            tt.style.fontWeight = "bold";
-            tt.style.marginBottom = "0.25em";
-            tt.textContent = item.title;
-            row.appendChild(tt);
-          }
-          element = document.createElement("div");
-          element.style.whiteSpace = "pre-wrap";
-          element.textContent = item.text;
-        } else if (item.type == "divider") {
-          element = document.createElement("hr");
-          element.style.border = "none";
-          element.style.borderTop = "1px solid #999";
-          if (item.label) {
-            element = document.createElement("div");
-            element.style.borderBottom = "1px solid #999";
-            element.style.fontWeight = "bold";
-            element.textContent = item.label;
-          }
-        } else if (item.type == "spacer") {
-          element = document.createElement("div");
-          element.style.height = ((item.lines || 1) * 1.2) + "em";
-        } else if (item.type == "progress") {
-          if (item.label) {
-            var pl = document.createElement("label");
-            pl.textContent = item.label + " ";
-            row.appendChild(pl);
-          }
-          element = document.createElement("progress");
-          var min = typeof item.min == "number" ? item.min : 0;
-          var max = typeof item.max == "number" ? item.max : 100;
-          element.max = Math.max(1, max - min);
-          element.value = Math.max(0, Math.min(element.max, item.value - min));
-        } else if (item.type == "button") {
-          element = document.createElement("button");
-          element.textContent = item.label;
-          if (item.disabled) element.disabled = true;
-          element.onclick = function() { if (!item.disabled) event("action", item.id); };
-        } else {
-          var label = document.createElement("label");
-          label.textContent = item.label + " ";
-          applyStyle(label, item.labelStyle);
-          row.appendChild(label);
-          element = document.createElement(item.type == "select" ? "select" : "input");
-          if (item.type == "select") {
-            item.options.forEach(function(v) { var opt = document.createElement("option"); opt.value = v; opt.textContent = v; element.appendChild(opt); });
-          } else {
-            element.type = "text";
-            element.maxLength = 4096;
-            if (item.placeholder) element.placeholder = item.placeholder;
-          }
-          if (item.disabled) element.disabled = true;
-          element.value = item.value;
-          controls[item.id] = element;
-          element.onchange = function() { if (!item.disabled) event("change", item.id); };
-        }
-        element.id = item.id;
-        row.appendChild(element);
-        root.appendChild(row);
+        root.appendChild(buildItemNode(item));
       });
+      if (activeId) {
+        var toFocus = document.getElementById(activeId);
+        if (toFocus && typeof toFocus.focus == "function") toFocus.focus();
+      }
     }
     openafDesktop.onMessage(function(m) { if (m.type == "view") render(m.payload); });
     openafDesktop.ready.then(function() { render(initial); }).catch(function() { root.textContent = "Desktop connection failed"; });
@@ -253,10 +410,11 @@ OpenWrap.desktop.__tui = function(injectedUI) {
   function locked(fn) { lock.lock(); try { return fn(); } finally { lock.unlock(); } }
   function clean(text, multiline) { return ow.screen.sanitize(text, multiline); }
   function visible() { return Object.keys(windows).filter(function(id) { return windows[id].shown; }); }
-  function controls(w) { return w.view.items.filter(function(i) { return (i.type == "button" || i.type == "input" || i.type == "select") && !i.disabled; }); }
+  function flatItems(w) { return w && w.view ? OpenWrap.desktop.__viewFlatItems(w.view) : []; }
+  function controls(w) { return flatItems(w).filter(function(i) { return (i.type == "button" || i.type == "input" || i.type == "select" || i.type == "checkbox") && !i.disabled; }); }
   function values(w) {
     var out = {};
-    w.view.items.forEach(function(i) { if (i.type == "input" || i.type == "select") out[i.id] = i.value; });
+    flatItems(w).forEach(function(i) { if (i.type == "input" || i.type == "select" || i.type == "checkbox") out[i.id] = i.value; });
     return out;
   }
   function announce(w, type, item) {
@@ -287,12 +445,58 @@ OpenWrap.desktop.__tui = function(injectedUI) {
   }
   function syncCursors(w) {
     if (!w.cursors) w.cursors = {};
-    w.view.items.forEach(function(item) {
+    flatItems(w).forEach(function(item) {
       if (item.type == "input") {
         var gLen = ow.screen.graphemes(item.value || "").length;
         if (isUnDef(w.cursors[item.id]) || w.cursors[item.id] > gLen) w.cursors[item.id] = gLen;
       }
     });
+  }
+  function renderTableItem(item, itemW, ctx) {
+    var mode = ctx.caps.colorMode, u = ctx.caps.unicode, th = ctx.theme;
+    var rows = Array.isArray(item.rows) ? item.rows : [];
+    var cols = Array.isArray(item.columns) && item.columns.length > 0 ? item.columns : (rows[0] ? Object.keys(rows[0]) : []);
+    var out = [];
+    if (item.title && !item.border) {
+      out.push(ow.screen.style(clean(item.title, false), item.labelStyle || th.heading, { colorMode: mode }));
+    }
+    if (cols.length === 0) {
+      out.push(ow.screen.style("(empty table)", th.muted, { colorMode: mode }));
+      return out;
+    }
+    var sepV = ow.screen.style(u ? " │ " : " | ", th.border, { colorMode: mode });
+    var sepCross = u ? "─┼─" : "-+-";
+    var sepH = u ? "─" : "-";
+    var colWidths = cols.map(function(c) {
+      var maxW = ow.screen.width(clean(c, false));
+      rows.forEach(function(r) {
+        var cell = isDef(r[c]) && r[c] !== null ? clean(String(r[c]), false) : "";
+        maxW = Math.max(maxW, ow.screen.width(cell));
+      });
+      return Math.max(2, maxW);
+    });
+    var sepTotal = (cols.length - 1) * 3;
+    var availW = Math.max(cols.length * 2, itemW - sepTotal);
+    var sumW = colWidths.reduce(function(a, b) { return a + b; }, 0);
+    if (sumW > availW) {
+      colWidths = colWidths.map(function(cw) { return Math.max(2, Math.floor((cw / sumW) * availW)); });
+    }
+    var hdrCells = cols.map(function(c, idx) {
+      var txt = ow.screen.clip(clean(c, false), colWidths[idx], "");
+      return ow.screen.style(ow.screen.alignLine(txt, colWidths[idx], "left"), item.labelStyle || th.heading, { colorMode: mode });
+    });
+    out.push(hdrCells.join(sepV));
+    var divLine = colWidths.map(function(cw) { return repeat(cw, sepH); }).join(sepCross);
+    out.push(ow.screen.style(divLine, th.border, { colorMode: mode }));
+    rows.forEach(function(r) {
+      var rowCells = cols.map(function(c, idx) {
+        var rawCell = isDef(r[c]) && r[c] !== null ? clean(String(r[c]), false) : "";
+        var clipped = ow.screen.clip(rawCell, colWidths[idx], "");
+        return ow.screen.style(ow.screen.alignLine(clipped, colWidths[idx], "left"), item.style || th.text, { colorMode: mode });
+      });
+      out.push(rowCells.join(sepV));
+    });
+    return out;
   }
   function renderItem(w, item, selected, innerW, ctx) {
     var mode = ctx.caps.colorMode, u = ctx.caps.unicode, th = ctx.theme;
@@ -320,6 +524,8 @@ OpenWrap.desktop.__tui = function(injectedUI) {
       var pStr = ow.screen.progress(item.value, item.max, item.min, itemW, {
         label: item.label,
         showPercent: item.showPercent,
+        barStyle: item.barStyle,
+        smooth: item.smooth,
         filledStyle: item.style || th.progressFilled,
         emptyStyle: th.progressEmpty,
         labelStyle: item.labelStyle || th.label,
@@ -327,6 +533,24 @@ OpenWrap.desktop.__tui = function(injectedUI) {
         unicode: u
       });
       rawLines.push(pStr);
+    } else if (item.type == "table") {
+      rawLines = renderTableItem(item, itemW, ctx);
+    } else if (item.type == "sparkline") {
+      var spLbl = item.label ? clean(item.label, false) + ": " : "";
+      var spLblW = ow.screen.width(spLbl);
+      var spW = Math.max(6, itemW - spLblW);
+      var spStr = ow.format.printSparkline(item.values, {
+        width: spW,
+        min: item.min,
+        max: item.max,
+        markMin: true,
+        markMax: true,
+        trend: item.trend !== false,
+        palette: mode == "none" ? "none" : "auto",
+        capabilities: { width: spW, height: 1, ansi: mode != "none", unicode: u, colorMode: mode }
+      });
+      var spPrefix = spLbl ? ow.screen.style(spLbl, item.labelStyle || th.label, { colorMode: mode }) : "";
+      rawLines.push(spPrefix + String(spStr).split(/\r?\n/)[0]);
     } else if (item.type == "text") {
       var txt = clean(item.text, true);
       var txtStyle = item.style || th.text;
@@ -340,10 +564,24 @@ OpenWrap.desktop.__tui = function(injectedUI) {
     } else if (item.type == "button") {
       var bPrefix = selected ? "> " : "  ";
       var bCore = "[ " + clean(item.label, false) + " ]";
-      var bSt = selected ? (item.focusStyle || th.focusButton) : (item.style || (item.disabled ? th.muted : th.button));
+      var variantMap = { primary: th.accent, success: th.positive, warning: th.warning, error: th.negative };
+      var baseBtnStyle = (item.variant && variantMap[item.variant]) ? variantMap[item.variant] : th.button;
+      var bSt = selected ? (item.focusStyle || th.focusButton) : (item.style || (item.disabled ? th.muted : baseBtnStyle));
       var pSt = selected ? th.focusLabel : th.muted;
       var lineB = ow.screen.style(bPrefix, pSt, { colorMode: mode }) + ow.screen.style(bCore, bSt, { colorMode: mode });
       ow.screen.wrap(lineB, itemW).forEach(function(l) { rawLines.push(l); });
+    } else if (item.type == "checkbox") {
+      var cbPrefix = selected ? "> " : "  ";
+      var checked = item.value === "true" || item.value === true;
+      var cbBox = "[" + (checked ? (u ? "✓" : "x") : " ") + "] ";
+      var cbLbl = clean(item.label, false);
+      var pStC = selected ? th.focusLabel : th.muted;
+      var boxStC = selected ? (item.focusStyle || th.focusSelect) : (item.style || (checked ? th.positive : th.select));
+      var lblStC = selected ? (item.labelStyle || th.focusLabel) : (item.labelStyle || th.label);
+      var lineC = ow.screen.style(cbPrefix, pStC, { colorMode: mode }) +
+                  ow.screen.style(cbBox, boxStC, { colorMode: mode }) +
+                  ow.screen.style(cbLbl, lblStC, { colorMode: mode });
+      ow.screen.wrap(lineC, itemW).forEach(function(l) { rawLines.push(l); });
     } else if (item.type == "select") {
       var sPrefix = selected ? "> " : "  ";
       var sLbl = clean(item.label, false) + ": ";
@@ -361,28 +599,37 @@ OpenWrap.desktop.__tui = function(injectedUI) {
       var iPrefix = selected ? "> " : "  ";
       var iLbl = clean(item.label, false) + ": ";
       var valClean = clean(item.value, false);
-      var gs = ow.screen.graphemes(valClean);
+      var rawGs = ow.screen.graphemes(valClean);
+      var maskCh = u ? "•" : "*";
+      var gs = item.password ? rawGs.map(function() { return maskCh; }) : rawGs;
+      var dispClean = gs.join("");
       var cur = isDef(w.cursors && w.cursors[item.id]) ? Math.max(0, Math.min(gs.length, w.cursors[item.id])) : gs.length;
       var pStI = selected ? th.focusLabel : th.muted;
       var lStI = selected ? (item.labelStyle || th.focusLabel) : (item.labelStyle || th.label);
       var vStI = selected ? (item.focusStyle || th.focusInput) : (item.style || th.input);
+      var minFieldW = isNumber(item.fieldWidth) ? Math.min(item.fieldWidth, Math.max(4, itemW - ow.screen.width(iPrefix + iLbl) - 1)) : 0;
       var valRendered;
       if (selected) {
         if (cur >= gs.length) {
-          valRendered = ow.screen.style(valClean + "_", vStI, { colorMode: mode });
+          var padTail = Math.max(0, minFieldW - ow.screen.width(dispClean) - 1);
+          valRendered = ow.screen.style(dispClean + "_" + repeat(padTail, " "), vStI, { colorMode: mode });
         } else {
           var before = gs.slice(0, cur).join("");
           var at = gs[cur];
           var after = gs.slice(cur + 1).join("");
+          var padMid = Math.max(0, minFieldW - ow.screen.width(dispClean) - 1);
           valRendered = ow.screen.style(before, vStI, { colorMode: mode }) +
                         ow.screen.style(at, { reverse: true, bold: true, underline: true }, { colorMode: mode }) +
                         ow.screen.style(after, vStI, { colorMode: mode }) +
-                        ow.screen.style("_", th.accent, { colorMode: mode });
+                        ow.screen.style("_" + repeat(padMid, " "), th.accent, { colorMode: mode });
         }
-      } else if (valClean.length === 0 && item.placeholder) {
-        valRendered = ow.screen.style(clean(item.placeholder, false), th.muted, { colorMode: mode });
+      } else if (dispClean.length === 0 && item.placeholder) {
+        var phText = clean(item.placeholder, false);
+        var padPh = Math.max(0, minFieldW - ow.screen.width(phText));
+        valRendered = ow.screen.style(phText + repeat(padPh, " "), th.muted, { colorMode: mode });
       } else {
-        valRendered = ow.screen.style(valClean, vStI, { colorMode: mode });
+        var padVal = Math.max(0, minFieldW - ow.screen.width(dispClean));
+        valRendered = ow.screen.style(dispClean + repeat(padVal, " "), vStI, { colorMode: mode });
       }
       var lineI = ow.screen.style(iPrefix, pStI, { colorMode: mode }) +
                   ow.screen.style(iLbl, lStI, { colorMode: mode }) +
@@ -394,12 +641,13 @@ OpenWrap.desktop.__tui = function(injectedUI) {
       var bStyle = typeof item.border == "string" ? item.border : (item.borderStyle || ctx.borderStyle);
       var boxed = ow.screen.box(rawLines, {
         width: itemW,
-        title: item.title || (item.type != "text" ? item.label : undefined),
+        title: item.title || (item.type != "text" && item.type != "table" ? item.label : undefined),
         align: align,
         padding: item.padding,
         borderStyle: bStyle,
         borderColor: selected ? th.focusLabel : th.border,
         titleStyle: selected ? th.focusLabel : th.title,
+        shadow: item.shadow,
         colorMode: mode,
         unicode: u
       });
@@ -414,6 +662,26 @@ OpenWrap.desktop.__tui = function(injectedUI) {
       });
     }
     return rawLines;
+  }
+
+  function recordItemHit(itemHits, item, lineStr, yRow, xOffset, colW) {
+    if (item.disabled || ["button", "input", "select", "checkbox"].indexOf(item.type) < 0) return;
+    var plain = String(lineStr).replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");
+    var lead = /^ */.exec(plain)[0].length, text = plain.replace(/ +$/, "");
+    if (text.length > lead) {
+      var hitEnd = ow.screen.width(text);
+      if (item.type == "input" && isNumber(item.fieldWidth)) {
+        hitEnd = Math.min(colW, Math.max(hitEnd, lead + 2 + ow.screen.width(clean(item.label, false)) + 2 + item.fieldWidth));
+      }
+      itemHits.push({
+        x: xOffset + lead + 1,
+        end: xOffset + hitEnd,
+        y: yRow,
+        id: item.id,
+        valueStart: item.type == "input" ? xOffset + lead + 2 + ow.screen.width(clean(item.label, false)) + 3 : -1,
+        previous: item.type == "select" ? xOffset + ow.screen.width(text.substring(0, text.lastIndexOf("<"))) + 1 : -1
+      });
+    }
   }
 
   function render() {
@@ -452,18 +720,47 @@ OpenWrap.desktop.__tui = function(injectedUI) {
       }
       var gap = Math.max(0, Number(w.view.spacing) || 0);
       w.view.items.forEach(function(item, idx) {
-        var selected = Boolean(focused && item.id == focused.id);
-        if (selected) focusedRow = lines.length;
-        var itemLines = renderItem(w, item, selected, contentW, ctx);
-        itemLines.forEach(function(l) {
-          if (!item.disabled && ["button", "input", "select"].indexOf(item.type) >= 0) {
-            var plain = String(l).replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");
-            var lead = /^ */.exec(plain)[0].length, text = plain.replace(/ +$/, "");
-            if (text.length > lead) itemHits.push({ x: lead + 1, end: ow.screen.width(text), y: lines.length, id: item.id,
-              previous: item.type == "select" ? ow.screen.width(text.substring(0, text.lastIndexOf("<"))) + 1 : -1 });
+        if (item.type == "row") {
+          var rChildren = item.items || [];
+          var rGap = isNumber(item.gap) ? item.gap : 2;
+          var rowTotalW = item.width ? Math.min(contentW, Math.max(4, item.width)) : contentW;
+          var totalGap = Math.max(0, (rChildren.length - 1) * rGap);
+          var availCols = Math.max(rChildren.length * 4, rowTotalW - totalGap);
+          var spanSum = rChildren.reduce(function(acc, c) { return acc + (c.span || 1); }, 0);
+          var colWidths = [], usedCols = 0;
+          rChildren.forEach(function(c, ci) {
+            var cw = ci == rChildren.length - 1 ? Math.max(4, availCols - usedCols) : Math.max(4, Math.floor(((c.span || 1) / spanSum) * availCols));
+            colWidths.push(cw);
+            usedCols += cw;
+          });
+          var colBlocks = [], maxRowH = 0, curX = 0;
+          rChildren.forEach(function(c, ci) {
+            var cSelected = Boolean(focused && c.id == focused.id);
+            if (cSelected) focusedRow = lines.length;
+            var cLines = renderItem(w, c, cSelected, colWidths[ci], ctx);
+            cLines.forEach(function(cl, rIdx) {
+              recordItemHit(itemHits, c, cl, lines.length + rIdx, curX, colWidths[ci]);
+            });
+            if (cLines.length > maxRowH) maxRowH = cLines.length;
+            colBlocks.push({ lines: cLines, width: colWidths[ci] });
+            curX += colWidths[ci] + rGap;
+          });
+          var sepStr = repeat(rGap, " ");
+          for (var ri = 0; ri < maxRowH; ri++) {
+            var combined = colBlocks.map(function(b) {
+              return ow.screen.alignLine(b.lines[ri] || "", b.width, "left", " ", null, { colorMode: mode });
+            }).join(sepStr);
+            lines.push(combined);
           }
-          lines.push(l);
-        });
+        } else {
+          var selected = Boolean(focused && item.id == focused.id);
+          if (selected) focusedRow = lines.length;
+          var itemLines = renderItem(w, item, selected, contentW, ctx);
+          itemLines.forEach(function(l) {
+            recordItemHit(itemHits, item, l, lines.length, 0, contentW);
+            lines.push(l);
+          });
+        }
         var itemGap = isNumber(item.spacing) ? item.spacing : gap;
         if (itemGap > 0 && idx < w.view.items.length - 1) {
           for (var g = 0; g < itemGap; g++) lines.push("");
@@ -475,7 +772,7 @@ OpenWrap.desktop.__tui = function(injectedUI) {
         var dx = edge(w.view.padding, "left", "x") + edge(w.view.margin, "left", "x");
         var dy = edge(w.view.padding, "top", "y") + edge(w.view.margin, "top", "y");
         var right = edge(w.view.padding, "right", "x") + edge(w.view.margin, "right", "x");
-        itemHits.forEach(function(h) { h.x += dx; h.end = Math.min(h.end + dx, contentW - right); h.previous += dx; h.y += dy; });
+        itemHits.forEach(function(h) { h.x += dx; h.end = Math.min(h.end + dx, contentW - right); h.previous += dx; if (h.valueStart > 0) h.valueStart += dx; h.y += dy; });
         focusedRow += dy;
         lines = ow.screen.space(lines, { width: contentW, padding: w.view.padding, margin: w.view.margin, colorMode: mode });
       }
@@ -496,6 +793,7 @@ OpenWrap.desktop.__tui = function(injectedUI) {
         var limit = contentW - (totalLines > viewportH && contentW >= 10 ? 1 : 0);
         h.end = Math.min(h.end, limit);
         h.x += framed ? 1 : 0; h.end += framed ? 1 : 0; h.previous += framed ? 1 : 0;
+        if (h.valueStart > 0) h.valueStart += framed ? 1 : 0;
         h.y = row + 2 + (framed ? 1 : 0);
         h.windowId = w.id; h.revision = w.revision;
         if (h.x <= h.end) hitMap.push(h);
@@ -536,8 +834,20 @@ OpenWrap.desktop.__tui = function(injectedUI) {
       while (lines.length < bodyHeight) lines.push("");
     }
 
-    var helpText = "Tab: focus  Enter: action/change  Left/Right: select/cursor  PgUp/PgDn: scroll  Ctrl-N/P: tabs  Ctrl-W: close  Ctrl-C: close all";
-    var statusRow = ow.screen.alignLine(ow.screen.style(helpText, th.statusBar, { colorMode: mode }), width, "left", " ", th.statusBar, { colorMode: mode });
+    var helpPairs = [
+      ["Tab:", " focus  "],
+      ["Enter:", " action/change  "],
+      ["Left/Right:", " select/cursor  "],
+      ["PgUp/PgDn:", " scroll  "],
+      ["Ctrl-N/P:", " tabs  "],
+      ["Ctrl-W:", " close  "],
+      ["Ctrl-C:", " close all"]
+    ];
+    var helpStyled = helpPairs.map(function(pair) {
+      return ow.screen.style(pair[0], th.keyPill || th.badge, { colorMode: mode }) +
+             ow.screen.style(pair[1], th.keyLabel || th.statusBar, { colorMode: mode });
+    }).join("");
+    var statusRow = ow.screen.alignLine(helpStyled, width, "left", " ", th.statusBar, { colorMode: mode });
 
     var rows = [headerRow].concat(lines).concat([statusRow]);
     var frame = rows.map(function(s) { return ow.screen.clip(s, width, ""); }).join("\r\n");
@@ -564,7 +874,14 @@ OpenWrap.desktop.__tui = function(injectedUI) {
     w.focus = index;
     var item = cs[index];
     if (item.type == "button") announce(w, "action", item);
-    else if (item.type == "select") key(m.x == h.previous ? "left" : "right");
+    else if (item.type == "checkbox") {
+      item.value = item.value === "true" ? "false" : "true";
+      announce(w, "change", item);
+    } else if (item.type == "select") key(m.x == h.previous ? "left" : "right");
+    else if (item.type == "input" && h.valueStart > 0 && m.x >= h.valueStart) {
+      var gs = ow.screen.graphemes(item.value || "");
+      w.cursors[item.id] = Math.max(0, Math.min(gs.length, m.x - h.valueStart));
+    }
   }
   function key(k) {
     var ids = visible(), w = windows[active];
@@ -582,6 +899,11 @@ OpenWrap.desktop.__tui = function(injectedUI) {
     var item = cs[w.focus];
     if (!item) return;
     if (["tab", "down", "shift-tab", "up"].indexOf(k) >= 0) { w.focus = (w.focus + (k == "shift-tab" || k == "up" ? cs.length - 1 : 1)) % cs.length; w.followFocus = true; return; }
+    if (item.type == "checkbox" && (k == " " || k == "enter" || k == "left" || k == "right")) {
+      item.value = item.value === "true" ? "false" : "true";
+      announce(w, "change", item);
+      return;
+    }
     if (k == "enter" || (k == " " && item.type == "button")) { announce(w, item.type == "button" ? "action" : "change", item); return; }
     if (item.type == "select") {
       if (k == "left" || k == "right" || k == " ") {
@@ -695,7 +1017,28 @@ OpenWrap.desktop.__tui = function(injectedUI) {
         case "window.hide": w.shown = false; chooseActive(); break;
         case "window.close": close(id); break;
         case "window.setTitle": w.title = o.title; break;
-        case "window.setView": w.view = JSON.parse(JSON.stringify(o.view)); w.revision = o.viewRevision; w.focus = 0; w.scroll = 0; w.followFocus = true; w.cursors = {}; break;
+        case "window.setView":
+          var prevCs = controls(w);
+          var prevFocusId = (prevCs[w.focus] && prevCs[w.focus].id) ? prevCs[w.focus].id : null;
+          var prevCursors = w.cursors || {};
+          var prevScroll = w.scroll || 0;
+          w.view = JSON.parse(JSON.stringify(o.view));
+          w.revision = o.viewRevision;
+          var nextCs = controls(w);
+          var nextFocusIdx = prevFocusId ? nextCs.map(function(c) { return c.id; }).indexOf(prevFocusId) : -1;
+          if (nextFocusIdx >= 0) {
+            w.focus = nextFocusIdx;
+            w.scroll = prevScroll;
+            w.followFocus = false;
+            w.cursors = prevCursors;
+            syncCursors(w);
+          } else {
+            w.focus = 0;
+            w.scroll = 0;
+            w.followFocus = true;
+            w.cursors = {};
+          }
+          break;
         default: throw error("UNSUPPORTED_CAPABILITY", "Unsupported TUI operation: " + envelope.operation);
         }
         return null;
