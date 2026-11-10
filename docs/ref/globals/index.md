@@ -457,7 +457,7 @@ Sources:
 
 ## $gpt
 
-### $gpt(aModel) : $gpt
+### $gpt(aModel, aEmbeddingConfig) : $gpt
 
 Creates a GPT AI model from `aModel` (e.g. type "openai", "gemini", "ollama" or "anthropic").
 
@@ -490,6 +490,10 @@ OpenAI-compatible examples:
 - { type: "openai", key: "...", url: "https://RESOURCE.openai.azure.com", mode: "azure-openai-legacy", deployment: "DEPLOYMENT", apiVersion: "2024-10-21" }
 - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com", mode: "foundry", model: "DEPLOYMENT" }
 - { type: "openai", key: "...", url: "https://RESOURCE.services.ai.azure.com/models", mode: "foundry", apiVersion: "2024-05-01-preview", model: "DEPLOYMENT" }
+
+`aEmbeddingConfig` optionally supplies an independent embeddings provider map; otherwise `OAF_EMBED_MODEL` is read as JSON/SLON.
+Clients initialize on first use. Embeddings-only use does not require chat configuration.
+Example: `$llm(__, { type: "ollama", model: "embeddinggemma-2" }).getEmbeddings("hello")`.
 
 If `aModel` is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
 
@@ -606,7 +610,7 @@ Sources:
 
 ## $llm
 
-### $llm(aModel) : $llm
+### $llm(aModel, aEmbeddingConfig) : $llm
 
 Shortcut for $gpt on the owrap.AI library.
 

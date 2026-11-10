@@ -12,7 +12,7 @@ Tries to denormalize aMapOfNormalizedData (result from ow.ai.normalize.withSchem
 
 Sources:
 
-- js/owrap.ai.js:6242
+- js/owrap.ai.js:6269
 
 <a id="api-ow-ai-normalize-intarray-665ab975"></a>
 
@@ -24,7 +24,7 @@ Returns anArray where all numbers have been rounded to an integer value.
 
 Sources:
 
-- js/owrap.ai.js:6226
+- js/owrap.ai.js:6253
 
 <a id="api-ow-ai-normalize-quantitize-ce6799b2"></a>
 
@@ -36,7 +36,7 @@ Given anArray of numbers tries to quantitize returning an array of values betwee
 
 Sources:
 
-- js/owrap.ai.js:6201
+- js/owrap.ai.js:6228
 
 <a id="api-ow-ai-normalize-scalearray-dc381fc0"></a>
 
@@ -48,7 +48,7 @@ Given anArray of numbers tries to normalize returning an array of values between
 
 Sources:
 
-- js/owrap.ai.js:6167
+- js/owrap.ai.js:6194
 
 <a id="api-ow-ai-normalize-softmax-b0e3b7a8"></a>
 
@@ -60,7 +60,7 @@ Given anArray of numbers tries to apply a Softmax function returning an array of
 
 Sources:
 
-- js/owrap.ai.js:6181
+- js/owrap.ai.js:6208
 
 <a id="api-ow-ai-normalize-tofeaturesarray-5ab229a0"></a>
 
@@ -72,7 +72,7 @@ Tries to convert anArrayOfObjects into an array of array of values where each va
 
 Sources:
 
-- js/owrap.ai.js:6434
+- js/owrap.ai.js:6461
 
 <a id="api-ow-ai-normalize-withschema-c82518c9"></a>
 
@@ -106,5 +106,5 @@ $from(ar).sort("time").select((r) => { return normalize(r, sar); });
 
 Sources:
 
-- js/owrap.ai.js:6323
+- js/owrap.ai.js:6350
 

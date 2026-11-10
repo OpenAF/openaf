@@ -14,7 +14,7 @@
 
 Sources:
 
-- js/owrap.ai.js:5933
+- js/owrap.ai.js:5960
 
 <a id="api-ow-ai-network-forecast-957a0dba"></a>
 
@@ -26,7 +26,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:6058
+- js/owrap.ai.js:6085
 
 <a id="api-ow-ai-network-fromjson-933ef45b"></a>
 
@@ -38,7 +38,7 @@ Tries to rebuild the network from aMap returned previously by a toJson function.
 
 Sources:
 
-- js/owrap.ai.js:6130
+- js/owrap.ai.js:6157
 
 <a id="api-ow-ai-network-get-ec109274"></a>
 
@@ -50,7 +50,7 @@ Given an inputArray of decimal values, normalize between 0 and 1, will activate 
 
 Sources:
 
-- js/owrap.ai.js:6071
+- js/owrap.ai.js:6098
 
 <a id="api-ow-ai-network-getbrainjsobject-fbf59706"></a>
 
@@ -62,7 +62,7 @@ Returns the current BrainJS object.
 
 Sources:
 
-- js/owrap.ai.js:5964
+- js/owrap.ai.js:5991
 
 <a id="api-ow-ai-network-getsynapticobject-7c5b9998"></a>
 
@@ -74,7 +74,7 @@ Returns the current Synaptic object.
 
 Sources:
 
-- js/owrap.ai.js:5954
+- js/owrap.ai.js:5981
 
 <a id="api-ow-ai-network-gru-2da524f5"></a>
 
@@ -88,7 +88,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:5923
+- js/owrap.ai.js:5950
 
 <a id="api-ow-ai-network-grutimestep-6e90d006"></a>
 
@@ -102,7 +102,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:5893
+- js/owrap.ai.js:5920
 
 <a id="api-ow-ai-network-hopfield-c49c6257"></a>
 
@@ -114,7 +114,7 @@ Hopfield serves as a content-addressable memory remembering patterns and when fe
 
 Sources:
 
-- js/owrap.ai.js:6019
+- js/owrap.ai.js:6046
 
 <a id="api-ow-ai-network-liquid-ee3d55a7"></a>
 
@@ -126,7 +126,7 @@ Liquid state machines are neural networks where neurons are randomly connected t
 
 Sources:
 
-- js/owrap.ai.js:6005
+- js/owrap.ai.js:6032
 
 <a id="api-ow-ai-network-lstm-4a1e99cf"></a>
 
@@ -140,7 +140,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:5913
+- js/owrap.ai.js:5940
 
 ### ow.ai.network.lstm(args) : ow.ai.network
 
@@ -150,7 +150,7 @@ there are very long time lags of unknown size between important events. There is
 
 Sources:
 
-- js/owrap.ai.js:5989
+- js/owrap.ai.js:6016
 
 <a id="api-ow-ai-network-lstmtimestep-76b39f17"></a>
 
@@ -164,7 +164,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:5883
+- js/owrap.ai.js:5910
 
 <a id="api-ow-ai-network-neuralnetwork-ebf8d081"></a>
 
@@ -178,7 +178,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:5863
+- js/owrap.ai.js:5890
 
 <a id="api-ow-ai-network-perceptron-d3e26071"></a>
 
@@ -190,7 +190,7 @@ Perceptron or feed-forward neural networks. There is a minimum of 3 layers (inpu
 
 Sources:
 
-- js/owrap.ai.js:5975
+- js/owrap.ai.js:6002
 
 <a id="api-ow-ai-network-put-cd5d64e0"></a>
 
@@ -202,7 +202,7 @@ Given an inputArray of decimal values, normalize between 0 and 1, will activate 
 
 Sources:
 
-- js/owrap.ai.js:6089
+- js/owrap.ai.js:6116
 
 <a id="api-ow-ai-network-readfile-b61f5de5"></a>
 
@@ -214,7 +214,7 @@ Rebuilds a network from a map stored in aFile previously with ow.ai.network.writ
 
 Sources:
 
-- js/owrap.ai.js:6156
+- js/owrap.ai.js:6183
 
 <a id="api-ow-ai-network-recurrent-7ae29583"></a>
 
@@ -228,7 +228,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:5943
+- js/owrap.ai.js:5970
 
 <a id="api-ow-ai-network-rnn-d3620917"></a>
 
@@ -242,7 +242,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:5903
+- js/owrap.ai.js:5930
 
 <a id="api-ow-ai-network-rnntimestep-6faeb0d8"></a>
 
@@ -256,7 +256,7 @@ Sources:
 
 Sources:
 
-- js/owrap.ai.js:5873
+- js/owrap.ai.js:5900
 
 <a id="api-ow-ai-network-tojson-35a69c57"></a>
 
@@ -268,7 +268,7 @@ Returns a map representation of the current network to be later rebuilt with the
 
 Sources:
 
-- js/owrap.ai.js:6117
+- js/owrap.ai.js:6144
 
 <a id="api-ow-ai-network-train-6ded6ca0"></a>
 
@@ -286,7 +286,7 @@ entry values and output values normalized to a decimal number between 0 and 1. E
 
 Sources:
 
-- js/owrap.ai.js:6032
+- js/owrap.ai.js:6059
 
 <a id="api-ow-ai-network-writefile-9e75b768"></a>
 
@@ -298,5 +298,5 @@ Writes a compressed file with the map representation of the current network.
 
 Sources:
 
-- js/owrap.ai.js:6146
+- js/owrap.ai.js:6173
 
