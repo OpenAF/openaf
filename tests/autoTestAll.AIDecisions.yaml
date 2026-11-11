@@ -153,3 +153,8 @@ todo:
 - AIDecisions::DecisionSchemaValidationIsolation
 - AIDecisions::DecisionFlatConfigurationAndEnvironment
 - AIDecisions::DecisionNativeCapabilityRequirements
+
+- name: AIDecisions::DecisionGeminiNative
+  from: AIDecisions::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testDecisionGeminiNative;

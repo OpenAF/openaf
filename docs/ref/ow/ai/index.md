@@ -46,7 +46,7 @@ global.__a2a__.registerAgent(weatherAgent.meta, weatherAgent.handler);
 
 Sources:
 
-- js/owrap.ai.js:4190
+- js/owrap.ai.js:4258
 
 <a id="api-ow-ai-cluster-13a1e7b2"></a>
 
@@ -64,7 +64,7 @@ clustering:
 
 Sources:
 
-- js/owrap.ai.js:7353
+- js/owrap.ai.js:7422
 
 <a id="api-ow-ai-decisiontree-57df3dad"></a>
 
@@ -99,7 +99,7 @@ C45:
 
 Sources:
 
-- js/owrap.ai.js:6504
+- js/owrap.ai.js:6573
 
 <a id="api-ow-ai-gpt-e6d70a57"></a>
 
@@ -144,7 +144,7 @@ Usage stats note: `getLastStats()` now includes OpenAI cached prompt tokens (`to
 
 Sources:
 
-- js/owrap.ai.js:4318
+- js/owrap.ai.js:4386
 
 <a id="api-ow-ai-network-6f71c866"></a>
 
@@ -156,7 +156,7 @@ Creates a neural network given the parameters in aMap. aMap should contain a "ty
 
 Sources:
 
-- js/owrap.ai.js:5832
+- js/owrap.ai.js:5901
 
 <a id="api-ow-ai-regression-63c957b5"></a>
 

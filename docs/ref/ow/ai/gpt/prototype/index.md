@@ -12,7 +12,7 @@ Gets text embeddings for aInput (string or array of strings) using aEmbeddingMod
 
 Sources:
 
-- js/owrap.ai.js:4433
+- js/owrap.ai.js:4501
 
 <a id="api-ow-ai-gpt-prototype-getmodelinfo-d37dbffb"></a>
 
@@ -24,7 +24,7 @@ Returns the model information for aModelId (defaults to the current configured m
 
 Sources:
 
-- js/owrap.ai.js:4419
+- js/owrap.ai.js:4487
 
 <a id="api-ow-ai-gpt-prototype-getmodelname-30fda71f"></a>
 
@@ -36,7 +36,7 @@ Returns the default model name configured for this GPT instance.
 
 Sources:
 
-- js/owrap.ai.js:4395
+- js/owrap.ai.js:4463
 
 <a id="api-ow-ai-gpt-prototype-getmodels-10d9d1e8"></a>
 
@@ -48,7 +48,7 @@ Returns the available models from the GPT AI service.
 
 Sources:
 
-- js/owrap.ai.js:4409
+- js/owrap.ai.js:4477
 
 <a id="api-ow-ai-gpt-prototype-gettype-a77f2868"></a>
 
@@ -60,5 +60,5 @@ Returns the GPT provider type used to create this instance.
 
 Sources:
 
-- js/owrap.ai.js:4385
+- js/owrap.ai.js:4453
 

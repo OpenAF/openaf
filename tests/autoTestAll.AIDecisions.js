@@ -643,7 +643,7 @@
       var other = make(provider);
       other.getGPT().model._decisionRequest = function() { throw "must not call"; };
       expectError(function() { other.decide("state", questions, { images: images }); }, "LLM_DECISION_INVALID_REQUEST");
-      ow.test.assert(other.getCapabilities().inputTypes, provider == "openai" ? ["text", "json", "image"] : ["text", "json"], "Provider-specific input capabilities");
+      ow.test.assert(other.getCapabilities().inputTypes, provider == "openai" ? ["text", "json", "image"] : ["text", "json", "image", "audio", "video", "document"], "Provider-specific input capabilities");
     });
     ow.test.assert(calls.length, 3, "Invalid image requests fail before HTTP");
   };
@@ -898,4 +898,66 @@
     };
     compatible.jsonSchemaPrompt("lookup", descriptor);
   };
+  // Synthetic Gemini Decisions fixture based on googleapis/python-genai v3.2.0.
+  exports.testDecisionGeminiNative = function() {
+    ow.loadAI()
+    var g = make("gemini", { model: "gemini-decision-1" }), calls = [], api = g.getGPT().model
+    var fixture = function() {
+      var r = nativeFixture()
+      delete r.model
+      r.answers.urgent.confidence = 0.5
+      r.usage = { total_input_tokens: 17, total_output_tokens: 0, total_tokens: 17, total_cached_tokens: 0 }
+      return r
+    }
+    api._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: body }); return fixture() }
+    var qs = copy(questions)
+    qs.urgent.criteria = { "false": "Routine", "true": "Immediate" }
+    var input = [
+      { type: "text", text: "Evidence" },
+      { type: "image", mime_type: "image/png", data: "YQ==", resolution: "low" },
+      { type: "audio", mime_type: "audio/wav", uri: "gs://bucket/audio.wav", channels: 1, sample_rate: 16000 },
+      { type: "video", mime_type: "video/mp4", uri: "https://example.com/video.mp4" },
+      { type: "document", mime_type: "application/pdf", data: "YQ==" }
+    ]
+    var result = g.decideWithStats({ ticket: "Claim" }, qs, { input: input, requireProbabilities: true })
+    ow.test.assert(calls.length, 1, "One native request")
+    ow.test.assert(calls[0].uri, "decisions", "Native route")
+    ow.test.assert(calls[0].body.model, "models/gemini-decision-1", "Model resource name")
+    ow.test.assert(calls[0].body.input.slice(1), input, "Preserve ordered media")
+    ow.test.assert(calls[0].body.input[0].text, JSON.stringify({ ticket: "Claim" }), "JSON state remains text context")
+    ow.test.assert(calls[0].body.questions.urgent.criteria.true_description, "Immediate", "Boolean criteria translation")
+    ow.test.assert(result.response.strategy, "native", "Auto selects native")
+    ow.test.assert(result.response.answers.urgent.providerConfidence, 0.5, "Boolean confidence")
+    ow.test.assert(result.response.answers.priority.expectedScore, 1.1, "Score expectation")
+    ow.test.assert(result.stats.tokens.completion, 0, "Zero output tokens")
+    ow.test.assert(result.stats.tokens.cached, 0, "Zero cached tokens")
+    ow.test.assert(g.getCapabilities().inputTypes.indexOf("audio") >= 0, true, "Media capabilities")
+    var before = calls.length
+    ;[[], [{ type: "image", mime_type: "image/png", data: "?" }], [{ type: "document", mime_type: "text/plain", data: "YQ==" }], [{ type: "video", mime_type: "video/mp4", uri: "/tmp/a" }], [{ type: "image", mime_type: "image/png", data: "YQ==", uri: "https://example.com/a" }]].forEach(function(parts) {
+      expectError(function() { g.decide("state", questions, { input: parts }) }, "LLM_DECISION_INVALID_REQUEST")
+    })
+    expectError(function() { g.decide("state", questions, { providerOptions: { temperature: 0 } }) }, "LLM_DECISION_INVALID_REQUEST")
+    expectError(function() { g.decide("state", questions, { strategy: "structured" }) }, "LLM_DECISION_UNSUPPORTED")
+    var tooMany = {}
+    for (var i = 0; i < 1001; i++) tooMany["q" + i] = { type: "boolean", instructions: "Check" }
+    expectError(function() { g.decide("state", tooMany) }, "LLM_DECISION_INVALID_REQUEST")
+    var tooWide = copy(questions)
+    tooWide.priority.criteria = []
+    for (var i = 0; i < 256; i++) tooWide.priority.criteria.push("Level " + i)
+    expectError(function() { g.decide("state", tooWide) }, "LLM_DECISION_INVALID_REQUEST")
+    expectError(function() { g.decide("x".repeat(65536), questions) }, "LLM_DECISION_INVALID_REQUEST")
+    ow.test.assert(calls.length, before, "Invalid requests never reach HTTP")
+    var ordinary = make("gemini")
+    ordinary.getGPT().model._decisionRequest = function() { throw "must not call" }
+    expectError(function() { ordinary.decide("state", questions, { input: input }) }, "LLM_DECISION_INVALID_REQUEST")
+    ;[function(r) { r.answers.route.probabilities.billing = 0.2 }, function(r) { r.answers.priority.legend["0"] = "Wrong" }, function(r) { r.answers.urgent.confidence = 2 }].forEach(function(mutate) {
+      api._decisionRequest = function() { var r = fixture(); mutate(r); return r }
+      expectError(function() { g.decide("state", questions) }, "LLM_DECISION_INVALID_RESPONSE")
+    })
+    api._decisionRequest = function() { var r = fixture(); delete r.answers.route; return r }
+    expectError(function() { g.decide("state", questions) }, "LLM_DECISION_INVALID_RESPONSE")
+    api._decisionRequest = function() { return { prompt_feedback: { block_reason: "safety" } } }
+    expectError(function() { g.decide("state", questions) }, "LLM_DECISION_INVALID_RESPONSE")
+    ow.test.assert(isUnDef(g.getLastStats()), true, "Failure clears stats")
+  }
 })();
