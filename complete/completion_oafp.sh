@@ -296,6 +296,7 @@ F_in__in_ndslon=0
 F_in__in_ndslon_ndslonjoin_=1
 F_in__in_ndslon_ndslonfilter_=1
 F_in__in_oaf=0
+F_in__in_files=0
 F_in__in_oafp=0
 F_in__in_oafp_inoafpseq_=1
 F_in__in_ojob=0
@@ -689,6 +690,9 @@ F_loopcount_=1
 F_loopduration_=1
 F_counterdelta_=1
 F_inparams_=1
+F_filesin_=1
+F_filesworkers_=1
+F_filessource_=1
 
 # Iterate over the arguments
 FFOUND=0
@@ -999,6 +1003,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#ndslonjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_ndslon_ndslonjoin_=0; fi
     if [ "${arg#ndslonfilter=}" != "$arg" ]; then FFOUND=1; F_in__in_ndslon_ndslonfilter_=0; fi
     if [ "$arg" = "in=oaf" ]; then FFOUND=1; F_in__in_oaf=1; F_in_=0; fi
+    if [ "$arg" = "in=files" ]; then FFOUND=1; F_in__in_files=1; F_in_=0; fi
     if [ "$arg" = "in=oafp" ]; then FFOUND=1; F_in__in_oafp=1; F_in_=0; fi
     if [ "${arg#inoafpseq=}" != "$arg" ]; then FFOUND=1; F_in__in_oafp_inoafpseq_=0; fi
     if [ "$arg" = "in=ojob" ]; then FFOUND=1; F_in__in_ojob=1; F_in_=0; fi
@@ -1694,6 +1699,12 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "counterdelta=" ]; then FFOUND=1; F_counterdelta_=0; fi
     # inparams= single option
     if [ "$arg" = "inparams=" ]; then FFOUND=1; F_inparams_=0; fi
+    # filesin= single option
+    if [ "$arg" = "filesin=" ]; then FFOUND=1; F_filesin_=0; fi
+    # filesworkers= single option
+    if [ "$arg" = "filesworkers=" ]; then FFOUND=1; F_filesworkers_=0; fi
+    # filessource= single option
+    if [ "$arg" = "filessource=" ]; then FFOUND=1; F_filessource_=0; fi
   done
 fi
 
@@ -2180,6 +2191,7 @@ if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_in_ -eq 1 ]; then
   printf '%s\t%s\n' 'in=ndjson' 'A NDJSON (new-line delimited JSON) format'
   printf '%s\t%s\n' 'in=ndslon' 'A NDSLON (new-line delimited SLON) format'
   printf '%s\t%s\n' 'in=oaf' 'Takes an OpenAF scripting code or OpenAF scripting file to execute and use the result as input'
+  printf '%s\t%s\n' 'in=files' 'Processes a newline-separated list of local filepaths concurrently; see Parallel file lists'
   printf '%s\t%s\n' 'in=oafp' 'Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process (arrays will call multiple oafp processes; inoafpseq=true will process sequentially)'
   printf '%s\t%s\n' 'in=ojob' 'Takes a JSON/SLON/YAML map input with a '\''ojob'\'' string and a '\''args'\'' map parameter'
   printf '%s\t%s\n' 'in=openmetrics' 'An OpenMetrics/Prometheus compatible format'
@@ -3873,6 +3885,18 @@ fi
 # Print completion for inparams=
 if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_inparams_ -eq 1 ]; then
   printf '%s\t%s\n' 'inparams=' 'Resolve supported input parameters from one request map; explicit invocation values win. Defaults to false.'
+fi
+# Print completion for filesin=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_filesin_ -eq 1 ]; then
+  printf '%s\t%s\n' 'filesin=' 'Input format for each listed file; defaults to extension detection'
+fi
+# Print completion for filesworkers=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_filesworkers_ -eq 1 ]; then
+  printf '%s\t%s\n' 'filesworkers=' 'Positive worker count; defaults to at most four cores'
+fi
+# Print completion for filessource=
+if [ $_G_EXACT_CHOSEN -eq 0 ] && [ $F_filessource_ -eq 1 ]; then
+  printf '%s\t%s\n' 'filessource=' 'Optional literal field containing the listed filepath'
 fi
 
 # end

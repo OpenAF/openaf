@@ -657,6 +657,8 @@ complete:
       desc: If true each line is interpreted as an array before filters execute (this allows to filter slon records on a ndslon)
   - name: in=oaf
     desc: Takes an OpenAF scripting code or OpenAF scripting file to execute and use the result as input
+  - name: in=files
+    desc: Processes a newline-separated list of local filepaths concurrently; see Parallel file lists
   - name: in=oafp
     desc: Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process (arrays will call multiple oafp processes; inoafpseq=true will process sequentially)
     opts:
@@ -1461,3 +1463,9 @@ complete:
   desc: 'Transform options: identity, timestamp and counters (array of dotted paths).'
 - name: inparams=
   desc: Resolve supported input parameters from one request map; explicit invocation values win. Defaults to false.
+- name: filesin=
+  desc: Input format for each listed file; defaults to extension detection
+- name: filesworkers=
+  desc: Positive worker count; defaults to at most four cores
+- name: filessource=
+  desc: Optional literal field containing the listed filepath
