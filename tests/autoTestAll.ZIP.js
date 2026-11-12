@@ -1,6 +1,40 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    exports.testArchiveExtractionLimits = function() {
+        plugin("ZIP")
+        var base = String(java.nio.file.Files.createTempDirectory("archive-extract-limits-"))
+        var key = "openaf.archive.maxEntryBytes"
+        var previous = java.lang.System.getProperty(key)
+        var zip = new ZIP()
+        try {
+            zip.putFile("data.txt", af.fromString2Bytes("x".repeat(128)))
+            io.writeFileBytes(base + "/input.zip", zip.generate(__, true))
+            io.mkdir(base + "/output")
+            io.writeFileString(base + "/output/data.txt", "existing")
+            java.lang.System.setProperty(key, "16")
+            var rejected = false
+            try { io.unzip(base + "/input.zip", base + "/output", function() {}, function() {}) } catch(e) {
+                rejected = String(e).indexOf("Archive quota exceeded") >= 0
+            }
+            ow.test.assert(rejected, true, "Extraction swallowed its quota failure")
+            ow.test.assert(io.readFileString(base + "/output/data.txt"), "existing", "Quota failure replaced existing destination")
+            ow.test.assert(io.listFiles(base + "/output").files.length, 1, "Quota failure left a partial staging file")
+            var path = java.nio.file.Paths.get(base + "/output/data.txt")
+            var posix = java.nio.file.Files.getFileStore(path).supportsFileAttributeView("posix")
+            if (posix) java.nio.file.Files.setPosixFilePermissions(path, java.nio.file.attribute.PosixFilePermissions.fromString("rwxr-xr--"))
+            java.lang.System.setProperty(key, "256")
+            io.unzip(base + "/input.zip", base + "/output", function() {}, function() {})
+            ow.test.assert(io.readFileString(base + "/output/data.txt"), "x".repeat(128), "Valid extraction failed")
+            if (posix) ow.test.assert(String(java.nio.file.attribute.PosixFilePermissions.toString(java.nio.file.Files.getPosixFilePermissions(path))), "rwxr-xr--", "Extraction changed destination permissions")
+        } finally {
+            if (isNull(previous)) java.lang.System.clearProperty(key)
+            else java.lang.System.setProperty(key, previous)
+            zip.close()
+            io.rm(base)
+        }
+    }
+
     exports.testZIP = function() {
         plugin("ZIP");
 

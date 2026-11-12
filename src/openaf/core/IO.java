@@ -641,19 +641,11 @@ public class IO extends ScriptableObject {
 	 */
 	@JSFunction
 	public static Object gunzip(Object dataIn) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		
-		if (dataIn instanceof org.mozilla.javascript.NativeJavaArray) {
-			dataIn = ((org.mozilla.javascript.NativeJavaArray) dataIn).unwrap();
-		}
-		GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream((byte[]) dataIn));
-		IOUtils.copy(gis, baos);
-		
-		gis.close();
-		baos.flush();
-		baos.close();
-		
-		return baos.toByteArray();		
+        if (dataIn instanceof org.mozilla.javascript.NativeJavaArray) dataIn = ((org.mozilla.javascript.NativeJavaArray) dataIn).unwrap();
+        new ArchiveLimits.Budget().checkInput(((byte[]) dataIn).length);
+        try (java.io.InputStream in = ArchiveLimits.gunzip(new ByteArrayInputStream((byte[]) dataIn))) {
+            return IOUtils.toByteArray(in);
+        }
 	}
 	
     /**
@@ -760,7 +752,7 @@ public class IO extends ScriptableObject {
 	public static Object readFileGzipStream(String filename) throws IOException {
 		java.io.InputStream input = FileUtils.openInputStream(new File(filename));
 		try {
-			return new GZIPInputStream(input);
+			return ArchiveLimits.gunzip(input);
 		} catch (IOException | RuntimeException | Error failure) {
 			try { input.close(); } catch (Throwable cleanup) { failure.addSuppressed(cleanup); }
 			throw failure;

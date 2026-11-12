@@ -24,6 +24,7 @@ package openaf.plugins;
  *
  */
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -78,6 +79,71 @@ public class HTTPServer extends ScriptableObject {
 	protected HttpServer javaHttpServer;
 	protected HttpsServer javaHttpsServer;
     private ExecutorService javaExecutor;
+    private volatile int maxRequestBodySize = javaHttpSetting("maxBodyBytes", 8 * 1024 * 1024);
+
+    private static int javaHttpSetting(String name, int fallback) {
+        int value = Integer.parseInt(System.getProperty("openaf.http.java." + name, Integer.toString(fallback)));
+        if (value < 1) throw new IllegalArgumentException("Java HTTP limit must be positive: " + name);
+        return value;
+    }
+
+    private static ExecutorService newJavaExecutor() {
+        int workers = javaHttpSetting("maxWorkers", 8);
+        int queue = javaHttpSetting("maxQueuedRequests", 64);
+        return new java.util.concurrent.ThreadPoolExecutor(workers, workers, 0L,
+                java.util.concurrent.TimeUnit.MILLISECONDS,
+                new java.util.concurrent.ArrayBlockingQueue<Runnable>(queue));
+    }
+
+    /**
+     * <odoc><key>HTTPd.setMaxRequestBodySize(bytes)</key>
+     * Sets the positive maximum inbound body size for Java-mode custom and echo routes.
+     * The default is 8 MiB. Oversized requests receive 413 before callbacks run.
+     * </odoc>
+     */
+    @JSFunction
+    public void setMaxRequestBodySize(int bytes) {
+        if (bytes < 1) throw new IllegalArgumentException("Request body limit must be positive");
+        maxRequestBodySize = bytes;
+    }
+
+    private static final class RequestBodyException extends IOException {
+        final int status;
+        RequestBodyException(int status) { super(status == 413 ? "Request body too large" : "Invalid Content-Length"); this.status = status; }
+    }
+
+    private byte[] readRequestBody(HttpExchange exchange) throws IOException {
+        int limit = maxRequestBodySize;
+        String length = exchange.getRequestHeaders().getFirst("Content-Length");
+        if (length != null) {
+            long declared;
+            try { declared = Long.parseLong(length); }
+            catch (NumberFormatException invalid) { throw new RequestBodyException(400); }
+            if (declared < 0) throw new RequestBodyException(400);
+            if (declared > limit) throw new RequestBodyException(413);
+        }
+        InputStream in = exchange.getRequestBody();
+        ByteArrayOutputStream out = new ByteArrayOutputStream(Math.min(limit, 8192));
+        byte[] buffer = new byte[8192];
+        int n;
+        while ((n = in.read(buffer, 0, (int) Math.min(buffer.length, (long) limit - out.size() + 1))) != -1) {
+            // Do not close/drain an unfinished body before sending the rejection.
+            if (n > limit - out.size()) throw new RequestBodyException(413);
+            out.write(buffer, 0, n);
+        }
+        in.close();
+        return out.toByteArray();
+    }
+
+    private static void rejectRequestBody(HttpExchange exchange, RequestBodyException failure) throws IOException {
+        byte[] response = failure.getMessage().getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Connection", "close");
+        exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
+        try {
+            exchange.sendResponseHeaders(failure.status, response.length);
+            try (OutputStream out = exchange.getResponseBody()) { out.write(response); }
+        } finally { exchange.close(); }
+    }
 	protected String impl;
 	protected boolean isSecure = false;
 	protected Map<String, HttpHandler> javaHandlers = new ConcurrentHashMap<>();
@@ -407,6 +473,8 @@ public class HTTPServer extends ScriptableObject {
 			address = new InetSocketAddress((String) host, port);
 		}
 		
+        javaHttpSetting("maxWorkers", 8);
+        javaHttpSetting("maxQueuedRequests", 64);
 		if (keyStorePath != null && !keyStorePath.equals("undefined") && 
 			password != null && !(password instanceof Undefined)) {
 			// HTTPS server
@@ -437,7 +505,7 @@ public class HTTPServer extends ScriptableObject {
 				sslContext.init(kmf.getKeyManagers(), null, null);
 				javaHttpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
 				
-				javaExecutor = Executors.newCachedThreadPool();
+				javaExecutor = newJavaExecutor();
 				javaHttpsServer.setExecutor(javaExecutor);
 				javaHttpsServer.start();
 				isSecure = true;
@@ -451,7 +519,7 @@ public class HTTPServer extends ScriptableObject {
 			// HTTP server
 			javaHttpServer = HttpServer.create(address, 0);
             serverport = javaHttpServer.getAddress().getPort();
-			javaExecutor = Executors.newCachedThreadPool();
+			javaExecutor = newJavaExecutor();
 			javaHttpServer.setExecutor(javaExecutor);
 			javaHttpServer.start();
 			isSecure = false;
@@ -674,12 +742,11 @@ public class HTTPServer extends ScriptableObject {
 						response.append("  ").append(key).append(": ").append(String.join(", ", values)).append("\n");
 					});
 					
-					try (InputStream is = exchange.getRequestBody()) {
-						byte[] body = is.readAllBytes();
-						if (body.length > 0) {
-							response.append("Body:\n").append(new String(body, StandardCharsets.UTF_8));
-						}
-					}
+                    byte[] body;
+                    try { body = readRequestBody(exchange); }
+                    catch (RequestBodyException failure) { rejectRequestBody(exchange, failure); return; }
+                    if (body.length > 0) response.append("Body:\n").append(new String(body, StandardCharsets.UTF_8));
+
 					
 					byte[] responseBytes = response.toString().getBytes(StandardCharsets.UTF_8);
 					exchange.getResponseHeaders().set("Content-Type", "text/plain");
@@ -1329,6 +1396,8 @@ public class HTTPServer extends ScriptableObject {
 				// Convert result to HTTP response
 				sendResponse(exchange, result);
 				
+            } catch (RequestBodyException failure) {
+                rejectRequestBody(exchange, failure);
 			} catch (Exception e) {
 				// Once streaming has started a second status line cannot be sent.
 				if (exchange.getResponseCode() < 0) {
@@ -1344,7 +1413,7 @@ public class HTTPServer extends ScriptableObject {
 			}
 		}
 		
-		private Object convertHttpExchangeToRequest(HttpExchange exchange) {
+		private Object convertHttpExchangeToRequest(HttpExchange exchange) throws IOException {
 			Context cx = (Context) AFCmdBase.jse.enterContext();
 			Scriptable request = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 			AFCmdBase.jse.exitContext();
@@ -1367,15 +1436,12 @@ public class HTTPServer extends ScriptableObject {
 			request.put("header", request, headers);
 			
 			// Body (if any)
-			try (InputStream is = exchange.getRequestBody()) {
-				byte[] body = is.readAllBytes();
-				if (body.length > 0) {
-					request.put("data", request, new String(body, StandardCharsets.UTF_8));
-					request.put("bytes", request, body);
-				}
-			} catch (IOException e) {
-				// Handle error
-			}
+            byte[] body = readRequestBody(exchange);
+            if (body.length > 0) {
+                request.put("data", request, new String(body, StandardCharsets.UTF_8));
+                request.put("bytes", request, body);
+            }
+
 			
 			return request;
 		}

@@ -995,6 +995,17 @@
         ow.loadFormat();
 
         var code = af.create2FACredentials("test", "openaf");
+        var enrollments = [code, af.create2FACredentials()]
+        enrollments.forEach(function(credentials) {
+            ow.test.assert(isUnDef(credentials.qrChart), true, "Enrollment must not return a remote QR service URL")
+            ow.test.assert(isArray(credentials.scratchCodes), true, "Scratch codes must remain available")
+            ow.test.assert(String(credentials.verificationCode).length, 6, "Verification code must remain available")
+            ow.test.assert(isString(credentials.key), true, "Manual enrollment key must remain available")
+            ow.test.assert(credentials.otpURL.indexOf("otpauth://totp/"), 0, "Local enrollment URI must remain available")
+            ow.test.assert(credentials.otpURL.indexOf("?secret=" + credentials.key + "&") >= 0, true, "Enrollment URI must contain the generated key")
+            var currentToken = af.get2FAToken(credentials.encryptedKey)
+            ow.test.assert(af.validate2FA(credentials.encryptedKey, currentToken), true, "Encrypted key must still authenticate")
+        })
         var init = new Date();
 
         var token = af.get2FAToken(code.encryptedKey);

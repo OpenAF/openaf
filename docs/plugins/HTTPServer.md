@@ -4,6 +4,18 @@ The `HTTPServer` plugin provides an embedded web server supporting NanoHTTPD (`n
 
 ---
 
+## Java-mode request limits
+
+Custom/default routes and echo routes in `impl: "java"` accept request bodies up to 8 MiB by default. Both declared `Content-Length` and actual streamed bytes are checked. Excess bodies receive HTTP 413 before the callback runs, including chunked uploads; the rejected connection is closed. Empty bodies and accepted `data`/`bytes` representations are unchanged. Set a positive per-server byte limit with `server.setMaxRequestBodySize(bytes)`, or configure the creation default with Java system property `openaf.http.java.maxBodyBytes`.
+
+Java listeners use at most 8 workers and queue at most 64 requests by default. Positive creation-time system properties `openaf.http.java.maxWorkers` and `openaf.http.java.maxQueuedRequests` override these bounds. Submissions beyond those bounds are rejected; an overloaded client may see a closed connection rather than an HTTP response. `stop()` shuts down the owned workers. These limits bound body buffering and dispatched work; they are not a global connection quota or a timeout for slow uploads. Larger trusted limits permit greater resource consumption. NanoHTTPD engines have separate request handling.
+
+## NanoHTTPD request limits
+
+Both `nwu` and `nwu2` reject bodies larger than 8 MiB before route dispatch or temporary-file creation. Positive Java system properties configure admission: `openaf.http.nano.maxBodyBytes` (8 MiB), `openaf.http.nano.maxBufferedBytes` (128 MiB shared across both stacks), and `openaf.http.nano.maxMultipartParts` (1,024). Values must fit a positive signed 32-bit integer. The aggregate budget reserves twice each admitted body for its raw spool and extracted PUT/multipart copies, and remains reserved until response processing and temporary-file cleanup finish. Spools use bounded heap buffers instead of persistent memory mappings. If cleanup fails, the failed storage remains charged until process restart; repair the filesystem before restarting. Excess individual bodies/parts receive 413; exhausted shared budget receives 503. Later requests can proceed when reservations are released.
+
+Malformed, negative, overflowing or conflicting Content-Length headers receive 400. Identical repeated lengths remain accepted. Transfer-Encoding is unsupported and rejected with 400, including ambiguous TE/CL combinations. Truncated bodies fail instead of reaching callbacks as partial input. Parsing a body twice returns cached file entries rather than consuming the next request. Temporary files no longer retain unused output handles. These controls bound admitted HTTP bodies, not global connections, custom raw-stream consumers, or application-retained data; the WebSocket connection stream is unchanged. Trusted larger settings increase resource bounds.
+
 ## Loading Syntax
 
 ```javascript
@@ -69,6 +81,8 @@ print("Server listening on port: " + hs.getPort());
 ---
 
 ## WebSockets
+
+The `nwu` and `nwu2` NanoWSD receivers limit inbound frames and assembled messages to 1 MiB by default, and fragmented messages to 256 frames (including empty fragments). Oversized data is rejected with `MessageTooBig` before its payload is allocated. Java handlers can explicitly change the byte limit with `WebSocket.setMaxMessageSize(positiveBytes)`; the fragment-count limit remains in effect. The default `WebSocketFrame.read(stream)` uses the same byte limit; `read(stream, maxPayloadSize)` allows an explicit parser limit. Ping, Pong and Close retain their protocol limits. These are per-message bounds, not a quota across connections.
 
 WebSocket support is backed by the `HTTPws` plugin (`src/openaf/plugins/HTTPws/WebSockets.java`) and is enabled by passing `webSockets: true` to the `HTTPd` constructor (or calling `addWS(uri)`).
 

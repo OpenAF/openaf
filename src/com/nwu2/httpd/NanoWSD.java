@@ -64,6 +64,9 @@ public abstract class NanoWSD extends NanoHTTPD {
         CLOSED
     }
 
+    /** Default inbound frame and assembled-message limit: one MiB. */
+    public static final int DEFAULT_MAX_MESSAGE_SIZE = 1024 * 1024;
+
     public static abstract class WebSocket {
 
         private final InputStream in;
@@ -99,7 +102,7 @@ public abstract class NanoWSD extends NanoHTTPD {
             this.handshakeResponse.addHeader(NanoWSD.HEADER_CONNECTION, NanoWSD.HEADER_CONNECTION_VALUE);
         }
 
-        private int maxMessageSize = Integer.MAX_VALUE;
+        private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
 
         /** Optional per-connection limit, checked before frame allocation and fragment assembly. */
         public void setMaxMessageSize(int bytes) {
@@ -168,6 +171,8 @@ public abstract class NanoWSD extends NanoHTTPD {
                     NanoWSD.LOG.log(Level.FINE, "close failed", e);
                 }
             }
+            this.continuousFrames.clear();
+            this.continuousOpCode = null;
             this.state = State.CLOSED;
             onClose(code, reason, initiatedByRemote);
         }
@@ -200,7 +205,7 @@ public abstract class NanoWSD extends NanoHTTPD {
         private void handleFrameFragment(WebSocketFrame frame) throws IOException {
             long length = frame.getBinaryPayload().length;
             for (WebSocketFrame previous : this.continuousFrames) length += previous.getBinaryPayload().length;
-            if (length > this.maxMessageSize || (this.maxMessageSize != Integer.MAX_VALUE && this.continuousFrames.size() >= 256)) {
+            if (length > this.maxMessageSize || this.continuousFrames.size() >= 256) {
                 throw new WebSocketException(CloseCode.MessageTooBig, "Message limit exceeded.");
             }
             if (frame.getOpCode() != OpCode.Continuation) {
@@ -260,7 +265,9 @@ public abstract class NanoWSD extends NanoHTTPD {
         private void readWebsocket() {
             try {
                 while (this.state == State.OPEN) {
-                    handleWebsocketFrame(WebSocketFrame.read(this.in, this.maxMessageSize));
+                    int remaining = this.maxMessageSize;
+                    for (WebSocketFrame previous : this.continuousFrames) remaining -= previous.getBinaryPayload().length;
+                    handleWebsocketFrame(WebSocketFrame.read(this.in, this.maxMessageSize, Math.max(0, remaining)));
                 }
             } catch (CharacterCodingException e) {
                 onException(e);
@@ -447,10 +454,14 @@ public abstract class NanoWSD extends NanoHTTPD {
         }
 
         public static WebSocketFrame read(InputStream in) throws IOException {
-            return read(in, Integer.MAX_VALUE);
+            return read(in, DEFAULT_MAX_MESSAGE_SIZE);
         }
 
         public static WebSocketFrame read(InputStream in, int maxPayloadSize) throws IOException {
+            return read(in, maxPayloadSize, maxPayloadSize);
+        }
+
+        private static WebSocketFrame read(InputStream in, int maxPayloadSize, int remainingMessageSize) throws IOException {
             byte head = (byte) checkedRead(in.read());
             boolean fin = (head & 0x80) != 0;
             OpCode opCode = OpCode.find((byte) (head & 0x0F));
@@ -465,7 +476,7 @@ public abstract class NanoWSD extends NanoHTTPD {
 
             WebSocketFrame frame = new WebSocketFrame(opCode, fin);
             frame.readPayloadInfo(in);
-            if (frame._payloadLength > maxPayloadSize) {
+            if (frame._payloadLength > maxPayloadSize || (!opCode.isControlFrame() && frame._payloadLength > remainingMessageSize)) {
                 throw new WebSocketException(CloseCode.MessageTooBig, "Frame limit exceeded.");
             }
             frame.readPayload(in);

@@ -149,7 +149,42 @@ OpenWrap.oJob = function(isNonLocal) {
 	return this;
 };
 
+// A load graph owns one thread-local budget; concurrent loads cannot reset each other.
+OpenWrap.oJob.prototype.__remoteLoadContext = new java.lang.ThreadLocal()
+OpenWrap.oJob.prototype.__withRemoteLoadBudget = function(fn, enterFile) {
+	var context = this.__remoteLoadContext.get(), owner = isNull(context), entered = false
+	if (owner) {
+		var limit = function(name, fallback) {
+			var value = Number(java.lang.System.getProperty("openaf.ojob." + name, String(fallback)))
+			if (!isFinite(value) || Math.floor(value) != value || value < 1 || value > 2147483646) throw "Invalid oJob download limit: " + name
+			return value
+		}
+		context = { bytes: 0, requests: 0, files: 0, depth: 0,
+			fileLimit: limit("maxRemoteBytes", 8 * 1024 * 1024),
+			totalLimit: limit("maxRemoteTotalBytes", 32 * 1024 * 1024),
+			requestLimit: limit("maxRemoteRequests", 128),
+			loadLimit: limit("maxLoadFiles", 256), depthLimit: limit("maxIncludeDepth", 64),
+			timeout: limit("remoteTimeoutMs", 30000) }
+		this.__remoteLoadContext.set(context)
+	}
+	try {
+		if (enterFile) {
+			context.files++
+			context.depth++
+			entered = true
+			if (context.files > context.loadLimit || context.depth > context.depthLimit) throw "oJob include budget exceeded"
+		}
+		return fn(context)
+	} finally {
+		if (entered) context.depth--
+		if (owner) this.__remoteLoadContext.remove()
+	}
+}
+
 OpenWrap.oJob.prototype.__readAuthorizedRemoteBytes = function(aURL) {
+	var parent = this
+	return this.__withRemoteLoadBudget(function(budget) {
+	var deadline = java.lang.System.nanoTime() + budget.timeout * 1000000
 	var current = String(aURL)
 	var initialURL = new java.net.URL(current), initialUserInfo = initialURL.getUserInfo(), initialPort = initialURL.getPort() >= 0 ? initialURL.getPort() : initialURL.getDefaultPort()
 	var user, pass
@@ -158,21 +193,27 @@ OpenWrap.oJob.prototype.__readAuthorizedRemoteBytes = function(aURL) {
 		pass = String(java.net.URLDecoder.decode(String(initialUserInfo).substring(String(initialUserInfo).indexOf(":") + 1), "UTF-8"))
 	}
 	for (var redirects = 0; redirects <= 10; redirects++) {
+		if (++budget.requests > budget.requestLimit) throw "oJob remote request budget exceeded"
+		var remainingMs = Math.ceil((deadline - java.lang.System.nanoTime()) / 1000000)
+		if (remainingMs <= 0) throw "oJob remote download deadline exceeded"
 		var currentURL = new java.net.URL(current)
 		if (!String(currentURL.getProtocol()).match(/^https?$/i)) throw "Unauthorized URL scheme: " + current
-		if (this.authorizedDomains.indexOf(String(currentURL.getHost())) < 0) throw "Unauthorized URL redirect: " + current
+		if (parent.authorizedDomains.indexOf(String(currentURL.getHost())) < 0) throw "Unauthorized URL redirect: " + current
 
-		var http = ow.loadObj().rest.connectionFactory()
+		var http = ow.loadObj().rest.connectionFactory(), stream
 		try {
-			http.client = http.client.newBuilder().followRedirects(false).followSslRedirects(false).build()
+			http.client = http.client.newBuilder().followRedirects(false).followSslRedirects(false)
+				.connectTimeout(remainingMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.readTimeout(remainingMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.callTimeout(remainingMs, java.util.concurrent.TimeUnit.MILLISECONDS).build()
 			var currentPort = currentURL.getPort() >= 0 ? currentURL.getPort() : currentURL.getDefaultPort()
 			if (isDef(user) && String(currentURL.getProtocol()).toLowerCase() == String(initialURL.getProtocol()).toLowerCase() &&
 				String(currentURL.getHost()).toLowerCase() == String(initialURL.getHost()).toLowerCase() && currentPort == initialPort) {
 				http.login(user, pass, false, current)
 			}
 			http.setThrowExceptions(false)
-			var response = http.getBytes(current)
-			var code = response.responseCode
+			stream = http.getStream(current)
+			var code = http.responseCode()
 			if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
 				var location = http._response.header("Location")
 				if (isNull(location)) throw "HTTP redirect without Location for URL: " + current
@@ -180,15 +221,29 @@ OpenWrap.oJob.prototype.__readAuthorizedRemoteBytes = function(aURL) {
 				continue
 			}
 			if (code >= 300) throw "HTTP response code " + code + " for URL: " + current
-			return response.responseBytes
+			var allowed = Math.min(budget.fileLimit, budget.totalLimit - budget.bytes)
+			var declared = Number(http._response.body().contentLength())
+			if (declared > allowed) throw "oJob remote byte budget exceeded"
+			// The HTTP stream is decoded (including transparent gzip); length is only a hint.
+			var bytes = stream.readNBytes(allowed + 1)
+			if (bytes.length > allowed) throw "oJob remote byte budget exceeded"
+			budget.bytes += bytes.length
+			return bytes
 		} finally {
+			try { if (isDef(stream)) stream.close() } catch(e) {}
 			try { http.close() } catch(e) {}
 		}
 	}
 	throw "Too many HTTP redirects for URL: " + aURL
+	})
 }
 
-OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath, aContentCallback) {
+OpenWrap.oJob.prototype.verifyIntegrity = function() {
+	var parent = this, args = arguments
+	return this.__withRemoteLoadBudget(function() { return parent.__verifyIntegrityBudgeted.apply(parent, args) }, false)
+}
+
+OpenWrap.oJob.prototype.__verifyIntegrityBudgeted = function(aFileOrPath, aContentCallback) {
 	_$(aFileOrPath, "aFileOrPath").isString().$_();
 	
 	var isUrl = false;
@@ -696,7 +751,12 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
  * Loads aJSON oJob configuration and returns the processed map (with all includes processed).
  * </odoc>
  */
-OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos, dontLoadJobs) {
+OpenWrap.oJob.prototype.loadJSON = function() {
+	var parent = this, args = arguments
+	return this.__withRemoteLoadBudget(function() { return parent.__loadJSONBudgeted.apply(parent, args) }, false)
+}
+
+OpenWrap.oJob.prototype.__loadJSONBudgeted = function(aJSON, dontLoadTodos, dontLoadJobs) {
 	if (!isMap(aJSON)) return {};
 	var res = aJSON;
 	var parent = this
@@ -1004,7 +1064,12 @@ OpenWrap.oJob.prototype.__readCachedFile = function(aPath, aReadFn) {
 	return clone(parsed)
 }
 
-OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
+OpenWrap.oJob.prototype.__loadFile = function() {
+	var parent = this, args = arguments
+	return this.__withRemoteLoadBudget(function() { return parent.__loadFileBudgeted.apply(parent, args) }, true)
+}
+
+OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isInclude) {
 	var res = {}, parent = this, validation = false, signatureRejected = false, verifiedContent, aOrigFile = aFile;
 
 	function _readRemoteBytes(url) {

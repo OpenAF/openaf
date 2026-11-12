@@ -2346,8 +2346,8 @@ public class AFBase extends ScriptableObject {
 	 * <odoc>
 	 * <key>af.create2FACredentials(anAccountName, anIssuer) : Map</key>
 	 * Given anAccountName and anIssuer will create a the 2FA/TOTP (Time-Based One-Time Password) returning a map with
-	 * the scratchCodes, the verificationCode, the key, the openaf encryptedKey, the QR code URL 
-	 * and the OTP URL.
+	 * the scratchCodes, the verificationCode, the key, the openaf encryptedKey and the OTP URL.
+	 * Render the OTP URL as a QR code locally; no third-party QR service URL is returned.
 	 * </odoc>
 	 */
 	public Object create2FACredentials(String issuer, String accountName) throws Exception {
@@ -2365,9 +2365,6 @@ public class AFBase extends ScriptableObject {
 		map.put("verificationCode", String.format("%06d", gkey.getVerificationCode()));
 		map.put("key", gkey.getKey());
 		map.put("encryptedKey", encrypt(gkey.getKey(), null));
-		//map.put("qrChart", GoogleAuthenticatorQRGenerator.getOtpAuthURL(issuer, accountName, gkey));
-		//map.put("otpURL", GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(issuer, accountName, gkey));
-		map.put("qrChart", "https://api.qrserver.com/v1/create-qr-code/?data=otpauth%3A%2F%2Ftopt%2F" + issuer + "%3A" + accountName + "%3Fsecret%3D" + gkey.getKey() + "%26issuer%3D" + issuer + "%26algorithm%3D" + gkey.getConfig().getHmacHashFunction().toString().replace("Hmac", "") + "%26digits%3D" + gkey.getConfig().getCodeDigits() + "%26period%3D" + (gkey.getConfig().getTimeStepSizeInMillis() / 1000) + "&size=200x200&ecc=M&margin=0");
 		map.put("otpURL", "otpauth://totp/" + issuer + ":" + accountName + "?secret=" + gkey.getKey() + "&issuer=" + issuer + "&algorithm=" + gkey.getConfig().getHmacHashFunction().toString().replace("Hmac", "") + "&digits=" + gkey.getConfig().getCodeDigits() + "&period=" + (gkey.getConfig().getTimeStepSizeInMillis() / 1000));
 
 		return map.getMap();

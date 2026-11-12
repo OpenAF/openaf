@@ -70,7 +70,7 @@ Sources:
 
 ### af.create2FACredentials(anAccountName, anIssuer) : Map
 
-Given anAccountName and anIssuer will create a the 2FA/TOTP (Time-Based One-Time Password) returning a map with the scratchCodes, the verificationCode, the key, the openaf encryptedKey, the QR code URL  and the OTP URL.
+Given anAccountName and anIssuer will create a the 2FA/TOTP (Time-Based One-Time Password) returning a map with the scratchCodes, the verificationCode, the key, the openaf encryptedKey and the OTP URL. Render the OTP URL as a QR code locally; no third-party QR service URL is returned.
 
 Sources:
 

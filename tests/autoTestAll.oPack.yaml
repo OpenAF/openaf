@@ -4,6 +4,10 @@ include:
   - autoTestAll.common.yaml
 
 jobs:
+  - name: oPack::Credential scope
+    from: oPack::Init
+    to  : OpenAF Test
+    exec: args.func = args.tests.testCredentialScope;
   - name: oPack::Init
     exec: args.tests = require("autoTestAll.oPack.js");
 
@@ -19,5 +23,6 @@ jobs:
 
 todo:
   - oPack::Init
+  - oPack::Credential scope
   - oPack::Copy-only containment
   - oPack::Copy-only useunzip data boundary

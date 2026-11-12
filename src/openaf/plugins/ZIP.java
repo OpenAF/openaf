@@ -50,6 +50,7 @@ import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
 import openaf.AFCmdBase;
+import openaf.core.ArchiveLimits;
 import openaf.SimpleLog;
 import openaf.SimpleLog.logtype;
 
@@ -141,16 +142,11 @@ public class ZIP extends ScriptableObject {
 	 */
 	@JSFunction
 	public static Object gunzip(Object dataIn) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		
-		GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream((byte[]) dataIn));
-		IOUtils.copy(gis, baos);
-		
-		gis.close();
-		baos.flush();
-		baos.close();
-		
-		return baos.toByteArray();		
+        if (dataIn instanceof NativeJavaArray) dataIn = ((NativeJavaArray) dataIn).unwrap();
+        new ArchiveLimits.Budget().checkInput(((byte[]) dataIn).length);
+        try (InputStream in = ArchiveLimits.gunzip(new ByteArrayInputStream((byte[]) dataIn))) {
+            return IOUtils.toByteArray(in);
+        }
 	}
 	
 	/**
@@ -204,7 +200,7 @@ public class ZIP extends ScriptableObject {
 		} else {
 			ZipEntry entry = zipEntries.get(name);
 			if (zipFile == null || entry == null) return null;
-			try (InputStream is = zipFile.getInputStream(entry)) {
+			try (InputStream is = ArchiveLimits.entry(zipFile.getInputStream(entry), entry)) {
 				return IOUtils.toByteArray(is);
 			}
 		}
@@ -257,10 +253,12 @@ public class ZIP extends ScriptableObject {
 	 */
 	@JSFunction
 	public Object streamGetFile(String aFilePath, String name) throws IOException {
+        ArchiveLimits.checkFile(aFilePath);
 		try (ZipFile file = new ZipFile(aFilePath)) {
+            ArchiveLimits.checkZipFile(file);
 			ZipEntry entry = file.getEntry(name);
 			if (entry == null) return null;
-			try (InputStream stream = file.getInputStream(entry)) {
+			try (InputStream stream = ArchiveLimits.entry(file.getInputStream(entry), entry)) {
 				return IOUtils.toByteArray(stream);
 			}
 		}
@@ -276,14 +274,16 @@ public class ZIP extends ScriptableObject {
 	 */
 	@JSFunction
 	public synchronized Object streamGetFileStream(String aFilePath, String name) throws Exception {
+        ArchiveLimits.checkFile(aFilePath);
 		final ZipFile file = new ZipFile(aFilePath);
 		try {
+            ArchiveLimits.checkZipFile(file);
 			ZipEntry entry = file.getEntry(name);
 			if (entry == null) {
 				file.close();
 				return null;
 			}
-			InputStream stream = new FilterInputStream(file.getInputStream(entry)) {
+			InputStream stream = new FilterInputStream(ArchiveLimits.entry(file.getInputStream(entry), entry)) {
 				@Override
 				public void close() throws IOException {
 					synchronized (ZIP.this) {
@@ -514,7 +514,9 @@ public class ZIP extends ScriptableObject {
 						IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
 					else
 						if(!newZe.isDirectory()) 
-							IOUtils.copy(zipFile.getInputStream(newZe), zos);
+							try (InputStream in = ArchiveLimits.entry(zipFile.getInputStream(newZe), zipEntries.get(ze))) {
+                                IOUtils.copy(in, zos);
+                            }
 					
 					zos.closeEntry(); 
 				}
@@ -563,7 +565,9 @@ public class ZIP extends ScriptableObject {
 						IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
 					else
 						if(!newZe.isDirectory()) 
-							IOUtils.copy(zipFile.getInputStream(newZe), zos);
+							try (InputStream in = ArchiveLimits.entry(zipFile.getInputStream(newZe), zipEntries.get(ze))) {
+                                IOUtils.copy(in, zos);
+                            }
 					
 					zos.closeEntry(); 
 				}
@@ -575,7 +579,10 @@ public class ZIP extends ScriptableObject {
 			baos.flush();
 		}
 
-		if (!dontReload) load(org.apache.commons.io.FileUtils.readFileToByteArray(new File(aFile)));
+        if (!dontReload) {
+            ArchiveLimits.checkFile(aFile);
+            load(org.apache.commons.io.FileUtils.readFileToByteArray(new File(aFile)));
+        }
 	}
 	
 	/**
@@ -586,19 +593,23 @@ public class ZIP extends ScriptableObject {
 	 */
 	@JSFunction
 	public ZIP load(Object data) throws IOException {
-		clean();
-		
-		if (data instanceof NativeJavaArray) data = ((NativeJavaArray) data).unwrap();
-		ByteArrayInputStream bais = new ByteArrayInputStream((byte[]) data);
-		ZipInputStream zis = new ZipInputStream(bais);
-		ZipEntry ze;
-		
-		while((ze = zis.getNextEntry()) != null) {
-			zipEntries.put(ze.getName(), ze);
-			zipData.put(ze.getName(), IOUtils.toByteArray(zis));
-			SimpleLog.log(logtype.DEBUG, "loading " + ze.getName(), null);
-		}
-		
+        if (data instanceof NativeJavaArray) data = ((NativeJavaArray) data).unwrap();
+        new ArchiveLimits.Budget().checkInput(((byte[]) data).length);
+        Map<String, ZipEntry> entries = new ConcurrentHashMap<>();
+        Map<String, byte[]> contents = new ConcurrentHashMap<>();
+        try (ZipInputStream zis = ArchiveLimits.zip(new ByteArrayInputStream((byte[]) data))) {
+            ZipEntry ze;
+            while ((ze = zis.getNextEntry()) != null) {
+                byte[] bytes = IOUtils.toByteArray(zis);
+                entries.put(ze.getName(), ze);
+                contents.put(ze.getName(), bytes);
+            }
+        }
+        if (zipFile != null) zipFile.close();
+        zipFile = null;
+        zipEntries = entries;
+        zipData = contents;
+
 		return this;
 	}
 	
@@ -616,7 +627,8 @@ public class ZIP extends ScriptableObject {
 		Map<String, ZipEntry> zes = new HashMap<String, ZipEntry>();
 	
 		if (aFilePath != null && !(aFilePath instanceof Undefined) && aFilePath instanceof String) {
-            try (ZipInputStream stream = new ZipInputStream(new FileInputStream((String) aFilePath))) {
+            ArchiveLimits.checkFile((String) aFilePath);
+            try (ZipInputStream stream = ArchiveLimits.zip(new FileInputStream((String) aFilePath))) {
                 ZipEntry entry;
                 while ((entry = stream.getNextEntry()) != null) {
                     zes.put(entry.getName(), entry);
@@ -644,7 +656,9 @@ public class ZIP extends ScriptableObject {
     @JSFunction
     public Object listMetadata(String aFilePath) throws IOException {
         Map<String, ZipEntry> entries = new HashMap<>();
+        ArchiveLimits.checkFile(aFilePath);
         try (ZipFile archive = new ZipFile(aFilePath)) {
+            ArchiveLimits.checkZipFile(archive);
             Enumeration<? extends ZipEntry> directory = archive.entries();
             while (directory.hasMoreElements()) {
                 ZipEntry entry = directory.nextElement();
@@ -693,20 +707,25 @@ public class ZIP extends ScriptableObject {
 	 */
 	@JSFunction
 	public synchronized ZIP loadFile(String filename) throws IOException {
-		if (zipFile != null) zipFile.close();
-		zipFile = null;
-		clean();
-		
-		zipFile = new ZipFile(filename);
-		ZipEntry ze;
-		Enumeration<? extends ZipEntry> e = zipFile.entries();
-		
-		while(e.hasMoreElements()) {
-			ze = e.nextElement();
-			SimpleLog.log(logtype.DEBUG, "loading " + ze.getName(), null);
-			zipEntries.put(ze.getName(), ze);
-		}
-		
+        ArchiveLimits.checkFile(filename);
+        ZipFile next = new ZipFile(filename);
+        Map<String, ZipEntry> entries = new ConcurrentHashMap<>();
+        try {
+            ArchiveLimits.checkZipFile(next);
+            Enumeration<? extends ZipEntry> e = next.entries();
+            while (e.hasMoreElements()) {
+                ZipEntry ze = e.nextElement();
+                entries.put(ze.getName(), ze);
+            }
+            if (zipFile != null) zipFile.close();
+        } catch (IOException | RuntimeException failure) {
+            try { next.close(); } catch (IOException cleanup) { failure.addSuppressed(cleanup); }
+            throw failure;
+        }
+        zipFile = next;
+        zipEntries = entries;
+        zipData = new ConcurrentHashMap<>();
+
 		return this;
 	}
 	
@@ -717,11 +736,11 @@ public class ZIP extends ScriptableObject {
 	
 	@JSFunction
 	public Object getArchiveInputStream(Object inputStream) throws ArchiveException {
-		return new ArchiveStreamFactory().createArchiveInputStream((InputStream) inputStream);
+		return ArchiveLimits.archive((InputStream) inputStream);
 	}
 	
 	@JSFunction
-	public Object getCompressInputStream(Object inputStream) throws CompressorException {
-		return new CompressorStreamFactory().createCompressorInputStream((InputStream) inputStream);
+	public Object getCompressInputStream(Object inputStream) throws CompressorException, IOException {
+		return ArchiveLimits.compressor((InputStream) inputStream);
 	}
 }

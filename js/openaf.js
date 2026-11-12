@@ -13522,7 +13522,7 @@ IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
 	var fis, zis
 	try {
 		fis = new java.io.FileInputStream(zipFile)
-		zis = new java.util.zip.ZipInputStream(fis)
+		zis = Packages.openaf.core.ArchiveLimits.zip(fis)
 
 		var ne = zis.getNextEntry()
 		while (!isNull(ne)) {
@@ -13549,15 +13549,30 @@ IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
 						source: entryName,
 						target: targetPath
 					})
-					var wtmp
-					try {
-						wtmp = io.writeFileStream(String(entryPath))
-						Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
-					} finally {
-						if (isDef(wtmp)) wtmp.close()
-					}
+                    var wtmp, temporary
+                    try {
+                        temporary = files.createTempFile(entryPath.getParent(), ".openaf-unzip-", ".part")
+                        wtmp = io.writeFileStream(String(temporary))
+                        Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
+                        wtmp.close()
+                        wtmp = undefined
+                        resolveEntry(entryName)
+                        // Publish only validated content through a normal file stream, preserving
+                        // existing permissions and the usual creation mode for new files.
+                        var staged = io.readFileStream(String(temporary))
+                        try {
+                            wtmp = io.writeFileStream(String(entryPath))
+                            Packages.org.apache.commons.io.IOUtils.copyLarge(staged, wtmp)
+                        } finally { staged.close() }
+                    } finally {
+                        try { if (isDef(wtmp)) wtmp.close() }
+                        finally { if (isDef(temporary)) files.deleteIfExists(temporary) }
+                    }
 				}
 			} catch(e) {
+                // Quota failures are fatal: never drain or continue the rejected archive.
+                var cause = e.javaException || e
+                if (cause instanceof Packages.openaf.core.ArchiveLimits.LimitException) throw e
 				logErrFn("ERROR: [" + entryName + "] " + e, e)
 			}
 

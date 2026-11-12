@@ -129,3 +129,21 @@ OpenAF core can enforce script integrity with `OAF_INTEGRITY` and `OAF_INTEGRITY
 
 ---
 See also: `openaf-flags.md`, main `ojob.md`.
+
+
+## Remote oJob resource limits
+
+Remote definitions are read from a stream with a decoded byte limit before integrity checks or parsing. Redirect and error bodies are closed without buffering. Domain authorization, same-origin credentials, integrity formats, and single-fetch verification remain unchanged.
+
+Trusted JVM properties configure positive integer limits (invalid settings fail closed):
+
+| Property prefix: `openaf.ojob.` | Default | Scope |
+| --- | --- | --- |
+| `maxRemoteBytes` | 8388608 | One decoded definition |
+| `maxRemoteTotalBytes` | 33554432 | Remote bytes in one load/include graph |
+| `maxRemoteRequests` | 128 | Requests including redirect hops in a graph |
+| `maxLoadFiles` | 256 | Files entered in a graph, including local files |
+| `maxIncludeDepth` | 64 | Nested file loads |
+| `remoteTimeoutMs` | 30000 | One download including redirects |
+
+Budgets are released on success and failure. Independent threads have independent budgets; these are not a process-wide concurrency quota. Direct integrity checks and preview reads receive their own budgets. Local file bytes are not capped by the remote byte limits. Raising settings increases resource exposure.

@@ -55,7 +55,7 @@ public final class StreamConversions {
              OutputStream target = shouldNotClose ? leaveOpen((OutputStream) output) : (OutputStream) output) {
             byte[] buffer = new byte[BUFFER_SIZE];
             if (format == Format.GUNZIP) {
-                try (InputStream decoded = new GZIPInputStream(leaveOpen(source), BUFFER_SIZE)) {
+                try (InputStream decoded = ArchiveLimits.gunzip(leaveOpen(source))) {
                     IOUtils.copyLarge(decoded, target, buffer);
                 }
             } else {

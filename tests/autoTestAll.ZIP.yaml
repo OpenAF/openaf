@@ -4,6 +4,11 @@ include:
    - autoTestAll.common.yaml
 
 jobs:
+   - name: ZIP::Archive extraction quotas
+     from: ZIP::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testArchiveExtractionLimits
+
    # ZIP tests
    # --------------
    - name: ZIP::Init
@@ -34,6 +39,7 @@ todo:
    # ZIP tests
    # ------------
    - ZIP::Init
+   - ZIP::Archive extraction quotas
    - ZIP::ZIP basic functionality
    - ZIP::ZIP streaming functionality
    - ZIP::Read ownership and missing entries
