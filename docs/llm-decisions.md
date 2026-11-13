@@ -32,7 +32,7 @@ State is a nonempty text string or a JSON data object/array. Whitespace-only tex
 
 Every question is evaluated against the same supplied state. Decisions ignore stored conversation, `withInstructions`, `withContext`, tools, MCP tools, and callbacks. They neither append history nor run tools. Sequential decisions require explicit separate calls. Structured requests place the question specification in system instructions and state in user data. A returned routing label is data; application code remains responsible for authorization and execution policies.
 
-Version 1 supports text/JSON and native image input for Ollama and OpenAI. Streaming, tool options, and other unsupported option keys are rejected.
+Version 1 supports text/JSON, native image input for Ollama and OpenAI, and native multimodal input for Gemini. Streaming, tool options, and other unsupported option keys are rejected.
 
 ### Image decisions with Ollama
 
@@ -319,3 +319,30 @@ tool execution use `LLM_DECISION_UNSUPPORTED`; invalid schemas, malformed respon
 authentication, and transient failures retain their existing error categories.
 After tools execute, callers must never restart the whole invocation through a
 fallback API. Successful tool results remain in conversation history on failure.
+
+## Native Gemini decisions
+
+Select `model: "gemini-decision-1"` (or `models/gemini-decision-1`) with `type: "gemini"`. `auto` selects native Decisions for this model; ordinary Gemini models retain structured decisions. Per-call `options.model` is honored. The decision-only model cannot use the structured strategy. Native calls use `POST /decisions` under the configured versioned Gemini URL (default `https://generativelanguage.googleapis.com/v1beta`), retaining configured authentication, headers, and timeout. Endpoint/account availability is unknown until execution.
+
+```javascript
+var ai = $llm({ type: "gemini", key: getEnv("GEMINI_API_KEY"), model: "gemini-decision-1" })
+var result = ai.decide("Evaluate this insurance claim.", {
+  damage: { type: "boolean", instructions: "Does the evidence show physical damage?" }
+}, {
+  requireProbabilities: true,
+  input: [
+    { type: "image", mime_type: "image/jpeg", data: photoBase64, resolution: "low" },
+    { type: "document", mime_type: "application/pdf", uri: uploadedPdfUri }
+  ]
+})
+```
+
+`options.input` is a nonempty ordered array, initially supported only by Gemini native decisions. Required `state` remains text/JSON context, sent as the first text part. Additional text parts use `{ type: "text", text: "..." }`. Media parts use `type: "image"`, `"audio"`, `"video"`, or `"document"`, a matching `mime_type`, and exactly one of raw base64 `data` or an HTTPS/Google Cloud Storage `uri`. Documents currently accept PDF only. Callers read files and manage uploads; the wrapper does not fetch media or accept local paths. Existing `options.images` remains specific to Ollama/OpenAI.
+
+Image/video parts optionally accept `resolution`: `low`, `medium`, `high`, or `ultra_high`. Audio parts optionally accept positive integer `sample_rate` and `channels`. Video processing controls and multimodal question instructions are not exposed. Unknown fields, malformed base64, conflicting sources, and unsupported options fail before HTTP. Google validates actual media contents and URI availability.
+
+Native requests support up to 1,000 questions and 2–255 choice options or score levels. Choice IDs cannot have surrounding whitespace or control characters. OpenAF caps serialized UTF-8 bodies at 64 KiB for text-only calls and 32 MiB when `input` is supplied; these are client limits, not Google's service limits. Native calls reject all structured-generation provider options and do not merge chat `params`.
+
+Boolean questions map to `noul` with optional `false_description`/`true_description` criteria. Returned probabilities and confidence are retained separately; scores expose both the modal level and probability-weighted expectation. Distribution checks use OpenAF's four-decimal tolerance without asserting provider rounding precision. Blocked or malformed results raise typed decision errors. Usage comes from the native `usage` envelope, including zero output tokens when reported. Calls remain stateless with no automatic retry or fallback.
+
+Wire fixtures follow the [official Python SDK v3.2.0](https://github.com/googleapis/python-genai/tree/v3.2.0/google/genai/_gaos/types/decisions). Fixture tests do not establish live provider availability.

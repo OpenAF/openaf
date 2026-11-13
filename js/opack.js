@@ -100,7 +100,7 @@ var verb;
 var arg;
 var __remoteUser;
 var __remotePass;
-var __remoteHTTP;
+var __remoteCredentialScope;
 
 // *********
 // FUNCTIONS
@@ -548,7 +548,14 @@ function listFiles(startPath, relPath, excludingList) {
 	return files.sort()
 }
 
-function generateHash(aObject) {
+function generateHash(aObject, expectedHash) {
+    if (isString(expectedHash) && /^(sha256:)?[a-f0-9]{64}$/i.test(expectedHash)) {
+        if (isString(aObject)) {
+            var input = io.readFileStream(aObject)
+            try { return String(sha256(input)) } finally { input.close() }
+        }
+        return String(sha256(aObject))
+    }
 	var res = "";
 
 	if (isString(aObject)) {
@@ -602,7 +609,7 @@ function listFilesWithHash(startPath, excludingList) {
 			_ul.line(str)
 			//lognl(str);
 			if (str.length > cmax) cmax = str.length;
-			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) && !(files[i].match(new RegExp(PACKAGEYAML + "$", "")))) {
+			if (files[i] != PACKAGEJSON && files[i] != PACKAGEYAML) {
 				filesHash[files[i]] = generateHash(startPath + "/" + files[i]);
 			}
 		} catch (e) {
@@ -655,27 +662,27 @@ function verifyHashList(startPath, filesHash, localPaths) {
 
 		switch(location) {
 		case "local": 
-			hash = generateHash(isDef(localPaths) && Object.prototype.hasOwnProperty.call(localPaths, file) ? localPaths[file] : startPath + "/" + file);
+			hash = generateHash(isDef(localPaths) && Object.prototype.hasOwnProperty.call(localPaths, file) ? localPaths[file] : startPath + "/" + file, filesHash[file]);
 			break;
 		case "http":
-			hash = generateHash(http);
+			hash = generateHash(http, filesHash[file]);
 			break;
 		case "opack":
 			if (location == "opack") 
-				hash = generateHash(zip.streamGetFile(file));
+				hash = generateHash(zip.streamGetFile(file), filesHash[file]);
 			else
-				hash = generateHash(zip.getFile(file));
+				hash = generateHash(zip.getFile(file), filesHash[file]);
 			break;
 		case "opackhttp":
 			if (location == "opackhttp")
-				hash = generateHash(zip.streamGetFile(file));
+				hash = generateHash(zip.streamGetFile(file), filesHash[file]);
 			else
-				hash = generateHash(zip.getFile(file));
+				hash = generateHash(zip.getFile(file), filesHash[file]);
 			break;
 		}
 
 		//if (location == 'local') ;
-		if (hash == filesHash[file])
+		if (isString(filesHash[file]) && String(hash).toLowerCase() == filesHash[file].replace(/^sha256:/i, "").toLowerCase())
 			results[file] = true;
 	}
 	_ul.end()
@@ -684,6 +691,117 @@ function verifyHashList(startPath, filesHash, localPaths) {
 	zip.close();
 
 	return results;
+}
+
+// Materialize one private snapshot; never fetch again after its integrity check.
+function stagePackageFiles(packag, pack, root, nohash, sources) {
+	var targets = Object.create(null), seen = Object.create(null)
+	packag.files.forEach(file => {
+		var relative = packag.__filelocation == "local" ? localPackageRelativePath(pack, file) : String(file)
+		var target = resolvePackagePath(root, relative)
+		if (Object.prototype.hasOwnProperty.call(seen, target)) throw "Duplicate package target: " + file
+		seen[target] = true
+		targets[file] = target
+	})
+	var remote = packag.__filelocation == "opackurl" ? getHTTPOPack(pack) : undefined
+	var copied = pForEach(packag.files, function(file) {
+		try {
+			var target = targets[file]
+			mkdir(String(new java.io.File(target).getParent()))
+			if (file == PACKAGEJSON || file == PACKAGEYAML) {
+				// The trusted parsed description governs this install, not a second fetched copy.
+				var description = clone(packag)
+				delete description.__filelocation
+				delete description.__target
+				if (file == PACKAGEJSON) io.writeFileJSON(target, description)
+				else io.writeFileYAML(target, description)
+			} else {
+				switch (packag.__filelocation) {
+				case "local": copyFile(sources[file], target); break
+				case "url":
+					ioStreamCopy(io.writeFileStream(target), execHTTPWithCred(pack.replace(/ /g, "%20") + "/" + file.replace(/ /g, "%20"), "GET", "", {}, true, undefined, true))
+					break
+				case "opackurl":
+					if (isUnDef(remote)) throw "Missing remote archive"
+					var bytes = remote.getFile(file)
+					if (java.util.Objects.isNull(bytes)) throw "Missing archive entry: " + file
+					io.writeFileBytes(target, bytes)
+					break
+				case "opacklocal":
+					var zip = new ZIP()
+					try {
+						var input = zip.streamGetFileStream(pack, file)
+						if (isNull(input) || isUnDef(input)) throw "Missing archive entry: " + file
+						ioStreamCopy(io.writeFileStream(target), input)
+					} finally { zip.close() }
+					break
+				default: throw "Unknown package source"
+				}
+			}
+			if (!io.fileExists(target) || !io.fileInfo(target).isFile) throw "Missing staged file: " + file
+			return 1
+		} catch(e) { logErr("Cannot stage " + file + ": " + e); return 0 }
+	})
+	if (!isArray(copied) || copied.length != packag.files.length || copied.some(r => r != 1)) throw "Package staging failed"
+	if (!nohash) packag.files.forEach(file => {
+		if (file == PACKAGEJSON || file == PACKAGEYAML) return
+		if (!isMap(packag.filesHash) || !Object.prototype.hasOwnProperty.call(packag.filesHash, file)) throw "Missing package hash: " + file
+		var expected = packag.filesHash[file], actual, input
+		if (!isString(expected)) throw "Invalid package hash: " + file
+		if (/^(sha256:)?[a-f0-9]{64}$/i.test(expected)) {
+			input = io.readFileStream(targets[file])
+			try { actual = String(sha256(input)) } finally { input.close() }
+			expected = expected.replace(/^sha256:/i, "")
+		} else if (/^[a-f0-9]{40}$/i.test(expected)) {
+			// Legacy text hashes normalize CRLF. Bare CR changes code semantics and is unsafe.
+			if (!io.isBinaryFile(targets[file])) {
+				var cr = false
+				input = io.readFileStream(targets[file])
+				try {
+					ioStreamReadBytes(input, bs => {
+						for (var i = 0; i < bs.length; i++) {
+							if (cr && bs[i] != 10) throw "Unverifiable bare CR in " + file
+							cr = bs[i] == 13
+						}
+					})
+					if (cr) throw "Unverifiable bare CR in " + file
+				} finally { input.close() }
+			}
+			actual = generateHash(targets[file])
+		} else throw "Unsupported package hash: " + file
+		if (String(actual).toLowerCase() != expected.toLowerCase()) throw "Package hash mismatch: " + file
+	})
+	return targets
+}
+
+// Backup only affected files; unrelated content in custom installation directories is retained.
+function packageFileTransaction(targets, obsolete, root) {
+	var backups = [], known = Object.create(null)
+	Object.keys(targets).map(file => targets[file]).concat(obsolete).forEach(path => {
+		if (Object.prototype.hasOwnProperty.call(known, path)) return
+		known[path] = true
+		var backup = { target: path }
+		if (io.fileExists(path)) {
+			if (!io.fileInfo(path).isFile) throw "Package target is not a regular file: " + path
+			backup.source = root + "/" + backups.length
+			java.nio.file.Files.copy(java.nio.file.Paths.get(path), java.nio.file.Paths.get(backup.source), java.nio.file.StandardCopyOption.COPY_ATTRIBUTES)
+		}
+		backups.push(backup)
+	})
+	return {
+		rollback: function() {
+			var failures = []
+			backups.forEach(backup => {
+				try {
+					if (isDef(backup.source)) {
+						mkdir(String(new java.io.File(backup.target).getParent()))
+						java.nio.file.Files.copy(java.nio.file.Paths.get(backup.source), java.nio.file.Paths.get(backup.target), java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES)
+					} else io.rm(backup.target)
+				} catch(e) { failures.push(String(e)) }
+			})
+			if (failures.length > 0) throw "Package rollback failed: " + failures.join("; ")
+		}
+	}
 }
 
 // Copy files from source to target
@@ -846,57 +964,87 @@ function sortPackagesByDeps(packages, isErase) {
 // SCRIPT UTILITIES
 // ----------------------------------------------------------
 
-// Get credentials
-function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
-	//if (isUnDef(__remoteHTTP)) __remoteHTTP = new HTTP();
-	if (isUnDef(__remoteHTTP)) __remoteHTTP = new ow.obj.http();
-    var res;
+function setOPackCredentials(cred) {
+	if (cred.indexOf(":") > 0) {
+		var nextCred = cred.split(/:/)
+		if (__remoteUser != nextCred[0] || __remotePass != nextCred[1]) {
+			__remoteCredentialScope = undefined
+		}
+		[__remoteUser, __remotePass] = nextCred
+	}
+}
 
-	ow.loadNet()
-	var path = ow.net.path4URL(aURL), host = ow.net.host4URL(aURL)
-	path = path.substring(0, path.lastIndexOf("/"))
+// Credentials are scoped to a scheme, host, effective port and package directory.
+function opackCredentialScope(aURL) {
+	if (new java.net.URI(String(aURL)).getRawUserInfo() != null) throw "Invalid package HTTP URL"
+	// Use the same canonical, encoded representation as the HTTP backend.
+	var url = new Packages.okhttp3.Request.Builder().url(String(aURL)).build().url()
+	var host = String(url.host())
+	if (host.indexOf(":") >= 0) host = "[" + host + "]"
+	var path = String(url.encodedPath())
+	path = path.substring(0, path.lastIndexOf("/") + 1)
+	return String(url.scheme()) + "://" + host + ":" + url.port() + path
+}
+
+// Get credentials. Never retain an authenticated client between requests.
+function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	var scope = opackCredentialScope(aURL)
+	var http = new ow.obj.http()
+	var res
 
 	try {
-		res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
-		if (res.responseCode == 401) throw "code: 401";
+		res = http.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)
+		if (http.responseCode() == 401) throw "code: 401"
 	} catch(e) {
-		if (String(e).indexOf("code: 401") >= 0) {
-			// Ensure bucket default exists
-			var si
-			try {
-				try { $sec(__, "opack").get("opack::") } catch(e1) { $sec(__, "opack").set("opack::", {}) }
-				
-				si = $sec(__, "opack").get("opack::" + host + "::" + path)
-			} catch(ee) {
+		if (String(e).indexOf("code: 401") < 0) throw e
+		var user, pass, si
+		// Explicit -cred values bind once, to the first challenged protection space.
+		if (isDef(__remoteUser) && isDef(__remotePass)) {
+			if (isUnDef(__remoteCredentialScope)) __remoteCredentialScope = scope
+			if (__remoteCredentialScope == scope) {
+				user = __remoteUser
+				pass = __remotePass
 			}
-
-			if (isMap(si) && (isUnDef(__remoteUser) || isUnDef(__remotePass))) { __remoteUser = Packages.openaf.AFCmdBase.afc.dIP(si.u); __remotePass = Packages.openaf.AFCmdBase.afc.dIP(si.p) }
-			if (isDef(__remoteUser) && isDef(__remotePass)) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL)
-
-			if (isUnDef(__remoteUser) || isUnDef(__remotePass)) {
-				__remoteUser = ask("Enter authentication user: ");
-				__remotePass = ask("Enter authentication password: ", String.fromCharCode(0));
+		}
+		try {
+			try { $sec(__, "opack").get("opack::") } catch(e1) { $sec(__, "opack").set("opack::", {}) }
+			// Legacy keys omit the scheme and cannot safely identify a protection space.
+			si = $sec(__, "opack").get("opack::" + scope)
+		} catch(ee) {}
+		if (isMap(si) && (isUnDef(user) || isUnDef(pass))) {
+			user = si.u
+			pass = si.p
+		}
+		if (isUnDef(user) || isUnDef(pass)) {
+			user = ask("Enter authentication user: ")
+			pass = ask("Enter authentication password: ", String.fromCharCode(0))
+		}
+		// Challenge authentication only; preemptive headers survive same-origin redirects.
+		http.login(Packages.openaf.AFCmdBase.afc.dIP(user), Packages.openaf.AFCmdBase.afc.dIP(pass), false, aURL)
+		var authenticator = http.client.authenticator()
+		http.client = http.client.newBuilder().authenticator({
+			authenticate: function(route, response) {
+				if (opackCredentialScope(String(response.request().url())) != scope) return null
+				return authenticator.authenticate(route, response)
 			}
-			__remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
-			res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
-			if (res.responseCode == 200) {
-				try {
-					$sec(__, "opack").set("opack::" + host + "::" + path, {
-						u: __remoteUser,
-						p: __remotePass
-					})
-				} catch(e2) {}
+		}).addNetworkInterceptor({
+			intercept: function(chain) {
+				var request = chain.request()
+				if (opackCredentialScope(String(request.url())) != scope) {
+					request = request.newBuilder().removeHeader("Authorization").build()
+				}
+				return chain.proceed(request)
 			}
-		} else {
-			throw e;
+		}).build()
+		http.close()
+		res = http.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)
+		if (http.responseCode() == 200) {
+			try { $sec(__, "opack").set("opack::" + scope, { u: user, p: pass }) } catch(e2) {}
 		}
 	}
 
-	if (returnStream) {
-		return res;
-	} else {
-		return res.responseBytes;
-	}
+	if (!returnStream) http.close()
+	return returnStream ? res : res.responseBytes
 }
 
 // Find OpenAF she-bang
@@ -1314,7 +1462,7 @@ function checkVersion(packag, force) {
 }
 
 // INSTALL
-function install(args) {
+function install(args, beforeCommit, forceVersion) {
 	if (isUnDef(args[0]) || args[0].length <= 0)
 		return;
 
@@ -1367,7 +1515,7 @@ function install(args) {
 		// -cred user:pass
 		if (foundCred) {
 			var cred = args[i];
-			if (cred.indexOf(":") > 0) [__remoteUser, __remotePass] = cred.split(/:/);
+			setOPackCredentials(cred)
 			foundCred = false
 			continue
 		}
@@ -1448,7 +1596,7 @@ function install(args) {
 
 		// Verify version
 		var origPack
-		if (checkVersion(packag, force) || justCopy) {
+		if (checkVersion(packag, force || forceVersion) || justCopy) {
 			log((justCopy ? "COPYING" : "INSTALLING") + " -- " + packag.name + " version " + packag.version);
 			origPack = findLocalDBByName(packag.name)
 		} else {
@@ -1547,172 +1695,57 @@ function install(args) {
 				_stats.failed++
 				return
 			}
-		if (!isUnDef(packag.scripts.preinstall) && !justCopy) {
-			var _r = runScript(packag.scripts.preinstall, { OPACK_PATH: outputPath })
-			if (!_r) {
-				logErr("Error while executing preinstall script.")
-				_stats.failed++
-				return
-			}
-		}
-
-		switch(packag.__filelocation) {
-			case "url":
-				log("Copying remote files...");
-				mkdir(outputPath);
-				var pres = pForEach(packag.files, function(apackfile) {
-					var message = "Copying " + apackfile + "...";
-					log(message);
-					
-					try {
-						var http = execHTTPWithCred(pack.replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true, undefined, true);
-						mkdir(String((new java.io.File(packageTargets[apackfile])).getParent()))
-						ioStreamCopy(io.writeFileStream(packageTargets[apackfile]), http);
-					} catch(e) {
-						logErr("Can't copy remote file '" + apackfile + "' (" + e.message + ")");
-						return 0
-					}
-					return 1
-				})
-				if (pres.filter(r => r == 1).length == packag.files.length) {
-					log(`All files copied (#${packag.files.length}).`)
-					_stats.installed++
-				} else {
-					log("Not all files were copied (" + pres.length + "/" + packag.files.length + ")!")
-					_stats.failed++
-				}
-				break;
-			case "opackurl":
-				var opack = getHTTPOPack(pack);
-				if(typeof opack == 'undefined') {
-					logErr("Can't get remote OPack '" + pack + "'")
-					_stats.failed++
-					return
-				}
-
-				var _ul = ow.format.string.updateLine(lognl)
-				var pres = pForEach(packag.files, function(apackfile) {
-					mkdir(outputPath);
-					var message = "Unpacking " + apackfile + "..."
-					_ul.line(message)
-
-					try {
-						mkdir(String((new java.io.File(packageTargets[apackfile])).getParent()))
-						io.writeFileBytes(packageTargets[apackfile], opack.getFile(apackfile));
-					} catch(e) {
-						logErr("Can't write " + outputPath + "/" + apackfile + " (" + e.message + ")");
-						return 0
-					}
-					return 1
-				})
-				_ul.end()
-				if (pres.filter(r => r == 1).length == packag.files.length) {
-					log(`All files unpacked (#${packag.files.length}).`)
-					_stats.installed++
-				} else {
-					log("Not all files were unpacked (" + pres.length + "/" + packag.files.length + ")!")
-					_stats.failed++
-				}
-				break;
-			case "local": {
-				log("Copying files");
-				var _ul = ow.format.string.updateLine(lognl)
-				outputPath = outputPath.replace(/\/{2,}/g, "/");
-				var pres = pForEach(packag.files, function(apackfile) {
-					try {
-						mkdir(outputPath);
-						var message = "Copying " + localPackageRelativePath(pack, apackfile) + "...";
-						//log(message);
-						_ul.line(message)
-						copyFile(packageSources[apackfile], packageTargets[apackfile]);
-					} catch(e) {
-						logErr(e);
-					}
-					return 1;
-				})
-				_ul.end()
-				if (pres.filter(r => r == 1).length == packag.files.length) {
-					log(`All files copied (#${packag.files.length}).`)
-					_stats.installed++
-				} else {
-					log("Not all files were copied (" + pres.length + "/" + packag.files.length + ")!")
-					_stats.failed++
-				}
-				break
-			}
-			case "opacklocal": {
-				log("Copying files");
-				var _ul = ow.format.string.updateLine(lognl)
-				outputPath = outputPath.replace(/\/{2,}/g, "/");
-				var pres = pForEach(packag.files, function(apackfile) {
-					mkdir(outputPath);
-					var message = "Copying " + apackfile + "...";
-					log(message)
-
-					try {
-						var opack = new ZIP();
-						try {
-							mkdir(String((new java.io.File(packageTargets[apackfile])).getParent()))
-							ioStreamCopy(io.writeFileStream(packageTargets[apackfile]), opack.streamGetFileStream(pack, apackfile));
-						} finally {
-							opack.close();
-						}
-					} catch(e) {
-						logErr("Can't write " + outputPath + "/" + apackfile + " (" + e.message + ")");
-						return 0
-					}
-					return 1
-				})
-				_ul.end()
-				if (pres.filter(r => r == 1).length == packag.files.length) {
-					log(`All files copied (#${packag.files.length}).`)
-					_stats.installed++
-				} else {
-					log("Not all files were copied (" + pres.length + "/" + packag.files.length + ")!")
-					_stats.failed++
-				}
-				break;
-			}
-		}
-
-		// Delete old files
-		if (isDef(origPack)) {
-			$from(origPack.files).except(packag.files).select(file => {
-				log("Deleting " + file + "...")
-					io.rm(resolvePackagePath(outputPath, file))
-			})
-		}
-
-		// Verify package files installed
-		if (!nohash) {
-			log("Verifying package files installed...");
-				var hashResults = verifyHashList(outputPath, packag.filesHash, packageTargets);
-			var c = 0, t = 0
-			for(let i in packag.files) {
-				var file = packag.files[i];
-				if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
-				if (!(hashResults[file])) {
-					logErr("File '" + file + "' not equal to declared hash ('" + packag.filesHash[file] + "')");
-				} else {
-					c++
-				}
-				t++
-			}
-			log(`` + c + ` file(s) verified (#` + t + `) (+package description file).`)
-		}
-
-		if (typeof packag.scripts.postinstall !== 'undefined' && !justCopy) {
-			var _r = runScript(packag.scripts.postinstall, { OPACK_PATH: outputPath })
-			if (!_r) {
-				logErr("Error while executing postinstall script.")
-				_stats.failed++
-				return
-			}
-		}
-
-		log("Package " + packag.name + " installed.");
-		delete packag["__filelocation"];
-		if (!justCopy) addLocalDB(packag, outputPath);
+        var stagingRoot, transaction, updateErased = false
+        try {
+            stagingRoot = String(java.nio.file.Files.createTempDirectory("openaf-opack-stage-"))
+            var payloadRoot = stagingRoot + "/payload", backupRoot = stagingRoot + "/backup"
+            mkdir(payloadRoot)
+            mkdir(backupRoot)
+            var staged = stagePackageFiles(packag, pack, payloadRoot, nohash, packageSources)
+            var obsolete = [], obsoleteNames = Object.create(null)
+            var finalPaths = packag.files.map(file => packageTargets[file])
+            if (isDef(origPack) && isArray(origPack.files)) origPack.files.forEach(file => {
+                var path = resolvePackagePath(outputPath, file)
+                if (finalPaths.indexOf(path) < 0) { obsolete.push(path); obsoleteNames[path] = file }
+            })
+            transaction = packageFileTransaction(packageTargets, obsolete, backupRoot)
+            // An update may erase its old installation only after this exact snapshot passed.
+            if (isFunction(beforeCommit)) { updateErased = true; beforeCommit(origPack) }
+            if (isDef(packag.scripts.preinstall) && !justCopy && !runScript(packag.scripts.preinstall, { OPACK_PATH: outputPath })) {
+                throw "Error while executing preinstall script"
+            }
+            // Hooks may change directories/symlinks; revalidate before the first promotion write.
+            packag.files.forEach(file => {
+                var relative = packag.__filelocation == "local" ? localPackageRelativePath(pack, file) : String(file)
+                if (resolvePackagePath(outputPath, relative) != packageTargets[file]) throw "Package destination changed: " + file
+            })
+            obsolete.forEach(path => {
+                if (resolvePackagePath(outputPath, obsoleteNames[path]) != path) throw "Obsolete package destination changed: " + path
+            })
+            packag.files.forEach(file => {
+                mkdir(String(new java.io.File(packageTargets[file]).getParent()))
+                java.nio.file.Files.copy(java.nio.file.Paths.get(staged[file]), java.nio.file.Paths.get(packageTargets[file]), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            })
+            obsolete.forEach(path => io.rm(path))
+            if (isDef(packag.scripts.postinstall) && !justCopy && !runScript(packag.scripts.postinstall, { OPACK_PATH: outputPath })) {
+                throw "Error while executing postinstall script"
+            }
+            log("Package " + packag.name + " installed.")
+            delete packag.__filelocation
+            if (!justCopy) addLocalDB(packag, outputPath)
+            _stats.installed++
+        } catch(e) {
+            logErr(String(e))
+            if (isDef(transaction)) {
+                try { transaction.rollback() } catch(rollbackError) { logErr(String(rollbackError)) }
+                if (updateErased && isDef(origPack) && !justCopy) addLocalDB(origPack, origPack.__target || outputPath)
+            }
+            _stats.failed++
+        } finally {
+            if (isDef(stagingRoot)) {
+                try { io.rm(stagingRoot) } catch(cleanupError) { logErr("Cannot remove package staging directory: " + cleanupError) }
+            }
+        }
 	})
 
 	log(ansiColor("FAINT",repeat(4, "-")))
@@ -1910,7 +1943,7 @@ function update(args) {
 
 		if (foundCred) {
 			var cred = args[i];
-			if (cred.indexOf(":") > 0) [__remoteUser, __remotePass] = cred.split(/:/);
+			setOPackCredentials(cred)
 			foundCred = false;
 			continue
 		}
@@ -2041,17 +2074,19 @@ function update(args) {
 			return
 		}
 
-		if (ferase) {
-			var otherStats = erase([_pack], derase, true)
-			_stats.erasedToUpdate += otherStats.erased
-			_stats.failed += otherStats.failed
-		}
+        var beforeInstallCommit
+        if (ferase) beforeInstallCommit = function(oldPack) {
+            if (isUnDef(oldPack)) return
+            var erased = erase([oldPack.__target || packag.name], derase, true, true)
+            _stats.erasedToUpdate += erased.erased
+            if (erased.failed > 0) throw "Cannot erase previous package for update"
+        }
 		var installArgs = [_pack]
 		if (isDef(originalInstallPath)) {
 			installArgs.push("-d")
 			installArgs.push(originalInstallPath)
 		}
-		var otherStats = install(installArgs)
+		var otherStats = install(installArgs, beforeInstallCommit, force)
 		if (isDef(otherStats)) {
 			_stats.updated += otherStats.installed
 			_stats.failed += otherStats.failed
@@ -2065,7 +2100,7 @@ function update(args) {
 }
 
 // ERASE
-function erase(args, dontRemoveDir, isUpdate) {
+function erase(args, dontRemoveDir, isUpdate, allowUnrelated) {
 	if (!isUnDef(args[0]) && args[0].toUpperCase() == 'OPENAF') {
 		logErr("Can't delete OpenAF. Please delete manually or following the uninstall instructions.");
 		return;
@@ -2172,7 +2207,8 @@ function erase(args, dontRemoveDir, isUpdate) {
 				}
 			}
 			if (!dontRemoveDir) rmdir(packag.__target, true);
-			if (!(io.fileExists(packag.__target) && io.listFiles(packag.__target).files.length > 0)) {
+            var remainingPackageFiles = packag.files.some(file => io.fileExists(resolvePackagePath(packag.__target, file)))
+			if (!(io.fileExists(packag.__target) && io.listFiles(packag.__target).files.length > 0) || (allowUnrelated && !remainingPackageFiles)) {
 				log("Package " + packag.name + " erased.")
 				_stats.erased++
 			} else {

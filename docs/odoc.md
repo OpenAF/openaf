@@ -39,7 +39,7 @@ The parser does not create searchable fields for `<category>`, `<author>`, `<ver
 
 ## Opt in to Markdown
 
-Use Markdown when an entry contains more than one paragraph or includes examples. Keep simple, single-paragraph descriptions as plain text. Use blank lines between paragraphs, lists for options, backticks for parameter names and short expressions, and fenced blocks with a language label for standalone examples.
+Use Markdown when an entry contains more than one paragraph or includes examples. Keep simple, single-paragraph descriptions as plain text. Place the comment immediately above the corresponding function or, for generated methods, the registration block. Keep the existing help key and signature when converting an entry.
 
 Mark an individual entry with `format="markdown"` or its alias `format="md"`:
 
@@ -54,7 +54,7 @@ Mark an individual entry with `format="markdown"` or its alias `format="md"`:
  * - Returns a string.
  *
  * ```javascript
- * greeting("Ada");
+ * greeting("Ada")
  * // "Hello Ada"
  * ```
  * ]]>
@@ -62,7 +62,11 @@ Mark an individual entry with `format="markdown"` or its alias `format="md"`:
  */
 ````
 
-Markdown entries preserve ordinary newlines, blank lines, and indentation; trailing backslashes are unnecessary. CDATA allows literal `&` and XML/HTML examples. Without CDATA, the body must remain XML-compatible. Existing unmarked entries retain their original extraction and plain-text display.
+The `<key>` remains an XML element and supplies the searchable signature; Markdown belongs in the body after it. Use blank lines between paragraphs, lists for options, backticks for parameter names and short expressions, and language-labelled fenced blocks for standalone examples. The same comment structure works in Java source.
+
+Markdown entries preserve ordinary newlines, blank lines, and indentation; trailing backslashes are unnecessary. The parser removes the leading comment `*` and one following space, so add indentation after that prefix for nested lists or code. It trims blank lines at the edges of the body.
+
+CDATA is useful for examples containing literal `&`, `<`, or XML/HTML. Without it, escape XML-sensitive characters (for example, `&amp;` and `&lt;`); entities are decoded in the extracted text. CDATA cannot contain its closing delimiter `]]>`. Also avoid a literal `</odoc>` in the body: the source extractor treats it as the end of the entry, even inside CDATA. A `*/` in an example would end the surrounding JavaScript or Java comment. Rewrite or split such examples to keep the source and ODoc well formed. Existing unmarked entries retain their original extraction and plain-text display.
 
 Generated Markdown entries contain `{ k, t, format: "markdown" }`. `ODoc.add(key, signature, text, "markdown")` (or `"md"`) provides the same opt-in for programmatically created entries. Both aliases normalize to `format: "markdown"`. Local ZIP and web gzip storage retain the format marker.
 
@@ -78,6 +82,10 @@ if (results.length == 1 && isString(results[0].text)) {
 
 `withMD()` implements OpenAF's supported Markdown subset, rather than full CommonMark.
 
+### Check an entry
+
+Generate help from the edited source using the commands below, then inspect the raw result of `searchHelp()` for the expected key, `format: "markdown"`, line breaks, and example text. Also check `openaf -helpscript greeting` or console help against a build containing the generated database. Redirected output and browser help show the source, so check an ANSI-capable terminal when assessing rendered formatting. When adding or moving entries between modules, ensure every source file is included in the relevant generated help subject; the [build script](../buildos.js) explicitly merges some lazy-module entries.
+
 ## Generate local help
 
 Run from the directory containing `greeting.js`:
@@ -90,6 +98,38 @@ openaf -c 'setOfflineHelp(true); print(stringify(searchHelp("greeting", "help/")
 The first argument is an **output directory**, not a database filename. Each map value is one source filename, not an array or directory. This creates `help/.odoc.db`. `ODoc.parseDir` and `ODoc.saveDB` are not core APIs.
 
 After creating an output directory, `saveHelpWeb("help-web", { greetings: "greeting.js" })` writes subject `.gz` files and `__odockeys.gz`. It does not start a web server. The repository's `odocweb/` directory holds generated data. Publish it through your chosen documentation frontend.
+
+## Generate a Markdown reference wiki
+
+The standalone [genODocReference.yaml](../genODocReference.yaml) job scans JavaScript and Java source directories recursively and writes a browsable Markdown reference:
+
+```sh
+ojob genODocReference.yaml dirs=js,src output=odoc-reference
+```
+
+Open `odoc-reference/index.md` in a Markdown viewer or browse it in a Git repository. The wiki includes category indexes, breadcrumbs, an alphabetical All APIs index, and one page per lookup key. Categories follow API namespaces: `ow.test.assert` appears under `ow` → `ow.test`. Keys without a namespace, including constructors, appear under Globals. All links between generated pages are relative `.md` links. Stable hashed filenames distinguish case, punctuation, and non-ASCII keys on case-insensitive filesystems.
+
+| Argument | Meaning |
+| --- | --- |
+| `dirs` | Required comma-delimited source directories, relative to the invocation directory. Whitespace around each directory is trimmed; overlapping roots are scanned once. Paths containing commas are unsupported. |
+| `output` | Output directory; defaults to `odoc-reference`. The output subtree is excluded from scanning. |
+| `maxBlockMB` | Maximum size of one ODoc block, in units of 1,048,576 UTF-16 code units; defaults to `8`. Must be greater than zero and at most `1024`. This is a parser limit, not a process memory limit. |
+
+The job uses OpenAF's `ioStreamRead`, file I/O, hashing, temporary-directory cleanup, and oJob facilities. It processes fixed-size source chunks, buffers at most one bounded ODoc block, and spools extracted documentation bodies to temporary disk storage. Heap use grows with API/category metadata and source locations rather than total source size or documentation text. It requires writable temporary space alongside the output directory. Symbolic links are skipped; symbolic-link input roots are refused.
+
+Markdown-marked entries retain their formatting, CDATA, and examples. Legacy entries retain their extracted text and explicit line breaks, escaped for Markdown display. Duplicate keys share a page: distinct signatures, bodies, or formats remain separate sections, while identical entries merge and list all source locations in deterministic order. Source locations identify the opening ODoc tag.
+
+Malformed, oversized, unclosed, or unreadable input is reported with source locations where available. Valid entries are still published, the home page is marked incomplete, and the process exits with status `1`. The `.odoc-reference.json` manifest records counts and completeness; diagnostic details are printed to stderr. Invalid arguments or output conflicts stop publication.
+
+Reruns replace manifest-owned pages and remove stale owned pages while preserving unrelated files. Existing files that conflict with new generated filenames are refused before output changes. Pages are staged before publication and the manifest is written last; publication is not a transaction across all files. An interrupted filesystem operation may require restoring a backup or generating into an empty directory. Keep the manifest with the generated wiki. Do not run concurrent generators against the same output directory.
+
+For a direct Java invocation with arguments, pass the job and arguments together as the `-e` value:
+
+```sh
+java -Xmx256m -jar openaf.jar --ojob -e 'genODocReference.yaml dirs=js,src output=odoc-reference'
+```
+
+Focused tests are in `tests/autoTestAll.ODocReference.yaml`, including a 270 MiB source file scanned in a subprocess with a 256 MiB Java heap.
 
 ## Library interfaces
 

@@ -1,0 +1,83 @@
+include:
+- autoTestAll.common.yaml
+- ../ojob.yaml
+jobs:
+- name: Interact::Init
+  exec: |
+    ow.loadScreen()
+    // Fall back to checkout source when exercising an older installed runtime.
+    if (typeof ow.screen.interact != "function") {
+      load("../js/owrap.screen.js")
+      ow.screen = new OpenWrap.screen()
+      ow.loadDesktop()
+      load("../js/owrap.desktop.js")
+      loadCompiledLib("owrap_desktop_ui_js")
+      load("../js/owrap.desktop.ui.js")
+    }
+    args.tests = require("autoTestAll.Interact.js")
+- name: Interact fixture handler
+  exec: |
+    sleep(args.delay || 0, true)
+- name: Interact fixture failure
+  exec: throw "fixture failure"
+- name: Interact fixture reducer
+  exec: |
+    if (args.state.stopOnInit) args.close = true
+    if (args.state.failReducer) throw "reducer failure"
+    if (args.error) { args.state.failure = args.error; args.close = true }
+    if (args.result && args.result.close) args.close = true
+    if (args.result && args.result.values) args.state.values = args.result.values
+    if (args.result && args.result.label) args.state.completed.push(args.result.label)
+    if (args.result && args.result.tick) args.state.ticks++
+    if (args.state.completed.length == 2 || args.state.ticks == 2) args.close = true
+- name: Interact::Concurrent results
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testConcurrentResults
+- name: Interact::Timer
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testTimer
+- name: Interact::Close drain
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testCloseDrain
+- name: Interact::Validation
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testValidation
+- name: Interact::Handler failure
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testHandlerFailure
+- name: Interact::Reducer failure
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testReducerFailure
+- name: Interact::TUI
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testTUI
+- name: Interact::Capacity
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testCapacity
+- name: Interact::Embedded shortcut
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testEmbedded
+- name: Interact::Console controls
+  from: Interact::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testConsoleControls
+todo:
+- Interact::Console controls
+- Interact::Embedded shortcut
+- Interact::Capacity
+- Interact::TUI
+- Interact::Handler failure
+- Interact::Reducer failure
+- Interact::Concurrent results
+- Interact::Timer
+- Interact::Close drain
+- Interact::Validation

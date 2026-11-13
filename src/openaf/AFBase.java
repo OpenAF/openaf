@@ -73,7 +73,7 @@ import org.mozilla.javascript.ast.AstRoot;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 
 import com.cedarsoftware.io.JsonIo;
 import com.google.gson.Gson;
@@ -93,7 +93,7 @@ import java.lang.String;
  * 
  */
 public class AFBase extends ScriptableObject {
-	private static final Pattern VISIBLE_LENGTH_ANSI_RE = Pattern.compile("\u001B(?:\\[[0-9;?]*[ -/]*[@-~]|\\][^\\u0007\\u001B]*(?:\\u0007|\\u001B\\\\))");
+	private static final Pattern VISIBLE_LENGTH_ANSI_RE = Pattern.compile("\u001B(?:\\[[0-?]*[ -/]*[@-~]|\\][^\\u0007\\u001B]*(?:\\u0007|\\u001B\\\\))");
 
 	/**
 	 * 
@@ -562,6 +562,41 @@ public class AFBase extends ScriptableObject {
 		}
 	}
 	
+    private static Thread readProcessStream(InputStream input, ByteArrayOutputStream output, String name) {
+        Thread reader = new Thread(() -> {
+            try (InputStream stream = input) {
+                IOUtils.copyLarge(stream, output);
+            } catch (IOException ignored) {
+                // A timeout or cancellation can close a pipe after some output was captured.
+            }
+        }, name);
+        reader.setDaemon(true);
+        reader.start();
+        return reader;
+    }
+
+    private static void stopProcess(Process process) {
+        try {
+            List<ProcessHandle> children = process.descendants().toList();
+            for (int i = children.size() - 1; i >= 0; i--) children.get(i).destroyForcibly();
+        } catch (RuntimeException ignored) {
+            // Process enumeration may be unavailable in a restricted runtime.
+        }
+        process.destroyForcibly();
+    }
+
+    private static void joinProcessReader(Thread reader, long startedAt, long timeoutNanos) throws InterruptedException {
+        if (reader == null) return;
+        if (timeoutNanos == Long.MAX_VALUE) {
+            reader.join();
+        } else {
+            long remaining = timeoutNanos - (System.nanoTime() - startedAt);
+            if (remaining > 0) TimeUnit.NANOSECONDS.timedJoin(reader, remaining);
+            // Allow a terminated process's pipes to finish draining without an unbounded wait.
+            if (reader.isAlive()) reader.join(1000);
+        }
+    }
+
 	/**
 	 * <odoc format="markdown">
 	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding, dontWait, envsMap, exitCallback) : String/Map</key>
@@ -569,6 +604,8 @@ public class AFBase extends ScriptableObject {
 	 * Tries to execute `commandArguments` (either a String or an array of strings) in the operating system. Optionally
 	 * `aStdIn` can be provided, `aTimeout` can be defined for the execution and if `shouldInheritIO` is true the stdout, stderr and stdin
 	 * will be inherit from OpenAF. If `shouldInheritIO` is not defined or false it will return the stdout of the command execution.
+	 * Captured stdout and stderr are drained concurrently. The timeout includes writing `aStdIn`. Without
+	 * supplied input or a stream callback, stdin is closed so commands reading to EOF can finish.
 	 * It's possible also to provide a different working `aDirectory`.
 	 * If `envsMap` (a map of strings) is defined the environment variables will be replaced by `envsMap`.
 	 * The variables `__exitcode` and `__stderr` can be checked for the command exit code and the stderr output correspondingly. In alternative
@@ -632,163 +669,134 @@ public class AFBase extends ScriptableObject {
 			}
 		}
 		
-		final Process p = pb.start();
-		//p = Runtime.getRuntime().exec(s);
-			
-		if (in instanceof NativeJavaObject) {
-			in = ((NativeJavaObject) in).unwrap();
-		}
-		if (in instanceof String) {
-			try {
-				OutputStream stdin = p.getOutputStream();
-				stdin.write(((String) in).getBytes());
-				stdin.close();
-			} catch(IOException e) {}
-		}
+        // Parse before starting a child so an invalid timeout cannot orphan it.
+        long timeoutMillis = -1;
+        if (timeout != null && !(timeout instanceof Undefined)) {
+            timeoutMillis = Double.valueOf(Double.parseDouble(timeout.toString())).longValue();
+        }
+        final long startedAt = System.nanoTime();
+        final long timeoutNanos = timeoutMillis < 0 ? Long.MAX_VALUE : TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        final Process p = pb.start();
+        final InputStream stdout = inheritIO ? null : p.getInputStream();
+        final InputStream stderr = inheritIO ? null : p.getErrorStream();
+        final ByteArrayOutputStream output = new ByteArrayOutputStream();
+        final ByteArrayOutputStream error = new ByteArrayOutputStream();
+        final boolean callbackOwnsStreams = !inheritIO && callback instanceof Function;
+        Thread timeoutThread = null, exitCallbackThread = null, inputThread = null;
+        Thread outputThread = null, errorThread = null;
+        int exit = -1;
+        try {
+            // Arm the deadline before either feeding stdin or handing streams to a callback.
+            if (timeoutMillis >= 0) {
+                timeoutThread = new Thread(() -> {
+                    try {
+                        long remaining = Math.max(0, timeoutNanos - (System.nanoTime() - startedAt));
+                        if (!p.waitFor(remaining, TimeUnit.NANOSECONDS)) stopProcess(p);
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
+                    }
+                }, "OpenAF-sh-timeout");
+                timeoutThread.start();
+            }
+            if (exitCallback instanceof Function) {
+                exitCallbackThread = new Thread(() -> {
+                    Context cx = (Context) AFCmdBase.jse.enterContext();
+                    try {
+                        while (p.isAlive()) {
+                            try {
+                                if (!p.waitFor(500, TimeUnit.MILLISECONDS)) {
+                                    Object status = ((Function) exitCallback).call(cx,
+                                            (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { p });
+                                    if (status instanceof String) {
+                                        if ("force".equalsIgnoreCase((String) status)) stopProcess(p);
+                                        else if ("destroy".equalsIgnoreCase((String) status)) p.destroy();
+                                    }
+                                }
+                            } catch (InterruptedException interrupted) {
+                                Thread.currentThread().interrupt();
+                                break;
+                            } catch (Exception failure) {
+                                failure.printStackTrace();
+                            }
+                        }
+                    } finally {
+                        AFCmdBase.jse.exitContext();
+                    }
+                }, "OpenAF-sh-exit-callback");
+                exitCallbackThread.start();
+            }
 
-		InputStream is, iserr;
-		if(inheritIO) {
-			is = null; iserr = null;
-			IOUtils.copy(p.getInputStream(), System.out);
-			IOUtils.copy(p.getErrorStream(), System.err);
-		} else {
-			is = p.getInputStream();
-			iserr = p.getErrorStream();
-		}
+            if (!callbackOwnsStreams && !inheritIO && !dontWait) {
+                outputThread = readProcessStream(stdout, output, "OpenAF-sh-stdout");
+                errorThread = readProcessStream(stderr, error, "OpenAF-sh-stderr");
+            }
+            if (in instanceof NativeJavaObject) in = ((NativeJavaObject) in).unwrap();
+            if (in instanceof String && !inheritIO) {
+                final byte[] input = ((String) in).getBytes();
+                inputThread = new Thread(() -> {
+                    try (OutputStream stream = p.getOutputStream()) {
+                        stream.write(input);
+                    } catch (IOException ignored) {
+                        // Preserve the shell API's behavior when a child stops accepting input.
+                    }
+                }, "OpenAF-sh-stdin");
+                inputThread.setDaemon(true);
+                inputThread.start();
+            } else if (!inheritIO && !callbackOwnsStreams) {
+                p.getOutputStream().close();
+            }
 
-	    final AtomicReference<String> tlines = new AtomicReference<String>(null);
-	    final AtomicReference<String> tlinesErr = new AtomicReference<String>(null);
+            if (callbackOwnsStreams && p.isAlive()) {
+                Context cx = (Context) AFCmdBase.jse.enterContext();
+                try {
+                    ((Function) callback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                            new Object[] { stdout, stderr, p.getOutputStream() });
+                } catch (Exception failure) {
+                    failure.printStackTrace();
+                } finally {
+                    AFCmdBase.jse.exitContext();
+                }
+            }
+            if (!dontWait) {
+                // A callback owns the streams until it returns. Only then capture any unread remainder.
+                if (callbackOwnsStreams) {
+                    outputThread = readProcessStream(stdout, output, "OpenAF-sh-stdout");
+                    errorThread = readProcessStream(stderr, error, "OpenAF-sh-stderr");
+                }
+                exit = p.waitFor();
+                joinProcessReader(inputThread, startedAt, timeoutNanos);
+                joinProcessReader(outputThread, startedAt, timeoutNanos);
+                joinProcessReader(errorThread, startedAt, timeoutNanos);
+            }
+        } catch (InterruptedException interrupted) {
+            stopProcess(p);
+            throw interrupted;
+        } finally {
+            if (!dontWait || !p.isAlive()) {
+                if (timeoutThread != null) timeoutThread.interrupt();
+                if (exitCallbackThread != null) exitCallbackThread.interrupt();
+            }
+            // Do not block closing a pipe whose daemon reader is still unwinding after a timeout.
+            if (outputThread == null || !outputThread.isAlive()) IOUtils.closeQuietly(p.getInputStream());
+            if (errorThread == null || !errorThread.isAlive()) IOUtils.closeQuietly(p.getErrorStream());
+            if (inputThread == null || !inputThread.isAlive()) IOUtils.closeQuietly(p.getOutputStream());
+        }
 
-		// Exit callback handling
-		Thread exitCallbackThread = null;
-		if (p.isAlive() && exitCallback != null && !(exitCallback instanceof Undefined) && exitCallback instanceof Function) {
-			exitCallbackThread = new Thread() {
-				public void run() {
-					boolean stopped = false;
-					Context cx = (Context) AFCmdBase.jse.enterContext();
-					while (p.isAlive()) {
-						//try { } catch(Exception e) {}
-						try {
-							//java.lang.Thread.onSpinWait(); this.sleep(500); 
-							if (!p.waitFor(500, java.util.concurrent.TimeUnit.MILLISECONDS)) {
-								Object status = ((Function) exitCallback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { p });
-								if (status instanceof String) {
-									switch(((String) status).toLowerCase()) {
-									case "force"  :
-										p.destroyForcibly();
-										stopped = true;
-										break;
-									case "destroy":
-										p.destroy();
-										stopped = true;
-										break;
-									}
-								}
-							}
-						} catch(Exception e) {
-							e.printStackTrace();
-						} finally {
-							if (stopped) {
-								try {
-									if (is != null    && !p.isAlive()) tlines.set(IOUtils.toString(is, Cencoding));
-									if (iserr != null && !p.isAlive()) tlinesErr.set(IOUtils.toString(iserr, Cencoding));
-								} catch(Exception e) { }
-							}
-						}
-					}
-					AFCmdBase.jse.exitContext();
-				};
-			};
-			exitCallbackThread.start();
-		} 
-
-		// Timeout handling
-		Thread timeoutThread = null;
-		if (p.isAlive() && timeout != null && !(timeout instanceof org.mozilla.javascript.Undefined)) {
-			long tt = Double.valueOf(Double.parseDouble(timeout.toString())).longValue();
-			if (tt >= 0) {
-				timeoutThread = new Thread() {
-					public void run() {
-						try {
-							//t.join(tt); // not working in some cases
-							long limit = java.lang.System.currentTimeMillis() + tt;
-							while(java.lang.System.currentTimeMillis() < limit && p.isAlive()) {
-								Thread.sleep(10);
-								//long now = java.lang.System.currentTimeMillis();
-								//if (limit > now) t.wait(limit - now);
-							}
-						} catch(InterruptedException e) {
-							//t.interrupt();
-							Thread.currentThread().interrupt();
-						} finally {
-							try {
-								if (is != null    && !p.isAlive()) tlines.set(IOUtils.toString(is, Cencoding));
-								if (iserr != null && !p.isAlive()) tlinesErr.set(IOUtils.toString(iserr, Cencoding));
-							} catch(Exception e) { }
-							if (p.isAlive()) {
-								p.destroy();
-								p.destroyForcibly();
-								try {
-									if (is != null   ) is.close();
-									if (iserr != null) iserr.close();
-								} catch(Exception e) { }
-							}
-						}
-					};
-				};
-				timeoutThread.start();
-			} 
-		}
-
-		// Callback handling
-		if (p.isAlive() && is != null && iserr != null && callback != null && callback instanceof Function) {
-			Context cx = (Context) AFCmdBase.jse.enterContext();
-			try {
-				((Function) callback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { is, iserr, p.getOutputStream() });
-			} catch(Exception e) {
-				e.printStackTrace();
-			} finally {
-				AFCmdBase.jse.exitContext();
-			}
-		}
-
-		String lines = new String(); 
-		String linesErr = new String();
-
-		if (!dontWait) {
-			try {
-				if (is != null   ) lines = IOUtils.toString(is, Cencoding);
-				if (iserr != null) linesErr = IOUtils.toString(iserr, Cencoding);
-			} catch(Exception e) { }
-		}
-
-		int exit = -1; 
-		try {
-			if (!dontWait) exit = p.waitFor();
-		
-			try { 
-				if (is != null   ) is.close();
-				if (iserr != null) iserr.close();
-			} catch(Exception e) { }
-		} catch(IllegalMonitorStateException e) {
-			//exit = p.exitValue();
-		}
-
-		p.getInputStream().close();
-		p.getErrorStream().close();
-		
-		if (returnObj) {
-			JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
-			// prefer values captured in threads (timeout handler) when available
-			no.put("stdout", tlines.get() != null ? tlines.get() : lines);
-			no.put("stderr", tlinesErr.get() != null ? tlinesErr.get() : linesErr);
-			no.put("exitcode", exit);
-			return no.getMap();
-		} else {
-			((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__exitcode", exit, ScriptableObject.PERMANENT);
-			((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__stderr", tlinesErr.get() != null ? tlinesErr.get() : linesErr, ScriptableObject.PERMANENT);
-			return tlines.get() != null ? tlines.get() : lines;
-		}
+        String lines = dontWait ? "" : output.toString(Cencoding);
+        String linesErr = dontWait ? "" : error.toString(Cencoding);
+        if (returnObj) {
+            JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
+            no.put("stdout", lines);
+            no.put("stderr", linesErr);
+            no.put("exitcode", exit);
+            return no.getMap();
+        } else {
+            ((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__exitcode", exit, ScriptableObject.PERMANENT);
+            ((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__stderr", linesErr, ScriptableObject.PERMANENT);
+            return lines;
+        }
 	}
 	
 
@@ -2338,8 +2346,8 @@ public class AFBase extends ScriptableObject {
 	 * <odoc>
 	 * <key>af.create2FACredentials(anAccountName, anIssuer) : Map</key>
 	 * Given anAccountName and anIssuer will create a the 2FA/TOTP (Time-Based One-Time Password) returning a map with
-	 * the scratchCodes, the verificationCode, the key, the openaf encryptedKey, the QR code URL 
-	 * and the OTP URL.
+	 * the scratchCodes, the verificationCode, the key, the openaf encryptedKey and the OTP URL.
+	 * Render the OTP URL as a QR code locally; no third-party QR service URL is returned.
 	 * </odoc>
 	 */
 	public Object create2FACredentials(String issuer, String accountName) throws Exception {
@@ -2357,9 +2365,6 @@ public class AFBase extends ScriptableObject {
 		map.put("verificationCode", String.format("%06d", gkey.getVerificationCode()));
 		map.put("key", gkey.getKey());
 		map.put("encryptedKey", encrypt(gkey.getKey(), null));
-		//map.put("qrChart", GoogleAuthenticatorQRGenerator.getOtpAuthURL(issuer, accountName, gkey));
-		//map.put("otpURL", GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(issuer, accountName, gkey));
-		map.put("qrChart", "https://api.qrserver.com/v1/create-qr-code/?data=otpauth%3A%2F%2Ftopt%2F" + issuer + "%3A" + accountName + "%3Fsecret%3D" + gkey.getKey() + "%26issuer%3D" + issuer + "%26algorithm%3D" + gkey.getConfig().getHmacHashFunction().toString().replace("Hmac", "") + "%26digits%3D" + gkey.getConfig().getCodeDigits() + "%26period%3D" + (gkey.getConfig().getTimeStepSizeInMillis() / 1000) + "&size=200x200&ecc=M&margin=0");
 		map.put("otpURL", "otpauth://totp/" + issuer + ":" + accountName + "?secret=" + gkey.getKey() + "&issuer=" + issuer + "&algorithm=" + gkey.getConfig().getHmacHashFunction().toString().replace("Hmac", "") + "&digits=" + gkey.getConfig().getCodeDigits() + "&period=" + (gkey.getConfig().getTimeStepSizeInMillis() / 1000));
 
 		return map.getMap();

@@ -63,18 +63,21 @@ var nLinq = function(anObject, aK) {
     }
     
     var aException = function(aArrayA, aArrayB) {
-        var cb = aArrayB.map(r => JSON.stringify(aSortMap(r), void 0, ""));
-        return aArrayA.filter(r => cb.indexOf(JSON.stringify(aSortMap(r), void 0, "")) < 0);
+        var cb = new Set()
+        aArrayB.forEach(r => cb.add(JSON.stringify(aSortMap(r), void 0, "")))
+        return aArrayA.filter(r => !cb.has(JSON.stringify(aSortMap(r), void 0, "")))
     }
     
     var aIntersection = function(aArrayA, aArrayB) {
-        var cb = aArrayB.map(r => JSON.stringify(aSortMap(r), void 0, ""));
-        return aArrayA.filter(r => cb.indexOf(JSON.stringify(aSortMap(r), void 0, "")) >= 0);
+        var cb = new Set()
+        aArrayB.forEach(r => cb.add(JSON.stringify(aSortMap(r), void 0, "")))
+        return aArrayA.filter(r => cb.has(JSON.stringify(aSortMap(r), void 0, "")))
     }
     
     var aUnion = function(aArrayA, aArrayB) {
-        var ca = aArrayA.map(r => JSON.stringify(aSortMap(r), void 0, ""));
-        return aArrayA.concat(aArrayB.filter(r => ca.indexOf(JSON.stringify(aSortMap(r), void 0, "")) < 0));
+        var ca = new Set()
+        aArrayA.forEach(r => ca.add(JSON.stringify(aSortMap(r), void 0, "")))
+        return aArrayA.concat(aArrayB.filter(r => !ca.has(JSON.stringify(aSortMap(r), void 0, ""))))
     }
 
     var aCartesian = function(aArrayA, aArrayB) {
@@ -117,19 +120,12 @@ var nLinq = function(anObject, aK) {
         } else {
             f = new Function("r", "whereFn", "return $$(r).isDef() ? (" + where + ") : void 0");
         }
-        if (alimit != 0) {
-            if (negative) 
-                res = aOrig.filter(r => !f(r, whereFn)).slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0);
-            else 
-                res = aOrig.filter(r => f(r, whereFn)).slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0);
-        } else {
-            if (negative)
-                res = aOrig.filter(r => !f(r, whereFn));
-            else
-                res = aOrig.filter(r => f(r, whereFn));
-        }
+        res = aOrig.filter(r => negative ? !f(r, whereFn) : f(r, whereFn))
         if (askip != 0) {
             res = res.slice(askip);
+        }
+        if (alimit != 0) {
+            res = res.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0)
         }
         return res;
     };
@@ -512,9 +508,8 @@ var nLinq = function(anObject, aK) {
 
             code.select(r => {
                 var v = ($$(aKey).isDef() ? $$(r).get(aKey) : r);
-                if ($$(v).isBoolean()) v = String(v);
-                if (Object.keys(vals).indexOf(v) < 0) {
-                    vals[v] = [r];
+                if (!Object.prototype.hasOwnProperty.call(vals, v)) {
+                    Object.defineProperty(vals, v, { value: [r], enumerable: true, writable: true, configurable: true })
                 } else {
                     vals[v].push(r);
                 }
@@ -531,7 +526,7 @@ var nLinq = function(anObject, aK) {
             var fn = (_r, _i, m) => {
                 var _vs = Object.keys(_r)
                 _vs.forEach((v, _j) => {
-                    m[v] = {}
+                    Object.defineProperty(m, v, { value: {}, enumerable: true, writable: true, configurable: true })
                     if (_i + 1 < ks.length) {
                         fn(nLinq(_r[v]).group(ks[_i + 1]), _i + 1, m[v])
                     }
@@ -572,6 +567,17 @@ var nLinq = function(anObject, aK) {
             var ks = aKey.split(",")
             var aks = aAltKey.split(",")
             var _fr = []
+            // Keep the runtime clone when available; browser results need independent containers too.
+            var copyResult = typeof clone === "function" ? clone : function copy(value) {
+                if (!Array.isArray(value) && !$$(value).isMap()) return value
+                var result = Array.isArray(value) ? new Array(value.length) : {}
+                Object.keys(value).forEach(key => {
+                    Object.defineProperty(result, key, {
+                        value: copy(value[key]), enumerable: true, writable: true, configurable: true
+                    })
+                })
+                return result
+            }
 
             var fn = (_r, _i, m) => {
                 var _vs = Object.keys(_r)
@@ -582,7 +588,7 @@ var nLinq = function(anObject, aK) {
                     }
                     if (ks.length == _i + 1) {
                         m[aFnKey] = aFn(_r[v])
-                        _fr.push(clone(m))
+                        _fr.push(copyResult(m))
                     }
                 })
             }
@@ -627,16 +633,16 @@ var nLinq = function(anObject, aK) {
         at     : aParam => {
             _$(aParam, "index").isNumber().$_();
 
-            res = applyConditions(res, __, true);
+            res = applyConditions(res, void 0, true);
             return res[Number(aParam)];
         },
-        all    : (aFallback) => { res = applyConditions(res, __, true); return $$(res).isArray() ? res.length == anObject.length : aFallback; },
-        count  : () => { res = applyConditions(res, __, true); return res.length; },
-        first  : (aFallback) => { res = applyConditions(res, __, true); return (res.length > 0 ? res[0] : aFallback); },
-        last   : (aFallback) => { res = applyConditions(res, __, true); return (res.length > 0 ? res[res.length-1] : aFallback); },
-        any    : () => { res = applyConditions(res, __, true); return (res.length > 0); },
-        none   : () => { res = applyConditions(res, __, true); return (res.length == 0); },
-        reverse: () => { res = applyConditions(res, __, true); return res.reverse(); },
+        all    : (aFallback) => { res = applyConditions(res, void 0, true); return $$(res).isArray() ? res.length == anObject.length : aFallback; },
+        count  : () => { res = applyConditions(res, void 0, true); return res.length; },
+        first  : (aFallback) => { res = applyConditions(res, void 0, true); return (res.length > 0 ? res[0] : aFallback); },
+        last   : (aFallback) => { res = applyConditions(res, void 0, true); return (res.length > 0 ? res[res.length-1] : aFallback); },
+        any    : () => { res = applyConditions(res, void 0, true); return (res.length > 0); },
+        none   : () => { res = applyConditions(res, void 0, true); return (res.length == 0); },
+        reverse: () => { res = applyConditions(res, void 0, true); return res.reverse(); },
 
         // Applying to current result set
         each   : aFn => {
@@ -906,7 +912,7 @@ var nLinq = function(anObject, aK) {
         },
         // Main selector
         select : aParam => {
-            res = applyConditions(res, __, true);
+            res = applyConditions(res, void 0, true);
             // no parameters
             if ($$(aParam).isUnDef()) {
                 return res;

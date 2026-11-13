@@ -1,128 +1,128 @@
 # Copyright 2026 Nuno Aguiar
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 jobs:
 - name: AIDecisions::Init
   exec: args.tests = require("autoTestAll.AIDecisions.js");
 - name: AIDecisions::DecisionNative
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionNative;
 - name: AIDecisions::DecisionValidation
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionValidation;
 - name: AIDecisions::OpenAISchemaResponsesTools
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testOpenAISchemaResponsesTools;
 - name: AIDecisions::OpenAISchemaNativeTools
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testOpenAISchemaNativeTools;
 - name: AIDecisions::OllamaSchemaTools
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testOllamaSchemaTools;
 - name: AIDecisions::DecisionGeminiStructured
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionGeminiStructured;
 - name: AIDecisions::DecisionOpenAIStructured
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionOpenAIStructured;
 - name: AIDecisions::DecisionRawAndSingleExecution
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionRawAndSingleExecution;
 - name: AIDecisions::DecisionNativeInvalidResponses
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionNativeInvalidResponses;
 - name: AIDecisions::DecisionStructuredInvalidResponses
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionStructuredInvalidResponses;
 - name: AIDecisions::DecisionIsolation
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionIsolation;
 - name: AIDecisions::DecisionSafePropertiesAndValidation
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionSafePropertiesAndValidation;
 - name: AIDecisions::DecisionLimitsAndEndpoint
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionLimitsAndEndpoint;
 - name: AIDecisions::DecisionGeminiSchemaHelper
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionGeminiSchemaHelper;
 - name: AIDecisions::DecisionCapabilitiesAndLegacyAdapters
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionCapabilitiesAndLegacyAdapters;
 - name: AIDecisions::DecisionHTTPBoundary
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionHTTPBoundary;
 - name: AIDecisions::DecisionLegacyChatCompatibility
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionLegacyChatCompatibility;
 - name: AIDecisions::DecisionExecutionScopedStats
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionExecutionScopedStats;
 - name: AIDecisions::DecisionSchemaValidationIsolation
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionSchemaValidationIsolation;
 - name: AIDecisions::DecisionFlatConfigurationAndEnvironment
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionFlatConfigurationAndEnvironment;
 - name: AIDecisions::DecisionNativeCapabilityRequirements
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionNativeCapabilityRequirements;
 - name: AIDecisions::DecisionImages
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionImages;
 - name: AIDecisions::DecisionOpenAINative
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionOpenAINative;
 - name: AIDecisions::DecisionOpenAINativeInvalidResponses
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionOpenAINativeInvalidResponses;
 - name: AIDecisions::DecisionOpenAINativeImagesAndCapabilities
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionOpenAINativeImagesAndCapabilities;
 - name: AIDecisions::DecisionOpenAINativeHTTP
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionOpenAINativeHTTP;
 - name: AIDecisions::DecisionOpenRouter
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionOpenRouter;
 - name: AIDecisions::DecisionOpenRouterHTTP
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionOpenRouterHTTP;
 - name: AIDecisions::DecisionMicrosoft
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionMicrosoft;
 - name: AIDecisions::DecisionMicrosoftHTTP
   from: AIDecisions::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testDecisionMicrosoftHTTP;
 todo:
 - AIDecisions::OllamaSchemaTools
@@ -153,3 +153,8 @@ todo:
 - AIDecisions::DecisionSchemaValidationIsolation
 - AIDecisions::DecisionFlatConfigurationAndEnvironment
 - AIDecisions::DecisionNativeCapabilityRequirements
+
+- name: AIDecisions::DecisionGeminiNative
+  from: AIDecisions::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testDecisionGeminiNative;

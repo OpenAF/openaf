@@ -87,6 +87,96 @@ a new controller refreshes or authenticates again. Cached responses omit provide
 fields that are not in the stored credential record. `cancel()` controls callback
 login; token HTTP requests are bounded by `tokenTimeoutMs`.
 
+## Automatic MCP OAuth
+
+For an HTTP MCP server that supports dynamic client registration, only the server
+URL and OAuth type are required. Add a token store to reuse the client registration
+and login across sessions:
+
+```javascript
+var mcp = $mcp({
+  type: "remote",
+  url: "https://mcp.atlassian.com/v2/mcp",
+  auth: {
+    type: "oauth2",
+    tokenStore: { type: "sec", profile: "atlassian" }
+  }
+})
+try {
+  mcp.initialize()
+  print(mcp.listTools())
+} finally {
+  mcp.destroy()
+}
+```
+
+Construction is lazy. `initialize()`, `authenticate()`, or the first authenticated
+request discovers the provider, registers a public client, and opens browser consent
+when login is necessary. The local callback listener is reserved before registration;
+its address and client identity are saved before consent. Tokens are encrypted using
+the existing `$sec` adapter. Without `tokenStore`, the registration lasts only for
+that client instance.
+
+When `clientId` and `grantType` are omitted, OpenAF selects `authorization_code` and
+local callback login. Explicit client IDs retain the existing `client_credentials`
+default. Explicit grant, endpoints, scope, callback, and redirect settings take
+precedence. Automatic mode requests scopes from the server's authentication
+challenge; otherwise it leaves scope to the provider. It never requests every
+advertised permission automatically. The provider still controls consent and access.
+
+Discovery uses an unauthenticated GET to inspect the server's challenge, then
+protected-resource and OAuth/OIDC metadata. It does not execute a tool to discover
+authentication. Missing registration support produces a configuration error requiring
+an explicit client identity. Discovered issuer/resource identities are validated and
+metadata/endpoints require HTTPS, with the documented loopback/`allowHTTP` exceptions.
+
+| Option | Automatic OAuth behavior |
+| --- | --- |
+| `registration` | Omitted enables DCR; `false` disables it. A map accepts `clientName` (default `OpenAF`), `applicationType` (default `native`), `initialAccessToken`, and positive `timeoutMs` (default 60000). |
+| `clientMetadataURL` | User-hosted HTTPS client metadata document. Preferred over DCR when the provider advertises support. OpenAF validates its identity and chooses a compatible registered loopback callback. |
+| `tokenEndpointAuthMethod` | Defaults to `none` for public PKCE clients. `client_secret_basic` and `client_secret_post` request confidential DCR clients and apply to login and refresh. |
+| `redirectURI` | Optional in automatic mode. A generated loopback address is saved with registration and reused. |
+| `interactive: false` | Reuses stored credentials and refreshes tokens; never creates a new client or launches login. |
+
+A user-hosted metadata document must contain its exact HTTPS URL as `client_id`, a
+nonempty `client_name`, and `redirect_uris` containing a usable HTTP loopback URI
+with an explicit port. Only public metadata-document clients are supported:
+
+```json
+{
+  "client_id": "https://example.org/openaf-client.json",
+  "client_name": "OpenAF",
+  "redirect_uris": ["http://127.0.0.1:17879/oauth/callback"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none"
+}
+```
+
+Configure `auth.clientMetadataURL` with that URL. Hosting and publishing the document
+remain the application's responsibility. Unsupported metadata-document capability
+falls back to DCR; an invalid selected document fails explicitly.
+
+`getAuthStatus()` adds non-secret `clientAvailable` and `registrationMethod`
+(`explicit`, `metadata`, or `dynamic`) fields. Inspection may discover metadata and
+load saved state but never registers a client or starts browser login.
+`clearAuth()` removes login tokens while retaining registration.
+`clearAuth({ registration: true })` also forgets the local registration and generated
+callback. It does not delete the client at the provider.
+
+If the saved callback port is occupied, close the conflicting listener and retry.
+OpenAF does not silently create another client or change its registered callback.
+Registration failures, uncertain POST outcomes, expired client secrets, and storage
+write failures stop authentication. Reset registration explicitly before retrying a
+failed registration. A consent denial or timeout retains a successfully stored client.
+Use a separate token-store profile for each account. Registrations are isolated by
+issuer, resource, profile, and registration configuration; issued secrets are stored
+only in encrypted registration records. Initial registration tokens are not persisted.
+
+The Atlassian URL above is an integration example. Provider policy and consent can
+still reject registration or login; deterministic tests do not establish live account
+access.
+
 ## Persistent delegated OAuth for `$mcp`
 
 `$mcp` uses the same helper for `auth.callback: true`. Persistence remains opt-in
@@ -157,7 +247,7 @@ This keeps WorkIQ's explicit profile keys usable without silently migrating toke
 whose full identity was not recorded.
 
 The versioned encrypted record contains the access token, refresh token, scheme,
-absolute expiry and identity fingerprint. It excludes client secrets, authorization
+absolute expiry and identity fingerprint. For explicitly configured clients it excludes client secrets, authorization
 codes and PKCE verifiers. Unknown expiry is stored as `null`: the issuing instance
 may keep using that token, but another instance must refresh or authenticate again.
 
@@ -233,3 +323,12 @@ a particular identity provider's app registration or consent policy.
 A single page retains its cache metadata. For multiple pages, `ttlMs` is bounded by the earliest remaining page lifetime; a missing or invalid lifetime prevents caching. Different cache scopes produce a private, non-cacheable aggregate (`ttlMs: 0`). After the existing 1,000-page limit, `nextCursor` remains available to indicate that enumeration is incomplete; it is removed only when enumeration finishes.
 
 An error, `input_required`, or malformed list response is returned unchanged, including when it follows successful pages. Callers must inspect the response before treating it as a list; these responses are not converted to empty or partial success.
+
+## MCP event connections
+
+The [MCP client event APIs](mcp-client.md) use the configured authentication
+provider for inbound HTTP request replies, optional GET listeners and session
+DELETE. Tokens remain in the OpenAF connection; never forward Authorization
+headers or token-store data to an MCP App iframe. Session-expiry recovery retries
+only discovery and resource reads; failed mutating tools are returned to the
+caller without replay. Browser login and MCP Apps rendering are separate flows.

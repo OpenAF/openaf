@@ -9,18 +9,54 @@
     ow.loadServer(); ow.loadSec();
     var port = findRandomOpenPort(), hs = ow.server.httpd.start(port, '127.0.0.1');
     var root = 'http://127.0.0.1:' + port;
-    var state = { tokens: [], mode: 'ok', rotation: true };
+    var state = { registrations: [], tokens: [], mode: 'ok', rotation: true };
     ow.server.httpd.route(hs, {
+      '/mcp': function(req) {
+        if (req.method == 'GET' && state.noChallenge) return ow.server.httpd.reply({}, 405, 'application/json', {})
+        if (req.method == 'GET') return ow.server.httpd.reply({}, 401, 'application/json', {
+          'WWW-Authenticate': 'Bearer resource_metadata="' + root + '/.well-known/oauth-protected-resource/mcp", scope="read offline_access"'
+        })
+        var raw = req.files && req.files.postData || req.data
+        var message = isString(raw) ? jsonParse(raw) : raw
+        if (!message || !message.id) return ow.server.httpd.reply('', 202, 'application/json', {})
+        return ow.server.httpd.reply({ jsonrpc: '2.0', id: message.id, result: {
+          protocolVersion: '2025-06-18', capabilities: {}, serverInfo: { name: 'oauth-fixture', version: '1' }
+        } }, 200, 'application/json', {})
+      },
       '/.well-known/oauth-protected-resource/mcp': function() {
+        if (state.resourceStatus) return ow.server.httpd.reply({}, state.resourceStatus, 'application/json', {})
         return ow.server.httpd.reply({ resource: root + '/mcp', authorization_servers: [root] }, 200, 'application/json', {});
       },
       '/.well-known/oauth-authorization-server': function() {
-        return ow.server.httpd.reply({ issuer: root, token_endpoint: root + '/token', authorization_endpoint: root + '/authorize' }, 200, 'application/json', {});
+        if (state.metadataStatus) return ow.server.httpd.reply({}, state.metadataStatus, 'application/json', {})
+        return ow.server.httpd.reply({ client_id_metadata_document_supported: state.cimd === true, issuer: state.issuer || root, token_endpoint: root + '/token', registration_endpoint: root + '/register', authorization_endpoint: root + '/authorize' }, 200, 'application/json', {});
+      },
+      '/.well-known/oauth-protected-resource': function() {
+        return ow.server.httpd.reply({ resource: root + '/mcp', authorization_servers: [root] }, 200, 'application/json', {})
+      },
+      '/.well-known/openid-configuration': function() {
+        return ow.server.httpd.reply({ issuer: root, token_endpoint: root + '/token', registration_endpoint: root + '/register', authorization_endpoint: root + '/authorize' }, 200, 'application/json', {})
+      },
+      '/register': function(req) {
+        var body = req.files && req.files.postData || req.data
+        state.registrations.push(isString(body) ? jsonParse(body) : body)
+        if (state.registrationStatus) return ow.server.httpd.reply({ error: 'invalid_client_metadata', error_description: 'provider-secret' }, state.registrationStatus, 'application/json', {})
+        var requested = state.registrations[state.registrations.length - 1]
+        var redirect = new java.net.URI(requested.redirect_uris[0])
+        var socket = new java.net.Socket()
+        try {
+          socket.connect(new java.net.InetSocketAddress(String(redirect.getHost()), Number(redirect.getPort())), 1000)
+          state.callbackReserved = true
+        } finally { socket.close() }
+        return ow.server.httpd.reply({ client_id: 'dynamic-public', token_endpoint_auth_method: requested.token_endpoint_auth_method,
+          client_secret: requested.token_endpoint_auth_method == 'none' ? undefined : 'client-secret', client_secret_expires_at: 0,
+          redirect_uris: requested.redirect_uris }, 201, 'application/json', {})
       },
       '/token': function(req) {
         var body = req.files && req.files.postData || req.data;
         var params = merge(req.params || {}, isString(body) ? ow.server.rest.parseQuery(body) : {});
         state.tokens.push(params);
+        state.lastTokenHeaders = req.header;
         if (state.mode === 'revoked') return ow.server.httpd.reply({ error: 'invalid_grant' }, 400, 'application/json', {});
         if (state.mode === 'offline') return ow.server.httpd.reply({ error: 'temporarily_unavailable' }, 503, 'application/json', {});
         if (state.mode === 'rejectRefresh' && params.grant_type === 'refresh_token') {
@@ -50,7 +86,7 @@
     };
     var clients = [];
     function client(config) { var c = $mcp(config || cfg); clients.push(c); return c; }
-    try { fn({ cfg: cfg, state: state, client: client }); }
+    try { fn({ cfg: cfg, state: state, client: client, root: root }); }
     finally {
       clients.forEach(function(c) { c.destroy(); });
       ow.server.httpd.stop(hs); io.rm(dir);
@@ -65,6 +101,241 @@
       var tail = mode === 'deny' ? '&error=access_denied' : '&code=callback-code';
       $rest().get(cfg.auth.redirectURI + '?state=' + (mode === 'bad-state' ? 'wrong' : params.state) + tail);
     };
+  }
+  function automaticConfig(ctx) {
+    var cfg = { type: 'remote', url: ctx.cfg.url, auth: { type: 'oauth2', tokenStore: clone(ctx.cfg.auth.tokenStore),
+      disableOpenBrowser: true, loginTimeoutMs: 1000 } }
+    delete cfg.auth.tokenStore.key
+    cfg.auth.tokenStore.profile = 'atlassian-fixture'
+    cfg.auth.onAuthorizationURL = function(url) {
+      var params = ow.server.rest.parseQuery(String(new java.net.URI(url).getRawQuery()))
+      assertEq(params.code_challenge_method, 'S256', 'Automatic PKCE')
+      assertEq(params.scope, 'read offline_access', 'Required challenge scopes')
+      $rest().get(params.redirect_uri + '?state=' + params.state + '&code=callback-code')
+    }
+    return cfg
+  }
+  exports.testMinimalOAuthConfiguration = function() {
+    fixture(function(ctx) {
+      var cfg = automaticConfig(ctx), client = ctx.client(cfg)
+      assertEq(client.getAuthStatus().clientAvailable, false, 'Inspection does not register')
+      assertEq(ctx.state.registrations.length, 0, 'No registration during inspection')
+      client.initialize()
+      assertEq(client.getAuthStatus().authenticated, true, 'Minimal configuration initializes')
+      assertEq(ctx.state.registrations.length, 1, 'One dynamic registration')
+      var registered = ctx.state.registrations[0]
+      assertEq(registered.scope, 'read offline_access', 'Only challenged scopes registered')
+      assertEq(registered.application_type, 'native', 'Native registration')
+      assertEq(ctx.state.callbackReserved, true, 'Callback bound before registration')
+      var restart = ctx.client(automaticConfig(ctx))
+      restart.authenticate()
+      assertEq(ctx.state.registrations.length, 1, 'Fresh minimal configuration reuses registration')
+      assertEq(ctx.state.tokens.length, 1, 'Fresh minimal configuration reuses tokens')
+      client.clearAuth()
+      assertEq(client.getAuthStatus().clientAvailable, true, 'Logout retains registration')
+      client.authenticate()
+      assertEq(ctx.state.registrations.length, 1, 'Relogin retains registration')
+      client.clearAuth({ registration: true })
+      assertEq(client.getAuthStatus().clientAvailable, false, 'Explicit reset forgets registration')
+      ctx.client(automaticConfig(ctx)).authenticate()
+      assertEq(ctx.state.registrations.length, 2, 'Reset permits fresh registration')
+    })
+  }
+  exports.testAutomaticOAuthFailureAndNoninteractive = function() {
+    fixture(function(ctx) {
+      var cfg = automaticConfig(ctx)
+      cfg.auth.interactive = false
+      fails(function() { ctx.client(cfg).authenticate() }, 'login required')
+      assertEq(ctx.state.registrations.length, 0, 'Unattended login does not register')
+      cfg = automaticConfig(ctx)
+      ctx.state.registrationStatus = 400
+      var client = ctx.client(cfg)
+      fails(function() { client.authenticate() }, 'registration failed')
+      fails(function() { client.authenticate() }, 'registration failed')
+      assertEq(ctx.state.registrations.length, 1, 'Failed registration is not automatically repeated')
+      client.clearAuth({ registration: true })
+      ctx.state.registrationStatus = 0
+      client.authenticate()
+      assertEq(ctx.state.registrations.length, 2, 'Explicit reset allows retry')
+    })
+  }
+  exports.testAutomaticOAuthConfidentialClients = function() {
+    ;['client_secret_basic', 'client_secret_post'].forEach(function(method) {
+      fixture(function(ctx) {
+        var cfg = automaticConfig(ctx)
+        cfg.auth.tokenEndpointAuthMethod = method
+        var client = ctx.client(cfg)
+        client.authenticate()
+        assertEq(ctx.state.registrations[0].token_endpoint_auth_method, method, 'Requested authentication method')
+        if (method == 'client_secret_post') assertEq(ctx.state.tokens[0].client_secret, 'client-secret', 'POST secret')
+        else {
+          assertEq(isUnDef(ctx.state.tokens[0].client_secret), true, 'Basic secret excluded from body')
+          var headers = ctx.state.lastTokenHeaders
+          assertEq(String(headers.authorization || headers.Authorization).indexOf('Basic '), 0, 'Basic authorization header')
+        }
+        cfg.auth.refreshWindowMs = 7200000
+        client.authenticate()
+        assertEq(ctx.state.tokens[1].grant_type, 'refresh_token', 'Confidential refresh')
+        var raw = io.readFileString(cfg.auth.tokenStore.file)
+        assertEq(raw.indexOf('client-secret') < 0, true, 'Registered secret encrypted')
+      })
+    })
+  }
+  exports.testAutomaticOAuthDiscoveryFallbackAndBinding = function() {
+    fixture(function(ctx) {
+      ctx.state.metadataStatus = 404
+      ctx.state.resourceStatus = 404
+      ctx.state.noChallenge = true
+      var cfg = automaticConfig(ctx)
+      cfg.auth.scope = 'read offline_access'
+      ctx.client(cfg).authenticate()
+      assertEq(ctx.state.tokens.length, 1, 'OIDC metadata fallback succeeds')
+    })
+    fixture(function(ctx) {
+      ctx.state.issuer = ctx.root + '/wrong'
+      fails(function() { ctx.client(automaticConfig(ctx)).authenticate() }, 'issuer mismatch')
+      assertEq(ctx.state.registrations.length, 0, 'Issuer mismatch prevents registration')
+    })
+  }
+  exports.testAutomaticOAuthOccupiedSavedCallback = function() {
+    fixture(function(ctx) {
+      var client = ctx.client(automaticConfig(ctx))
+      client.authenticate()
+      var port = Number(new java.net.URI(ctx.state.registrations[0].redirect_uris[0]).getPort())
+      client.clearAuth()
+      var blocker = ow.server.httpd.start(port, '127.0.0.1')
+      try {
+        fails(function() { client.authenticate() }, 'callback port unavailable')
+        assertEq(ctx.state.registrations.length, 1, 'Occupied saved port does not create another client')
+      } finally { ow.server.httpd.stop(blocker) }
+      client.authenticate()
+      assertEq(ctx.state.registrations.length, 1, 'Saved callback reused after conflict clears')
+    })
+  }
+  exports.testAutomaticOAuthDenialRetainsRegistration = function() {
+    fixture(function(ctx) {
+      var cfg = automaticConfig(ctx)
+      cfg.auth.onAuthorizationURL = function(url) {
+        var params = ow.server.rest.parseQuery(String(new java.net.URI(url).getRawQuery()))
+        $rest().get(params.redirect_uri + '?state=' + params.state + '&error=access_denied')
+      }
+      var client = ctx.client(cfg)
+      fails(function() { client.authenticate() }, 'authorization denied')
+      ctx.client(automaticConfig(ctx)).authenticate()
+      assertEq(ctx.state.registrations.length, 1, 'Denied consent does not register another client')
+    })
+  }
+  exports.testAutomaticOAuthConcurrentRegistration = function() {
+    fixture(function(ctx) {
+      var cfg = automaticConfig(ctx)
+      delete cfg.auth.onAuthorizationURL
+      var script = cfg.auth.tokenStore.file + '.register-child.js'
+      io.writeFileString(script, 'try { var cfg=' + stringify(cfg, __, '') + '; cfg.auth.onAuthorizationURL=function(url) { var p=ow.server.rest.parseQuery(String(new java.net.URI(url).getRawQuery())); $rest().get(p.redirect_uri+"?state="+p.state+"&code=child-code"); }; var c=$mcp(cfg); c.authenticate(); c.destroy(); exit(0); } catch(e) { printErr(String(e)); exit(1); }')
+      var results = parallel4Array([1, 2], function() {
+        return $sh([ow.format.getJavaHome() + '/bin/java', '-jar', getOpenAFJar(), '-f', script]).get(0)
+      })
+      results.forEach(function(r) { assertEq(r.exitcode, 0, 'Child automatic login: ' + r.stderr) })
+      assertEq(ctx.state.registrations.length, 1, 'Processes share one client registration')
+      assertEq(ctx.state.tokens.length, 1, 'Processes share one callback exchange')
+    })
+  }
+  exports.testAutomaticOAuthMemoryAndMetadataValidation = function() {
+    fixture(function(ctx) {
+      var cfg = automaticConfig(ctx)
+      delete cfg.auth.tokenStore
+      var client = ctx.client(cfg)
+      client.authenticate()
+      client.authenticate()
+      assertEq(ctx.state.registrations.length, 1, 'In-memory identity reused')
+      client.clearAuth()
+      client.authenticate()
+      assertEq(ctx.state.registrations.length, 1, 'In-memory identity retained after logout')
+    })
+    fixture(function(ctx) {
+      ctx.state.cimd = true
+      var cfg = automaticConfig(ctx)
+      cfg.auth.clientMetadataURL = 'https://example.org/'
+      fails(function() { ctx.client(cfg).authenticate() }, 'HTTPS URL with a path')
+      assertEq(ctx.state.registrations.length, 0, 'Invalid selected metadata document does not fall back to DCR')
+    })
+  }
+  exports.testAutomaticOAuthExpiredSecretAndStorageFailure = function() {
+    fixture(function(ctx) {
+      var records = {}, failSave = false
+      var cfg = automaticConfig(ctx)
+      cfg.auth.tokenEndpointAuthMethod = 'client_secret_post'
+      cfg.auth.tokenStore = {
+        load: function(key) { return records[key] },
+        save: function(key, value) { if (failSave) throw new Error('secret-storage-error'); records[key] = value },
+        clear: function(key) { delete records[key] },
+        withLock: function(key, fn) { return fn() }
+      }
+      var client = ctx.client(cfg)
+      client.authenticate()
+      var key = Object.keys(records).filter(k => k.indexOf('oauth2-registration-') == 0)[0]
+      records[key].secretExpiresAt = Math.floor(now() / 1000) - 1
+      fails(function() { client.authenticate() }, 'client secret expired')
+      assertEq(ctx.state.registrations.length, 1, 'Expiry does not silently register another client')
+      client.clearAuth({ registration: true })
+      failSave = true
+      fails(function() { client.authenticate() }, 'registration storage write failed')
+      fails(function() { client.authenticate() }, 'registration failed')
+      assertEq(ctx.state.registrations.length, 2, 'Storage failure does not repeat registration')
+    })
+  }
+  exports.testAutomaticOAuthClientMetadataDocument = function() {
+    fixture(function(ctx) {
+      ctx.state.cimd = true
+      var cfg = automaticConfig(ctx)
+      delete cfg.auth.onAuthorizationURL
+      var keystore = cfg.auth.tokenStore.file + '.tls.p12'
+      var keytool = $sh([ow.format.getJavaHome() + '/bin/keytool', '-genkeypair', '-alias', 'fixture',
+        '-keystore', keystore, '-storepass', 'fixture-password', '-keypass', 'fixture-password',
+        '-storetype', 'PKCS12', '-keyalg', 'RSA', '-keysize', '2048', '-validity', '1',
+        '-dname', 'CN=127.0.0.1', '-ext', 'SAN=IP:127.0.0.1', '-noprompt']).get(0)
+      assertEq(keytool.exitcode, 0, 'Created local TLS fixture: ' + keytool.stderr)
+      var https = ow.server.httpd.start(findRandomOpenPort(), '127.0.0.1', keystore, 'fixture-password')
+      var documentURL = 'https://127.0.0.1:' + https.getPort() + '/client.json'
+      var redirect = 'http://127.0.0.1:' + findRandomOpenPort() + '/metadata-callback'
+      ow.server.httpd.route(https, { '/client.json': function() {
+        return ow.server.httpd.reply({ client_id: documentURL, client_name: 'Metadata fixture',
+          redirect_uris: [redirect], token_endpoint_auth_method: 'none' }, 200, 'application/json', {})
+      } })
+      try {
+        cfg.auth.clientMetadataURL = documentURL
+        var script = cfg.auth.tokenStore.file + '.metadata-child.js'
+        io.writeFileString(script, 'try { var cfg=' + stringify(cfg, __, '') + '; cfg.auth.onAuthorizationURL=function(url) { var p=ow.server.rest.parseQuery(String(new java.net.URI(url).getRawQuery())); $rest().get(p.redirect_uri+"?state="+p.state+"&code=metadata-code"); }; var c=$mcp(cfg); c.authenticate(); if(c.getAuthStatus().registrationMethod!=="metadata") throw new Error("Wrong registration method"); c.destroy(); exit(0); } catch(e) { printErr(String(e)); exit(1); }')
+        var result = $sh([ow.format.getJavaHome() + '/bin/java', '-Djavax.net.ssl.trustStore=' + keystore,
+          '-Djavax.net.ssl.trustStorePassword=fixture-password', '-jar', getOpenAFJar(), '-f', script]).get(0)
+        assertEq(result.exitcode, 0, 'Metadata-document login: ' + result.stderr)
+        assertEq(ctx.state.registrations.length, 0, 'Metadata document takes priority over DCR')
+        assertEq(ctx.state.tokens[0].client_id, documentURL, 'Document URL used as client ID')
+        assertEq(ctx.state.tokens[0].redirect_uri, redirect, 'Registered document callback selected')
+      } finally { ow.server.httpd.stop(https) }
+    })
+  }
+  exports.testAutomaticOAuthRegistration = function() {
+    fixture(function(ctx) {
+      delete ctx.cfg.auth.clientId
+      delete ctx.cfg.auth.grantType
+      delete ctx.cfg.auth.authURL
+      delete ctx.cfg.auth.tokenURL
+      callback(ctx.cfg)
+      var first = ctx.client()
+      assertEq(first.authenticate().authenticated, true, 'Automatic OAuth login')
+      assertEq(ctx.state.registrations.length, 1, 'Registered once')
+      assertEq(ctx.state.registrations[0].token_endpoint_auth_method, 'none', 'Public PKCE client')
+      assertEq(ctx.state.tokens[0].client_id, 'dynamic-public', 'Registered identity exchanged')
+      var nextCfg = clone(ctx.cfg)
+      delete nextCfg.auth.clientId
+      delete nextCfg.auth.clientSecret
+      delete nextCfg.auth.tokenEndpointAuthMethod
+      nextCfg.auth.interactive = false
+      var next = ctx.client(nextCfg)
+      assertEq(next.authenticate().authenticated, true, 'Stored registration and token reused')
+      assertEq(ctx.state.registrations.length, 1, 'Restart does not register')
+      assertEq(ctx.state.tokens.length, 1, 'Restart does not exchange')
+    })
   }
   exports.testPersistentOAuthCallbackAndRefresh = function() {
     fixture(function(ctx) {

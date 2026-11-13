@@ -121,11 +121,21 @@ Invoke it as `openaf --opack <verb> [args...] [options]` (packaged distributions
 - `-repo <url\|path>` — prepend an extra repository to search for this run only.
 - `-deps` — automatically install missing dependencies instead of prompting interactively.
 - `-useunzip` — accepted for compatibility; extraction uses the same safe internal streaming path.
-- `-noverify` — skip the post-install file-hash verification pass.
-- `-cred <user:pass>` — HTTP basic-auth credentials for protected repositories/URLs.
+- `-noverify` — explicitly bypass staged file-hash verification for trusted input; file-copy failures still abort.
+- `-cred <user:pass>` — HTTP basic-auth credentials, bound to the first challenged scheme, host, port and package directory. Other protection spaces use their own stored credentials or prompt separately. Older stored credentials without a scheme must be entered again.
 - `-arg <value>` — passed through to `preinstall`/`postinstall` scripts as `arg`.
 - `-justcopy` — copy files without registering in the DB or checking versions (used internally by `oJob-common`'s packaging job, see §5).
 - `update` also adds: `-all` (update every installed package), `-noerase` (don't delete the old version's files before installing the new one), `-erasefolder` (do remove the old version's install folder — the "keep folder" behavior is the default).
+
+### Integrity checks
+
+Installation copies every listed file into a private temporary directory and checks that exact snapshot before either incoming install hook or any destination write. Every non-description payload needs a matching `filesHash` value unless `-noverify` is explicitly used. Missing files, failed reads, missing/malformed hashes and mismatches abort the package without reporting success or registering it. Updates defer erasing the old package until the incoming snapshot passes. JSON/YAML descriptions are written from the parsed manifest used for the operation rather than fetched again.
+
+The package generator now includes nested package-description files in the hash list. Legacy packages missing hashes for nested descriptions or other payloads need a regenerated trusted manifest (or an explicit trusted `-noverify` bypass). Only the root description parsed for the operation is exempt.
+
+Legacy 40-digit SHA-1 values remain accepted, including LF/CRLF text compatibility; bare carriage returns in legacy-hashed text are rejected because they can change code semantics without changing that normalized hash. New manifests can provide raw 64-digit SHA-256 or `sha256:<digest>` values, verified against exact bytes. This does not authenticate the publisher or protect an attacker-modified manifest.
+
+Only verified staged files are promoted. Unrelated destination files are retained and affected files are backed up for restoration on promotion/hook failure. Rollback failures are reported; arbitrary hook side effects and interruption are not transactional. Staging needs temporary disk space for the payload and backups. Copy-only installs still verify by default, and `-noverify` remains an explicit integrity bypass. The standalone regression can be run from the checkout root with `java -jar openaf.jar -f tests/opack-integrity.js`.
 
 ### 3.2 Examples
 

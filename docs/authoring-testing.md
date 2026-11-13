@@ -82,3 +82,7 @@ java -jar openaf.jar -f tests/runOJobCode.js
 | Inspecting YAML causes activity | `-compile`, `-jobs`, and related commands load dependencies; plain parsing is a different check. |
 
 For AI-assisted debugging provide the command, version, small input, expected output, and actual diagnostics with secrets removed. Ask for source-backed APIs and a clear distinction between static inspection and execution.
+
+## Sessions and standalone suites
+
+For richer assertions, fixtures, scoped mocks, async tasks and process-isolated workflow verification, see the [ow.test API guide](./ow-test.md). Existing `ow.test.test()` scripts retain their recording behavior. New suite runners return an explicit result and exit code; no oJob orchestrator is required.

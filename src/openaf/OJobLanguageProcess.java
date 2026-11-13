@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Local oJob language processes. No Rhino calls are made from worker threads. */
 public final class OJobLanguageProcess {
@@ -20,12 +21,18 @@ public final class OJobLanguageProcess {
     // How long to keep draining stdout/stderr after the process exited (see run)
     private static final long DRAIN_GRACE_MS = 2000;
 
-    private static Thread drain(InputStream input, ByteArrayOutputStream output) {
+    private static Thread drain(InputStream input, ByteArrayOutputStream output, int limit, AtomicBoolean truncated) {
         Thread thread = new Thread(() -> {
             try (InputStream stream = input) {
                 byte[] buffer = new byte[8192];
                 int count;
-                while ((count = stream.read(buffer)) != -1) output.write(buffer, 0, count);
+                while ((count = stream.read(buffer)) != -1) {
+                    synchronized (output) {
+                        int keep = limit == 0 ? count : Math.min(count, Math.max(0, limit - output.size()));
+                        output.write(buffer, 0, keep);
+                        if (keep < count) truncated.set(true);
+                    }
+                }
             } catch (IOException ignored) {
                 // Termination closes the pipes; captured output remains available.
             }
@@ -60,17 +67,21 @@ public final class OJobLanguageProcess {
         if (command.isEmpty()) throw new IllegalArgumentException("Language command is empty");
         ProcessBuilder builder = new ProcessBuilder(command);
         if (options.has("cwd")) builder.directory(Path.of(options.get("cwd").getAsString()).toFile());
+        if (options.has("clearEnvironment") && options.get("clearEnvironment").getAsBoolean()) builder.environment().clear();
         if (options.has("env")) options.getAsJsonObject("env").entrySet().forEach(e ->
             builder.environment().put(e.getKey(), e.getValue().getAsString()));
         long timeout = options.has("timeout") ? options.get("timeout").getAsLong() : 0;
         if (timeout < 0) throw new IllegalArgumentException("Language timeout must be positive");
+        int outputLimit = options.has("maxOutputBytes") ? options.get("maxOutputBytes").getAsInt() : 0;
+        if (outputLimit < 0) throw new IllegalArgumentException("Output limit must be nonnegative");
+        AtomicBoolean outputTruncated = new AtomicBoolean();
         long start = System.nanoTime();
         Process process = builder.start();
         process.getOutputStream().close();
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-        Thread out = drain(process.getInputStream(), stdout);
-        Thread err = drain(process.getErrorStream(), stderr);
+        Thread out = drain(process.getInputStream(), stdout, outputLimit, outputTruncated);
+        Thread err = drain(process.getErrorStream(), stderr, outputLimit, outputTruncated);
         Map<Long, ProcessHandle> descendants = new LinkedHashMap<>();
         boolean timedOut = false;
         boolean descendantTracking = true;
@@ -106,6 +117,8 @@ public final class OJobLanguageProcess {
             result.put("exitcode", process.isAlive() ? -1 : process.exitValue());
             result.put("timedOut", timedOut);
             result.put("descendantTracking", descendantTracking);
+            result.put("outputTruncated", outputTruncated.get());
+            result.put("terminated", !process.isAlive());
             return new Gson().toJson(result);
         } catch (InterruptedException e) {
             terminate(process, descendants);

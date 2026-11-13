@@ -1,6 +1,40 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    exports.testArchiveExtractionLimits = function() {
+        plugin("ZIP")
+        var base = String(java.nio.file.Files.createTempDirectory("archive-extract-limits-"))
+        var key = "openaf.archive.maxEntryBytes"
+        var previous = java.lang.System.getProperty(key)
+        var zip = new ZIP()
+        try {
+            zip.putFile("data.txt", af.fromString2Bytes("x".repeat(128)))
+            io.writeFileBytes(base + "/input.zip", zip.generate(__, true))
+            io.mkdir(base + "/output")
+            io.writeFileString(base + "/output/data.txt", "existing")
+            java.lang.System.setProperty(key, "16")
+            var rejected = false
+            try { io.unzip(base + "/input.zip", base + "/output", function() {}, function() {}) } catch(e) {
+                rejected = String(e).indexOf("Archive quota exceeded") >= 0
+            }
+            ow.test.assert(rejected, true, "Extraction swallowed its quota failure")
+            ow.test.assert(io.readFileString(base + "/output/data.txt"), "existing", "Quota failure replaced existing destination")
+            ow.test.assert(io.listFiles(base + "/output").files.length, 1, "Quota failure left a partial staging file")
+            var path = java.nio.file.Paths.get(base + "/output/data.txt")
+            var posix = java.nio.file.Files.getFileStore(path).supportsFileAttributeView("posix")
+            if (posix) java.nio.file.Files.setPosixFilePermissions(path, java.nio.file.attribute.PosixFilePermissions.fromString("rwxr-xr--"))
+            java.lang.System.setProperty(key, "256")
+            io.unzip(base + "/input.zip", base + "/output", function() {}, function() {})
+            ow.test.assert(io.readFileString(base + "/output/data.txt"), "x".repeat(128), "Valid extraction failed")
+            if (posix) ow.test.assert(String(java.nio.file.attribute.PosixFilePermissions.toString(java.nio.file.Files.getPosixFilePermissions(path))), "rwxr-xr--", "Extraction changed destination permissions")
+        } finally {
+            if (isNull(previous)) java.lang.System.clearProperty(key)
+            else java.lang.System.setProperty(key, previous)
+            zip.close()
+            io.rm(base)
+        }
+    }
+
     exports.testZIP = function() {
         plugin("ZIP");
 
@@ -73,5 +107,69 @@
             io.rm(path); io.rm(emptyPath);
         }
     };
+
+  exports.testZIPMetadataListing = function() {
+    plugin('ZIP')
+    var path = io.createTempFile('zip-metadata-', '.zip')
+    var corrupt = io.createTempFile('zip-corrupt-', '.zip')
+    var sequential = io.createTempFile('zip-sequential-', '.zip')
+    var zip = new ZIP()
+    var output = new java.util.zip.ZipOutputStream(io.writeFileStream(path))
+    var payload = af.fromString2Bytes('integrity-check-payload', 'UTF-8')
+    try {
+      var stored = new java.util.zip.ZipEntry('stored.txt')
+      var crc = new java.util.zip.CRC32()
+      crc.update(payload)
+      stored.setMethod(java.util.zip.ZipEntry.STORED)
+      stored.setSize(payload.length)
+      stored.setCompressedSize(payload.length)
+      stored.setCrc(crc.getValue())
+      stored.setComment('central comment')
+      output.putNextEntry(stored)
+      output.write(payload)
+      output.closeEntry()
+      output.putNextEntry(new java.util.zip.ZipEntry('folder/'))
+      output.closeEntry()
+      output.putNextEntry(new java.util.zip.ZipEntry('folder/雪.txt'))
+      output.write(af.fromString2Bytes('compressed'.repeat(1000), 'UTF-8'))
+      output.closeEntry()
+    } finally { output.close() }
+    try {
+      zip.putFile('memory.txt', 'retained')
+      var ordinary = zip.list(path), metadata = zip.listMetadata(path)
+      ow.test.assert(Object.keys(metadata).sort(), Object.keys(ordinary).sort(), 'Metadata listing changed entry names')
+      Object.keys(ordinary).forEach(name => {
+        ;['name', 'size', 'compressedSize', 'crc', 'time'].forEach(field => {
+          ow.test.assert(metadata[name][field], ordinary[name][field], 'Metadata field differs: ' + name + '.' + field)
+        })
+      })
+      ow.test.assert(metadata['stored.txt'].comment, 'central comment', 'Central directory comment missing')
+      ow.test.assert(af.fromBytes2String(zip.getFile('memory.txt')), 'retained', 'Metadata listing replaced in-memory archive')
+
+      var bytes = af.fromBytes2Array(io.readFileBytes(path))
+      var dataOffset = 30 + (bytes[26] & 255) + ((bytes[27] & 255) << 8) + (bytes[28] & 255) + ((bytes[29] & 255) << 8)
+      bytes[dataOffset] ^= 1
+      io.writeFileBytes(corrupt, af.fromArray2Bytes(bytes))
+      ow.test.assert(zip.listMetadata(corrupt)['stored.txt'].crc, metadata['stored.txt'].crc, 'Metadata-only traversal tried to read payload')
+      var failed = false
+      try { zip.list(corrupt) } catch(e) { failed = true }
+      ow.test.assert(failed, true, 'Default list no longer checks payload CRC')
+
+      bytes = af.fromBytes2Array(io.readFileBytes(path))
+      var central = -1
+      for (var i = 0; i < bytes.length - 3; i++) {
+        if (bytes[i] == 80 && bytes[i + 1] == 75 && bytes[i + 2] == 1 && bytes[i + 3] == 2) { central = i; break }
+      }
+      ow.test.assert(central > 0, true, 'ZIP fixture has no central directory')
+      io.writeFileBytes(sequential, af.fromArray2Bytes(bytes.slice(0, central)))
+      ow.test.assert(Object.keys(zip.list(sequential)).sort(), Object.keys(ordinary).sort(), 'Default sequential ZIP support changed')
+      failed = false
+      try { zip.listMetadata(sequential) } catch(e) { failed = true }
+      ow.test.assert(failed, true, 'Metadata-only listing accepted a missing central directory')
+    } finally {
+      zip.close()
+      ;[path, corrupt, sequential].forEach(file => io.rm(file))
+    }
+  }
 
 })();

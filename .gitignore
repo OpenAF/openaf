@@ -28,3 +28,7 @@ maven-*
 .github/workflows/*
 !.github/workflows/publish-maven.yml
 /tools/central/__pycache__/
+
+# ow.test generated validation artifacts
+/tests/framework-results.json
+/js/.openaf_precompiled/

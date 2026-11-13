@@ -1,0 +1,70 @@
+include:
+  - autoTestAll.common.yaml
+
+ojob:
+  sequential: true
+
+jobs:
+  - name: Adapter::Async resources
+    to: OpenAF Test
+    exec: |
+      args.func = function(c) {
+        global.__adapterTemp = c.tmpDir()
+        io.writeFileString(global.__adapterTemp + "/fixture.txt", "temporary")
+        return c.spawn(function() {
+          c.assertEqual(io.fileExists(global.__adapterTemp + "/fixture.txt"), true)
+          return 42
+        })
+      }
+
+  - name: Adapter::Cleanup
+    to: OpenAF Test
+    exec: |
+      args.func = function(c) {
+        c.assertEqual(io.fileExists(global.__adapterTemp), false)
+      }
+
+  - name: Adapter::Missing export
+    to: OpenAF Test
+    exec: args.func = undefined
+
+  - name: Adapter::Nested failure
+    to: OpenAF Test
+    exec: |
+      args.func = function() {
+        ow.test.test("Adapter::Child", function() { ow.test.assertEqual(1, 2) })
+      }
+
+  - name: Adapter::Skip
+    to: OpenAF Test
+    exec: |
+      args.func = function(c) { c.skip("Optional capability unavailable") }
+
+  - name: Adapter::Timeout
+    to: OpenAF Test
+    args:
+      testOptions:
+        timeout: 20
+    exec: |
+      args.func = function() { java.lang.Thread.sleep(1000) }
+
+  - name: Adapter::Cleanup failure
+    to: OpenAF Test
+    exec: |
+      args.func = function(c) {
+        c.defer(function() { throw new Error("cleanup failed") })
+      }
+
+  - name: Adapter::Results
+    exec: |
+      args.result = require("autoTestAll.reporting.js").summarize(ow.test.getResults(), "adapter-regression")
+
+todo:
+  - Adapter::Async resources
+  - Adapter::Cleanup
+  - Adapter::Missing export
+  - Adapter::Nested failure
+  - Adapter::Skip
+  - Adapter::Timeout
+  - Adapter::Cleanup failure
+  - Adapter::Results

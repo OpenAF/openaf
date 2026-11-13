@@ -1,7 +1,7 @@
 # Copyright 2026 Nuno Aguiar
 
 include:
-  - oJobTest.yaml
+  - autoTestAll.common.yaml
 
 jobs:
   - name: SecurityCookies::Init
@@ -9,7 +9,7 @@ jobs:
 
   - name: SecurityCookies::Host-only binding
     from: SecurityCookies::Init
-    to  : oJob Test
+    to  : OpenAF Test
     exec: args.func = args.tests.testHostOnlyCookieBinding;
 
 todo:

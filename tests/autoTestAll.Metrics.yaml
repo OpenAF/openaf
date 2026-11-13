@@ -1,15 +1,15 @@
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 
 jobs:
 - name: Metrics::Strict output
   from: Metrics::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testOpenMetricsStrict;
 
 - name: Metrics::HTTP endpoint
   from: Metrics::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testOpenMetricsEndpoint;
 
 - name: Metrics::Init
@@ -17,17 +17,17 @@ jobs:
 
 - name: Metrics::Quoted labels
   from: Metrics::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testOpenMetricsLabels;
 
 - name: Metrics::Compatibility
   from: Metrics::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testOpenMetricsCompatibility;
 
 - name: Metrics::Invalid labels
   from: Metrics::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testOpenMetricsInvalidLabels;
 
 todo:

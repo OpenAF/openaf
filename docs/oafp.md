@@ -258,3 +258,18 @@ var result = $oafp(data, {
 
 print(result);
 ```
+
+### Category widgets in grids
+
+The existing `grid` output can use OpenAF widget types `pie`, `donut`,
+`stackedBar`, `stackedColumns`, `divergingBars` and `treemap`. Cells use `obj` for their data and an
+`options` map for renderer settings. For example, an OpenAF grid cell is:
+
+```javascript
+{ type: "donut", title: "Resources", obj: { CPU: 50, Memory: 30, Other: 20 },
+  options: { size: "auto", palette: "auto", legend: "right" } }
+```
+
+See [terminal category distributions](openaf-advanced.md#category-distributions-pie-donut-and-stacked-bars)
+for input formats and fallbacks. These extend the existing grid widget system;
+there are no additional oafp output formats.

@@ -77,9 +77,13 @@ io.writeFileString(''' + json.dumps(str(root / 'pyoaf')) + ''', generateUnixPySc
     shim = root / 'oaf'
     if os.name != 'nt':
         import shlex
-        shim.write_text('#!/bin/sh\nexec ' + shlex.join([java, '-jar', str(jar)]) + ' "$@"\n')
+        # Match the installed launcher: a shell waiting for Java, not an exec shim.
+        shim.write_text('#!/bin/sh\n' + shlex.join([java, '-jar', str(jar)]) + ' "$@"\n')
         shim.chmod(0o755)
         generator = "var code = io.readFileString(getOpenAFJar() + '::js/oafpy.js'); code = code.replace(" + json.dumps('getOpenAFPath()') + ", " + json.dumps(json.dumps(str(root) + os.sep)) + "); af.eval(code);"
+        # An optional source generator permits focused validation before rebuilding the JAR.
+        if len(sys.argv) > 2:
+            generator = generator.replace("getOpenAFJar() + '::js/oafpy.js'", json.dumps(str(Path(sys.argv[2]).resolve())))
         module = oaf('-c', generator).stdout
         (root / 'oaf.py').write_text(module)
         probe = root / 'inverse.py'
@@ -87,13 +91,19 @@ io.writeFileString(''' + json.dumps(str(root / 'pyoaf')) + ''', generateUnixPySc
         pid_file = root / 'child.pid'
         with probe.open('a') as output:
             output.write("with open(" + repr(str(pid_file)) + ", 'w') as handle:\n    handle.write(str(_oaf('Number(java.lang.ProcessHandle.current().pid())')))\n")
-        assert 'INVERSE_OK' in run([sys.executable, str(probe)]).stdout
+        result = run([sys.executable, str(probe)])
+        assert 'INVERSE_OK' in result.stdout and not result.stderr, (result.stdout, result.stderr)
         try:
             os.kill(int(pid_file.read_text()), 0)
         except ProcessLookupError:
             pass
         else:
             raise AssertionError('generated oaf.py left its child running')
+        # Explicit cleanup remains safe when atexit calls it again.
+        result = run([sys.executable, '-c', 'import oaf; oaf.on_exit(); oaf.on_exit()'], cwd=root)
+        assert not result.stderr, result.stderr
+        failed = run([sys.executable, '-c', 'import oaf; raise RuntimeError("after-import")'], cwd=root, code=1)
+        assert 'after-import' in failed.stderr and 'atexit callback' not in failed.stderr, failed.stderr
         shim.write_text('#!/bin/sh\nexit 9\n')
         failed = subprocess.run([sys.executable, str(probe)], env=env, capture_output=True, text=True, timeout=20)
         assert failed.returncode != 0 and 'OpenAF startup failed' in failed.stderr, failed.stderr

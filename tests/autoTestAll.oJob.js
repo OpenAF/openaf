@@ -1,6 +1,96 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
+    function legacyDependencyScores(jobs) {
+        var scores = Object.create(null)
+        jobs.forEach(function(job) { scores[job.name] = 0 })
+        function visit(job) {
+            if (typeof job == 'string') job = jobs.filter(function(candidate) { return candidate.name == job })[0]
+            if (job == null) return
+            scores[job.name]++
+            ;['from','earlier','to','then','deps'].forEach(function(field) {
+                var list = job[field]
+                if (list == null) return
+                ;(typeof list == 'string' ? [list] : list).forEach(function(dependency) {
+                    var name = typeof dependency == 'string' ? dependency : dependency.name
+                    scores[name] = (scores[name] || 0) + scores[job.name]
+                    visit(name)
+                })
+            })
+        }
+        jobs.forEach(visit)
+        return scores
+    }
+
+    exports.testOJobDependencyScores = function() {
+        ow.loadOJob()
+        var seed = 14323
+        function random() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296 }
+        function check(jobs, exact) {
+            var expected = legacyDependencyScores(jobs), actual = ow.oJob.__dependencyScores(jobs)
+            if (exact) Object.keys(expected).forEach(function(name) {
+                ow.test.assert(String(actual[name]), String(expected[name]), 'Dependency score must preserve legacy updates for ' + name)
+            })
+            var originalOrder = jobs.slice().sort(function(a,b) { return expected[b.name] - expected[a.name] }).map(function(job) { return job.name })
+            var newOrder = jobs.slice().sort(function(a,b) { return Number(actual[b.name].compareTo(actual[a.name])) }).map(function(job) { return job.name })
+            ow.test.assert(newOrder, originalOrder, 'Dependency priority and stable ties must match the legacy order')
+        }
+        for (var trial = 0; trial < 50; trial++) {
+            var jobs = []
+            for (var i = 0; i < 10; i++) {
+                var deps = []
+                for (var j = 0; j < i; j++) if (random() < 0.25) deps.push('node-' + j)
+                jobs.push({name:'node-' + i,deps:deps})
+            }
+            for (var i = jobs.length - 1; i > 0; i--) {
+                var at = Math.floor(random() * (i + 1)), tmp = jobs[at]
+                jobs[at] = jobs[i]; jobs[i] = tmp
+            }
+            check(jobs, true)
+        }
+        check([{name:'a'},{name:'b'},{name:'c',from:'a',earlier:['b'],to:[{name:'missing'}],then:['a'],deps:[{name:'b'}]}], true)
+        check([{name:'duplicate'},{name:'duplicate',deps:['base']},{name:'base'},{name:'last',deps:['duplicate']}], true)
+        // Exceed the bounded walk while retaining exactly representable legacy scores.
+        check([{name:'leaf'},{name:'middle',deps:Array(100).fill('leaf')},{name:'root',deps:Array(100).fill('middle')}], true)
+        ;[18,20,24].forEach(function(n) {
+            var jobs = []
+            for (var i = 0; i < n; i++) jobs.push({name:'node-' + i,deps:i < 2 ? [] : ['node-' + (i - 1),'node-' + (i - 2)]})
+            check(jobs, false)
+        })
+        var failed = false
+        try { ow.oJob.__dependencyScores([{name:'a',deps:['b']},{name:'b',deps:['a']}]) }
+        catch(e) { failed = String(e).indexOf('Cyclic job dependency: a -> b -> a') >= 0 }
+        ow.test.assert(failed, true, 'Cyclic definitions must fail clearly without recursion overflow')
+        var large = []
+        for (var i = 0; i < 100; i++) large.push({name:'node-' + i,deps:i < 2 ? [] : ['node-' + (i - 1),'node-' + (i - 2)]})
+        var scores = ow.oJob.__dependencyScores(large)
+        ow.test.assert(scores['node-0'].signum() > 0, true, 'Large shared DAG scores must remain exact finite integers')
+    }
+
+    exports.testOJobDependencyExecutionOrder = function() {
+        var definition = {
+            ojob:{includeOJob:false,logToConsole:false,sequential:true,shareArgs:false},
+            jobs:[
+                {name:'Base',exec:"global.__order.push('base')"},
+                {name:'Left',from:'Base',exec:"global.__order.push('left')"},
+                {name:'Right',from:'Base',exec:"global.__order.push('right')"},
+                {name:'Last',deps:['Left','Right'],exec:"global.__order.push('last')"}
+            ],
+            todo:['Left','Right','Last']
+        }
+        function run(legacy) {
+            var script = io.createTempFile('ojob-order-', '.js'), source = getEnv('OJOB_CODE_SOURCE')
+            var code = 'ow.loadOJob();' + (source ? 'load(' + stringify(source) + ');Object.keys(OpenWrap.oJob.prototype).forEach(function(k){ow.oJob[k]=OpenWrap.oJob.prototype[k]});' : '')
+            if (legacy) code += 'var legacy=' + legacyDependencyScores.toString() + ';ow.oJob.__dependencyScores=function(jobs){var scores=legacy(jobs);Object.keys(scores).forEach(function(k){scores[k]=new java.math.BigInteger(String(scores[k]))});return scores};'
+            code += 'global.__order=[];var definition=' + stringify(definition) + ';ow.oJob.load(definition.jobs,definition.todo,definition.ojob,{});__pm.registered=ow.oJob.getJobsCh().getKeys().map(function(k){return k.name});ow.oJob.start({});__pm.order=global.__order;'
+            io.writeFileString(script, code)
+            try { return $openaf(script) } finally { io.rm(script) }
+        }
+        var expected = run(true), actual = run(false)
+        ow.test.assert(actual, expected, 'Registered and inherited execution order must match legacy scoring')
+        ow.test.assert(actual.order, ['base','left','base','right','last'], 'Dependency fixture must execute every intended job')
+    }
+
     exports.testOJobHelpExamples = function() {
         ow.loadOJob();
         __initializeCon();

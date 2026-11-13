@@ -167,6 +167,8 @@
   };
   exports.testScreenStylingAlignAndUTF8 = function() {
     ow.loadScreen();
+    eq(ow.screen.clip("👨‍👩‍👧‍👦abc", 2), "👨‍👩‍👧‍👦", "Shared cluster clipping");
+    eq(ow.screen.clip("x", 0), "", "Zero width clipping");
     // 1. Colors: 16, 256, and truecolor RGB/hex
     var c256 = ow.screen.parseColor(208);
     eq(c256.idx256, 208, "256 color index parsed");
@@ -191,7 +193,7 @@
     eq(center.indexOf("   " + utfText + "    "), 0, "Centered padding 3 left, 4 right");
     eq(right.indexOf("       " + utfText), 0, "Right padding 7 spaces");
 
-    // 3. Box drawing, divider, progress, spacing
+    // 3. Box drawing (rounded, left-accent, shadow), divider, smooth progress, keybar
     var box = ow.screen.box("Centered UTF-8 🌟", { width: 30, title: "Panel", align: "center", borderStyle: "rounded", colorMode: "256" });
     var boxLines = box.split("\n");
     eq(boxLines.length, 3, "Box has top, content, bottom");
@@ -199,9 +201,29 @@
     eq(ow.screen.width(boxLines[1]), 30, "Box content row width");
     eq(ow.screen.width(boxLines[2]), 30, "Box bottom border width");
 
-    // 4. TUI rendering with rich view (divider, progress, spacer, align, styles, border)
-    var ui = terminal(); ui.height = 18; ui.colorMode = "truecolor";
+    var leftBox = ow.screen.box("Callout line", { width: 24, title: "Note", borderStyle: "left", colorMode: "256", unicode: true });
+    var leftLines = leftBox.split("\n");
+    eq(leftLines.length, 2, "Left-accent box has title + content without top/bottom frame");
+    eq(ow.screen.stripAnsi(leftLines[0]).indexOf("▊") === 0, true, "Left-accent uses thick bar");
+
+    var shadowBox = ow.screen.box("Shadowed", { width: 20, borderStyle: "single", shadow: true, colorMode: "256", unicode: true });
+    var shLines = shadowBox.split("\n");
+    eq(shLines.length, 4, "Shadow box adds bottom shadow row");
+    eq(ow.screen.width(shLines[0]), 20, "Shadow box preserves total width");
+
+    var smoothProg = ow.screen.stripAnsi(ow.screen.progress(53, 100, 0, 26, { smooth: true, unicode: true, colorMode: "none" }));
+    eq(/\[█+[▏▎▍▌▋▊▉]?░*\]/.test(smoothProg), true, "Sub-cell progress bar renders smooth block characters");
+    var thinProg = ow.screen.stripAnsi(ow.screen.progress(50, 100, 0, 20, { barStyle: "thin", unicode: true, colorMode: "none" }));
+    eq(thinProg.indexOf("[") < 0 && thinProg.indexOf("━") >= 0, true, "Thin barStyle omits brackets and uses horizontal line chars");
+
+    var kb = ow.screen.keybar([{ key: "Tab", label: "Focus" }, { key: "Enter", label: "Run" }], 30, { colorMode: "256" });
+    eq(ow.screen.width(kb), 30, "Keybar aligns to exact width");
+    eq(ow.screen.stripAnsi(kb).indexOf(" Tab  Focus") >= 0, true, "Keybar formats key pills and labels");
+
+    // 4. TUI rendering with rich view (row, checkbox, password input, table, sparkline, focus preservation)
+    var ui = terminal(); ui.width = 72; ui.height = 22; ui.colorMode = "truecolor";
     var d = desktop(ui, { providerOptions: { tui: { theme: "ocean", border: "rounded" } } });
+    var events = new java.util.concurrent.LinkedBlockingQueue();
     var richView = {
       title: "Dashboard 🚀",
       subtitle: "UTF-8 & Truecolor",
@@ -209,17 +231,57 @@
       spacing: 1,
       items: [
         { id: "hdr", type: "divider", label: "Metrics" },
-        { id: "prog", type: "progress", label: "CPU", value: 75, min: 0, max: 100 },
+        {
+          id: "topRow",
+          type: "row",
+          gap: 2,
+          items: [
+            { id: "secret", type: "input", label: "Pass", value: "abc", password: true, fieldWidth: 10 },
+            { id: "flag", type: "checkbox", label: "Enable", value: false },
+            { id: "act", type: "button", label: "Confirm", variant: "primary" }
+          ]
+        },
+        { id: "prog", type: "progress", label: "CPU", value: 75, min: 0, max: 100, smooth: true },
+        { id: "spark", type: "sparkline", label: "Load", values: [10, 30, 20, 50, 40], min: 0, max: 60 },
+        { id: "tbl", type: "table", columns: ["Host", "State"], rows: [{ Host: "node-1", State: "READY" }] },
         { id: "sp", type: "spacer", lines: 1 },
-        { id: "msg", type: "text", text: "Aligned right 日本語", align: "right", style: { fg: "#89dceb", bold: true, italic: true } },
-        { id: "ok", type: "button", label: "Confirm", align: "center" }
+        { id: "msg", type: "text", text: "Aligned right 日本語", align: "right", style: { fg: "#89dceb", bold: true, italic: true } }
       ]
     };
     var w = d.window({ title: "RichWindow", view: richView });
+    w.on("message", function(e) { events.add(JSON.stringify(e.message)); });
+    function nextMsg() {
+      var m = events.poll(3, java.util.concurrent.TimeUnit.SECONDS);
+      eq(m != null, true, "Rich view interaction emits message");
+      return JSON.parse(String(m));
+    }
     try {
       wait(w.show());
       until(function() { return ui.output().indexOf("Dashboard 🚀") >= 0 && ui.output().indexOf("75%") >= 0; });
-      eq(ui.output().indexOf("Aligned right 日本語") >= 0, true, "UTF-8 text rendered in TUI");
+      var plainOut = ow.screen.stripAnsi(ui.output());
+      eq(plainOut.indexOf("Aligned right 日本語") >= 0, true, "UTF-8 text rendered in TUI");
+      eq(plainOut.indexOf("•••_") >= 0, true, "Password input masks characters with bullets");
+      eq(plainOut.indexOf("node-1") >= 0 && plainOut.indexOf("READY") >= 0, true, "Table widget rendered in TUI");
+
+      // Tab to checkbox ('flag') and toggle with Space
+      ui.keys("\t ");
+      var m1 = nextMsg();
+      eq(m1.type, "change", "Checkbox emits change event");
+      eq(m1.payload.id, "flag", "Checkbox ID in event");
+      eq(m1.payload.values.flag, "true", "Checkbox toggled to 'true'");
+      eq(m1.payload.values.secret, "abc", "Password input real value preserved in snapshot");
+
+      // Preserve focus across setView when control ID ('flag') still exists
+      richView.items[1].items[1].value = "true";
+      richView.items[2].value = 90;
+      wait(w.setView(richView));
+      until(function() { return ui.output().indexOf("90%") >= 0; });
+      // Pressing Space again should still toggle 'flag' because focus was preserved on 'flag'!
+      ui.keys(" ");
+      var m2 = nextMsg();
+      eq(m2.payload.id, "flag", "Focus preserved on 'flag' across setView");
+      eq(m2.payload.values.flag, "false", "Checkbox toggled back to 'false'");
+
       wait(w.close()); d.wait(5000);
     } finally { d.__cleanup(); }
   };

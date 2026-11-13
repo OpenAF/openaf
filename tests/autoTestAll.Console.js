@@ -158,3 +158,80 @@ exports.testMultilinePrompts = function() {
     });
   });
 };
+
+exports.testPollingPrompts = function() {
+  function terminal(text, ansi) {
+    var pos = 0, output = [], raw = false
+    var ui = { ansi: Boolean(ansi),
+      console: ansi ? { getConsoleReader: function() { return { getTerminal: function() { return { getWidth: function() { return 80 } } } } } } : __,
+      read: function() { return pos < text.length ? text.charCodeAt(pos++) : -2 },
+      write: function(s) { output.push(String(s)) },
+      raw: function(fn) { raw = true; try { return fn() } finally { raw = false } },
+      output: function() { return output.join("") }, isRaw: function() { return raw }
+    }
+    return ui
+  }
+  var ticks = 0, options = { onIdle: function() { return ++ticks < 100 }, pollInterval: 1 }
+  var ui = terminal("ab\x1b[DX\n")
+  ow.test.assert(ask("Name: ", __, ui, true, ui.write, options), "aXb", "Shared injected prompt supports cursor editing")
+  ow.test.assert(ticks > 0, true, "Idle callback runs on reader path")
+  ui = terminal("secret\n")
+  ow.test.assert(ask("Password: ", "*", ui, true, ui.write, options), "secret", "Masked prompt returns full value")
+  ow.test.assert(ui.output().indexOf("secret"), -1, "Masked prompt does not echo the secret")
+  ui = terminal("hidden\n")
+  ow.test.assert(af.decrypt(askEncrypt("Secret: ", ui, true, ui.write, options)), "hidden", "Encrypted prompt forwards polling")
+  ow.test.assert(ui.output().indexOf("hidden"), -1, "Hidden prompt suppresses input")
+  ui = terminal("")
+  ow.test.assert(ask("Cancel: ", "*", ui, true, ui.write, { onIdle: function() { return false } }), null, "Callback cancels without input")
+  ow.test.assert(ui.isRaw(), false, "Cancellation restores raw mode")
+  var failed = false
+  try { ask("Failure: ", __, ui, true, ui.write, { onIdle: function() { throw "idle sentinel" } }) } catch(e) { failed = String(e).indexOf("idle sentinel") >= 0 }
+  ow.test.assert(failed && !ui.isRaw(), true, "Callback exceptions restore raw mode")
+  ui = terminal("0\n2\n")
+  ow.test.assert(askChoose("Pick", ["one", "two"], __, __, ui, options), 1, "Numbered choices validate with polling")
+  ui = terminal("\x1b[B\n", true)
+  ow.test.assert(askChoose("Pick", ["one", "two"], __, __, ui, options), 1, "ANSI choices retain arrow navigation with polling")
+  ui = terminal(" \x1b[B \n", true)
+  ow.test.assert(askChooseMultiple("Pick", ["one", "two"], __, __, ui, options), ["one", "two"], "Multiple choices retain selection with polling")
+  ui = terminal("", true)
+  ow.test.assert(askChoose("Cancel", ["one"], __, __, ui, { onIdle: function() { return false } }), __, "Menu idle cancellation")
+  ow.test.assert(ui.output().indexOf("\x1B[?25h") >= 0, true, "Menu cancellation restores cursor")
+  ui = terminal("\x03")
+  ow.test.assert(ask("Interrupt: ", __, ui, true, ui.write, options), null, "Ctrl-C cancels shared polling input")
+  ui = terminal("")
+  ui.read = function() { return -1 }
+  ow.test.assert(ask("EOF: ", __, ui, true, ui.write, options), null, "EOF cancels shared polling input")
+  ui = terminal("zY")
+  ow.test.assert(ask1("Confirm: ", "YN", ui, ui.write, options), "Y", "Character prompts forward polling and allowed characters")
+  ui = terminal("default\n")
+  ow.test.assert(askDef(__, "Value: ", false, false, ui, options), "default", "Default prompts forward polling")
+  failed = false
+  try { ask("Invalid: ", __, ui, true, ui.write, { onIdle: function() {}, pollInterval: 0 }) } catch(e) { failed = true }
+  ow.test.assert(failed, true, "Invalid intervals are rejected before reading")
+  ui = terminal("value\n")
+  ow.test.assert(askStruct([{ name: "field" }], ui, options)[0].answer, "value", "Structured prompts forward polling")
+};
+
+exports.testNativePollingLine = function() {
+  var bytes = new java.lang.String("ab\u001b[DX\nsecret\n").getBytes("UTF-8")
+  var out = new java.io.ByteArrayOutputStream()
+  var term = new Packages.org.jline.terminal.impl.DumbTerminal("prompt-test", "xterm", new java.io.ByteArrayInputStream(bytes), out, java.nio.charset.StandardCharsets.UTF_8)
+  term.setSize(new Packages.org.jline.terminal.Size(80, 24))
+  var con = new Packages.jline.console.ConsoleReader(new Packages.jline.Terminal(term))
+  var ticks = 0, callback = new java.util.function.BooleanSupplier({ getAsBoolean: function() { ticks++; return true } })
+  try {
+    ow.test.assert(String(con.readLine("Name: ", null, callback, 1)), "aXb", "Native polling retains JLine cursor editing")
+    ow.test.assert(ticks > 0, true, "Native callback runs while reading")
+    con.getHistory().clear()
+    ow.test.assert(String(con.readLine("Password: ", java.lang.Character.valueOf("*"), callback, 1)), "secret", "Native polling retains password input")
+    ow.test.assert(Number(con.getHistory().size()), 0, "Native masked input stays out of history")
+    ow.test.assert(String(out.toString("UTF-8")).indexOf("secret"), -1, "Native masked input is not echoed")
+    con.getCursorBuffer().write("password")
+    var stop = new java.util.function.BooleanSupplier({ getAsBoolean: function() { return false } })
+    ow.test.assert(con.readLine("Cancel: ", java.lang.Character.valueOf("*"), stop, 1), null, "Native callback cancels")
+    ow.test.assert(Number(con.getHistory().size()), 0, "Masked cancelled prompt does not enter history")
+    var failed = false
+    try { con.readLine("Throw: ", null, new java.util.function.BooleanSupplier({ getAsBoolean: function() { throw "native idle sentinel" } }), 1) } catch(e) { failed = true }
+    ow.test.assert(failed, true, "Native callback exceptions propagate")
+  } finally { con.close(); term.close() }
+};

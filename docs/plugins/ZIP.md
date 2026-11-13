@@ -4,6 +4,22 @@ The `ZIP` plugin provides in-memory and streaming NIO (`jar:` FileSystem) ZIP ar
 
 ---
 
+## Decompression limits
+
+ZIP/GZIP reads, `io.gunzip`, `io.gunzipStream`, `io.readFileGzipStream`, `io.unzip`, and the generic decompression bridges enforce finite operation-scoped quotas. Trusted process configuration can override positive limits with Java system properties:
+
+| Property | Default |
+| --- | --- |
+| `openaf.archive.maxInputBytes` | 256 MiB |
+| `openaf.archive.maxEntryBytes` | 64 MiB |
+| `openaf.archive.maxTotalBytes` | 256 MiB |
+| `openaf.archive.maxEntries` | 100,000 |
+| `openaf.archive.maxRatio` | 1,000 |
+
+The ratio check has a 1 MiB startup allowance. Streaming readers count actual input and output; random-access ZIP readers preflight central-directory count, sizes and ratio and enforce actual output against declared and configured limits. These are per-operation limits, not a process-wide memory quota. Repeated independent reads are separate operations. Compressed bytes already buffered by the caller cannot be retroactively bounded.
+
+Excess data throws `ArchiveLimits.LimitException` without returning the violating chunk. Failed in-memory loads preserve prior state. ZIP listing drains payloads through the same limits and still checks CRCs; metadata-only listing does not decompress. `io.unzip` treats quota errors as fatal, removes its current temporary file and preserves an existing destination; files completed before a later quota error remain. Other existing unsafe-path errors can still be logged and skipped. Increase limits only for trusted workloads; overrides also increase the maximum permitted resource use.
+
 ## Loading Syntax
 
 ```javascript

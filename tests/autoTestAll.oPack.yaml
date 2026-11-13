@@ -1,23 +1,28 @@
 # Copyright 2026 Nuno Aguiar
 
 include:
-  - oJobTest.yaml
+  - autoTestAll.common.yaml
 
 jobs:
+  - name: oPack::Credential scope
+    from: oPack::Init
+    to  : OpenAF Test
+    exec: args.func = args.tests.testCredentialScope;
   - name: oPack::Init
     exec: args.tests = require("autoTestAll.oPack.js");
 
   - name: oPack::Copy-only containment
     from: oPack::Init
-    to  : oJob Test
+    to  : OpenAF Test
     exec: args.func = args.tests.testCopyContainment;
 
   - name: oPack::Copy-only useunzip data boundary
     from: oPack::Init
-    to  : oJob Test
+    to  : OpenAF Test
     exec: args.func = args.tests.testCopyUseUnzipIsDataOnly;
 
 todo:
   - oPack::Init
+  - oPack::Credential scope
   - oPack::Copy-only containment
   - oPack::Copy-only useunzip data boundary

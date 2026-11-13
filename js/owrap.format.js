@@ -103,7 +103,7 @@ OpenWrap.format.prototype.string = {
 	getAstralCodePoint: (highSurrogate, lowSurrogate) => {
 	    return (highSurrogate - 0xD800) * 0x400 + lowSurrogate - 0xDC00 + 0x10000;
 	},
-	_wrapAnsiRE: /\033\[[0-9;?]*[ -\/]*[@-~]/g,
+	_wrapAnsiRE: /\033\[[0-?]*[ -\/]*[@-~]/g,
 	_stripAnsi: function(aString) {
 		return String(aString).replace(this._wrapAnsiRE, "")
 	},
@@ -112,7 +112,10 @@ OpenWrap.format.prototype.string = {
 		(cp >= 0x1AB0 && cp <= 0x1AFF) ||
 		(cp >= 0x1DC0 && cp <= 0x1DFF) ||
 		(cp >= 0x20D0 && cp <= 0x20FF) ||
-		(cp >= 0xFE20 && cp <= 0xFE2F)
+		(cp >= 0xFE20 && cp <= 0xFE2F) ||
+        (cp >= 0xE0020 && cp <= 0xE007F) ||
+        (cp >= 0xE0100 && cp <= 0xE01EF) ||
+        [6, 7, 8].indexOf(Number(java.lang.Character.getType(cp))) >= 0
 	),
 	_isWrapEmojiModifierCodePoint: cp => (
 		(cp >= 0x1F3FB && cp <= 0x1F3FF) ||
@@ -121,7 +124,7 @@ OpenWrap.format.prototype.string = {
 	),
 	_isWrapRegionalIndicatorCodePoint: cp => cp >= 0x1F1E6 && cp <= 0x1F1FF,
 	_nextWrapToken: function(aString, idx) {
-		var ansi = /^\033\[[0-9;?]*[ -\/]*[@-~]/.exec(aString.slice(idx))
+		var ansi = /^(?:\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\))/.exec(aString.slice(idx))
 		if (ansi) return { token: ansi[0], next: idx + ansi[0].length, width: 0, isSpace: false }
 
 		var start = idx
@@ -934,20 +937,31 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	ansiClip: (aStr, aWidth, aEllipsis) => {
-		aStr = String(aStr)
-		aWidth = _$(aWidth, "aWidth").isNumber().$_()
-		aEllipsis = _$(aEllipsis, "aEllipsis").isString().default("\u2026")
-		if (visibleLength(aStr) <= aWidth) return aStr
-		var limit = Math.max(0, aWidth - visibleLength(aEllipsis)), out = "", w = 0, hasEsc = false, re = /\x1b\[[0-9;?]*[ -\/]*[@-~]/y
-		for (var i = 0; i < aStr.length; ) {
-			re.lastIndex = i
-			var m = re.exec(aStr)
-			if (m) { out += m[0]; i += m[0].length; hasEsc = true; continue }
-			var cp = aStr.codePointAt(i), ch = String.fromCodePoint(cp), cw = visibleLength(ch)
-			if (w + cw > limit) break
-			out += ch; w += cw; i += ch.length
-		}
-		return out + aEllipsis + (hasEsc ? "\x1b[0m" : "")
+        aStr = String(aStr)
+        aWidth = Math.max(0, Math.floor(_$(aWidth, "aWidth").isNumber().$_()))
+        aEllipsis = _$(aEllipsis, "aEllipsis").isString().default("…")
+        if (!isFinite(aWidth)) throw new Error("aWidth must be finite")
+        if (aWidth == 0) return ""
+        var S = ow.format.string, clipped = visibleLength(aStr) > aWidth
+        if (visibleLength(aEllipsis) > aWidth) aEllipsis = ""
+        var limit = clipped ? aWidth - visibleLength(aEllipsis) : aWidth
+        var out = "", w = 0, esc = false, link = false
+        for (var i = 0; i < aStr.length;) {
+          var part = S._nextWrapToken(aStr, i)
+          if (!part || part.next <= i) break
+          i = part.next
+          if (part.token.charAt(0) == "\x1b") {
+            // Preserve complete controls as the established API does; never emit a partial escape.
+            if (/^\x1b\[[0-9;:]*m$/.test(part.token)) { out += part.token; esc = true }
+            else if (/^\x1b\]8;/.test(part.token)) { out += part.token; link = true }
+            else if (part.token.length > 1) out += part.token
+            continue
+          }
+          if (part.width + w > limit) break
+          out += part.token
+          w += part.width
+        }
+        return out + (clipped ? aEllipsis : "") + (link ? "\x1b]8;;\x1b\\" : "") + (esc ? "\x1b[0m" : "")
 	},
 
 	/**
@@ -1239,31 +1253,14 @@ OpenWrap.format.prototype.string = {
 		var jansi = JavaImporter(Packages.org.fusesource.jansi);
 		aPattern = _$(aPattern, "pattern").isString().default(" ");
 	
-		var o = [], extra = []
-		for(var ii = 0; ii < numberOfLines; ii++) { o[ii] = repeat(currentWidth, aPattern); extra[ii] = 0 }
-		
-		var fn = (orig, x, y, str) => { 
-			var c = -1; 
-			str.split(/\r?\n/).forEach(r => { 
-				c++; 
-				if ( (x + c) < numberOfLines) {
-					//var rm = r.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "");
-					var rml = ansiLength(r)
-		
-					orig[x + c] = orig[x + c].substring(0, y + extra[x + c]) + 
-						          r + 
-						          orig[x + c].substring(y + rml + extra[x + c])
-			
-					extra[x + c] = extra[x + c]+ (r.length - rml)
-				}
-			}); 
-	
-		};
-		
-		anArrayElements.forEach(elem => {
-			fn(o, elem.x, elem.y, elem.t);
-		});
-		
+        var o = []
+        for (var i = 0; i < numberOfLines; i++) o.push(ow.format.viz.layout.padLines("", currentWidth, 1, aPattern))
+        anArrayElements.forEach(function(elem) {
+          String(elem.t).split(/\r?\n/).forEach(function(line, i) {
+            var r = elem.x + i
+            if (r >= 0 && r < numberOfLines && elem.y >= 0) o[r] = __vizOverlay(o[r], line, elem.y, currentWidth)
+          })
+        })
 		if (shouldReturn) {
 			return o.join("");
 		} else {
@@ -1304,7 +1301,11 @@ OpenWrap.format.prototype.string = {
 	 * - `boxplot`: obj is a number array or array of { values, label } series (see `ow.format.printBoxplot`)
 	 * - `timeline`: obj is an array of { label, start, end, color, status } events (see `ow.format.printTimeline`)
 	 * - `statusMatrix`: obj is a matrix or { values, xLabels, yLabels } of status values (see `ow.format.printStatusMatrix`)
-	 * - `progress`: obj is a number or { value, max, min } map
+	 * - `pie/donut/stackedBar`: obj is a category array or value map; options match the corresponding renderer
+ * - `stackedColumns`: obj is an array of { label, values } columns
+ * - `divergingBars`: obj is a signed category array or value map
+ * - `treemap`: obj is a non-negative category array or value map
+ * - `progress`: obj is a number or { value, max, min } map
 	 *
 	 * Each cell delegates rendering to `ow.format.printDashboard`.
 	 * ]]>
@@ -1768,13 +1769,14 @@ OpenWrap.format.prototype.bool = (aValue, isLight, anExtra) => ow.format.string.
  * <odoc>
  * <key>ow.format.term.getCapabilities(aOptions) : Map</key>
  * Returns a map with terminal capabilities, including width/height, tty/ansi availability and color depth.
- * Results are cached unless aOptions.refresh = true.
+ * Detected base facts are cached unless aOptions.refresh = true. Width/height, ansi, unicode and
+ * colorMode overrides apply only to the current call; NO_COLOR always disables colour.
  * </odoc>
  */
 OpenWrap.format.prototype.term = {
 	getCapabilities: function(aOptions) {
 		aOptions = _$(aOptions, "aOptions").isMap().default({})
-		if (isDef(__owFormatTermCapabilitiesCache) && aOptions.refresh !== true) return clone(__owFormatTermCapabilitiesCache)
+		if (isDef(__owFormatTermCapabilitiesCache) && aOptions.refresh !== true) return this._applyCapabilities(__owFormatTermCapabilitiesCache, aOptions)
 
 		//var env = java.lang.System.getenv()
 		var _n = v => {
@@ -1787,6 +1789,7 @@ OpenWrap.format.prototype.term = {
 
 		var _termW = _n(getEnv("COLUMNS")), _termH = _n(getEnv("LINES"))
 		var _isTTY = (java.lang.System.console() != null)
+        try { _isTTY = Packages.jline.Terminal.isOutputTTY() } catch(e) {}
 		var _ansi = false
 		var _unicode = true
 		var _term = String(getEnv("TERM") || "")
@@ -1802,17 +1805,19 @@ OpenWrap.format.prototype.term = {
 
 		try {
 			if (isUnDef(__conAnsi)) __initializeCon()
-			_ansi = __conAnsi && _isTTY
+			_ansi = _isTTY && (__conAnsi || (_term !== "" && _term != "dumb"))
 		} catch(e) {
 			_ansi = _isTTY
 		}
 
-		var _lang = String(getEnv("LANG") || "")
-		if (_lang.toUpperCase().indexOf("ASCII") >= 0) _unicode = false
+		var _lang = String(getEnv("LC_ALL") || getEnv("LC_CTYPE") || getEnv("LANG") || "")
+		if (_lang.toUpperCase().indexOf("ASCII") >= 0 || /^(C|POSIX)$/i.test(_lang)) _unicode = false
 
 		if (isDef(getEnv("NO_COLOR"))) {
 			_colorDepth = 0
-		} else if (String(getEnv("COLORTERM") || "").match(/24bit|truecolor/i)) {
+		} else if (!_ansi) {
+            _colorDepth = 0
+        } else if (String(getEnv("COLORTERM") || "").match(/24bit|truecolor/i)) {
 			_colorDepth = 16777216
 		} else if (_term.match(/256color/i)) {
 			_colorDepth = 256
@@ -1823,8 +1828,8 @@ OpenWrap.format.prototype.term = {
 		__owFormatTermCapabilitiesCache = {
 			isTTY: _isTTY,
 			ansi: _ansi,
-			width: _$(aOptions.width).isNumber().default(_termW > 0 ? _termW : 80),
-			height: _$(aOptions.height).isNumber().default(_termH > 0 ? _termH : 24),
+			width: _termW > 0 ? _termW : 80,
+			height: _termH > 0 ? _termH : 24,
 			colorDepth: _colorDepth,
 			colorMode: (_colorDepth >= 16777216 ? "truecolor" : (_colorDepth >= 256 ? "256" : (_colorDepth >= 16 ? "16" : "none"))),
 			unicode: _unicode,
@@ -1832,12 +1837,21 @@ OpenWrap.format.prototype.term = {
 			timestamp: nowUTC()
 		}
 
-		return clone(__owFormatTermCapabilitiesCache)
+		return this._applyCapabilities(__owFormatTermCapabilitiesCache, aOptions)
 	},
-	getPalette: function(mode, overrides) {
+    _applyCapabilities: function(base, options) {
+      var caps = clone(base)
+      ;["width", "height", "ansi", "unicode", "colorMode"].forEach(function(k) {
+        if (isDef(options[k])) caps[k] = options[k]
+      })
+      if (caps.ansi === false || isDef(getEnv("NO_COLOR"))) caps.colorMode = "none"
+      caps.colorDepth = { none: 0, "16": 16, "256": 256, truecolor: 16777216 }[caps.colorMode] || 0
+      return caps
+    },
+    getPalette: function(mode, overrides, capabilities) {
 		mode = _$(mode, "mode").isString().default("auto")
 		overrides = _$(overrides, "overrides").isMap().default({})
-		var caps = this.getCapabilities()
+		var caps = capabilities || this.getCapabilities()
 		if (mode == "auto") mode = caps.colorMode
 
 		var palettes = {
@@ -1880,7 +1894,8 @@ OpenWrap.format.prototype.term = {
 		}
 
 		var base = clone(_$(palettes[mode], "palette").isMap().default(palettes.none))
-		return merge(base, overrides)
+		base.categories = ["BLUE", "GREEN", "YELLOW", "MAGENTA", "CYAN", "RED", "bright_blue", "bright_green", "bright_yellow", "bright_magenta", "bright_cyan", "bright_red"]
+        return merge(base, overrides)
 	}
 }
 
@@ -1903,7 +1918,7 @@ OpenWrap.format.prototype.viz = {
 		var patch = ""
 		var clearLine = _$(aOptions.clearLine).isBoolean().default(true) ? "\033[2K" : ""
 
-		if (_prev.length > 1) patch += ow.format.string.ansiMoveUp(_prev.length - 1)
+		if (_prev.length > 1) patch += "\x1b[" + (_prev.length - 1) + "A"
 		patch += "\r"
 
 		for(var i = 0; i < _max; i++) {
@@ -1911,10 +1926,11 @@ OpenWrap.format.prototype.viz = {
 			var _n = _$( _next[i] ).default("")
 			if (_p != _n) changed++
 
-			patch += clearLine + _n
-			if (i < _max - 1) patch += "\n"
+			patch += "\x1b[0m" + clearLine + _n + "\x1b[0m"
+			if (i < _max - 1) patch += "\r\n"
 		}
 
+        if (_max > Math.max(1, _next.length)) patch += "\x1b[" + (_max - Math.max(1, _next.length)) + "A\r"
 		return {
 			patch: patch,
 			changedLines: changed,
@@ -1922,18 +1938,27 @@ OpenWrap.format.prototype.viz = {
 			isFullRewrite: true
 		}
 	},
-	watchResize: function(aCallback, aOptions) {
+    /**
+     * <odoc format="markdown">
+     * <key>ow.format.viz.watchResize(callback, options) : Map</key>
+     * Polls terminal dimensions; returns a controller with `stop()`. Optional `getCapabilities`
+     * supplies a capability map per poll for embedded terminals and deterministic tests.
+     * </odoc>
+     */
+    watchResize: function(aCallback, aOptions) {
 		_$(aCallback, "aCallback").isFunction().$_()
 		aOptions = _$(aOptions, "aOptions").isMap().default({})
 		var interval = _$(aOptions.interval).isNumber().default(250)
-		var _last = ow.format.term.getCapabilities({ refresh: true })
+		var read = isFunction(aOptions.getCapabilities) ? aOptions.getCapabilities : function() { return ow.format.term.getCapabilities({ refresh: true }) }
+        if (!isFinite(interval) || interval < 1) throw new Error("Resize interval must be positive")
+        var _last = clone(read())
 		var _active = true
 		var _timer = new java.util.Timer(true)
 
 		var _task = new JavaAdapter(java.util.TimerTask, {
 			run: function() {
 				if (!_active) return
-				var _now = ow.format.term.getCapabilities({ refresh: true })
+				var _now = clone(read())
 				if (_now.width != _last.width || _now.height != _last.height) {
 					var _prev = _last
 					_last = _now
@@ -1970,7 +1995,7 @@ OpenWrap.format.prototype.viz = {
 			_rendering = true
 			var _t = now()
 			try {
-				var _caps = ow.format.term.getCapabilities({ refresh: true })
+				var _caps = isMap(aOptions.capabilities) ? clone(aOptions.capabilities) : ow.format.term.getCapabilities({ refresh: true })
 				var out = aRendererFn({
 					id: id,
 					frame: _frame,
@@ -1983,7 +2008,10 @@ OpenWrap.format.prototype.viz = {
 					var _d = ow.format.viz.diffFrames(_prev, out)
 					if (_d.patch.length > 0) printnl(_d.patch)
 				} else {
-					if (_prev.length > 0) printnl(ow.format.string.ansiMoveUp(_prev.split(/\r?\n/).length - 1) + "\r")
+					if (_prev.length > 0) {
+                        var up = _prev.split(/\r?\n/).length - 1
+                        printnl((up > 0 ? "\x1b[" + up + "A" : "") + "\r")
+                    }
 					printnl(out)
 				}
 				_prev = out
@@ -2005,7 +2033,7 @@ OpenWrap.format.prototype.viz = {
 			__owFormatLiveSessions[id] = true
 			var _task = new JavaAdapter(java.util.TimerTask, { run: () => _renderOnce(false) })
 			_timer.scheduleAtFixedRate(_task, 0, interval)
-			if (_$(aOptions.watchResize).isBoolean().default(true)) {
+			if (!isMap(aOptions.capabilities) && _$(aOptions.watchResize).isBoolean().default(true)) {
 				_watch = ow.format.viz.watchResize(() => _renderOnce(false), { interval: Math.max(100, Math.round(interval / 2)) })
 			}
 		}
@@ -2058,31 +2086,23 @@ OpenWrap.format.prototype.viz = {
 	 */
 	createCanvas: function(aOptions) {
 		aOptions = _$(aOptions, "aOptions").isMap().default({})
-		var _caps = ow.format.term.getCapabilities()
-		var w = _$(aOptions.width).isNumber().default(_caps.width)
-		var h = _$(aOptions.height).isNumber().default(_caps.height)
-		var _buf = []
-		for (var _ci = 0; _ci < h; _ci++) {
-			var _row = []
-			for (var _cj = 0; _cj < w; _cj++) _row.push(" ")
-			_buf.push(_row)
-		}
-		return {
-			width: w, height: h,
-			write: function(row, col, str, style) {
-				if (row < 0 || row >= h || col < 0) return
-				var lines = String(_$(str).default("")).replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "").split(/\r?\n/)
-				lines.forEach(function(line, li) {
-					if (row + li >= h) return
-					line.substring(0, Math.min(line.length, w - col)).split("").forEach(function(ch, ci) {
-						if (col + ci < w) _buf[row + li][col + ci] = (isDef(style) && style !== "") ? ansiColor(style, ch) : ch
-					})
-				})
-			},
-			render: function() {
-				return _buf.map(function(row) { return row.join("") }).join("\n")
-			}
-		}
+        var caps = isMap(aOptions.capabilities) ? aOptions.capabilities : ow.format.term.getCapabilities()
+        var w = __vizDimension(aOptions.width, caps.width), h = __vizDimension(aOptions.height, caps.height)
+        var rows = []
+        for (var r = 0; r < h; r++) rows.push(repeat(w, " "))
+        return {
+          width: w, height: h,
+          write: function(row, col, str, style) {
+            if (row < 0 || col < 0 || col >= w || row >= h) return
+            String(_$(str).default("")).split(/\r?\n/).forEach(function(line, i) {
+              if (row + i >= h) return
+              line = visibleLength(line) ? __vizPlain(line) : ""
+              if (style) line = ansiColor(style, line)
+              rows[row + i] = __vizOverlay(rows[row + i], line, col, w)
+            })
+          },
+          render: function() { return rows.join("\n") }
+        }
 	},
 	/**
 	 * <odoc>
@@ -2110,15 +2130,20 @@ OpenWrap.format.prototype.viz = {
 			})
 		},
 		padLines: function(str, width, height, fillChar) {
-			fillChar = _$(fillChar).isString().default(" ")
-			var lines = String(_$(str).default("")).split(/\r?\n/)
-			lines = lines.map(function(l) {
-				var vl = ansiLength(l)
-				if (vl > width) return l.substring(0, width + (l.length - vl))
-				return l + repeat(width - vl, fillChar)
-			})
-			while (lines.length < height) lines.push(repeat(width, fillChar))
-			return lines.slice(0, height).join("\n")
+            width = __vizDimension(width, 0)
+            height = __vizDimension(height, 0)
+            if (!width || !height) return ""
+            fillChar = _$(fillChar).isString().default(" ")
+            var fw = visibleLength(fillChar)
+            if (!fw) { fillChar = " "; fw = 1 }
+            fillChar = ow.format.string.ansiClip(fillChar, fw, "")
+            var lines = String(_$(str).default("")).split(/\r?\n/).slice(0, height)
+            while (lines.length < height) lines.push("")
+            return lines.map(function(l) {
+              l = ow.format.string.ansiClip(l, width, "")
+              var rem = width - visibleLength(l)
+              return l + repeat(Math.floor(rem / fw), fillChar) + repeat(rem % fw, " ")
+            }).join("\n")
 		}
 	}
 }
@@ -2128,14 +2153,23 @@ OpenWrap.format.prototype.viz = {
  * <key>ow.format.printSparkline(series, aOptions) : String</key>
  * Returns a compact sparkline string for the provided numeric series or array of named series ({data, name, color}).
  * aOptions: width (default terminal width), label, showMinMax (default false), color, palette.
+ * Opt-in enhancements: min/max fixed range, thresholds [{value,color}], markMin/markMax,
+ * highlightLast (boolean or colour), trend, missing (gap/skip/error), colorScale (array or
+ * {min,max,colors}), capabilities and unicode. Enhanced mode respects the total width including
+ * labels. Null/undefined/NaN are missing; other non-finite/non-numeric values throw.
+ * Threshold colours override the scale; highlightLast overrides both. Monochrome retains markers.
+ * Downsampling enhanced series selects the last point in each bin, retaining the last sample.
  * Degrades to ASCII characters when unicode is not available.
  * </odoc>
  */
 OpenWrap.format.prototype.printSparkline = function(series, aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
-	var _caps  = ow.format.term.getCapabilities()
-	var _pal   = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
-	var BLOCKS = _caps.unicode ? ["▁","▂","▃","▄","▅","▆","▇","█"] : ["_",".","-","~","=","#","#","█"]
+    if (["min", "max", "thresholds", "markMin", "markMax", "highlightLast", "trend", "missing", "colorScale"].some(function(k) { return isDef(aOptions[k]) })) return __vizSparkline(series, aOptions)
+	var _caps  = clone(aOptions.capabilities || ow.format.term.getCapabilities())
+    if (isBoolean(aOptions.unicode)) _caps.unicode = aOptions.unicode
+    if (aOptions.palette == "none" || aOptions.color === false || isDef(getEnv("NO_COLOR"))) _caps.colorMode = "none"
+	var _pal   = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"), {}, _caps)
+	var BLOCKS = _caps.unicode ? ["▁","▂","▃","▄","▅","▆","▇","█"] : ["_",".","-","~","=","#","#","#"]
 	var MAX_B  = BLOCKS.length - 1
 
 	var data
@@ -2578,7 +2612,7 @@ OpenWrap.format.prototype.printHeatmap = function(values, aOptions) {
 
 	if (matrix.length == 0) return "(empty)"
 
-	var _caps   = ow.format.term.getCapabilities()
+	var _caps   = aOptions.capabilities || ow.format.term.getCapabilities()
 	var _pal    = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
 	var width   = Math.max(4, _$(aOptions.width).isNumber().default(Math.min(_caps.width, 80)))
 	var height  = Math.max(2, _$(aOptions.height).isNumber().default(Math.min(_caps.height, matrix.length + 2)))
@@ -2632,7 +2666,7 @@ OpenWrap.format.prototype.printHeatmap = function(values, aOptions) {
 		if (yLabelW > 0) {
 			var srcRow = Math.min(matrix.length - 1, ridx * rowStep)
 			label = String(_$(yLabels[srcRow]).default(""))
-			if (ansiLength(label) > yLabelW) label = label.substring(0, yLabelW)
+			if (ansiLength(label) > yLabelW) label = ow.format.string.ansiClip(label, yLabelW, "")
 			label = label + repeat(Math.max(0, yLabelW - ansiLength(label)), " ") + " "
 		}
 		var cells = row.map(function(v) {
@@ -2656,7 +2690,7 @@ OpenWrap.format.prototype.printHeatmap = function(values, aOptions) {
 		var minS = String(Math.round(minV * 100) / 100)
 		var maxS = String(Math.round(maxV * 100) / 100)
 		var legendLine = minS + " " + ramp.join("") + " " + maxS
-		if (ansiLength(legendLine) > width) legendLine = legendLine.substring(0, width + (legendLine.length - ansiLength(legendLine)))
+		if (ansiLength(legendLine) > width) legendLine = ow.format.string.ansiClip(legendLine, width, "")
 		out.push(legendLine)
 	}
 
@@ -2751,7 +2785,7 @@ OpenWrap.format.prototype.printBullet = function(values, aOptions) {
 
 		var line = chars.join("")
 		if (labelW > 0) {
-			if (ansiLength(label) > labelW) label = label.substring(0, labelW)
+			if (ansiLength(label) > labelW) label = ow.format.string.ansiClip(label, labelW, "")
 			line = label + repeat(Math.max(0, labelW - ansiLength(label)), " ") + " " + line
 		}
 		if (showValue) {
@@ -2810,7 +2844,7 @@ OpenWrap.format.prototype.printScatter = function(points, aOptions) {
 	points.forEach(function(p) {
 		var px = Math.max(0, Math.min(plotW - 1, Math.round(((p.x - xMin) / xSpan) * (plotW - 1))))
 		var py = Math.max(0, Math.min(plotH - 1, Math.round((1 - ((p.y - yMin) / ySpan)) * (plotH - 1))))
-		rows[py][px] = _paint(_$(p.color).isString().default(_pal.accent), String(_$(p.symbol).isString().default(_caps.unicode ? "●" : "o")).charAt(0))
+		rows[py][px] = _paint(_$(p.color).isString().default(_pal.accent), __vizSymbol(String(_$(p.symbol).isString().default(_caps.unicode ? "●" : "o")), _caps.unicode ? "●" : "o"))
 	})
 
 	var out = rows.map(function(r, i) {
@@ -2901,7 +2935,7 @@ OpenWrap.format.prototype.printBoxplot = function(values, aOptions) {
 		}
 		var line = chars.join("")
 		if (labelW > 0) {
-			var lbl = s.label.substring(0, labelW)
+			var lbl = ow.format.string.ansiClip(s.label, labelW, "")
 			line = lbl + repeat(Math.max(0, labelW - ansiLength(lbl)), " ") + " " + line
 		}
 		return line
@@ -2972,7 +3006,7 @@ OpenWrap.format.prototype.printTimeline = function(events, aOptions) {
 		if (startP == endP) chars[startP] = _paint(_colorFn(e), _caps.unicode ? "◆" : "*")
 		var line = chars.join("")
 		if (labelW > 0) {
-			var lbl = e.label.substring(0, labelW)
+			var lbl = ow.format.string.ansiClip(e.label, labelW, "")
 			line = lbl + repeat(Math.max(0, labelW - ansiLength(lbl)), " ") + " " + line
 		}
 		return line
@@ -3039,7 +3073,7 @@ OpenWrap.format.prototype.printStatusMatrix = function(values, aOptions) {
 	}
 	var _statusSymbol = function(v) {
 		var k = String(_$(v).default("default")).toLowerCase()
-		return String(_$(symbols[k]).default(_$(symbols.default).default("."))).charAt(0)
+		return __vizSymbol(String(_$(symbols[k]).default(_$(symbols.default).default("."))), ".")
 	}
 	var _paint = (_caps.colorMode !== "none") ? function(c, txt) { return (isString(c) && c !== "") ? ansiColor(c, txt) : txt } : function(c, txt) { return txt }
 
@@ -3060,7 +3094,7 @@ OpenWrap.format.prototype.printStatusMatrix = function(values, aOptions) {
 		}
 		var prefix = ""
 		if (yLabelW > 0) {
-			var lbl = String(_$(yLabels[r]).default("")).substring(0, yLabelW)
+			var lbl = ow.format.string.ansiClip(String(_$(yLabels[r]).default("")), yLabelW, "")
 			prefix = lbl + repeat(Math.max(0, yLabelW - ansiLength(lbl)), " ") + " "
 		}
 		out.push(prefix + line.slice(0, plotW).join(""))
@@ -3095,7 +3129,8 @@ OpenWrap.format.prototype.printStatusMatrix = function(values, aOptions) {
  * - `timeline`: data is consumed by `ow.format.printTimeline`
  * - `statusMatrix`: data is consumed by `ow.format.printStatusMatrix`
  *
- * `aOptions`: width, height, columns (auto if 0), border (default true), borderColor, borderStyle, palette.
+ * `aOptions`: width, height, columns (auto if 0), border (default true), borderColor, borderStyle, palette, capabilities.
+ * Category widget types: `pie`, `donut`, `stackedBar`, `stackedColumns`, `divergingBars`, `treemap`; data and options match their renderers.
  * ]]>
  * </odoc>
  */
@@ -3103,8 +3138,8 @@ OpenWrap.format.prototype.printDashboard = function(widgets, aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	widgets  = _$(widgets).isArray().default([])
 
-	var _caps   = ow.format.term.getCapabilities()
-	var _pal    = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"))
+	var _caps   = aOptions.capabilities || ow.format.term.getCapabilities()
+	var _pal    = ow.format.term.getPalette(_$(aOptions.palette).isString().default("auto"), {}, _caps)
 	var totalW  = _$(aOptions.width).isNumber().default(_caps.width)
 	var totalH  = _$(aOptions.height).isNumber().default(Math.max(6, _caps.height - 2))
 	var border  = _$(aOptions.border).isBoolean().default(true)
@@ -3165,8 +3200,20 @@ OpenWrap.format.prototype.printDashboard = function(widgets, aOptions) {
 
 			var content = ""
 			try {
-				var wOpts = merge({ width: iW, height: iH, palette: palette }, _$(widget.options).isMap().default({}))
-				switch (widget.type) {
+				var requestedOptions = _$(widget.options).isMap().default({})
+                var wOpts = merge({ width: iW, height: iH, palette: palette, capabilities: _caps }, requestedOptions)
+                if (["pie", "donut"].indexOf(widget.type) >= 0 && isUnDef(requestedOptions.width) && isUnDef(requestedOptions.height)) wOpts._fitToBox = true
+				if (["pie", "donut", "stackedBar", "stackedColumns", "divergingBars", "treemap"].indexOf(widget.type) >= 0) {
+                    wOpts.width = Math.min(iW, __vizDimension(wOpts.width, iW))
+                    wOpts.height = Math.min(iH, __vizDimension(wOpts.height, iH))
+                }
+                switch (widget.type) {
+                case "divergingBars": content = ow.format.printDivergingBars(widget.data, wOpts); break
+                case "treemap": content = ow.format.printTreemap(widget.data, wOpts); break
+                case "pie": content = ow.format.printPie(widget.data, wOpts); break
+                case "donut": content = ow.format.printDonut(widget.data, wOpts); break
+                case "stackedBar": content = ow.format.printStackedBar(widget.data, wOpts); break
+                case "stackedColumns": content = ow.format.printStackedColumns(widget.data, wOpts); break
 				case "table":
 					content = printTable(_$(widget.data).isArray().default([]), iW, __, true, "utf")
 					break
@@ -3229,32 +3276,29 @@ OpenWrap.format.prototype.printDashboard = function(widgets, aOptions) {
 				content = (_caps.colorMode !== "none" && _pal.negative && _pal.negative !== "") ? ansiColor(_pal.negative, "Err: " + String(e.message || e)) : "Err: " + String(e.message || e)
 			}
 
-			var lines = String(_$(content).default("")).split(/\r?\n/)
-			lines = lines.map(function(l) {
-				var vl = ansiLength(l)
-				if (vl > iW) return l.substring(0, iW + (l.length - vl))
-				return l + repeat(iW - vl, " ")
-			})
-			while (lines.length < iH) lines.push(repeat(iW, " "))
-			lines = lines.slice(0, iH)
+            var lines = ow.format.viz.layout.padLines(content, iW, iH).split("\n")
 
 			if (border) {
 				var title = _$(widget.title).isString().default("")
-				var tl    = title.length
+				var tl    = visibleLength(title)
 				var dashCount = Math.max(0, iW - 1 - tl)
 
-				var top = tl > 0 ? bc(bchars.topLeft + (borderStyle != "simple" ? bchars.horizontal : " ")) + (borderStyle != "simple" ? " " : "") + ansiColor("BOLD", title.substring(0, iW - 2)) + " " + bc(repeat(Math.max(0, dashCount - (borderStyle != "simple" ? 2 : 1)), bchars.horizontal) + bchars.topRight)
+				var top = tl > 0 ? bc(bchars.topLeft + (borderStyle != "simple" ? bchars.horizontal : " ")) + (borderStyle != "simple" ? " " : "") + ansiColor("BOLD", ow.format.string.ansiClip(title, Math.max(0, iW - 2), "")) + " " + bc(repeat(Math.max(0, dashCount - (borderStyle != "simple" ? 2 : 1)), bchars.horizontal) + bchars.topRight)
 									: bc(bchars.topLeft + repeat(iW, bchars.horizontal) + bchars.topRight)
 				var bot = bc(bchars.bottomLeft + repeat(iW, bchars.horizontal) + bchars.bottomRight)
 				lines = lines.map(function(l) { return bc(bchars.vertical) + l + bc(bchars.vertical) })
 				lines.unshift(top)
 				if (borderStyle != "simple") lines.push(bot)
 			} else if (hasTitle) {
-				var _ht = widget.title.substring(0, iW - 3)
+				var _ht = ow.format.string.ansiClip(widget.title, Math.max(0, iW - 3), "")
 				lines.unshift(ansiColor("RESET,BOLD", "> " + _ht + " " + repeat(Math.max(0, iW - 3 - ansiLength(_ht)), "─")))
 			}
-			return lines
-		})
+			return lines.map(function(line) {
+                if (_caps.colorMode == "none" || palette == "none") line = __vizPlain(line)
+                if (!_caps.unicode) line = line.replace(/─/g, "-")
+                return ow.format.viz.layout.padLines(line, wW, 1)
+            }).slice(0, wH)
+        })
 
 		var maxL = rendered.reduce(function(m, c) { return Math.max(m, c.length) }, 0)
 		rendered.forEach(function(c, ci) { while (c.length < maxL) c.push(repeat(widths[ci], " ")) })
@@ -5409,8 +5453,11 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi), provide aLineWidth
  * to override the detected console width when line width is needed, and provide aBgColor (an ansiColor color name, e.g. "BG_BLUE")
  * to maintain a background color throughout the output and pass it to sub-functions where applicable.
- * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets, numbered lines, links, blocks and
+ * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets (`*`, `-`, `+`), numbered lines (`1.` or `1)`),
+ * task lists (`- [ ]`, `- [x]`), nested lists, links, block quotes (that can contain lists) and
  * simple LaTeX-like math symbols (e.g. "$\rightarrow$", "$\alpha$", "$\leq$") which are converted to their unicode equivalent.
+ * List items are wrapped with a hanging indent, numbers are right-aligned per list and continuation lines are merged into their item.
+ * Bullet and task glyphs can be changed with `__flags.WITHMD.bullets` (one per nesting level) and `__flags.WITHMD.tasks`.
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aBgColor) {
@@ -5447,6 +5494,10 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 			},
 			bullets: "BOLD",
 			list: "BOLD",
+			task: {
+				open: "BOLD",
+				done: "FAINT"
+			},
 			strike: "STRIKETHROUGH",
 			note: {
 				line: "FAINT",
@@ -5590,49 +5641,141 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 	var _lineChar = isDef(__con) ? "─" : "-"
 	var _lineRule = repeat(_aSize, ansiColor(__colorFormat.md.line, _lineChar))
 
-	// Single line transformers
-	res = res.split("\n").map(l => {
-		// line rule
-		if (l.trim().match(/^---+/)) {
-			return _lineRule
+	// Line transformers: paragraphs, rules, lists (nested, ordered, task) and block quotes
+	var _wf = __flags.WITHMD
+	var _bulletGlyphs = (isArray(_wf.bullets) && _wf.bullets.length > 0) ? _wf.bullets : ["•", "◦", "▪"]
+	var _taskGlyphs = isMap(_wf.tasks) ? _wf.tasks : {}
+	var _taskOpen = _taskGlyphs.open || "☐", _taskDone = _taskGlyphs.done || "☑"
+	var _taskColors = __colorFormat.md.task || {}
+	var _isTableRow = t => t.length > 2 && t.charAt(0) == "|" && t.charAt(t.length - 1) == "|"
+	var _indLen = s => s.indexOf("\t") < 0 ? s.length : s.replace(/\t/g, "    ").length
+	var _wrapTo = (s, w) => (visibleLength(ow.format.string._stripAnsi(s)) > w ? ow.format.string.wordWrap(s, Math.max(1, w)) : s)
+	var _prepLine = l => l.indexOf("](") >= 0 ? l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, _linkRep) : l
+	var _parseItem = (l, t) => {
+		var ch = t.charAt(0), m
+		if (ch == "-" || ch == "*" || ch == "+") {
+			m = l.match(/^([ \t]*)[-*+][ \t]+(.+)$/)
+			if (m) {
+				var task = __, tx = m[2], tm = tx.match(/^\[([ xX])\][ \t]+(.+)$/)
+				if (tm) { task = tm[1] == " " ? "open" : "done"; tx = tm[2] }
+				return { kind: "bullet", ind: m[1], text: tx, task: task }
+			}
+		} else if (ch >= "0" && ch <= "9") {
+			m = l.match(/^([ \t]*)(\d+)([.)])[ \t]+(.+)$/)
+			if (m) return { kind: "ordered", ind: m[1], num: m[2], delim: m[3], text: m[4] }
+		}
+		return __
+	}
+	var _mdLines = (lines, width) => {
+		var out = [], block = [], stack = [], root = {}
+
+		// render a complete list block: numbers are aligned per sibling group and
+		// wrapped lines hang under the item text
+		var _flush = () => {
+			if (block.length == 0) return
+			block.forEach(e => {
+				if (e.t == "blank") { out.push(""); return }
+				if (e.t == "para") {
+					var pp = repeat(e.owner.rcol, " ")
+					_wrapTo(e.text, width - e.owner.rcol).split("\n").forEach(w => out.push(pp + w))
+					return
+				}
+				var rind = e.parent ? e.parent.rcol : e.ind, marker, mw
+				if (e.kind == "ordered") {
+					var ms = e.num + e.delim
+					mw = e.group.w
+					marker = repeat(mw - ms.length, " ") + ansiColor(__colorFormat.md.list, ms)
+				} else {
+					var g = e.task ? (e.task == "done" ? _taskDone : _taskOpen) : _bulletGlyphs[e.bl % _bulletGlyphs.length]
+					mw = visibleLength(g)
+					marker = ansiColor(e.task ? (_taskColors[e.task] || __colorFormat.md.bullets) : __colorFormat.md.bullets, g)
+				}
+				e.rcol = rind + mw + 1
+				var pad = repeat(e.rcol, " ")
+				_wrapTo(e.text, width - e.rcol).split("\n").forEach((w, i) => out.push(i == 0 ? repeat(rind, " ") + marker + da + " " + w : pad + w))
+			})
+			block = []; stack = []; root = {}
 		}
 
-		// Links
-		l = l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, _linkRep)
+		for (var i = 0; i < lines.length; i++) {
+			var l = _prepLine(lines[i]), t = l.trim(), ch = t.charAt(0)
 
-		// bullets
-		var ar = l.match(/^(\s*)\*(\s+)(.+)$/)
-		if (ar) {
-			var lsize = visibleLength(ar[1] + "\u2022" + ar[2])
+			// blank line: keeps a list open only if the list goes on
+			if (t.length == 0) {
+				if (block.length > 0) {
+					var j = i + 1
+					while (j < lines.length && lines[j].trim().length == 0) j++
+					if (j < lines.length) {
+						var nl = lines[j], nt = nl.trim()
+						if (_parseItem(nl, nt) || (/^[ \t]/.test(nl) && nt.indexOf("```") != 0 && !_isTableRow(nt))) {
+							block.push({ t: "blank" })
+							continue
+						}
+					}
+					_flush()
+				}
+				out.push(l)
+				continue
+			}
 
-			return ow.format.string.wordWrap(ar[3], _tWidth - lsize).split("\n").map((l, i) => {
-				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.bullets, "\u2022") + ar[2] : repeat(lsize, ' ')) + l
-			}).join("\n")
+			// line rule
+			if (ch == "-" && /^---+/.test(t)) {
+				_flush()
+				out.push(_lineRule)
+				continue
+			}
+
+			// list items (bullets, numbered, task lists)
+			var it = _parseItem(l, t)
+			if (it) {
+				var ind = _indLen(it.ind)
+				while (stack.length > 0 && ind <= stack[stack.length - 1].ind) stack.pop()
+				var parent = stack.length > 0 ? stack[stack.length - 1] : __
+				var holder = parent || root
+				if (!holder.g) holder.g = {}
+				var grp = holder.g[it.kind] || (holder.g[it.kind] = { w: 0 })
+				if (it.kind == "ordered") grp.w = Math.max(grp.w, it.num.length + it.delim.length)
+				var ne = { t: "item", kind: it.kind, ind: ind, text: it.text, task: it.task, num: it.num, delim: it.delim, parent: parent, group: grp, bl: parent ? parent.bl + (parent.kind == "bullet" ? 1 : 0) : 0 }
+				block.push(ne)
+				stack.push(ne)
+				continue
+			}
+
+			// continuation of the current list item (indented or lazy) or loose paragraph
+			if (block.length > 0) {
+				var last = block[block.length - 1], ind0 = _indLen(l.match(/^[ \t]*/)[0])
+				var mergeable = !_isTableRow(t) && t.indexOf("```") != 0 && !(ind0 == 0 && (ch == "\u001b" || ch == ">"))
+				if (mergeable && last.t != "blank") {
+					last.text += " " + t
+					continue
+				}
+				if (mergeable && ind0 > 0) {
+					var owner = __
+					for (var k = stack.length - 1; k >= 0; k--) if (ind0 > stack[k].ind) { owner = stack[k]; break }
+					if (owner) {
+						block.push({ t: "para", owner: owner, text: t })
+						continue
+					}
+				}
+				_flush()
+			}
+
+			// side line render (consecutive quote lines become one block, lists inside are supported)
+			if (l.charAt(0) == ">" && /^> .+$/.test(l)) {
+				var inner = [], q = i
+				while (q < lines.length && /^> .+$/.test(lines[q])) { inner.push(lines[q].substring(2)); q++ }
+				i = q - 1
+				out.push(ow.format.withSideLine(_mdLines(inner, width - 3).join("\n"), width, __colorFormat.md.note.line, _withColor(__colorFormat.md.note.text, aBgColor), _noteTheme))
+				continue
+			}
+
+			// if not a code block or a table then it should be paragraph
+			out.push(_isTableRow(t) || t.indexOf("```") == 0 ? l : _wrapTo(l, width))
 		}
-
-		// numbered list
-		var ar = l.match(/^(\s*)(\d+)\.(\s+)(.+)$/)
-		if (ar) {
-			var lsize = visibleLength(ar[1] + ar[2] + "." + ar[3])
-
-			return ow.format.string.wordWrap(ar[4], _tWidth - lsize).split("\n").map((l, i) => {
-				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.list, ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
-			}).join("\n")
-		}
-
-		// side line render
-		if (/^(\> .+)$/.test(l)) {
-			var note = l.match(/^\> (.+)$/)
-			return ow.format.withSideLine(note[1], _aSize, __colorFormat.md.note.line, _withColor(__colorFormat.md.note.text, aBgColor), _noteTheme)
-		}
-
-		// if not a code block or a table then it should be paragraph
-		if (!/^\|.+\|$/.test(l.trim()) && !/^```/.test(l.trim()) && l.trim().length > 0) {
-			if (visibleLength(ow.format.string._stripAnsi(l)) > _aSize) l = ow.format.string.wordWrap(l, _aSize)
-		}
-
-		return l
-	}).join("\n")
+		_flush()
+		return out
+	}
+	res = _mdLines(res.split("\n"), _aSize).join("\n")
 
 	// Multi line transformers
 	// code block
@@ -6532,4 +6675,781 @@ OpenWrap.format.prototype.cron = {
 			delayedAtLeast: (isDelayed) ? ar[ar.length - 1].getTime() - lastUpdate : 0
 		};
 	}
+}
+
+
+// Pure colour primitives shared with ow.screen; no terminal initialization.
+OpenWrap.format.__colors = {}
+OpenWrap.format.__colors.__namedColors = {
+  black:   { ansi16: 30, idx256: 0,   rgb: [0, 0, 0],       css: "#000000" },
+  red:     { ansi16: 31, idx256: 1,   rgb: [205, 49, 49],   css: "#cd3131" },
+  green:   { ansi16: 32, idx256: 2,   rgb: [13, 188, 121],  css: "#0dbc79" },
+  yellow:  { ansi16: 33, idx256: 3,   rgb: [229, 229, 16],  css: "#e5e510" },
+  blue:    { ansi16: 34, idx256: 4,   rgb: [36, 114, 200],  css: "#2472c8" },
+  magenta: { ansi16: 35, idx256: 5,   rgb: [188, 63, 188],  css: "#bc3fbc" },
+  cyan:    { ansi16: 36, idx256: 6,   rgb: [17, 168, 205],  css: "#11a8cd" },
+  white:   { ansi16: 37, idx256: 7,   rgb: [229, 229, 229], css: "#e5e5e5" },
+  gray:    { ansi16: 90, idx256: 244, rgb: [128, 128, 128], css: "#808080" },
+  grey:    { ansi16: 90, idx256: 244, rgb: [128, 128, 128], css: "#808080" },
+  bright_black:   { ansi16: 90, idx256: 8,  rgb: [102, 102, 102], css: "#666666" },
+  bright_red:     { ansi16: 91, idx256: 9,  rgb: [241, 76, 76],   css: "#f14c4c" },
+  bright_green:   { ansi16: 92, idx256: 10, rgb: [35, 209, 139],  css: "#23d18b" },
+  bright_yellow:  { ansi16: 93, idx256: 11, rgb: [245, 245, 67],  css: "#f5f543" },
+  bright_blue:    { ansi16: 94, idx256: 12, rgb: [59, 142, 234],  css: "#3b8eea" },
+  bright_magenta: { ansi16: 95, idx256: 13, rgb: [214, 112, 214], css: "#d670d6" },
+  bright_cyan:    { ansi16: 96, idx256: 14, rgb: [41, 184, 219],  css: "#29b8db" },
+  bright_white:   { ansi16: 97, idx256: 15, rgb: [255, 255, 255], css: "#ffffff" },
+  orange:  { ansi16: 33, idx256: 208, rgb: [255, 135, 0],   css: "#ff8700" },
+  purple:  { ansi16: 35, idx256: 135, rgb: [175, 95, 255],  css: "#af5fff" },
+  pink:    { ansi16: 95, idx256: 211, rgb: [255, 135, 175], css: "#ff87af" },
+  teal:    { ansi16: 36, idx256: 37,  rgb: [0, 175, 175],   css: "#00afaf" },
+  gold:    { ansi16: 93, idx256: 220, rgb: [255, 215, 0],   css: "#ffd700" },
+  indigo:  { ansi16: 34, idx256: 63,  rgb: [95, 95, 255],   css: "#5f5fff" },
+  lime:    { ansi16: 92, idx256: 118, rgb: [135, 255, 0],   css: "#87ff00" },
+  coral:   { ansi16: 91, idx256: 209, rgb: [255, 135, 95],  css: "#ff875f" },
+  slate:   { ansi16: 90, idx256: 60,  rgb: [95, 95, 135],   css: "#5f5f87" },
+  sky:     { ansi16: 96, idx256: 117, rgb: [135, 215, 255], css: "#87d7ff" }
+};
+
+OpenWrap.format.__colors.__rgbTo256 = function(r, g, b) {
+  r = Math.max(0, Math.min(255, Math.round(Number(r) || 0)));
+  g = Math.max(0, Math.min(255, Math.round(Number(g) || 0)));
+  b = Math.max(0, Math.min(255, Math.round(Number(b) || 0)));
+  if (r === g && g === b) {
+    if (r < 8) return 16;
+    if (r > 248) return 231;
+    return Math.round(((r - 8) / 247) * 24) + 232;
+  }
+  var cr = Math.round((r / 255) * 5), cg = Math.round((g / 255) * 5), cb = Math.round((b / 255) * 5);
+  return 16 + (36 * cr) + (6 * cg) + cb;
+};
+
+OpenWrap.format.__colors.__rgbTo16 = function(r, g, b) {
+  var best = 37, bestDist = Infinity;
+  var names = Object.keys(OpenWrap.format.__colors.__namedColors);
+  for (var i = 0; i < 16 && i < names.length; i++) {
+    var entry = OpenWrap.format.__colors.__namedColors[names[i]];
+    var dr = r - entry.rgb[0], dg = g - entry.rgb[1], db = b - entry.rgb[2];
+    var dist = dr * dr + dg * dg + db * db;
+    if (dist < bestDist) { bestDist = dist; best = entry.ansi16; }
+  }
+  return best;
+};
+
+OpenWrap.format.__colors.__256ToRgb = function(idx) {
+  idx = Math.max(0, Math.min(255, Math.round(Number(idx) || 0)));
+  if (idx < 16) {
+    var keys = ["black","red","green","yellow","blue","magenta","cyan","white","bright_black","bright_red","bright_green","bright_yellow","bright_blue","bright_magenta","bright_cyan","bright_white"];
+    return OpenWrap.format.__colors.__namedColors[keys[idx]].rgb.slice();
+  }
+  if (idx >= 232) {
+    var v = 8 + (idx - 232) * 10;
+    return [v, v, v];
+  }
+  var n = idx - 16;
+  var steps = [0, 95, 135, 175, 215, 255];
+  return [steps[Math.floor(n / 36) % 6], steps[Math.floor(n / 6) % 6], steps[n % 6]];
+};
+
+OpenWrap.format.__colors.parseColor = function(spec) {
+  if (isUnDef(spec) || spec === null || spec === "") return null;
+  if (typeof spec == "number" && isFinite(spec) && spec >= 0 && spec <= 255) {
+    var idx = Math.round(spec), rgb = OpenWrap.format.__colors.__256ToRgb(idx);
+    return {
+      type: "256", r: rgb[0], g: rgb[1], b: rgb[2], idx256: idx,
+      ansi16: OpenWrap.format.__colors.__rgbTo16(rgb[0], rgb[1], rgb[2]),
+      css: "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")"
+    };
+  }
+  if (Array.isArray(spec) && spec.length === 3 && spec.every(function(x) { return typeof x == "number" && isFinite(x) && x >= 0 && x <= 255; })) {
+    var r = Math.round(spec[0]), g = Math.round(spec[1]), b = Math.round(spec[2]);
+    return {
+      type: "rgb", r: r, g: g, b: b,
+      idx256: OpenWrap.format.__colors.__rgbTo256(r, g, b),
+      ansi16: OpenWrap.format.__colors.__rgbTo16(r, g, b),
+      css: "rgb(" + r + "," + g + "," + b + ")"
+    };
+  }
+  if (typeof spec != "string") return null;
+  var s = spec.trim();
+  if (!s || s.toLowerCase() == "default" || s.toLowerCase() == "none") return null;
+  var lower = s.toLowerCase().replace(/[\s-]+/g, "_");
+  if (lower.indexOf("fg_") === 0) lower = lower.substring(3);
+  else if (lower.indexOf("bg_") === 0) lower = lower.substring(3);
+  if (Object.prototype.hasOwnProperty.call(OpenWrap.format.__colors.__namedColors, lower)) {
+    var c = OpenWrap.format.__colors.__namedColors[lower];
+    return { type: "named", name: lower, r: c.rgb[0], g: c.rgb[1], b: c.rgb[2], idx256: c.idx256, ansi16: c.ansi16, css: c.css };
+  }
+  var m;
+  if ((m = /^#([0-9a-fA-F]{3})$/.exec(s))) {
+    var r1 = parseInt(m[1][0] + m[1][0], 16), g1 = parseInt(m[1][1] + m[1][1], 16), b1 = parseInt(m[1][2] + m[1][2], 16);
+    return { type: "rgb", r: r1, g: g1, b: b1, idx256: OpenWrap.format.__colors.__rgbTo256(r1, g1, b1), ansi16: OpenWrap.format.__colors.__rgbTo16(r1, g1, b1), css: "rgb(" + r1 + "," + g1 + "," + b1 + ")" };
+  }
+  if ((m = /^#([0-9a-fA-F]{6})$/.exec(s))) {
+    var r2 = parseInt(m[1].substring(0, 2), 16), g2 = parseInt(m[1].substring(2, 4), 16), b2 = parseInt(m[1].substring(4, 6), 16);
+    return { type: "rgb", r: r2, g: g2, b: b2, idx256: OpenWrap.format.__colors.__rgbTo256(r2, g2, b2), ansi16: OpenWrap.format.__colors.__rgbTo16(r2, g2, b2), css: "#" + m[1].toLowerCase() };
+  }
+  if ((m = /^(?:(?:fg_|bg_)?rgb)\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i.exec(s))) {
+    var r3 = Number(m[1]), g3 = Number(m[2]), b3 = Number(m[3]);
+    if (r3 <= 255 && g3 <= 255 && b3 <= 255) {
+      return { type: "rgb", r: r3, g: g3, b: b3, idx256: OpenWrap.format.__colors.__rgbTo256(r3, g3, b3), ansi16: OpenWrap.format.__colors.__rgbTo16(r3, g3, b3), css: "rgb(" + r3 + "," + g3 + "," + b3 + ")" };
+    }
+  }
+  if ((m = /^(?:(?:fg|bg|color)\(\s*(\d{1,3})\s*\)|(\d{1,3}))$/i.exec(s))) {
+    var idx2 = Number(m[1] || m[2]);
+    if (idx2 >= 0 && idx2 <= 255) return this.parseColor(idx2);
+  }
+  return null;
+};
+
+OpenWrap.format.__colors.colorSeq = function(spec, isBg, colorMode) {
+  var mode = colorMode || "none";
+  if (mode == "none") return "";
+  var c = (isMap(spec) && isNumber(spec.idx256)) ? spec : this.parseColor(spec);
+  if (!c) return "";
+  if (mode == "truecolor" && (c.type == "rgb" || c.type == "named")) {
+    return (isBg ? "48;2;" : "38;2;") + c.r + ";" + c.g + ";" + c.b;
+  }
+  if (mode == "truecolor" || mode == "256") {
+    if (c.type == "named" && c.idx256 < 16 && mode == "16") {
+      return String(isBg ? c.ansi16 + 10 : c.ansi16);
+    }
+    return (isBg ? "48;5;" : "38;5;") + c.idx256;
+  }
+  return String(isBg ? c.ansi16 + 10 : c.ansi16);
+};
+
+
+// Internal terminal visualization primitives. Dimensions are terminal columns/rows.
+function __vizDimension(value, fallback) {
+  var n = isDef(value) ? value : fallback
+  if (typeof n != "number" || !isFinite(n) || n < 0 || Math.floor(n) != n) throw new Error("Invalid visualization dimension: " + n)
+  return n
+}
+function __vizPlain(text) {
+  return String(text).replace(/\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\))/g, "").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/g, "")
+}
+// Slice by columns, replaying style prefixes. A bisected wide glyph becomes spaces.
+function __vizSlice(text, from, to) {
+  var S = ow.format.string, out = "", prefix = "", x = 0, styled = false
+  for (var i = 0; i < text.length;) {
+    var t = S._nextWrapToken(text, i)
+    if (!t || t.next <= i) break
+    i = t.next
+    if (t.token.charAt(0) == "\x1b") {
+      if (/^\x1b\[[0-9;:]*m$/.test(t.token)) {
+        // A full reset makes earlier style history irrelevant. Bounding replay also
+        // avoids quadratic ANSI growth when many coloured rectangles overlap.
+        prefix = t.token == "\x1b[0m" || t.token == "\x1b[m" ? t.token : prefix + t.token
+        if (x >= from && x < to) { out += t.token; styled = true }
+      }
+      continue
+    }
+    if (x >= to) break
+    if (t.width && x + t.width > from && x < to) {
+      if (!out && prefix) { out = prefix; styled = true }
+      out += x >= from && x + t.width <= to ? t.token : repeat(Math.min(to, x + t.width) - Math.max(from, x), " ")
+    }
+    x += t.width
+  }
+  return out + (styled ? "\x1b[0m" : "")
+}
+function __vizOverlay(base, text, col, width) {
+  text = ow.format.string.ansiClip(text, Math.max(0, width - col), "")
+  return ow.format.viz.layout.padLines(__vizSlice(base, 0, col) + text + __vizSlice(base, col + visibleLength(text), width), width, 1)
+}
+function __vizOptions(options) {
+  var o = clone(_$(options, "options").isMap().default({}))
+  var caps = o.capabilities || ow.format.term.getCapabilities()
+  o.capabilities = clone(caps)
+  o.unicode = isBoolean(o.unicode) ? o.unicode : caps.unicode !== false
+  o.palette = _$(o.palette).isString().default("auto")
+  o.colorMode = o.palette == "auto" ? (caps.colorMode || "none") : o.palette
+  if (["none", "16", "256", "truecolor"].indexOf(o.colorMode) < 0) throw new Error("Invalid palette")
+  if (o.color === false || caps.ansi === false || isDef(getEnv("NO_COLOR"))) o.colorMode = "none"
+  o.colors = isDef(o.colors) ? o.colors : ow.format.term.getPalette(o.palette, {}, caps).categories
+  if (!isArray(o.colors) || !o.colors.length) throw new Error("colors must be a non-empty array")
+  o.precision = isDef(o.precision) ? o.precision : 1
+  if (typeof o.precision != "number" || o.precision < 0 || o.precision > 10 || Math.floor(o.precision) != o.precision) throw new Error("Invalid precision")
+  o.legend = _$(o.legend).isString().default("auto")
+  if (["auto", "right", "bottom", "inline", "none"].indexOf(o.legend) < 0) throw new Error("Invalid legend")
+  return o
+}
+function __vizNormalize(values, o) {
+  var items
+  if (isArray(values)) items = values.map(function(v, i) { return isMap(v) ? { label: v.label, value: v.value, color: v.color, index: i } : { value: v, index: i } })
+  else if (isMap(values)) items = Object.keys(values).map(function(k, i) { return { label: k, value: values[k], index: i } })
+  else throw new Error("values must be an array or map")
+  var seen = {}, max = 0
+  items.forEach(function(v, i) {
+    if (typeof v.value != "number" || !isFinite(v.value) || v.value < 0) throw new Error("Invalid category value at " + i + ": " + v.label)
+    v.label = isDef(v.label) && String(v.label) !== "" ? __vizPlain(String(v.label)).replace(/[\r\n\t]/g, " ") : "Item " + (i + 1)
+    var key = "$" + v.label, count = (seen[key] || 0) + 1
+    seen[key] = count
+    v.key = v.label + "\u0000" + count
+    if (count > 1) v.label += " (" + count + ")"
+    v.explicitColor = isDef(v.color)
+    v.color = OpenWrap.format.__colors.parseColor(isDef(v.color) ? v.color : o.colors[i % o.colors.length])
+    if (!v.color) throw new Error("Invalid category color at " + i)
+    max = Math.max(max, v.value)
+  })
+  var total = items.reduce(function(n, v) { return n + (max ? v.value / max : 0) }, 0)
+  items.forEach(function(v) { v.share = total ? (v.value / max) / total : 0 })
+  var limit = isDef(o.maxCategories) ? __vizDimension(o.maxCategories, 12) : 12
+  if (limit == 1) throw new Error("maxCategories must be zero or at least two")
+  if (limit && items.length > limit) {
+    var ranked = items.slice().sort(function(a, b) { return b.share - a.share || a.index - b.index }), keep = ranked.slice(0, limit - 1)
+    var rest = items.filter(function(v) { return keep.indexOf(v) < 0 })
+    items = items.filter(function(v) { return keep.indexOf(v) >= 0 })
+    items.push({ label: "Other (" + rest.length + ")", index: items.length, key: "Other", value: rest.reduce(function(n, v) { return n + v.value }, 0), share: rest.reduce(function(n, v) { return n + v.share }, 0), color: OpenWrap.format.__colors.parseColor(o.colors[(limit - 1) % o.colors.length]) })
+  }
+  return items
+}
+function __vizID(i) { return "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".charAt(i % 36) }
+function __vizPercent(v, o, positive) {
+  var rounded = Number((v * 100).toFixed(o.precision))
+  return (rounded == 0 && (v > 0 || positive) ? "<" + Math.pow(10, -o.precision) : String(rounded)) + "%"
+}
+function __vizValue(item) { return isFinite(item.value) ? String(item.value) : "sum > " + Number.MAX_VALUE }
+function __vizLegend(items, o) {
+  return items.map(function(v, i) {
+    return __vizPaint(__vizID(i), v.color, null, o) + " " + v.label +
+      (o.showPercent !== false ? " " + __vizPercent(v.share, o, v.value > 0) : "") +
+      (o.showValue ? " (" + __vizValue(v) + ")" : "") + (v.invisible && v.value > 0 ? " *" : "")
+  })
+}
+function __vizPrepareColor(color, mode) {
+  color._vizFG = OpenWrap.format.__colors.colorSeq(color, false, mode)
+  color._vizBG = OpenWrap.format.__colors.colorSeq(color, true, mode)
+  color._vizMode = mode
+}
+function __vizPaint(text, fg, bg, o) {
+  if (o.colorMode == "none") return text
+  if (fg && fg._vizMode != o.colorMode) __vizPrepareColor(fg, o.colorMode)
+  if (bg && bg._vizMode != o.colorMode) __vizPrepareColor(bg, o.colorMode)
+  var seq = (fg ? fg._vizFG : "39") + ";" + (bg ? bg._vizBG : "49")
+  return "\x1b[" + seq + "m" + text + "\x1b[0m"
+}
+// Hamilton allocation, including an optional unoccupied portion.
+function __vizAllocate(shares, units) {
+  var scaled = shares.map(function(v) { return v * units }), counts = scaled.map(Math.floor)
+  var order = scaled.map(function(v, i) { return i }).sort(function(a, b) { return (scaled[b] - counts[b]) - (scaled[a] - counts[a]) || a - b })
+  var left = units - counts.reduce(function(a, b) { return a + b }, 0)
+  for (var i = 0; i < left; i++) counts[order[i % order.length]]++
+  return counts
+}
+function __vizFinish(lines, o, width, height) {
+  if (!width || !height) return ""
+  return lines.slice(0, height).map(function(l) {
+    var out = "", last = "", end = 0, re = /(\x1b\[[0-9;]+m)([^\x1b]*)\x1b\[0m/g, m
+    while ((m = re.exec(l)) !== null) {
+      if (m.index == end && m[1] == last) out = out.slice(0, -4) + m[2] + "\x1b[0m"
+      else out += l.slice(end, m.index) + m[0]
+      last = m[1]
+      end = re.lastIndex
+    }
+    out += l.slice(end)
+    return ow.format.string.ansiClip(out, width, "")
+  }).join("\n")
+}
+function __vizStack(items, o, width, vertical) {
+  var shares = items.map(function(v) { return v.share })
+  if (o.normalize === false) {
+    var total = items.reduce(function(n, v) { return n + v.value }, 0), max = isDef(o.max) ? o.max : total
+    if (!isNumber(max) || !isFinite(max) || max < total || max < 0) throw new Error("max must be finite and at least the total")
+    shares = items.map(function(v) { return max ? v.value / max : 0 })
+  }
+  shares.push(Math.max(0, 1 - shares.reduce(function(a, b) { return a + b }, 0)))
+  var fractional = o.unicode && o.colorMode != "none" && o.fractional !== false
+  var factor = fractional ? 8 : 1
+  function allocate(f) {
+    var counts = __vizAllocate(shares, width * f), pixels = []
+    counts.forEach(function(n, i) { for (var j = 0; j < n; j++) pixels.push(i < items.length ? i : -1) })
+    return pixels
+  }
+  var pixels = allocate(factor)
+  if (factor == 8) {
+    for (var x = 0; x < pixels.length; x += 8) {
+      var distinct = []
+      for (var k = 0; k < 8; k++) if (distinct.indexOf(pixels[x + k]) < 0) distinct.push(pixels[x + k])
+      if (distinct.length > 2) { factor = 1; pixels = allocate(1); break }
+    }
+  }
+  var out = [], used = []
+  for (var x = 0; x < width; x++) {
+    var a = pixels[x * factor], b = pixels[x * factor + factor - 1], n = 0
+    for (var k = 0; k < factor; k++) { if (pixels[x * factor + k] == a) n++; if (pixels[x * factor + k] >= 0) used[pixels[x * factor + k]] = true }
+    if (a == b) out.push(a < 0 ? " " : __vizPaint(o.colorMode == "none" || !o.unicode ? __vizID(a) : "█", items[a].color, null, o))
+    else {
+      var glyphs = vertical ? " ▁▂▃▄▅▆▇█" : " ▏▎▍▌▋▊▉█"
+      out.push(__vizPaint(glyphs.charAt(n), a < 0 ? null : items[a].color, b < 0 ? null : items[b].color, o))
+    }
+  }
+  items.forEach(function(v, i) { v.invisible = !used[i] })
+  return out
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.format.printStackedBar(values, options) : String</key>
+ * <![CDATA[
+ * Returns a category distribution. `values` accepts numbers, `{label,value,color}` records or a value map.
+ * Options: `width` (40), `height`, `normalize` (true), `max`, `fractional` (true),
+ * `legend` (none), `showPercent` (true), `showValue` (false), `precision` (1),
+ * `palette` (auto), `colors`, `color`, `unicode`, `capabilities`, `maxCategories` (12; 0 disables grouping).
+ * Invalid values/colours throw. Tiny segments may have no pixels and are marked `*` in legends.
+ * All renderers return strings without printing. Explicit dimensions include legends.
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.format.prototype.printStackedBar = function(values, options) {
+  var o = __vizOptions(options), items = __vizNormalize(values, o)
+  var w = __vizDimension(o.width, Math.min(40, o.capabilities.width || 80)), h = __vizDimension(o.height, 1000000)
+  if (!w || !h) return ""
+  if (!items.length || !items.some(function(v) { return v.share > 0 })) return __vizFinish([items.length ? "(no data)" : "(empty)"], o, w, h)
+  var external = ["bottom", "right"].indexOf(o.legend) >= 0
+  if (external && h == 1) return ow.format.printStackedBar(values, merge(o, { legend: "none" }))
+  function compact() {
+    return items.map(function(v, i) {
+      return __vizID(i) + ":" + (o.showPercent !== false ? __vizPercent(v.share, o, v.value > 0) : v.label) +
+        (o.showValue ? "(" + __vizValue(v) + ")" : "") + (v.invisible && v.value > 0 ? "*" : "")
+    }).join(" ")
+  }
+  var summary = compact(), inline = !external && o.showPercent !== false
+  // Reserve marker space before allocating so tiny slices cannot push text out of bounds.
+  var summaryW = visibleLength(summary) + items.length
+  var bw = inline ? w - summaryW - 1 : w
+  if (inline && bw < 4) return __vizFinish([summary], o, w, h)
+  var bar = __vizStack(items, o, bw, false).join("")
+  var lines = external ? [bar].concat(__vizLegend(items, o)) :
+    [bar + (inline ? " " + ow.format.string.ansiPad(compact(), summaryW) : "")]
+  if (lines.length > h && h > 1) lines[h - 1] = "+" + (lines.length - h + 1) + " categories"
+  return __vizFinish(lines, o, w, h)
+}
+
+// Internal raster: row-major category samples; -1 is terminal background.
+OpenWrap.format.prototype.viz._createRaster = function(width, height, mode) {
+  var sx = mode == "braille" ? 2 : 1, sy = mode == "braille" ? 4 : mode == "halfblock" ? 2 : 1
+  var pw = width * sx, ph = height * sy, data = []
+  for (var i = 0; i < pw * ph; i++) data.push(-1)
+  return {
+    width: width, height: height, pixelWidth: pw, pixelHeight: ph,
+    set: function(x, y, value) { if (x >= 0 && y >= 0 && x < pw && y < ph) data[y * pw + x] = value },
+    render: function(items, o) {
+      var lines = [], bits = [[1, 8], [2, 16], [4, 32], [64, 128]], used = []
+      for (var y = 0; y < height; y++) {
+        var line = ""
+        for (var x = 0; x < width; x++) {
+          var counts = [], mask = 0, best = -1, bestN = 0
+          for (var dy = 0; dy < sy; dy++) for (var dx = 0; dx < sx; dx++) {
+            var v = data[(y * sy + dy) * pw + x * sx + dx]
+            if (v >= 0) {
+              counts[v] = (counts[v] || 0) + 1
+              if (mode == "braille") {
+                if (o.colorMode != "none" || ((dx + dy + v) % (v % 3 + 2)) != 0) {
+                  mask |= bits[dy][dx]
+                  if (o.colorMode == "none") used[v] = true
+                }
+              } else used[v] = true
+            }
+          }
+          for (var j = 0; j < counts.length; j++) if (counts[j] > bestN) { best = j; bestN = counts[j] }
+          if (mode == "braille" && mask && o.colorMode != "none") used[best] = true
+          if (mode == "braille") line += mask ? __vizPaint(String.fromCharCode(0x2800 + mask), items[best].color, null, o) : " "
+          else if (mode == "halfblock") {
+            var top = data[(y * 2) * pw + x], bottom = data[(y * 2 + 1) * pw + x]
+            line += top < 0 && bottom < 0 ? " " : __vizPaint(top == bottom ? "█" : top < 0 ? "▄" : "▀", items[top < 0 ? bottom : top].color, top >= 0 && bottom >= 0 && top != bottom ? items[bottom].color : null, o)
+          } else line += best < 0 ? " " : __vizPaint(__vizID(best), items[best].color, null, o)
+        }
+        lines.push(line)
+      }
+      items.forEach(function(v, i) { v.invisible = !used[i] })
+      return lines
+    }
+  }
+}
+function __vizPie(values, options, donut) {
+  var o = __vizOptions(options), items = __vizNormalize(values, o)
+  if (o.normalize === false) throw new Error("Pie and donut require normalization")
+  var size = _$(o.size).isString().default("small")
+  if (["tiny", "small", "medium", "auto"].indexOf(size) < 0) throw new Error("Invalid size")
+  var mode = _$(o.mode).isString().default("auto")
+  if (["auto", "braille", "halfblock", "ascii"].indexOf(mode) < 0) throw new Error("Invalid raster mode")
+  if (mode == "auto") mode = o.unicode && o.colorMode != "none" ? "halfblock" : "ascii"
+  if (!o.unicode || (mode == "halfblock" && o.colorMode == "none")) mode = "ascii"
+  var inner = donut ? (isDef(o.innerRadius) ? o.innerRadius : 0.5) : 0
+  if (typeof inner != "number" || !isFinite(inner) || inner < 0 || inner >= 1) throw new Error("innerRadius must be in [0,1)")
+  var angle = isDef(o.startAngle) ? o.startAngle : -90, aspect = isDef(o.cellAspect) ? o.cellAspect : 0.5
+  if (typeof angle != "number" || !isFinite(angle) || typeof aspect != "number" || !isFinite(aspect) || aspect <= 0) throw new Error("Invalid geometry options")
+  if (isDef(o.fallback) && ["auto", "text"].indexOf(o.fallback) < 0) throw new Error("Invalid fallback")
+  if (isDef(o.centerTextOverflow) && ["legend", "clip", "omit"].indexOf(o.centerTextOverflow) < 0) throw new Error("Invalid centerTextOverflow")
+  var medium = size == "medium" || (size == "auto" && (o.width || o.capabilities.width) >= 20 && (o.height || o.capabilities.height) >= 8)
+  var gw = medium ? 20 : 12, gh = medium ? 8 : 5
+  var legend = o.legend == "none" ? [] : __vizLegend(items, o)
+  var lw = legend.reduce(function(n, l) { return Math.max(n, visibleLength(l)) }, 0)
+  var explicitW = o._fitToBox !== true && isDef(o.width), explicitH = o._fitToBox !== true && isDef(o.height)
+  var h = __vizDimension(o.height, size == "auto" ? o.capabilities.height || 24 : Math.max(gh, legend.length))
+  var defaultW = size == "auto" ? o.capabilities.width || 80 : gw + (legend.length ? lw + 2 : 0)
+  if (explicitH && !explicitW) {
+    var bottomLegend = legend.length && (o.legend == "bottom" || o.legend == "inline")
+    defaultW = Math.max(1, Math.ceil(Math.max(0, h - (bottomLegend ? legend.length : 0)) / aspect)) +
+      (legend.length && !bottomLegend ? lw + 2 : 0)
+  }
+  var w = __vizDimension(o.width, defaultW)
+  if (explicitW && !explicitH) {
+    var canPlaceRight = legend.length && o.legend != "bottom" && o.legend != "inline" && w >= 8 + lw + 2
+    var plotHeight = Math.max(1, Math.ceil((canPlaceRight ? w - lw - 2 : w) * aspect))
+    h = canPlaceRight ? Math.max(plotHeight, legend.length) : plotHeight + legend.length
+  }
+  if (!w || !h) return ""
+  if (!items.length || !items.some(function(v) { return v.share > 0 })) return __vizFinish([items.length ? "(no data)" : "(empty)"], o, w, h)
+  function fallback() {
+    if (o.fallback == "text") return __vizFinish([__vizLegend(items, o).join("  ")], o, w, h)
+    return ow.format.printStackedBar(values, merge(o, { width: w, height: h, legend: h > 1 ? "bottom" : "none" }))
+  }
+  if (size == "tiny") return ow.format.printStackedBar(values, merge(o, { width: w, height: 1, legend: "none" }))
+  var right = legend.length && o.legend != "bottom" && o.legend != "inline" && w >= 8 + lw + 2 && h >= Math.min(legend.length, gh)
+  var bottom = legend.length && !right
+  var availableW = right ? w - lw - 2 : w, availableH = bottom ? h - legend.length : h
+  gw = explicitW || explicitH ? availableW : Math.min(gw, availableW)
+  gh = explicitW || explicitH ? availableH : Math.min(gh, availableH)
+  if (gw < 8 || gh < 4) return fallback()
+  var raster = ow.format.viz._createRaster(gw, gh, mode), cumulative = [], sum = 0
+  items.forEach(function(v) { sum += v.share; cumulative.push(sum) })
+  cumulative[cumulative.length - 1] = 1
+  var radius = Math.min(gw * aspect, gh) / 2, hole = radius * inner
+  for (var y = 0; y < raster.pixelHeight; y++) for (var x = 0; x < raster.pixelWidth; x++) {
+    var px = ((x + 0.5) * gw / raster.pixelWidth - gw / 2) * aspect
+    var py = (y + 0.5) * gh / raster.pixelHeight - gh / 2, d = px * px + py * py
+    if (d > radius * radius || d < hole * hole) continue
+    var turn = ((Math.atan2(py, px) * 180 / Math.PI - angle) * (o.clockwise === false ? -1 : 1) % 360 + 360) % 360 / 360
+    var category = 0
+    while (category < cumulative.length - 1 && turn >= cumulative[category]) category++
+    raster.set(x, y, category)
+  }
+  var extraCenter = null
+  var lines = raster.render(items, o), center = isDef(o.centerText) ? __vizPlain(String(o.centerText)).replace(/[\r\n\t]/g, " ") : ""
+  if (donut && center) {
+    var row = Math.floor(gh / 2), dy = Math.abs(row + 0.5 - gh / 2) + 0.5
+    var safe = hole > dy ? Math.sqrt(hole * hole - dy * dy) / aspect : 0
+    var left = Math.ceil(gw / 2 - safe), rightEdge = Math.floor(gw / 2 + safe), avail = Math.max(0, rightEdge - left)
+    if (visibleLength(center) > avail && o.centerTextOverflow != "clip") {
+      if (o.centerTextOverflow != "omit") extraCenter = center
+    } else if (avail) {
+      center = ow.format.string.ansiClip(center, avail, "")
+      lines[row] = __vizOverlay(lines[row], center, left + Math.floor((avail - visibleLength(center)) / 2), gw)
+    }
+  }
+  var centerLegend = extraCenter
+  legend = o.legend == "none" ? [] : __vizLegend(items, o)
+  if (centerLegend) legend.push(centerLegend)
+  // A late centre-label overflow must not replace a row of the ring.
+  if (centerLegend && !right && lines.length + legend.length > h) {
+    return __vizFinish([centerLegend].concat(__vizLegend(items, o)), o, w, h)
+  }
+  if (right && legend.length > h) legend = legend.slice(0, h - 1).concat(["+" + (legend.length - h + 1) + " categories"])
+  if (right) {
+    for (var r = 0; r < Math.max(lines.length, legend.length); r++) lines[r] = ow.format.viz.layout.padLines(lines[r] || "", gw, 1) + "  " + (legend[r] || "")
+  } else lines = lines.concat(legend)
+  return __vizFinish(lines, o, w, h)
+}
+/**
+ * <odoc format="markdown">
+ * <key>ow.format.printPie(values, options) : String</key>
+ * <![CDATA[
+ * Renders non-negative category proportions as a pie. Input formats and colour options match `printStackedBar`.
+ * `size`: tiny (one-line bar), small (12x5 geometry), medium (20x8), auto.
+ * `width`/`height` bound the entire output including legends and override preset geometry.
+ * With one explicit dimension the other is derived using `cellAspect` after reserving legends.
+ * Dashboard-allocated dimensions are bounds; set widget options.width/height to override geometry.
+ * `legend`: auto/right/bottom/inline/none.
+ * `mode`: auto/halfblock/braille/ascii. Auto prefers half-block colour; ASCII uses category letters.
+ * `startAngle`: -90 degrees, `clockwise`: true, `cellAspect`: 0.5 (cell width/height).
+ * Geometry below 8x4 falls back to a stacked bar (`fallback: "auto"`) or text (`"text"`).
+ * Braille uses majority colour per cell (input-order ties); monochrome uses category stipples.
+ * Legends mark unsampled positive slices with `*`. Excess categories group as Other (n).
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.format.prototype.printPie = function(values, options) { return __vizPie(values, options, false) }
+/**
+ * <odoc format="markdown">
+ * <key>ow.format.printDonut(values, options) : String</key>
+ * <![CDATA[
+ * Uses `printPie` geometry with `innerRadius` (default 0.5, fraction in [0,1)).
+ * Optional `centerText` fits wholly inside the hole. `centerTextOverflow` defaults to legend;
+ * clip/omit are alternatives. All other options match `printPie`.
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.format.prototype.printDonut = function(values, options) { return __vizPie(values, options, true) }
+/**
+ * <odoc format="markdown">
+ * <key>ow.format.printStackedColumns(columns, options) : String</key>
+ * <![CDATA[
+ * Renders `[{label: "Host", values: {CPU: 50, Memory: 30}}]` using stable category colours.
+ * Options match `printStackedBar`, plus `height` (10), `width` (40), `gap` (1), `labels` (true).
+ * Missing categories are zero. Absolute mode uses one shared max. Too narrow a box throws.
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.format.prototype.printStackedColumns = function(columns, options) {
+  _$(columns, "columns").isArray().$_()
+  var o = __vizOptions(options), w = __vizDimension(o.width, 40), h = __vizDimension(o.height, 10)
+  if (!w || !h) return ""
+  if (!columns.length) return __vizFinish(["(empty)"], o, w, h)
+  var gap = __vizDimension(o.gap, 1), labels = o.labels !== false, ph = h - (labels ? 1 : 0)
+  if (w < columns.length + gap * (columns.length - 1) || ph < 1) throw new Error("Insufficient stacked column area")
+  var categories = [], keys = [], max = 0
+  var series = columns.map(function(c) {
+    if (!isMap(c)) throw new Error("Each column requires label and values")
+    var items = __vizNormalize(c.values, merge(o, { maxCategories: 0 }))
+    max = Math.max(max, items.reduce(function(n, v) { return n + v.value }, 0))
+    items.forEach(function(v) { if (keys.indexOf(v.key) < 0) { if (!v.explicitColor) v.color = OpenWrap.format.__colors.parseColor(o.colors[keys.length % o.colors.length]); keys.push(v.key); categories.push(v) } })
+    return items
+  })
+  if (o.normalize === false && !isDef(o.max)) o.max = max
+  var cw = Math.floor((w - gap * (columns.length - 1)) / columns.length)
+  var stacks = series.map(function(items) {
+    return __vizStack(categories.map(function(c, i) {
+      var v = items.filter(function(v) { return v.key == c.key })[0]
+      return { value: v ? v.value : 0, share: v ? v.share : 0, color: c.color }
+    }), o, ph, true)
+  })
+  var lines = []
+  for (var y = ph - 1; y >= 0; y--) lines.push(stacks.map(function(s) { return repeat(cw, s[y]) }).join(repeat(gap, " ")))
+  if (labels) lines.push(columns.map(function(c, i) { return ow.format.viz.layout.padLines(String(isDef(c.label) ? c.label : "Column " + (i + 1)), cw, 1) }).join(repeat(gap, " ")))
+  if (["bottom", "right"].indexOf(o.legend) >= 0) {
+    // Reserve legend rows by re-rendering geometry at its smaller height.
+    if (h > categories.length + (labels ? 1 : 0)) {
+      var body = ow.format.printStackedColumns(columns, merge(o, { height: h - categories.length, legend: "none" }))
+      // Column legend describes category identity; percentages vary per column.
+      o.showPercent = false
+      o.showValue = false
+      return __vizFinish(body.split("\n").concat(__vizLegend(categories, o)), o, w, h)
+    }
+    throw new Error("Insufficient legend area")
+  }
+  return __vizFinish(lines, o, w, h)
+}
+
+function __vizSymbol(text, fallback) {
+  var token = ow.format.string._nextWrapToken(__vizPlain(text), 0)
+  return token && token.width == 1 ? token.token : fallback
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.format.printDivergingBars(values, options) : String</key>
+ * <![CDATA[
+ * Renders signed category values around a zero axis. Accepts numbers, `{label,value,color}` records
+ * or a value map. Options match category renderers, plus `symmetric` (true), `min`/`max`,
+ * `labels` (true), `showValue` (true). Width defaults to 40; height defaults to the row count.
+ * An explicit range must include zero and every value. Monochrome uses `-` and `+` bars.
+ * Narrow areas fall back to signed text. Input order is retained; categories are not aggregated.
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.format.prototype.printDivergingBars = function(values, options) {
+  var o = __vizOptions(options), source
+  if (isArray(values)) source = values.map(function(v) { return isMap(v) ? v : { value: v } })
+  else if (isMap(values)) source = Object.keys(values).map(function(k) { return { label: k, value: values[k] } })
+  else throw new Error("values must be an array or map")
+  source.forEach(function(v, i) {
+    if (typeof v.value != "number" || !isFinite(v.value)) throw new Error("Invalid signed value at " + i)
+  })
+  var items = __vizNormalize(source.map(function(v) { return { label: v.label, value: Math.abs(v.value), color: v.color } }), merge(o, { maxCategories: 0 }))
+  var w = __vizDimension(o.width, 40), h = __vizDimension(o.height, Math.max(1, items.length))
+  if (!w || !h) return ""
+  if (!items.length) return __vizFinish(["(empty)"], o, w, h)
+  var lo = 0, hi = 0
+  source.forEach(function(v) { lo = Math.min(lo, v.value); hi = Math.max(hi, v.value) })
+  var magnitude = Math.max(-lo, hi)
+  if (o.symmetric !== false) { lo = -magnitude; hi = magnitude }
+  lo = isDef(o.min) ? o.min : lo
+  hi = isDef(o.max) ? o.max : hi
+  if (typeof lo != "number" || typeof hi != "number" || !isFinite(lo) || !isFinite(hi) || lo > 0 || hi < 0 || lo > hi || source.some(function(v) { return v.value < lo || v.value > hi })) throw new Error("Range must include zero and all values")
+  var showValue = o.showValue !== false, labels = o.labels !== false
+  function signed(v) { return (v > 0 ? "+" : "") + String(v) }
+  var labelW = labels ? Math.min(14, items.reduce(function(n, v) { return Math.max(n, visibleLength(v.label)) }, 0)) : 0
+  var valueW = showValue ? source.reduce(function(n, v) { return Math.max(n, visibleLength(signed(v.value))) }, 0) : 0
+  var plotW = w - (labelW ? labelW + 1 : 0) - (valueW ? valueW + 1 : 0)
+  var scale = Math.max(-lo, hi) || 1, negative = -lo / scale, positive = hi / scale
+  var axis = plotW > 0 ? Math.round((plotW - 1) * (negative + positive ? negative / (negative + positive) : 0.5)) : 0
+  var lines = items.map(function(item, i) {
+    var value = source[i].value
+    if (plotW < 3) return (labels ? item.label + " " : "") + signed(value)
+    var chars = [], count = value < 0 ? Math.round((value / lo) * axis) : hi ? Math.round((value / hi) * (plotW - axis - 1)) : 0
+    for (var x = 0; x < plotW; x++) chars.push(" ")
+    chars[axis] = "|"
+    var glyph = o.colorMode != "none" && o.unicode ? "█" : value < 0 ? "-" : "+"
+    for (var x = 0; x < count; x++) chars[value < 0 ? axis - x - 1 : axis + x + 1] = __vizPaint(glyph, item.color, null, o)
+    return (labelW ? ow.format.viz.layout.padLines(item.label, labelW, 1) + " " : "") + chars.join("") +
+      (showValue ? " " + repeat(valueW - visibleLength(signed(value)), " ") + signed(value) : "")
+  })
+  if (lines.length > h) {
+    if (h == 1) lines[0] = "(" + lines.length + " rows) " + (labels ? items[0].label + " " : "") + signed(source[0].value)
+    else lines[h - 1] = "+" + (lines.length - h + 1) + " rows"
+  }
+  return __vizFinish(lines, o, w, h)
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.format.printTreemap(values, options) : String</key>
+ * <![CDATA[
+ * Renders non-negative categories as cell rectangles using deterministic balanced recursive slicing.
+ * Inputs and colour options match `printPie`. Defaults: width 40, height 10, labels true,
+ * cellAspect 0.5, legend auto (up to three bottom rows). Legend right reserves a side panel.
+ * Rectangles are quantized to cells; categories receiving no cells are marked `*` in the legend.
+ * Zero values occupy no cells. Labels are clipped inside their own rectangles. Narrow areas use
+ * a stacked distribution. `legend: "none"` devotes the whole area to geometry.
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.format.prototype.printTreemap = function(values, options) {
+  var o = __vizOptions(options), items = __vizNormalize(values, o)
+  var w = __vizDimension(o.width, 40), h = __vizDimension(o.height, 10), aspect = isDef(o.cellAspect) ? o.cellAspect : 0.5
+  if (typeof aspect != "number" || !isFinite(aspect) || aspect <= 0) throw new Error("Invalid cellAspect")
+  if (!w || !h) return ""
+  if (!items.length || !items.some(function(v) { return v.share > 0 })) return __vizFinish([items.length ? "(no data)" : "(empty)"], o, w, h)
+  var legend = o.legend != "none", lw = __vizLegend(items, o).reduce(function(n, l) { return Math.max(n, visibleLength(l)) }, 0) + 2
+  var right = legend && o.legend == "right" && w >= lw + 4
+  var legendH = legend && !right ? Math.min(items.length, 3, Math.max(1, Math.floor(h / 3))) : 0
+  var pw = right ? w - lw : w, ph = h - legendH
+  if (pw < 2 || ph < 2) return ow.format.printStackedBar(values, merge(o, { width: w, height: h, legend: h > 1 ? "bottom" : "none" }))
+  var lines = [], rects = []
+  for (var y = 0; y < ph; y++) lines.push(repeat(pw, " "))
+  items.forEach(function(v) { v.invisible = v.value > 0 })
+  var sorted = items.map(function(v, i) { return i }).filter(function(i) { return items[i].share > 0 }).sort(function(a, b) { return items[b].share - items[a].share || a - b })
+  function divide(indices, x, y, width, height) {
+    if (!indices.length || !width || !height) return
+    if (indices.length == 1 || (width == 1 && height == 1)) {
+      rects.push({ index: indices[0], x: x, y: y, width: width, height: height })
+      items[indices[0]].invisible = false
+      return
+    }
+    var total = indices.reduce(function(n, i) { return n + items[i].share }, 0), sum = 0, cut = 1, distance = Infinity, leftShare = 0
+    for (var i = 1; i < indices.length; i++) {
+      sum += items[indices[i - 1]].share
+      var d = Math.abs(total / 2 - sum)
+      if (d < distance) { distance = d; cut = i; leftShare = sum }
+    }
+    var vertical = height == 1 || (width > 1 && width * aspect >= height), size = vertical ? width : height
+    var first = Math.round(size * leftShare / total), left = indices.slice(0, cut), rightItems = indices.slice(cut)
+    if (!first) { divide(rightItems, x, y, width, height); return }
+    if (first == size) { divide(left, x, y, width, height); return }
+    if (vertical) {
+      divide(left, x, y, first, height)
+      divide(rightItems, x + first, y, width - first, height)
+    } else {
+      divide(left, x, y, width, first)
+      divide(rightItems, x, y + first, width, height - first)
+    }
+  }
+  divide(sorted, 0, 0, pw, ph)
+  // Rectangles never overlap. Encode horizontal runs directly instead of repeatedly
+  // slicing/replaying the ANSI history of an already-coloured canvas row.
+  rects.sort(function(a, b) { return a.x - b.x })
+  rects.forEach(function(r) {
+    var item = items[r.index]
+    r.fill = o.colorMode != "none" ? " " : __vizID(r.index)
+    r.textColor = OpenWrap.format.__colors.parseColor((item.color.r * 0.299 + item.color.g * 0.587 + item.color.b * 0.114) >= 150 ? "BLACK" : "WHITE")
+    r.labelRow = o.labels === false ? -1 : r.y + Math.floor((r.height - 1) / 2)
+    var text = __vizID(r.index) + (r.width >= 4 ? " " + item.label : "")
+    r.text = ow.format.string.ansiClip(text, r.width, "")
+    r.textWidth = visibleLength(r.text)
+  })
+  for (var y = 0; y < ph; y++) {
+    var pieces = []
+    rects.forEach(function(r) {
+      if (y < r.y || y >= r.y + r.height) return
+      var text = repeat(r.width, r.fill)
+      if (y == r.labelRow) {
+        var left = Math.floor((r.width - r.textWidth) / 2)
+        text = repeat(left, r.fill) + r.text + repeat(r.width - left - r.textWidth, r.fill)
+      }
+      pieces.push(__vizPaint(text, r.textColor, items[r.index].color, o))
+    })
+    lines[y] = pieces.join("")
+  }
+  if (legend) {
+    var entries = __vizLegend(items, o), rows = right ? h : legendH
+    if (entries.length > rows) entries = entries.slice(0, rows - 1).concat(["+" + (items.length - rows + 1) + " categories" + (items.some(function(v) { return v.invisible }) ? " (* too small)" : "")])
+    if (right) {
+      for (var y = 0; y < Math.max(ph, entries.length); y++) lines[y] = ow.format.viz.layout.padLines(lines[y] || "", pw, 1) + "  " + (entries[y] || "")
+    } else lines = lines.concat(entries)
+  }
+  return __vizFinish(lines, o, w, h)
+}
+
+// Opt-in sparkline renderer. Legacy calls retain their original implementation.
+function __vizSparkline(series, options) {
+  var o = __vizOptions(options), width = __vizDimension(o.width, o.capabilities.width || 80)
+  if (!width) return ""
+  var missing = _$(o.missing).isString().default("gap")
+  if (["gap", "skip", "error"].indexOf(missing) < 0) throw new Error("Invalid missing-value policy")
+  var thresholds = _$(o.thresholds).isArray().default([]).map(function(t) {
+    var color = isMap(t) ? OpenWrap.format.__colors.parseColor(t.color) : null
+    if (!color || typeof t.value != "number" || !isFinite(t.value)) throw new Error("Invalid threshold")
+    return { value: t.value, color: color }
+  }).sort(function(a, b) { return a.value - b.value })
+  var scale = o.colorScale, colors = []
+  if (isDef(scale)) {
+    var specs = isArray(scale) ? scale : isMap(scale) ? scale.colors : null
+    if (!isArray(specs) || !specs.length) throw new Error("colorScale requires a non-empty colors array")
+    colors = specs.map(function(c) { var parsed = OpenWrap.format.__colors.parseColor(c); if (!parsed) throw new Error("Invalid scale color"); return parsed })
+  }
+  var data = isArray(series) && series.length && isMap(series[0]) && isArray(series[0].data) ? series : [{ data: series, color: o.color }]
+  var blocks = o.unicode ? "▁▂▃▄▅▆▇█" : "_.-~=###"
+  return data.map(function(s) {
+    _$(s.data, "series data").isArray().$_()
+    var vals = s.data.map(function(v) {
+      if (v === null || isUnDef(v) || (typeof v == "number" && isNaN(v))) {
+        if (missing == "error") throw new Error("Missing sparkline value")
+        return null
+      }
+      if (typeof v != "number" || !isFinite(v)) throw new Error("Invalid sparkline value")
+      return v
+    })
+    if (missing == "skip") vals = vals.filter(function(v) { return v !== null })
+    var finite = vals.filter(function(v) { return v !== null })
+    var label = isDef(o.label) ? __vizPlain(String(o.label)).replace(/[\r\n\t]/g, " ") + " " : ""
+    var name = isDef(s.name) ? " " + __vizPlain(String(s.name)).replace(/[\r\n\t]/g, " ") : ""
+    if (!finite.length) return __vizFinish([label + (vals.length ? repeat(Math.min(vals.length, width), " ") : "(empty)") + name], o, width, 1)
+    var observedMin = finite.reduce(function(n, v) { return Math.min(n, v) }, finite[0]), observedMax = finite.reduce(function(n, v) { return Math.max(n, v) }, finite[0])
+    var min = isDef(o.min) ? o.min : observedMin, max = isDef(o.max) ? o.max : observedMax
+    if (typeof min != "number" || typeof max != "number" || !isFinite(min) || !isFinite(max) || min > max) throw new Error("Invalid sparkline range")
+    var scaleMin = isMap(scale) && isDef(scale.min) ? scale.min : min, scaleMax = isMap(scale) && isDef(scale.max) ? scale.max : max
+    if (typeof scaleMin != "number" || typeof scaleMax != "number" || !isFinite(scaleMin) || !isFinite(scaleMax) || scaleMin > scaleMax) throw new Error("Invalid colour scale range")
+    function ratio(v, lo, hi) {
+      if (lo == hi) return 0
+      var divisor = Math.max(Math.abs(lo), Math.abs(hi), Math.abs(v)) || 1
+      return Math.max(0, Math.min(1, (v / divisor - lo / divisor) / (hi / divisor - lo / divisor)))
+    }
+    var trend = o.trend ? " " + (finite[finite.length - 1] > finite[0] ? (o.unicode ? "↑" : "+") : finite[finite.length - 1] < finite[0] ? (o.unicode ? "↓" : "-") : (o.unicode ? "→" : "=")) : ""
+    var suffix = (o.showMinMax ? " min:" + observedMin + " max:" + observedMax : "") + name + trend
+    var plotW = Math.max(0, width - visibleLength(label) - visibleLength(suffix))
+    var sampled = vals
+    if (vals.length > plotW) {
+      sampled = []
+      for (var i = 0; i < plotW; i++) sampled.push(vals[Math.min(vals.length - 1, Math.ceil((i + 1) * vals.length / plotW) - 1)])
+    }
+    var base = OpenWrap.format.__colors.parseColor(isDef(s.color) && typeof s.color != "boolean" ? s.color : o.colors[0])
+    if (!base) throw new Error("Invalid sparkline color")
+    var highlight = OpenWrap.format.__colors.parseColor(typeof o.highlightLast == "string" ? o.highlightLast : "YELLOW")
+    if (o.highlightLast && !highlight) throw new Error("Invalid last-value color")
+    var last = -1
+    sampled.forEach(function(v, i) { if (v !== null) last = i })
+    var line = sampled.map(function(v, i) {
+      if (v === null) return " "
+      var glyph = blocks.charAt(Math.round(ratio(v, min, max) * 7)), color = colors.length ? colors[Math.min(colors.length - 1, Math.floor(ratio(v, scaleMin, scaleMax) * colors.length))] : base
+      thresholds.forEach(function(t) { if (v >= t.value) color = t.color })
+      if (o.markMin && v == observedMin) glyph = o.unicode ? "▼" : "v"
+      if (o.markMax && v == observedMax) glyph = o.unicode ? "▲" : "^"
+      if (o.highlightLast && i == last) color = highlight
+      return __vizPaint(glyph, color, null, o)
+    }).join("")
+    return __vizFinish([label + line + suffix], o, width, 1)
+  }).join("\n")
 }

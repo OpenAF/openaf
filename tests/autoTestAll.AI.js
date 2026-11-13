@@ -1256,6 +1256,10 @@
 
         [ "ollama", "anthropic" ].forEach(provider => {
             var g = provider == "ollama" ? new ow.ai.gpt(provider, { url: "http://127.0.0.1:11434", model: "llama-test" }) : new ow.ai.gpt(provider, { key: "test-key" });
+            // Test the unsupported-capability boundary, not a provider-name assumption:
+            // these providers can now implement structuredSchemaPrompt themselves.
+            g.model.structuredSchemaPrompt = __
+            g.model.rawResponse = __
             var threw = false;
             try {
                 g.jsonSchemaPrompt("test", { name: "T", schema: {} });
@@ -1266,4 +1270,112 @@
             ow.test.assert(threw, true, "Problem: jsonSchemaPrompt should throw for providers that don't support rawResponse.");
         });
     };
+
+    exports.testAIOpenAITerminalResponsesDoNotRetry = function() {
+        ow.loadAI()
+        var responses = [
+            { choices: [{ finish_reason: "length", message: { role: "assistant", content: "partial" } }] },
+            { choices: [{ finish_reason: "content_filter", message: { role: "assistant", content: "" } }] },
+            { choices: [] },
+            { choices: [{ finish_reason: "tool_calls", message: { role: "assistant", tool_calls: [{ id: "missing", function: { name: "missing", arguments: "{}" } }] } }] }
+        ]
+        responses.forEach(response => {
+            var g = new ow.ai.gpt("openai", { key: "test-key" }), calls = 0
+            g.model._request = () => {
+                if (++calls > 1) throw new Error("Terminal response was retried")
+                return response
+            }
+            ow.test.assert(g.rawPrompt("hello"), response, "Raw terminal response is preserved")
+            ow.test.assert(calls, 1, "Terminal response uses one request")
+            if (response.choices.length && response.choices[0].finish_reason === "length") {
+                ow.test.assert(g.getConversation().slice(-1)[0].content, "partial", "Partial response remains in conversation")
+                ow.test.assert(g.getLastStats().finishReasons, ["length"], "Terminal finish reason is captured")
+            }
+        })
+    }
+
+    exports.testAIHTTPResponseOwnership = function() {
+        ow.loadAI()
+        ow.loadServer()
+        ow.loadObj()
+        var hs = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1")
+        var url = "http://127.0.0.1:" + hs.getPort(), routes = {}
+        ;["", "/v1"].forEach(prefix => {
+            routes[prefix + "/ok"] = () => ow.server.httpd.reply({ ok: true }, 200, "application/json", {})
+            routes[prefix + "/bad"] = () => ow.server.httpd.reply("{invalid-json", 200, "application/json", {})
+            routes[prefix + "/error"] = () => ow.server.httpd.reply({ error: "fixture" }, 500, "application/json", {})
+            routes[prefix + "/stream"] = () => ow.server.httpd.reply("fixture-stream", 200, "text/plain", {})
+        })
+        ow.server.httpd.route(hs, routes)
+        var originalRequest = ow.ai.__httpRequest, clients = []
+        ow.ai.__httpRequest = function(client, options, verb, requestURL) {
+            if (requestURL.indexOf(url + "/") === 0) clients.push(client)
+            return originalRequest.apply(this, arguments)
+        }
+        function lastCount() { return Number(clients[clients.length - 1].client.connectionPool().connectionCount()) }
+        try {
+            ;["openai", "gemini", "ollama", "anthropic"].forEach(type => {
+                var model = new ow.ai.gpt(type, { key: "test-key", model: "fixture", url: url }).model
+                for (var i = 0; i < 3; i++) {
+                    ow.test.assert(model._request("ok", {}).ok, true, type + " parses response")
+                    ow.test.assert(lastCount(), 0, type + " releases completed request pool")
+                }
+                ;["bad", "error"].forEach(path => {
+                    try { model._request(path, {}) } catch (expected) {}
+                    ow.test.assert(lastCount(), 0, type + " releases failed request pool")
+                })
+                var stream = model._requestStream("stream", {})
+                try {
+                    ow.test.assert(lastCount(), 1, type + " live stream retains its connection")
+                    ow.test.assert(stream.read(), 102, type + " stream remains readable")
+                    ow.test.assert(lastCount(), 1, type + " partial stream retains its connection")
+                } finally { stream.close() }
+                ow.test.assert(lastCount(), 0, type + " partial close releases pool")
+                stream = model._requestStream("stream", {})
+                ow.test.assert(af.fromBytes2String(stream.readAllBytes()), "fixture-stream", type + " complete stream bytes")
+                ow.test.assert(lastCount(), 0, type + " EOF releases pool without explicit close")
+                stream.close()
+                model._requestStream("error", {})
+                ow.test.assert(lastCount(), 0, type + " HTTP stream error releases pool")
+            })
+            var borrowed = new ow.obj.http()
+            try {
+                var stream = ow.ai.__httpRequest(borrowed, { httpClient: borrowed }, "GET", url + "/stream", {}, true, false)
+                stream.readAllBytes()
+                stream.close()
+                ow.test.assert(Number(borrowed.client.connectionPool().connectionCount()), 1, "Caller-owned pool is retained")
+                ow.test.assert(borrowed.get(url + "/ok").response.indexOf("true") >= 0, true, "Caller-owned client remains reusable")
+            } finally { borrowed.close() }
+        } finally {
+            ow.ai.__httpRequest = originalRequest
+            clients.forEach(client => client.close())
+            ow.server.httpd.stop(hs)
+        }
+    }
+
+    exports.testAIStreamingCallbackFailureClosesResponse = function() {
+        ow.loadAI()
+        var events = {
+            openai: 'data: {"choices":[{"delta":{"content":"x"}}]}\n\n',
+            gemini: 'data: {"candidates":[{"content":{"parts":[{"text":"x"}]}}]}\n\n',
+            ollama: '{"message":{"content":"x"},"done":false}\n',
+            anthropic: 'data: {"type":"content_block_delta","delta":{"text":"x"}}\n\n'
+        }
+        Object.keys(events).forEach(type => {
+            var model = new ow.ai.gpt(type, { key: "test-key", model: "fixture", url: "http://127.0.0.1:1" }).model
+            var input = af.fromString2InputStream(events[type]), closed = false, failure
+            var stream = new JavaAdapter(java.io.InputStream, {
+                read: function(bytes, offset, length) {
+                    return arguments.length === 0 ? input.read() : input.read(bytes, offset, length)
+                },
+                close: () => { closed = true; input.close() }
+            })
+            model._request = () => ({})
+            model._requestStream = () => stream
+            try { model.rawPromptStream("hello", __, __, false, [], () => { throw new Error("fixture callback failure") }) }
+            catch (e) { failure = String(e) }
+            ow.test.assert(isString(failure) && failure.indexOf("fixture callback failure") >= 0, true, type + " preserves callback failure")
+            ow.test.assert(closed, true, type + " closes stream when callback throws")
+        })
+    }
 })();

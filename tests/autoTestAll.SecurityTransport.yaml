@@ -1,7 +1,7 @@
 # Copyright 2026 Nuno Aguiar
 
 include:
-  - oJobTest.yaml
+  - autoTestAll.common.yaml
 
 jobs:
   - name: SecurityTransport::Init
@@ -9,12 +9,12 @@ jobs:
 
   - name: SecurityTransport::SMTP STARTTLS requirement
     from: SecurityTransport::Init
-    to  : oJob Test
+    to  : OpenAF Test
     exec: args.func = args.tests.testEmailTLSRequirement;
 
   - name: SecurityTransport::FTPS trust configuration
     from: SecurityTransport::Init
-    to  : oJob Test
+    to  : OpenAF Test
     exec: args.func = args.tests.testFTPSTrustConfiguration;
 
 todo:

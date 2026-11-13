@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 
 ojob:
    sequential: false
@@ -22,7 +22,15 @@ ojob:
 jobs:
    # RUN TESTS
    # ---------
+   - name: Initialize Results
+     exec: |
+       ow.loadTest()
+       ow.test.reset()
+       global.__testRunId = genUUID()
+       io.writeFileJSON("autoTestAll.results.json", {runId:global.__testRunId, complete:false});
+
    - name    : Run Tests
+     deps: [Initialize Results]
      type    : jobs
      typeArgs:
        file: autoTestAll.allJobs.yaml
@@ -30,53 +38,35 @@ jobs:
    # FINAL TEST RESULTS
    # ------------------
    - name: Results
-     from: oJob Test Results
      deps:
        - Run Tests
-     args: 
-       quiet: true
      exec: |
-       args.results.asserts = ow.test.getCountAssert()
-       tprint("Tests PASSED : {{pass}}/{{count}}", args.results);
-       tprint("Tests FAILED : {{fail}}/{{count}}", args.results);
-       tprint("Count asserts: {{asserts}}", args.results)
-       if (args.results.fail > 0) printErr("There are failed tests");
-
-       // Write a simple json result file
-       io.writeFile("autoTestAll.results.json", {
-         pass: args.results.pass,
-         fail: args.results.fail,
-         count: args.results.count,
-         asserts: args.results.asserts
+       var jobErrors = ow.oJob.getLogCh().getAll().filter(function(entry) {
+         return entry.error && (entry.ojobId === ow.oJob.getID() + "autoTestAll.allJobs.yaml" || entry.name === "Run Tests")
+       }).map(function(entry) {
+         return { name: "OJobError", phase: "scheduler", message: "Job failed: " + entry.name }
        })
+       var result = require("autoTestAll.reporting.js").summarize(ow.test.getResults(), global.__testRunId, jobErrors)
+       tprint("Tests PASSED : {{pass}}/{{count}}", result)
+       tprint("Tests FAILED : {{fail}}/{{count}}", result)
+       tprint("Tests SKIPPED: {{skip}}/{{count}}", result)
+       tprint("Count asserts: {{asserts}}", result)
+       if (result.exitCode !== 0) printErr("Test run failed or is incomplete")
 
-   - name: JUnit results
-     to  : oJob Generate JUnit XML
-     deps:
-       - Run Tests
-     exec: >
-       args.suitesName  = "Automatic OpenAF build test";
-       args.resultsFile = "autoTestAllResults.xml";
-       args.suitesId    = af.getVersion();
-       io.writeFileString("autoTestAll.md", ow.test.toMarkdown());
+       // Publish complete:true only after every report has been written.
+       io.writeFileString("autoTestAllResults.xml", ow.test.report.junit(result, af.getVersion(), "Automatic OpenAF build test"))
+       io.writeFileString("autoTestAll.md", ow.test.report.markdown(result))
+       io.writeFileString("autoTestAll.results.json", ow.test.report.json(result))
 
    - name: End
      deps:
-       - Run Tests
        - Results
-       - JUnit results
-     exec: >
-       sleep(1000);
-       exit(0);
+     exec: |
+       var result = io.readFileJSON("autoTestAll.results.json")
+       exit(result.runId === global.__testRunId && result.complete ? result.exitCode : 2)
 
 todo:
-   # Run tests
-   # ---------
+   - Initialize Results
    - Run Tests
-   
-   # Final results
-   # -------------
    - Results
-   - JUnit results
-   
    - End

@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
    - autoTestAll.ServerOAuth.yaml
 
 jobs:
@@ -13,108 +13,118 @@ jobs:
 
    - name: Server::Locks
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testLocks;
 
    - name: Server::REST server
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRESTServer;
 
    - name: Server::REST server NWU2
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRESTServerNWU2;
 
    - name: Server::REST server Java
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRESTServerJava;
 
    - name: Server::REST server simple
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRESTServer2;
 
    - name: Server::REST server simple NWU2
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRESTServer2NWU2;
 
    - name: Server::REST server simple Java
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRESTServer2Java;
 
    - name: Server::HTTP server 
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPServer;
 
    - name: Server::HTTP server NWU2
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPServerNWU2;
 
    - name: Server::HTTP server Java
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPServerJava;
 
    - name: Server::HTTP server prefix
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPServerPrefix;
 
    - name: Server::HTTP server prefix NWU2
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPServerPrefixNWU2;
 
    - name: Server::HTTP server prefix Java
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPServerPrefixJava;
 
    - name: Server::HTTP server prefix helpers
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPServerPrefixHelpers;
 
    - name: Server::HTTP file helper containment
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPFileHelperContainment;
 
    - name: Server::HTTP file browser Java containment
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPFileBrowseJava;
 
    - name: Server::Scheduler
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testScheduler;
 
    - name: Server::Auth
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testAuth;
 
    - name: Server::AuthApp
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testAuthApp;
 
    - name: Server::Queue
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testQueue;
 
    - name: Server::CheckIn
      from: Server::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testCheckIn;
+
+   - name: Server::HTTP file ranges and empty files
+     from: Server::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testHTTPFileRangesAndEmptyFiles
+
+   - name: Server::HTTP Java response streaming
+     from: Server::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testHTTPJavaResponseStreaming
 
 todo:
    # Server tests
@@ -141,3 +151,5 @@ todo:
    - Server::AuthApp
    - Server::Queue
    - Server::CheckIn
+   - Server::HTTP file ranges and empty files
+   - Server::HTTP Java response streaming

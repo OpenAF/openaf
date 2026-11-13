@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # HTTP tests
@@ -12,27 +12,27 @@ jobs:
 
    - name: HTTP::HTTP plugin basic functionality
      from: HTTP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTP;
 
    - name: HTTP::HTTP plugin web socket client
      from: HTTP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPWSClient;
 
    - name: HTTP::HTTP plugin test basic auth
      from: HTTP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testBasicAuth;
 
    - name: HTTP::HTTP changing user agent
      from: HTTP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testChangingUserAgent
 
    - name: HTTP::Persistent query state
      from: HTTP::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testHTTPPersistentQueryState;
 
 todo:

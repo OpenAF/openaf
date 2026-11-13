@@ -149,7 +149,42 @@ OpenWrap.oJob = function(isNonLocal) {
 	return this;
 };
 
+// A load graph owns one thread-local budget; concurrent loads cannot reset each other.
+OpenWrap.oJob.prototype.__remoteLoadContext = new java.lang.ThreadLocal()
+OpenWrap.oJob.prototype.__withRemoteLoadBudget = function(fn, enterFile) {
+	var context = this.__remoteLoadContext.get(), owner = isNull(context), entered = false
+	if (owner) {
+		var limit = function(name, fallback) {
+			var value = Number(java.lang.System.getProperty("openaf.ojob." + name, String(fallback)))
+			if (!isFinite(value) || Math.floor(value) != value || value < 1 || value > 2147483646) throw "Invalid oJob download limit: " + name
+			return value
+		}
+		context = { bytes: 0, requests: 0, files: 0, depth: 0,
+			fileLimit: limit("maxRemoteBytes", 8 * 1024 * 1024),
+			totalLimit: limit("maxRemoteTotalBytes", 32 * 1024 * 1024),
+			requestLimit: limit("maxRemoteRequests", 128),
+			loadLimit: limit("maxLoadFiles", 256), depthLimit: limit("maxIncludeDepth", 64),
+			timeout: limit("remoteTimeoutMs", 30000) }
+		this.__remoteLoadContext.set(context)
+	}
+	try {
+		if (enterFile) {
+			context.files++
+			context.depth++
+			entered = true
+			if (context.files > context.loadLimit || context.depth > context.depthLimit) throw "oJob include budget exceeded"
+		}
+		return fn(context)
+	} finally {
+		if (entered) context.depth--
+		if (owner) this.__remoteLoadContext.remove()
+	}
+}
+
 OpenWrap.oJob.prototype.__readAuthorizedRemoteBytes = function(aURL) {
+	var parent = this
+	return this.__withRemoteLoadBudget(function(budget) {
+	var deadline = java.lang.System.nanoTime() + budget.timeout * 1000000
 	var current = String(aURL)
 	var initialURL = new java.net.URL(current), initialUserInfo = initialURL.getUserInfo(), initialPort = initialURL.getPort() >= 0 ? initialURL.getPort() : initialURL.getDefaultPort()
 	var user, pass
@@ -158,21 +193,27 @@ OpenWrap.oJob.prototype.__readAuthorizedRemoteBytes = function(aURL) {
 		pass = String(java.net.URLDecoder.decode(String(initialUserInfo).substring(String(initialUserInfo).indexOf(":") + 1), "UTF-8"))
 	}
 	for (var redirects = 0; redirects <= 10; redirects++) {
+		if (++budget.requests > budget.requestLimit) throw "oJob remote request budget exceeded"
+		var remainingMs = Math.ceil((deadline - java.lang.System.nanoTime()) / 1000000)
+		if (remainingMs <= 0) throw "oJob remote download deadline exceeded"
 		var currentURL = new java.net.URL(current)
 		if (!String(currentURL.getProtocol()).match(/^https?$/i)) throw "Unauthorized URL scheme: " + current
-		if (this.authorizedDomains.indexOf(String(currentURL.getHost())) < 0) throw "Unauthorized URL redirect: " + current
+		if (parent.authorizedDomains.indexOf(String(currentURL.getHost())) < 0) throw "Unauthorized URL redirect: " + current
 
-		var http = ow.loadObj().rest.connectionFactory()
+		var http = ow.loadObj().rest.connectionFactory(), stream
 		try {
-			http.client = http.client.newBuilder().followRedirects(false).followSslRedirects(false).build()
+			http.client = http.client.newBuilder().followRedirects(false).followSslRedirects(false)
+				.connectTimeout(remainingMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.readTimeout(remainingMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.callTimeout(remainingMs, java.util.concurrent.TimeUnit.MILLISECONDS).build()
 			var currentPort = currentURL.getPort() >= 0 ? currentURL.getPort() : currentURL.getDefaultPort()
 			if (isDef(user) && String(currentURL.getProtocol()).toLowerCase() == String(initialURL.getProtocol()).toLowerCase() &&
 				String(currentURL.getHost()).toLowerCase() == String(initialURL.getHost()).toLowerCase() && currentPort == initialPort) {
 				http.login(user, pass, false, current)
 			}
 			http.setThrowExceptions(false)
-			var response = http.getBytes(current)
-			var code = response.responseCode
+			stream = http.getStream(current)
+			var code = http.responseCode()
 			if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
 				var location = http._response.header("Location")
 				if (isNull(location)) throw "HTTP redirect without Location for URL: " + current
@@ -180,15 +221,29 @@ OpenWrap.oJob.prototype.__readAuthorizedRemoteBytes = function(aURL) {
 				continue
 			}
 			if (code >= 300) throw "HTTP response code " + code + " for URL: " + current
-			return response.responseBytes
+			var allowed = Math.min(budget.fileLimit, budget.totalLimit - budget.bytes)
+			var declared = Number(http._response.body().contentLength())
+			if (declared > allowed) throw "oJob remote byte budget exceeded"
+			// The HTTP stream is decoded (including transparent gzip); length is only a hint.
+			var bytes = stream.readNBytes(allowed + 1)
+			if (bytes.length > allowed) throw "oJob remote byte budget exceeded"
+			budget.bytes += bytes.length
+			return bytes
 		} finally {
+			try { if (isDef(stream)) stream.close() } catch(e) {}
 			try { http.close() } catch(e) {}
 		}
 	}
 	throw "Too many HTTP redirects for URL: " + aURL
+	})
 }
 
-OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath, aContentCallback) {
+OpenWrap.oJob.prototype.verifyIntegrity = function() {
+	var parent = this, args = arguments
+	return this.__withRemoteLoadBudget(function() { return parent.__verifyIntegrityBudgeted.apply(parent, args) }, false)
+}
+
+OpenWrap.oJob.prototype.__verifyIntegrityBudgeted = function(aFileOrPath, aContentCallback) {
 	_$(aFileOrPath, "aFileOrPath").isString().$_();
 	
 	var isUrl = false;
@@ -278,6 +333,130 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath, aContentCallback
 	}
 };
 
+// Compile each dependency subtree into a sparse affine transformation of the scores.
+// This preserves the legacy ordered score updates without expanding shared DAG paths.
+// Integer coefficients also avoid rounding and overflow changing priority or stable ties.
+OpenWrap.oJob.prototype.__dependencyScores = function(jobs) {
+  var zero = java.math.BigInteger.ZERO, one = java.math.BigInteger.ONE
+  var names = [], ids = Object.create(null), first = Object.create(null), graph = []
+  function key(name) {
+    name = String(name)
+    if (isUnDef(ids[name])) { ids[name] = names.length; names.push(name) }
+    return ids[name]
+  }
+  jobs.forEach(function(job, i) {
+    key(job.name)
+    if (isUnDef(first[job.name])) first[job.name] = i
+  })
+  jobs.forEach(function(job) {
+    var edges = []
+    ;['from', 'earlier', 'to', 'then', 'deps'].forEach(function(field) {
+      var dependencies = job[field]
+      if (isUnDef(dependencies) || dependencies == null) return
+      ;(isString(dependencies) ? [dependencies] : dependencies).forEach(function(dependency) {
+        var name = isString(dependency) ? dependency : dependency.name
+        edges.push({ key:key(name), node:first[name] })
+      })
+    })
+    graph.push(edges)
+  })
+  var state = [], order = []
+  jobs.forEach(function(job, root) {
+    if (state[root] == 2) return
+    var stack = [{node:root,next:0}]
+    state[root] = 1
+    while (stack.length > 0) {
+      var frame = stack[stack.length - 1], edges = graph[frame.node]
+      if (frame.next < edges.length) {
+        var child = edges[frame.next++].node
+        if (isUnDef(child) || state[child] == 2) continue
+        if (state[child] == 1) throw new Error('Cyclic job dependency: ' + stack.map(function(f) { return jobs[f.node].name }).concat([jobs[child].name]).join(' -> '))
+        state[child] = 1
+        stack.push({node:child,next:0})
+      } else {
+        order.push(frame.node)
+        state[frame.node] = 2
+        stack.pop()
+      }
+    }
+  })
+  var visits = [], maxVisits = 0
+  order.forEach(function(node) {
+    var count = 1
+    graph[node].forEach(function(edge) { if (isDef(edge.node)) count = Math.min(8193, count + visits[edge.node]) })
+    visits[node] = count
+    maxVisits = Math.max(maxVisits, count)
+  })
+  // Avoid matrix construction for ordinary chains and bounded, lightly shared subtrees.
+  // Each subtree expands at most 8192 calls here unless the entire graph has no branching.
+  if (maxVisits <= 8192 || graph.every(function(edges) { return edges.length <= 1 })) {
+    var direct = names.map(function() { return zero })
+    jobs.forEach(function(job, root) {
+      var stack = [{node:root,next:0}]
+      direct[key(job.name)] = direct[key(job.name)].add(one)
+      while (stack.length > 0) {
+        var frame = stack[stack.length - 1], edges = graph[frame.node]
+        if (frame.next >= edges.length) { stack.pop(); continue }
+        var edge = edges[frame.next++]
+        direct[edge.key] = direct[edge.key].add(direct[key(jobs[frame.node].name)])
+        if (isDef(edge.node)) {
+          direct[edge.key] = direct[edge.key].add(one)
+          stack.push({node:edge.node,next:0})
+        }
+      }
+    })
+    var result = Object.create(null)
+    names.forEach(function(name, i) { result[name] = direct[i] })
+    return result
+  }
+  var identity = names.map(function(name, i) {
+    var terms = {}; terms[i] = one
+    return {constant:zero,terms:terms}
+  })
+  function add(target, source, coefficient) {
+    target.constant = target.constant.add(source.constant.multiply(coefficient))
+    Object.keys(source.terms).forEach(function(i) {
+      var value = source.terms[i].multiply(coefficient)
+      target.terms[i] = isDef(target.terms[i]) ? target.terms[i].add(value) : value
+    })
+  }
+  var transforms = []
+  order.forEach(function(node) {
+    var rows = {}, own = key(jobs[node].name)
+    rows[own] = {constant:one,terms:identity[own].terms}
+    graph[node].forEach(function(edge) {
+      var sum = {constant:zero,terms:{}}
+      add(sum, rows[edge.key] || identity[edge.key], one)
+      add(sum, rows[own], one)
+      rows[edge.key] = sum
+      if (isUnDef(edge.node)) return
+      var child = transforms[edge.node], next = {}
+      Object.keys(child).forEach(function(target) {
+        var expression = child[target], result = {constant:expression.constant,terms:{}}
+        Object.keys(expression.terms).forEach(function(input) {
+          add(result, rows[input] || identity[input], expression.terms[input])
+        })
+        next[target] = result
+      })
+      Object.keys(next).forEach(function(target) { rows[target] = next[target] })
+    })
+    transforms[node] = rows
+  })
+  var values = names.map(function() { return zero })
+  jobs.forEach(function(job, node) {
+    var next = {}, rows = transforms[node]
+    Object.keys(rows).forEach(function(target) {
+      var expression = rows[target], value = expression.constant
+      Object.keys(expression.terms).forEach(function(input) { value = value.add(expression.terms[input].multiply(values[input])) })
+      next[target] = value
+    })
+    Object.keys(next).forEach(function(target) { values[target] = next[target] })
+  })
+  var scores = Object.create(null)
+  names.forEach(function(name, i) { scores[name] = values[i] })
+  return scores
+}
+
 /**
  * <odoc>
  * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, init, help)</key>
@@ -289,6 +468,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	ojob = _$(ojob).isMap().default({});
 
 	if (isUnDef(jobs)) jobs = [];
+  // Explicit test seam, installed only in an isolated test worker.
+  if (this.__testTransform) jobs = jobs.map(this.__testTransform)
 	if (isUnDef(todo)) todo = [];
 	this.__ojob = merge(this.__ojob, ojob);
 	if (isMap(help) && !compare(help, {})) this.__help = help;
@@ -308,42 +489,9 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 
 	if (isDef(init)) this.init = init;
 	
-	// Calculate dependencies
-	var mdeps = {};
-	function depsScore(v) {
-		//if (isString(v)) v = $path(jobs, "[?name==`" + v + "`] | @[0]");
-		if (isString(v)) v = $from(jobs).useCase(true).equals("name", v).at(0);
-		if (v == null || isUnDef(v)) return;
-
-		var s = v.name; 
-		if (isDef(mdeps[s])) {
-			mdeps[s] += 1;
-			
-			var depsScore2 = (vvv) => { 
-				if (isString(vvv)) {
-					if (vvv === v.name) logWarn("Suspicious recursive relation in job " + v.name);
-					mdeps[vvv] = (isDef(mdeps[vvv]) ? mdeps[vvv] : 0) + mdeps[s];
-					depsScore(vvv);
-				} else {
-					if (vvv.name === v.name) logWarn("Suspicious recursive relation in job " + v.name);
-					mdeps[vvv.name] = (isDef(mdeps[vvv.name]) ? mdeps[vvv.name] : 0) + mdeps[s];
-					depsScore(vvv.name);
-				}
-			};
-
-			if (isObject(v) && !isString(v)) {
-				if (isDef(v.from) && v.from != null)       (isString(v.from) ? depsScore2(v.from) : v.from.forEach(depsScore2));
-				if (isDef(v.earlier) && v.earlier != null) (isString(v.earlier) ? depsScore2(v.earlier) : v.earlier.forEach(depsScore2));
-				if (isDef(v.to) && v.to != null)           (isString(v.to) ? depsScore2(v.to) : v.to.forEach(depsScore2));
-				if (isDef(v.then) && v.then != null)       (isString(v.then) ? depsScore2(v.then) : v.then.forEach(depsScore2));
-				if (isDef(v.deps) && v.deps != null)       (isString(v.deps) ? [ v.deps ].forEach(depsScore2) : v.deps.forEach(depsScore2));
-			}
-		}
-	};
 
 	var parent = this
 	jobs.forEach((v, i) => { 
-		mdeps[v.name] = 0
 
 		// Helpers
 		if (isDef(jobs[i].execFile)) {
@@ -363,10 +511,10 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		if (isArray(jobs[i].earlier)) jobs[i].earlier = jobs[i].earlier.map(r => parent.parseTodo(r))
 		if (isArray(jobs[i].then))    jobs[i].then    = jobs[i].then.map(r => parent.parseTodo(r))
 	})
-	jobs.forEach(depsScore);
+	var mdeps = this.__dependencyScores(jobs)
 
 	var sjobs = jobs.sort((a, b) => {
-		return mdeps[b.name] - mdeps[a.name];
+		return Number(mdeps[b.name].compareTo(mdeps[a.name]))
 	});
 
 	// Add jobs
@@ -603,7 +751,12 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
  * Loads aJSON oJob configuration and returns the processed map (with all includes processed).
  * </odoc>
  */
-OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos, dontLoadJobs) {
+OpenWrap.oJob.prototype.loadJSON = function() {
+	var parent = this, args = arguments
+	return this.__withRemoteLoadBudget(function() { return parent.__loadJSONBudgeted.apply(parent, args) }, false)
+}
+
+OpenWrap.oJob.prototype.__loadJSONBudgeted = function(aJSON, dontLoadTodos, dontLoadJobs) {
 	if (!isMap(aJSON)) return {};
 	var res = aJSON;
 	var parent = this
@@ -911,7 +1064,12 @@ OpenWrap.oJob.prototype.__readCachedFile = function(aPath, aReadFn) {
 	return clone(parsed)
 }
 
-OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
+OpenWrap.oJob.prototype.__loadFile = function() {
+	var parent = this, args = arguments
+	return this.__withRemoteLoadBudget(function() { return parent.__loadFileBudgeted.apply(parent, args) }, true)
+}
+
+OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isInclude) {
 	var res = {}, parent = this, validation = false, signatureRejected = false, verifiedContent, aOrigFile = aFile;
 
 	function _readRemoteBytes(url) {
@@ -1646,6 +1804,13 @@ OpenWrap.oJob.prototype.add2Todo = function(aTodo, aId) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anException, aId, aTypeArgs) {
+  if (this.__testObserver) this.__testObserver({
+    type: "job.log",
+    operation: aOp,
+    job: aJobName,
+    executionId: aJobExecId,
+    error: isDef(anException) ? String(anException) : undefined
+  })
 	var aId = (isDef(aId) ? aId : "");
 	var itsAnError = false
 		
@@ -2664,6 +2829,12 @@ OpenWrap.oJob.prototype.getState = function(altId) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.setState = function(aState, altId) {
+  if (this.__testObserver) this.__testObserver({
+    type: "state.transition",
+    previous: this.getState(altId),
+    state: String(aState),
+    id: altId
+  })
 	altId = _$(altId, "altId").isString().default("")
 	$set("ojob::state::" + this.getID() + altId, String(aState))
 }
@@ -2805,10 +2976,50 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 	}
 
   function _run(aExec, args, job, id) {
-    var ins = ow.instrumentation;
-    if (!ins || !ins.isEnabled("jobs")) return _runBody(aExec, args, job, id);
-    var execute = function() { return ins.withSpan("ojob " + job.name, { attributes: { "ojob.name": job.name, "ojob.type": job.type || "simple" } }, function() { return _runBody(aExec, args, job, id); }); };
-    return ["periodic", "subscribe", "shutdown"].indexOf(job.type) >= 0 ? ins.withContext(undefined, execute) : execute();
+    var ins = ow.instrumentation, observer = parent.__testObserver
+    var invoke = function() {
+      if (!ins || !ins.isEnabled("jobs")) return _runBody(aExec, args, job, id)
+      var execute = function() {
+        return ins.withSpan("ojob " + job.name, {
+          attributes: {
+            "ojob.name": job.name,
+            "ojob.type": job.type || "simple"
+          }
+        }, function() {
+          return _runBody(aExec, args, job, id)
+        })
+      }
+      return ["periodic", "subscribe", "shutdown"].indexOf(job.type) >= 0 ? ins.withContext(undefined, execute) : execute()
+    }
+    if (!observer) return invoke()
+    var executionId = String(java.util.UUID.randomUUID()), start = nowNano()
+    observer({
+      type: "job.start",
+      executionId: executionId,
+      job: job.name,
+      args: args
+    })
+    try {
+      var result = invoke()
+      observer({
+        type: "job.end",
+        executionId: executionId,
+        job: job.name,
+        args: isDef(resExec) ? resExec : args,
+        durationMs: (nowNano() - start) / 1000000
+      })
+      return result
+    }
+    catch (e) {
+      observer({
+        type: "job.error",
+        executionId: executionId,
+        job: job.name,
+        error: String(e),
+        durationMs: (nowNano() - start) / 1000000
+      })
+      throw e
+    }
   }
 	function _runBody(aExec, args, job, id) {
 		if (isDef(aJob.typeArgs.noTemplateArgs)) noTemplateArgs = aJob.typeArgs.noTemplateArgs; else noTemplateArgs = !parent.__ojob.templateArgs
@@ -4293,6 +4504,8 @@ OpenWrap.oJob.prototype.runLanguageProcess = function(command, options) {
   var request = { command: command };
   if (isDef(options.pwd)) request.cwd = _$(options.pwd, "pwd").isString().$_();
   if (isDef(options.env)) request.env = _$(options.env, "env").isMap().$_();
+  if (isDef(options.maxOutputBytes)) request.maxOutputBytes = options.maxOutputBytes
+  if (isDef(options.clearEnvironment)) request.clearEnvironment = options.clearEnvironment
   if (isDef(options.timeout)) {
     if (!isNumber(options.timeout) || !isFinite(options.timeout) || options.timeout <= 0) throw new Error("Language timeout must be positive milliseconds");
     request.timeout = Math.max(1, Math.ceil(options.timeout));

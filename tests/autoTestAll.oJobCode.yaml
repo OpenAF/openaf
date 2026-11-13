@@ -1,5 +1,5 @@
 include:
-- oJobTest.yaml
+- autoTestAll.common.yaml
 
 jobs:
 - name: oJobCode::Init
@@ -7,17 +7,17 @@ jobs:
 
 - name: oJobCode::EmbeddedCall
   from: oJobCode::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testEmbeddedBodyWithFunctionCall;
 
 - name: oJobCode::EmbeddedAssignment
   from: oJobCode::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testEmbeddedBodyWithoutFunctionCall;
 
 - name: oJobCode::EmbeddedModule
   from: oJobCode::Init
-  to: oJob Test
+  to: OpenAF Test
   exec: args.func = args.tests.testEmbeddedModuleStillRequires;
 
 todo:

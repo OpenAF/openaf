@@ -20,7 +20,11 @@ jobs:
      - Build OpenAFOS
      exec  : |
         log("Repacking...");
-        $sh().envs({ __OAF_MAINCLASS: "openaf.Launcher" }, true).sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "--repack"]).exec()
+        var result = $sh().envs({ __OAF_MAINCLASS: "openaf.Launcher" }, true).sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "--repack"]).exec(0)
+        if (result.exitcode != 0) {
+          logErr("Repack failed: " + result.stderr + result.stdout)
+          exit(1)
+        }
 
         var isOk = false, init = now()
         do {
@@ -28,18 +32,22 @@ jobs:
           if (!io.fileExists(global.path + "/openaf.jar.tmp")) isOk = true
         } while (!isOk && now() - init < 60000)
 
+        if (!isOk) {
+          logErr("Repack did not finish within 60 seconds")
+          exit(1)
+        }
         log("Repacked.")
 
    # Copy OpenAF to the right place for use
    - name  : Copy OpenAF
      deps  :
+     - Prepare shell complete
      - Prepare ojob saved 
      - Prepare ojob doc
      - Build OpenAFOS
      - Repack OpenAFOS
-     exec  : >
+     exec  : |
         log("Copying...");
-        //sh("cp " + global.path + "/openaf.jar " + global.path + "/dist/openaf.jar", "", undefined, true);
         io.mkdir(global.path + "/dist");
         io.cp(global.path + "/openaf.jar", global.path + "/dist/openaf.jar");
 
@@ -47,6 +55,7 @@ jobs:
    - name : Prepare ojob doc
      deps :
      - Repack OpenAFOS
+     - Prepare ojob saved
      exec : |
        sleep(1000, true)
 
@@ -90,6 +99,7 @@ jobs:
               zip.close()
             } catch(e) {
               logErr("Error copying " + from + " to (openaf.jar)" + to + ": " + e)
+              exit(1)
             }
           }
           try {
@@ -99,6 +109,7 @@ jobs:
             zip.close()
           } catch(e) {
             logErr("Error copying " + from + " to (openaf.jar.orig)" + to + ": " + e)
+            exit(1)
           }
        }
 
@@ -141,8 +152,12 @@ jobs:
      exec : |
        sleep(1000, true)
 
-       $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "-c", "ow.loadOJob();__flags.OJOB_CHECK_JOB_CHANGES=false;oJobRunFile('" + global.path + "/ojob.json');io.writeFileJSON('" + global.path + "/ojob.saved.json',$ch('oJob::jobs').getAll(), '')"])
-       .exec()
+       var result = $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "-c", "ow.loadOJob();__flags.OJOB_CHECK_JOB_CHANGES=false;oJobRunFile('" + global.path + "/ojob.json');io.writeFileJSON('" + global.path + "/ojob.saved.json',$ch('oJob::jobs').getAll(), '')"])
+       .exec(0)
+       if (result.exitcode != 0) {
+         logErr("Generating saved jobs failed: " + result.stderr + result.stdout)
+         exit(1)
+       }
        
        plugin("ZIP")
        var zip = new ZIP()
@@ -153,6 +168,19 @@ jobs:
        is = io.readFileStream(global.path + "/ojob.saved.json")
        zip.streamPutFileStream(global.path + "/openaf.jar.orig", "ojob.saved.json", is)
        is.close()
+
+   # ----------------------------
+   - name : Generate ODoc reference
+     deps :
+     - Repack OpenAFOS
+     exec : |
+       log("Generating ODoc reference...")
+       var result = $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "--ojob", "-e",
+          global.path + "/genODocReference.yaml dirs=js,src output=docs/ref"]).pwd(global.path).get(0)
+       if (result.exitcode != 0) {
+         logErr("Generating ODoc reference failed: " + result.stderr + result.stdout)
+         exit(1)
+       }
 
    # --------------------
    - name : Check pom.xml
@@ -165,6 +193,7 @@ todo:
 - Prepare ojob saved
 - Prepare ojob doc
 - Prepare shell complete
+- Generate ODoc reference
 - Build OpenAFOS
 - Repack OpenAFOS
 - Copy OpenAF

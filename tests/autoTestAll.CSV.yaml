@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # ow.ai tests
@@ -12,27 +12,27 @@ jobs:
 
    - name: CSV::Generic CSV
      from: CSV::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testCSV;
 
    - name: CSV::Generic $CSV
      from: CSV::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.test$CSV
 
    - name: CSV::Stream CSV
      from: CSV::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testStreamCSV;
 
    - name: CSV::ToFrom CSV
      from: CSV::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testToFromArrayCSV;
 
    - name: CSV::ToFrom $CSV
      from: CSV::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testToFromArray$CSV
 
 todo:

@@ -1,0 +1,13 @@
+# Shared execution for the repository's YAML test jobs.
+include:
+  - oJobTest.yaml
+
+jobs:
+  - name: OpenAF Test
+    exec: |
+      ow.loadTest()
+      // Record missing exports as errors instead of losing them in the oJob log.
+      ow.test.execute(job.name, function(c) {
+        if (!isFunction(args.func)) throw new Error("Missing test function for " + job.name)
+        return args.func(c)
+      }, Object.assign({}, args.testOptions || {}, { failurePolicy: "record" }))

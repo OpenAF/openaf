@@ -5,6 +5,8 @@ import java.io.IOException;
 import jline.console.ConsoleReader;
 
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
@@ -87,6 +89,22 @@ public class Console extends ScriptableObject {
 		
 		return cr.readLine(prompt, c);		
 	}
+
+    /** <odoc>
+     * <key>Console.readLinePromptPolling(aPrompt, aMaskchar, aOnIdle, aPollInterval) : String</key>
+     * Reads with normal line editing while calling aOnIdle on the reading thread.
+     * Returning false cancels with null. aPollInterval is a positive millisecond interval.
+     * Exceptions propagate after terminal restoration; no background reader is started.
+     * </odoc> */
+    @JSFunction
+    public String readLinePromptPolling(String prompt, String maskChar, Function onIdle, double interval) throws IOException {
+        if (onIdle == null || !Double.isFinite(interval) || interval < 1 || interval > Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Callback and positive polling interval required");
+        Character mask = maskChar == null || maskChar.isEmpty() || "undefined".equals(maskChar)
+            ? null : Character.valueOf(maskChar.charAt(0));
+        return cr.readLine(prompt, mask, () -> !Boolean.FALSE.equals(onIdle.call(
+            Context.getCurrentContext(), onIdle.getParentScope(), onIdle.getParentScope(), new Object[0])), (long) interval);
+    }
 	
 	/**
 	 * <odoc>

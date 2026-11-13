@@ -1,10 +1,14 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-- oJobTest.yaml
+- autoTestAll.MCPOAuth.yaml
+- autoTestAll.common.yaml
+- autoTestAll.Test.yaml
 - autoTestAll.Desktop.yaml
 - autoTestAll.DesktopTUI.yaml
+- autoTestAll.Interact.yaml
 - autoTestAll.Generic.yaml
+- autoTestAll.nLinq.yaml
 - autoTestAll.Path.yaml
 - autoTestAll.Jq.yaml
 - autoTestAll.Joni.yaml
@@ -13,7 +17,7 @@ include:
 - autoTestAll.IO.yaml
 - autoTestAll.StreamConversions.yaml
 - autoTestAll.StreamConsumers.yaml
-- autoTestAll.DB.yaml   
+- autoTestAll.DB.yaml
 - autoTestAll.HTTP.yaml
 - autoTestAll.Net.yaml
 - autoTestAll.Java.yaml
@@ -21,12 +25,13 @@ include:
 - autoTestAll.Channels.yaml
 - autoTestAll.Template.yaml
 - autoTestAll.oDoc.yaml
+- autoTestAll.ODocReference.yaml
 - autoTestAll.AI.yaml
 - autoTestAll.AIDecisions.yaml
 - autoTestAll.Python.yaml
 - autoTestAll.Server.yaml
 - autoTestAll.Schema.yaml
-- autoTestAll.Obj.yaml   
+- autoTestAll.Obj.yaml
 - autoTestAll.JMX.yaml
 - autoTestAll.ZIP.yaml
 - autoTestAll.Compile.yaml

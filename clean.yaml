@@ -43,6 +43,7 @@ jobs:
     // Explicit names keep test sources, fixtures and benchmark baselines intact.
     var outputs = [
       "autoTestAll.results.json", "autoTestAllResults.xml", "autoTestAll.md",
+      "framework-results.json", ".openaf_precompiled",
       "results.svg", "asserts.svg", "languages-results.json", "data-file.json",
       "autoTestAll.test", "autoTestAll.txt", "autoTestAll.xml", "autoTestAll.xlsx",
       "autoTestAll.gz", "autoTestAll.jar", "autoTestAll.zip",
@@ -53,8 +54,10 @@ jobs:
       "server.pid", "test_checkin.pid"
     ].map(function(name) { return "tests/" + name; });
     io.listFiles(root + "/tests").files.forEach(function(file) {
-      // The DB persistence test uses a timestamp followed by .test.
-      if (/^\d{14}\.test(?:\.(?:mv\.db|trace\.db|lock\.db))?$/.test(file.filename)) {
+      // The DB test's day-of-year date format produces 14 or 15 digits.
+      var dbOutput = /^\d{14,15}\.test(?:\.(?:mv\.db|trace\.db|lock\.db))?$/.test(file.filename)
+      var mcpOutput = /^ojob_mcp_tpldesc_[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\.yaml$/i.test(file.filename)
+      if (file.isFile && (dbOutput || mcpOutput)) {
         outputs.push("tests/" + file.filename);
       }
     });
@@ -68,3 +71,19 @@ jobs:
       print((dryrun ? "Would remove " : "Removing ") + name);
       if (!dryrun && !io.rm(target)) throw "Could not remove " + target;
     });
+    // Remove these leftover directories only when empty, without following links.
+    var emptyDirectories = {}
+    ;["tests/private/tmp", "tests/private"].forEach(function(name) {
+      var target = root + "/" + name
+      var directory = new java.io.File(target)
+      if (!directory.isDirectory() || String(directory.getCanonicalPath()).replace(/\\/g, "/") !== target) return
+      var children = directory.list()
+      if (children === null) throw "Could not list " + target
+      for (var i = 0; i < children.length; i++) {
+        if (!emptyDirectories[name + "/" + children[i]]) return
+      }
+      print((dryrun ? "Would remove " : "Removing ") + name)
+      // File.delete is nonrecursive and fails if new contents appeared meanwhile.
+      if (!dryrun && !directory.delete()) throw "Could not remove empty directory " + target
+      emptyDirectories[name] = true
+    })

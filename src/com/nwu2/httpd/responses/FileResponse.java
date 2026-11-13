@@ -222,48 +222,59 @@ public class FileResponse extends Response {
 			if (mime == null)
 				mime = Codes.MIME_DEFAULT_BINARY;
 
-			// Support (simple) skipping:
-			long startFrom = 0;
-			String range = header.get("range");
-				if (range != null) {
-					if (range.startsWith("bytes=")) {
-						range = range.substring("bytes=".length());
-						int minus = range.indexOf('-');
-						if (minus > 0)
-							range = range.substring(0, minus);
-						try {
-							startFrom = Long.parseLong(range);
-						} catch (NumberFormatException nfe) {
-						}
-					}
-				}
-				if (startFrom < 0 || startFrom >= f.length()) {
-					return new com.nwu2.httpd.responses.SimpleResponse(httpd,
-							com.nwu2.httpd.NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE, Codes.MIME_PLAINTEXT,
-							"Requested Range Not Satisfiable");
-				}
-
-				FileInputStream fis = null;
-				boolean success = false;
-				try {
-					fis = new FileInputStream(f);
-					fis.skip(startFrom);
-					com.nwu2.httpd.responses.Response r = new com.nwu2.httpd.responses.SimpleResponse(
-							httpd, Codes.HTTP_OK, mime, fis);
-					r.addHeader("Content-length", "" + (f.length() - startFrom));
-					r.addHeader("Content-range", "" + startFrom + "-"
-							+ (f.length() - 1) + "/" + f.length());
-					success = true;
-					return r;
-				} finally {
-					if (!success && fis != null) {
-						try {
-							fis.close();
-						} catch (IOException e) {
-							// Ignored: best-effort to close stream on failure
-						}
-					}
-				}
+            long fileLength = f.length();
+            long startFrom = 0;
+            long endAt = fileLength - 1;
+            boolean partial = false;
+            String range = header.get("range");
+            // Unsupported units and multiple ranges are ignored, returning the complete representation.
+            if (range != null && range.startsWith("bytes=") && range.indexOf(',') < 0) {
+                String value = range.substring(6).trim();
+                boolean valid = value.matches("[0-9]*-[0-9]*") && !value.equals("-") && fileLength > 0;
+                if (valid) {
+                    int dash = value.indexOf('-');
+                    try {
+                        if (dash == 0) {
+                            long suffix = Long.parseLong(value.substring(1));
+                            valid = suffix > 0;
+                            startFrom = Math.max(0, fileLength - suffix);
+                        } else {
+                            startFrom = Long.parseLong(value.substring(0, dash));
+                            if (dash < value.length() - 1) endAt = Math.min(endAt, Long.parseLong(value.substring(dash + 1)));
+                            valid = startFrom < fileLength && endAt >= startFrom;
+                        }
+                    } catch (NumberFormatException e) {
+                        valid = false;
+                    }
+                }
+                if (!valid) {
+                    Response response = new SimpleResponse(httpd,
+                            com.nwu2.httpd.NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE,
+                            Codes.MIME_PLAINTEXT, "Requested Range Not Satisfiable");
+                    response.addHeader("Content-Range", "bytes */" + fileLength);
+                    return response;
+                }
+                partial = true;
+            }
+            long contentLength = partial ? endAt - startFrom + 1 : fileLength;
+            FileInputStream fis = new FileInputStream(f);
+            boolean transferred = false;
+            try {
+                fis.skipNBytes(startFrom);
+                java.io.InputStream data = org.apache.commons.io.input.BoundedInputStream.builder()
+                        .setInputStream(fis).setMaxCount(contentLength).setPropagateClose(true).get();
+                Response response = new SimpleResponse(httpd, partial ?
+                        com.nwu2.httpd.NanoHTTPD.Response.Status.PARTIAL_CONTENT : Codes.HTTP_OK, mime, fis);
+                response.data = data;
+                response.size = contentLength;
+                response.addHeader("Accept-Ranges", "bytes");
+                response.addHeader("Content-Length", String.valueOf(contentLength));
+                if (partial) response.addHeader("Content-Range", "bytes " + startFrom + "-" + endAt + "/" + fileLength);
+                transferred = true;
+                return response;
+            } finally {
+                if (!transferred) fis.close();
+            }
 			} catch (IOException ioe) {
 				return new com.nwu2.httpd.responses.SimpleResponse(httpd,
 						Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
@@ -312,7 +323,13 @@ public class FileResponse extends Response {
 		this.status = r.status;
 		this.mimeType = r.mimeType;
 		this.header = r.header;
-		this.data = r.data;
+		this.size = r.size;
+		if (request.getMethod() == Request.MethodType.HEAD) {
+            org.apache.commons.io.IOUtils.closeQuietly(r.data);
+            this.data = java.io.InputStream.nullInputStream();
+        } else {
+            this.data = r.data;
+        }
 	}
 
 

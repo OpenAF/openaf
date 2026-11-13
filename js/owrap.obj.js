@@ -978,7 +978,8 @@ OpenWrap.obj.prototype.pool = {
 								parent.__currentFree--;
 							} else {
 								r++;
-								if (r <= parent.__retry) i = 0;
+								if (r > parent.__retry) throw "No available objects in pool."
+								i = 0
 							}
 						} else {
 							i++;
@@ -1062,12 +1063,13 @@ OpenWrap.obj.prototype.pool = {
 				var parent = this;
 
 				var i = 0;
-				while(parent.__pool[i].obj != obj && i < parent.__pool.length) {
+				while(i < parent.__pool.length && parent.__pool[i].obj != obj) {
 					i++;
 				}
 				if (i == parent.__pool.length) return;
 
 				try { parent.__close(parent.__pool[i].obj) } catch (e) {}
+				if (!parent.__pool[i].inUse) parent.__currentFree--
 				delete parent.__pool[i];
 				parent.__currentSize--;
 				loadLodash();
@@ -1333,7 +1335,8 @@ OpenWrap.obj.prototype.big = {
 					uuid = existing;
 					
 					delete this.internalData[uuid];
-					delete this.internalIndex[hash];
+					this.internalIndex[hash] = this.internalIndex[hash].filter(entry => entry.u != uuid)
+					if (this.internalIndex[hash].length == 0) delete this.internalIndex[hash]
 				}
 			}, 
 			
@@ -1402,7 +1405,7 @@ OpenWrap.obj.prototype.big = {
 			 * </odoc>
 			 */
 			getSize: function() {
-				return Object.keys(this.__getIndex()).length;
+				return Object.keys(this.__getData()).length
 			},
 			
 			getByID: function(aId) {
@@ -4403,3 +4406,132 @@ OpenWrap.obj.prototype.socket = {
 		return res;
 	}
 };
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.obj.schemaCreate(aOptions) : Map</key>
+ * <![CDATA[
+ * Creates independent JSON Schema engines without changing global schema options or registrations.
+ * `aOptions` overrides the engine options; coercion, default insertion and additional-property removal
+ * are disabled by default.
+ *
+ * The returned object exposes:
+ *
+ * - `inspect(schema, value)`: returns a detached `{valid, errors}` snapshot.
+ * - `schemaCompile(schema)`: returns a validator with thread-local `errors`.
+ * - `schemaValidate(schema, value)`: returns `true` or throws on invalid data.
+ * - `schemaAdd(key, schema)`: registers a schema and returns this engine wrapper.
+ * - `schemaRemove(key)`: removes schemas and clears compiled caches.
+ * ]]>
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaCreate = function(options) {
+  loadAjv()
+  options = Object.assign({
+    useDefaults: false,
+    coerceTypes: false,
+    removeAdditional: false,
+    allErrors: true,
+    strict: false,
+    code: { es5: true }
+  }, options || {})
+  var engines = Object.create(null),
+    cache = Object.create(null),
+    owners = Object.create(null),
+    lock = new java.util.concurrent.locks.ReentrantLock()
+  function locked(fn) {
+    lock.lock()
+    try {
+      return fn()
+    } finally {
+      lock.unlock()
+    }
+  }
+  function draft(schema) {
+    return ow.obj.__schemaDraft(schema)
+  }
+  function engine(d) {
+    if (!engines[d]) engines[d] = Ajv.OpenAF.create(d, Object.assign({}, options), 'fast')
+    return engines[d]
+  }
+  function resolve(schema) {
+    if (typeof schema === 'string') {
+      var owner = owners[schema]
+      if (!owner) throw new Error('Schema not registered: ' + schema)
+      return engine(owner).getSchema(schema)
+    }
+    var d = draft(schema), key = d + ':' + ow.obj.__schemaKey(schema)
+    if (!cache[key]) {
+      var ids = Ajv.OpenAF.schemaIds(engine(d), schema)
+      ids.forEach(function(id) {
+        if (owners[id] && owners[id] !== d) throw new Error("Cross-draft schema id: " + id)
+      })
+      cache[key] = engine(d).compile(schema)
+      ids.forEach(function(id) {
+        owners[id] = d
+      })
+    }
+    return cache[key]
+  }
+  var api = {
+    inspect: function(schema, value) {
+      return locked(function() {
+        var v = resolve(schema), valid = v(value)
+        return {
+          valid: valid,
+          errors: JSON.parse(JSON.stringify(v.errors || []))
+        }
+      })
+    },
+    schemaCompile: function(schema) {
+      locked(function() {
+        resolve(schema)
+      })
+      var errors = new java.lang.ThreadLocal()
+      var f = function(value) {
+        var r = api.inspect(schema, value)
+        errors.set(r.errors)
+        return r.valid
+      }
+      Object.defineProperty(f, 'errors', {
+        get: function() {
+          return errors.get()
+        }
+      })
+      return f
+    },
+    schemaValidate: function(schema, value) {
+      var r = api.inspect(schema, value)
+      if (!r.valid) throw new Error(JSON.stringify(r.errors))
+      return true
+    },
+    schemaAdd: function(key, schema) {
+      return locked(function() {
+        var d = draft(schema), ids = Ajv.OpenAF.schemaIds(engine(d), schema, key)
+        ids.forEach(function(id) {
+          if (owners[id] && owners[id] !== d) throw new Error('Cross-draft schema id: ' + id)
+        })
+        engine(d).addSchema(schema, key)
+        ids.forEach(function(id) {
+          owners[id] = d
+        })
+        if (key) owners[key] = d
+        return api
+      })
+    },
+    schemaRemove: function(key) {
+      return locked(function() {
+        Object.keys(engines).forEach(function(d) {
+          engines[d].removeSchema(key)
+        })
+        cache = Object.create(null)
+        if (key === undefined) owners = Object.create(null)
+        else Object.keys(owners).forEach(function(id) {
+          if (!engine(owners[id]).getSchema(id)) delete owners[id]
+        })
+        return api
+      })
+    }
+  }
+  return api
+}

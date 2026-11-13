@@ -97,6 +97,7 @@ public class CompileJS2Java {
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 

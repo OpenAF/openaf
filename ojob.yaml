@@ -2389,3 +2389,21 @@ jobs:
     } catch(e) {
       throw "Error on LLM: " + e
     }
+# ---------------------
+- name: ojob interact
+  typeArgs:
+    noLog: true
+    shortcut:
+      name: interact
+      keyArg: __interaction
+  help:
+    text: Runs an event-driven console, TUI or JavaFX session. See ow.screen.interact.
+    expects:
+    - name: __interaction
+      desc: Interaction options including view, state, bindings and reducer job.
+  check:
+    in:
+      __interaction: isMap
+  exec: |
+    ow.loadScreen()
+    args.interaction = ow.screen.interact(args.__interaction)

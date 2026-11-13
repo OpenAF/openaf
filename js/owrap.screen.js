@@ -58,155 +58,25 @@ OpenWrap.screen.prototype.capabilities = function(options) {
   };
 };
 
-OpenWrap.screen.__namedColors = {
-  black:   { ansi16: 30, idx256: 0,   rgb: [0, 0, 0],       css: "#000000" },
-  red:     { ansi16: 31, idx256: 1,   rgb: [205, 49, 49],   css: "#cd3131" },
-  green:   { ansi16: 32, idx256: 2,   rgb: [13, 188, 121],  css: "#0dbc79" },
-  yellow:  { ansi16: 33, idx256: 3,   rgb: [229, 229, 16],  css: "#e5e510" },
-  blue:    { ansi16: 34, idx256: 4,   rgb: [36, 114, 200],  css: "#2472c8" },
-  magenta: { ansi16: 35, idx256: 5,   rgb: [188, 63, 188],  css: "#bc3fbc" },
-  cyan:    { ansi16: 36, idx256: 6,   rgb: [17, 168, 205],  css: "#11a8cd" },
-  white:   { ansi16: 37, idx256: 7,   rgb: [229, 229, 229], css: "#e5e5e5" },
-  gray:    { ansi16: 90, idx256: 244, rgb: [128, 128, 128], css: "#808080" },
-  grey:    { ansi16: 90, idx256: 244, rgb: [128, 128, 128], css: "#808080" },
-  bright_black:   { ansi16: 90, idx256: 8,  rgb: [102, 102, 102], css: "#666666" },
-  bright_red:     { ansi16: 91, idx256: 9,  rgb: [241, 76, 76],   css: "#f14c4c" },
-  bright_green:   { ansi16: 92, idx256: 10, rgb: [35, 209, 139],  css: "#23d18b" },
-  bright_yellow:  { ansi16: 93, idx256: 11, rgb: [245, 245, 67],  css: "#f5f543" },
-  bright_blue:    { ansi16: 94, idx256: 12, rgb: [59, 142, 234],  css: "#3b8eea" },
-  bright_magenta: { ansi16: 95, idx256: 13, rgb: [214, 112, 214], css: "#d670d6" },
-  bright_cyan:    { ansi16: 96, idx256: 14, rgb: [41, 184, 219],  css: "#29b8db" },
-  bright_white:   { ansi16: 97, idx256: 15, rgb: [255, 255, 255], css: "#ffffff" },
-  orange:  { ansi16: 33, idx256: 208, rgb: [255, 135, 0],   css: "#ff8700" },
-  purple:  { ansi16: 35, idx256: 135, rgb: [175, 95, 255],  css: "#af5fff" },
-  pink:    { ansi16: 95, idx256: 211, rgb: [255, 135, 175], css: "#ff87af" },
-  teal:    { ansi16: 36, idx256: 37,  rgb: [0, 175, 175],   css: "#00afaf" },
-  gold:    { ansi16: 93, idx256: 220, rgb: [255, 215, 0],   css: "#ffd700" },
-  indigo:  { ansi16: 34, idx256: 63,  rgb: [95, 95, 255],   css: "#5f5fff" },
-  lime:    { ansi16: 92, idx256: 118, rgb: [135, 255, 0],   css: "#87ff00" },
-  coral:   { ansi16: 91, idx256: 209, rgb: [255, 135, 95],  css: "#ff875f" },
-  slate:   { ansi16: 90, idx256: 60,  rgb: [95, 95, 135],   css: "#5f5f87" },
-  sky:     { ansi16: 96, idx256: 117, rgb: [135, 215, 255], css: "#87d7ff" }
-};
+ow.loadFormat()
 
-OpenWrap.screen.__rgbTo256 = function(r, g, b) {
-  r = Math.max(0, Math.min(255, Math.round(Number(r) || 0)));
-  g = Math.max(0, Math.min(255, Math.round(Number(g) || 0)));
-  b = Math.max(0, Math.min(255, Math.round(Number(b) || 0)));
-  if (r === g && g === b) {
-    if (r < 8) return 16;
-    if (r > 248) return 231;
-    return Math.round(((r - 8) / 247) * 24) + 232;
-  }
-  var cr = Math.round((r / 255) * 5), cg = Math.round((g / 255) * 5), cb = Math.round((b / 255) * 5);
-  return 16 + (36 * cr) + (6 * cg) + cb;
-};
-
-OpenWrap.screen.__rgbTo16 = function(r, g, b) {
-  var best = 37, bestDist = Infinity;
-  var names = Object.keys(OpenWrap.screen.__namedColors);
-  for (var i = 0; i < 16 && i < names.length; i++) {
-    var entry = OpenWrap.screen.__namedColors[names[i]];
-    var dr = r - entry.rgb[0], dg = g - entry.rgb[1], db = b - entry.rgb[2];
-    var dist = dr * dr + dg * dg + db * db;
-    if (dist < bestDist) { bestDist = dist; best = entry.ansi16; }
-  }
-  return best;
-};
-
-OpenWrap.screen.__256ToRgb = function(idx) {
-  idx = Math.max(0, Math.min(255, Math.round(Number(idx) || 0)));
-  if (idx < 16) {
-    var keys = ["black","red","green","yellow","blue","magenta","cyan","white","bright_black","bright_red","bright_green","bright_yellow","bright_blue","bright_magenta","bright_cyan","bright_white"];
-    return OpenWrap.screen.__namedColors[keys[idx]].rgb.slice();
-  }
-  if (idx >= 232) {
-    var v = 8 + (idx - 232) * 10;
-    return [v, v, v];
-  }
-  var n = idx - 16;
-  var steps = [0, 95, 135, 175, 215, 255];
-  return [steps[Math.floor(n / 36) % 6], steps[Math.floor(n / 6) % 6], steps[n % 6]];
-};
-
-/** <odoc>
+// Keep the established screen API while sharing the pure implementation.
+OpenWrap.screen.__namedColors = OpenWrap.format.__colors.__namedColors
+OpenWrap.screen.__rgbTo256 = OpenWrap.format.__colors.__rgbTo256
+OpenWrap.screen.__rgbTo16 = OpenWrap.format.__colors.__rgbTo16
+OpenWrap.screen.__256ToRgb = OpenWrap.format.__colors.__256ToRgb
+/** <odoc format="markdown">
  * <key>ow.screen.parseColor(aSpec) : Map</key>
- * Parses a color specification (named color, 0-255 number, "FG(n)", "BG(n)", "#rgb", "#rrggbb",
- * "rgb(r,g,b)", or [r,g,b]) into a normalized descriptor with { type, r, g, b, idx256, ansi16, css }.
- * Returns null if invalid or empty.
+ * Parses named, indexed or RGB colours. Returns null for invalid colours.
  * </odoc> */
-OpenWrap.screen.prototype.parseColor = function(spec) {
-  if (isUnDef(spec) || spec === null || spec === "") return null;
-  if (typeof spec == "number" && isFinite(spec) && spec >= 0 && spec <= 255) {
-    var idx = Math.round(spec), rgb = OpenWrap.screen.__256ToRgb(idx);
-    return {
-      type: "256", r: rgb[0], g: rgb[1], b: rgb[2], idx256: idx,
-      ansi16: OpenWrap.screen.__rgbTo16(rgb[0], rgb[1], rgb[2]),
-      css: "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")"
-    };
-  }
-  if (Array.isArray(spec) && spec.length === 3 && spec.every(function(x) { return typeof x == "number" && isFinite(x) && x >= 0 && x <= 255; })) {
-    var r = Math.round(spec[0]), g = Math.round(spec[1]), b = Math.round(spec[2]);
-    return {
-      type: "rgb", r: r, g: g, b: b,
-      idx256: OpenWrap.screen.__rgbTo256(r, g, b),
-      ansi16: OpenWrap.screen.__rgbTo16(r, g, b),
-      css: "rgb(" + r + "," + g + "," + b + ")"
-    };
-  }
-  if (typeof spec != "string") return null;
-  var s = spec.trim();
-  if (!s || s.toLowerCase() == "default" || s.toLowerCase() == "none") return null;
-  var lower = s.toLowerCase().replace(/[\s-]+/g, "_");
-  if (lower.indexOf("fg_") === 0) lower = lower.substring(3);
-  else if (lower.indexOf("bg_") === 0) lower = lower.substring(3);
-  if (Object.prototype.hasOwnProperty.call(OpenWrap.screen.__namedColors, lower)) {
-    var c = OpenWrap.screen.__namedColors[lower];
-    return { type: "named", name: lower, r: c.rgb[0], g: c.rgb[1], b: c.rgb[2], idx256: c.idx256, ansi16: c.ansi16, css: c.css };
-  }
-  var m;
-  if ((m = /^#([0-9a-fA-F]{3})$/.exec(s))) {
-    var r1 = parseInt(m[1][0] + m[1][0], 16), g1 = parseInt(m[1][1] + m[1][1], 16), b1 = parseInt(m[1][2] + m[1][2], 16);
-    return { type: "rgb", r: r1, g: g1, b: b1, idx256: OpenWrap.screen.__rgbTo256(r1, g1, b1), ansi16: OpenWrap.screen.__rgbTo16(r1, g1, b1), css: "rgb(" + r1 + "," + g1 + "," + b1 + ")" };
-  }
-  if ((m = /^#([0-9a-fA-F]{6})$/.exec(s))) {
-    var r2 = parseInt(m[1].substring(0, 2), 16), g2 = parseInt(m[1].substring(2, 4), 16), b2 = parseInt(m[1].substring(4, 6), 16);
-    return { type: "rgb", r: r2, g: g2, b: b2, idx256: OpenWrap.screen.__rgbTo256(r2, g2, b2), ansi16: OpenWrap.screen.__rgbTo16(r2, g2, b2), css: "#" + m[1].toLowerCase() };
-  }
-  if ((m = /^(?:(?:fg_|bg_)?rgb)\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i.exec(s))) {
-    var r3 = Number(m[1]), g3 = Number(m[2]), b3 = Number(m[3]);
-    if (r3 <= 255 && g3 <= 255 && b3 <= 255) {
-      return { type: "rgb", r: r3, g: g3, b: b3, idx256: OpenWrap.screen.__rgbTo256(r3, g3, b3), ansi16: OpenWrap.screen.__rgbTo16(r3, g3, b3), css: "rgb(" + r3 + "," + g3 + "," + b3 + ")" };
-    }
-  }
-  if ((m = /^(?:(?:fg|bg|color)\(\s*(\d{1,3})\s*\)|(\d{1,3}))$/i.exec(s))) {
-    var idx2 = Number(m[1] || m[2]);
-    if (idx2 >= 0 && idx2 <= 255) return this.parseColor(idx2);
-  }
-  return null;
-};
-
-/** <odoc>
+OpenWrap.screen.prototype.parseColor = function(spec) { return OpenWrap.format.__colors.parseColor(spec) }
+/** <odoc format="markdown">
  * <key>ow.screen.colorSeq(aSpec, isBackground, aColorMode) : String</key>
- * Returns the SGR parameter sequence (e.g. "38;2;80;180;255" or "38;5;39" or "36") for a color
- * specification given the target colorMode ("truecolor", "256", "16", "none").
+ * Returns SGR colour parameters for the requested colour depth.
  * </odoc> */
-OpenWrap.screen.prototype.colorSeq = function(spec, isBg, colorMode) {
-  var mode = colorMode || this.capabilities().colorMode;
-  if (mode == "none") return "";
-  var c = (isMap(spec) && isNumber(spec.idx256)) ? spec : this.parseColor(spec);
-  if (!c) return "";
-  if (mode == "truecolor" && (c.type == "rgb" || c.type == "named")) {
-    return (isBg ? "48;2;" : "38;2;") + c.r + ";" + c.g + ";" + c.b;
-  }
-  if (mode == "truecolor" || mode == "256") {
-    if (c.type == "named" && c.idx256 < 16 && mode == "16") {
-      return String(isBg ? c.ansi16 + 10 : c.ansi16);
-    }
-    return (isBg ? "48;5;" : "38;5;") + c.idx256;
-  }
-  return String(isBg ? c.ansi16 + 10 : c.ansi16);
-};
+OpenWrap.screen.prototype.colorSeq = function(spec, bg, mode) {
+  return OpenWrap.format.__colors.colorSeq(spec, bg, mode || this.capabilities().colorMode)
+}
 
 /** <odoc>
  * <key>ow.screen.parseStyle(aStyle) : Map</key>
@@ -364,26 +234,8 @@ OpenWrap.screen.prototype.width = function(text) {
  * Clips aText to at most aWidth visible columns without splitting UTF-8 grapheme clusters or ANSI escapes.
  * </odoc> */
 OpenWrap.screen.prototype.clip = function(text, width, ellipsis) {
-  var s = String(isDef(text) && text !== null ? text : "");
-  var maxW = Math.max(0, Number(width) || 0);
-  var ell = isDef(ellipsis) ? String(ellipsis) : "";
-  if (visibleLength(s) <= maxW) return s;
-  var limit = Math.max(0, maxW - visibleLength(ell)), out = "", w = 0, hasEsc = false, idx = 0;
-  while (idx < s.length) {
-    var part = ow.format.string._nextWrapToken(s, idx);
-    if (!part || part.next <= idx) break;
-    if (/^\x1b\[/.test(part.token)) {
-      out += part.token;
-      hasEsc = true;
-      idx = part.next;
-      continue;
-    }
-    if (w + part.width > limit) break;
-    out += part.token;
-    w += part.width;
-    idx = part.next;
-  }
-  return out + ell + (hasEsc ? "\x1b[0m" : "");
+  return ow.format.string.ansiClip(String(isDef(text) && text !== null ? text : ""),
+    Math.max(0, Number(width) || 0), isDef(ellipsis) ? String(ellipsis) : "")
 };
 
 /** <odoc>
@@ -512,18 +364,22 @@ OpenWrap.screen.__borders = {
   single:  { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", lt: "├", rt: "┤" },
   double:  { tl: "╔", tr: "╗", bl: "╚", br: "╝", h: "═", v: "║", lt: "╠", rt: "╣" },
   heavy:   { tl: "┏", tr: "┓", bl: "┗", br: "┛", h: "━", v: "┃", lt: "┣", rt: "┫" },
+  left:    { tl: "▊", tr: " ", bl: "▊", br: " ", h: " ", v: "▊", vr: " ", lt: "▊", rt: " " },
   ascii:   { tl: "+", tr: "+", bl: "+", br: "+", h: "-", v: "|", lt: "+", rt: "+" },
   none:    { tl: " ", tr: " ", bl: " ", br: " ", h: " ", v: " ", lt: " ", rt: " " }
 };
 
 /** <odoc>
  * <key>ow.screen.borderChars(aStyle, aUnicode) : Map</key>
- * Returns the box-drawing characters for aStyle ("rounded", "single", "double", "heavy", "ascii", "none").
+ * Returns the box-drawing characters for aStyle ("rounded", "single", "double", "heavy", "left", "ascii", "none").
  * Automatically falls back to "ascii" when aUnicode is false.
  * </odoc> */
 OpenWrap.screen.prototype.borderChars = function(style, unicode) {
   var st = String(style || this.__options.borderStyle || "rounded").toLowerCase();
-  if (unicode === false && st != "none") st = "ascii";
+  if (unicode === false && st != "none") {
+    if (st == "left") return { tl: "|", tr: " ", bl: "|", br: " ", h: " ", v: "|", vr: " ", lt: "|", rt: " " };
+    st = "ascii";
+  }
   return OpenWrap.screen.__borders[st] || OpenWrap.screen.__borders.rounded;
 };
 
@@ -557,18 +413,24 @@ OpenWrap.screen.prototype.hr = function(width, options) {
  * Renders a bordered box/panel around aContent (string or array of lines).
  * Options: width, height, title, titleAlign ("left", "center", "right"), footer, footerAlign,
  * align ("left", "center", "right"), padding (number or {top,bottom,left,right}), borderStyle
- * ("rounded", "single", "double", "heavy", "ascii", "none"), borderColor/borderStyleSpec, titleStyle, style.
+ * ("rounded", "single", "double", "heavy", "left", "ascii", "none"), borderColor/borderStyleSpec,
+ * titleStyle, style, bgStyle, shadow (boolean).
  * </odoc> */
 OpenWrap.screen.prototype.box = function(content, options) {
   var opts = isMap(options) ? options : {};
   var caps = this.capabilities(opts);
-  var bchars = this.borderChars(opts.borderStyle || "rounded", caps.unicode);
+  var bStyleName = String(opts.borderStyle || "rounded").toLowerCase();
+  var isLeftAccent = bStyleName == "left";
+  var hasShadow = Boolean(opts.shadow);
+  var bchars = this.borderChars(bStyleName, caps.unicode);
   var pad = typeof opts.padding == "number" ? { top: 0, bottom: 0, left: opts.padding, right: opts.padding } :
             isMap(opts.padding) ? { top: Number(opts.padding.top || 0), bottom: Number(opts.padding.bottom || 0), left: Number(opts.padding.left || 0), right: Number(opts.padding.right || 0) } :
             { top: 0, bottom: 0, left: 1, right: 1 };
   var rawLines = Array.isArray(content) ? content : String(isDef(content) ? content : "").split(/\r?\n/);
   var totalW = Math.max(4, Number(opts.width || caps.width || 80));
-  var innerW = Math.max(1, totalW - 2 - pad.left - pad.right);
+  var boxW = hasShadow && totalW >= 5 ? totalW - 1 : totalW;
+  var borderCols = isLeftAccent ? 1 : 2;
+  var innerW = Math.max(1, boxW - borderCols - pad.left - pad.right);
   var self = this;
   var wrapped = [];
   rawLines.forEach(function(l) {
@@ -576,12 +438,12 @@ OpenWrap.screen.prototype.box = function(content, options) {
   });
   var bStyle = opts.borderColor || opts.borderStyleSpec || "FAINT";
   var tStyle = opts.titleStyle || "BOLD";
-  var cStyle = opts.style || null;
+  var cStyle = opts.style || opts.bgStyle || null;
   var align = opts.align || "left";
   var mode = caps.colorMode;
 
   function buildEdge(leftCh, rightCh, fillCh, label, labelAlign, lStyle) {
-    var edgeW = totalW - 2;
+    var edgeW = boxW - 2;
     if (!label) return self.style(leftCh + repeat(edgeW, fillCh) + rightCh, bStyle, { colorMode: mode });
     var cleanLbl = " " + self.clip(self.sanitize(label, false), Math.max(1, edgeW - 2), "") + " ";
     var lblW = visibleLength(cleanLbl);
@@ -595,15 +457,26 @@ OpenWrap.screen.prototype.box = function(content, options) {
   }
 
   var out = [];
-  out.push(buildEdge(bchars.tl, bchars.tr, bchars.h, opts.title, opts.titleAlign || "left", tStyle));
   var vLeft = this.style(bchars.v, bStyle, { colorMode: mode });
-  var vRight = this.style(bchars.v, bStyle, { colorMode: mode });
+  var vRight = isLeftAccent ? "" : this.style(isDef(bchars.vr) ? bchars.vr : bchars.v, bStyle, { colorMode: mode });
   var padL = repeat(pad.left, " "), padR = repeat(pad.right, " ");
+
+  if (isLeftAccent) {
+    if (opts.title) {
+      var cleanT = this.clip(this.sanitize(opts.title, false), innerW, "");
+      var tRow = padL + this.alignLine(this.style(cleanT, tStyle, { colorMode: mode }), innerW, opts.titleAlign || align, " ", null, { colorMode: mode }) + padR;
+      out.push(vLeft + (cStyle ? this.style(tRow, cStyle, { colorMode: mode }) : tRow));
+    }
+  } else {
+    out.push(buildEdge(bchars.tl, bchars.tr, bchars.h, opts.title, opts.titleAlign || "left", tStyle));
+  }
+
   for (var pt = 0; pt < pad.top; pt++) {
     var emptyRow = padL + repeat(innerW, " ") + padR;
     out.push(vLeft + (cStyle ? this.style(emptyRow, cStyle, { colorMode: mode }) : emptyRow) + vRight);
   }
-  var targetRows = isNumber(opts.height) ? Math.max(1, opts.height - 2 - pad.top - pad.bottom) : wrapped.length;
+  var chromeRows = (isLeftAccent ? (opts.title ? 1 : 0) + (opts.footer ? 1 : 0) : 2) + (hasShadow ? 1 : 0);
+  var targetRows = isNumber(opts.height) ? Math.max(1, opts.height - chromeRows - pad.top - pad.bottom) : wrapped.length;
   for (var i = 0; i < targetRows; i++) {
     var line = i < wrapped.length ? wrapped[i] : "";
     var aligned = padL + this.alignLine(line, innerW, align, " ", null, { colorMode: mode }) + padR;
@@ -613,13 +486,35 @@ OpenWrap.screen.prototype.box = function(content, options) {
     var emptyRowB = padL + repeat(innerW, " ") + padR;
     out.push(vLeft + (cStyle ? this.style(emptyRowB, cStyle, { colorMode: mode }) : emptyRowB) + vRight);
   }
-  out.push(buildEdge(bchars.bl, bchars.br, bchars.h, opts.footer, opts.footerAlign || "right", opts.footerStyle || bStyle));
+
+  if (isLeftAccent) {
+    if (opts.footer) {
+      var cleanF = this.clip(this.sanitize(opts.footer, false), innerW, "");
+      var fRow = padL + this.alignLine(this.style(cleanF, opts.footerStyle || bStyle, { colorMode: mode }), innerW, opts.footerAlign || "right", " ", null, { colorMode: mode }) + padR;
+      out.push(vLeft + (cStyle ? this.style(fRow, cStyle, { colorMode: mode }) : fRow));
+    }
+  } else {
+    out.push(buildEdge(bchars.bl, bchars.br, bchars.h, opts.footer, opts.footerAlign || "right", opts.footerStyle || bStyle));
+  }
+
+  if (hasShadow && totalW >= 5) {
+    var shStyle = opts.shadowStyle || "FAINT";
+    var shTop = this.style(" ", shStyle, { colorMode: mode });
+    var shSide = this.style(caps.unicode ? "█" : "#", shStyle, { colorMode: mode });
+    var shBot = " " + this.style(repeat(boxW, caps.unicode ? "▀" : "#"), shStyle, { colorMode: mode });
+    out = out.map(function(row, idx) {
+      return row + (idx === 0 ? shTop : shSide);
+    });
+    out.push(shBot);
+  }
   return out.join("\n");
 };
 
 OpenWrap.screen.__themes = {
   default: {
     none: {
+      surface: {},
+      panel: {},
       tabBar: { bold: true },
       tabActive: { bold: true, reverse: true },
       tabInactive: {},
@@ -640,6 +535,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: {},
       badge: { bold: true, reverse: true },
       statusBar: { reverse: true },
+      keyPill: { bold: true, reverse: true },
+      keyLabel: { reverse: true },
       scrollbarThumb: { bold: true },
       scrollbarTrack: {},
       accent: { bold: true },
@@ -648,6 +545,8 @@ OpenWrap.screen.__themes = {
       negative: { bold: true }
     },
     "16": {
+      surface: { fg: "white", bg: "black" },
+      panel: { fg: "white", bg: "black" },
       tabBar: { fg: "white", bg: "black" },
       tabActive: { fg: "black", bg: "cyan", bold: true },
       tabInactive: { fg: "white", dim: true },
@@ -668,6 +567,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: "white", dim: true },
       badge: { fg: "black", bg: "cyan", bold: true },
       statusBar: { fg: "black", bg: "white" },
+      keyPill: { fg: "black", bg: "cyan", bold: true },
+      keyLabel: { fg: "black", bg: "white" },
       scrollbarThumb: { fg: "cyan", bold: true },
       scrollbarTrack: { fg: "white", dim: true },
       accent: { fg: "cyan", bold: true },
@@ -676,6 +577,8 @@ OpenWrap.screen.__themes = {
       negative: { fg: "red", bold: true }
     },
     "256": {
+      surface: { fg: 252, bg: 234 },
+      panel: { fg: 252, bg: 236 },
       tabBar: { fg: 252, bg: 236 },
       tabActive: { fg: 232, bg: 39, bold: true },
       tabInactive: { fg: 246, bg: 236 },
@@ -696,6 +599,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: 239 },
       badge: { fg: 232, bg: 39, bold: true },
       statusBar: { fg: 252, bg: 236 },
+      keyPill: { fg: 232, bg: 39, bold: true },
+      keyLabel: { fg: 252, bg: 236 },
       scrollbarThumb: { fg: 39, bold: true },
       scrollbarTrack: { fg: 238 },
       accent: { fg: 39, bold: true },
@@ -704,6 +609,8 @@ OpenWrap.screen.__themes = {
       negative: { fg: 196, bold: true }
     },
     truecolor: {
+      surface: { fg: "#cdd6f4", bg: "#181825" },
+      panel: { fg: "#cdd6f4", bg: "#1e1e2e" },
       tabBar: { fg: "#cdd6f4", bg: "#1e1e2e" },
       tabActive: { fg: "#11111b", bg: "#89b4fa", bold: true },
       tabInactive: { fg: "#9399b2", bg: "#1e1e2e" },
@@ -724,6 +631,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: "#45475a" },
       badge: { fg: "#11111b", bg: "#89b4fa", bold: true },
       statusBar: { fg: "#cdd6f4", bg: "#1e1e2e" },
+      keyPill: { fg: "#11111b", bg: "#89b4fa", bold: true },
+      keyLabel: { fg: "#cdd6f4", bg: "#1e1e2e" },
       scrollbarThumb: { fg: "#89b4fa", bold: true },
       scrollbarTrack: { fg: "#313244" },
       accent: { fg: "#89b4fa", bold: true },
@@ -734,6 +643,8 @@ OpenWrap.screen.__themes = {
   },
   ocean: {
     truecolor: {
+      surface: { fg: "#f0f9ff", bg: "#082f49" },
+      panel: { fg: "#f0f9ff", bg: "#0c4a6e" },
       tabBar: { fg: "#e0f2fe", bg: "#0c4a6e" },
       tabActive: { fg: "#082f49", bg: "#38bdf8", bold: true },
       tabInactive: { fg: "#7dd3fc", bg: "#0c4a6e" },
@@ -754,6 +665,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: "#0369a1" },
       badge: { fg: "#082f49", bg: "#38bdf8", bold: true },
       statusBar: { fg: "#e0f2fe", bg: "#0c4a6e" },
+      keyPill: { fg: "#082f49", bg: "#38bdf8", bold: true },
+      keyLabel: { fg: "#e0f2fe", bg: "#0c4a6e" },
       scrollbarThumb: { fg: "#38bdf8", bold: true },
       scrollbarTrack: { fg: "#075985" },
       accent: { fg: "#38bdf8", bold: true },
@@ -764,6 +677,8 @@ OpenWrap.screen.__themes = {
   },
   light: {
     truecolor: {
+      surface: { fg: "#0f172a", bg: "#f8fafc" },
+      panel: { fg: "#0f172a", bg: "#f1f5f9" },
       tabBar: { fg: "#1e293b", bg: "#e2e8f0" },
       tabActive: { fg: "#ffffff", bg: "#2563eb", bold: true },
       tabInactive: { fg: "#475569", bg: "#e2e8f0" },
@@ -784,6 +699,8 @@ OpenWrap.screen.__themes = {
       progressEmpty: { fg: "#cbd5e1" },
       badge: { fg: "#ffffff", bg: "#2563eb", bold: true },
       statusBar: { fg: "#1e293b", bg: "#e2e8f0" },
+      keyPill: { fg: "#ffffff", bg: "#2563eb", bold: true },
+      keyLabel: { fg: "#1e293b", bg: "#e2e8f0" },
       scrollbarThumb: { fg: "#2563eb", bold: true },
       scrollbarTrack: { fg: "#cbd5e1" },
       accent: { fg: "#2563eb", bold: true },
@@ -820,6 +737,9 @@ OpenWrap.screen.prototype.getTheme = function(theme, colorMode, overrides) {
 /** <odoc>
  * <key>ow.screen.progress(aValue, aMax, aMin, aWidth, aOptions) : String</key>
  * Renders a smooth Unicode/ASCII progress bar with optional percentage/label and 16/256/truecolor styling.
+ * Options include: label, showPercent, smooth (default true, uses 1/8th sub-cell blocks),
+ * barStyle ("bracket" default, "thin" for ━/─ without brackets, "bar" for █/░ without brackets),
+ * theme, filledStyle, emptyStyle, labelStyle, percentStyle.
  * </odoc> */
 OpenWrap.screen.prototype.progress = function(value, max, min, width, options) {
   var opts = isMap(options) ? options : {};
@@ -834,16 +754,66 @@ OpenWrap.screen.prototype.progress = function(value, max, min, width, options) {
   var showPct = opts.showPercent !== false;
   var suffix = showPct ? " " + ow.format.string.leftPad(String(pct), 3, " ") + "%" : "";
   var prefix = isDef(opts.label) && String(opts.label).length > 0 ? this.sanitize(opts.label, false) + ": " : "";
+  var barStyle = String(opts.barStyle || "bracket").toLowerCase();
+  var hasBrackets = barStyle != "thin" && barStyle != "bar";
   var totalW = Math.max(10, Number(width || caps.width || 40));
-  var barW = Math.max(4, totalW - visibleLength(prefix) - visibleLength(suffix) - 2);
-  var filled = Math.round(ratio * barW), empty = Math.max(0, barW - filled);
-  var fChar = caps.unicode ? "█" : "#";
-  var eChar = caps.unicode ? "░" : "-";
-  var fStr = this.style(repeat(filled, fChar), isDef(opts.filledStyle) ? opts.filledStyle : th.progressFilled, { colorMode: caps.colorMode });
-  var eStr = this.style(repeat(empty, eChar), isDef(opts.emptyStyle) ? opts.emptyStyle : th.progressEmpty, { colorMode: caps.colorMode });
+  var barW = Math.max(4, totalW - visibleLength(prefix) - visibleLength(suffix) - (hasBrackets ? 2 : 0));
+  var filledStyle = isDef(opts.filledStyle) ? opts.filledStyle : th.progressFilled;
+  var emptyStyle = isDef(opts.emptyStyle) ? opts.emptyStyle : th.progressEmpty;
+  var fStr = "", eStr = "";
+
+  if (barStyle == "thin") {
+    var fThin = Math.round(ratio * barW), eThin = Math.max(0, barW - fThin);
+    fStr = this.style(repeat(fThin, caps.unicode ? "━" : "="), filledStyle, { colorMode: caps.colorMode });
+    eStr = this.style(repeat(eThin, caps.unicode ? "─" : "-"), emptyStyle, { colorMode: caps.colorMode });
+  } else if (caps.unicode && opts.smooth !== false) {
+    var subBlocks = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"];
+    var eighths = Math.round(ratio * barW * 8);
+    var fullCells = Math.floor(eighths / 8);
+    var remEighths = eighths - fullCells * 8;
+    var partChar = remEighths > 0 ? subBlocks[remEighths] : "";
+    var emptyCells = Math.max(0, barW - fullCells - (partChar ? 1 : 0));
+    fStr = this.style(repeat(fullCells, "█") + partChar, filledStyle, { colorMode: caps.colorMode });
+    eStr = this.style(repeat(emptyCells, "░"), emptyStyle, { colorMode: caps.colorMode });
+  } else {
+    var filled = Math.round(ratio * barW), empty = Math.max(0, barW - filled);
+    var fChar = caps.unicode ? "█" : "#";
+    var eChar = caps.unicode ? "░" : "-";
+    fStr = this.style(repeat(filled, fChar), filledStyle, { colorMode: caps.colorMode });
+    eStr = this.style(repeat(empty, eChar), emptyStyle, { colorMode: caps.colorMode });
+  }
+
   var lblStr = prefix ? this.style(prefix, isDef(opts.labelStyle) ? opts.labelStyle : th.label, { colorMode: caps.colorMode }) : "";
   var pctStr = suffix ? this.style(suffix, isDef(opts.percentStyle) ? opts.percentStyle : th.muted, { colorMode: caps.colorMode }) : "";
-  return lblStr + "[" + fStr + eStr + "]" + pctStr;
+  return lblStr + (hasBrackets ? "[" : "") + fStr + eStr + (hasBrackets ? "]" : "") + pctStr;
+};
+
+/** <odoc>
+ * <key>ow.screen.keybar(aBindings, aWidth, aOptions) : String</key>
+ * Renders a Textual-style keybinding footer/status bar from an array of { key, label } maps
+ * (or [key, label] pairs), styling keys as high-contrast badges and descriptions with the status bar style.
+ * </odoc> */
+OpenWrap.screen.prototype.keybar = function(bindings, width, options) {
+  var opts = isMap(options) ? options : {};
+  var caps = this.capabilities(opts);
+  var th = this.getTheme(opts.theme, caps.colorMode);
+  var w = Math.max(1, Number(width || caps.width || 80));
+  var keyStyle = isDef(opts.keyStyle) ? opts.keyStyle : (th.keyPill || th.badge);
+  var labelStyle = isDef(opts.labelStyle) ? opts.labelStyle : (th.keyLabel || th.statusBar);
+  var barStyle = isDef(opts.style) ? opts.style : th.statusBar;
+  var sep = isDef(opts.sep) ? String(opts.sep) : "  ";
+  var self = this;
+  var list = Array.isArray(bindings) ? bindings : [];
+  var segments = list.map(function(b) {
+    var k = Array.isArray(b) ? b[0] : (isMap(b) ? b.key : "");
+    var l = Array.isArray(b) ? b[1] : (isMap(b) ? b.label : "");
+    var kClean = " " + self.sanitize(k, false) + " ";
+    var lClean = " " + self.sanitize(l, false);
+    return self.style(kClean, keyStyle, { colorMode: caps.colorMode }) +
+           self.style(lClean, labelStyle, { colorMode: caps.colorMode });
+  });
+  var joined = segments.join(self.style(sep, barStyle, { colorMode: caps.colorMode }));
+  return this.alignLine(joined, w, opts.align || "left", " ", barStyle, { colorMode: caps.colorMode });
 };
 
 /** <odoc>
@@ -861,3 +831,196 @@ OpenWrap.screen.prototype.run = function(viewOrWinOpts, onMessage, desktopOpts) 
   d.wait();
   return win;
 };
+
+/** <odoc format="markdown">
+ * <key>ow.screen.interact(aOptions) : Map</key>
+ * Runs a persistent `console`, `tui` or `javafx` view. Options include `view`,
+ * `state`, `bindings` (event keys such as `action:save`, `change:name`, `init`,
+ * `timer`), `reducer`, `interval` in milliseconds and `concurrency` (default 4).
+ * Bindings are job names or `{job, args}` maps. Handlers receive independent
+ * `event`, `values` and `state` snapshots. The reducer receives current `state`,
+ * `event`, `result` and `error`, returning `state`, optional `view` and `close`.
+ * `consoleUI` and `terminalUI` can provide borrowed console/TUI terminal adapters.
+ * Closing drains handlers. Jobs must coordinate their own external side effects.
+ * </odoc> */
+OpenWrap.screen.prototype.interact = function(options) {
+  var o = options || {}, mode = o.mode || "console", state = clone(o.state || {}), view = clone(o.view)
+  var limit = _$(o.concurrency).isNumber().default(4), bindings = o.bindings || {}
+  if (["console", "tui", "javafx"].indexOf(mode) < 0 || !isFinite(limit) || limit < 1 || Math.floor(limit) != limit) throw "Invalid interaction mode or concurrency"
+  if (!isString(o.reducer)) throw "Interaction requires a reducer job"
+  if (isDef(o.interval) && (!isNumber(o.interval) || !isFinite(o.interval) || o.interval < 1)) throw "Invalid interaction interval"
+  ow.loadDesktop()
+  var d = new OpenWrap.desktop({ provider: mode == "console" ? "tui" : mode })
+  loadCompiledLib("owrap_desktop_ui_js")
+  if (mode == "tui" && o.terminalUI) d.registerProvider(OpenWrap.desktop.__tui(o.terminalUI))
+  view = OpenWrap.desktop.__view(d, view)
+  var events = new java.util.concurrent.LinkedBlockingQueue(256), results = new java.util.concurrent.LinkedBlockingQueue()
+  var active = 0, closing = false, revision = 0, timerBusy = false, win, failure, ui, dirty = true, initialized = false
+  var values = {}, pending = {}, nextTick = now() + (o.interval || 0)
+  function fields() {
+    var out = []
+    view.items.forEach(function(i) { if (i.type == "row") i.items.forEach(function(c) { out.push(c) }); else out.push(i) })
+    return out
+  }
+  function syncValues() {
+    values = {}
+    fields().forEach(function(i) { if (["input", "select", "checkbox"].indexOf(i.type) >= 0) values[i.id] = String(i.value) })
+  }
+  function enqueue(type, id, vals) {
+    events.offer(JSON.stringify({ type: type, id: id || "", values: clone(vals || values), revision: revision }))
+  }
+  function settle(promise) {
+    var deadline = now() + 35000
+    while (promise.state.get() != promise.states.FULFILLED && promise.state.get() != promise.states.FAILED && now() < deadline) sleep(10, true)
+    if (promise.state.get() == promise.states.FAILED) throw promise.reason
+    if (promise.state.get() != promise.states.FULFILLED) throw "Interaction desktop command timed out"
+  }
+  function invoke(name, input, id) {
+    var definition = ow.oJob.getJobsCh().get({ name: name })
+    if (isUnDef(definition)) throw "Job not found: " + name
+    // oJob normally records uncaught job failures without propagating them.
+    // Preserve explicit job catch policies, otherwise surface failures to the reducer.
+    var todo = { name: name, catch: isDef(definition.catch) ? definition.catch : "throw exception" }
+    return $job(todo, input, id, false)
+  }
+  function launch(e) {
+    var key = e.type + (e.id ? ":" + e.id : ""), b = bindings[key]
+    if (isUnDef(b)) { if (e.type == "timer") timerBusy = false; return }
+    if (isString(b)) b = { job: b }
+    if (!isMap(b) || !isString(b.job)) throw "Invalid interaction binding: " + key
+    active++
+    if (e.type == "timer") timerBusy = true
+    var input = merge(clone(b.args || {}), { event: clone(e), values: clone(e.values), state: clone(state) })
+    var id = "|interact-" + genUUID()
+    $do(function() {
+      var r = { event: e }
+      try { r.result = invoke(b.job, input, id) } catch (err) { r.error = String(err) }
+      try { results.offer(JSON.stringify(r)) } catch (err) { results.offer(JSON.stringify({ event: e, error: "Handler result is not JSON: " + String(err) })) }
+    })
+  }
+  function pump() {
+    var raw
+    while ((raw = results.poll()) != null) {
+      active--
+      var r = JSON.parse(String(raw))
+      if (r.event.type == "timer") timerBusy = false
+      if (!failure) try {
+        var update = invoke(o.reducer, { state: clone(state), event: r.event, result: r.result, error: r.error }, "|interact-" + genUUID())
+        if (!isMap(update)) throw "Reducer must return arguments"
+        if (isDef(update.state)) state = clone(update.state)
+        if (update.close) closing = true
+        if (isDef(update.view) && !closing) {
+          view = OpenWrap.desktop.__view(d, update.view)
+          revision++
+          dirty = true
+          syncValues()
+          if (win) settle(win.setView(view))
+        }
+      } catch (err) { failure = err; closing = true }
+    }
+    if (closing) return
+    if (initialized && o.interval && now() >= nextTick) {
+      nextTick = now() + o.interval
+      if (!timerBusy) { enqueue("timer"); timerBusy = true }
+    }
+    while ((raw = events.poll()) != null) {
+      var e = JSON.parse(String(raw)), key = e.type + ":" + e.id
+      if (e.revision != revision) { if (e.type == "timer") timerBusy = false; continue }
+      if (e.type == "action" || e.type == "change") values = clone(e.values)
+      if (active < limit) launch(e)
+      else if (e.type == "change" || e.type == "timer") pending[key] = e
+    }
+    Object.keys(pending).forEach(function(k) { if (active < limit) { var e = pending[k]; delete pending[k]; if (e.revision == revision) launch(e); else if (e.type == "timer") timerBusy = false } })
+  }
+  // Shared ask helpers own input editing; their idle hook keeps orchestration
+  // responsive without writing view updates over an active prompt.
+  var promptOptions = { onIdle: function() { pump(); return !closing }, pollInterval: 50 }
+  function line(prompt, secret) {
+    return ask(prompt, secret ? "*" : __, ui, true, ui.write, promptOptions)
+  }
+  function consoleContent() {
+    return fields().map(function(i) {
+      if (i.type == "text") return ow.screen.style(i.text || "", i.style)
+      if (i.type == "divider") return ow.screen.hr(60)
+      if (i.type == "spacer") return repeat(i.lines || 1, "\n")
+      if (i.type == "progress") return ow.screen.progress(i.value, isDef(i.max) ? i.max : 100, i.min || 0, 50, { label: i.label })
+      if (i.type == "table") {
+        var columns = i.columns || (i.rows.length ? Object.keys(i.rows[0]) : [])
+        return (i.title ? i.title + "\n" : "") + [columns.join(" | ")].concat(i.rows.map(function(r) { return columns.map(function(c) { return isDef(r[c]) ? String(r[c]) : "" }).join(" | ") })).join("\n")
+      }
+      if (i.type == "sparkline") return (i.label || "") + ": " + i.values.join(" ")
+      return ""
+    }).filter(function(t) { return t !== "" }).join("\n")
+  }
+  function consoleLoop() {
+    while (!closing) {
+      pump()
+      var controls = fields().filter(function(i) { return !i.disabled && ["button", "input", "select", "checkbox"].indexOf(i.type) >= 0 })
+      if (dirty) {
+        ui.write(ow.screen.box(consoleContent(), { title: o.title || "Interaction" }))
+        controls.forEach(function(i, n) { ui.write((n + 1) + ". " + (i.label || i.id)) })
+        dirty = false
+      }
+      var promptRevision = revision, answer = line("Action (q to close): ")
+      if (answer == "q" || answer == null) { closing = true; continue }
+      if (promptRevision != revision) { dirty = true; continue }
+      var item = controls[Number(answer) - 1]
+      if (!item) continue
+      if (active >= limit) { ui.write("All handlers are busy. Try again shortly."); continue }
+      if (item.type != "button") {
+        var value = __
+        if (item.type == "checkbox" || item.type == "select") {
+          var choices = item.type == "checkbox" ? ["No", "Yes"] : item.options
+          var selected = askChoose(item.label || item.id, choices, __, __, ui, promptOptions)
+          if (isDef(selected)) value = item.type == "checkbox" ? (selected == 1 ? "true" : "false") : choices[selected]
+        } else value = line((item.label || item.id) + ": ", item.password)
+        if (closing) continue
+        if (promptRevision != revision) { dirty = true; continue }
+        if (!isString(value) || value.length > 4096 || /[\x00-\x1f\x7f-\x9f]/.test(value)) continue
+        values[item.id] = value
+      }
+      enqueue(item.type == "button" ? "action" : "change", item.id)
+    }
+  }
+  syncValues()
+  try {
+    enqueue("init")
+    while (!closing && (active || !events.isEmpty())) { pump(); sleep(10, true) }
+    initialized = true
+    nextTick = now() + (o.interval || 0)
+    if (mode != "console" && !closing) {
+      win = d.window({ title: o.title || "OpenAF Interaction", view: view })
+      win.on("message", function(e) {
+        // Desktop view revisions start at one; retain the revision of each event.
+        var eventRevision = e.viewRevision - 1 + initialRevision
+        events.offer(JSON.stringify({ type: e.message.type, id: e.message.payload.id, values: e.message.payload.values, revision: eventRevision }))
+      })
+      win.on("closed", function() { closing = true })
+      win.on("error", function(e) { failure = new Error(JSON.stringify(e.error || e)); closing = true })
+      d.on("error", function(e) { failure = new Error(JSON.stringify(e.error || e)); closing = true })
+      var initialRevision = revision
+      settle(win.show())
+      // Graphical view updates use the bridge, which connects after window.show.
+      if (!d.info().capabilities.nativeViews) {
+        var readyDeadline = now() + 10000
+        while (!closing && !(win.__socket && win.__socket.isOpen()) && now() < readyDeadline) sleep(10, true)
+        if (!closing && !(win.__socket && win.__socket.isOpen())) throw "Interaction frontend connection timed out"
+      }
+      nextTick = now() + (o.interval || 0)
+    }
+    if (mode == "console" && !closing) {
+      ui = o.consoleUI || askConsole()
+      consoleLoop()
+    } else while (!closing) { pump(); sleep(20, true) }
+  } finally {
+    closing = true
+    try {
+      if (win) { win.close(); d.wait() }
+    } finally {
+      if (ui && !o.consoleUI) ui.close()
+      while (active) { pump(); sleep(10, true) }
+    }
+  }
+  if (failure) throw failure
+  return { state: state, outcome: "closed" }
+}

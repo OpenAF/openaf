@@ -797,9 +797,23 @@ var client = $mcp({
 });
 ```
 
+For automatic interactive OAuth, omit `clientId` and `grantType` and configure
+`auth: { type: "oauth2", tokenStore: { type: "sec", profile: "my-account" } }`.
+OpenAF discovers endpoints and required scopes, obtains a client identity through
+metadata documents or dynamic registration, reserves a local callback, and opens
+browser consent. The server must support an available registration mechanism.
+See [automatic MCP OAuth](mcp-oauth.md#automatic-mcp-oauth) for defaults and overrides.
+
 OAuth2 token URLs can also be auto-discovered from the MCP server's OAuth 2.0 Protected Resource Metadata when `tokenURL`/`authURL` are omitted.
 
 To retain OAuth credentials across sessions, opt in with `auth.tokenStore: { type: "sec", profile: "alice" }`. The built-in adapter uses an encrypted SBucket and coordinates token refresh across local processes. Custom synchronous stores are also supported. See [persistent OAuth, callback login and token stores](mcp-oauth.md) for configuration, failure behavior and storage limitations.
+
+### Resources, callbacks and MCP Apps
+
+See [MCP client capabilities](mcp-client.md) for resource/template APIs, subscriptions,
+server-initiated request and notification handlers, sampling/elicitation/roots,
+modern continuations, rich results, the optional Apps host contract, verified
+draw.io examples and the capability matrix. The default version remains 2025-06-18.
 
 ### Tool blacklist
 
@@ -818,3 +832,311 @@ client.initialize();
 
 ---
 See also: `ojob-security.md`, `openaf-flags.md`, and main references.
+
+### Category distributions: pie, donut and stacked bars
+
+Load `ow.loadFormat()` first. Each renderer returns a string; use `print()` for static
+output or return it from a dashboard renderer. Inputs can be `[50, 30, 20]`, a map
+such as `{ A: 50, B: 30, C: 20 }`, or records with `label`, `value` and optional
+`color`. Values must be finite non-negative numbers; invalid values and colours
+throw. Empty input produces `(empty)` and zero totals produce `(no data)`.
+
+```javascript
+ow.loadFormat()
+var values = [
+  { label: "A", value: 50, color: "BLUE" },
+  { label: "B", value: 30, color: "GREEN" },
+  { label: "C", value: 20, color: "YELLOW" }
+]
+
+// One-line category distribution; disable summary text to devote every cell to the bar.
+print(ow.format.printStackedBar(values, { width: 40, showPercent: false }))
+print(ow.format.printPie(values, { size: "tiny", width: 60 }))
+
+// Small and medium circles. Named sizes describe geometry before external legends.
+print(ow.format.printPie(values, { size: "small", mode: "braille" }))
+print(ow.format.printPie(values, { size: "medium", mode: "halfblock" }))
+print(ow.format.printDonut(values, { size: "small" }))
+print(ow.format.printDonut(values, {
+  size: "medium", innerRadius: 0.6, centerText: "65%", legend: "right"
+}))
+
+// Normalized percentage bar with a separate legend.
+print(ow.format.printStackedBar(values, {
+  width: 40, normalize: true, showPercent: true, legend: "bottom", palette: "auto"
+}))
+print(ow.format.printStackedColumns([
+  { label: "Host 1", values: { CPU: 50, Memory: 30, Other: 20 } },
+  { label: "Host 2", values: { CPU: 20, Memory: 50, Other: 30 } }
+], { width: 30, height: 8 }))
+```
+
+`small` uses 12×5 geometry and `medium` uses 20×8. Explicit `width`/`height`
+constrain the entire output, including legends, and override preset geometry.
+Supplying just one dimension derives the other from `cellAspect` after reserving
+legend space. Dashboard-allocated dimensions remain bounds unless the widget's
+own options explicitly set width or height. `size: "auto"` chooses a fitting
+preset. Below 8×4 geometry, pie/donut fall back to a stacked summary; select
+`fallback: "text"` for text only. `legend` accepts `auto`, `right`, `bottom`,
+`inline` and `none`; a constrained right legend moves below the chart when needed.
+Centre text never overwrites the donut ring. If it cannot fit, it goes to the
+legend; `centerTextOverflow: "clip"` or `"omit"` changes that policy.
+
+`mode: "auto"` prefers coloured half-blocks, with separate upper/lower colours.
+Braille has finer geometry but only one foreground colour per cell: mixed cells
+use the majority category, with input-order ties. Monochrome Braille uses stipples;
+ASCII geometry uses category letters. Half-block monochrome falls back to ASCII.
+`cellAspect` defaults to 0.5 (physical cell width/height); fonts can require adjustment.
+Angles are degrees: `startAngle: -90`, `clockwise: true` starts at the top.
+
+Colour is optional. `palette` accepts `auto`, `none`, `16`, `256`, `truecolor`;
+`colors` supplies category overrides. `color: false` and `NO_COLOR` suppress ANSI.
+Tiny positive slices can have no rendered samples; legends mark them with `*`.
+The default `maxCategories: 12` aggregates excess categories as `Other (n)`;
+use zero to retain all. Percentages describe the data, not quantized pixel areas.
+Duplicate labels remain separate and receive occurrence suffixes.
+
+Compact bars show category IDs and percentages inline; use a bottom legend for full labels.
+Stacked bars use stable largest-remainder allocation. Colour Unicode bars use
+eighth-cell blocks where representable, falling back to whole cells if more than
+two categories share a cell. Monochrome uses category letters. Absolute mode is
+`normalize: false, max: 200`; a maximum below the total throws. Column charts use
+a shared maximum and consistent category identity across columns. A column chart
+too narrow to retain every column throws rather than dropping data.
+
+```javascript
+// Mixed dashboard. Grid cells use obj instead of data and accept the same types/options.
+print(ow.format.printDashboard([[
+  { type: "pie", title: "Distribution", data: values },
+  { type: "donut", title: "Share", data: values,
+    options: { innerRadius: 0.6, centerText: "65%" } },
+  { type: "stackedBar", title: "Resources", data: values,
+    options: { legend: "bottom" } }
+]], { width: 100, height: 12, border: true }))
+
+// Live output: stop the controller when finished.
+var live = ow.format.viz.live(function(ctx) {
+  return ow.format.printDashboard([[
+    { type: "donut", title: "Live share", data: [50 + ctx.frame % 10, 30, 20],
+      options: { size: "auto", legend: "right" } },
+    { type: "stackedBar", title: "Resources", data: values }
+  ]], {
+    width: ctx.size.width, height: Math.max(1, ctx.size.height - 1),
+    capabilities: ctx.capabilities, border: true
+  })
+}, { fps: 4 })
+// live.stop()
+
+// Deterministic no-colour rendering, including redirected stdout:
+print(ow.format.printPie(values, {
+  width: 32, height: 8, palette: "none", unicode: false,
+  capabilities: { width: 32, height: 8, ansi: false, unicode: false, colorMode: "none" }
+}))
+```
+
+Use static rendering when redirecting output to a file, for example save the last
+snippet in `distribution.js` and run `openaf -f distribution.js > distribution.txt`.
+Explicit capabilities and dimensions do not require a TTY. Renderers do not move
+the cursor or perform external I/O. `viz.diffFrames` currently rewrites the frame;
+it detects colour-only changes, clears removed rows and preserves the next frame's
+cursor origin. It is not a per-cell diff engine.
+
+For text composition, use `visibleLength`, `string.ansiClip` and `string.ansiPad`.
+Clipping preserves supported Unicode clusters and complete styling escapes, closes
+ANSI styles/hyperlinks, and respects column budgets. Emoji widths follow OpenAF's
+`VISIBLELENGTH_WIDE_EMOJI` setting; actual terminal fonts can differ. Capability
+width/height overrides apply only to the current call and do not change the cache.
+
+#### Measuring render performance
+
+Use the existing `ow.format.viz.benchmarkRender` after warming up the JVM:
+
+```javascript
+var render = function() {
+  return ow.format.printPie([50, 30, 20], {
+    size: "medium", mode: "braille", palette: "16", legend: "none",
+    capabilities: { width: 80, height: 24, ansi: true, unicode: true, colorMode: "16" }
+  })
+}
+for (var i = 0; i < 100; i++) render()
+for (var batch = 0; batch < 5; batch++) {
+  print(ow.format.viz.benchmarkRender(render, { iterations: 200 }))
+}
+```
+
+Reference budgets after warm-up: p95 at most 5 ms for a 40-column stacked bar,
+15 ms for a medium pie/donut, and 50 ms for a 100×30 mixed dashboard. These are
+measurement targets, not portable unit-test timeouts. Record JVM, hardware and
+background load when comparing results. `viz.live` also accepts an explicit
+`capabilities` map; with it, automatic terminal resize polling is disabled and
+updates use the supplied dimensions.
+
+### Diverging bars, treemaps and sparkline annotations
+
+These additions use the same offline rendering and capability options as pie and
+stacked charts. They return strings, with no printing or cursor movement.
+
+```javascript
+ow.loadFormat()
+print(ow.format.printDivergingBars({ Regression: -12, Unchanged: 0, Improvement: 30 }, {
+  width: 50, symmetric: true, palette: "auto"
+}))
+print(ow.format.printTreemap({ API: 50, Cache: 30, Workers: 20 }, {
+  width: 40, height: 10, legend: "right", palette: "auto"
+}))
+print(ow.format.printSparkline([10, 25, null, 40, 70, 55], {
+  width: 40, min: 0, max: 100, missing: "gap",
+  thresholds: [{ value: 60, color: "RED" }],
+  markMin: true, markMax: true, highlightLast: "YELLOW", trend: true
+}))
+```
+
+Diverging bars accept signed number arrays, category records, or value maps.
+The default symmetric range centres the zero axis; `symmetric: false` allocates
+negative/positive space according to their respective extents. Explicit `min`
+and `max` must include zero and all values. `labels` and `showValue` default to
+true. The default width is 40 and the height is the number of values. Monochrome
+uses minus/plus bars, so direction remains readable without colour. Very narrow
+boxes use signed text. Categories retain their order and are never aggregated.
+
+Treemaps accept the non-negative category formats supported by `printPie`.
+Defaults are 40×10, `labels: true`, `cellAspect: 0.5`, and an automatic bottom
+legend occupying up to three rows. `legend: "right"` reserves a side panel when
+it fits. Balanced recursive slicing splits along the longer physical dimension,
+using stable value order and integer cell boundaries. Categories too small to
+receive cells are marked `*`; a truncated legend announces hidden categories.
+This deliberately favours predictable small layouts over a squarified algorithm.
+Labels never extend beyond their rectangles. Use `legend: "none"` to devote the
+whole box to geometry. Small boxes use a stacked distribution instead.
+
+Sparkline annotations are opt-in. Existing calls retain their glyphs, sampling
+and defaults. Enhanced mode supports:
+
+- `min`/`max`: fixed geometry bounds; values outside the range clamp to the endpoint.
+- `missing: "gap" | "skip" | "error"`: handles null, undefined and NaN. Other
+  nonnumeric or infinite values throw. The default in enhanced mode is `gap`.
+- `markMin`/`markMax`: use ▼/▲, or v/^ in ASCII. Max wins when both markers apply.
+- `highlightLast`: true for yellow, or an explicit colour for the last visible value.
+- `trend`: append ↑/↓/→, or +/-/= in ASCII, comparing first and last finite values.
+- `thresholds: [{value,color}]`: thresholds apply in ascending order.
+- `colorScale`: an array of category colours or `{min,max,colors}`. Explicit scale
+  bounds give multiple series a consistent colour scale. Threshold colours take
+  precedence over the scale; last-value highlighting takes precedence over both.
+
+Enhanced sparklines budget labels, names and annotations inside the requested
+width. Downsampling selects the last point in each bin and retains the last
+sample. No-colour output still includes geometry, extrema markers and trend.
+Both `divergingBars` and `treemap` are dashboard/grid widget types. For example:
+
+```javascript
+print(ow.format.printDashboard([[
+  { type: "divergingBars", title: "Change", data: { A: -10, B: 25 } },
+  { type: "treemap", title: "Capacity", data: { API: 50, Cache: 30, Other: 20 } }
+]], { width: 80, height: 12 }))
+```
+
+Very small positive percentages are displayed as `<0.1%` at the default precision,
+rather than rounded to zero. Aggregated values that overflow a finite JavaScript
+sum are labelled `sum > 1.7976931348623157e+308`; normalized shares remain finite.
+
+The optional benchmark is reproducible without external dependencies:
+
+```sh
+cd tests
+java --enable-native-access=ALL-UNNAMED -jar ../openaf.jar -f benchmark-format-viz.js > /tmp/format-viz-benchmark.json
+```
+
+To exercise real colour modes on POSIX systems, run the command with `env -u NO_COLOR`
+prefixed; this changes only that child process. Otherwise the benchmark correctly
+honours `NO_COLOR` and measures monochrome fallbacks.
+
+It records OS/architecture, JVM, `NO_COLOR` status, warm-up count, five batches of 200 renders,
+legacy baselines, twelve-category alternating-colour input, new renderers and a
+mixed dashboard. Budgets are reported per renderer. Set
+`FORMAT_VIZ_BENCH_ENFORCE=true` to enforce reference-machine budgets; ordinary
+unit tests do not assert wall-clock timings. Sample counts can be overridden with
+`FORMAT_VIZ_BENCH_WARMUP`, `FORMAT_VIZ_BENCH_ITERATIONS` and `FORMAT_VIZ_BENCH_BATCHES`.
+
+The following candidates remain intentionally unimplemented: horizontal range
+charts (highest utility/lowest complexity), percentile strips, grouped bars,
+logarithmic histograms, and waterfalls. Quadrant encoding, public raster/renderer
+registries and per-cell frame diffs also remain outside this implementation.
+
+### Terminal visualization validation snapshot (2026-11-08)
+
+Phases 1–5 are implemented. Phase 6 automated checks are green for the local
+macOS build and the offline Linux minimum-runtime checks below. Native desktop
+and Windows visual verification remain explicitly unverified; this snapshot does
+not certify a Windows terminal or a GUI terminal emulator.
+
+| Gate | Observed result |
+| --- | --- |
+| Build with JDK 27.0.1.0.3 | Passed; compiled/repacked JAR produced |
+| Complete repository suite | 532/532 passed; 17,413 assertions; colour cases enabled |
+| Offline Format exports, macOS arm64 / Java 27 | 76 passed from an unrelated working directory |
+| Focused Linux arm64 / Java 21.0.12 checks | 24 passed, no network, read-only JAR/test mounts |
+| Linux arm64 / Java 25 checks | 24 passed before the final colon-SGR compatibility correction |
+| macOS PTY size checks | Direct input, piped stdin, redirected stdout, resize and stdin preservation passed |
+| Linux Java 21 PTY capabilities | stdout TTY and ANSI detected; xterm-256color profile returned |
+| Packaged public APIs and offline help | Pie, donut, stacked bars/columns, diverging bars and treemap present |
+| Unicode/ANSI regressions | Covered clusters, wide cells, CSI/OSC clipping, retained line breaks, colon SGR in JS and Java |
+| Frame/resize lifecycle | Terminal-state emulator verifies changed FG/BG, removed rows and cursor origin; watcher snapshots reused maps and stops polling |
+| Headless font previews | Menlo, 11×22 cells, Braille supported; light and dark inspected |
+| Optimization visual equivalence | Both font-preview PNGs byte-identical before/after treemap run encoding |
+| Native desktop/Windows matrix | Pending: desktop locked; no Windows terminal available |
+
+All ten benchmark budgets passed on both recorded runtimes. The following are the
+largest p95 measurements among five batches of 200 renders, after 100 warm-ups.
+`NO_COLOR` was absent in both processes; these include real-colour encoding rather
+than accidentally timing monochrome fallbacks.
+
+| Renderer | Reference budget, ms | macOS Java 27, ms | Linux Java 21, ms |
+| --- | ---: | ---: | ---: |
+| `legacySparkline` | 5 | 1 | 2 |
+| `legacyHeatmap` | 15 | 2 | 3 |
+| `stackedBar` | 5 | 3 | 3 |
+| `halfblockPie` | 15 | 9 | 9 |
+| `braillePie` | 15 | 12 | 13 |
+| `donut` | 15 | 8 | 9 |
+| `divergingBars` | 10 | 2 | 2 |
+| `treemap` | 40 | 4 | 4 |
+| `enhancedSparkline` | 5 | 1 | 1 |
+| `mixedDashboard` | 50 | 39 | 38 |
+
+A concurrent-load diagnostic run measured 51 ms p95 for the Linux mixed dashboard;
+the table records the controlled run after the full test suite exited. Timing
+budgets are reference-machine measurements, not guarantees under competing load.
+
+Explicit sizing regressions also verify that a small pie/donut can expand to
+24×12, either dimension derives the other from cell aspect ratio, and dashboard
+bounds preserve presets unless widget options explicitly override dimensions.
+
+The unsupported-provider AI fixture was updated to explicitly remove the two
+structured-output interfaces on its local test instances. Provider names no longer
+imply missing capabilities. The exact unsupported-capability error assertion is
+retained, and no production AI implementation was changed.
+
+Relevant tests live in `tests/autoTestAll.Format.js` and are registered after
+`Format::Load Format` in the paired YAML. They include `testPrintPieDonut`,
+`testPrintStackedDistributions`, `testPrintDivergingBars`, `testPrintTreemap`,
+`testSparklineEnhancements`, `testVizRasterEncoders`, `testVizCanvasUnicode`,
+`testAnsiClipClusters`, `testVizFrameTerminalState`, `testVizWatchResize`, and
+mixed dashboard/grid/live cases. Wall-clock budgets remain in the separate
+`tests/benchmark-format-viz.js` harness, not ordinary unit tests.
+
+To rerun the complete suite against the built JAR:
+
+```sh
+cd tests
+env -u NO_COLOR java --enable-native-access=ALL-UNNAMED -jar ../openaf.jar --ojob -e autoTestAll.yaml
+```
+
+To enforce the recorded benchmark budgets on a reference machine:
+
+```sh
+env -u NO_COLOR FORMAT_VIZ_BENCH_ENFORCE=true java --enable-native-access=ALL-UNNAMED -jar ../openaf.jar -f benchmark-format-viz.js
+```
+
+Native terminal font/raster placement, GUI reflow during resize, and Windows
+console integration still require an available native environment. Headless font
+previews and byte-level assertions do not claim to replace those checks.

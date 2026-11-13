@@ -19,7 +19,10 @@ import org.jline.reader.Binding;
 import org.jline.reader.Buffer;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
+import java.util.HashMap;
+import java.util.function.BooleanSupplier;
+import org.jline.keymap.KeyMap;
+import org.jline.reader.impl.LineReaderImpl;
 import org.jline.reader.Reference;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Attributes;
@@ -33,10 +36,41 @@ public class ConsoleReader implements Closeable {
     private final CursorBuffer cursorBuffer = new CursorBuffer();
     private History history = new MemoryHistory();
     private CompletionHandler completionHandler = new CandidateListCompletionHandler();
-    private LineReader reader;
+    private PollingLineReader reader;
     private boolean historyEnabled = true;
     private boolean expandEvents = true;
     private boolean handleUserInterrupt;
+    private BooleanSupplier idleCallback;
+    private long pollInterval = 50;
+
+    private static class PromptCancelled extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+    }
+
+    private class PollingLineReader extends LineReaderImpl {
+        PollingLineReader() {
+            super(ConsoleReader.this.terminal.unwrap(), "OpenAF", new HashMap<>());
+        }
+
+        private void poll() {
+            if (idleCallback == null) return;
+            do {
+                if (!idleCallback.getAsBoolean()) throw new PromptCancelled();
+            } while (bindingReader.peekCharacter(pollInterval) == org.jline.utils.NonBlockingReader.READ_EXPIRED);
+        }
+
+        @Override
+        protected <T> T doReadBinding(KeyMap<T> keys, KeyMap<T> local) {
+            poll();
+            return super.doReadBinding(keys, local);
+        }
+
+        @Override
+        public int readCharacter() {
+            poll();
+            return super.readCharacter();
+        }
+    }
 
     public ConsoleReader() throws IOException { this(Terminal.system(), false); }
     public ConsoleReader(InputStream input, OutputStream output) throws IOException {
@@ -49,10 +83,10 @@ public class ConsoleReader implements Closeable {
     }
     private synchronized LineReader lineReader() {
         if (reader == null) {
-            reader = LineReaderBuilder.builder().terminal(terminal.unwrap())
-                .appName("OpenAF").history(new LegacyHistory(history))
-                .parser(new DefaultParser().quoteChars(new char[0]).escapeChars(new char[0])
-                    .eofOnUnclosedQuote(false).eofOnEscapedNewLine(false)).build();
+            reader = new PollingLineReader();
+            reader.setHistory(new LegacyHistory(history));
+            reader.setParser(new DefaultParser().quoteChars(new char[0]).escapeChars(new char[0])
+                .eofOnUnclosedQuote(false).eofOnEscapedNewLine(false));
             reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, !expandEvents);
             // Keep JS evaluation/multiline decisions in the calling console.
             reader.option(LineReader.Option.BRACKETED_PASTE, true);
@@ -124,22 +158,35 @@ public class ConsoleReader implements Closeable {
     public String readLine(String prompt) throws IOException { return readLine(prompt, null); }
     public String readLine(Character mask) throws IOException { return readLine("", mask); }
     public String readLine(String prompt, Character mask) throws IOException {
+        return readLine(prompt, mask, null, 50);
+    }
+    public String readLine(String prompt, Character mask, BooleanSupplier onIdle, long interval) throws IOException {
+        if (interval < 1) throw new IllegalArgumentException("Positive polling interval required");
         synchronized (terminal) {
+            BooleanSupplier previousCallback = idleCallback;
+            long previousInterval = pollInterval;
             LineReader lr = lineReader();
             lr.setVariable(LineReader.DISABLE_HISTORY, !historyEnabled || mask != null);
             String initial = cursorBuffer.toString();
             cursorBuffer.clear();
             try {
+                idleCallback = onIdle;
+                pollInterval = interval;
                 return lr.readLine(prompt == null ? "" : prompt, mask, initial);
+            } catch (PromptCancelled e) {
+                return null;
             } catch (EndOfFileException e) {
                 return null;
             } catch (org.jline.reader.UserInterruptException e) {
+                if (onIdle != null) return null;
                 if (handleUserInterrupt) throw new jline.console.UserInterruptException(e.getPartialLine());
                 // JLine 2 normally leaves SIGINT to the process handler.
                 terminal.restore();
                 System.exit(130);
                 return null;
             } finally {
+                idleCallback = previousCallback;
+                pollInterval = previousInterval;
                 lr.setVariable(LineReader.DISABLE_HISTORY, !historyEnabled);
             }
         }

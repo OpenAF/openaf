@@ -97,6 +97,7 @@ import com.nwu.httpd.NanoHTTPD.Response.IStatus;
 import com.nwu.httpd.NanoHTTPD.Response.Status;
 
 import org.apache.commons.io.FileUtils;
+import openaf.core.HttpRequestBodyBudget;
 
 import java.lang.String;
 
@@ -433,11 +434,11 @@ public abstract class NanoHTTPD {
 
         private final File file;
 
-        private final OutputStream fstream;
+        private OutputStream fstream;
 
         public DefaultTempFile(File tempdir) throws IOException {
             this.file = File.createTempFile("NanoHTTPD-", "", tempdir);
-            this.fstream = new FileOutputStream(this.file);
+
         }
 
         @Override
@@ -454,7 +455,8 @@ public abstract class NanoHTTPD {
         }
 
         @Override
-        public OutputStream open() throws Exception {
+        public synchronized OutputStream open() throws Exception {
+            if (this.fstream == null) this.fstream = new FileOutputStream(this.file);
             return this.fstream;
         }
     }
@@ -485,14 +487,18 @@ public abstract class NanoHTTPD {
 
         @Override
         public void clear() {
+            List<TempFile> failed = new ArrayList<TempFile>();
             for (TempFile file : this.tempFiles) {
                 try {
                     file.delete();
-                } catch (Exception ignored) {
-                    NanoHTTPD.LOG.log(Level.WARNING, "could not delete file ", ignored);
+                } catch (Exception failure) {
+                    failed.add(file);
+                    NanoHTTPD.LOG.log(Level.WARNING, "could not delete file ", failure);
                 }
             }
             this.tempFiles.clear();
+            this.tempFiles.addAll(failed);
+            if (!failed.isEmpty()) throw new IllegalStateException("Request temporary-file cleanup failed; body budget retained.");
         }
 
         @Override
@@ -658,6 +664,34 @@ public abstract class NanoHTTPD {
 
         private final BufferedInputStream inputStream;
 
+        private long admittedBodySize = -1;
+        private HttpRequestBodyBudget.Reservation bodyReservation;
+        private boolean bodyParseAttempted;
+        private Map<String, String> parsedBodyFiles;
+        private int multipartLimit;
+
+        private void admitBody() throws ResponseException {
+            if (this.admittedBodySize >= 0) return;
+            if (this.headers.containsKey("transfer-encoding")) {
+                throw new ResponseException(Response.Status.BAD_REQUEST, "Transfer-Encoding is not supported.");
+            }
+            String declared = this.headers.get("content-length");
+            long size;
+            if (declared != null) {
+                if (!declared.matches("[0-9]+")) throw new ResponseException(Response.Status.BAD_REQUEST, "Invalid Content-Length.");
+                try { size = Long.parseLong(declared); }
+                catch (NumberFormatException invalid) { throw new ResponseException(Response.Status.BAD_REQUEST, "Invalid Content-Length."); }
+            } else size = this.splitbyte < this.rlen ? this.rlen - this.splitbyte : 0;
+            if (size > HttpRequestBodyBudget.maxBodyBytes()) {
+                throw new ResponseException(Response.Status.PAYLOAD_TOO_LARGE, "Request body limit exceeded.");
+            }
+            HttpRequestBodyBudget.Reservation reservation = HttpRequestBodyBudget.acquire(size);
+            if (reservation == null) throw new ResponseException(Response.Status.SERVICE_UNAVAILABLE, "Request body budget exhausted.");
+            this.bodyReservation = reservation;
+            this.admittedBodySize = size;
+            this.multipartLimit = HttpRequestBodyBudget.maxMultipartParts();
+        }
+
         private int splitbyte;
 
         private int rlen;
@@ -745,7 +779,12 @@ public abstract class NanoHTTPD {
                 while (line != null && !line.trim().isEmpty()) {
                     int p = line.indexOf(':');
                     if (p >= 0) {
-                        headers.put(line.substring(0, p).trim().toLowerCase(Locale.US), line.substring(p + 1).trim());
+                        String name = line.substring(0, p).trim().toLowerCase(Locale.US);
+                        String value = line.substring(p + 1).trim();
+                        if ("content-length".equals(name) && headers.containsKey(name) && !headers.get(name).equals(value)) {
+                            throw new ResponseException(Response.Status.BAD_REQUEST, "Conflicting Content-Length.");
+                        }
+                        headers.put(name, value);
                     }
                     line = in.readLine();
                 }
@@ -909,6 +948,9 @@ public abstract class NanoHTTPD {
 
         @Override
         public void execute() throws IOException {
+            this.admittedBodySize = -1;
+            this.bodyParseAttempted = false;
+            this.parsedBodyFiles = null;
             Response r = null;
             try {
                 // Read the first 8192 bytes.
@@ -985,6 +1027,8 @@ public abstract class NanoHTTPD {
                 String connection = this.headers.get("connection");
                 boolean keepAlive = "HTTP/1.1".equals(protocolVersion) && (connection == null || !connection.matches("(?i).*close.*"));
 
+                // Reject before route dispatch, allocation or temporary-file creation.
+                admitBody();
                 // Ok, now do the serve()
 
                 // TODO: long body_size = getBodySize();
@@ -1028,8 +1072,18 @@ public abstract class NanoHTTPD {
                 resp.send(this.outputStream);
                 safeClose(this.outputStream);
             } finally {
-                safeClose(r);
-                this.tempFileManager.clear();
+                boolean cleaned = false;
+                try {
+                    safeClose(r);
+                    this.tempFileManager.clear();
+                    cleaned = true;
+                } finally {
+                    this.parsedBodyFiles = null;
+                    this.parms = new HashMap<String, List<String>>();
+                    // Fail closed if cleanup fails: leaked files remain charged until process restart.
+                    if (cleaned && this.bodyReservation != null) this.bodyReservation.close();
+                    this.bodyReservation = null;
+                }
             }
         }
 
@@ -1060,10 +1114,10 @@ public abstract class NanoHTTPD {
          * a large block at a time and uses a temporary buffer to optimize
          * (memory mapped) file access.
          */
-        private int[] getBoundaryPositions(ByteBuffer b, byte[] boundary) {
-            int[] res = new int[0];
+        private int[] getBoundaryPositions(ByteBuffer b, byte[] boundary) throws ResponseException {
+            List<Integer> matches = new ArrayList<Integer>();
             if (b.remaining() < boundary.length) {
-                return res;
+                return new int[0];
             }
 
             int search_window_pos = 0;
@@ -1081,10 +1135,10 @@ public abstract class NanoHTTPD {
                             break;
                         if (i == boundary.length - 1) {
                             // Match found, add it to results
-                            int[] new_res = new int[res.length + 1];
-                            System.arraycopy(res, 0, new_res, 0, res.length);
-                            new_res[res.length] = search_window_pos + j;
-                            res = new_res;
+                            if (matches.size() >= (long) this.multipartLimit + 1) {
+                                throw new ResponseException(Response.Status.PAYLOAD_TOO_LARGE, "Multipart part limit exceeded.");
+                            }
+                            matches.add(search_window_pos + j);
                         }
                     }
                 }
@@ -1098,6 +1152,8 @@ public abstract class NanoHTTPD {
                 new_bytes = (b.remaining() < new_bytes) ? b.remaining() : new_bytes;
                 b.get(search_window, boundary.length, new_bytes);
             } while (new_bytes > 0);
+            int[] res = new int[matches.size()];
+            for (int i = 0; i < res.length; i++) res[i] = matches.get(i);
             return res;
         }
 
@@ -1169,6 +1225,7 @@ public abstract class NanoHTTPD {
          * read bytes.
          */
         public long getBodySize() {
+            if (this.admittedBodySize >= 0) return this.admittedBodySize;
             if (this.headers.containsKey("content-length")) {
                 return Long.parseLong(this.headers.get("content-length"));
             } else if (this.splitbyte < this.rlen) {
@@ -1179,6 +1236,10 @@ public abstract class NanoHTTPD {
 
         @Override
         public void parseBody(Map<String, String> files) throws IOException, ResponseException {
+            admitBody();
+            if (this.parsedBodyFiles != null) { files.putAll(this.parsedBodyFiles); return; }
+            if (this.bodyParseAttempted) throw new ResponseException(Response.Status.BAD_REQUEST, "Request body already consumed.");
+            this.bodyParseAttempted = true;
             try (RandomAccessFile randomAccessFile = getBodySize() >= MEMORY_STORE_LIMIT ? getTmpBucket() : null;
                  FileChannel fileChannel = randomAccessFile != null ? randomAccessFile.getChannel() : null;
                  ByteArrayOutputStream baos = getBodySize() < MEMORY_STORE_LIMIT ? new ByteArrayOutputStream() : null;
@@ -1189,16 +1250,24 @@ public abstract class NanoHTTPD {
                 // Read all the body and write it to request_data_output
                 byte[] buf = new byte[REQUEST_BUFFER_LEN];
                 long size = getBodySize();
-                while (this.rlen >= 0 && size > 0) {
+                while (size > 0) {
                     this.rlen = this.inputStream.read(buf, 0, (int) Math.min(size, REQUEST_BUFFER_LEN));
+                    if (this.rlen < 0) throw new ResponseException(Response.Status.BAD_REQUEST, "Incomplete request body.");
                     size -= this.rlen;
-                    if (this.rlen > 0) {
-                        requestDataOutput.write(buf, 0, this.rlen);
-                    }
+                    if (this.rlen > 0) requestDataOutput.write(buf, 0, this.rlen);
                 }
 
-                ByteBuffer fbuf = baos != null ? ByteBuffer.wrap(baos.toByteArray(), 0, baos.size()) :
-                        fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, randomAccessFile.length());
+                ByteBuffer fbuf;
+                if (baos != null) fbuf = ByteBuffer.wrap(baos.toByteArray(), 0, baos.size());
+                else {
+                    // Bounded heap storage avoids mapped files surviving quota release/Windows deletion.
+                    fbuf = ByteBuffer.allocate((int) randomAccessFile.length());
+                    fileChannel.position(0);
+                    while (fbuf.hasRemaining()) {
+                        if (fileChannel.read(fbuf) < 0) throw new IOException("Incomplete request spool.");
+                    }
+                    fbuf.flip();
+                }
 
                 // If the method is POST, there may be parameters in data section, too, read it:
                 if (Method.POST.equals(this.method)) {
@@ -1225,6 +1294,7 @@ public abstract class NanoHTTPD {
                 } else if (Method.PUT.equals(this.method)) {
                     files.put("content", saveTmpFile(fbuf, 0, fbuf.limit(), null));
                 }
+                this.parsedBodyFiles = new HashMap<String, String>(files);
             }
         }
 

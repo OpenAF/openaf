@@ -276,7 +276,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		path     : true
 	},
 	WITHMD: {
-		htmlFilter: true
+		htmlFilter: true,
+		bullets: ["\u2022", "\u25e6", "\u25aa"],
+		tasks: { open: "\u2610", done: "\u2611" }
 	},
 	OAFP: {
 		libs: []
@@ -2224,7 +2226,7 @@ const stringify = function(aobj, replacer, space) {
  *   selects the default table renderer for `$output` when no global or explicit format is set.
  * - `tree`: { lines } color for tree connecting lines (other tree options are merged with `__flags.TREE`).
  * - `md`: colors used by `ow.format.withMD`: codeBlock {line, text, theme}, codeInline {text, surround}, heads {h1..h4}, line, link {text, url},
- *   bullets, list, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.
+ *   bullets, list, task {open, done}, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.
  *
  * Example:
  *
@@ -5124,7 +5126,7 @@ const inherit = function(Child, Parent) {
  */
 const __visibleLength = "H4sIAAAAAAAAAO2daXIjNwyF/+c2wP0Pl0rcAB4WshdJHo/rfWWP1d0kVhKklJQo8mF0z6fVk5fR/3/kv1wxX9dgmP48KnN5UYnKg3Xo+MXapPn661Jy2VIxUSXt6hPH580fqnerSHw9W3f7ZfX5K8uikWgpqT119zweNqy8eUiFQeZP7kT4GFBqF7pJnnqX+6uuxeXLW/WJkaRdtvrMqZhXPlEgN+9SIJ4USLbdOYLqczVu9LiFNNEQZrqSghgL4Y1ZYrLC2eggUvX7eAmvvKWPNbGMeRS9KUQyF6QeLXwEOaj6QX4Ndy2DOM0gGiBbPFRiU7PE3zp0rcmm4ra3iGTDvMuJjUbVtHBLsyYI+BTHph+CYc66TRI3Y6zhaLN+2uSLN2yDtcbfwzjUhVYLQSraHS6l+I+p0bKmCspa68dhl4XUpMfiG04PGWl+YHNQ7oPPDKh29/ymhqGoVPccTr8StyAZEBfVcUGJig/QtLcV59UkPyx4LiGqJzxvM3enu07ItXpVX11MfAmRtheHjU/R9yZBvN7bFmBM/NxxYLyJyw/8aVMlXZlRMTG1KUUnUpVNLZevUPyTwA1+vpU5lFc7i0V6Tsnr9m7k3sPn3HGVry/3P+1wTU8TI8thHR3EW70lLqmA2QRVLOyDuxLtjvzEj1hVtAXWbU9zAlaNtLIVf2H1WHtwfahsG5xoefZ0tGltBpbvQdLe/k3Hjbltz6T56dLU+upd87Zth/Ke5KbU6CGDlEnwuC2x/vBPTABvrvHQRcVb3tSoRTrPiRJHya3aoK+29zzgXDyVP6TyaCdlG2KbQJ+qpQvkqyyBFkqzIO9csglRoDzSEawSGt8OeyWqkbb9lG1UMWESu9diefICZca71vVMeI0YF31j8UibYoi8/NuzUb+WQKWoizcIEXmaVS0+aly6SAvySbXOJltGIZd5VODo34btPKJlniXBp50fsg7FHJ/UNfqbLLiGe93P6nFPQ41levDQ4iwtGdwyOZgwygGviqVpLMJsP5N5CZyy5BfyybRyyPxk9tmBjcLiaRTeS7pgx6T2rtsLV5Kr0CDZGW/umjVe+vq12trwY4dj2sAMC9llORc6wu4GdQ67lVL7YWEUT17Vn/LTdszVVtiBHLdg6R1csxWzyK6GxDWOUtjQhb4pQHm9m9f5ejdHC3S1BXTsuR+bJ1ntEn8We+tJ5ZNxm+Ue+uxX+tw67np1LvWjtDVpIGoz4YqUvf0m6LRInozJTXxrNYllBD4mwOFdsvWOOfMbidiUGC2SV9/p+KcUvnbELwqzxpscg14foFXbDX/i1vTmqzY9PlALe9GAvkzlRXRYp+fP1MYFehmNxU5vWuLTq00qawy+HMu2ojuxITwJeokbJnPpYLv6xlUpZcrG8Mq72P9s2sNHdVGOjw8DMdaH/viYU3yPFq9MoED0j95hC3iT/BKT7JbB5kwfhrn4qtVbiSGLm6xu4SAujaT0/PbfK6vQ7FyKUNlR5rZ3pa80LkKwfvQi1/T/zVyL9xv8/1QAvy0xtwbB5wfMLVMmc57Pt1nJrfZ6b9a+O5p/0Xz+JlNPlfwt8SKEEEIIIYQQQgghhBBCCPnl/Pb/fk0IIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQ8qPoh3vf4OiD58nB6alwcqUflRe97Def32lWxHGdcHxqUW4q/CfpknIAbjwXwWs8nBYPXpU4BjTpDJnu+63TQOcgZxdkOlQ6xTCM3Gk6sUrL1aK9wmGgK5ljCKaDS/PZuZLzUuWkeMSJrKOsKmnZLBTbQbDbpkXUpFK7aav++U/2H2fHUv+J5HqrRru1nKZGbhSzs5mg/SYa7+LyHNM62Bce2UG4eRj0U6MHzfA4fPPwYoOqUt3Ao/SoSYli5TFKhXT9bbr1CTYVGVrsv5j3MKh1mHs1uyZDwXW19IDA0y8KtsqvU0w2lcXOPIZ0q3eBO4sjz9EZlwApths2DmzCQ7vIr5QD2G3RyeNt7czkX1tjStQiAj2ikJImUvEypmxpG54K9Lq+VO0c89gJTps4Nd0zVyNR60du7qmE/EsMeJBUJYzYupqEp0C+FI0T7VWjpHXM3FlbcMm2azZUY6IWKw4h9cCnpytZ2sO7D0G3XbAJzt9Jbqub9qpVqnlopajuozt7UE9Fz7ZAWpOQMhdeIrKlvi2OrehxJbaCCaTWLszMk6FTfTlU4vi4O/YIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCEnvON/OiaEEEIIIYQQQsj3cPpG/vlb/rMe9z5P4AcYhBBCCCGEEELIc3R49cd54X368AVkD9Tf7iL+1XKXe2fTxu8vJOe8Gq8nqf4s8N2hfutnWvo6KRPpCyLxq19PUlzEZMFJXvpOStdoX5m5Eg5fBYmmi8reuuJq9xga7j3cclYuX5X7VML1MQDZGnqdSbzhSrt31cZv5Vm4r/Mz3FtuOP75F8Cu/6jh/wAA"
 var __visibleLength2
-const __visibleLengthAnsiRE = /\033(?:\[[0-9;?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\))/g
+const __visibleLengthAnsiRE = /\033(?:\[[0-?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\))/g
 const __visibleLengthChar = java.lang.Character
 const __visibleLengthIsControl = cp => (
 	(cp >= 0 && cp <= 0x1F) ||
@@ -8429,9 +8431,21 @@ const __streamCodec = (() => {
  * </odoc>
  */
 const ioStreamCopy = function(aOutputStream, aInputStream) {
-	Packages.org.apache.commons.io.IOUtils.copyLarge(aInputStream, aOutputStream);
-	Packages.org.apache.commons.io.IOUtils.closeQuietly(aInputStream);
-	Packages.org.apache.commons.io.IOUtils.closeQuietly(aOutputStream);
+	var failure, failed = false
+	try {
+		Packages.org.apache.commons.io.IOUtils.copyLarge(aInputStream, aOutputStream)
+	} catch(e) {
+		failure = e
+		failed = true
+	}
+	[aInputStream, aOutputStream].forEach(stream => {
+		try {
+			Packages.org.apache.commons.io.IOUtils.closeQuietly(stream)
+		} catch(e) {
+			if (!failed) { failure = e; failed = true }
+		}
+	})
+	if (failed) throw failure
 }
 
 /**
@@ -9513,8 +9527,94 @@ const $jsonrpc = function (aOptions) {
 
 	const _captureSessionFromHeaders = headers => {
 		var _sid = _pickHeaderCaseInsensitive(headers, "mcp-session-id")
-		if (isDef(_sid) && String(_sid).length > 0) {
+		if ((!isString(_mcpInfo.protocolVersion) || _mcpInfo.protocolVersion < "2026-07-28") && isDef(_sid) && String(_sid).length > 0) {
 			_session.mcpSessionId = String(_sid)
+		}
+	}
+
+	// connectionFactory() creates a default HTTP client. Its exec() only applies the
+	// connection timeout and options.timeout, so configure read/write/call limits on
+	// the client's builder as well, rather than passing unused top-level REST keys.
+	const _configureHTTPTimeouts = (http, options) => {
+		var nested = options.options || {}
+		var connect = isNumber(options.connectionTimeout) ? options.connectionTimeout : aOptions.timeout
+		var read = isNumber(options.readTimeout) ? options.readTimeout : (isNumber(nested.readTimeout) ? nested.readTimeout : aOptions.timeout)
+		var write = isNumber(options.writeTimeout) ? options.writeTimeout : (isNumber(nested.writeTimeout) ? nested.writeTimeout : aOptions.timeout)
+		var call = isNumber(options.callTimeout) ? options.callTimeout : (isNumber(nested.timeout) ? nested.timeout : aOptions.timeout)
+		options.connectionTimeout = connect
+		options.options = merge(nested, { timeout: call })
+		if (isDef(http.client) && "function" === typeof http.client.newBuilder) {
+			http.client = http.client.newBuilder()
+				.connectTimeout(connect, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.readTimeout(read, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.writeTimeout(write, java.util.concurrent.TimeUnit.MILLISECONDS)
+				.callTimeout(call, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+		}
+	}
+
+	const _requestHandlers = Object.create(null), _notificationHandlers = Object.create(null)
+	const _inbound = new java.util.concurrent.LinkedBlockingQueue(128)
+	var _workers = []
+	const _dispatch = message => {
+		if (!isMap(message) || message.jsonrpc != "2.0" || !isString(message.method)) return __
+		if (isUnDef(message.id)) {
+			var fn
+			_r._sy.run(() => {
+				_r._notifications = _r._notifications || []
+				_r._notifications.push(message)
+				if (_r._notifications.length > 50) _r._notifications.shift()
+				fn = _notificationHandlers[message.method]
+			})
+			try {
+				if (isFunction(fn)) fn(message.params || {}, message)
+			} catch(e) { _debug("jsonrpc notification handler error: " + e) }
+			try { if (isFunction(aOptions.onNotification)) aOptions.onNotification(message) }
+			catch(e) { _debug("jsonrpc onNotification error: " + e) }
+			return __
+		}
+		var reply = { jsonrpc: "2.0", id: message.id }
+		try {
+			var handler
+			_r._sy.run(() => { handler = _requestHandlers[message.method] })
+			if (!isFunction(handler)) throw { code: -32601, message: "Method not found: " + message.method }
+			var result = handler(message.params || {}, message)
+			if (isUnDef(result)) throw { code: -32603, message: "Request handler returned undefined" }
+			reply.result = result
+		} catch(e) {
+			if (isUnDef(e) || e === null) e = { message: "Request handler failed" }
+			reply.error = { code: isNumber(e.code) ? e.code : -32603, message: String(e.message || e) }
+			if (isDef(e.data)) reply.error.data = e.data
+		}
+		return reply
+	}
+	const _sendReply = reply => {
+		if (isUnDef(reply) || _r._s) return
+		if (aOptions.type == "stdio") {
+			_r._sy.run(() => {
+				var id = _r._ids.inc()
+				_r._q[id] = { __message: reply }
+				_r._wq.put(id)
+			})
+		} else {
+			// Responses use a separate HTTP POST, including the original authentication context.
+			var opts = isFunction(aOptions.getReplyOptions) ? aOptions.getReplyOptions() : {}
+			opts.message = reply
+			_r.exec("", {}, true, opts)
+		}
+	}
+	const _receive = message => {
+		if (_r._s || !isMap(message) || message.jsonrpc != "2.0") return
+		if (isString(message.method)) {
+			if (aOptions.type == "stdio") {
+				if (!_inbound.offer(stringify(message, __, "")) && isDef(message.id)) {
+					_sendReply({ jsonrpc: "2.0", id: message.id, error: { code: -32000, message: "Client inbound queue full" } })
+				}
+			} else _sendReply(_dispatch(message))
+		} else if (isDef(message.id) && (Object.prototype.hasOwnProperty.call(message, "result") || isDef(message.error))) {
+			_r._sy.run(() => {
+				var waiter = _r._w.get(String(message.id))
+				if (waiter != null) { _r._r[message.id] = message; waiter.countDown() }
+			})
 		}
 	}
 
@@ -9568,6 +9668,16 @@ const $jsonrpc = function (aOptions) {
 				return _r
 			}
 
+			if (_workers.length == 0) {
+				_workers = [0, 1].map(() => $doV(() => {
+					while (!_r._s) {
+						var message = _inbound.poll(250, java.util.concurrent.TimeUnit.MILLISECONDS)
+						if (message != null) {
+							try { _sendReply(_dispatch(jsonParse(String(message)))) } catch(e) { _debug("jsonrpc dispatch error: " + e) }
+						}
+					}
+				}))
+			}
 			aOptions.cmd = cmd
 			aOptions.type = "stdio"
 			if (isDef(_r._p)) return _r
@@ -9597,9 +9707,9 @@ const $jsonrpc = function (aOptions) {
 											var _wid = _r._wq.poll(250, java.util.concurrent.TimeUnit.MILLISECONDS)
 											if (_wid == null) continue
 											var _id = Number(_wid)
-											var _qe = _r._q[_id]
-											delete _r._q[_id]
-											if (isMap(_qe) && isDef(_qe.method)) {
+											var _qe
+											_r._sy.run(() => { _qe = _r._q[_id]; delete _r._q[_id] })
+											if (isMap(_qe) && (isDef(_qe.method) || isDef(_qe.__message))) {
 												var _m = {
 													jsonrpc: "2.0",
 													id: _id,
@@ -9609,6 +9719,7 @@ const $jsonrpc = function (aOptions) {
 												if (_qe.__notify) {
 													delete _m.id
 												}
+												if (isDef(_qe.__message)) _m = _qe.__message
 												var msg = stringify(_m, __, "") + "\n"
 												_debug("jsonrpc -> " + msg)
 												ioStreamWrite(i, msg)
@@ -9620,23 +9731,7 @@ const $jsonrpc = function (aOptions) {
 									$doV(() => {
 										ioStreamReadLines(o, line => {
 											_debug("jsonrpc <- " + line)
-											var _l = jsonParse(line)
-											if (isMap(_l) && isDef(_l.jsonrpc)) {
-												if (isDef(_l.id)) {
-													_r._r[_l.id] = _l
-													var _lw = _r._w.get(String(_l.id))
-													if (_lw != null) _lw.countDown()
-												} else {
-													_r._notifications = _r._notifications || []
-													_r._notifications.push(_l)
-													if (_r._notifications.length > 50) _r._notifications.shift()
-													if (isFunction(aOptions.onNotification)) {
-														try { aOptions.onNotification(_l) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
-													}
-												}
-											} else {
-												_debug("jsonrpc <- (ignored non-JSON-RPC line) " + line)
-											}
+											try { _receive(jsonParse(line)) } catch(e) { _debug("jsonrpc malformed message: " + e) }
 											return !!_r._s
 										}, __, true, "UTF-8")
 									}),
@@ -9712,23 +9807,19 @@ const $jsonrpc = function (aOptions) {
 				var _obj = jsonParse(_payload, __, __, true)
 				var _evt = isDef(_obj) ? _obj : _payload
 
-				if (isDef(anExpectedId) && isMap(_evt) && isUnDef(_evt.id) && isUnDef(_evt.error)) {
-					_mcpInfo.lastNotifications = _mcpInfo.lastNotifications || []
-					_mcpInfo.lastNotifications.push(_evt)
-					if (isFunction(aOptions.onNotification)) {
-						try { aOptions.onNotification(_evt) } catch(e) { _debug("jsonrpc onNotification error: " + e) }
-					}
+				if (isMap(_evt) && isString(_evt.method)) {
+					_receive(_evt)
 					return
 				}
 
 				_events.push(_evt)
-				if (isDef(anExpectedId) && isMap(_evt) && (_evt.id == anExpectedId || isDef(_evt.error))) {
+				if (isDef(anExpectedId) && isMap(_evt) && (_evt.id === anExpectedId && isUnDef(_evt.method))) {
 					_stopped = true
 				}
 			}
 			try {
 				ioStreamReadLines(aStream, line => {
-					var _line = String(line)
+					var _line = String(line).replace(/\r$/, "")
 					if (_line.length == 0) {
 						_flush()
 						return _stopped
@@ -9742,7 +9833,7 @@ const $jsonrpc = function (aOptions) {
 						_nonSseLines.push(_line)
 					}
 					return false
-				}, "\n", false)
+				}, "\n", false, "UTF-8")
 				if (!_stopped) _flush()
 			} finally {
 				try { aStream.close() } catch(e) {}
@@ -9758,6 +9849,7 @@ const $jsonrpc = function (aOptions) {
 			return []
 		},
 		exec: (aMethod, aParams, aNotification, aExecOptions) => {
+			if (_r._s) throw new Error("JSON-RPC client has been destroyed")
 			aExecOptions = _$(aExecOptions, "aExecOptions").isMap().default({})
 			_mcpInfo.lastRequest = {
 				method: _$(aMethod, "aMethod").isString().default(__),
@@ -9800,12 +9892,11 @@ const $jsonrpc = function (aOptions) {
 						__notify: !!aNotification
 					}
 
-					var _res, _wl
+					var _res, _wl, _completed = false
 					// ids are unique per connection and responses are matched by id, so concurrent exec() calls
 					// (e.g. with shared:true) can be pipelined safely
 					_r._sy.run(() => {
-						_id = _r._ids.get()
-						_r._ids.inc()
+						_id = _r._ids.inc()
 						_r._q[_id] = _req
 						if (!aNotification) {
 							_wl = new java.util.concurrent.CountDownLatch(1)
@@ -9816,18 +9907,27 @@ const $jsonrpc = function (aOptions) {
 					// If this is a notification (no reply expected) skip waiting for a response
 					if (!!aNotification) return __
 					try {
-						if (!_wl.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)) _debug("jsonrpc request " + _id + " timed out after " + aOptions.timeout + "ms")
+						if (isFunction(aExecOptions.onRequestId)) aExecOptions.onRequestId(_id)
+						if (!_wl.await(aOptions.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+							_r.exec("notifications/cancelled", { requestId: _id, reason: "Client timeout" }, true)
+							throw new Error("JSON-RPC request " + _id + " timed out after " + aOptions.timeout + "ms")
+						}
+						_completed = true
 					} finally {
-						_r._w.remove(String(_id))
+						_r._sy.run(() => {
+							_r._w.remove(String(_id))
+							if (!_completed) { delete _r._q[_id]; delete _r._r[_id] }
+						})
 					}
 					if (isMap(_r._r[_id])) {
 						_res = _r._r[_id]
 						delete _r._r[_id]
 					}
+					if (isUnDef(_res) && _r._s) throw new Error("JSON-RPC client destroyed while awaiting response")
 					_mcpInfo.lastResponse = _res
 					_mcpInfo.lastResponseHeaders = __
 					if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
-					return isDef(_res) && isDef(_res.result) ? _res.result : _res
+					return isMap(_res) && Object.prototype.hasOwnProperty.call(_res, "result") ? _res.result : _res
 				// Unified Streamable HTTP path (2025-06-18). type:"remote"/"http" and type:"sse"/sse:true
 				// are accepted aliases with identical behaviour: the spec requires the client to accept
 				// both application/json and text/event-stream on every POST, and the server is free to
@@ -9859,10 +9959,10 @@ const $jsonrpc = function (aOptions) {
 					if (isDef(_mcpInfo.protocolVersion) && isUnDef(_pickHeaderCaseInsensitive(_restOptions.requestHeaders, "mcp-protocol-version"))) {
 						_restOptions.requestHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
 					}
-					// route around the writeTimeout/readTimeout mixup in ow.obj.http.exec by setting all three explicitly
-					_restOptions.readTimeout  = _$(_restOptions.readTimeout, "readTimeout").isNumber().default(aOptions.timeout)
-					_restOptions.writeTimeout = _$(_restOptions.writeTimeout, "writeTimeout").isNumber().default(aOptions.timeout)
-					_restOptions.callTimeout  = _$(_restOptions.callTimeout, "callTimeout").isNumber().default(aOptions.timeout)
+					// Set defaults for each phase; _configureHTTPTimeouts applies them to the underlying client.
+					_restOptions.readTimeout  = _$(_restOptions.readTimeout, "readTimeout").isNumber().default(isMap(_restOptions.options) && isNumber(_restOptions.options.readTimeout) ? _restOptions.options.readTimeout : aOptions.timeout)
+					_restOptions.writeTimeout = _$(_restOptions.writeTimeout, "writeTimeout").isNumber().default(isMap(_restOptions.options) && isNumber(_restOptions.options.writeTimeout) ? _restOptions.options.writeTimeout : aOptions.timeout)
+					_restOptions.callTimeout  = _$(_restOptions.callTimeout, "callTimeout").isNumber().default(isMap(_restOptions.options) && isNumber(_restOptions.options.timeout) ? _restOptions.options.timeout : aOptions.timeout)
 
 					var _req = {
 						jsonrpc: "2.0",
@@ -9875,15 +9975,26 @@ const $jsonrpc = function (aOptions) {
 					} else {
 						delete _req.id
 					}
+					if (!aNotification && isFunction(aExecOptions.onRequestId)) aExecOptions.onRequestId(_req.id)
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
 
+					if (isMap(aExecOptions.message)) _req = aExecOptions.message
+					var _requestProtocol = isMap(aParams._meta) ? aParams._meta["io.modelcontextprotocol/protocolVersion"] : __
+					if (isUnDef(_requestProtocol)) _requestProtocol = _mcpInfo.protocolVersion
+					if (isString(_requestProtocol) && _requestProtocol >= "2026-07-28" && isString(_req.method)) {
+						_restOptions.requestHeaders["Mcp-Method"] = _req.method
+						if (isString(aParams.name)) _restOptions.requestHeaders["Mcp-Name"] = aParams.name
+					}
 					var _http = ow.loadObj().rest.connectionFactory()
 					try {
+						_configureHTTPTimeouts(_http, _restOptions)
 						_restOptions.httpClient = _http
 						var _raw = $rest(_restOptions).post2Stream(aOptions.url, _req)
 						_captureSessionFromHeaders(_http.responseHeaders())
 						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
-						_mcpInfo.lastResponseCode = _http.responseCode()
+						var _responseCode = _http.responseCode()
+						_mcpInfo.lastResponseCode = _responseCode
+						if (isMap(aExecOptions.diagnostics)) aExecOptions.diagnostics.responseCode = _responseCode
 
 						var res
 						// (0) shape first: with throwExceptions:false a failed call returns {error:...}
@@ -9892,30 +10003,32 @@ const $jsonrpc = function (aOptions) {
 							var _errBody = isDef(_raw.error) ? _raw.error : _raw
 							var _parsedErr = isString(_errBody) ? jsonParse(_errBody, __, __, true) : _errBody
 							res = (isMap(_parsedErr) && isDef(_parsedErr.error)) ? _parsedErr
-								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + stringify(_errBody, __, "") } }
+								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _responseCode + ": " + stringify(_errBody, __, "") } }
 						} else if (!!aNotification) {
 							try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
 							_mcpInfo.lastResponse = __
 							return
-						} else if (_mcpInfo.lastResponseCode == 202 || _mcpInfo.lastResponseCode == 204) {
+						} else if (_responseCode == 202 || _responseCode == 204) {
 							// server accepted but has nothing to say for a request expecting a reply
 							try { if (isDef(_raw) && "function" === typeof _raw.close) _raw.close() } catch(e) {}
 							res = __
-						} else if (_mcpInfo.lastResponseCode >= 400) {
+						} else if (_responseCode >= 400) {
 							var _errText = _r._drainStream(_raw)
 							var _parsedErr2 = jsonParse(_errText, __, __, true)
 							res = (isMap(_parsedErr2) && isDef(_parsedErr2.error)) ? _parsedErr2
-								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _mcpInfo.lastResponseCode + ": " + _errText } }
+								: { jsonrpc: "2.0", error: { code: -32000, message: "HTTP " + _responseCode + ": " + _errText } }
 						} else {
-							var _ct = _http.responseType()
+							var _ct = String(_http.responseType())
 							if (isString(_ct) && _ct.toLowerCase().indexOf("text/event-stream") >= 0) {
 								var _events = _r._readSSE(_raw, _req.id)
-								res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isDef(r.error)).shift()
-								if (isUnDef(res) && _events.length > 0) res = _events[0]
+								res = _events.filter(r => isMap(r)).filter(r => r.id === _req.id && isUnDef(r.method)).shift()
 							} else {
 								res = jsonParse(_r._drainStream(_raw), __, __, true)
 							}
 						}
+						if (!aNotification && _responseCode >= 200 && _responseCode < 300 &&
+							(!isMap(res) || res.jsonrpc != "2.0" || res.id !== _req.id ||
+							(!Object.prototype.hasOwnProperty.call(res, "result") && !isMap(res.error)))) throw new Error("Invalid or mismatched JSON-RPC response for request " + _req.id)
 						_mcpInfo.lastResponse = res
 						// Notifications do not expect a reply
 						if (!!aNotification) return
@@ -9923,7 +10036,7 @@ const $jsonrpc = function (aOptions) {
 						if (isDef(res)) {
 							if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
 							if (aMethod == "initialize" && !aNotification) _r._info = res.result
-							if (isDef(res.result)) return res.result
+							if (Object.prototype.hasOwnProperty.call(res, "result")) return res.result
 							if (isDef(res.error)) return res
 						}
 						return __
@@ -9932,12 +10045,75 @@ const $jsonrpc = function (aOptions) {
 					}
 			}
 		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$jsonrpc.onRequest(method, handler) : Map</key>
+		 * Registers a synchronous inbound JSON-RPC request handler `(params, request)`.
+		 * Throw `{code,message,data}` for a protocol error. `offRequest(method)` removes it.
+		 * `onNotification(method, handler)` and `offNotification(method)` register/remove event handlers.
+		 * Stdio uses two bounded callback workers; HTTP POST SSE dispatches on its response reader.
+		 * `startListening(options)` / `stopListening()` manage one optional legacy HTTP GET stream.
+		 * `exec(method, params, notification, {onRequestId: fn})` exposes the outgoing id for cancellation.
+		 * </odoc>
+		 */
+		onRequest: (method, handler) => {
+			_r._sy.run(() => { _requestHandlers[_$(method, "method").isString().$_()] = _$(handler, "handler").isFunction().$_() })
+			return _r
+		},
+		offRequest: method => { _r._sy.run(() => { delete _requestHandlers[method] }); return _r },
+		onNotification: (method, handler) => {
+			_r._sy.run(() => { _notificationHandlers[_$(method, "method").isString().$_()] = _$(handler, "handler").isFunction().$_() })
+			return _r
+		},
+		offNotification: method => { _r._sy.run(() => { delete _notificationHandlers[method] }); return _r },
+		// Also used by modern MCP input-required continuations; no transport I/O.
+		handleRequest: message => _dispatch(merge({ jsonrpc: "2.0", id: 0 }, message)),
+		// One opt-in legacy Streamable HTTP GET listener, closed explicitly or on destroy.
+		startListening: options => {
+			_r._sy.run(() => {
+				if (_r._listenerActive) return _r
+				if (["remote", "http", "sse"].indexOf(aOptions.type) < 0 || _mcpInfo.protocolVersion >= "2026-07-28") throw new Error("GET listener requires legacy Streamable HTTP")
+				var opts = merge(clone(aOptions.options || {}), options || {})
+				opts.requestHeaders = merge(merge((aOptions.options || {}).requestHeaders || {}, (options || {}).requestHeaders || {}), { Accept: "text/event-stream" })
+				if (isDef(_session.mcpSessionId)) opts.requestHeaders["mcp-session-id"] = _session.mcpSessionId
+				if (isDef(_mcpInfo.protocolVersion)) opts.requestHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
+				opts.readTimeout = opts.callTimeout = aOptions.timeout
+				var http = ow.loadObj().rest.connectionFactory(), stream
+				try {
+					_configureHTTPTimeouts(http, opts)
+					opts.httpClient = http
+					stream = $rest(opts).get2Stream(aOptions.url)
+					if (http.responseCode() != 200 || String(http.responseType()).toLowerCase().indexOf("text/event-stream") < 0) throw new Error("MCP endpoint does not provide a GET event stream")
+				} catch(e) {
+					try { if (isDef(stream)) stream.close() } catch(ignored) {}
+					http.close()
+					throw e
+				}
+				_r._listenerActive = true
+				_r._listenerStream = stream
+				_r._listenerHttp = http
+				_r._listener = $doV(() => {
+					try { _r._readSSE(stream) } catch(e) { _mcpInfo.listenerError = String(e) }
+					finally { if (_r._listenerHttp === http) _r._listenerActive = false; try { http.close() } catch(e) {} }
+				})
+			})
+			return _r
+		},
+		stopListening: () => {
+			try { if (isDef(_r._listenerStream)) _r._listenerStream.close() } catch(e) {}
+			try { if (isDef(_r._listenerHttp)) _r._listenerHttp.close() } catch(e) {}
+			_r._listenerActive = false
+			return _r
+		},
 		getInfo: () => _r._info,
-		getClientInfo: () => merge({ lastStderr: _r._stderr || [], lastNotifications: _r._notifications || [] }, _mcpInfo),
+		getClientInfo: () => merge({ lastStderr: _r._stderr || [], lastNotifications: _r._notifications || [], listenerActive: !!_r._listenerActive }, _mcpInfo),
 		// records the protocol version negotiated during initialize() so it can be echoed back
 		// via the MCP-Protocol-Version header on every subsequent HTTP request
 		setProtocolVersion: v => {
-			if (isString(v) && v.length > 0) _mcpInfo.protocolVersion = v
+			if (isString(v) && v.length > 0) {
+				_mcpInfo.protocolVersion = v
+				if (v >= "2026-07-28") _session.mcpSessionId = __
+			}
 			return _r
 		},
 		// clears a captured Mcp-Session-Id, e.g. after the server reports it expired (HTTP 404)
@@ -9946,10 +10122,12 @@ const $jsonrpc = function (aOptions) {
 			return _r
 		},
 		destroy: () => {
+			if (_r._s) return
 			if (_r._copies.get() > 0) {
 				_r._copies.dec()
 				return
 			}
+			_r.stopListening()
 			if ((aOptions.type == "remote" || aOptions.type == "http" || aOptions.type == "sse") &&
 				isDef(aOptions.url) && isDef(_session.mcpSessionId)) {
 				// clients that no longer need a session SHOULD explicitly terminate it; tolerate
@@ -9959,7 +10137,15 @@ const $jsonrpc = function (aOptions) {
 					_delHttp = ow.loadObj().rest.connectionFactory()
 					var _delHeaders = { "mcp-session-id": _session.mcpSessionId }
 					if (isDef(_mcpInfo.protocolVersion)) _delHeaders["mcp-protocol-version"] = _mcpInfo.protocolVersion
-					$rest({ httpClient: _delHttp, requestHeaders: _delHeaders, timeout: aOptions.timeout }).delete(aOptions.url)
+					var _delOptions = clone(aOptions.options || {})
+					if (isFunction(aOptions.getReplyOptions)) _delOptions.requestHeaders = merge(_delOptions.requestHeaders || {}, aOptions.getReplyOptions().restOptions.requestHeaders || {})
+					_delOptions = merge(_delOptions || {}, { httpClient: _delHttp, timeout: aOptions.timeout })
+					_delOptions.requestHeaders = merge(_delOptions.requestHeaders || {}, _delHeaders)
+					if (isFunction(_delOptions.login)) _delOptions.login(_delHttp)
+					else if (isString(_delOptions.login) && isString(_delOptions.pass)) _delHttp.login(_delOptions.login, _delOptions.pass, false, aOptions.url)
+					_configureHTTPTimeouts(_delHttp, _delOptions)
+					_delHttp.exec(aOptions.url, "DELETE", __, _delOptions.requestHeaders, false, aOptions.timeout, false,
+						_delOptions.options)
 				} catch(e) {
 					_debug("jsonrpc session DELETE error: " + e)
 				} finally {
@@ -9967,6 +10153,15 @@ const $jsonrpc = function (aOptions) {
 				}
 			}
 			_r._s = true
+			_inbound.clear()
+			Object.keys(_requestHandlers).forEach(k => delete _requestHandlers[k])
+			Object.keys(_notificationHandlers).forEach(k => delete _notificationHandlers[k])
+			_r._w.values().forEach(w => w.countDown())
+			_r._w.clear()
+			_r._wq.clear()
+			_r._q = {}
+			_r._r = {}
+			if (isDef(_shareKey)) delete __jsonrpcSharedConnections[_shareKey]
 			if (isDef(_r._p)) {
 				$doWait(_r._p)
 			}
@@ -10023,14 +10218,18 @@ const $jsonrpc = function (aOptions) {
  *   - `type` (string): "bearer" (static token) or "oauth2" (automatic token retrieval/refresh)
  * - `token` (string): Bearer token when type is "bearer"
  *   - `tokenType` (string): Authorization scheme prefix (default: "Bearer")
- * - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow
+ * - For oauth2: missing clientId/grantType selects automatic authorization_code login with dynamic registration and a reserved loopback callback. Explicit clientId retains the client_credentials default.
+ * - `registration`: false disables DCR; a map accepts clientName, applicationType, initialAccessToken and timeoutMs (60000).
+ * - `clientMetadataURL`: user-hosted HTTPS public-client metadata document, preferred when supported.
+ * - `tokenEndpointAuthMethod`: none (automatic default), client_secret_basic, or client_secret_post.
+ * - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType, extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow
  *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata (the metadata issuer must match and discovered endpoints must use HTTPS unless they are loopback addresses or allowHTTP is true)
  * - `interactive` (boolean): false prohibits browser login and code prompts; omitted preserves existing behavior
- *   - `callback` (boolean): opt-in loopback login through `ow.server.httpd.oauth2` at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000
+ *   - `callback` (boolean): default true for automatic OAuth, otherwise opt-in loopback login through `ow.server.httpd.oauth2` at redirectURI, with state/PKCE validation; loginTimeoutMs defaults to 300000
  * - `tokenStore` (map): opt-in {type: "sec", profile: "default"}; optional repo (default mcp-oauth2), bucket, key, file, lockSecret, mainSecret, lockTimeoutMs (60000). Or a synchronous custom load/save/clear/withLock store.
  *   - `sendResource` (boolean): false omits the OAuth resource parameter; default true
  * - `disableOpenBrowser` (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)
- * - authenticate() / getAuthStatus() / clearAuth(): authenticate, inspect non-secret status, or clear local tokens
+ * - authenticate() / getAuthStatus() / clearAuth(): authenticate, inspect non-secret status (including clientAvailable/registrationMethod), or clear local tokens. clearAuth({registration:true}) also forgets local registration.
  *
  * Type-specific details:
  *
@@ -10060,8 +10259,29 @@ const $jsonrpc = function (aOptions) {
  * - `listPrompts()`: Get list of available prompts from the MCP server
  * - `getPrompt(promptName, promptArguments)`: Get a specific prompt with given arguments
  * - `toGptTools(aGptInstance, aToolNames)`: Add MCP tools to a `$gpt` instance
- * - `exec(method, params)`: Low-level method to execute any MCP/JSON-RPC method
+ * - `getCapabilities()`: Copy of the negotiated server capabilities
+ * - `listResources()` / `listResourceTemplates()`: Paginated resource catalogs, preserving metadata
+ * - `readResource(uri)`: Full resource result (text, base64 blobs, MIME types and metadata); URI is sent unchanged
+ * - `subscribeResource(uri, callback)` / `unsubscribeResource(uri)`: Legacy resource updates when the server advertises resources.subscribe
+ * - `onRequest(method, handler)` / `offRequest(method)`: Dedicated-connection inbound handlers `(params, request)`; return a result or throw `{code,message,data}`
+ * - `onNotification(method, handler)` / `offNotification(method)`: Dedicated-connection event handlers `(params, notification)`
+ * - `onSamplingRequest(handler)`: Opt into basic sampling; no automatic LLM calls or sampling tools
+ * - `onElicitationRequest(handler, modes)`: Opt into form elicitation (default), optionally url mode on supported versions
+ * - `setRoots(roots)`: Explicit file URI roots; never discovers filesystem paths automatically
+ * - `continueRequest(method, originalParams, inputRequired)`: Explicit single-round modern MRTR retry using registered handlers and opaque requestState
+ * - `startListening()` / `stopListening()`: Opt-in legacy HTTP GET event stream; no automatic reconnect
+ * - `cancelRequest(id, reason)`: Best-effort protocol cancellation
+ * - `getToolUI(name)` / `getAppResource(name)` / `hasApps()`: MCP Apps metadata and ui:// resource retrieval, without executing HTML
+ * - `exec(method, params, execOptions)`: Low-level MCP/JSON-RPC; optional `onRequestId(id)` callback in execOptions
  * - `destroy()`: Stop the client and cleanup resources
+ *
+ * Register sampling, elicitation and roots before legacy initialize(); only configured capabilities are advertised.
+ * Stdio callbacks run on two bounded workers, permitting nested synchronous calls but not arbitrary nesting.
+ * HTTP callbacks on POST SSE use independent authenticated response POSTs. HTTP resource subscriptions require
+ * a supported GET event stream; modern subscriptions/listen is not implemented and fails explicitly.
+ * Modern input_required results are never retried automatically. toGptTools retains plain text behavior and
+ * serializes rich result envelopes as JSON, excluding tools marked app-only by MCP Apps visibility.
+ * See docs/mcp-client.md for the full host integration contract, limitations and verified examples.
  *
  * Important: The initialize() method must be called before using listTools, callTool,
  * listPrompts, or getPrompt methods. All methods return results synchronously (not promises).
@@ -10176,11 +10396,15 @@ const $mcp = function(aOptions) {
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2025-06-18")
-	// capabilities we actually implement handlers for; nothing is advertised by default since this
-	// client has no inbound dispatcher (a server issuing e.g. sampling/createMessage would just hang)
+	// Optional client capabilities are added by handler registration below; none are enabled by default.
 	aOptions.capabilities = _$(aOptions.capabilities, "aOptions.capabilities").isMap().default({})
 
-	const _toolBlacklist = {}
+  // Missing client identity selects delegated browser login; explicit clients retain legacy defaults.
+  const _automaticOAuth = String(aOptions.auth.type).toLowerCase() == "oauth2" && ["remote", "http", "sse"].indexOf(aOptions.type) >= 0 && isUnDef(aOptions.auth.clientId)
+  if (_automaticOAuth && isUnDef(aOptions.auth.grantType)) aOptions.auth.grantType = "authorization_code"
+  if (_automaticOAuth && aOptions.auth.grantType == "authorization_code" && isUnDef(aOptions.auth.callback)) aOptions.auth.callback = true
+
+	const _toolBlacklist = Object.create(null)
 	aOptions.blacklist.forEach(toolName => {
 		toolName = _$(toolName, "aOptions.blacklist[]").isString().$_()
 		_toolBlacklist[toolName] = true
@@ -10261,22 +10485,54 @@ const $mcp = function(aOptions) {
 		if (isUnDef(_path) || _path == "/") _path = ""
 		return String(new java.net.URI(_scheme, _uri.getUserInfo(), _host, _uri.getPort(), "/.well-known/" + aSuffix + _path, null, null).toString())
 	}
-	const _fetchJSON = aURL => {
-		var _http = ow.loadObj().rest.connectionFactory()
-		try {
-			var _res = $rest({
-				httpClient: _http,
-				requestHeaders: { Accept: "application/json" }
-			}).get(aURL)
-			return {
-				body: _res,
-				headers: _http.responseHeaders(),
-				status: _http.responseCode()
-			}
-		} finally {
-			try { _http.close() } catch(e) {}
-		}
-	}
+  const _validateOAuthURL = (url, label) => {
+    var uri
+    try { uri = new java.net.URI(String(url)) } catch(e) { throw new Error("Invalid OAuth " + label + " URL") }
+    var scheme = String(uri.getScheme()), host = String(uri.getHost())
+    if (uri.getHost() === null || uri.getRawUserInfo() !== null || uri.getRawFragment() !== null ||
+        (scheme != "https" && !(scheme == "http" && (aOptions.auth.allowHTTP === true ||
+        ["127.0.0.1", "localhost", "::1", "[::1]"].indexOf(host) >= 0)))) {
+      throw new Error("OAuth " + label + " requires HTTPS (HTTP is allowed for loopback hosts or auth.allowHTTP=true)")
+    }
+    return uri
+  }
+  const _fetchJSON = aURL => {
+    _validateOAuthURL(aURL, "metadata")
+    var http = ow.loadObj().rest.connectionFactory()
+    var limit = aOptions.timeout
+    http.client = http.client.newBuilder().followRedirects(false).followSslRedirects(false)
+      .callTimeout(limit, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+    try {
+      http.setThrowExceptions(false)
+      return { body: $rest({ httpClient: http, requestHeaders: { Accept: "application/json" } }).get(aURL),
+        headers: http.responseHeaders(), status: http.responseCode() }
+    } catch(e) { throw new Error("OAuth metadata request failed; check connectivity and provider configuration") }
+    finally { try { http.close() } catch(ignore) {} }
+  }
+  const _oauthHeader = (headers, name) => {
+    var key = Object.keys(headers || {}).filter(k => String(k).toLowerCase() == name)[0]
+    var value = isDef(key) ? headers[key] : __
+    return isArray(value) ? value.join(", ") : value
+  }
+  const _oauthChallenge = () => {
+    var response = _fetchJSON(aOptions.url)
+    if (response.status != 401) return {}
+    var header = String(_oauthHeader(response.headers, "www-authenticate") || "")
+    var bearer = /(?:^|,)\s*Bearer\s+(.+?)(?=,\s*[A-Za-z]+\s+[^=]|$)/i.exec(header)
+    var params = {}, text = bearer ? bearer[1] : "", pattern = /([a-z_]+)\s*=\s*(?:"((?:\\.|[^"\\])*)"|([^,\s]+))/gi, match
+    while ((match = pattern.exec(text)) !== null) params[String(match[1]).toLowerCase()] = isDef(match[2]) ? match[2].replace(/\\(.)/g, "$1") : match[3]
+    return params
+  }
+  const _firstOAuthMetadata = urls => {
+    for (var i = 0; i < urls.length; i++) {
+      var response = _fetchJSON(urls[i])
+      if (response.status == 404 || response.status == 405) continue
+      if (response.status < 200 || response.status >= 300 || !isMap(response.body)) throw new Error("OAuth metadata endpoint returned an invalid response")
+      return { url: urls[i], body: response.body }
+    }
+    throw new Error("OAuth metadata not found; configure explicit metadata URLs")
+  }
+
 	const _getOAuthResource = () => {
 		if (aOptions.auth.sendResource === false) return __
 		if (isDef(_auth.resource)) return _auth.resource
@@ -10295,42 +10551,35 @@ const $mcp = function(aOptions) {
 	}
 	const _discoverOAuthMetadata = () => {
 		if (isDef(_auth.authorizationServerMetadata)) return _auth.authorizationServerMetadata
-		if (isDef(aOptions.auth.tokenURL) && isDef(aOptions.auth.authURL)) return __
-		var _resource = _getOAuthResource()
-		var _resourceMetadataURL = _$(aOptions.auth.protectedResourceMetadataURL, "aOptions.auth.protectedResourceMetadataURL").isString().default(
-			_buildWellKnownURL(_resource, "oauth-protected-resource")
-		)
-		var _resourceMetadata = _fetchJSON(_resourceMetadataURL).body
-		if (!isMap(_resourceMetadata)) {
-			throw new Error("OAuth protected resource metadata response is invalid for " + _resourceMetadataURL)
-		}
-		if (!isArray(_resourceMetadata.authorization_servers) || _resourceMetadata.authorization_servers.length == 0) {
-			throw new Error("OAuth protected resource metadata doesn't contain authorization_servers")
-		}
-		var _issuer = _$(aOptions.auth.authorizationServer, "aOptions.auth.authorizationServer").isString().default(
-			_$(aOptions.auth.authorizationServerIssuer, "aOptions.auth.authorizationServerIssuer").isString().default(_resourceMetadata.authorization_servers[0])
-		)
-		var _authServerMetadataURL = _$(aOptions.auth.authorizationServerMetadataURL, "aOptions.auth.authorizationServerMetadataURL").isString().default(
-			_buildWellKnownURL(_issuer, "oauth-authorization-server")
-		)
-		var _authServerMetadata = _fetchJSON(_authServerMetadataURL).body
-		if (!isMap(_authServerMetadata)) {
-			throw new Error("OAuth authorization server metadata response is invalid for " + _authServerMetadataURL)
-		}
-		// RFC 8414 section 3.3: the metadata issuer must match the issuer it was requested for
-		if (isDef(_authServerMetadata.issuer) && String(_authServerMetadata.issuer).replace(/\/+$/, "") != String(_issuer).replace(/\/+$/, "")) {
-			throw new Error("OAuth authorization server metadata issuer '" + _authServerMetadata.issuer + "' doesn't match '" + _issuer + "'")
-		}
-		// Discovered endpoints come from the (possibly untrusted) server: don't send secrets in clear text to remote hosts
-		;["authorization_endpoint", "token_endpoint", "registration_endpoint"].forEach(k => {
-			if (!isString(_authServerMetadata[k]) || aOptions.auth.allowHTTP === true) return
-			var _u
-			try { _u = new java.net.URI(_authServerMetadata[k]) } catch(e) { throw new Error("OAuth discovered " + k + " is not a valid URL") }
-			var _sch = String(_u.getScheme()).toLowerCase()
-			if (_sch == "https") return
-			if (_sch == "http" && ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(_u.getHost()).toLowerCase()) >= 0) return
-			throw new Error("OAuth discovered " + k + " must use HTTPS (set auth.allowHTTP=true to override): " + _authServerMetadata[k])
-		})
+		if (!_automaticOAuth && isDef(aOptions.auth.tokenURL) && isDef(aOptions.auth.authURL)) return __
+		var _resource = _getOAuthResource() || _canonicalizeResourceURI(aOptions.url)
+    var challenge = _automaticOAuth && isUnDef(aOptions.auth.protectedResourceMetadataURL) ? _oauthChallenge() : {}
+    if (isUnDef(aOptions.auth.scope) && isString(challenge.scope) && challenge.scope.length) aOptions.auth.scope = challenge.scope
+    var root = new java.net.URI(_resource)
+    var origin = String(new java.net.URI(root.getScheme(), null, root.getHost(), root.getPort(), null, null, null))
+    var resourceURLs = isString(aOptions.auth.protectedResourceMetadataURL) ? [aOptions.auth.protectedResourceMetadataURL] :
+      (isString(challenge.resource_metadata) ? [challenge.resource_metadata] :
+        [_buildWellKnownURL(_resource, "oauth-protected-resource"), origin + "/.well-known/oauth-protected-resource"])
+    var resourceResult = _firstOAuthMetadata(resourceURLs)
+    var _resourceMetadataURL = resourceResult.url, _resourceMetadata = resourceResult.body
+    if (isDef(_resourceMetadata.resource) && _canonicalizeResourceURI(_resourceMetadata.resource) != _canonicalizeResourceURI(_resource)) throw new Error("OAuth protected resource metadata resource mismatch")
+    if (_automaticOAuth && !isString(_resourceMetadata.resource)) throw new Error("OAuth protected resource metadata requires resource")
+    if (!isArray(_resourceMetadata.authorization_servers) || !_resourceMetadata.authorization_servers.length) throw new Error("OAuth protected resource metadata doesn't contain authorization_servers")
+    var _issuer = aOptions.auth.authorizationServer || aOptions.auth.authorizationServerIssuer || _resourceMetadata.authorization_servers[0]
+    _validateOAuthURL(_issuer, "issuer")
+    var issuerURI = new java.net.URI(_issuer)
+    var issuerPath = String(issuerURI.getPath() || "").replace(/\/$/, "")
+    var issuerOrigin = String(new java.net.URI(issuerURI.getScheme(), null, issuerURI.getHost(), issuerURI.getPort(), null, null, null))
+    var metadataURLs = isString(aOptions.auth.authorizationServerMetadataURL) ? [aOptions.auth.authorizationServerMetadataURL] :
+      [_buildWellKnownURL(_issuer, "oauth-authorization-server"), _buildWellKnownURL(_issuer, "openid-configuration")]
+    if (issuerPath.length) metadataURLs.push(issuerOrigin + issuerPath + "/.well-known/openid-configuration")
+    var serverResult = _firstOAuthMetadata(metadataURLs)
+    var _authServerMetadataURL = serverResult.url, _authServerMetadata = serverResult.body
+    if ((_automaticOAuth || isDef(_authServerMetadata.issuer)) && _authServerMetadata.issuer !== _issuer) throw new Error("OAuth authorization server metadata issuer mismatch")
+    ;["authorization_endpoint", "token_endpoint", "registration_endpoint"].forEach(k => {
+      if (isDef(_authServerMetadata[k])) _validateOAuthURL(_authServerMetadata[k], k)
+    })
+
 		_auth.protectedResourceMetadataURL = _resourceMetadataURL
 		_auth.protectedResourceMetadata = _resourceMetadata
 		_auth.authorizationServerIssuer = _issuer
@@ -10367,6 +10616,160 @@ const $mcp = function(aOptions) {
 
     var _oauthPending, _authStore, _authStoreKey, _authStoreHasRecord, _authStoreFailed = false;
     const _authLockName = "mcp-oauth-" + genUUID();
+    var _registration, _registrationKey, _registrationStore, _registrationIdentity, _registrationFailed = false
+    var _callbackReservation, _oauthDestroyed = false
+    const _requestedRedirectURI = aOptions.auth.redirectURI
+    const _requestedAuthMethod = aOptions.auth.tokenEndpointAuthMethod
+    const _releaseCallback = () => {
+      if (isDef(_callbackReservation)) {
+        try { ow.server.httpd.stop(_callbackReservation) } finally { _callbackReservation = __ }
+      }
+    }
+    const _validateCallback = redirect => {
+      var uri
+      try { uri = new java.net.URI(String(redirect)) } catch(e) { throw new Error("Invalid OAuth callback URI") }
+      if (String(uri.getScheme()) != "http" || ["127.0.0.1", "localhost", "::1", "[::1]"].indexOf(String(uri.getHost())) < 0 ||
+          uri.getPort() <= 0 || uri.getPort() > 65535 || uri.getRawQuery() !== null || uri.getRawFragment() !== null || uri.getRawUserInfo() !== null) {
+        throw new Error("OAuth callback requires an HTTP loopback URI with an explicit port")
+      }
+      return uri
+    }
+    const _reserveCallback = redirect => {
+      if (isDef(_callbackReservation)) return redirect
+      ow.loadServer()
+      plugin("HTTPServer")
+      var uri = isDef(redirect) ? _validateCallback(redirect) : __
+      try {
+        _callbackReservation = new HTTPd(isDef(uri) ? Number(uri.getPort()) : 0,
+          isDef(uri) ? String(uri.getHost()).replace(/^\[|\]$/g, "").replace(/^localhost$/, "127.0.0.1") : "127.0.0.1", __, __, __, __, 30000, "java")
+      } catch(e) { throw new Error("OAuth callback port unavailable; close the conflicting listener or clear the registration") }
+      return isDef(redirect) ? redirect : "http://127.0.0.1:" + _callbackReservation.getPort() + "/oauth/callback"
+    }
+    const _withRegistrationLock = fn => {
+      if (isUnDef(_registrationStore)) return fn()
+      var entered = 0, active = true, result, callbackError
+      try {
+        _registrationStore.withLock(_registrationKey, () => {
+          if (!active || ++entered != 1) throw new Error("OAuth registration withLock must invoke its callback synchronously once")
+          try { result = fn() } catch(e) { callbackError = e; throw e }
+        })
+      } catch(e) {
+        if (isDef(callbackError)) throw callbackError
+        throw new Error("OAuth registration storage lock failed or timed out")
+      } finally { active = false }
+      if (isDef(callbackError)) throw callbackError
+      if (entered != 1) throw new Error("OAuth registration withLock must invoke its callback synchronously once")
+      return result
+    }
+    const _resolveOAuthClient = (readOnly, clearing) => {
+      if (!_automaticOAuth || aOptions.auth.grantType != "authorization_code") return
+      if (_registrationFailed && !clearing) throw new Error("OAuth registration failed; clearAuth({registration:true}) or recreate the client before retrying")
+      var metadata = _discoverOAuthMetadata(), cfg = aOptions.auth.tokenStore
+      var options = isMap(aOptions.auth.registration) ? aOptions.auth.registration : {}
+      var identity = _registrationIdentity || sha256(stringify(sortMapKeys({ version: 1,
+        issuer: _auth.authorizationServerIssuer, url: aOptions.url,
+        profile: isMap(cfg) ? cfg.profile || cfg.key || "default" : "default",
+        redirectURI: _requestedRedirectURI, scope: aOptions.auth.scope,
+        metadataURL: aOptions.auth.clientMetadataURL, clientName: options.clientName,
+        applicationType: options.applicationType, method: _requestedAuthMethod }, true), __, ""))
+      _registrationIdentity = identity
+      _registrationKey = "oauth2-registration-v1-" + identity
+      if (isDef(cfg)) {
+        _$(cfg, "auth.tokenStore").isMap().$_()
+        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type")
+        if (["load", "save", "clear", "withLock"].some(k => isDef(cfg[k]))) {
+          ;["load", "save", "clear", "withLock"].forEach(k => _$(cfg[k], "auth.tokenStore." + k).isFunction().$_())
+          _registrationStore = cfg
+        } else _registrationStore = _secTokenStore(cfg)
+      }
+      _withRegistrationLock(() => {
+        if (isDef(_registrationStore)) {
+          try { _registration = _registrationStore.load(_registrationKey) }
+          catch(e) { throw new Error("OAuth registration storage read failed") }
+        }
+        if (isDef(_registration) && (!isMap(_registration) || _registration.version != 1 || _registration.identity != identity ||
+            !isString(_registration.clientId) || !_registration.clientId.length || !isString(_registration.redirectURI) ||
+            ["none", "client_secret_basic", "client_secret_post"].indexOf(_registration.method) < 0 ||
+            (_registration.method != "none" && (!isString(_registration.clientSecret) || !_registration.clientSecret.length)))) {
+          if (!clearing) throw new Error("OAuth registration profile is invalid; clearAuth({registration:true})")
+        }
+        if (isUnDef(_registration)) {
+          if (readOnly) {
+            aOptions.auth.clientId = __
+            aOptions.auth.clientSecret = __
+            _resetAuth()
+            return
+          }
+          if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled")
+          var redirect = _requestedRedirectURI, clientId, secret, expires, kind = "dynamic"
+          var method = _requestedAuthMethod || "none"
+          if (isArray(metadata.token_endpoint_auth_methods_supported) && metadata.token_endpoint_auth_methods_supported.indexOf(method) < 0) throw new Error("OAuth server does not support the requested client authentication method")
+          if (isArray(metadata.code_challenge_methods_supported) && metadata.code_challenge_methods_supported.indexOf("S256") < 0) throw new Error("OAuth server does not support PKCE S256")
+          if (["none", "client_secret_basic", "client_secret_post"].indexOf(method) < 0) throw new Error("Unsupported OAuth client authentication method")
+          if (isString(aOptions.auth.clientMetadataURL) && metadata.client_id_metadata_document_supported === true) {
+            var uri = _validateOAuthURL(aOptions.auth.clientMetadataURL, "client metadata")
+            if (String(uri.getScheme()) != "https" || !String(uri.getPath()).length || String(uri.getPath()) == "/" || uri.getRawQuery() !== null) throw new Error("OAuth client metadata requires an HTTPS URL with a path")
+            var documentResponse = _fetchJSON(aOptions.auth.clientMetadataURL), doc = documentResponse.body
+            if (documentResponse.status != 200 || !isMap(doc) || doc.client_id != aOptions.auth.clientMetadataURL || !isString(doc.client_name) || !doc.client_name.length || !isArray(doc.redirect_uris)) throw new Error("Invalid OAuth client metadata document")
+            if (isUnDef(redirect)) {
+              redirect = doc.redirect_uris.filter(v => { try { _validateCallback(v); return true } catch(e) { return false } })[0]
+            }
+            _validateCallback(redirect)
+            if (doc.redirect_uris.indexOf(redirect) < 0 || method != "none" || (isDef(doc.token_endpoint_auth_method) && doc.token_endpoint_auth_method != "none")) throw new Error("OAuth client metadata is incompatible with callback or authentication method")
+            clientId = aOptions.auth.clientMetadataURL
+            kind = "metadata"
+          } else {
+            if (aOptions.auth.registration === false || !isString(metadata.registration_endpoint)) throw new Error("OAuth clientId required; server does not support automatic registration")
+            _validateOAuthURL(metadata.registration_endpoint, "registration")
+            if (aOptions.auth.callback === true) redirect = _reserveCallback(redirect)
+            _validateCallback(redirect)
+            var payload = { client_name: options.clientName || "OpenAF", redirect_uris: [redirect],
+              application_type: options.applicationType || "native", grant_types: ["authorization_code", "refresh_token"],
+              response_types: ["code"], token_endpoint_auth_method: method }
+            if (isDef(aOptions.auth.scope)) payload.scope = aOptions.auth.scope
+            var limit = isDef(options.timeoutMs) ? options.timeoutMs : 60000
+            if (!isNumber(limit) || !isFinite(limit) || limit <= 0) throw new Error("OAuth registration timeout must be positive")
+            var connection = ow.loadObj().rest.connectionFactory(), response, status
+            try {
+              connection.client = connection.client.newBuilder().followRedirects(false).followSslRedirects(false)
+                .callTimeout(limit, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+              connection.setThrowExceptions(false)
+              var headers = { Accept: "application/json" }
+              if (isString(options.initialAccessToken)) headers.Authorization = "Bearer " + options.initialAccessToken
+              // A lost response may already have created a client: never repeat this POST automatically.
+              _registrationFailed = true
+              response = $rest({ httpClient: connection, requestHeaders: headers }).post(metadata.registration_endpoint, payload)
+              status = connection.responseCode()
+            } catch(e) { throw new Error("OAuth client registration request failed; reset the registration before retrying") }
+            finally { try { connection.close() } catch(ignore) {} }
+            if (status != 201 || !isMap(response) || !isString(response.client_id) || !response.client_id.length) throw new Error("OAuth client registration failed; provider did not return a client identity")
+            if (isDef(response.token_endpoint_auth_method) && response.token_endpoint_auth_method != method) throw new Error("OAuth registration returned an incompatible authentication method")
+            if (method != "none" && (!isString(response.client_secret) || !response.client_secret.length)) throw new Error("OAuth registration did not return a client secret")
+            if (isDef(response.redirect_uris) && (!isArray(response.redirect_uris) || response.redirect_uris.indexOf(redirect) < 0)) throw new Error("OAuth registration rejected the callback URI")
+            if (isDef(response.client_secret_expires_at) && (!isNumber(response.client_secret_expires_at) || !isFinite(response.client_secret_expires_at) || response.client_secret_expires_at < 0)) throw new Error("OAuth registration returned invalid secret expiry")
+            clientId = response.client_id
+            secret = method == "none" ? __ : response.client_secret
+            expires = response.client_secret_expires_at
+          }
+          var record = { version: 1, identity: identity, clientId: clientId, clientSecret: secret,
+            redirectURI: redirect, method: method, kind: kind, secretExpiresAt: expires }
+          if (isDef(_registrationStore)) {
+            try { _registrationStore.save(_registrationKey, record) }
+            catch(e) { _registrationFailed = true; throw new Error("OAuth registration storage write failed; reset the registration before retrying") }
+          }
+          _registration = record
+          _registrationFailed = false
+        }
+        if (!clearing) {
+          _validateCallback(_registration.redirectURI)
+          if (isNumber(_registration.secretExpiresAt) && _registration.secretExpiresAt > 0 && _registration.secretExpiresAt * 1000 <= now()) throw new Error("OAuth client secret expired; clearAuth({registration:true}) before retrying")
+        }
+        aOptions.auth.clientId = _registration.clientId
+        aOptions.auth.clientSecret = _registration.clientSecret
+        aOptions.auth.redirectURI = _registration.redirectURI
+        aOptions.auth.tokenEndpointAuthMethod = _registration.method
+      })
+    }
     const _authFingerprint = () => {
         // Resolve both endpoints before selecting the entry: login must not change its identity.
         _getResolvedTokenURL();
@@ -10374,6 +10777,7 @@ const $mcp = function(aOptions) {
         var scope = String(aOptions.auth.scope || "").split(/\s+/).filter(v => v.length > 0).sort();
         return sha256(stringify(sortMapKeys({
             version: 1, url: aOptions.url, clientId: aOptions.auth.clientId,
+            tokenEndpointAuthMethod: aOptions.auth.tokenEndpointAuthMethod,
             tokenURL: _getResolvedTokenURL(), authURL: aOptions.auth.authURL || _auth.discoveredAuthURL,
             issuer: _auth.authorizationServerIssuer || aOptions.auth.authorizationServer || aOptions.auth.authorizationServerIssuer,
             scope: scope.filter((v, i) => i == 0 || v != scope[i - 1]),
@@ -10392,6 +10796,8 @@ const $mcp = function(aOptions) {
     const _authStatus = () => ({
         authenticated: isString(_auth.token) && _auth.expiresAt > now() && !_authStoreFailed,
         expiresAt: _auth.expiresAt, refreshable: isString(_auth.refreshToken),
+        clientAvailable: isString(aOptions.auth.clientId),
+        registrationMethod: isDef(_registration) ? _registration.kind : (isString(aOptions.auth.clientId) ? "explicit" : __),
         persistent: isMap(aOptions.auth.tokenStore)
     });
     const _deleteAuth = () => {
@@ -10533,6 +10939,9 @@ const $mcp = function(aOptions) {
             return { Authorization: (aOptions.auth.tokenType || "Bearer") + " " + token };
         }
         if (type != "oauth2") throw new Error("Unsupported MCP authentication type");
+        var method = aOptions.auth.tokenEndpointAuthMethod
+        if (isDef(method) && ["none", "client_secret_basic", "client_secret_post"].indexOf(method) < 0) throw new Error("Unsupported OAuth client authentication method")
+        if ((method == "client_secret_basic" || method == "client_secret_post") && (!isString(aOptions.auth.clientSecret) || !aOptions.auth.clientSecret.length)) throw new Error("OAuth client authentication requires a client secret")
         var windowMs = _$(aOptions.auth.refreshWindowMs, "auth.refreshWindowMs").isNumber().default(30000);
         if (isUnDef(_auth.token) || _auth.expiresAt <= now() + windowMs) {
             var tokenURL = _getResolvedTokenURL();
@@ -10545,13 +10954,17 @@ const $mcp = function(aOptions) {
                 if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
                 ow.loadServer();
                 // MCP owns the storage transaction, refresh and identity. The helper owns this login only.
-                _oauthPending = ow.server.httpd.oauth2(merge(aOptions.auth, {
+                if (_automaticOAuth) _reserveCallback(aOptions.auth.redirectURI)
+                var loginOptions = merge(aOptions.auth, {
                     authURL: _getResolvedAuthURL(), tokenURL: tokenURL, resource: resource, tokenStore: false
-                }));
+                })
+                loginOptions.__callbackReservation = _callbackReservation
+                _oauthPending = ow.server.httpd.oauth2(loginOptions)
                 params = { grant_type: "authorization_code" };
                 try { res = _oauthPending.authenticate(); }
                 catch(e) {
                     if (e.oauthError == "invalid_grant" || e.oauthError == "interaction_required") res = { error: e.oauthError };
+                    else if (e.oauthError == "invalid_client") throw new Error("OAuth client credentials rejected; check explicit credentials or clearAuth({registration:true}) before retrying")
                     else throw e;
                 } finally { _oauthPending = __; _auth.authorizationCode = __; _auth.pkceVerifier = __; }
             } else {
@@ -10562,7 +10975,7 @@ const $mcp = function(aOptions) {
                     redirect_uri: aOptions.auth.redirectURI, code_verifier: _getPKCEVerifier()
                 };
                 else params = { grant_type: grant, client_id: clientId };
-                if (isDef(aOptions.auth.clientSecret)) params.client_secret = aOptions.auth.clientSecret;
+                if (isDef(aOptions.auth.clientSecret) && ["none", "client_secret_basic"].indexOf(aOptions.auth.tokenEndpointAuthMethod) < 0) params.client_secret = aOptions.auth.clientSecret;
                 if (isDef(scope)) params.scope = scope;
                 if (isDef(audience)) params.audience = audience;
                 if (isDef(resource)) params.resource = resource;
@@ -10570,8 +10983,14 @@ const $mcp = function(aOptions) {
                 var tokenHttp = ow.loadObj().rest.connectionFactory();
                 try {
                     tokenHttp.setThrowExceptions(false);
+                    tokenHttp.client = tokenHttp.client.newBuilder().followRedirects(false).followSslRedirects(false)
+                        .callTimeout(aOptions.auth.tokenTimeoutMs || 60000, java.util.concurrent.TimeUnit.MILLISECONDS).build()
                     var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000);
-                    res = $rest({ httpClient: tokenHttp, urlEncode: true, timeout: tokenTimeout,
+                    var tokenHeaders = {}
+                    if (aOptions.auth.tokenEndpointAuthMethod == "client_secret_basic") {
+                        tokenHeaders.Authorization = "Basic " + af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(_urlEnc(clientId) + ":" + _urlEnc(aOptions.auth.clientSecret))))
+                    }
+                    res = $rest({ httpClient: tokenHttp, requestHeaders: tokenHeaders, urlEncode: true, timeout: tokenTimeout,
                         readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params);
                     if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {};
                 }
@@ -10582,6 +11001,7 @@ const $mcp = function(aOptions) {
                 }
             }
             if (!isMap(res) || !isString(res.access_token) || res.access_token.length == 0) {
+                if (isMap(res) && res.error == "invalid_client") throw new Error("OAuth client credentials rejected; check explicit credentials or clearAuth({registration:true}) before retrying")
                 if (isMap(res) && (res.error == "invalid_grant" || res.error == "interaction_required")) {
                     _resetAuth();
                     _deleteAuth();
@@ -10599,12 +11019,43 @@ const $mcp = function(aOptions) {
         }
         return { Authorization: _auth.tokenType + " " + _auth.token };
     };
-    const _getAuthHeaders = () => _withAuthStore(() => _getOAuthHeaders(false));
+    const _withOAuthOperation = fn => {
+      var lock = $lock(_authLockName), result
+      var cfg = aOptions.auth.tokenStore
+      if (isMap(cfg)) {
+        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000)
+        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive")
+        if (!lock.tryLock(() => { result = fn() }, timeout)) throw new Error("OAuth credential storage lock timed out")
+        return result
+      }
+      lock.lock()
+      try { return fn() } finally { lock.unlock() }
+    }
+    const _getAuthHeaders = () => _withOAuthOperation(() => {
+      try {
+        if (_oauthDestroyed) throw new Error("MCP client destroyed")
+        _resolveOAuthClient()
+        if (_oauthDestroyed) throw new Error("OAuth login cancelled")
+        return _withAuthStore(() => _getOAuthHeaders(false))
+      }
+      finally { _releaseCallback() }
+    });
+
+	const _clientCapabilities = version => {
+		var caps = clone(aOptions.capabilities)
+		if (version < "2025-06-18") delete caps.elicitation
+		else if (version < "2025-11-25" && isMap(caps.elicitation)) {
+			delete caps.elicitation.url
+			if (!isMap(caps.elicitation.form)) delete caps.elicitation
+		}
+		if (version >= "2026-07-28" && isMap(caps.roots)) delete caps.roots.listChanged
+		return caps
+	}
 
 	// Protocol version eras this client knows how to speak. Legacy (initialize-handshake-based) eras stay the
 	// default for every caller that doesn't opt into aOptions.protocolVersion == "auto"; the modern (stateless,
 	// per-request) era is only ever used after a successful _negotiateModernEra() probe below.
-	const _MCP_KNOWN_VERSIONS = ["2024-11-05", "2025-06-18", "2026-07-28"]
+	const _MCP_KNOWN_VERSIONS = ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25", "2026-07-28"]
 	const _MCP_MODERN_THRESHOLD = "2026-07-28"
 
 	// Probes the server for the modern (2026-07-28+) stateless protocol era via server/discover, per the spec's
@@ -10617,7 +11068,7 @@ const $mcp = function(aOptions) {
 	const _negotiateModernEra = clientInfo => {
 		var _probeMeta = {
 			"io.modelcontextprotocol/protocolVersion": _MCP_MODERN_THRESHOLD,
-			"io.modelcontextprotocol/clientCapabilities": aOptions.capabilities,
+			"io.modelcontextprotocol/clientCapabilities": _clientCapabilities(_MCP_MODERN_THRESHOLD),
 			"io.modelcontextprotocol/clientInfo": clientInfo
 		}
 		var _discover
@@ -10660,7 +11111,7 @@ const $mcp = function(aOptions) {
 			params = merge({}, isMap(params) ? params : {})
 			params._meta = merge({
 				"io.modelcontextprotocol/protocolVersion": _r._negotiatedVersion,
-				"io.modelcontextprotocol/clientCapabilities": aOptions.capabilities,
+				"io.modelcontextprotocol/clientCapabilities": _clientCapabilities(_r._negotiatedVersion),
 				"io.modelcontextprotocol/clientInfo": aOptions.clientInfo
 			}, isMap(params._meta) ? params._meta : {})
 		}
@@ -10673,16 +11124,17 @@ const $mcp = function(aOptions) {
 				execOptions.restOptions = _restOptions
 			}
 		}
+		execOptions.diagnostics = {}
 		var _result = _jsonrpc.exec(method, params, notification, execOptions)
 
 		// HTTP 404 with a Mcp-Session-Id set means the session expired (per the Streamable HTTP
 		// transport spec): clear it, re-initialize and retry once. Guard against servers that
 		// (non-compliantly) answer an unknown method with a plain 404 - that's a JSON-RPC -32601
 		// error, not a session issue, and must not trigger a re-initialize loop.
-		if (_isHttp && !notification && method != "initialize") {
+		if (_isHttp && !notification && ["tools/list", "prompts/list", "resources/list", "resources/templates/list", "resources/read"].indexOf(method) >= 0) {
 			var _clientInfo = _jsonrpc.getClientInfo()
 			var _isMethodNotFound = isMap(_result) && isMap(_result.error) && _result.error.code == -32601
-			if (_clientInfo.lastResponseCode == 404 && isDef(_clientInfo.session) && isDef(_clientInfo.session.mcpSessionId) && !_isMethodNotFound) {
+			if (execOptions.diagnostics.responseCode == 404 && isDef(_clientInfo.session) && isDef(_clientInfo.session.mcpSessionId) && !_isMethodNotFound) {
 				_jsonrpc.clearSession()
 				try {
 					_r.initialize()
@@ -10956,6 +11408,35 @@ const $mcp = function(aOptions) {
 		return isDef(filter) ? filter(all) : all
 	}
 
+	// Responses to inbound HTTP requests and session DELETE use the same auth provider.
+	var _originalNotification = aOptions.onNotification
+	aOptions.onNotification = message => {
+		if (message.method == "notifications/resources/updated" && isMap(message.params) && isFunction(_subscriptions[message.params.uri])) _subscriptions[message.params.uri](message.params, message)
+		if (isFunction(_originalNotification)) _originalNotification(message)
+	}
+	aOptions.getReplyOptions = () => {
+      // Session cleanup may use the last credential, but must never start another login.
+      var headers
+      if (!_oauthDestroyed) headers = _getAuthHeaders()
+      else if (isString(_auth.token)) headers = { Authorization: _auth.tokenType + " " + _auth.token }
+      else if (isString(aOptions.auth.token)) headers = { Authorization: (aOptions.auth.tokenType || "Bearer") + " " + aOptions.auth.token }
+      return { restOptions: { requestHeaders: headers } }
+    }
+	// Advertise implemented optional capabilities only after explicit handler registration.
+	delete aOptions.capabilities.sampling
+	delete aOptions.capabilities.elicitation
+	delete aOptions.capabilities.roots
+	const _subscriptions = Object.create(null)
+	var _roots = [], _elicitationModes = { form: {} }
+	const _requireResources = () => {
+		if (!_r._initialized) throw new Error("MCP client not initialized. Call initialize() first.")
+		if (!isMap(_r._capabilities.resources)) throw new Error("MCP server does not advertise resources")
+	}
+	const _resourceURI = uri => {
+		uri = _$(uri, "uri").isString().$_()
+		if (!(new java.net.URI(uri)).isAbsolute()) throw new Error("MCP resource URI must be absolute")
+		return uri
+	}
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
 	
@@ -10984,11 +11465,12 @@ const $mcp = function(aOptions) {
 			// Modern era already negotiated: there's no handshake to repeat in this era.
 			if (_r._era == "modern") return _r
 
-			if (aOptions.protocolVersion == "auto") {
+			if (aOptions.protocolVersion == "auto" || aOptions.protocolVersion == _MCP_MODERN_THRESHOLD) {
 				if (_negotiateModernEra(clientInfo)) {
 					_r._initialized = true
 					return _r
 				}
+				if (aOptions.protocolVersion != "auto") throw new Error("Server does not support the requested stateless MCP version")
 				// Not a modern server (or no usable response): fall back to the legacy initialize
 				// handshake below, using this client's default legacy version, exactly as a caller
 				// that never set "auto" would.
@@ -10997,17 +11479,18 @@ const $mcp = function(aOptions) {
 
 			var initResult = _execWithAuth("initialize", {
 				protocolVersion: aOptions.protocolVersion,
-				capabilities: aOptions.capabilities,
+				capabilities: _clientCapabilities(aOptions.protocolVersion),
 				clientInfo: clientInfo
 			})
 
 			if (isDef(initResult) && isUnDef(initResult.error)) {
+				if (isString(initResult.protocolVersion) && _MCP_KNOWN_VERSIONS.indexOf(initResult.protocolVersion) < 0) throw new Error("Unsupported negotiated MCP version: " + initResult.protocolVersion)
                 _r._initialized = true
                 _r._era = "legacy"
+                _r._negotiatedVersion = initResult.protocolVersion || aOptions.protocolVersion
                 _r._capabilities = initResult.capabilities || {}
                 _r._initResult = initResult
-                // Negotiated version: use whatever the server returned (even if unrecognised) for
-                // the MCP-Protocol-Version header on every request from here on
+                // Echo the negotiated version in the MCP-Protocol-Version header on later requests.
                 _jsonrpc.setProtocolVersion(isString(initResult.protocolVersion) ? initResult.protocolVersion : aOptions.protocolVersion)
 
                 // Send initialized notification
@@ -11032,6 +11515,241 @@ const $mcp = function(aOptions) {
             }
         },
         getInfo: () => _r._initResult,
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.getCapabilities() : Map</key>
+		 * Returns a copy of the negotiated server capabilities.
+		 * </odoc>
+		 */
+		getCapabilities: () => clone(_r._capabilities),
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.startListening() : Map</key>
+		 * Opens one opt-in legacy HTTP GET event stream on an initialized dedicated client. Does not reconnect automatically.
+		 * </odoc>
+		 */
+		startListening: () => {
+			if (!_r._initialized || aOptions.shared) throw new Error("Listener requires initialized dedicated MCP connection")
+			_jsonrpc.startListening({ requestHeaders: _getAuthHeaders() })
+			return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.stopListening() : Map</key>
+		 * Closes the optional HTTP event stream; returns the client.
+		 * </odoc>
+		 */
+		stopListening: () => { _jsonrpc.stopListening(); return _r },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.onRequest(method, handler) : Map</key>
+		 * Registers a synchronous inbound handler `(params, request)` on a dedicated connection. Return the protocol result or throw `{code,message,data}`.
+		 * </odoc>
+		 */
+		onRequest: (method, handler) => {
+			if (aOptions.shared) throw new Error("Inbound handlers require a dedicated MCP connection (shared:false)")
+			_jsonrpc.onRequest(method, handler); return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.offRequest(method) : Map</key>
+		 * Removes the inbound handler and its optional capability from future requests.
+		 * </odoc>
+		 */
+		offRequest: method => {
+			_jsonrpc.offRequest(method)
+			var cap = { "sampling/createMessage": "sampling", "elicitation/create": "elicitation", "roots/list": "roots" }[method]
+			if (isDef(cap)) delete aOptions.capabilities[cap]
+			return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.onNotification(method, handler) : Map</key>
+		 * Registers one event callback `(params, message)` per method on a dedicated connection. Re-registration replaces it.
+		 * </odoc>
+		 */
+		onNotification: (method, handler) => {
+			if (aOptions.shared) throw new Error("Inbound handlers require a dedicated MCP connection (shared:false)")
+			_jsonrpc.onNotification(method, handler); return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.offNotification(method) : Map</key>
+		 * Removes the registered notification callback.
+		 * </odoc>
+		 */
+		offNotification: method => { _jsonrpc.offNotification(method); return _r },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.onSamplingRequest(handler) : Map</key>
+		 * Opts into basic sampling using a synchronous application handler. Register before legacy initialization. No automatic LLM calls; sampling tools are rejected.
+		 * </odoc>
+		 */
+		onSamplingRequest: handler => {
+			_$(handler, "handler").isFunction().$_()
+			_r.onRequest("sampling/createMessage", params => {
+				if (isDef(params.tools) || isDef(params.toolChoice)) throw { code: -32602, message: "Sampling tools are not supported" }
+				return handler(params)
+			})
+			aOptions.capabilities.sampling = {}
+			return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.onElicitationRequest(handler, modes) : Map</key>
+		 * Opts into elicitation; modes defaults to `{form:{}}`. URL mode requires version 2025-11-25 or later and explicit `{url:{}}` support.
+		 * </odoc>
+		 */
+		onElicitationRequest: (handler, modes) => {
+			_$(handler, "handler").isFunction().$_()
+			_elicitationModes = clone(modes || { form: {} })
+			if (!isMap(_elicitationModes.form) && !isMap(_elicitationModes.url)) throw new Error("Select form and/or url elicitation")
+			_r.onRequest("elicitation/create", params => {
+				var mode = params.mode || "form"
+				if (_r._negotiatedVersion < "2025-06-18" || !isMap(_elicitationModes[mode]) || (mode == "url" && _r._negotiatedVersion < "2025-11-25")) throw { code: -32602, message: "Unsupported elicitation mode" }
+				return handler(params)
+			})
+			aOptions.capabilities.elicitation = clone(_elicitationModes)
+			return _r
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.setRoots(roots) : Map</key>
+		 * Sets explicit absolute file URI roots and registers roots/list. An empty array shares no roots; no paths are discovered automatically.
+		 * </odoc>
+		 */
+		setRoots: roots => {
+			_$(roots, "roots").isArray().$_()
+			var validated = roots.map(root => {
+				if (!isMap(root) || !isString(root.uri)) throw new Error("MCP roots require explicit file URIs")
+				var uri = new java.net.URI(root.uri)
+				if (String(uri.getScheme()).toLowerCase() != "file" || uri.isOpaque() || !String(uri.getPath()).startsWith("/")) throw new Error("MCP roots require absolute file URIs")
+				return clone(root)
+			})
+			_roots = validated
+			_r.onRequest("roots/list", () => ({ roots: clone(_roots) }))
+			aOptions.capabilities.roots = { listChanged: true }
+			if (_r._initialized && _r._era == "legacy") _execWithAuth("notifications/roots/list_changed", {}, true)
+			return _r
+		},
+		// Explicit MRTR retry only: callers supply the original method and params, never global lastRequest.
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.continueRequest(method, originalParams, inputRequired) : Map</key>
+		 * Explicitly continues one modern input_required round using registered handlers, keyed inputResponses and opaque requestState. Never called automatically.
+		 * </odoc>
+		 */
+		continueRequest: (method, params, inputRequired) => {
+			if (_r._era != "modern" || !_r.isInputRequired(inputRequired)) throw new Error("Expected modern input_required result")
+			if (method == "tools/call" && _isToolBlacklisted(params.name)) throw new Error("MCP tool is blacklisted")
+			var next = clone(params || {}), responses = {}
+			Object.keys(inputRequired.inputRequests || {}).forEach(key => {
+				var response = _jsonrpc.handleRequest(inputRequired.inputRequests[key])
+				if (isDef(response.error)) throw new Error("MCP input request failed: " + response.error.message)
+				responses[key] = response.result
+			})
+			next.inputResponses = responses
+			if (isDef(inputRequired.requestState)) next.requestState = inputRequired.requestState
+			if (method == "tools/call" && isFunction(aOptions.preFn)) aOptions.preFn(next.name, next.arguments)
+			var result = _execWithAuth(method, next)
+			if (method == "tools/call" && isFunction(aOptions.posFn)) aOptions.posFn(next.name, next.arguments, result)
+			return result
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.listResources() : Map</key>
+		 * Collects resource pages with metadata. Requires advertised resources capability; unsuccessful responses remain intact.
+		 * </odoc>
+		 */
+		listResources: () => { _requireResources(); return _listPages("resources/list", "resources") },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.listResourceTemplates() : Map</key>
+		 * Collects resourceTemplates pages. URI template expansion is the caller's responsibility.
+		 * </odoc>
+		 */
+		listResourceTemplates: () => { _requireResources(); return _listPages("resources/templates/list", "resourceTemplates") },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.readResource(uri) : Map</key>
+		 * Reads an absolute resource URI through MCP, retaining all text/blob contents, MIME types, metadata and unknown fields. Does not dereference URLs locally.
+		 * </odoc>
+		 */
+		readResource: uri => { _requireResources(); return _execWithAuth("resources/read", { uri: _resourceURI(uri) }) },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.subscribeResource(uri, callback) : Map</key>
+		 * Subscribes on a dedicated legacy transport with resources.subscribe. Callback receives `(params, message)`. HTTP requires GET SSE; modern subscriptions/listen is unsupported.
+		 * </odoc>
+		 */
+		subscribeResource: (uri, callback) => {
+			_requireResources()
+			if (aOptions.shared || _r._era == "modern" || _r._capabilities.resources.subscribe !== true) throw new Error("Resource subscriptions require dedicated legacy transport and server resources.subscribe")
+			uri = _resourceURI(uri)
+			_$(callback, "callback").isFunction().$_()
+			_subscriptions[uri] = callback
+			var result
+			try {
+				if (aOptions.type != "stdio") _r.startListening()
+				result = _execWithAuth("resources/subscribe", { uri: uri })
+			} catch(e) { delete _subscriptions[uri]; throw e }
+			if (isMap(result) && isDef(result.error)) delete _subscriptions[uri]
+			return result
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.unsubscribeResource(uri) : Map</key>
+		 * Unsubscribes and removes its callback after a successful response.
+		 * </odoc>
+		 */
+		unsubscribeResource: uri => {
+			_requireResources()
+			if (aOptions.shared || _r._era == "modern" || _r._capabilities.resources.subscribe !== true) throw new Error("Resource subscriptions require dedicated legacy transport and server resources.subscribe")
+			uri = _resourceURI(uri)
+			var result = _execWithAuth("resources/unsubscribe", { uri: uri })
+			if (!isMap(result) || isUnDef(result.error)) delete _subscriptions[uri]
+			return result
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.getToolUI(name) : Map</key>
+		 * Returns a copy of a discovered tool's `_meta.ui` or undefined.
+		 * </odoc>
+		 */
+		getToolUI: name => {
+			var listed = _r.listTools()
+			if (!isArray(listed.tools)) throw new Error("Unable to discover MCP tools")
+			var tool = listed.tools.filter(t => t.name == name)[0]
+			return isDef(tool) && isMap(tool._meta) && isMap(tool._meta.ui) ? clone(tool._meta.ui) : __
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.getAppResource(name) : Map</key>
+		 * Reads a tool's ui:// App resource, retaining the complete envelope. Never evaluates returned HTML or JavaScript.
+		 * </odoc>
+		 */
+		getAppResource: name => {
+			var ui = _r.getToolUI(name)
+			if (!isMap(ui) || !isString(ui.resourceUri) || ui.resourceUri.indexOf("ui://") != 0) throw new Error("Tool has no MCP App ui:// resource")
+			return _r.readResource(ui.resourceUri)
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.hasApps() : Boolean</key>
+		 * Reports whether discovered tools reference UI resources; does not imply a browser host or trusted content.
+		 * </odoc>
+		 */
+		hasApps: () => {
+			var listed = _r.listTools()
+			return isArray(listed.tools) && listed.tools.some(t => isMap(t._meta) && isMap(t._meta.ui) && isString(t._meta.ui.resourceUri))
+		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.cancelRequest(id, reason) : Map</key>
+		 * Sends best-effort notifications/cancelled. Does not roll back remote side effects. Low-level execOptions.onRequestId exposes outgoing ids.
+		 * </odoc>
+		 */
+		cancelRequest: (id, reason) => { _execWithAuth("notifications/cancelled", { requestId: id, reason: reason || "Client cancellation" }, true); return _r },
 		getClientInfo: () => {
 			var _clientInfo = _jsonrpc.getClientInfo()
 			if (isMap(_r._initResult)) {
@@ -11044,8 +11762,7 @@ const $mcp = function(aOptions) {
 		},
 		// True when result carries the modern era's InputRequiredResult shape (resultType "input_required"),
 		// meaning the server needs more information (sampling/elicitation/roots) before it can complete the
-		// request -- see the MRTR pattern. This client has no interactive UI to satisfy such a request; callers
-		// that talk to modern servers using those features should check for this and surface it to the user.
+		// request -- see the MRTR pattern. Callers can explicitly continue it using registered handlers.
 		isInputRequired: result => isMap(result) && result.resultType == "input_required",
 		listTools: () => {
 			if (!_r._initialized) {
@@ -11240,16 +11957,15 @@ const $mcp = function(aOptions) {
 				toolsToAdd = toolsList.tools.filter(tool => aToolNames.indexOf(tool.name) >= 0)
 			}
 
+			toolsToAdd = toolsToAdd.filter(tool => !isMap(tool._meta) || !isMap(tool._meta.ui) || !isArray(tool._meta.ui.visibility) || tool._meta.ui.visibility.indexOf("model") >= 0)
 			toolsToAdd.forEach(tool => {
-				var gptParams = {
-					type: "object",
-					properties: tool.inputSchema.properties || {},
-					required: tool.inputSchema.required || []
-				}
+				var gptParams = clone(tool.inputSchema || { type: "object", properties: {} })
 
 				var mcpToolFn = function(args) {
 					try {
 						var result = _r.callTool(tool.name, args)
+						if (Object.keys(result).some(k => ["content", "isError"].indexOf(k) < 0) || result.isError === true ||
+							(isArray(result.content) && result.content.some(c => c.type != "text"))) return stringify(result)
 						if (isDef(result.content) && isArray(result.content)) {
 							// Extract text content from MCP result
 							return result.content.map(c => c.text || c.data || stringify(c)).join("\n")
@@ -11270,21 +11986,44 @@ const $mcp = function(aOptions) {
 		},
         // Explicit operator authentication; never returns credentials.
         authenticate: () => { _getAuthHeaders(); return _authStatus(); },
-        getAuthStatus: () => _withAuthStore(() => _authStatus()),
-        clearAuth: () => _withAuthStore(() => {
-            _resetAuth();
-            _deleteAuth();
-            _authStoreFailed = false;
-            return _authStatus();
-        }, true),
+        getAuthStatus: () => _withOAuthOperation(() => { _resolveOAuthClient(true); return _automaticOAuth && isUnDef(_registration) ? _authStatus() : _withAuthStore(() => _authStatus()); }),
+        clearAuth: (options) => _withOAuthOperation(() => {
+            _resolveOAuthClient(true, true)
+            var result = _automaticOAuth && isUnDef(_registration) ? _authStatus() : _withAuthStore(() => {
+                _resetAuth()
+                _deleteAuth()
+                _authStoreFailed = false
+                return _authStatus()
+            }, true)
+            if (isMap(options) && options.registration === true && _automaticOAuth) {
+                _withRegistrationLock(() => {
+                    if (isDef(_registrationStore)) {
+                        try { _registrationStore.clear(_registrationKey) }
+                        catch(e) { throw new Error("OAuth registration storage delete failed") }
+                    }
+                    _registration = __
+                    _registrationFailed = false
+                    aOptions.auth.clientId = __
+                    aOptions.auth.clientSecret = __
+                    aOptions.auth.redirectURI = _requestedRedirectURI
+                    aOptions.auth.tokenEndpointAuthMethod = _requestedAuthMethod
+                })
+                _releaseCallback()
+                return _authStatus()
+            }
+            return result
+        }),
 
-		exec: (method, params) => {
-			return _execWithAuth(method, params)
+		exec: (method, params, execOptions) => {
+			return _execWithAuth(method, params, false, execOptions)
 		},
 		destroy: () => {
+            _oauthDestroyed = true
             if (isDef(_oauthPending)) {
                 _oauthPending.cancel();
             }
+            _releaseCallback()
+			Object.keys(_subscriptions).forEach(k => delete _subscriptions[k])
 			_jsonrpc.destroy()
 		}
 	}
@@ -12783,7 +13522,7 @@ IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
 	var fis, zis
 	try {
 		fis = new java.io.FileInputStream(zipFile)
-		zis = new java.util.zip.ZipInputStream(fis)
+		zis = Packages.openaf.core.ArchiveLimits.zip(fis)
 
 		var ne = zis.getNextEntry()
 		while (!isNull(ne)) {
@@ -12810,15 +13549,30 @@ IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
 						source: entryName,
 						target: targetPath
 					})
-					var wtmp
-					try {
-						wtmp = io.writeFileStream(String(entryPath))
-						Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
-					} finally {
-						if (isDef(wtmp)) wtmp.close()
-					}
+                    var wtmp, temporary
+                    try {
+                        temporary = files.createTempFile(entryPath.getParent(), ".openaf-unzip-", ".part")
+                        wtmp = io.writeFileStream(String(temporary))
+                        Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
+                        wtmp.close()
+                        wtmp = undefined
+                        resolveEntry(entryName)
+                        // Publish only validated content through a normal file stream, preserving
+                        // existing permissions and the usual creation mode for new files.
+                        var staged = io.readFileStream(String(temporary))
+                        try {
+                            wtmp = io.writeFileStream(String(entryPath))
+                            Packages.org.apache.commons.io.IOUtils.copyLarge(staged, wtmp)
+                        } finally { staged.close() }
+                    } finally {
+                        try { if (isDef(wtmp)) wtmp.close() }
+                        finally { if (isDef(temporary)) files.deleteIfExists(temporary) }
+                    }
 				}
 			} catch(e) {
+                // Quota failures are fatal: never drain or continue the rejected archive.
+                var cause = e.javaException || e
+                if (cause instanceof Packages.openaf.core.ArchiveLimits.LimitException) throw e
 				logErrFn("ERROR: [" + entryName + "] " + e, e)
 			}
 
@@ -13209,14 +13963,14 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
  
 /**
  * <odoc>
- * <key>$llm(aModel) : $llm</key>
+ * <key>$llm(aModel, aEmbeddingConfig) : $llm</key>
  * Shortcut for $gpt on the owrap.AI library.
  * </odoc>
  */
-const $llm = function(aModel) {
-        if (global.$gpt) return $gpt(aModel)
+const $llm = function(aModel, aEmbeddingConfig) {
+        if (global.$gpt) return $gpt(aModel, aEmbeddingConfig)
         ow.loadAI()
-        return $gpt(aModel)
+        return $gpt(aModel, aEmbeddingConfig)
 }
 
 /**
@@ -14630,24 +15384,110 @@ const __askRows = (text, con) => {
 		.columnSplitLength(width, false, false).size()))
 }
 
+// Shared prompt polling. Callbacks run on the reader thread and may return false
+// to cancel. Existing calls without options keep their original input path.
+const __askOptions = options => {
+  if (isUnDef(options)) return __
+  _$(options, "prompt options").isMap().$_()
+  if (isUnDef(options.onIdle)) return __
+  _$(options.onIdle, "onIdle").isFunction().$_()
+  var interval = _$(options.pollInterval, "pollInterval").isNumber().default(50)
+  if (!isFinite(interval) || interval < 1 || interval > 2147483647) throw "Invalid prompt polling interval"
+  return { onIdle: options.onIdle, pollInterval: interval }
+}
+
+const __askPollChar = (ui, options) => {
+  var term = !isFunction(ui.read) ? ui.console.getConsoleReader().getTerminal().unwrap() : __
+  var readCode = timeout => term ? Number(term.reader().read(timeout)) : Number(ui.read(timeout))
+  var read = () => {
+    while (true) {
+      if (options.onIdle() === false) return "\u0003"
+      var code = readCode(options.pollInterval)
+      if (code == -1) return "\uffff"
+      if (code != -2) return String.fromCharCode(code)
+    }
+  }
+  if (term) {
+    var attrs = term.enterRawMode()
+    try { return read() } finally { term.setAttributes(attrs) }
+  }
+  return isFunction(ui.raw) ? ui.raw(read) : read()
+}
+
+// Adapter for borrowed key-only UIs. Native consoles use JLine instead, retaining
+// completion, history, masking and full cursor editing.
+const __askUILine = (prompt, mask, ui, options) => {
+  ow.loadScreen()
+  if (mask === "") mask = __
+  var run = () => {
+    var chars = [], cursor = 0, lastWidth = 0
+    var masked = () => isUnDef(mask) ? chars.join("") : mask == "\u0000" ? "" : repeat(chars.length, String(mask).charAt(0))
+    var draw = () => {
+      var text = masked(), width = ow.screen.width(text)
+      var prefix = isUnDef(mask) ? chars.slice(0, cursor).join("") : mask == "\u0000" ? "" : repeat(cursor, String(mask).charAt(0))
+      ui.write("\r" + prompt + text + repeat(Math.max(0, lastWidth - width), " ") + repeat(Math.max(lastWidth, width) - ow.screen.width(prefix), "\b"), false)
+      lastWidth = width
+    }
+    ui.write(prompt, false)
+    while (true) {
+      if (options.onIdle() === false) { ui.write(""); return null }
+      var key = askKey(ui, options.pollInterval)
+      if (isUnDef(key)) continue
+      if (key == "eof" || key == "ctrl-c") { ui.write(""); return null }
+      if (key == "enter") { ui.write(""); return chars.join("") }
+      if (key == "left") cursor = Math.max(0, cursor - 1)
+      else if (key == "right") cursor = Math.min(chars.length, cursor + 1)
+      else if (key == "home" || key == "ctrl-a") cursor = 0
+      else if (key == "end" || key == "ctrl-e") cursor = chars.length
+      else if (key == "backspace" && cursor > 0) { chars.splice(--cursor, 1) }
+      else if (key == "delete") chars.splice(cursor, 1)
+      else if (key == "ctrl-u") { chars = chars.slice(cursor); cursor = 0 }
+      else if (isString(key) && (key.length == 1 || key.length == 2 && key.charCodeAt(0) >= 0xD800 && key.charCodeAt(0) <= 0xDBFF) && ow.screen.width(key) >= 0 && !/[\x00-\x1f\x7f]/.test(key)) {
+        chars.splice(cursor++, 0, key)
+        // Keep combining characters attached to their preceding grapheme.
+        var prefix = ow.screen.graphemes(chars.slice(0, cursor).join(""))
+        chars = prefix.concat(chars.slice(cursor))
+        cursor = prefix.length
+      } else continue
+      draw()
+    }
+  }
+  return isFunction(ui.raw) ? ui.raw(run) : run()
+}
+
 /**
  * <odoc>
  * <key>ask(aPrompt, aMask, aConsole, noAnsi, aWrite) : String</key>
  * Stops for user interaction prompting aPrompt waiting for an entire line of characters and, optionally, masking the user input with aMask (e.g. "*").
- * Returns the user input.
+ * Returns the user input. An optional sixth aOptions map accepts onIdle and
+ * pollInterval (milliseconds, default 50). onIdle runs on the input thread;
+ * returning false cancels with null. aConsole also accepts an askConsole UI map.
+ * Native line editing/history are preserved; masked input is not added to history.
  * </odoc>
  */
-const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
+const ask = (aPrompt, aMask, _con, noAnsi, aWrite, aOptions) => {
+  var polling = __askOptions(aOptions), ui = _con && (isFunction(_con.read) || isDef(_con.console)) ? _con : __
+  if (ui) { _con = ui.console; aWrite = aWrite || ui.write; if (isUnDef(noAnsi)) noAnsi = !ui.ansi }
+  if (polling && ui && isUnDef(_con)) return __askUILine(_$(aPrompt).isString().default("> "), aMask, ui, polling)
 	aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
+  var read = prompt => {
+    if (!polling) return _con.readLinePrompt(prompt, aMask)
+    try { return _con.readLinePromptPolling(prompt, aMask, polling.onIdle, polling.pollInterval) }
+    catch(e) {
+      if (e.javaException && e.javaException instanceof Packages.jline.console.UserInterruptException) return null
+      throw e
+    }
+  }
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
 		var _prompt = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt)
-		var _v = _con.readLinePrompt(_prompt, aMask)
+		var _v = read(_prompt)
+    if (_v == null) return null
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
 		;(aWrite || printErr)("\x1b[" + __askRows(_prompt + (_v == null || aMask == String.fromCharCode(0) ? "" : _m), _con) + "A\x1b[0G\x1b[0J" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
-		return _con.readLinePrompt(aPrompt, aMask)
+		return read(aPrompt)
 	}
 }
 
@@ -14656,12 +15496,13 @@ const ask = (aPrompt, aMask, _con, noAnsi, aWrite) => {
  * <key>askEncrypt(aPrompt, aConsole, noAnsi, aWrite) : String</key>
  * Similar to ask but the return user input will be encrypted.
  * If an empty string is entered by the user the function will return undefined.
+ * An optional fifth aOptions forwards onIdle/pollInterval to ask; cancellation returns undefined.
  * </odoc>
  */
-const askEncrypt = (aPrompt, _con, noAnsi, aWrite) => {
+const askEncrypt = (aPrompt, _con, noAnsi, aWrite, aOptions) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
-	var v = ask(aPrompt, String.fromCharCode(0), _con, noAnsi, aWrite);
-	if (isString(v) && v == "") return __;
+	var v = ask(aPrompt, String.fromCharCode(0), _con, noAnsi, aWrite, aOptions);
+	if (v == null || isString(v) && v == "") return __;
 	return af.encrypt(v);
 }
 
@@ -14669,10 +15510,26 @@ const askEncrypt = (aPrompt, _con, noAnsi, aWrite) => {
  * <odoc>
  * <key>ask1(aPrompt, allowed, aConsole, aWrite) : String</key>
  * Stops for user interaction prompting aPrompt waiting for a single character within the allowed string (a set of characters).
+ * An optional fifth aOptions accepts onIdle/pollInterval; cancellation returns null.
  * Returns the user input.
  * </odoc>
  */
-const ask1 = (aPrompt, allowed, _con, aWrite) => {
+const ask1 = (aPrompt, allowed, _con, aWrite, aOptions) => {
+  var polling = __askOptions(aOptions), ui = _con && (isFunction(_con.read) || isDef(_con.console)) ? _con : __
+  if (polling && !ui && isDef(_con)) ui = { console: _con, write: aWrite || printnl }
+  if (polling && !ui) {
+    var ownedUI = askConsole()
+    try { return ask1(aPrompt, allowed, ownedUI, aWrite, aOptions) } finally { ownedUI.close() }
+  }
+  if (ui) { _con = ui.console; aWrite = aWrite || ui.write }
+  if (polling) {
+    if (isDef(aPrompt)) (aWrite || printnl)(aPrompt, false)
+    while (true) {
+      var ch = __askPollChar(ui, polling)
+      if (ch == "\u0003" || ch == "\uffff") return null
+      if (!allowed || allowed.indexOf(ch) >= 0) return ch
+    }
+  }
 	if (isDef(aPrompt)) { if (aWrite) aWrite(aPrompt, false); else printnl(aPrompt); }
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	return _con.readChar(allowed);
@@ -14681,12 +15538,13 @@ const ask1 = (aPrompt, allowed, _con, aWrite) => {
 /**
  * <odoc>
  * <key>askN(aPromptFn, aStopFn, aConsole) : String</key>
+ * An optional fourth aOptions forwards onIdle/pollInterval to each line prompt.
  * Stops for a multi-line user interaction prompting, for each line, the result of calling aPromptFn that receives the current user input 
  * (if a string is provided it will default to a function that returns that string). The interaction will stop when aStopFn function, that receives the current
  * user input as an argument, returns true (if the function is not provided it will default to 3 new lines).
  * </odoc>
  */
-const askN = (aPromptFn, aStopFn, _con) => {
+const askN = (aPromptFn, aStopFn, _con, aOptions) => {
 	aStopFn = _$(aStopFn, "aStopFn").isFunction().default(text => {
 		return text.match(/\n\n\n$/);
 	});
@@ -14694,7 +15552,7 @@ const askN = (aPromptFn, aStopFn, _con) => {
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	var r = "";
 	do {
-		var l = _con.readLinePrompt(aPromptFn(r));
+		var l = isDef(aOptions) ? ask(aPromptFn(r), __, _con, true, __, aOptions) : _con.readLinePrompt(aPromptFn(r));
 		if (l == null) return r;
 		r += l + "\n";
 	} while (!aStopFn(r));
@@ -14704,16 +15562,17 @@ const askN = (aPromptFn, aStopFn, _con) => {
 /**
  * <odoc>
  * <key>askDef(aInit, aQuestion, isSecret, isVoidable, aUI) : String</key>
+ * An optional sixth aOptions forwards onIdle/pollInterval to the input helper.
  * If aInit is not defined will ask aQuestion (if isSecret = true it will askEncrypt) and return
  * the value. If isVoidable = true and no answer is provided it will return undefined.
  * </odoc>
  */
-const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI) => {
+const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI, aOptions) => {
 	aQuestion = _$(aQuestion, "aQuestion").isString().default("Question: ");
 	if (isUnDef(aInit)) {
 		var r;
-		if (isSecret) r = askEncrypt(aQuestion, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write);
-		else r = ask(aQuestion, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write);
+		if (isSecret) r = askEncrypt(aQuestion, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions);
+		else r = ask(aQuestion, __, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions);
 		if (isVoidable && isString(r) && r.length == 0) r = __;
 		return r; 
 	} else {
@@ -14727,9 +15586,16 @@ const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI) => {
  * Stops for user interaction prompting aPrompt waiting for a single character to choose from the provided anArray of options. Optionally
  * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.\
  * Optional aUI is the console/write/ansi map returned by askConsole (or a compatible injected UI).
+ * An optional sixth aOptions accepts onIdle and pollInterval as in ask; cancellation returns undefined.
  * </odoc>
  */
-const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
+const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI, aOptions) => {
+  var polling = __askOptions(aOptions)
+  if (polling && !aUI) {
+    var ownedUI = askConsole()
+    try { return askChoose(aPrompt, anArray, aMaxDisplay, aHelpText, ownedUI, aOptions) } finally { ownedUI.close() }
+  }
+
 	_$(aPrompt, "aPrompt").isString().$_()
 	_$(anArray, "anArray").isArray().$_()
 	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
@@ -14742,7 +15608,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 	if (aUI && !aUI.ansi) {
 		while (true) {
 			anArray.forEach((text, i) => _write((i + 1) + ". " + text))
-			var answer = ask(aPrompt + " [number, blank to cancel]: ", __, aUI.console, true, _write)
+			var answer = ask(aPrompt + " [number, blank to cancel]: ", __, aUI, true, _write, aOptions)
 			if (answer == null || answer === "") return __
 			if (/^\d+$/.test(answer) && Number(answer) >= 1 && Number(answer) <= anArray.length) return Number(answer) - 1
 		}
@@ -14797,22 +15663,23 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 			_display(_o)
 		}
 
+		var readChar = () => polling ? __askPollChar(aUI, polling) : _con.readChar("")
 		let c = 0
 		try {
 		do {
 			_print()
-			var _c = _con.readChar("")
+			var _c = readChar()
 			c = String(_c).charCodeAt(0)
 			if (c == 3 || c == 65535) { cancelled = true; break }
 			if (c == 27) {
-				c = String(_con.readChar("")).charCodeAt(0)
+				c = String(readChar()).charCodeAt(0)
 				if (c == 27) {
 					cancelled = true
 					break
 				} else {
 					filter = ""
 					if (c == 91 || c == 79) {
-						c = String(_con.readChar("")).charCodeAt(0)
+						c = String(readChar()).charCodeAt(0)
 						if (c == 66) option = (option + 1) % anArray.length
 						if (c == 65) option = (option - 1 + anArray.length) % anArray.length
 					}
@@ -14850,9 +15717,16 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
  * <key>askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText, aUI) : Array</key>
  * Stops for user interaction prompting aPrompt waiting for a single character to choose multiple from the provided anArray of options. Optionally
  * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns an array with the chosen options.
+ * An optional sixth aOptions accepts onIdle and pollInterval as in ask; cancellation returns undefined.
  * </odoc>
  */
-const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
+const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI, aOptions) => {
+  var polling = __askOptions(aOptions)
+  if (polling && !aUI) {
+    var ownedUI = askConsole()
+    try { return askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText, ownedUI, aOptions) } finally { ownedUI.close() }
+  }
+
 	_$(aPrompt, "aPrompt").isString().$_()
 	_$(anArray, "anArray").isArray().$_()
 	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
@@ -14865,7 +15739,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
   if (aUI && !aUI.ansi) {
     while (true) {
       anArray.forEach((text, i) => _write((i + 1) + ". " + text));
-      var answer = ask(aPrompt + " [comma-separated numbers, blank for none]: ", __, aUI.console, true, _write);
+      var answer = ask(aPrompt + " [comma-separated numbers, blank for none]: ", __, aUI, true, _write, aOptions);
       if (answer == null) return __;
       if (answer.trim() === "") return [];
       var parts = answer.split(",").map(v => v.trim());
@@ -14931,22 +15805,23 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
 			_write(_o)
 		}
 
+		var readChar = () => polling ? __askPollChar(aUI, polling) : _con.readChar("")
 		let c = 0
 		try {
 		do {
 			_print()
-			var _c = _con.readChar("")
+			var _c = readChar()
 			c = String(_c).charCodeAt(0)
 			if (c == 3 || c == 65535) { cancelled = true; break; }
 			if (c == 27) {
-				c = String(_con.readChar("")).charCodeAt(0)
+				c = String(readChar()).charCodeAt(0)
 				if (c == 27) {
 					cancelled = true
 					break
 				} else {
 					filter = ""
 					if (c == 91 || c == 79) {
-						c = String(_con.readChar("")).charCodeAt(0)
+						c = String(readChar()).charCodeAt(0)
 						if (c == 66) option = (option + 1) % anArray.length
 						if (c == 65) option = (option - 1 + anArray.length) % anArray.length
 					}
@@ -15013,9 +15888,10 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI) => {
  * - "choose" (requires options)
  * - "multiple" (requires options)
  * ]]>
+ * An optional third aOptions forwards onIdle/pollInterval to each input helper.
  * </odoc>
  */
-const askStruct = (ar, aUI) => {
+const askStruct = (ar, aUI, aOptions) => {
 	if (isArray(ar)) {
 		var _r = ar.map(t => {
 			_$(t.name, "name").isString().$_()
@@ -15027,13 +15903,13 @@ const askStruct = (ar, aUI) => {
 			if (isString(t.help)) t.help = ansiColor("FAINT,ITALIC", t.help)
 
 			switch(t.type) {
-			case 'secret'  : __r.answer = askEncrypt(t.prompt, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write); break
-			case 'char'    : __r.answer = ask1(t.prompt, t.options, aUI && aUI.console, aUI && aUI.write); break
-			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help, aUI)]; break
-			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help, aUI); break
+			case 'secret'  : __r.answer = askEncrypt(t.prompt, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions); break
+			case 'char'    : __r.answer = ask1(t.prompt, t.options, aUI, aUI && aUI.write, aOptions); break
+			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help, aUI, aOptions)]; break
+			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help, aUI, aOptions); break
 			case "question": 
 			case '?'       : 
-			default        : __r.answer = ask(t.prompt, __, aUI && aUI.console, aUI && !aUI.ansi, aUI && aUI.write)
+			default        : __r.answer = ask(t.prompt, __, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions)
 			}
 			if (isDef(t.output) && t.output == "index") {
 				if (isArray(__r.answer)) {
@@ -16501,12 +17377,13 @@ const $sh = function(aString, aIn) {
 	/**
 	 * <odoc>
 	 * <key>$sh.envs(aMap, includeExisting) : $sh</key>
-	 * Uses aMap of strings as the environment variables map. If includeExisting = true it will include the current environment variables also.
+	 * Uses aMap of strings as the environment variables map. If includeExisting = true it will include the current environment variables also,
+	 * with values explicitly provided in aMap taking precedence.
 	 * </odoc>
 	 */
 	__sh.prototype.envs = function(aMap, includeExisting) {
 		aMap = _$(aMap, "envs map").isMap().default({});
-		if (includeExisting) aMap = merge(aMap, getEnvs());
+		if (includeExisting) aMap = merge(getEnvs(), aMap)
 		this.envs = aMap;
 		return this;
 	};
@@ -18093,7 +18970,7 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 
 (function() {
 	// Archive training must not execute user or embedded startup profiles.
-	if (java.lang.Boolean.getBoolean("openaf.cds.training")) return;
+	if (java.lang.Boolean.getBoolean("openaf.cds.training") || java.lang.Boolean.getBoolean("openaf.test.worker")) return
 	var prof = "";
 	try {
 		var fprof = __gHDir() + "/" + OPENAFPROFILE;

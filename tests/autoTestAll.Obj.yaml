@@ -1,7 +1,7 @@
 # Copyright 2023 Nuno Aguiar
 
 include:
-   - oJobTest.yaml
+   - autoTestAll.common.yaml
 
 jobs:
    # Obj tests
@@ -12,130 +12,136 @@ jobs:
 
    - name: Obj::Flatten
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFlatten;
 
   #  - name: Obj::REST Errors
   #    from: Obj::Init
-  #    to  : oJob Test
+  #    to  : OpenAF Test
   #    exec: args.func = args.tests.testRESTErrors;
 
    - name: Obj::REST closes owned client after failure
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testRESTClosesOwnedClientAfterFailure;
 
    - name: Obj::Edge cases
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjectEdgeCases;
 
    - name: Obj::Array to ordered object
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testArray2OrdObj;
 
    - name: Obj::Ordered object to array
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testOrdObj2Array;
 
    - name: Obj::Get Path
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testGetPath;
 
    - name: Obj::Set Path
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSetPath;
 
    - name: Obj::Array to object conversion
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testArray2Obj;
 
    - name: Obj::Object to array conversion
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObj2Array;
 
    - name: Obj::Object schema validation
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSchema;
 
    - name: Obj::Object pool
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjPool;
     
    - name: Obj::Thread-safe array
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSyncArray;
 
    - name: Obj::Thread-safe map
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSyncMap;
 
    - name: Obj::Object fuzzy search
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFuzzySearch;
 
    - name: Obj::Generate One of
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjGen;
 
    - name: Obj::Generate One of Fn
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjFnGen;
 
    - name: Obj::Sign object
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testSignObj;
 
    - name: Obj::DB ResultSet to object
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testDBRS2ObjPG
 
    - name: Obj::Filter
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFilter
 
    - name: Obj::Flat map
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testFlatMap
 
    - name: Obj::Object pool capacity
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjPoolCapacity;
 
    - name: Obj::Object pool batch growth
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjPoolBatchGrowth;
 
    - name: Obj::Object pool stop without close
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjPoolStopWithoutClose;
 
    - name: Obj::Object pool added and failed batch
      from: Obj::Init
-     to  : oJob Test
+     to  : OpenAF Test
      exec: args.func = args.tests.testObjPoolAddedAndFailedBatch;
 
+   - name: Obj::Object pool health retries
+     from: Obj::Init
+     to: OpenAF Test
+     exec: args.func = args.tests.testObjPoolHealthRetries
+
 todo:
+- Obj::Object pool health retries
 # Obj tests
 # ------------
 - Obj::Init

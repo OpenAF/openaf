@@ -84,8 +84,9 @@ jobs:
         run: |
           java -jar openaf.jar --install
           cd tests
+          rm -f autoTestAll.results.json
           ../ojob autoTestAll.yaml
-          python3 -c 'import json; r=json.load(open("autoTestAll.results.json")); assert r["fail"] == 0 and r["count"] > 0'
+          python3 -c 'import json; r=json.load(open("autoTestAll.results.json")); assert r.get("complete") is True and r["fail"] == 0 and r["count"] > 0 and not r.get("infrastructureErrors")'
       - name: Snapshot tested binary and matching generated sources
         working-directory: release
         run: |
