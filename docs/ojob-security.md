@@ -13,6 +13,8 @@ Resolution order:
 2. Existing `ow.oJob.authorizedDomains`
 3. Default constant `OJOB_AUTHORIZEDDOMAINS` (defaults to `["ojob.io"]`)
 
+Remote definitions require HTTPS, including every redirect hop. Explicit HTTP URLs and HTTPS-to-HTTP redirects are rejected before contacting the HTTP endpoint, even when the hostname is authorized or an integrity hash is configured. Bare authorized-domain references continue to resolve to HTTPS. Migrate HTTP definitions to HTTPS or trusted local files.
+
 The definition download helpers check the exact hostname before fetching. For an unauthorized host they return an `Unauthorized URL` placeholder definition; do not rely on this path to throw an exception or provide a nonzero exit status. Loader inspection still processes trusted libraries and includes; it is not a sandbox.
 
 ## Integrity Verification

@@ -1,4 +1,6 @@
-// Standalone loopback regression: java -jar openaf.jar -f tests/ojob-download-limits.js.
+// Standalone TLS loopback regression (run from repository root):
+// keytool -genkeypair -alias test -keyalg RSA -keystore /tmp/ojob-test.p12 -storetype PKCS12 -storepass changeit -dname CN=localhost -ext SAN=IP:127.0.0.1 -validity 1
+// java -Dojob.test.keyStore=/tmp/ojob-test.p12 -Djavax.net.ssl.trustStore=/tmp/ojob-test.p12 -Djavax.net.ssl.trustStorePassword=changeit -jar openaf.jar -f tests/ojob-download-limits.js
 try {
     ow.loadOJob(); ow.loadServer(); ow.loadTest(); plugin("HTTPServer")
     // Exercise checkout source, including when the bootstrap JAR predates this patch.
@@ -25,8 +27,10 @@ try {
         job.authorizedDomains = ["127.0.0.1"]
         OJOB_INTEGRITY = {}; OJOB_INTEGRITY_STRICT = false; OJOB_INTEGRITY_WARN = false
         OJOB_VALIDATION_STRICT = false; OJOB_SIGNATURE_STRICT = false
-        server = new HTTPd(0,"127.0.0.1",__,__,__,__,5000,"java")
-        root = "http://127.0.0.1:" + server.getPort()
+        var keyStore = java.lang.System.getProperty("ojob.test.keyStore")
+        check(!isNull(keyStore), "Set ojob.test.keyStore to a loopback TLS test keystore")
+        server = new HTTPd(0,"127.0.0.1",String(keyStore),"changeit",__,__,5000,"java")
+        root = "https://127.0.0.1:" + server.getPort()
         server.add("/exact.json", () => server.replyOKText(exact))
         server.add("/large.json", () => server.replyOKText(large))
         server.add("/chunked.json", () => server.replyStream(af.fromString2InputStream(large),"application/json",200,{}))
