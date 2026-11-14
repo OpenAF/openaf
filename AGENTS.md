@@ -18,8 +18,18 @@
 - Java packages: keep under `openaf.*`; place new plugins in `src/openaf/plugins/` when appropriate.
 - JavaScript/YAML: use 2-space indentation in new code; preserve the surrounding indentation in existing blocks. Filenames use kebab/camel to match neighbors.
 - JavaScript: omit optional statement-ending semicolons in new code. Retain required separators in `for` headers, between same-line statements, and wherever automatic semicolon insertion would change parsing (for example before a following `(` or `[` expression). Keep spacing readable and avoid reformatting unrelated legacy code.
+- Code sections: separate logical sections (validation, setup, processing, cleanup and return/output) with a blank line. Keep closely related statements together; do not insert blank lines between every statement. This follows the section spacing found in older code such as `js/owrap.obj.js` at commit `3f1445b0` (2023-11-10).
+- Section comments: introduce each logical code section with a short comment describing its purpose, using `//` in Java/JavaScript and `#` in YAML. Keep comments small and useful (for example, `// Set credentials` or `// Set timeout`); avoid narrating each statement. Apply these rules to new or changed sections without reformatting unrelated legacy code.
 - ODoc: place documentation immediately above the corresponding function or the registration block for generated methods. Use `<odoc format="markdown">` for Markdown content, backticks for API names and parameters, and CDATA for examples or XML-sensitive text. Preserve help keys/signatures and ensure moved module documentation remains included in generated help.
 - No strict linter config is enforced; match surrounding style and minimize diff noise.
+
+## oJob YAML Coding Style
+- Use `ojob.yaml` as the reference for reusable job definitions. Use 2-space indentation for new YAML and preserve the indentation of existing files. Match its indentless sequence style under keys such as `jobs:`, `expects:` and `check` lists.
+- Separate jobs with a blank line and a short `#` comment naming their purpose; match existing dashed comment separators where used. Separate top-level configuration, job definitions and execution lists with blank lines when present.
+- Give jobs descriptive names and keep related fields together: `name`, execution metadata (`type`, `typeArgs`, dependencies when applicable), `help`, `check`, then `exec`. Include only fields the job needs. Match nearby colon alignment within small related mappings, without realigning unrelated jobs.
+- For reusable jobs, describe their purpose in `help.text` and inputs in `help.expects` (`name` and `desc`, plus `required` when applicable). Declare input validation and defaults in `check.in`, following existing chains such as `isString.default(...)` and `toBoolean.isBoolean.default(...)`.
+- Use `exec: |` for multiline JavaScript so line breaks and section comments are preserved. Apply the JavaScript spacing, short section comments and semicolon rules above inside executable blocks.
+- Follow existing `typeArgs.shortcut` conventions when exposing a shortcut (`name`, `keyArg`, and argument mappings as needed). Preserve established argument names and output contracts (`args`, `$set`/`$get`) when extending existing jobs.
 
 ## Testing Guidelines
 - Framework: OpenAF oJob + JS tests in `tests/` driven by `autoTestAll.*.yaml`.
