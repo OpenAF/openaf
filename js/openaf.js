@@ -13431,11 +13431,14 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
  */
 AF.prototype.fromJSONC = function(aString, options) {
   if (!isString(aString)) throw new TypeError("JSONC input must be a string")
+
   options = options || {}
   if (isDef(options.allowTrailingComma) && typeof options.allowTrailingComma !== "boolean") throw new TypeError("allowTrailingComma must be boolean")
+
   var input = String(aString), out = [], quoted = false, escaped = false
   for (var i = 0; i < input.length; i++) {
     var c = input.charAt(i), next = input.charAt(i + 1)
+
     if (i === 0 && c === "\uFEFF") { out.push(" "); continue }
     if (quoted) {
       out.push(c)
@@ -13462,6 +13465,7 @@ AF.prototype.fromJSONC = function(aString, options) {
       i++
     } else out.push(c)
   }
+
   var text = out.join("")
   if (options.allowTrailingComma) {
     quoted = false
@@ -13487,6 +13491,7 @@ AF.prototype.fromJSONC = function(aString, options) {
     }
     text = out.join("")
   }
+
   return JSON.parse(text)
 }
 
@@ -13508,16 +13513,23 @@ AF.prototype.fromJSONC = function(aString, options) {
  */
 AF.prototype.toJSONC = function(aValue, comments, options) {
   options = options || {}
+
   var indent = isDef(options.indent) ? options.indent : 2
+
   if (typeof indent !== "number" || indent % 1 !== 0 || indent < 1 || indent > 10) throw new TypeError("indent must be an integer from 1 to 10")
+
   var serialized = JSON.stringify(aValue)
   if (typeof serialized !== "string") throw new TypeError("Value has no JSON representation")
+
   var value = JSON.parse(serialized), entries = Object.create(null), seen = Object.create(null)
+
   comments = isUnDef(comments) ? {} : comments
   if (!isMap(comments)) throw new TypeError("comments must be a map")
   Object.keys(comments).forEach(function(path) {
     if (path !== "" && (path.charAt(0) !== "/" || /~(?![01])/.test(path))) throw new Error("Invalid JSON Pointer: " + path)
+
     var entry = comments[path]
+
     if (isString(entry)) entry = { before: String(entry) }
     if (!isMap(entry) || Object.keys(entry).some(function(key) { return key !== "before" && key !== "inline" })) throw new TypeError("Invalid comment at " + path)
     ;["before", "inline"].forEach(function(key) {
@@ -13526,6 +13538,7 @@ AF.prototype.toJSONC = function(aValue, comments, options) {
     if (isDef(entry.inline) && /[\r\n\u2028\u2029]/.test(entry.inline)) throw new TypeError("Inline comment must be single-line at " + path)
     entries[path] = entry
   })
+
   var lines = []
   function emit(v, path, depth, prefix, comma) {
     seen[path] = true
@@ -13541,8 +13554,10 @@ AF.prototype.toJSONC = function(aValue, comments, options) {
       lines.push(pad + (array ? "]" : "}") + (comma ? "," : "") + (isDef(entry.inline) ? " // " + entry.inline : ""))
     } else lines.push(pad + prefix + JSON.stringify(v) + (comma ? "," : "") + (isDef(entry.inline) ? " // " + entry.inline : ""))
   }
+
   emit(value, "", 0, "", false)
   Object.keys(entries).forEach(function(path) { if (!seen[path]) throw new Error("Unmatched JSON Pointer: " + path) })
+
   return lines.join("\n")
 }
 
