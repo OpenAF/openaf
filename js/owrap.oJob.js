@@ -197,7 +197,8 @@ OpenWrap.oJob.prototype.__readAuthorizedRemoteBytes = function(aURL) {
 		var remainingMs = Math.ceil((deadline - java.lang.System.nanoTime()) / 1000000)
 		if (remainingMs <= 0) throw "oJob remote download deadline exceeded"
 		var currentURL = new java.net.URL(current)
-		if (!String(currentURL.getProtocol()).match(/^https?$/i)) throw "Unauthorized URL scheme: " + current
+		// Executable definitions require authenticated transport on every redirect hop.
+		if (!String(currentURL.getProtocol()).match(/^https$/i)) throw "Unauthorized URL scheme (HTTPS required): " + current
 		if (parent.authorizedDomains.indexOf(String(currentURL.getHost())) < 0) throw "Unauthorized URL redirect: " + current
 
 		var http = ow.loadObj().rest.connectionFactory(), stream
