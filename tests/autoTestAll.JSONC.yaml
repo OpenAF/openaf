@@ -1,0 +1,8 @@
+include:
+- autoTestAll.common.yaml
+jobs:
+- name: JSONC::Converters and files
+  to: OpenAF Test
+  exec: args.func = require("autoTestAll.JSONC.js").testJSONC
+todo:
+- JSONC::Converters and files

@@ -411,7 +411,7 @@ Tries to convert aMap into a similiar XML strucuture returned as string. Note th
 
 Sources:
 
-- js/openaf.js:14234
+- js/openaf.js:14249
 
 <a id="api-af-fromstring2bytes-ce6e043a"></a>
 
@@ -496,7 +496,7 @@ Tries to convert a XML object into a javascript object. Tag attributes will be i
 
 Sources:
 
-- js/openaf.js:14157
+- js/openaf.js:14172
 
 <a id="api-af-get2fatoken-66496fde"></a>
 
@@ -508,7 +508,7 @@ Given 2FA aKey it will return the current token. Note: it will use the current d
 
 Sources:
 
-- src/openaf/AFBase.java:2392
+- src/openaf/AFBase.java:2389
 
 <a id="api-af-getclass-c096574c"></a>
 
@@ -983,7 +983,7 @@ Given aToken and a 2FA aKey returns true if it's valid. Note: it will use the cu
 
 Sources:
 
-- src/openaf/AFBase.java:2378
+- src/openaf/AFBase.java:2375
 
 <a id="api-af-visiblelength-51f4bb06"></a>
 

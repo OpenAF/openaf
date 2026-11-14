@@ -124,7 +124,12 @@ jobs:
   from: AIDecisions::Init
   to: OpenAF Test
   exec: args.func = args.tests.testDecisionMicrosoftHTTP;
+- name: AIDecisions::DecisionGeminiNative
+  from: AIDecisions::Init
+  to: OpenAF Test
+  exec: args.func = args.tests.testDecisionGeminiNative;
 todo:
+- AIDecisions::DecisionGeminiNative
 - AIDecisions::OllamaSchemaTools
 - AIDecisions::DecisionMicrosoft
 - AIDecisions::DecisionMicrosoftHTTP
@@ -153,8 +158,3 @@ todo:
 - AIDecisions::DecisionSchemaValidationIsolation
 - AIDecisions::DecisionFlatConfigurationAndEnvironment
 - AIDecisions::DecisionNativeCapabilityRequirements
-
-- name: AIDecisions::DecisionGeminiNative
-  from: AIDecisions::Init
-  to: OpenAF Test
-  exec: args.func = args.tests.testDecisionGeminiNative;

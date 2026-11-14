@@ -12,7 +12,7 @@ Tries to wirte anArray to aFile. If withHeadersOrStreamFormat is provided, if an
 
 Sources:
 
-- js/openaf.js:15073
+- js/openaf.js:15088
 
 <a id="api-csv-fromfile2array-b3846607"></a>
 
@@ -24,5 +24,5 @@ Tries to read a CSV file and convert it into an array. If withHeadersOrStreamFor
 
 Sources:
 
-- js/openaf.js:15108
+- js/openaf.js:15123
 

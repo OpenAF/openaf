@@ -16,7 +16,7 @@ $lock(aLockName).destroy()
 
 Sources:
 
-- js/openaf.js:17060
+- js/openaf.js:17075
 
 <a id="api-lock-islocked-a3fa052b"></a>
 
@@ -32,7 +32,7 @@ $lock(aLockName).isLocked()
 
 Sources:
 
-- js/openaf.js:17047
+- js/openaf.js:17062
 
 <a id="api-lock-lock-10a25e42"></a>
 
@@ -48,7 +48,7 @@ $lock(aLockName).lock()
 
 Sources:
 
-- js/openaf.js:17021
+- js/openaf.js:17036
 
 <a id="api-lock-trylock-03a2f2c2"></a>
 
@@ -65,7 +65,7 @@ $lock(aLockName).tryLock(() => { ... })
 
 Sources:
 
-- js/openaf.js:17077
+- js/openaf.js:17092
 
 <a id="api-lock-unlock-a38ce8ca"></a>
 
@@ -81,5 +81,5 @@ $lock(aLockName).unlock()
 
 Sources:
 
-- js/openaf.js:17034
+- js/openaf.js:17049
 

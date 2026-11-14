@@ -20,7 +20,7 @@ Returns the current `aJobExecId` (or the created one for the operation start).
 
 Sources:
 
-- js/owrap.oJob.js:1726
+- js/owrap.oJob.js:1791
 
 <a id="api-ojob-add2todo-a6fc77be"></a>
 
@@ -32,7 +32,7 @@ Add a new aTodo job name or a complete aTodo object with an optional aId.
 
 Sources:
 
-- js/owrap.oJob.js:1705
+- js/owrap.oJob.js:1770
 
 <a id="api-ojob-addtodos-cb7a9633"></a>
 
@@ -44,7 +44,7 @@ Adds a new aTodoList array of job names. Optionally you can provide aId to segme
 
 Sources:
 
-- js/owrap.oJob.js:1676
+- js/owrap.oJob.js:1741
 
 <a id="api-ojob-getid-1f6ec467"></a>
 
@@ -56,7 +56,7 @@ Returns this oJob instance ID. Useful to lookup logging in the oJob::log channel
 
 Sources:
 
-- js/owrap.oJob.js:1635
+- js/owrap.oJob.js:1700
 
 <a id="api-ojob-getjob-84fed592"></a>
 
@@ -68,7 +68,7 @@ Retrieves the aJobName definition map so it can be changed and overwritten with 
 
 Sources:
 
-- js/owrap.oJob.js:1655
+- js/owrap.oJob.js:1720
 
 <a id="api-ojob-getlanguages-0a16f6dc"></a>
 
@@ -80,7 +80,7 @@ Lists registered languages, prerequisites and supported process options. With pr
 
 Sources:
 
-- js/owrap.oJob.js:4570
+- js/owrap.oJob.js:4635
 
 <a id="api-ojob-load-e1234a36"></a>
 
@@ -92,7 +92,7 @@ Loads a set of aJobsList, corresponding aTodoList and a list of aoJobList. Optio
 
 Sources:
 
-- js/owrap.oJob.js:406
+- js/owrap.oJob.js:461
 
 <a id="api-ojob-ojob-3a59fc4d"></a>
 
@@ -116,7 +116,7 @@ Registers one cleanup per adapter, run after oJob workers stop. Replacing a name
 
 Sources:
 
-- js/owrap.oJob.js:4607
+- js/owrap.oJob.js:4672
 
 <a id="api-ojob-removejob-abee67f4"></a>
 
@@ -128,7 +128,7 @@ Removes aJobName.
 
 Sources:
 
-- js/owrap.oJob.js:1665
+- js/owrap.oJob.js:1730
 
 <a id="api-ojob-runlanguageprocess-b2a2c7a3"></a>
 
@@ -140,7 +140,7 @@ Runs an argv array locally with concurrent UTF-8 output capture. Options: pwd, e
 
 Sources:
 
-- js/owrap.oJob.js:4429
+- js/owrap.oJob.js:4494
 
 <a id="api-ojob-setjob-18a75b65"></a>
 
@@ -152,7 +152,7 @@ Adds or overwrites an existing aJobName with the configuration aJob.
 
 Sources:
 
-- js/owrap.oJob.js:1645
+- js/owrap.oJob.js:1710
 
 <a id="api-ojob-start-7d22471a"></a>
 
@@ -164,7 +164,7 @@ Starts the todo list. Optionally you can provide arguments to be used by each jo
 
 Sources:
 
-- js/owrap.oJob.js:2347
+- js/owrap.oJob.js:2412
 
 <a id="api-ojob-stop-ad284346"></a>
 
@@ -176,5 +176,5 @@ Stops all oJob processing.
 
 Sources:
 
-- js/owrap.oJob.js:1999
+- js/owrap.oJob.js:2064
 

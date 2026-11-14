@@ -28,7 +28,7 @@ $a2m(['a', 'b', 'c'], [1, 2, 3])    // { a: 1, b: 2, c: 3 }
 
 Sources:
 
-- js/openaf.js:15280
+- js/openaf.js:15295
 
 <a id="api-a4m-7ca46bb3"></a>
 
@@ -57,7 +57,7 @@ $a4m(a, "key");
 
 Sources:
 
-- js/openaf.js:15221
+- js/openaf.js:15236
 
 <a id="api-atomic-cc485bd3"></a>
 
@@ -91,7 +91,7 @@ Creates an atomic object of `aType` (defaults to long) to be get/set atomically 
 
 Sources:
 
-- js/openaf.js:16730
+- js/openaf.js:16745
 
 <a id="api-await-a5b9c25f"></a>
 
@@ -103,7 +103,7 @@ Wrapper around the Java wait/notify mechanism. For the provided name will reture
 
 Sources:
 
-- js/openaf.js:17125
+- js/openaf.js:17140
 
 <a id="api-ch-98a1b084"></a>
 
@@ -151,7 +151,7 @@ Inter-channel HTTP REST:
 
 Sources:
 
-- js/openaf.js:16028
+- js/openaf.js:16043
 
 <a id="api-channels-efe21d2e"></a>
 
@@ -200,7 +200,7 @@ Inter-channel HTTP REST:
 
 Sources:
 
-- js/openaf.js:15913
+- js/openaf.js:15928
 
 <a id="api-csv-2b66fcda"></a>
 
@@ -221,7 +221,7 @@ $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray(
 
 Sources:
 
-- js/openaf.js:18215
+- js/openaf.js:18230
 
 <a id="api-do-426a9998"></a>
 
@@ -233,7 +233,7 @@ Instantiates and returns a oPromise. If you provide aFunction, this aFunction wi
 
 Sources:
 
-- js/openaf.js:17223
+- js/openaf.js:17238
 
 <a id="api-doa2b-872aa422"></a>
 
@@ -245,7 +245,7 @@ Will call aAFunction with a function as argument that should be used to "send" v
 
 Sources:
 
-- js/openaf.js:17164
+- js/openaf.js:17179
 
 <a id="api-doall-f50c55aa"></a>
 
@@ -257,7 +257,7 @@ Returns an oPromise that will be resolved when all oPromise part of the anArray 
 
 Sources:
 
-- js/openaf.js:17255
+- js/openaf.js:17270
 
 <a id="api-dofirst-6e3ae5c8"></a>
 
@@ -269,7 +269,7 @@ Returns an oPromise that will be resolved when any oPromise part of the anArray 
 
 Sources:
 
-- js/openaf.js:17266
+- js/openaf.js:17281
 
 <a id="api-dov-e673d541"></a>
 
@@ -281,7 +281,7 @@ Equivalent to $do but using virtual threads (if available) to execute the aFunct
 
 Sources:
 
-- js/openaf.js:17241
+- js/openaf.js:17256
 
 <a id="api-dowait-16fbe1be"></a>
 
@@ -293,7 +293,7 @@ Blocks until aPromise is fullfilled or rejected. Optionally you can specify aWai
 
 Sources:
 
-- js/openaf.js:17277
+- js/openaf.js:17292
 
 <a id="api-err-4a701167"></a>
 
@@ -305,7 +305,7 @@ Prints the exception stack trace and the code where it was thrown. If rethrow is
 
 Sources:
 
-- js/openaf.js:18785
+- js/openaf.js:18800
 
 <a id="api-f-dda9a73f"></a>
 
@@ -378,7 +378,7 @@ Tries to retrieve an array of function argument names for the provided search st
 
 Sources:
 
-- js/openaf.js:15142
+- js/openaf.js:15157
 
 <a id="api-fnm-b366d0ce"></a>
 
@@ -396,7 +396,7 @@ $fnM("h.get", { aUrl: "https://openaf.io/release" });
 
 Sources:
 
-- js/openaf.js:15325
+- js/openaf.js:15340
 
 <a id="api-fnm2a-853209a9"></a>
 
@@ -415,7 +415,7 @@ $fnM2A(h.get, h, $fnDef4Help("HTTP.get"), { aUrl: "https://openaf.io/build", isB
 
 Sources:
 
-- js/openaf.js:15303
+- js/openaf.js:15318
 
 <a id="api-from-8cb42383"></a>
 
@@ -451,7 +451,7 @@ Returns a value previously set with $set with aKey.
 
 Sources:
 
-- js/openaf.js:18388
+- js/openaf.js:18403
 
 <a id="api-gpt-903f1f26"></a>
 
@@ -616,7 +616,7 @@ Shortcut for $gpt on the owrap.AI library.
 
 Sources:
 
-- js/openaf.js:13950
+- js/openaf.js:13965
 
 <a id="api-m2a-ad7c39f1"></a>
 
@@ -632,7 +632,7 @@ $m2a(['c', 'b', 'a'], { a: 1, b: 2, c: 3 })    // [ 3, 2, 1 ]
 
 Sources:
 
-- js/openaf.js:15164
+- js/openaf.js:15179
 
 <a id="api-m4a-6d59cb28"></a>
 
@@ -660,7 +660,7 @@ $m4a(a, "key");
 
 Sources:
 
-- js/openaf.js:15251
+- js/openaf.js:15266
 
 <a id="api-mcp-da09ecd4"></a>
 
@@ -968,7 +968,7 @@ $output("# Results\n\n**Complete**", { __format: "md" });
 
 Sources:
 
-- js/openaf.js:18432
+- js/openaf.js:18447
 
 <a id="api-path-78ad0d4d"></a>
 
@@ -1159,7 +1159,7 @@ Tries to execute aFunction and return the corresponding returned result. If aNum
 
 Sources:
 
-- js/openaf.js:16807
+- js/openaf.js:16822
 
 <a id="api-set-e3b59d79"></a>
 
@@ -1171,7 +1171,7 @@ Sets aValue with aKey so it can be retrieved with $get later.
 
 Sources:
 
-- js/openaf.js:18371
+- js/openaf.js:18386
 
 <a id="api-sql-3f61f134"></a>
 
@@ -1187,7 +1187,7 @@ NOTE: In "h2" you can use the table _TMP for your queries.
 
 Sources:
 
-- js/openaf.js:13962
+- js/openaf.js:13977
 
 <a id="api-stream-4ae3ffed"></a>
 
@@ -1253,7 +1253,7 @@ Returns a function that tries to execute aFunc and throws and exception if the r
 
 Sources:
 
-- js/openaf.js:16790
+- js/openaf.js:16805
 
 <a id="api-unset-0dc709e5"></a>
 
@@ -1265,7 +1265,7 @@ Unset a previously set value with aKey.
 
 Sources:
 
-- js/openaf.js:18406
+- js/openaf.js:18421
 
 <a id="api-odoc-1868dc1d"></a>
 
@@ -1488,7 +1488,7 @@ Stops for user interaction prompting aPrompt waiting for an entire line of chara
 
 Sources:
 
-- js/openaf.js:15444
+- js/openaf.js:15459
 
 <a id="api-ask1-49aec0bc"></a>
 
@@ -1500,7 +1500,7 @@ Stops for user interaction prompting aPrompt waiting for a single character with
 
 Sources:
 
-- js/openaf.js:15495
+- js/openaf.js:15510
 
 <a id="api-askchoose-9faf557a"></a>
 
@@ -1514,7 +1514,7 @@ Optional aUI is the console/write/ansi map returned by askConsole (or a compatib
 
 Sources:
 
-- js/openaf.js:15569
+- js/openaf.js:15584
 
 <a id="api-askchoosemultiple-e8bc7b16"></a>
 
@@ -1526,7 +1526,7 @@ Stops for user interaction prompting aPrompt waiting for a single character to c
 
 Sources:
 
-- js/openaf.js:15701
+- js/openaf.js:15716
 
 <a id="api-askconsole-347dd601"></a>
 
@@ -1538,7 +1538,7 @@ Opens an independent controlling terminal (including with piped stdin/redirected
 
 Sources:
 
-- js/openaf.js:14908
+- js/openaf.js:14923
 
 <a id="api-askdef-f7aa713d"></a>
 
@@ -1550,7 +1550,7 @@ An optional sixth aOptions forwards onIdle/pollInterval to the input helper. If 
 
 Sources:
 
-- js/openaf.js:15548
+- js/openaf.js:15563
 
 <a id="api-askencrypt-68348c61"></a>
 
@@ -1562,7 +1562,7 @@ Similar to ask but the return user input will be encrypted. If an empty string i
 
 Sources:
 
-- js/openaf.js:15480
+- js/openaf.js:15495
 
 <a id="api-askkey-026b3a72"></a>
 
@@ -1574,7 +1574,7 @@ Reads a single key from aUI (a map returned by askConsole or compatible, providi
 
 Sources:
 
-- js/openaf.js:14933
+- js/openaf.js:14948
 
 <a id="api-askn-80ce7809"></a>
 
@@ -1586,7 +1586,7 @@ An optional fourth aOptions forwards onIdle/pollInterval to each line prompt. St
 
 Sources:
 
-- js/openaf.js:15524
+- js/openaf.js:15539
 
 <a id="api-askstruct-1604e2eb"></a>
 
@@ -1620,7 +1620,7 @@ An optional third aOptions forwards onIdle/pollInterval to each input helper.
 
 Sources:
 
-- js/openaf.js:15851
+- js/openaf.js:15866
 
 <a id="api-bcrypt-d8123d5b"></a>
 
@@ -2280,7 +2280,7 @@ Ensures that aOPackName is installed. Optionally you can provide a minimal opack
 
 Sources:
 
-- js/openaf.js:16685
+- js/openaf.js:16700
 
 <a id="api-index-1bc04b52"></a>
 
@@ -2688,8 +2688,8 @@ Mimics, using Java, the javascript match function. Supported mods are "g", "m" a
 
 Sources:
 
-- js/openaf.js:16580
-- js/openaf.js:16611
+- js/openaf.js:16595
+- js/openaf.js:16626
 
 ### javaRegExp(text).matchAll(regExp, mods) : Array
 
@@ -2697,7 +2697,7 @@ Mimics, using Java, the javascript match function with the "g" modifier. Support
 
 Sources:
 
-- js/openaf.js:16598
+- js/openaf.js:16613
 
 ### javaRegExp(text).replaceAll(regExp, mods) : Array
 
@@ -2705,7 +2705,7 @@ Mimics, using Java, the javascript replace function with the "g" modifier. Suppo
 
 Sources:
 
-- js/openaf.js:16626
+- js/openaf.js:16641
 
 ### javaRegExp().preCompile(regExp, mods)
 
@@ -2713,7 +2713,7 @@ Pre-compiles the regExp with the corresponding mods to be used by match, matchAl
 
 Sources:
 
-- js/openaf.js:16637
+- js/openaf.js:16652
 
 ### javaRegExp().removePreCompiled(regExp, mods)
 
@@ -2721,7 +2721,7 @@ Removes a previously added pre compiled combination of regExp and mods.
 
 Sources:
 
-- js/openaf.js:16647
+- js/openaf.js:16662
 
 ### javaRegExp(text).split(regExp, mods) : Array
 
@@ -2729,7 +2729,7 @@ Returns an array of the result of spliting text using the provided regExp and mo
 
 Sources:
 
-- js/openaf.js:16656
+- js/openaf.js:16671
 
 ### javaRegExp(text).test(regExp, mods) : boolean
 
@@ -2737,7 +2737,7 @@ Mimics, using Java, the javascript RegExp test function. Supported mods are "g",
 
 Sources:
 
-- js/openaf.js:16671
+- js/openaf.js:16686
 
 <a id="api-joniregexp-c4f214d3"></a>
 
@@ -2749,7 +2749,7 @@ Compiles an Oniguruma (Ruby syntax) pattern once. Options are ignoreCase, dotAll
 
 Sources:
 
-- js/openaf.js:16471
+- js/openaf.js:16486
 
 <a id="api-jsonparse-2f1285ac"></a>
 
@@ -3365,7 +3365,7 @@ Custom Promise-like implementation. If you provide aFunction, this aFunction wil
 
 Sources:
 
-- js/openaf.js:16165
+- js/openaf.js:16180
 
 <a id="api-objorstr-8199ad59"></a>
 
@@ -4101,7 +4101,7 @@ Tries to sort the first level map keys returning the rewritten map.  If moreLeve
 
 Sources:
 
-- js/openaf.js:15188
+- js/openaf.js:15203
 
 <a id="api-splitarray-c72950ff"></a>
 

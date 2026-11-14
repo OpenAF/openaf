@@ -12,7 +12,7 @@ Returns an oPromise that will be resolved when all oPromise part of the anArray 
 
 Sources:
 
-- js/openaf.js:16228
+- js/openaf.js:16243
 
 <a id="api-opromise-catch-6bbde967"></a>
 
@@ -24,7 +24,7 @@ Adds onRejected to the current oPromise stack to execute if the previous functio
 
 Sources:
 
-- js/openaf.js:16212
+- js/openaf.js:16227
 
 <a id="api-opromise-race-e467f817"></a>
 
@@ -36,7 +36,7 @@ Returns an oPromise that will be resolved when any oPromise part of the anArray 
 
 Sources:
 
-- js/openaf.js:16289
+- js/openaf.js:16304
 
 <a id="api-opromise-then-884156c1"></a>
 
@@ -48,5 +48,5 @@ Adds onFulfilled to the current oPromise stack to execute if the previous functi
 
 Sources:
 
-- js/openaf.js:16194
+- js/openaf.js:16209
 

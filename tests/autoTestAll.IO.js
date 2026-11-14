@@ -164,19 +164,23 @@
 
     exports.testTAR = () => {
         var tmp1 = io.createTempFile("tartest1_", ".tgz")
+        var source = io.createTempFile("tartest-source_", ".txt")
         var str = "This is a test"
-
-        io.writeFileTARStream(tmp1, __, writer => {
-            $from(io.listFiles(getOpenAFPath()).files)
-            .equals("isFile", true)
-            .select(r => writer(r.filename, io.readFileStream(r.filepath)) )
-        })
-
-        var lst = io.listFilesTAR(tmp1)
-        ow.test.assert($from(lst).equals("filename", "openaf.jar").any(), true, "Problem with writeFileTARStream/listFilesTAR")
-
-        io.writeFileTARBytes(tmp1, "test.txt", __, af.fromString2Bytes(str))
-        ow.test.assert(af.fromBytes2String(io.readFileTARBytes(tmp1, "test.txt")), str, "Problem with writeFileTARBytes/readFileTARBytes")
+        try {
+            io.writeFileString(source, str)
+            io.writeFileTARStream(tmp1, __, writer => {
+                var stream = io.readFileStream(source)
+                try { writer("nested/source.txt", stream) } finally { stream.close() }
+            })
+            var lst = io.listFilesTAR(tmp1)
+            ow.test.assert($from(lst).equals("filepath", "nested/source.txt").any(), true, "Streamed TAR entry must be listed")
+            ow.test.assert(af.fromBytes2String(io.readFileTARBytes(tmp1, "nested/source.txt")), str, "Streamed TAR contents")
+            io.writeFileTARBytes(tmp1, "test.txt", __, af.fromString2Bytes(str))
+            ow.test.assert(af.fromBytes2String(io.readFileTARBytes(tmp1, "test.txt")), str, "Problem with writeFileTARBytes/readFileTARBytes")
+        } finally {
+            io.rm(tmp1)
+            io.rm(source)
+        }
     }
 })();
 exports.testJSONMetadata = function() {

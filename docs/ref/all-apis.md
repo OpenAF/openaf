@@ -391,6 +391,7 @@
 - [HTTPd.replyOKXML](httpd/index.md#api-httpd-replyokxml-17cc63bf)
 - [HTTPd.replyStream](httpd/index.md#api-httpd-replystream-e3afb5ca)
 - [HTTPd.setDefault](httpd/index.md#api-httpd-setdefault-74e1d254)
+- [HTTPd.setMaxRequestBodySize](httpd/index.md#api-httpd-setmaxrequestbodysize-ae20bb23)
 - [HTTPd.setSession](httpd/index.md#api-httpd-setsession-47401fa7)
 - [HTTPd.stop](httpd/index.md#api-httpd-stop-895f3d39)
 - [JMX.JMX](jmx/index.md#api-jmx-jmx-342800c6)

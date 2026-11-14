@@ -12,7 +12,7 @@ Provided aJobsCh (a jobs channel) adds a new job with the provided aName, an arr
 
 Sources:
 
-- js/owrap.oJob.js:3349
+- js/owrap.oJob.js:3414
 
 <a id="api-ow-ojob-addtodo-3023f13c"></a>
 
@@ -24,7 +24,7 @@ Provided aOJobID (a oJob instance), aJobsCh (a jobs channel), aTodoCh (a todo ch
 
 Sources:
 
-- js/owrap.oJob.js:3821
+- js/owrap.oJob.js:3886
 
 <a id="api-ow-ojob-askonhelp-b0833ccf"></a>
 
@@ -36,7 +36,7 @@ Collects job arguments interactively. Pass an askConsole-compatible UI to borrow
 
 Sources:
 
-- js/owrap.oJob.js:2186
+- js/owrap.oJob.js:2251
 
 <a id="api-ow-ojob-getincludes-dfc79e9a"></a>
 
@@ -48,7 +48,7 @@ Returns a map with include and jobsInclude arrays (if any).
 
 Sources:
 
-- js/owrap.oJob.js:1488
+- js/owrap.oJob.js:1553
 
 <a id="api-ow-ojob-getjobsch-f5b543ed"></a>
 
@@ -60,7 +60,7 @@ Gets the oJob::jobs channel
 
 Sources:
 
-- js/owrap.oJob.js:1600
+- js/owrap.oJob.js:1665
 
 <a id="api-ow-ojob-getlogch-468e1458"></a>
 
@@ -72,7 +72,7 @@ Gets the oJob::log channel
 
 Sources:
 
-- js/owrap.oJob.js:1614
+- js/owrap.oJob.js:1679
 
 <a id="api-ow-ojob-getmainch-dd7f0682"></a>
 
@@ -84,7 +84,7 @@ Gets the oJob::oJob channel
 
 Sources:
 
-- js/owrap.oJob.js:1621
+- js/owrap.oJob.js:1686
 
 <a id="api-ow-ojob-getmetric-9fb90c6d"></a>
 
@@ -96,7 +96,7 @@ Retrieves the current metric identified by aMetricId
 
 Sources:
 
-- js/owrap.oJob.js:2778
+- js/owrap.oJob.js:2843
 
 <a id="api-ow-ojob-getmetrics-a13f1fb5"></a>
 
@@ -108,7 +108,7 @@ Returns a function to be used with ow.metrics.add to add functions by metric aTy
 
 Sources:
 
-- js/owrap.oJob.js:2803
+- js/owrap.oJob.js:2868
 
 <a id="api-ow-ojob-getmetricsch-bd36f588"></a>
 
@@ -120,7 +120,7 @@ Gets the oJob::metrics channel
 
 Sources:
 
-- js/owrap.oJob.js:1628
+- js/owrap.oJob.js:1693
 
 <a id="api-ow-ojob-getrawincludes-7e7caa65"></a>
 
@@ -132,7 +132,7 @@ Returns a map with include and jobsInclude arrays from the raw file (no include 
 
 Sources:
 
-- js/owrap.oJob.js:1520
+- js/owrap.oJob.js:1585
 
 <a id="api-ow-ojob-getstate-37cf5bca"></a>
 
@@ -144,7 +144,7 @@ Get current global state, if defined.
 
 Sources:
 
-- js/owrap.oJob.js:2749
+- js/owrap.oJob.js:2814
 
 <a id="api-ow-ojob-gettodoch-b8e25a7b"></a>
 
@@ -156,7 +156,7 @@ Gets the oJob::todo channel
 
 Sources:
 
-- js/owrap.oJob.js:1607
+- js/owrap.oJob.js:1672
 
 <a id="api-ow-ojob-isencrypteddefinition-352f39d8"></a>
 
@@ -168,7 +168,7 @@ Returns true if aFile ends with .yaml.enc or .json.enc (query/hash ignored).
 
 Sources:
 
-- js/owrap.oJob.js:1476
+- js/owrap.oJob.js:1541
 
 <a id="api-ow-ojob-loadfile-09decaf5"></a>
 
@@ -256,7 +256,7 @@ ojob:
 
 Sources:
 
-- js/owrap.oJob.js:1339
+- js/owrap.oJob.js:1404
 
 <a id="api-ow-ojob-loadjson-5f18f10c"></a>
 
@@ -268,7 +268,7 @@ Loads aJSON oJob configuration and returns the processed map (with all includes 
 
 Sources:
 
-- js/owrap.oJob.js:694
+- js/owrap.oJob.js:749
 
 <a id="api-ow-ojob-loadjobs-eca6748b"></a>
 
@@ -280,7 +280,7 @@ Sources:
 
 Sources:
 
-- js/owrap.oJob.js:1434
+- js/owrap.oJob.js:1499
 
 <a id="api-ow-ojob-previewfile-4a90517d"></a>
 
@@ -292,7 +292,7 @@ Returns a map with a preview of the oJob configuration that would be executed wi
 
 Sources:
 
-- js/owrap.oJob.js:1463
+- js/owrap.oJob.js:1528
 
 <a id="api-ow-ojob-run-00a28487"></a>
 
@@ -304,7 +304,7 @@ Tries to run the current loaded configuration jobs (on the corresponding channel
 
 Sources:
 
-- js/owrap.oJob.js:2737
+- js/owrap.oJob.js:2802
 
 <a id="api-ow-ojob-runallshutdownjobs-f695bf7f"></a>
 
@@ -316,7 +316,7 @@ Tries to run all the shutdown type jobs accumulated until now.
 
 Sources:
 
-- js/owrap.oJob.js:1586
+- js/owrap.oJob.js:1651
 
 <a id="api-ow-ojob-runfile-9f76483c"></a>
 
@@ -328,7 +328,7 @@ Loads aFile configuration and executes the oJob defined with the provided args. 
 
 Sources:
 
-- js/owrap.oJob.js:1448
+- js/owrap.oJob.js:1513
 
 <a id="api-ow-ojob-runjob-de7e184f"></a>
 
@@ -340,7 +340,7 @@ With jobs defined try to execute/start aJob, with the provideArgs, directly pass
 
 Sources:
 
-- js/owrap.oJob.js:2826
+- js/owrap.oJob.js:2891
 
 <a id="api-ow-ojob-setmetric-83b023b2"></a>
 
@@ -352,7 +352,7 @@ Sets aMetricObj for the metric identified with aId
 
 Sources:
 
-- js/owrap.oJob.js:2788
+- js/owrap.oJob.js:2853
 
 <a id="api-ow-ojob-setstate-ca0b6cc3"></a>
 
@@ -364,7 +364,7 @@ Sets the current global state to be used with todo.when
 
 Sources:
 
-- js/owrap.oJob.js:2761
+- js/owrap.oJob.js:2826
 
 <a id="api-ow-ojob-showhelp-3ec8fb88"></a>
 
@@ -376,5 +376,5 @@ Given a job help map and the current arguments determines if there is a need to 
 
 Sources:
 
-- js/owrap.oJob.js:2260
+- js/owrap.oJob.js:2325
 

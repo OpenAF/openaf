@@ -12,7 +12,7 @@ Interactevly asks to enter a text and then uses af.encrypt to print to stdout th
 
 Sources:
 
-- js/openaf.js:14290
+- js/openaf.js:14305
 
 <a id="api-af-endopenafandstart-0e9dd474"></a>
 
@@ -24,7 +24,7 @@ Calls endOpenAFAndStart to start a detached process and then end the current Ope
 
 Sources:
 
-- js/openaf.js:14298
+- js/openaf.js:14313
 
 <a id="api-af-endopenafandstartopenaf-4fd97509"></a>
 
@@ -36,7 +36,7 @@ Calls endOpenAFAndStartOpenAF to detach and start another OpenAF with current ar
 
 Sources:
 
-- js/openaf.js:14311
+- js/openaf.js:14326
 
 <a id="api-af-fromjsslon-ae7a936f"></a>
 
@@ -48,7 +48,7 @@ Tries to convert the provided aString into an object. The string might be JSON o
 
 Sources:
 
-- js/openaf.js:13758
+- js/openaf.js:13773
 
 <a id="api-af-fromjavaarray-86d677ec"></a>
 
@@ -72,7 +72,7 @@ Converts a nLinq chained command line string representation into a suitable map 
 
 Sources:
 
-- js/openaf.js:13780
+- js/openaf.js:13795
 
 <a id="api-af-fromslon-e259cf93"></a>
 
@@ -84,7 +84,7 @@ Converts a SLON (https://github.com/nmaguiar/slon) string representation into th
 
 Sources:
 
-- js/openaf.js:13745
+- js/openaf.js:13760
 
 <a id="api-af-fromsql-8a7ad674"></a>
 
@@ -96,7 +96,7 @@ Converts a SQL expression into an ASP map.
 
 Sources:
 
-- js/openaf.js:13793
+- js/openaf.js:13808
 
 <a id="api-af-fromsql2nlinq-5ad93570"></a>
 
@@ -108,7 +108,7 @@ Converts a SQL expression into a suitable map to be used with $from.query.
 
 Sources:
 
-- js/openaf.js:13806
+- js/openaf.js:13821
 
 <a id="api-af-fromtoon-102660d7"></a>
 
@@ -168,7 +168,7 @@ Protects the current execution against a exit instruction if shouldProtect = tru
 
 Sources:
 
-- js/openaf.js:14323
+- js/openaf.js:14338
 
 <a id="api-af-setinteractiveterminal-2ab01206"></a>
 
@@ -204,7 +204,7 @@ Converts aObject map/array into SLON representation with ansi colors (see more i
 
 Sources:
 
-- js/openaf.js:13734
+- js/openaf.js:13749
 
 <a id="api-af-tokyaml-479d16ab"></a>
 
@@ -236,7 +236,7 @@ Converts aObject map/array into SLON representation (see more in help for ow.for
 
 Sources:
 
-- js/openaf.js:13723
+- js/openaf.js:13738
 
 <a id="api-af-totoon-08ce2b27"></a>
 
