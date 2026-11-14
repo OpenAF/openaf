@@ -1,37 +1,39 @@
 include:
   - autoTestAll.common.yaml
+
 jobs:
   - name: Jq::Init
-    exec: args.tests = require("autoTestAll.Jq.js");
+    exec: args.tests = require("autoTestAll.Jq.js")
   - name: Jq::Corpus
     from: Jq::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testJqCorpus;
+    exec: args.func = args.tests.testJqCorpus
   - name: Jq::API
     from: Jq::Init
     to: OpenAF Test
     deps: [Jq::Corpus]
-    exec: args.func = args.tests.testJqAPI;
+    exec: args.func = args.tests.testJqAPI
   - name: Jq::Errors
     from: Jq::Init
     to: OpenAF Test
     deps: [Jq::API]
-    exec: args.func = args.tests.testJqErrors;
+    exec: args.func = args.tests.testJqErrors
   - name: Jq::Known differences
     from: Jq::Init
     to: OpenAF Test
     deps: [Jq::Errors]
-    exec: args.func = args.tests.testJqKnownDifferences;
+    exec: args.func = args.tests.testJqKnownDifferences
   - name: Jq::Cache
     from: Jq::Init
     to: OpenAF Test
     deps: [Jq::Known differences]
-    exec: args.func = args.tests.testJqCache;
+    exec: args.func = args.tests.testJqCache
   - name: Jq::Parallel
     from: Jq::Init
     to: OpenAF Test
     deps: [Jq::Cache]
-    exec: args.func = args.tests.testJqParallel;
+    exec: args.func = args.tests.testJqParallel
+
 todo:
   - Jq::Corpus
   - Jq::API

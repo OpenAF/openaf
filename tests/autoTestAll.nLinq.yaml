@@ -1,5 +1,6 @@
 include:
   - autoTestAll.common.yaml
+
 jobs:
   - name: nLinq::Init
     exec: args.tests = require("autoTestAll.nLinq.js")
@@ -15,6 +16,7 @@ jobs:
     from: nLinq::Init
     to: OpenAF Test
     exec: args.func = args.tests.testSetOperations
+
 todo:
   - nLinq::Grouping
   - nLinq::Pagination

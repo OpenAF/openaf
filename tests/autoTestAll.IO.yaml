@@ -23,7 +23,7 @@ jobs:
    - name: IO::IO Test JSON array stream
      from: IO::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testJSONArray;
+     exec: args.func = args.tests.testJSONArray
 
    - name: IO::IO Test Stream JSON
      from: IO::Init
@@ -73,42 +73,42 @@ jobs:
    - name: IO::JSON metadata traversal
      from: IO::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testJSONMetadata;
+     exec: args.func = args.tests.testJSONMetadata
 
    - name: IO::JSON extraction
      from: IO::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testJSONExtraction;
+     exec: args.func = args.tests.testJSONExtraction
 
    - name: IO::ZIP extraction containment
      from: IO::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testUnzipContainment;
+     exec: args.func = args.tests.testUnzipContainment
 
    - name: IO::Stream write boundaries
      from: IO::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testStreamWriteBoundaries;
+     exec: args.func = args.tests.testStreamWriteBoundaries
 
    - name: IO::Stream decoding and ownership
      from: IO::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testStreamDecodingAndOwnership;
+     exec: args.func = args.tests.testStreamDecodingAndOwnership
 
    - name: IO::Stream line boundaries
      from: IO::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testStreamLineBoundaries;
+     exec: args.func = args.tests.testStreamLineBoundaries
 
    - name: IO::XML skip lines
      from: IO::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testXMLSkipLines;
+     exec: args.func = args.tests.testXMLSkipLines
 
    - name: IO::Gzip initialization cleanup
      from: IO::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testGzipInitializationCleanup;
+     exec: args.func = args.tests.testGzipInitializationCleanup
 
 todo:
    - IO::Stream write boundaries

@@ -1,133 +1,199 @@
 # Copyright 2026 Nuno Aguiar
 include:
 - autoTestAll.common.yaml
+
 jobs:
+
+# AIDecisions::Init
 - name: AIDecisions::Init
-  exec: args.tests = require("autoTestAll.AIDecisions.js");
+  exec: args.tests = require("autoTestAll.AIDecisions.js")
+
+# AIDecisions::DecisionNative
 - name: AIDecisions::DecisionNative
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionNative;
+  exec: args.func = args.tests.testDecisionNative
+
+# AIDecisions::DecisionValidation
 - name: AIDecisions::DecisionValidation
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionValidation;
+  exec: args.func = args.tests.testDecisionValidation
+
+# AIDecisions::OpenAISchemaResponsesTools
 - name: AIDecisions::OpenAISchemaResponsesTools
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOpenAISchemaResponsesTools;
+  exec: args.func = args.tests.testOpenAISchemaResponsesTools
+
+# AIDecisions::OpenAISchemaNativeTools
 - name: AIDecisions::OpenAISchemaNativeTools
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOpenAISchemaNativeTools;
+  exec: args.func = args.tests.testOpenAISchemaNativeTools
+
+# AIDecisions::OllamaSchemaTools
 - name: AIDecisions::OllamaSchemaTools
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOllamaSchemaTools;
+  exec: args.func = args.tests.testOllamaSchemaTools
+
+# AIDecisions::DecisionGeminiStructured
 - name: AIDecisions::DecisionGeminiStructured
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionGeminiStructured;
+  exec: args.func = args.tests.testDecisionGeminiStructured
+
+# AIDecisions::DecisionOpenAIStructured
 - name: AIDecisions::DecisionOpenAIStructured
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionOpenAIStructured;
+  exec: args.func = args.tests.testDecisionOpenAIStructured
+
+# AIDecisions::DecisionRawAndSingleExecution
 - name: AIDecisions::DecisionRawAndSingleExecution
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionRawAndSingleExecution;
+  exec: args.func = args.tests.testDecisionRawAndSingleExecution
+
+# AIDecisions::DecisionNativeInvalidResponses
 - name: AIDecisions::DecisionNativeInvalidResponses
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionNativeInvalidResponses;
+  exec: args.func = args.tests.testDecisionNativeInvalidResponses
+
+# AIDecisions::DecisionStructuredInvalidResponses
 - name: AIDecisions::DecisionStructuredInvalidResponses
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionStructuredInvalidResponses;
+  exec: args.func = args.tests.testDecisionStructuredInvalidResponses
+
+# AIDecisions::DecisionIsolation
 - name: AIDecisions::DecisionIsolation
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionIsolation;
+  exec: args.func = args.tests.testDecisionIsolation
+
+# AIDecisions::DecisionSafePropertiesAndValidation
 - name: AIDecisions::DecisionSafePropertiesAndValidation
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionSafePropertiesAndValidation;
+  exec: args.func = args.tests.testDecisionSafePropertiesAndValidation
+
+# AIDecisions::DecisionLimitsAndEndpoint
 - name: AIDecisions::DecisionLimitsAndEndpoint
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionLimitsAndEndpoint;
+  exec: args.func = args.tests.testDecisionLimitsAndEndpoint
+
+# AIDecisions::DecisionGeminiSchemaHelper
 - name: AIDecisions::DecisionGeminiSchemaHelper
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionGeminiSchemaHelper;
+  exec: args.func = args.tests.testDecisionGeminiSchemaHelper
+
+# AIDecisions::DecisionCapabilitiesAndLegacyAdapters
 - name: AIDecisions::DecisionCapabilitiesAndLegacyAdapters
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionCapabilitiesAndLegacyAdapters;
+  exec: args.func = args.tests.testDecisionCapabilitiesAndLegacyAdapters
+
+# AIDecisions::DecisionHTTPBoundary
 - name: AIDecisions::DecisionHTTPBoundary
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionHTTPBoundary;
+  exec: args.func = args.tests.testDecisionHTTPBoundary
+
+# AIDecisions::DecisionLegacyChatCompatibility
 - name: AIDecisions::DecisionLegacyChatCompatibility
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionLegacyChatCompatibility;
+  exec: args.func = args.tests.testDecisionLegacyChatCompatibility
+
+# AIDecisions::DecisionExecutionScopedStats
 - name: AIDecisions::DecisionExecutionScopedStats
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionExecutionScopedStats;
+  exec: args.func = args.tests.testDecisionExecutionScopedStats
+
+# AIDecisions::DecisionSchemaValidationIsolation
 - name: AIDecisions::DecisionSchemaValidationIsolation
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionSchemaValidationIsolation;
+  exec: args.func = args.tests.testDecisionSchemaValidationIsolation
+
+# AIDecisions::DecisionFlatConfigurationAndEnvironment
 - name: AIDecisions::DecisionFlatConfigurationAndEnvironment
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionFlatConfigurationAndEnvironment;
+  exec: args.func = args.tests.testDecisionFlatConfigurationAndEnvironment
+
+# AIDecisions::DecisionNativeCapabilityRequirements
 - name: AIDecisions::DecisionNativeCapabilityRequirements
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionNativeCapabilityRequirements;
+  exec: args.func = args.tests.testDecisionNativeCapabilityRequirements
+
+# AIDecisions::DecisionImages
 - name: AIDecisions::DecisionImages
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionImages;
+  exec: args.func = args.tests.testDecisionImages
+
+# AIDecisions::DecisionOpenAINative
 - name: AIDecisions::DecisionOpenAINative
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionOpenAINative;
+  exec: args.func = args.tests.testDecisionOpenAINative
+
+# AIDecisions::DecisionOpenAINativeInvalidResponses
 - name: AIDecisions::DecisionOpenAINativeInvalidResponses
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionOpenAINativeInvalidResponses;
+  exec: args.func = args.tests.testDecisionOpenAINativeInvalidResponses
+
+# AIDecisions::DecisionOpenAINativeImagesAndCapabilities
 - name: AIDecisions::DecisionOpenAINativeImagesAndCapabilities
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionOpenAINativeImagesAndCapabilities;
+  exec: args.func = args.tests.testDecisionOpenAINativeImagesAndCapabilities
+
+# AIDecisions::DecisionOpenAINativeHTTP
 - name: AIDecisions::DecisionOpenAINativeHTTP
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionOpenAINativeHTTP;
+  exec: args.func = args.tests.testDecisionOpenAINativeHTTP
+
+# AIDecisions::DecisionOpenRouter
 - name: AIDecisions::DecisionOpenRouter
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionOpenRouter;
+  exec: args.func = args.tests.testDecisionOpenRouter
+
+# AIDecisions::DecisionOpenRouterHTTP
 - name: AIDecisions::DecisionOpenRouterHTTP
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionOpenRouterHTTP;
+  exec: args.func = args.tests.testDecisionOpenRouterHTTP
+
+# AIDecisions::DecisionMicrosoft
 - name: AIDecisions::DecisionMicrosoft
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionMicrosoft;
+  exec: args.func = args.tests.testDecisionMicrosoft
+
+# AIDecisions::DecisionMicrosoftHTTP
 - name: AIDecisions::DecisionMicrosoftHTTP
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionMicrosoftHTTP;
+  exec: args.func = args.tests.testDecisionMicrosoftHTTP
+
+# AIDecisions::DecisionGeminiNative
 - name: AIDecisions::DecisionGeminiNative
   from: AIDecisions::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDecisionGeminiNative;
+  exec: args.func = args.tests.testDecisionGeminiNative
+
 todo:
 - AIDecisions::DecisionGeminiNative
 - AIDecisions::OllamaSchemaTools

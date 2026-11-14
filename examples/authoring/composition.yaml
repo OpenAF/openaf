@@ -2,14 +2,21 @@ ojob:
   sequential: true
   shareArgs: true
   logToConsole: false
+
 jobs:
+
+# Prepare
 - name: Prepare
   exec: |
-    args.value = 21;
-    print("prepared");
+    args.value = 21
+    print("prepared")
+
+# Double
 - name: Double
   exec: |
-    args.value *= 2;
+    args.value *= 2
+
+# Calculate
 - name: Calculate
   deps: [Prepare]
   from: [Double]
@@ -20,10 +27,13 @@ jobs:
     out:
       result: isNumber
   exec: |
-    args.result = args.value;
+    args.result = args.value
+
+# Display
 - name: Display
   exec: |
-    print(args.result);
+    print(args.result)
+
 todo:
 - Prepare
 - Calculate

@@ -22,7 +22,7 @@ jobs:
    - name: Template::Test Markdown display math
      from: Template::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMD2HTMLDisplayMathKeepsLineBreaks;
+     exec: args.func = args.tests.testMD2HTMLDisplayMathKeepsLineBreaks
 
    - name: Template::Test Markdown to HTML prefix
      from: Template::Init

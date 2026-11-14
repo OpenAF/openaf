@@ -1,0 +1,75 @@
+# From the repository root (using a build containing ow.screen.interact):
+#   java -jar openaf.jar --ojob -e "examples/ojob-interact.yaml mode=console"
+#   java -jar openaf.jar --ojob -e "examples/ojob-interact.yaml mode=tui"
+#   java -jar openaf.jar --ojob -e "examples/ojob-interact.yaml mode=javafx"
+# JavaFX requires plugin-DesktopJavaFX. TUI requires a controlling terminal.
+# Click Slow and Fast in succession to see completion order differ from launch order.
+include:
+- ojob.yaml
+
+ojob:
+  sequential: true
+  shareArgs: true
+  logToConsole: false
+
+jobs:
+- name: Start interaction
+  exec: |
+    args.__interaction = {
+      mode: args.mode || "console",
+      title: "Event-driven jobs",
+      state: { name: "World", completed: 0, ticks: 0, message: "Choose an action" },
+      view: { items: [] },
+      concurrency: 4,
+      interval: 3000,
+      bindings: {
+        init: "Initialize interaction",
+        "change:name": "Remember name",
+        "action:slow": { job: "Greeting", args: { delay: 1500 } },
+        "action:fast": { job: "Greeting", args: { delay: 100 } },
+        "action:close": "Close interaction",
+        timer: "Refresh interaction"
+      },
+      reducer: "Update interaction"
+    }
+- name: Initialize interaction
+  exec: args.ready = true
+- name: Remember name
+  exec: args.name = args.values.name
+- name: Greeting
+  exec: |
+    sleep(args.delay, true)
+    args.message = "Hello " + args.values.name + " (" + args.delay + " ms)"
+- name: Refresh interaction
+  exec: args.tick = true
+- name: Close interaction
+  exec: args.close = true
+- name: Update interaction
+  exec: |
+    var s = args.state
+    if (args.error) s.message = String(args.error)
+    else if (args.result) {
+      if (args.result.name) s.name = args.result.name
+      if (args.result.message) { s.message = args.result.message; s.completed++ }
+      if (args.result.tick) s.ticks++
+      if (args.result.close) args.close = true
+    }
+    // Timer results update state without replacing the view while someone types.
+    // The next action shows the accumulated tick count.
+    if (args.event.type != "timer") args.view = {
+      items: [
+        { id: "status", type: "text", text: s.message },
+        { id: "counts", type: "text", text: "Completed: " + s.completed + "; timer ticks: " + s.ticks },
+        { id: "name", type: "input", label: "Name", value: s.name },
+        { id: "slow", type: "button", label: "Slow greeting" },
+        { id: "fast", type: "button", label: "Fast greeting" },
+        { id: "close", type: "button", label: "Close and drain" }
+      ]
+    }
+- name: Show final state
+  exec: sprint(args.interaction)
+
+todo:
+- Start interaction
+- ojob interact
+- Show final state

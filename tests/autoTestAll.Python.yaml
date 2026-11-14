@@ -1,36 +1,54 @@
 include:
 - autoTestAll.common.yaml
+
 jobs:
+
+# Python::Init
 - name: Python::Init
-  exec: args.tests = require("autoTestAll.Python.js");
+  exec: args.tests = require("autoTestAll.Python.js")
+
+# Python::RoundTrips
 - name: Python::RoundTrips
   from: Python::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testRoundTrips;
+  exec: args.func = args.tests.testRoundTrips
+
+# Python::SessionAndLifecycle
 - name: Python::SessionAndLifecycle
   from: Python::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testSessionAndLifecycle;
+  exec: args.func = args.tests.testSessionAndLifecycle
+
+# Python::ErrorsAndConcurrency
 - name: Python::ErrorsAndConcurrency
   from: Python::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testErrorsAndConcurrency;
+  exec: args.func = args.tests.testErrorsAndConcurrency
+
+# Python::InterpreterAndStartup
 - name: Python::InterpreterAndStartup
   from: Python::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testInterpreterAndStartup;
+  exec: args.func = args.tests.testInterpreterAndStartup
+
+# Python::CallbacksAndFrames
 - name: Python::CallbacksAndFrames
   from: Python::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testCallbacksAndFrames;
+  exec: args.func = args.tests.testCallbacksAndFrames
+
+# Python::Standalone
 - name: Python::Standalone
   from: Python::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testStandalone;
+  exec: args.func = args.tests.testStandalone
+
+# Python::Subprocess
 - name: Python::Subprocess
   from: Python::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testSubprocess;
+  exec: args.func = args.tests.testSubprocess
+
 todo:
 - Python::RoundTrips
 - Python::SessionAndLifecycle

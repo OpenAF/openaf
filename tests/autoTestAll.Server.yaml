@@ -84,12 +84,12 @@ jobs:
    - name: Server::HTTP file helper containment
      from: Server::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testHTTPFileHelperContainment;
+     exec: args.func = args.tests.testHTTPFileHelperContainment
 
    - name: Server::HTTP file browser Java containment
      from: Server::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testHTTPFileBrowseJava;
+     exec: args.func = args.tests.testHTTPFileBrowseJava
 
    - name: Server::Scheduler
      from: Server::Init

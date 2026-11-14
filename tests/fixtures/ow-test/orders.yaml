@@ -1,14 +1,22 @@
 ojob:
   async: false
   logToConsole: false
+
 jobs:
+
+# Inventory
 - name: Inventory
-  exec: args.available = false;
+  exec: args.available = false
+
+# ProcessOrder
 - name: ProcessOrder
   from: Inventory
   exec: |
-    args.status = args.available ? 'CONFIRMED' : 'REJECTED';
+    args.status = args.available ? 'CONFIRMED' : 'REJECTED'
+
+# Broken
 - name: Broken
-  exec: throw new Error('order failure');
+  exec: throw new Error('order failure')
+
 todo:
 - ProcessOrder

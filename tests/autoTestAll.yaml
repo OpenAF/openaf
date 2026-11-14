@@ -27,7 +27,7 @@ jobs:
        ow.loadTest()
        ow.test.reset()
        global.__testRunId = genUUID()
-       io.writeFileJSON("autoTestAll.results.json", {runId:global.__testRunId, complete:false});
+       io.writeFileJSON("autoTestAll.results.json", {runId:global.__testRunId, complete:false})
 
    - name    : Run Tests
      deps: [Initialize Results]

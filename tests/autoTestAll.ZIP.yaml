@@ -28,7 +28,7 @@ jobs:
    - name: ZIP::Read ownership and missing entries
      from: ZIP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testZIPReadOwnership;
+     exec: args.func = args.tests.testZIPReadOwnership
 
    - name: ZIP::Metadata listing and integrity contracts
      from: ZIP::Init

@@ -65,7 +65,7 @@ public class JSResponse2 extends Response {
 			json.put("params", json, toScriptable(request.getParams()));
 			json.put("files", json, toScriptable(request.getFiles()));
 			
-			Function func = HTTPServer.callbacks.get(this.httpd.getListeningPort() + ":" + props.get("uri"));
+            Function func = HTTPServer.callbacks.get(this.httpd.getListeningPort() + ":" + props.get("uri"));
 			Object ret = null; 
 			if (func != null) {
 				try {

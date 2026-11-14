@@ -1,36 +1,58 @@
 include:
 - autoTestAll.common.yaml
+
 jobs:
+
+# ServerOAuth::LegacySessionBoundary
 - name: ServerOAuth::LegacySessionBoundary
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testLegacySessionBoundary
+
+# ServerOAuth::LoginStorageAndRefresh
 - name: ServerOAuth::LoginStorageAndRefresh
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testLoginStorageAndRefresh
+
+# ServerOAuth::CallbackValidationAndCleanup
 - name: ServerOAuth::CallbackValidationAndCleanup
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testCallbackValidationAndCleanup
+
+# ServerOAuth::ConcurrentCallbacks
 - name: ServerOAuth::ConcurrentCallbacks
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testConcurrentCallbacks
+
+# ServerOAuth::ConfigurationAndUnattended
 - name: ServerOAuth::ConfigurationAndUnattended
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testConfigurationAndUnattended
+
+# ServerOAuth::RecoveryAndUnknownExpiry
 - name: ServerOAuth::RecoveryAndUnknownExpiry
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testRecoveryAndUnknownExpiry
+
+# ServerOAuth::StorageIdentityAndFailures
 - name: ServerOAuth::StorageIdentityAndFailures
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testStorageIdentityAndFailures
+
+# ServerOAuth::ConcurrentProcessRefresh
 - name: ServerOAuth::ConcurrentProcessRefresh
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testConcurrentProcessRefresh
+
+# ServerOAuth::JavaListenerWorkerCleanup
 - name: ServerOAuth::JavaListenerWorkerCleanup
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testJavaListenerWorkerCleanup
+
+# ServerOAuth::DefaultStorageWithoutDescriptor
 - name: ServerOAuth::DefaultStorageWithoutDescriptor
   to: OpenAF Test
   exec: args.func = require("autoTestAll.ServerOAuth.js").testDefaultStorageWithoutDescriptor
+
 todo:
 - ServerOAuth::LegacySessionBoundary
 - ServerOAuth::DefaultStorageWithoutDescriptor

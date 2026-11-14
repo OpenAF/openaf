@@ -1,7 +1,7 @@
 // OPENAF common functions
 // Copyright 2023 Nuno Aguiar
 
-af.eval("const self = this; const __ = void 0; const __oafInit = Number(java.lang.System.currentTimeMillis());");
+af.eval("const self = this; const __ = void 0; const __oafInit = Number(java.lang.System.currentTimeMillis());")
 
 /**
  * <odoc>
@@ -1130,7 +1130,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		}
 	}
 
-	var borderless = aTheme == "borderless";
+	var borderless = aTheme == "borderless"
 	var hLine = "-", vLine = "|", hvJoin = "+";
 	if (aTheme == "utf") {
 		hLine = "─";
@@ -1139,10 +1139,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	}
 
 	if (borderless) {
-		hLine = "━";
-		vLine = hvJoin = "  ";
+		hLine = "━"
+		vLine = hvJoin = "  "
 	}
-	var sepSize = visibleLength(vLine);
+	var sepSize = visibleLength(vLine)
 
 	//var pShouldBand = false
 	var _getColor = (aValue, ii, prev) => {
@@ -1178,21 +1178,21 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	if (anArrayOfEntries.length == 0) return ""
 	anArrayOfEntries = anArrayOfEntries.map(r => "[object Object]" != Object.prototype.toString.call(r) ? { " ": r } : r)
 
-	if (borderless && Object.keys(anArrayOfEntries[0]).length == 0) return "";
+	if (borderless && Object.keys(anArrayOfEntries[0]).length == 0) return ""
 
 	// If wordwrap generate new array
 	if (aWidthLimit > 0 || borderless) {
 		// A natural width still expands explicit newlines when there is no width limit.
-		var wrapWidth = aWidthLimit;
+		var wrapWidth = aWidthLimit
 		if (borderless && !(wrapWidth > 0)) {
-			var wrapCols = Object.keys(anArrayOfEntries[0]);
+			var wrapCols = Object.keys(anArrayOfEntries[0])
 			wrapWidth = wrapCols.reduce((size, col) => size + anArrayOfEntries.reduce((max, row) =>
-				Math.max(max, visibleLength(String(row[col]))), visibleLength(col)), 1 + sepSize * (wrapCols.length - 1));
+				Math.max(max, visibleLength(String(row[col]))), visibleLength(col)), 1 + sepSize * (wrapCols.length - 1))
 		}
 		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, wrapWidth, sepSize,
-			!borderless && useRowSep ? s => useAnsi ? ansiColor("FAINT", "-".repeat(s)) : "-".repeat(s) : __, true, borderless);
-		anArrayOfEntries = _t.lines;
-		anArrayOfIdxs = _t.idx;
+			!borderless && useRowSep ? s => useAnsi ? ansiColor("FAINT", "-".repeat(s)) : "-".repeat(s) : __, true, borderless)
+		anArrayOfEntries = _t.lines
+		anArrayOfIdxs = _t.idx
 	}
 	
 	// Find sizes
@@ -1216,10 +1216,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	// Produce table
 	//$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
 	var _ruleLine = glyph => {
-		var rule = [], lineSize = borderless ? 0 : 1, outOfWidth = false, colNum = 0;
+		var rule = [], lineSize = borderless ? 0 : 1, outOfWidth = false, colNum = 0
 		cols.forEach(col => {
-			if (outOfWidth) return;
-			lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1);
+			if (outOfWidth) return
+			lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1)
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit + (borderless ? 0 : 3))) {
 				rule.push(useAnsi ? [ _colorMap.lines, "...", "\u001b[m" ].join("") : "...")
 				outOfWidth = true
@@ -1230,8 +1230,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			colNum++
 		})
 		rule.push(__separator)
-		return rule.join("");
-	};
+		return rule.join("")
+	}
 	var _output = new ow.obj.syncArray(range(anArrayOfEntries.length))
 	pForEach(anArrayOfEntries, (row, ii) => {
 		var output = []
@@ -1242,7 +1242,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	
 		if (ii == 0) {
 			output.push(useAnsi ? _colorMap.title : "")
-			lineSize = borderless ? 0 : 1; outOfWidth = false; colNum = 0;
+			lineSize = borderless ? 0 : 1; outOfWidth = false; colNum = 0
 			cols.forEach(col => {
 				if (outOfWidth) return
 				lineSize += maxsize[col] + (borderless ? (colNum > 0 ? sepSize : 0) : 1)
@@ -1257,11 +1257,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				colNum++
 			})
 			output.push(__separator)
-			output.push(_ruleLine(hLine));
+			output.push(_ruleLine(hLine))
 		}
 
 		if (borderless && useRowSep && ii > 0 && anArrayOfIdxs.indexOf(ii) >= 0) {
-			output.push(_ruleLine("─"));
+			output.push(_ruleLine("─"))
 		}
 
 		lineSize = borderless ? 0 : 1; outOfWidth = false; colNum = 0
@@ -3627,55 +3627,55 @@ const addOPackRemoteDB = function(aURL) {
  * </odoc>
  */
 const getOPackRemoteDB = function() {
-	var __opacksEnv = getEnv("OAF_OPACKS");
+	var __opacksEnv = getEnv("OAF_OPACKS")
 	var _cache = $cache("__openaf_getOPackRemoteDB")
 	.fn((k) => {
-		var packages = {};
-		var _sources = clone(k.sources);
-		var _zip;
+		var packages = {}
+		var _sources = clone(k.sources)
+		var _zip
 
-		plugin("ZIP");
+		plugin("ZIP")
 
 		for(var i in _sources) {
 			if (!k.noHomeComms && _sources[i].toLowerCase().startsWith("http")) {
 				try {
-					var _stream = $rest({ connectionTimeout: 1500 }).get2Stream(_sources[i]);
-					_zip = new ZIP(af.fromInputStream2Bytes(_stream));
-					packages = merge(packages, af.fromJson(af.fromBytes2String(_zip.getFile(OPACKCENTRALJSON))));
+					var _stream = $rest({ connectionTimeout: 1500 }).get2Stream(_sources[i])
+					_zip = new ZIP(af.fromInputStream2Bytes(_stream))
+					packages = merge(packages, af.fromJson(af.fromBytes2String(_zip.getFile(OPACKCENTRALJSON))))
 				} catch(e) {
 					// Continue to next
 				} finally {
-					if (isDef(_zip)) _zip.close();
+					if (isDef(_zip)) _zip.close()
 				}
 			} else if (io.fileExists(_sources[i]) && io.fileInfo(_sources[i]).isDirectory) {
 				if (io.fileExists(_sources[i] + "/" + PACKAGESJSON_CENTRALDB)) {
 					try {
-						_zip = new ZIP(io.readFileBytes(_sources[i] + "/" + PACKAGESJSON_CENTRALDB));
-						packages = merge(packages, af.fromJson(af.fromBytes2String(_zip.getFile(OPACKCENTRALJSON))));
+						_zip = new ZIP(io.readFileBytes(_sources[i] + "/" + PACKAGESJSON_CENTRALDB))
+						packages = merge(packages, af.fromJson(af.fromBytes2String(_zip.getFile(OPACKCENTRALJSON))))
 					} finally {
-						if (isDef(_zip)) _zip.close();
+						if (isDef(_zip)) _zip.close()
 					}
 				}
 			}
 		}
 
-		return packages;
+		return packages
 	})
 	.ttl(_$(__flags.OPACK_REMOTE_DB_CACHE_TTL, "__flags.OPACK_REMOTE_DB_CACHE_TTL").isNumber().default(60000))
-	.create();
+	.create()
 
-	var _sources = clone(__opackCentral);
+	var _sources = clone(__opackCentral)
 
 	// Check for OAF_OPACKS environment variable
 	// If it exists, add the remote opack repositories
 	if (isString(__opacksEnv)) {
-		_sources = _sources.concat(__opacksEnv.split(","));
+		_sources = _sources.concat(__opacksEnv.split(","))
 	}
 
 	return _cache.get({
 		noHomeComms: noHomeComms,
 		sources: _sources.sort()
-	});
+	})
 }
  
 /**
@@ -3685,7 +3685,7 @@ const getOPackRemoteDB = function() {
  * locally, and per user, installed opack packages.
  * </odoc>
  */
-var __opackLocalDBCache;
+var __opackLocalDBCache
 const getOPackLocalDB = function() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 	var homeDB = __gHDir() + "/" + PACKAGESJSON_USERDB;
@@ -3697,7 +3697,7 @@ const getOPackLocalDB = function() {
 		__opackOpenAF.version = getVersion()
 	}
 
-	var statKey;
+	var statKey
 	if (__flags.OPACK_LOCALDB_CACHE) {
 		try {
 			var fiFile = io.fileExists(fileDB) ? io.fileInfo(fileDB) : __
@@ -4058,25 +4058,25 @@ const loadPy = function(aPyScript, aInput, aOutputArray, dontStop) {
  */
 const __precompiledArtifact = function(aScript, info, path, cl, aWrapCode, dontCompile) {
 	__signaturePolicyGuard(aScript)
-	var artifact = path + cl + ".jar";
-	var marker = path + "." + getDistribution() + "-" + getVersion() + "-j2";
+	var artifact = path + cl + ".jar"
+	var marker = path + "." + getDistribution() + "-" + getVersion() + "-j2"
 	if (!io.fileExists(marker)) {
 		io.rm(path)
 	}
 	if (!(io.fileExists(path) && io.fileExists(artifact)) ||
 		info.lastModified > io.fileInfo(artifact).lastModified) {
 		if (!dontCompile) {
-			io.mkdir(path);
+			io.mkdir(path)
 			io.writeFileString(marker, "")
-			io.rm(artifact);
+			io.rm(artifact)
 			var code = io.readFileString(info.canonicalPath)
 			__codeVerify(code, aScript)
 			if (!__flags.OAF_CLOSED) code = __loadPreParser(code)
-			if (isDef(aWrapCode)) code = aWrapCode(code);
-			af.compileToJar(cl, code, artifact);
+			if (isDef(aWrapCode)) code = aWrapCode(code)
+			af.compileToJar(cl, code, artifact)
 		}
 	}
-	return artifact;
+	return artifact
 }
 
 /**
@@ -4088,7 +4088,7 @@ const __precompiledArtifact = function(aScript, info, path, cl, aWrapCode, dontC
  */
 const requireCompiled = function(aScript, dontCompile, dontLoad) {
 	__signaturePolicyGuard(aScript)
-	var res = false, cl, artifact;
+	var res = false, cl, artifact
 	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
 		if (info.isFile) {
@@ -4096,15 +4096,15 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 			if (info.filename.endsWith(".js")) {
 				cl = info.filename.replace(/\./g, "_");
 				artifact = __precompiledArtifact(aScript, info, path, cl, code =>
-					"var __" + cl + " = function(require, exports, module) {" + code + "}", dontCompile);
-				aScript = artifact;
+					"var __" + cl + " = function(require, exports, module) {" + code + "}", dontCompile)
+				aScript = artifact
 			}
 			if (!dontLoad && aScript.endsWith(".jar")) {
 				try {
 					af.getClass(cl);
 				} catch(e) {
 					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
-						af.runFromExternalClass(cl, artifact);
+						af.runFromExternalClass(cl, artifact)
 						var exp = {}, mod = { id: cl, uri: cl, exports: exp };
 
 						global["__" + cl].call({}, requireCompiled, exp, mod);
@@ -4132,22 +4132,22 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
  */
 const loadCompiled = function(aScript, dontCompile, dontLoad) {
 	__signaturePolicyGuard(aScript)
-	var res = false, cl, artifact;
+	var res = false, cl, artifact
 	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
 		if (info.isFile) {
 			var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename)) + ".openaf_precompiled/";
 			if (info.filename.endsWith(".js") || info.filename.endsWith("_profile")) {
 				cl = info.filename.replace(/\./g, "_");
-				artifact = __precompiledArtifact(aScript, info, path, cl, __, dontCompile);
-				aScript = artifact;
+				artifact = __precompiledArtifact(aScript, info, path, cl, __, dontCompile)
+				aScript = artifact
 			}
 			if (!dontLoad && aScript.endsWith(".jar")) {
 				try {
 					af.getClass(cl);
 				} catch(e) {
 					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
-						af.runFromExternalClass(cl, artifact);
+						af.runFromExternalClass(cl, artifact)
 						res = true;
 					} else {
 						throw e;
@@ -4746,10 +4746,10 @@ const exit = function(exitCode, force) {
 	if(isUnDef(exitCode)) exitCode = 0
 
 	if (force) {
-		plugin("Threads");
-		var t = new Threads();
-		t.runOpenAFShutdownHooksNow();
-		t.nativeExit(exitCode);
+		plugin("Threads")
+		var t = new Threads()
+		t.runOpenAFShutdownHooksNow()
+		t.nativeExit(exitCode)
 	} else {
 		// let an armed fast exit (see armFastExitOnShutdown) keep this exit code
 		try { Packages.openaf.plugins.Threads.setRequestedExitCode(exitCode) } catch(e) {}
@@ -5340,8 +5340,8 @@ var $from = function(a) {
  * </odoc>
  */
 const $jq = function(input, expression, options) {
-  return af.jqJava(input, expression, options);
-};
+  return af.jqJava(input, expression, options)
+}
 
 /**
  * <odoc format="markdown">
@@ -6095,7 +6095,7 @@ const $path = function(aObj, aPath, customFunctions) {
 	}, customFunctions)
 
 	if (isDef(aObj))
-		return __flags.ALTERNATIVES.path ? af.pathJava(aObj, aPath, customFunctions) : jmespath.search(aObj, aPath, customFunctions);
+		return __flags.ALTERNATIVES.path ? af.pathJava(aObj, aPath, customFunctions) : jmespath.search(aObj, aPath, customFunctions)
 	else
 		return jmespath.types;
 };
@@ -6199,12 +6199,12 @@ const addOnOpenAFShutdown = function(aFunction) {
  */
 const armFastExitOnShutdown = function(anExitCode) {
 	if (isUnDef(anExitCode)) anExitCode = 0
-	plugin("Threads");
+	plugin("Threads")
 	try {
-		(new Threads()).armFastExitOnShutdown(anExitCode);
-		return true;
+		(new Threads()).armFastExitOnShutdown(anExitCode)
+		return true
 	} catch(e) {
-		return false;
+		return false
 	}
 }
 
@@ -6408,8 +6408,8 @@ const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 	var results = [];
 	for(var i = 0; i < numThreads; i++) {
 		var uuid = __threads.addThread(function(uuid) {
-			var result = aFunction(uuid, __threads);
-			__threads.sync(function() { results.push(result); });
+			var result = aFunction(uuid, __threads)
+			__threads.sync(function() { results.push(result); })
 			if (balance) __balance();
 		});
 		if (isDef(threads)) {
@@ -7055,13 +7055,13 @@ const loadLib = function(aLib, forceReload, aFunction) {
 }
 
 const isCoreCompiledLib = function(aClass) {
-	var _lc = String(aClass).toLowerCase();
-	return (_lc === "openaf_js" || _lc === "openafsigil_js");
+	var _lc = String(aClass).toLowerCase()
+	return (_lc === "openaf_js" || _lc === "openafsigil_js")
 }
 
 // Maps a compiled library class name back to its source file name (e.g. owrap_format_js -> owrap.format.js);
 // none of the bundled js/ file names contain underscores so every "_" was originally a "."
-const __compiledClass2Source = aClass => String(aClass).replace(/_js$/, "").replace(/_/g, ".") + ".js";
+const __compiledClass2Source = aClass => String(aClass).replace(/_js$/, "").replace(/_/g, ".") + ".js"
 
 /**
  * <odoc>
@@ -7076,34 +7076,34 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
-	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass);
+	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass)
 	var _loadCompiled = () => {
 		try {
-			af.runFromClass(af.newScriptInstance(aClass));
+			af.runFromClass(af.newScriptInstance(aClass))
 		} catch(e) {
-			if (isCoreCompiledLib(aClass)) throw e;
+			if (isCoreCompiledLib(aClass)) throw e
 			if (String(e).match(/ClassNotFoundException|Missing compiled companion class/)) {
 				try {
 					if (loadCompiled(_libPath)) {
-						af.runFromClass(af.newScriptInstance(aClass));
+						af.runFromClass(af.newScriptInstance(aClass))
 					} else {
-						loadLib(_libPath, true);
+						loadLib(_libPath, true)
 					}
 				} catch(_e) {
-					loadLib(_libPath, true);
+					loadLib(_libPath, true)
 				}
 			} else {
-				loadLib(_libPath, true);
+				loadLib(_libPath, true)
 			}
 		}
-		__loadedLibs[aClass.toLowerCase()] = true;
-	};
+		__loadedLibs[aClass.toLowerCase()] = true
+	}
 	if (withSync) {
 		sync(() => {
-				_loadCompiled();
+				_loadCompiled()
 			}, __loadedLibs)
 		} else {
-			_loadCompiled();
+			_loadCompiled()
 		}
 		if (isDef(aFunction)) aFunction()
 		return true
@@ -7113,47 +7113,47 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 }
 
 const loadCompiledRequire = function(aClass, forceReload, aFunction) {
-	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass);
+	var _libPath = getOpenAFJar() + "::js/" + __compiledClass2Source(aClass)
 	__signaturePolicyGuard(_libPath)
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) ||
 		__loadedLibs[aClass.toLowerCase()] == false) {
 		try {
-			af.runFromClass(af.newScriptInstance(aClass));
-			var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-			global["__" + aClass](loadCompiledRequire, exp, mod);
-			__loadedLibs[aClass.toLowerCase()] = true;
-			if (isDef(aFunction)) aFunction(mod.exports);
-			return mod.exports;
+			af.runFromClass(af.newScriptInstance(aClass))
+			var exp = {}, mod = { id: aClass, uri: aClass, exports: exp }
+			global["__" + aClass](loadCompiledRequire, exp, mod)
+			__loadedLibs[aClass.toLowerCase()] = true
+			if (isDef(aFunction)) aFunction(mod.exports)
+			return mod.exports
 		} catch(e) {
-			if (isCoreCompiledLib(aClass)) throw e;
+			if (isCoreCompiledLib(aClass)) throw e
 			if (String(e).match(/ClassNotFoundException|Missing compiled companion class/)) {
 				try {
 					if (loadCompiled(_libPath)) {
-						af.runFromClass(af.newScriptInstance(aClass));
-						var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-						global["__" + aClass](loadCompiledRequire, exp, mod);
-						__loadedLibs[aClass.toLowerCase()] = true;
-						if (isDef(aFunction)) aFunction(mod.exports);
-						return mod.exports;
+						af.runFromClass(af.newScriptInstance(aClass))
+						var exp = {}, mod = { id: aClass, uri: aClass, exports: exp }
+						global["__" + aClass](loadCompiledRequire, exp, mod)
+						__loadedLibs[aClass.toLowerCase()] = true
+						if (isDef(aFunction)) aFunction(mod.exports)
+						return mod.exports
 					}
 				} catch(_e) {
 					// Fall back to source load below.
 				}
 			}
-			var mod = require(_libPath);
-			__loadedLibs[aClass.toLowerCase()] = true;
-			if (isDef(aFunction)) aFunction(mod);
-			return mod;
+			var mod = require(_libPath)
+			__loadedLibs[aClass.toLowerCase()] = true
+			if (isDef(aFunction)) aFunction(mod)
+			return mod
 		}
 	} else {
 		if (isDef(global["__" + aClass])) {
-			var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-			global["__" + aClass](loadCompiledRequire, exp, mod);
-			return mod.exports;
+			var exp = {}, mod = { id: aClass, uri: aClass, exports: exp }
+			global["__" + aClass](loadCompiledRequire, exp, mod)
+			return mod.exports
 		} else {
-			if (isCoreCompiledLib(aClass)) throw new Error("Compiled core library not loaded: " + aClass);
-			return require(_libPath);
+			if (isCoreCompiledLib(aClass)) throw new Error("Compiled core library not loaded: " + aClass)
+			return require(_libPath)
 		}
 	}
 }
@@ -7535,7 +7535,7 @@ OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js");
  * Loads the opt-in generic instrumentation module. Loading does not enable capture.
  * </odoc>
  */
-OpenWrap.prototype.loadInstrumentation = function() { loadCompiledLib("owrap_instrumentation_js"); if (isUnDef(ow.instrumentation)) ow.instrumentation = new OpenWrap.instrumentation(); return ow.instrumentation; };
+OpenWrap.prototype.loadInstrumentation = function() { loadCompiledLib("owrap_instrumentation_js"); if (isUnDef(ow.instrumentation)) ow.instrumentation = new OpenWrap.instrumentation(); return ow.instrumentation; }
 
 //OpenWrap.prototype.loadMetrics = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
 OpenWrap.prototype.loadMetrics = function() { loadCompiledLib("owrap_metrics_js"); if (isUnDef(ow.metrics)) { ow.metrics = new OpenWrap.metrics(); /*pods.declare("ow.metrics", ow.metrics);*/ }; return ow.metrics; };
@@ -7602,11 +7602,11 @@ OpenWrap.prototype.loadJava = function() { loadCompiledLib("owrap_java_js"); if 
  * </odoc>
  */
 OpenWrap.prototype.loadDesktop = function(options) {
-  loadCompiledLib("owrap_desktop_js");
-  if (isUnDef(ow.desktop)) ow.desktop = new OpenWrap.desktop(options);
-  else if (isDef(options)) ow.desktop.__configure(options);
-  return ow.desktop;
-};
+  loadCompiledLib("owrap_desktop_js")
+  if (isUnDef(ow.desktop)) ow.desktop = new OpenWrap.desktop(options)
+  else if (isDef(options)) ow.desktop.__configure(options)
+  return ow.desktop
+}
 
 /**
  * <odoc>
@@ -7618,11 +7618,11 @@ OpenWrap.prototype.loadDesktop = function(options) {
  * </odoc>
  */
 OpenWrap.prototype.loadScreen = function(options) {
-  loadCompiledLib("owrap_screen_js");
-  if (isUnDef(ow.screen)) ow.screen = new OpenWrap.screen(options);
-  else if (isDef(options)) ow.screen.configure(options);
-  return ow.screen;
-};
+  loadCompiledLib("owrap_screen_js")
+  if (isUnDef(ow.screen)) ow.screen = new OpenWrap.screen(options)
+  else if (isDef(options)) ow.screen.configure(options)
+  return ow.screen
+}
 
 var ow = new OpenWrap()
 
@@ -7759,10 +7759,10 @@ if (isUnDef(__offlineHelp)) {
 const setOfflineHelp = function(aBoolean) {
 	__offlineHelp = aBoolean;
 	if (isDef(__odocs)) {
-		__odocs.offline = aBoolean;
-		__odocs = undefined;
+		__odocs.offline = aBoolean
+		__odocs = undefined
 	}
-	__odocsfiles = [];
+	__odocsfiles = []
 }
 
 /**
@@ -7791,7 +7791,7 @@ const searchHelp = function(aTerm, aPath, aId) {
 		} catch(e) {
 		}
 		paths.forEach(path => {
-			if (!(path.match(/\.(jar|db|zip)$/i))) path += "/";
+			if (!(path.match(/\.(jar|db|zip)$/i))) path += "/"
 			if (__odocsfiles.indexOf(path) < 0) {
 				__odocs.loadFile(path);
 				__odocsfiles.push(path);
@@ -7805,15 +7805,15 @@ const searchHelp = function(aTerm, aPath, aId) {
 	
 	if (keys.length == 1) {
 		var contents = __odocs.get(keys[0].id, keys[0].key);
-		if (isUnDef(contents)) return [];
+		if (isUnDef(contents)) return []
 		var result = {
 			"id": keys[0].id,
 			"key": keys[0].key,
 			"fullkey": contents.k,
 			"text": contents.t
-		};
-		if (isDef(contents.format)) result.format = contents.format;
-		return [ result ];
+		}
+		if (isDef(contents.format)) result.format = contents.format
+		return [ result ]
 	}
 	return uniqArray(keys);
 }
@@ -8066,8 +8066,8 @@ const mapArray = function(anArray, selectors, limit) {
  * </odoc>
  */
 const searchArray = function(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) {
-	ow.loadObj();
-	return ow.obj.searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel);
+	ow.loadObj()
+	return ow.obj.searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel)
 }
 
 /**
@@ -8229,7 +8229,7 @@ const ioStreamWrite = function(aStream, aString, aBufferSize, useNIO) {
 	if (useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aString, aStream, "utf-8");
 	} else {
-		ioStreamWriteBytes(aStream, af.fromString2Bytes(aString, "UTF-8"), aBufferSize, false);
+		ioStreamWriteBytes(aStream, af.fromString2Bytes(aString, "UTF-8"), aBufferSize, false)
 	}
 }
 
@@ -8246,7 +8246,7 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aArrayBytes, aStream);
 	} else {
 		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
-		if (bufferSize <= 0 || Math.floor(bufferSize) != bufferSize) throw "aBufferSize must be a positive integer";
+		if (bufferSize <= 0 || Math.floor(bufferSize) != bufferSize) throw "aBufferSize must be a positive integer"
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -8256,14 +8256,14 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 		var buffer = java.nio.ByteBuffer.allocate(bufferSize);
 
 		for (var offset = 0; offset < aArrayBytes.length;) {
-			var length = Math.min(bufferSize, aArrayBytes.length - offset);
-			buffer.clear();
-			buffer.put(aArrayBytes, offset, length);
-			buffer.flip();
+			var length = Math.min(bufferSize, aArrayBytes.length - offset)
+			buffer.clear()
+			buffer.put(aArrayBytes, offset, length)
+			buffer.flip()
 			while (buffer.hasRemaining()) {
-				channel.write(buffer);
+				channel.write(buffer)
 			}
-			offset += length;
+			offset += length
 		}
 	}
 }
@@ -8280,18 +8280,18 @@ const ioStreamRead = function(aStream, aFunction, aBufferSize, useNIO, encoding)
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	encoding = _$(encoding).isString().default(io.getDefaultEncoding());
 	var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
-	if (bufferSize <= 0 || Math.floor(bufferSize) != bufferSize) throw "aBufferSize must be a positive integer";
-	var reader = new java.io.InputStreamReader(aStream, encoding);
-	if (useNIO) reader = new java.io.BufferedReader(reader, bufferSize);
-	var cbuf = java.lang.reflect.Array.newInstance(java.lang.Character.TYPE, bufferSize);
-	var nRead;
+	if (bufferSize <= 0 || Math.floor(bufferSize) != bufferSize) throw "aBufferSize must be a positive integer"
+	var reader = new java.io.InputStreamReader(aStream, encoding)
+	if (useNIO) reader = new java.io.BufferedReader(reader, bufferSize)
+	var cbuf = java.lang.reflect.Array.newInstance(java.lang.Character.TYPE, bufferSize)
+	var nRead
 	try {
 		while ((nRead = reader.read(cbuf, 0, bufferSize)) > 0) {
-			if (aFunction(String(new java.lang.String(cbuf, 0, nRead))) == true) return;
+			if (aFunction(String(new java.lang.String(cbuf, 0, nRead))) == true) return
 		}
 	} finally {
 		// The non-NIO API borrows its input; the NIO API owns and closes it.
-		if (useNIO) reader.close();
+		if (useNIO) reader.close()
 	}
 }
 
@@ -8307,7 +8307,7 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	var buf = "", go = true;
 	if (isUnDef(aSeparator)) aSeparator = __separator;
-	if (aSeparator.length == 0) throw "aSeparator must not be empty";
+	if (aSeparator.length == 0) throw "aSeparator must not be empty"
 
 	ioStreamRead(aStream, function(buffer) {
 		if (go) {
@@ -8315,7 +8315,7 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 			buf += buffer;
 			while (buf.indexOf(aSeparator) >= 0) {
 				res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-				buf = buf.substring(buf.indexOf(aSeparator) + aSeparator.length);
+				buf = buf.substring(buf.indexOf(aSeparator) + aSeparator.length)
 				if (res == true) { buf = ""; go = false; return true; }
 			}
 			return res;
@@ -8323,7 +8323,7 @@ const ioStreamReadLines = function(aStream, aFunction, aSeparator, useNIO, anEnc
 	}, __, useNIO, anEncoding);
 	while (buf.indexOf(aSeparator) >= 0 && go) {
 		var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-		buf = buf.substring(buf.indexOf(aSeparator) + aSeparator.length);
+		buf = buf.substring(buf.indexOf(aSeparator) + aSeparator.length)
 		if (res == true) { buf = ""; go = false; return; }
 	}
 	if (buf.length > 0 && go) {
@@ -8421,7 +8421,7 @@ const __streamCodec = (() => {
       return use([zipped], () => copy(zipped, o))
     })
   }
-})();
+})()
 
 /**
  * <odoc>
@@ -10614,8 +10614,8 @@ const $mcp = function(aOptions) {
 		}
 	}
 
-    var _oauthPending, _authStore, _authStoreKey, _authStoreHasRecord, _authStoreFailed = false;
-    const _authLockName = "mcp-oauth-" + genUUID();
+    var _oauthPending, _authStore, _authStoreKey, _authStoreHasRecord, _authStoreFailed = false
+    const _authLockName = "mcp-oauth-" + genUUID()
     var _registration, _registrationKey, _registrationStore, _registrationIdentity, _registrationFailed = false
     var _callbackReservation, _oauthDestroyed = false
     const _requestedRedirectURI = aOptions.auth.redirectURI
@@ -10772,9 +10772,9 @@ const $mcp = function(aOptions) {
     }
     const _authFingerprint = () => {
         // Resolve both endpoints before selecting the entry: login must not change its identity.
-        _getResolvedTokenURL();
-        if (String(aOptions.auth.grantType || "client_credentials").toLowerCase() == "authorization_code") _getResolvedAuthURL();
-        var scope = String(aOptions.auth.scope || "").split(/\s+/).filter(v => v.length > 0).sort();
+        _getResolvedTokenURL()
+        if (String(aOptions.auth.grantType || "client_credentials").toLowerCase() == "authorization_code") _getResolvedAuthURL()
+        var scope = String(aOptions.auth.scope || "").split(/\s+/).filter(v => v.length > 0).sort()
         return sha256(stringify(sortMapKeys({
             version: 1, url: aOptions.url, clientId: aOptions.auth.clientId,
             tokenEndpointAuthMethod: aOptions.auth.tokenEndpointAuthMethod,
@@ -10787,25 +10787,25 @@ const $mcp = function(aOptions) {
             profile: aOptions.auth.tokenStore.profile || aOptions.auth.tokenStore.key || "default",
             extraParams: sha256(stringify(sortMapKeys(aOptions.auth.extraParams || {}, true), __, "")),
             extraAuthParams: sha256(stringify(sortMapKeys(aOptions.auth.extraAuthParams || {}, true), __, ""))
-        }, true), __, ""));
-    };
+        }, true), __, ""))
+    }
     const _resetAuth = () => {
-        _auth.token = __; _auth.refreshToken = __; _auth.expiresAt = 0;
-        _auth.tokenType = "Bearer"; _auth.authorizationCode = __; _auth.pkceVerifier = __;
-    };
+        _auth.token = __; _auth.refreshToken = __; _auth.expiresAt = 0
+        _auth.tokenType = "Bearer"; _auth.authorizationCode = __; _auth.pkceVerifier = __
+    }
     const _authStatus = () => ({
         authenticated: isString(_auth.token) && _auth.expiresAt > now() && !_authStoreFailed,
         expiresAt: _auth.expiresAt, refreshable: isString(_auth.refreshToken),
         clientAvailable: isString(aOptions.auth.clientId),
         registrationMethod: isDef(_registration) ? _registration.kind : (isString(aOptions.auth.clientId) ? "explicit" : __),
         persistent: isMap(aOptions.auth.tokenStore)
-    });
+    })
     const _deleteAuth = () => {
         if (isDef(_authStore) && _authStoreHasRecord) {
             try { _authStore.clear(_authStoreKey); _authStoreHasRecord = false; }
             catch(e) { _authStoreFailed = true; throw new Error("OAuth credential storage delete failed"); }
         }
-    };
+    }
     const _saveAuth = () => {
         if (isDef(_authStore)) {
             try {
@@ -10814,145 +10814,145 @@ const $mcp = function(aOptions) {
                     tokenType: _auth.tokenType,
                     expiresAt: _auth.expiresAt == Number.MAX_SAFE_INTEGER ? null : _auth.expiresAt,
                     refreshToken: _auth.refreshToken
-                });
-                _authStoreHasRecord = true;
+                })
+                _authStoreHasRecord = true
             } catch(e) {
-                _authStoreFailed = true;
-                throw new Error("OAuth credential storage write failed; clearAuth or recreate the client before retrying");
+                _authStoreFailed = true
+                throw new Error("OAuth credential storage write failed; clearAuth or recreate the client before retrying")
             }
         }
-    };
+    }
     const _secTokenStore = cfg => {
-        ow.loadServer();
-        return ow.server.httpd.__oauth2SecTokenStore(cfg, "mcp-oauth2");
-    };
+        ow.loadServer()
+        return ow.server.httpd.__oauth2SecTokenStore(cfg, "mcp-oauth2")
+    }
     const _runAuthStore = (fn, clearing) => {
-        var cfg = aOptions.auth.tokenStore;
-        if (isUnDef(cfg) || ["remote", "http", "sse"].indexOf(aOptions.type) < 0) return fn();
-        _$(cfg, "auth.tokenStore").isMap().$_();
-        if (String(aOptions.auth.type).toLowerCase() != "oauth2") throw new Error("OAuth tokenStore requires auth.type=oauth2");
-        if (_authStoreFailed && !clearing) throw new Error("OAuth credential storage failed; clearAuth or recreate the client before retrying");
-        var reserved = ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "refresh_token", "scope", "audience", "resource"];
+        var cfg = aOptions.auth.tokenStore
+        if (isUnDef(cfg) || ["remote", "http", "sse"].indexOf(aOptions.type) < 0) return fn()
+        _$(cfg, "auth.tokenStore").isMap().$_()
+        if (String(aOptions.auth.type).toLowerCase() != "oauth2") throw new Error("OAuth tokenStore requires auth.type=oauth2")
+        if (_authStoreFailed && !clearing) throw new Error("OAuth credential storage failed; clearAuth or recreate the client before retrying")
+        var reserved = ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "refresh_token", "scope", "audience", "resource"]
         if (isMap(aOptions.auth.extraParams) && reserved.some(k => isDef(aOptions.auth.extraParams[k]))) {
-            throw new Error("OAuth tokenStore does not allow protocol field overrides in extraParams");
+            throw new Error("OAuth tokenStore does not allow protocol field overrides in extraParams")
         }
-        if (isDef(cfg.profile)) _$(cfg.profile, "auth.tokenStore.profile").isString().$_();
-        if (isDef(cfg.key)) _$(cfg.key, "auth.tokenStore.key").isString().$_();
-        var fingerprint = _authFingerprint();
-        var key = isString(cfg.key) ? cfg.key : "oauth2-v1-" + fingerprint;
-        var store;
-        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type");
-        if (cfg.type == "sec" || !["load", "save", "clear", "withLock"].some(name => isDef(cfg[name]))) store = _secTokenStore(cfg);
+        if (isDef(cfg.profile)) _$(cfg.profile, "auth.tokenStore.profile").isString().$_()
+        if (isDef(cfg.key)) _$(cfg.key, "auth.tokenStore.key").isString().$_()
+        var fingerprint = _authFingerprint()
+        var key = isString(cfg.key) ? cfg.key : "oauth2-v1-" + fingerprint
+        var store
+        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type")
+        if (cfg.type == "sec" || !["load", "save", "clear", "withLock"].some(name => isDef(cfg[name]))) store = _secTokenStore(cfg)
         else {
-            ["load", "save", "clear", "withLock"].forEach(name => _$(cfg[name], "auth.tokenStore." + name).isFunction().$_());
-            store = cfg;
+            ["load", "save", "clear", "withLock"].forEach(name => _$(cfg[name], "auth.tokenStore." + name).isFunction().$_())
+            store = cfg
         }
-        var entered = 0, active = true, completed = false, callbackError, result;
+        var entered = 0, active = true, completed = false, callbackError, result
         try {
             store.withLock(key, () => {
-                entered++;
-                if (!active || entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously once");
+                entered++
+                if (!active || entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously once")
                 try {
-                    var record;
+                    var record
                     try { record = store.load(key); }
                     catch(e) { throw new Error("OAuth credential storage read failed"); }
-                    _authStore = store; _authStoreKey = key; _authStoreHasRecord = isDef(record);
+                    _authStore = store; _authStoreKey = key; _authStoreHasRecord = isDef(record)
                     if (!clearing && isDef(record)) {
                         if (!isMap(record) || record.version !== 1 || record.fingerprint !== fingerprint) {
-                            throw new Error("OAuth credential profile configuration mismatch; use another profile or clearAuth()");
+                            throw new Error("OAuth credential profile configuration mismatch; use another profile or clearAuth()")
                         }
                         if (!isString(record.token) || !record.token.length || !isString(record.tokenType) ||
                             !(record.expiresAt === null || (isNumber(record.expiresAt) && isFinite(record.expiresAt))) ||
                             (isDef(record.refreshToken) && !isString(record.refreshToken))) {
-                            throw new Error("OAuth credential profile is invalid");
+                            throw new Error("OAuth credential profile is invalid")
                         }
-                        var sameUnknownToken = record.expiresAt === null && _auth.token === record.token && _auth.expiresAt == Number.MAX_SAFE_INTEGER;
-                        _auth.token = record.token; _auth.tokenType = record.tokenType;
-                        _auth.expiresAt = record.expiresAt === null ? (sameUnknownToken ? Number.MAX_SAFE_INTEGER : 0) : record.expiresAt;
-                        _auth.refreshToken = record.refreshToken;
+                        var sameUnknownToken = record.expiresAt === null && _auth.token === record.token && _auth.expiresAt == Number.MAX_SAFE_INTEGER
+                        _auth.token = record.token; _auth.tokenType = record.tokenType
+                        _auth.expiresAt = record.expiresAt === null ? (sameUnknownToken ? Number.MAX_SAFE_INTEGER : 0) : record.expiresAt
+                        _auth.refreshToken = record.refreshToken
                     } else if (!clearing) {
-                        _auth.token = __; _auth.refreshToken = __; _auth.expiresAt = 0;
+                        _auth.token = __; _auth.refreshToken = __; _auth.expiresAt = 0
                     }
-                    result = fn();
-                    completed = true;
-                    return result;
+                    result = fn()
+                    completed = true
+                    return result
                 } catch(e) { callbackError = e; throw e; }
                 finally { _authStore = __; }
-            });
+            })
         } catch(e) {
-            if (isDef(callbackError)) throw callbackError;
-            throw new Error("OAuth credential storage lock failed or timed out");
+            if (isDef(callbackError)) throw callbackError
+            throw new Error("OAuth credential storage lock failed or timed out")
         } finally { active = false; }
-        if (isDef(callbackError)) throw callbackError;
-        if (entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback once");
-        if (!completed) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously");
-        return result;
-    };
+        if (isDef(callbackError)) throw callbackError
+        if (entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback once")
+        if (!completed) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously")
+        return result
+    }
     const _withAuthStore = (fn, clearing) => {
-        var localLock = $lock(_authLockName), result;
-        var cfg = aOptions.auth.tokenStore;
+        var localLock = $lock(_authLockName), result
+        var cfg = aOptions.auth.tokenStore
         if (isDef(cfg)) {
-            var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000);
-            if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive");
+            var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000)
+            if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive")
             if (!localLock.tryLock(() => { result = _runAuthStore(fn, clearing); }, timeout)) {
-                throw new Error("OAuth credential storage lock timed out");
+                throw new Error("OAuth credential storage lock timed out")
             }
-            return result;
+            return result
         }
-        localLock.lock();
+        localLock.lock()
         try { return _runAuthStore(fn, clearing); }
         finally { localLock.unlock(); }
-    };
+    }
 
     const _getAuthorizationCode = (_clientId, _scope, _audience, _resource) => {
-        if (isDef(_auth.authorizationCode)) return _auth.authorizationCode;
-        if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
-        var _authURL = _getResolvedAuthURL();
-        _$( _authURL, "authorization_endpoint").isString().$_();
-        var _redirectURI = _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_();
-        var _state = genUUID();
+        if (isDef(_auth.authorizationCode)) return _auth.authorizationCode
+        if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled")
+        var _authURL = _getResolvedAuthURL()
+        _$( _authURL, "authorization_endpoint").isString().$_()
+        var _redirectURI = _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_()
+        var _state = genUUID()
         // Keep legacy supplied state behavior unless the validating callback listener is enabled.
-        if (aOptions.auth.callback !== true && isString(aOptions.auth.state)) _state = aOptions.auth.state;
+        if (aOptions.auth.callback !== true && isString(aOptions.auth.state)) _state = aOptions.auth.state
         var _authParams = merge(isMap(aOptions.auth.extraAuthParams) ? aOptions.auth.extraAuthParams : {}, {
             response_type: "code", client_id: _clientId, redirect_uri: _redirectURI, state: _state,
             code_challenge: _getPKCEChallenge(), code_challenge_method: "S256"
-        });
-        if (isDef(_scope)) _authParams.scope = _scope;
-        if (isDef(_audience)) _authParams.audience = _audience;
-        if (isDef(_resource)) _authParams.resource = _resource;
-        var _query = Object.keys(_authParams).map(k => _urlEnc(k) + "=" + _urlEnc(_authParams[k])).join("&");
-        var _authFullURL = _authURL + (_authURL.indexOf("?") >= 0 ? "&" : "?") + _query;
-        _openAuthBrowser(_authFullURL);
-        if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL);
+        })
+        if (isDef(_scope)) _authParams.scope = _scope
+        if (isDef(_audience)) _authParams.audience = _audience
+        if (isDef(_resource)) _authParams.resource = _resource
+        var _query = Object.keys(_authParams).map(k => _urlEnc(k) + "=" + _urlEnc(_authParams[k])).join("&")
+        var _authFullURL = _authURL + (_authURL.indexOf("?") >= 0 ? "&" : "?") + _query
+        _openAuthBrowser(_authFullURL)
+        if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL)
         if (_$(aOptions.auth.promptForCode, "aOptions.auth.promptForCode").isBoolean().default(true)) {
-            _auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "));
-        } else throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.");
-        return _auth.authorizationCode;
-    };
+            _auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "))
+        } else throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.")
+        return _auth.authorizationCode
+    }
 
     const _getOAuthHeaders = (reauthorizing) => {
-        if (!isMap(aOptions.auth) || Object.keys(aOptions.auth).length == 0) return __;
-        if (["remote", "http", "sse"].indexOf(aOptions.type) < 0) return __;
-        var type = String(aOptions.auth.type || "bearer").toLowerCase();
+        if (!isMap(aOptions.auth) || Object.keys(aOptions.auth).length == 0) return __
+        if (["remote", "http", "sse"].indexOf(aOptions.type) < 0) return __
+        var type = String(aOptions.auth.type || "bearer").toLowerCase()
         if (type == "bearer") {
-            var token = _$(aOptions.auth.token, "aOptions.auth.token").isString().$_();
-            return { Authorization: (aOptions.auth.tokenType || "Bearer") + " " + token };
+            var token = _$(aOptions.auth.token, "aOptions.auth.token").isString().$_()
+            return { Authorization: (aOptions.auth.tokenType || "Bearer") + " " + token }
         }
-        if (type != "oauth2") throw new Error("Unsupported MCP authentication type");
+        if (type != "oauth2") throw new Error("Unsupported MCP authentication type")
         var method = aOptions.auth.tokenEndpointAuthMethod
         if (isDef(method) && ["none", "client_secret_basic", "client_secret_post"].indexOf(method) < 0) throw new Error("Unsupported OAuth client authentication method")
         if ((method == "client_secret_basic" || method == "client_secret_post") && (!isString(aOptions.auth.clientSecret) || !aOptions.auth.clientSecret.length)) throw new Error("OAuth client authentication requires a client secret")
-        var windowMs = _$(aOptions.auth.refreshWindowMs, "auth.refreshWindowMs").isNumber().default(30000);
+        var windowMs = _$(aOptions.auth.refreshWindowMs, "auth.refreshWindowMs").isNumber().default(30000)
         if (isUnDef(_auth.token) || _auth.expiresAt <= now() + windowMs) {
-            var tokenURL = _getResolvedTokenURL();
-            var clientId = _$(aOptions.auth.clientId, "auth.clientId").isString().$_();
-            var scope = aOptions.auth.scope, resource = _getOAuthResource(), audience = aOptions.auth.audience;
-            var grant = String(aOptions.auth.grantType || "client_credentials").toLowerCase();
-            var params, res;
+            var tokenURL = _getResolvedTokenURL()
+            var clientId = _$(aOptions.auth.clientId, "auth.clientId").isString().$_()
+            var scope = aOptions.auth.scope, resource = _getOAuthResource(), audience = aOptions.auth.audience
+            var grant = String(aOptions.auth.grantType || "client_credentials").toLowerCase()
+            var params, res
             if (!isString(_auth.refreshToken) && grant == "authorization_code" &&
                 aOptions.auth.callback === true && isUnDef(_auth.authorizationCode)) {
-                if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
-                ow.loadServer();
+                if (aOptions.auth.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled")
+                ow.loadServer()
                 // MCP owns the storage transaction, refresh and identity. The helper owns this login only.
                 if (_automaticOAuth) _reserveCallback(aOptions.auth.redirectURI)
                 var loginOptions = merge(aOptions.auth, {
@@ -10960,39 +10960,39 @@ const $mcp = function(aOptions) {
                 })
                 loginOptions.__callbackReservation = _callbackReservation
                 _oauthPending = ow.server.httpd.oauth2(loginOptions)
-                params = { grant_type: "authorization_code" };
+                params = { grant_type: "authorization_code" }
                 try { res = _oauthPending.authenticate(); }
                 catch(e) {
-                    if (e.oauthError == "invalid_grant" || e.oauthError == "interaction_required") res = { error: e.oauthError };
+                    if (e.oauthError == "invalid_grant" || e.oauthError == "interaction_required") res = { error: e.oauthError }
                     else if (e.oauthError == "invalid_client") throw new Error("OAuth client credentials rejected; check explicit credentials or clearAuth({registration:true}) before retrying")
-                    else throw e;
+                    else throw e
                 } finally { _oauthPending = __; _auth.authorizationCode = __; _auth.pkceVerifier = __; }
             } else {
-                if (isString(_auth.refreshToken)) params = { grant_type: "refresh_token", refresh_token: _auth.refreshToken, client_id: clientId };
+                if (isString(_auth.refreshToken)) params = { grant_type: "refresh_token", refresh_token: _auth.refreshToken, client_id: clientId }
                 else if (grant == "authorization_code") params = {
                     grant_type: grant, client_id: clientId,
                     code: _getAuthorizationCode(clientId, scope, audience, resource),
                     redirect_uri: aOptions.auth.redirectURI, code_verifier: _getPKCEVerifier()
-                };
-                else params = { grant_type: grant, client_id: clientId };
-                if (isDef(aOptions.auth.clientSecret) && ["none", "client_secret_basic"].indexOf(aOptions.auth.tokenEndpointAuthMethod) < 0) params.client_secret = aOptions.auth.clientSecret;
-                if (isDef(scope)) params.scope = scope;
-                if (isDef(audience)) params.audience = audience;
-                if (isDef(resource)) params.resource = resource;
-                if (isMap(aOptions.auth.extraParams)) params = merge(params, aOptions.auth.extraParams);
-                var tokenHttp = ow.loadObj().rest.connectionFactory();
+                }
+                else params = { grant_type: grant, client_id: clientId }
+                if (isDef(aOptions.auth.clientSecret) && ["none", "client_secret_basic"].indexOf(aOptions.auth.tokenEndpointAuthMethod) < 0) params.client_secret = aOptions.auth.clientSecret
+                if (isDef(scope)) params.scope = scope
+                if (isDef(audience)) params.audience = audience
+                if (isDef(resource)) params.resource = resource
+                if (isMap(aOptions.auth.extraParams)) params = merge(params, aOptions.auth.extraParams)
+                var tokenHttp = ow.loadObj().rest.connectionFactory()
                 try {
-                    tokenHttp.setThrowExceptions(false);
+                    tokenHttp.setThrowExceptions(false)
                     tokenHttp.client = tokenHttp.client.newBuilder().followRedirects(false).followSslRedirects(false)
                         .callTimeout(aOptions.auth.tokenTimeoutMs || 60000, java.util.concurrent.TimeUnit.MILLISECONDS).build()
-                    var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000);
+                    var tokenTimeout = _$(aOptions.auth.tokenTimeoutMs, "auth.tokenTimeoutMs").isNumber().default(60000)
                     var tokenHeaders = {}
                     if (aOptions.auth.tokenEndpointAuthMethod == "client_secret_basic") {
                         tokenHeaders.Authorization = "Basic " + af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(_urlEnc(clientId) + ":" + _urlEnc(aOptions.auth.clientSecret))))
                     }
                     res = $rest({ httpClient: tokenHttp, requestHeaders: tokenHeaders, urlEncode: true, timeout: tokenTimeout,
-                        readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params);
-                    if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {};
+                        readTimeout: tokenTimeout, callTimeout: tokenTimeout }).post(tokenURL, params)
+                    if (tokenHttp.responseCode() >= 400 && isMap(res) && isDef(res.access_token)) res = {}
                 }
                 catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }
                 finally {
@@ -11003,22 +11003,22 @@ const $mcp = function(aOptions) {
             if (!isMap(res) || !isString(res.access_token) || res.access_token.length == 0) {
                 if (isMap(res) && res.error == "invalid_client") throw new Error("OAuth client credentials rejected; check explicit credentials or clearAuth({registration:true}) before retrying")
                 if (isMap(res) && (res.error == "invalid_grant" || res.error == "interaction_required")) {
-                    _resetAuth();
-                    _deleteAuth();
-                    if (isDef(_authStore) && params.grant_type == "refresh_token" && res.error == "invalid_grant" && !reauthorizing) return _getOAuthHeaders(true);
-                    throw new Error("OAuth login required; credentials expired or revoked");
+                    _resetAuth()
+                    _deleteAuth()
+                    if (isDef(_authStore) && params.grant_type == "refresh_token" && res.error == "invalid_grant" && !reauthorizing) return _getOAuthHeaders(true)
+                    throw new Error("OAuth login required; credentials expired or revoked")
                 }
-                throw new Error("OAuth token request failed; provider did not return an access token");
+                throw new Error("OAuth token request failed; provider did not return an access token")
             }
-            _auth.token = res.access_token;
-            if (isString(res.refresh_token) && res.refresh_token.length > 0) _auth.refreshToken = res.refresh_token;
-            _auth.tokenType = aOptions.auth.tokenType || res.token_type || "Bearer";
-            var lifetime = Number(res.expires_in);
-            _auth.expiresAt = isDef(res.expires_in) && res.expires_in !== null && isFinite(lifetime) && lifetime >= 0 ? now() + lifetime * 1000 : Number.MAX_SAFE_INTEGER;
-            _saveAuth();
+            _auth.token = res.access_token
+            if (isString(res.refresh_token) && res.refresh_token.length > 0) _auth.refreshToken = res.refresh_token
+            _auth.tokenType = aOptions.auth.tokenType || res.token_type || "Bearer"
+            var lifetime = Number(res.expires_in)
+            _auth.expiresAt = isDef(res.expires_in) && res.expires_in !== null && isFinite(lifetime) && lifetime >= 0 ? now() + lifetime * 1000 : Number.MAX_SAFE_INTEGER
+            _saveAuth()
         }
-        return { Authorization: _auth.tokenType + " " + _auth.token };
-    };
+        return { Authorization: _auth.tokenType + " " + _auth.token }
+    }
     const _withOAuthOperation = fn => {
       var lock = $lock(_authLockName), result
       var cfg = aOptions.auth.tokenStore
@@ -11039,7 +11039,7 @@ const $mcp = function(aOptions) {
         return _withAuthStore(() => _getOAuthHeaders(false))
       }
       finally { _releaseCallback() }
-    });
+    })
 
 	const _clientCapabilities = version => {
 		var caps = clone(aOptions.capabilities)
@@ -12020,7 +12020,7 @@ const $mcp = function(aOptions) {
 		destroy: () => {
             _oauthDestroyed = true
             if (isDef(_oauthPending)) {
-                _oauthPending.cancel();
+                _oauthPending.cancel()
             }
             _releaseCallback()
 			Object.keys(_subscriptions).forEach(k => delete _subscriptions[k])
@@ -12133,10 +12133,10 @@ const $pyStart = function() {
  * </odoc>
  */
 const $py = function(aPythonCode, aInput, aOutputArray, throwExceptions, shouldFork) {
-	ow.loadPython();
-	ow.python.__ensureServer(false);
+	ow.loadPython()
+	ow.python.__ensureServer(false)
 	if (aPythonCode.indexOf("\n") < 0 && aPythonCode.endsWith(".py") && io.fileExists(aPythonCode)) aPythonCode = io.readFileString(aPythonCode);
-	return ow.python.exec(aPythonCode, aInput, aOutputArray, throwExceptions, shouldFork);
+	return ow.python.exec(aPythonCode, aInput, aOutputArray, throwExceptions, shouldFork)
 };
 
 /**
@@ -13049,24 +13049,24 @@ const newFn = function() {
  */
 AF.prototype.runFromExternalClass = function(aClass, aPath) {
 	try {
-		var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
-		af.runFromClass(af.newScriptInstance(cl));
-		return;
+		var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass)
+		af.runFromClass(af.newScriptInstance(cl))
+		return
 	} catch(e) {
 		if (String(e).match(/ClassNotFoundException/)) {
 			// Fall through to the default loader below.
 		} else {
-			throw e;
+			throw e
 		}
 	}
 	try {
-		af.runFromClass(af.newScriptInstance(aClass));
+		af.runFromClass(af.newScriptInstance(aClass))
 	} catch(e) {
 		if (String(e).match(/ClassNotFoundException/)) {
 			var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
-			af.runFromClass(af.newScriptInstance(cl));
+			af.runFromClass(af.newScriptInstance(cl))
 		} else {
-			throw e;
+			throw e
 		}
 	}
 };
@@ -14868,7 +14868,7 @@ IO.prototype.readJSONArray = function(source, callback, encoding, raw) {
     } finally {
         if (owned) stream.close()
     }
-};
+}
 
 /**
  * <odoc format="markdown">
@@ -14949,74 +14949,74 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
  * </odoc>
  */
 IO.prototype.scanJSON = function(aFile, aVisitor, aOptions) {
-  _$(aFile, "aFile").isString().$_();
-  _$(aVisitor, "aVisitor").isFunction().$_();
-  var opts = aOptions || {}, parser;
-  var ranges = new java.io.RandomAccessFile(aFile, "r"), stack = [], nodes = 0, roots = 0, stopped = false;
-  var offset = () => Number(parser.currentTokenLocation().getByteOffset());
-  var emit = e => { if (aVisitor(e) == "stop") stopped = true; };
+  _$(aFile, "aFile").isString().$_()
+  _$(aVisitor, "aVisitor").isFunction().$_()
+  var opts = aOptions || {}, parser
+  var ranges = new java.io.RandomAccessFile(aFile, "r"), stack = [], nodes = 0, roots = 0, stopped = false
+  var offset = () => Number(parser.currentTokenLocation().getByteOffset())
+  var emit = e => { if (aVisitor(e) == "stop") stopped = true; }
   // Jackson leaves strings lazy. Advancing skips their text; trim only the JSON separators.
   var endScalar = end => {
     while (end > 0) {
-      ranges.seek(end - 1);
-      var c = ranges.read();
-      if (c != 32 && c != 9 && c != 10 && c != 13 && c != 44) break;
-      end--;
+      ranges.seek(end - 1)
+      var c = ranges.read()
+      if (c != 32 && c != 9 && c != 10 && c != 13 && c != 44) break
+      end--
     }
-    return end;
-  };
+    return end
+  }
   try {
     for (var i = 0; i < Math.min(4, Number(ranges.length())); i++) {
-      var byte = ranges.read();
-      if (byte == 0 || byte == 254 || byte == 255) throw "io.scanJSON requires UTF-8 JSON";
+      var byte = ranges.read()
+      if (byte == 0 || byte == 254 || byte == 255) throw "io.scanJSON requires UTF-8 JSON"
     }
-    parser = new Packages.com.fasterxml.jackson.core.JsonFactory().createParser(new java.io.File(aFile));
-    var token = parser.nextToken();
+    parser = new Packages.com.fasterxml.jackson.core.JsonFactory().createParser(new java.io.File(aFile))
+    var token = parser.nextToken()
     while (token != null && !stopped) {
-      if (nodes % 4096 == 0 && isFunction(opts.cancel) && opts.cancel()) throw "JSON scan cancelled";
-      if (isFunction(opts.progress) && nodes % 4096 == 0) opts.progress(offset());
-      var name = String(token), parent = stack[stack.length - 1];
+      if (nodes % 4096 == 0 && isFunction(opts.cancel) && opts.cancel()) throw "JSON scan cancelled"
+      if (isFunction(opts.progress) && nodes % 4096 == 0) opts.progress(offset())
+      var name = String(token), parent = stack[stack.length - 1]
       if (name == "FIELD_NAME") {
-        parent.key = String(parser.currentName());
-        token = parser.nextToken();
-        continue;
+        parent.key = String(parser.currentName())
+        token = parser.nextToken()
+        continue
       }
       if (name == "END_OBJECT" || name == "END_ARRAY") {
-        var frame = stack.pop();
+        var frame = stack.pop()
         emit({phase:"end", path:frame.path, type:frame.type, start:frame.start,
-              end:Number(parser.currentLocation().getByteOffset()), size:frame.count});
-        token = stopped ? null : parser.nextToken();
-        continue;
+              end:Number(parser.currentLocation().getByteOffset()), size:frame.count})
+        token = stopped ? null : parser.nextToken()
+        continue
       }
-      if (!parent && roots++ > 0) throw "Multiple JSON root values";
-      var path = parent ? parent.path.concat([parent.type == "array" ? parent.count : parent.key]) : [];
-      if (parent) parent.count++;
+      if (!parent && roots++ > 0) throw "Multiple JSON root values"
+      var path = parent ? parent.path.concat([parent.type == "array" ? parent.count : parent.key]) : []
+      if (parent) parent.count++
       var type = name == "START_OBJECT" ? "map" : name == "START_ARRAY" ? "array" :
                  name == "VALUE_STRING" ? "string" : name == "VALUE_NULL" ? "null" :
-                 name == "VALUE_TRUE" || name == "VALUE_FALSE" ? "boolean" : "number";
-      var event = {phase:"value", path:path, type:type, start:offset()};
-      if (++nodes > (opts.maxNodes || Infinity)) throw "JSON node limit exceeded";
-      var action = aVisitor(event);
+                 name == "VALUE_TRUE" || name == "VALUE_FALSE" ? "boolean" : "number"
+      var event = {phase:"value", path:path, type:type, start:offset()}
+      if (++nodes > (opts.maxNodes || Infinity)) throw "JSON node limit exceeded"
+      var action = aVisitor(event)
       if (action == "stop") { stopped = true; break; }
       if (type == "map" || type == "array") {
         if (action != "skip") {
-          stack.push({path:path, type:type, start:event.start, count:0});
-          token = parser.nextToken();
-          continue;
+          stack.push({path:path, type:type, start:event.start, count:0})
+          token = parser.nextToken()
+          continue
         }
-        parser.skipChildren();
-        event.end = Number(parser.currentLocation().getByteOffset());
-        token = parser.nextToken();
+        parser.skipChildren()
+        event.end = Number(parser.currentLocation().getByteOffset())
+        token = parser.nextToken()
       } else {
-        token = parser.nextToken();
-        event.end = endScalar(token == null ? Number(ranges.length()) : offset());
+        token = parser.nextToken()
+        event.end = endScalar(token == null ? Number(ranges.length()) : offset())
       }
-      emit({phase:"end", path:event.path, type:event.type, start:event.start, end:event.end});
+      emit({phase:"end", path:event.path, type:event.type, start:event.start, end:event.end})
     }
-    if (!stopped && (roots != 1 || stack.length)) throw "Incomplete JSON document";
-    return {complete:!stopped, nodes:nodes, bytes:Number(parser.currentLocation().getByteOffset())};
+    if (!stopped && (roots != 1 || stack.length)) throw "Incomplete JSON document"
+    return {complete:!stopped, nodes:nodes, bytes:Number(parser.currentLocation().getByteOffset())}
   } finally { try { if (parser) parser.close(); } finally { ranges.close(); } }
-};
+}
 
 /**
  * <odoc>
@@ -15026,23 +15026,23 @@ IO.prototype.scanJSON = function(aFile, aVisitor, aOptions) {
  * </odoc>
  */
 IO.prototype.copyJSONRange = function(aFile, aStart, anEnd, anOutputStream, aOptions) {
-  var input = new java.io.RandomAccessFile(aFile, "r"), opts = aOptions || {}, chunks = 0;
+  var input = new java.io.RandomAccessFile(aFile, "r"), opts = aOptions || {}, chunks = 0
   try {
-    if (aStart < 0 || anEnd < aStart || anEnd > Number(input.length())) throw "Invalid JSON byte range";
-    input.seek(aStart);
-    var buffer = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 65536), left = anEnd - aStart;
+    if (aStart < 0 || anEnd < aStart || anEnd > Number(input.length())) throw "Invalid JSON byte range"
+    input.seek(aStart)
+    var buffer = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 65536), left = anEnd - aStart
     while (left > 0) {
       if (chunks++ % 64 == 0) {
-        if (isFunction(opts.cancel) && opts.cancel()) throw "JSON copy cancelled";
-        if (isFunction(opts.progress)) opts.progress(anEnd - aStart - left);
+        if (isFunction(opts.cancel) && opts.cancel()) throw "JSON copy cancelled"
+        if (isFunction(opts.progress)) opts.progress(anEnd - aStart - left)
       }
-      var n = input.read(buffer, 0, Math.min(left, buffer.length));
-      if (n < 0) throw "JSON source changed during copy";
-      anOutputStream.write(buffer, 0, n);
-      left -= n;
+      var n = input.read(buffer, 0, Math.min(left, buffer.length))
+      if (n < 0) throw "JSON source changed during copy"
+      anOutputStream.write(buffer, 0, n)
+      left -= n
     }
   } finally { input.close(); }
-};
+}
 
 /**
  * <odoc>
@@ -15055,23 +15055,23 @@ IO.prototype.copyJSONRange = function(aFile, aStart, anEnd, anOutputStream, aOpt
  * </odoc>
  */
 IO.prototype.extractJSON = function(aFile, aPath, anOutputStream, aOptions) {
-  _$(aPath, "aPath").isArray().$_();
+  _$(aPath, "aPath").isArray().$_()
   aPath.forEach(k => {
-    if (!isString(k) && !(isNumber(k) && k >= 0 && Math.floor(k) == k)) throw "Invalid JSON path segment";
-  });
-  var selected;
+    if (!isString(k) && !(isNumber(k) && k >= 0 && Math.floor(k) == k)) throw "Invalid JSON path segment"
+  })
+  var selected
   this.scanJSON(aFile, e => {
-    var prefix = e.path.length <= aPath.length && e.path.every((k, i) => k === aPath[i]);
-    if (e.phase == "value" && (!prefix || e.path.length == aPath.length)) return "skip";
+    var prefix = e.path.length <= aPath.length && e.path.every((k, i) => k === aPath[i])
+    if (e.phase == "value" && (!prefix || e.path.length == aPath.length)) return "skip"
     if (e.phase == "end" && prefix && e.path.length == aPath.length) {
-      selected = e;
-      return "stop";
+      selected = e
+      return "stop"
     }
-  }, aOptions);
-  if (!selected) return false;
-  this.copyJSONRange(aFile, selected.start, selected.end, anOutputStream, aOptions);
-  return true;
-};
+  }, aOptions)
+  if (!selected) return false
+  this.copyJSONRange(aFile, selected.start, selected.end, anOutputStream, aOptions)
+  return true
+}
 
 /**
  * <odoc>
@@ -15082,8 +15082,8 @@ IO.prototype.extractJSON = function(aFile, aPath, anOutputStream, aOptions) {
  * </odoc>
  */
 const askConsole = () => {
-  plugin("Console");
-  var con = new Console(true), term = con.getConsoleReader().getTerminal().unwrap();
+  plugin("Console")
+  var con = new Console(true), term = con.getConsoleReader().getTerminal().unwrap()
   return {
     console:con, ansi:con.isAnsiSupported() && String(term.getType()) != "windows",
     write:function(text, newline) { term.writer().print((isDef(text) ? String(text) : "") + (newline === false ? "" : "\n")); term.writer().flush(); },
@@ -15095,8 +15095,8 @@ const askConsole = () => {
     raw:function(aFn) { var attrs = term.enterRawMode(); try { return aFn(); } finally { term.setAttributes(attrs); } },
     // Switches the alternate screen buffer (and hides/shows the cursor) on or off.
     altScreen:function(on) { term.writer().print(on ? "\x1b[?1049h\x1b[?25l\x1b[2J\x1b[H" : "\x1b[?25h\x1b[?1049l"); term.writer().flush(); }
-  };
-};
+  }
+}
 
 /**
  * <odoc>
@@ -15655,8 +15655,8 @@ const ask = (aPrompt, aMask, _con, noAnsi, aWrite, aOptions) => {
  */
 const askEncrypt = (aPrompt, _con, noAnsi, aWrite, aOptions) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
-	var v = ask(aPrompt, String.fromCharCode(0), _con, noAnsi, aWrite, aOptions);
-	if (v == null || isString(v) && v == "") return __;
+	var v = ask(aPrompt, String.fromCharCode(0), _con, noAnsi, aWrite, aOptions)
+	if (v == null || isString(v) && v == "") return __
 	return af.encrypt(v);
 }
 
@@ -15706,8 +15706,8 @@ const askN = (aPromptFn, aStopFn, _con, aOptions) => {
 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	var r = "";
 	do {
-		var l = isDef(aOptions) ? ask(aPromptFn(r), __, _con, true, __, aOptions) : _con.readLinePrompt(aPromptFn(r));
-		if (l == null) return r;
+		var l = isDef(aOptions) ? ask(aPromptFn(r), __, _con, true, __, aOptions) : _con.readLinePrompt(aPromptFn(r))
+		if (l == null) return r
 		r += l + "\n";
 	} while (!aStopFn(r));
 	return r;
@@ -15725,8 +15725,8 @@ const askDef = (aInit, aQuestion, isSecret, isVoidable, aUI, aOptions) => {
 	aQuestion = _$(aQuestion, "aQuestion").isString().default("Question: ");
 	if (isUnDef(aInit)) {
 		var r;
-		if (isSecret) r = askEncrypt(aQuestion, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions);
-		else r = ask(aQuestion, __, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions);
+		if (isSecret) r = askEncrypt(aQuestion, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions)
+		else r = ask(aQuestion, __, aUI, aUI && !aUI.ansi, aUI && aUI.write, aOptions)
 		if (isVoidable && isString(r) && r.length == 0) r = __;
 		return r; 
 	} else {
@@ -15887,19 +15887,19 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI, aOptio
 	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, space to select, enter to submit)"))
 
 
-  if (!anArray.length) return [];
-  var _write = aUI ? aUI.write : printErr;
-  var _move = n => aUI ? _write("\x1b[" + n + "A", false) : ow.format.string.ansiMoveUp(n);
+  if (!anArray.length) return []
+  var _write = aUI ? aUI.write : printErr
+  var _move = n => aUI ? _write("\x1b[" + n + "A", false) : ow.format.string.ansiMoveUp(n)
   if (aUI && !aUI.ansi) {
     while (true) {
-      anArray.forEach((text, i) => _write((i + 1) + ". " + text));
-      var answer = ask(aPrompt + " [comma-separated numbers, blank for none]: ", __, aUI, true, _write, aOptions);
-      if (answer == null) return __;
-      if (answer.trim() === "") return [];
-      var parts = answer.split(",").map(v => v.trim());
+      anArray.forEach((text, i) => _write((i + 1) + ". " + text))
+      var answer = ask(aPrompt + " [comma-separated numbers, blank for none]: ", __, aUI, true, _write, aOptions)
+      if (answer == null) return __
+      if (answer.trim() === "") return []
+      var parts = answer.split(",").map(v => v.trim())
       if (parts.every(v => /^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= anArray.length)) {
-        var indices = parts.map(Number);
-        return anArray.filter((v, i) => indices.indexOf(i + 1) >= 0);
+        var indices = parts.map(Number)
+        return anArray.filter((v, i) => indices.indexOf(i + 1) >= 0)
       }
     }
   }
@@ -15931,7 +15931,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI, aOptio
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
 		_write("\x1B[?25l" + _v)
 
-		aMaxDisplay = Math.max(1, Math.floor(aMaxDisplay));
+		aMaxDisplay = Math.max(1, Math.floor(aMaxDisplay))
 		let option = 0, firstTime = true, span = 0, cancelled = false
 		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
 		let _print = () => {
@@ -15989,7 +15989,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText, aUI, aOptio
 					if (c > 32 && c < 255) filter += _c
 				}
 				if (filter.length > 0) {
-					var found = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0);
+					var found = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 					if (found >= 0) option = found
 				}
 			}
@@ -16553,8 +16553,8 @@ oPromise.prototype.__exec = function() {
 
         do {
                 try {
-                        var __pl = __getThreadPool(this.vThreads);
-                        thisOP.__pool = __pl;
+                        var __pl = __getThreadPool(this.vThreads)
+                        thisOP.__pool = __pl
                         this.__f = __pl.submit(new java.lang.Runnable({
                                 run: () => {
                                         //var ignore = false;
@@ -16648,48 +16648,48 @@ oPromise.prototype.__exec = function() {
  * </odoc>
  */
 const joniRegExp = (pattern, options) => {
-  var compiled = af.joniJava(pattern, options);
+  var compiled = af.joniJava(pattern, options)
   var substitute = (template, m, input) => {
     return template.replace(/\$([$&`']|[0-9]{1,2}|<[^>]*>)/g, (token, key) => {
-      if (key == "$") return "$";
-      if (key == "&") return m.text;
-      if (key == "`") return input.slice(0, m.index);
-      if (key == "'") return input.slice(m.end);
+      if (key == "$") return "$"
+      if (key == "&") return m.text
+      if (key == "`") return input.slice(0, m.index)
+      if (key == "'") return input.slice(m.end)
       if (key.charAt(0) == "<") {
-        if (Object.keys(m.groups).length == 0) return token;
-        var name = key.slice(1, -1);
-        return Object.prototype.hasOwnProperty.call(m.groups, name) && isDef(m.groups[name]) ? m.groups[name] : "";
+        if (Object.keys(m.groups).length == 0) return token
+        var name = key.slice(1, -1)
+        return Object.prototype.hasOwnProperty.call(m.groups, name) && isDef(m.groups[name]) ? m.groups[name] : ""
       }
-      var n = Number(key);
-      if (n > 0 && n <= m.captures.length) return isDef(m.captures[n - 1]) ? m.captures[n - 1] : "";
+      var n = Number(key)
+      if (n > 0 && n <= m.captures.length) return isDef(m.captures[n - 1]) ? m.captures[n - 1] : ""
       if (key.length == 2 && Number(key.charAt(0)) > 0 && Number(key.charAt(0)) <= m.captures.length) {
-        var capture = m.captures[Number(key.charAt(0)) - 1];
-        return (isDef(capture) ? capture : "") + key.charAt(1);
+        var capture = m.captures[Number(key.charAt(0)) - 1]
+        return (isDef(capture) ? capture : "") + key.charAt(1)
       }
-      return token;
-    });
-  };
+      return token
+    })
+  }
   var replace = (input, replacement, all) => {
-    if (!isString(replacement) && !isFunction(replacement)) throw new TypeError("replacement must be a string or function");
-    var matches;
-    if (all) matches = compiled.matchAll(input);
+    if (!isString(replacement) && !isFunction(replacement)) throw new TypeError("replacement must be a string or function")
+    var matches
+    if (all) matches = compiled.matchAll(input)
     else {
-      var first = compiled.match(input);
-      matches = first === null ? [] : [first];
+      var first = compiled.match(input)
+      matches = first === null ? [] : [first]
     }
-    var out = [], last = 0;
+    var out = [], last = 0
     matches.forEach(m => {
-      out.push(input.slice(last, m.index));
+      out.push(input.slice(last, m.index))
       if (isFunction(replacement)) {
-        var args = [m.text].concat(m.captures, [m.index, input]);
-        if (Object.keys(m.groups).length > 0) args.push(m.groups);
-        out.push(String(replacement.apply(undefined, args)));
-      } else out.push(substitute(replacement, m, input));
-      last = m.end;
-    });
-    out.push(input.slice(last));
-    return out.join("");
-  };
+        var args = [m.text].concat(m.captures, [m.index, input])
+        if (Object.keys(m.groups).length > 0) args.push(m.groups)
+        out.push(String(replacement.apply(undefined, args)))
+      } else out.push(substitute(replacement, m, input))
+      last = m.end
+    })
+    out.push(input.slice(last))
+    return out.join("")
+  }
   return {
     test: input => compiled.test(input),
     match: input => compiled.match(input),
@@ -16697,8 +16697,8 @@ const joniRegExp = (pattern, options) => {
     replace: (input, replacement) => replace(input, replacement, false),
     replaceAll: (input, replacement) => replace(input, replacement, true),
     split: (input, limit) => compiled.split(input, limit)
-  };
-};
+  }
+}
 
 const javaRegExp = (text) => {
 	var s = java.lang.String(text);
@@ -16863,7 +16863,7 @@ const includeOPack = function(aOPackName, aMinVersion) {
 
 	if (aOPackName.toLowerCase() == "openaf") {
 		if (isDef(aMinVersion)) {
-			if (ow.loadFormat().compareVersion(getVersion(), aMinVersion) < 0) throw("The OpenAF version is " + getVersion() + ". It needs to be updated to " + aMinVersion);
+			if (ow.loadFormat().compareVersion(getVersion(), aMinVersion) < 0) throw("The OpenAF version is " + getVersion() + ". It needs to be updated to " + aMinVersion)
 		}
 		return true;
 	}
@@ -16889,7 +16889,7 @@ const includeOPack = function(aOPackName, aMinVersion) {
 		if (ow.loadFormat().compareVersion(version, aMinVersion) < 0) {
 			oPack("update " + aOPackName);
 			version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
-			if (ow.loadFormat().compareVersion(version, aMinVersion) < 0) throw "Couldn't update opack " + aOPackName + " from version " + version + " to >=" + aMinVersion;
+			if (ow.loadFormat().compareVersion(version, aMinVersion) < 0) throw "Couldn't update opack " + aOPackName + " from version " + version + " to >=" + aMinVersion
 		}
 	}    
 	return true;
@@ -18589,12 +18589,12 @@ const $unset = function(aK) {
 
 // Ignore unsupported preferences so existing output remains usable.
 function __defaultTableFormat() {
-	var format = (__colorFormat.table || {}).format;
+	var format = (__colorFormat.table || {}).format
 	if (isString(format)) {
-		format = format.toLowerCase();
-		if (["table", "stable", "ctable", "btable", "bstable"].indexOf(format) >= 0) return format;
+		format = format.toLowerCase()
+		if (["table", "stable", "ctable", "btable", "bstable"].indexOf(format) >= 0) return format
 	}
-	return __;
+	return __
 }
 
 /**
@@ -18794,22 +18794,22 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			break
 	        case "bstable":
 		case "btable":
-			var tableWidth = isDef(args.__width) ? args.__width : args.__WIDTH;
+			var tableWidth = isDef(args.__width) ? args.__width : args.__WIDTH
 			// bstable always uses row separators (without changing the caller's args)
-			var tableRowSep = format == "bstable" ? true : (isDef(args.__rowsep) ? args.__rowsep : args.__ROWSEP);
+			var tableRowSep = format == "bstable" ? true : (isDef(args.__rowsep) ? args.__rowsep : args.__ROWSEP)
 			if (isDef(tableWidth)) {
 				if ((!isNumber(tableWidth) && !isString(tableWidth)) || String(tableWidth).trim() == "" ||
 					!Number.isSafeInteger(Number(tableWidth)) || Number(tableWidth) <= 0) {
-					throw new Error("btable __width must be a positive integer");
+					throw new Error("btable __width must be a positive integer")
 				}
-				tableWidth = Number(tableWidth);
+				tableWidth = Number(tableWidth)
 			} else if (isDef(__con) && __con != "") {
-				var terminalWidth = __con.getTerminal().getWidth();
-				if (terminalWidth > 0) tableWidth = terminalWidth;
+				var terminalWidth = __con.getTerminal().getWidth()
+				if (terminalWidth > 0) tableWidth = terminalWidth
 			}
-			if (isMap(res)) res = [res];
-			if (isArray(res)) return fnP(printTable(res, tableWidth, true, __conAnsi, "borderless", __, true, toBoolean(tableRowSep) === true, true));
-			break;
+			if (isMap(res)) res = [res]
+			if (isArray(res)) return fnP(printTable(res, tableWidth, true, __conAnsi, "borderless", __, true, toBoolean(tableRowSep) === true, true))
+			break
 		case "ctable":
 			__ansiColorFlag = true
 			__conConsole = true

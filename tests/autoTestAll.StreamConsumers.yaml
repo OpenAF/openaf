@@ -1,24 +1,26 @@
 include:
   - autoTestAll.common.yaml
+
 jobs:
   - name: StreamConsumers::Init
-    exec: args.tests = require("autoTestAll.StreamConsumers.js");
+    exec: args.tests = require("autoTestAll.StreamConsumers.js")
   - name: StreamConsumers::Text codecs and fallbacks
     from: StreamConsumers::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testTextCodecs;
+    exec: args.func = args.tests.testTextCodecs
   - name: StreamConsumers::Images
     from: StreamConsumers::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testImageConsumers;
+    exec: args.func = args.tests.testImageConsumers
   - name: StreamConsumers::Generic output
     from: StreamConsumers::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testGenericOutput;
+    exec: args.func = args.tests.testGenericOutput
   - name: StreamConsumers::HTTP templates
     from: StreamConsumers::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testHTTPTemplates;
+    exec: args.func = args.tests.testHTTPTemplates
+
 todo:
   - StreamConsumers::HTTP templates
   - StreamConsumers::Text codecs and fallbacks

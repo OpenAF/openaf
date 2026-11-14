@@ -73,17 +73,17 @@ public class JMX extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>JMX.JMX(aURL, aLogin, aPassword, aProvider) : JMX</key>
-	 * <![CDATA[
-	 * Creates an instance to connect to `aURL` (e.g. service:jmx:rmi:///jndi/rmi://127.0.0.1:12345/jmxrmi). If needed `aLogin`
-	 * and `aPassword` can be provided. `aProvider` can also be specified to access custom MX bean classes (e.g. WebLogic application servers).
-	 * Example:
-	 *
-	 * ```javascript
-	 * var jmx = new JMX("service:jmx:rmi:///jndi/rmi://127.0.0.1:12345/jmxrmi");
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Creates an instance to connect to `aURL` (e.g. service:jmx:rmi:///jndi/rmi://127.0.0.1:12345/jmxrmi). If needed `aLogin`
+     * and `aPassword` can be provided. `aProvider` can also be specified to access custom MX bean classes (e.g. WebLogic application servers).
+     * Example:
+     *
+     * ```javascript
+     * var jmx = new JMX("service:jmx:rmi:///jndi/rmi://127.0.0.1:12345/jmxrmi");
+     * ```
+     * ]]>
 	 * </odoc>
 	 * @throws IllegalAccessException 
 	 * @throws InstantiationException 
@@ -277,16 +277,16 @@ public class JMX extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>JMX.getObject(aObjName) : Object</key>
-	 * <![CDATA[
-	 * Obtains a bean `aObject` (e.g. `aObjName` = "com.openaf:type=Values").
-	 * Example:
-	 *
-	 * ```javascript
-	 * jmx.getObject("com.openaf:type=Values");
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Obtains a bean `aObject` (e.g. `aObjName` = "com.openaf:type=Values").
+     * Example:
+     *
+     * ```javascript
+     * jmx.getObject("com.openaf:type=Values");
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction

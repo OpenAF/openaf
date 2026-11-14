@@ -3,17 +3,17 @@ include:
 
 jobs:
   - name: Repack::Init
-    exec: args.tests = require("autoTestAll.Repack.js");
+    exec: args.tests = require("autoTestAll.Repack.js")
 
   - name: Repack::Open JAR survives replacement
     from: Repack::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testOpenJar;
+    exec: args.func = args.tests.testOpenJar
 
   - name: Repack::Failed replacement preserves JAR
     from: Repack::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testFailedReplacement;
+    exec: args.func = args.tests.testFailedReplacement
 
 todo:
   - Repack::Open JAR survives replacement

@@ -233,11 +233,11 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0 || forceRepack) 
 					(elTemp.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor")) {
 					// JLine modules contribute different providers under one SPI descriptor.
                     if (elTemp.name == "META-INF/services/org.jline.terminal.spi.TerminalProvider") {
-                        var providers = af.fromBytes2String(zipTemp.getFile(elTemp.name));
-                        if (isDef(zipNew.list()[elTemp.name])) providers = af.fromBytes2String(zipNew.getFile(elTemp.name)) + "\n" + providers;
-                        zipNew.putFile(elTemp.name, af.fromString2Bytes(providers));
+                        var providers = af.fromBytes2String(zipTemp.getFile(elTemp.name))
+                        if (isDef(zipNew.list()[elTemp.name])) providers = af.fromBytes2String(zipNew.getFile(elTemp.name)) + "\n" + providers
+                        zipNew.putFile(elTemp.name, af.fromString2Bytes(providers))
                     } else {
-                        zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));
+                        zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name))
                     }
 				}
 			}
@@ -326,9 +326,9 @@ if (createTmp) {
 // Create archived classes (CDS)
 log("(re)Creating OpenAF shared archive...");
 try {
-	require(getOpenAFJar() + "::js/repackCDS.js").create();
+	require(getOpenAFJar() + "::js/repackCDS.js").create()
 } catch(e) {
-	logErr("Error creating OpenAF shared archive: " + e);
+	logErr("Error creating OpenAF shared archive: " + e)
 }
 
 log("Done repacking OpenAF.jar");

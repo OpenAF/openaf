@@ -5,12 +5,12 @@ include:
 
 jobs:
   - name: SecurityHTTP::Init
-    exec: args.tests = require("autoTestAll.SecurityHTTP.js");
+    exec: args.tests = require("autoTestAll.SecurityHTTP.js")
 
   - name: SecurityHTTP::Credential isolation
     from: SecurityHTTP::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testCredentialIsolation;
+    exec: args.func = args.tests.testCredentialIsolation
 
 todo:
   - SecurityHTTP::Init

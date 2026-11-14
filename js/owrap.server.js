@@ -1279,7 +1279,7 @@ OpenWrap.server.prototype.locks = function(justInternal, aCh, aOptions) {
 			if (isString(justInternal) && justInternal == "cluster") {
 				$ch(this.name).create(1, "simple");
 			} else {
-				$ch(this.name).create(1, "ignite", aOptions);
+				$ch(this.name).create(1, "ignite", aOptions)
 			}
 		}
 	}
@@ -1314,19 +1314,19 @@ OpenWrap.server.prototype.locks.prototype.setRetries = function(aNumber) {
  * </odoc>
  */
 OpenWrap.server.prototype.locks.prototype.isLocked = function(aLockName) {
-	var channel = $ch(this.name), key = { lock: aLockName };
-	var r = channel.get(key);
+	var channel = $ch(this.name), key = { lock: aLockName }
+	var r = channel.get(key)
 	if (isUnDef(r)) {
 		// Never overwrite another node's newly acquired lock during initialization.
-		channel.getSet(function(current) { return isUnDef(current); }, key, { lock: aLockName, value: false });
-		r = channel.get(key);
+		channel.getSet(function(current) { return isUnDef(current); }, key, { lock: aLockName, value: false })
+		r = channel.get(key)
 	}
 	if (r.value == true && isDef(r.timeout) && !isNull(r.timeout) && nowUTC() >= r.timeout) {
 		// An extension or a new acquisition must not be released by a stale read.
 		channel.getSet(function(current) {
-			return isDef(current) && current.value === true && current.timeout === r.timeout && nowUTC() >= current.timeout;
-		}, key, { lock: aLockName, value: false });
-		r = channel.get(key);
+			return isDef(current) && current.value === true && current.timeout === r.timeout && nowUTC() >= current.timeout
+		}, key, { lock: aLockName, value: false })
+		r = channel.get(key)
 	}
 	return r;
 };
@@ -2362,7 +2362,7 @@ OpenWrap.server.prototype.telemetry = {
     passive: function(aHs, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp, openMetricsStrict) {
 		aHs  = _$(aHs, "server").default("7777");
 		useOpenMetrics = _$(useOpenMetrics, "useOpenMetrics").default(false);
-		openMetricsStrict = _$(openMetricsStrict, "openMetricsStrict").isBoolean().default(true);
+		openMetricsStrict = _$(openMetricsStrict, "openMetricsStrict").isBoolean().default(true)
 		aURI = _$(aURI, "uri").isString().default((useOpenMetrics ? "/metrics" : "/healthz"));
 
 		if (isNumber(aHs)) aHs = ow.server.httpd.start(aHs);
@@ -2370,20 +2370,20 @@ OpenWrap.server.prototype.telemetry = {
 
 		var r = {};
 		r[aURI] = (r, aH) => {
-			var params = r.params || {};
+			var params = r.params || {}
 			var om = useOpenMetrics
 			if (params.f == "json") om = false
 			if (params.f == "om")   om = true
 			
 			try {
-				var metrics = isDef(params.s) ? ow.metrics.getSome(params.s.split(",")) : ow.metrics.getAll();
-				if (!om) return ow.server.httpd.reply(metrics);
-				var text = ow.metrics.fromObj2OpenMetrics(metrics, openMetricsPrefix, openMetricsStrict ? __ : now(), openMetricsHelp, __, openMetricsStrict);
+				var metrics = isDef(params.s) ? ow.metrics.getSome(params.s.split(",")) : ow.metrics.getAll()
+				if (!om) return ow.server.httpd.reply(metrics)
+				var text = ow.metrics.fromObj2OpenMetrics(metrics, openMetricsPrefix, openMetricsStrict ? __ : now(), openMetricsHelp, __, openMetricsStrict)
 				return aHs.reply(text, openMetricsStrict ?
-					"application/openmetrics-text; version=1.0.0; charset=utf-8" : "text/plain; version=0.0.4; charset=utf-8", 200, {});
+					"application/openmetrics-text; version=1.0.0; charset=utf-8" : "text/plain; version=0.0.4; charset=utf-8", 200, {})
 			} catch(e) {
 				sprintErr(e);
-				return ow.server.httpd.reply("Unable to collect metrics\n", 500, "text/plain; charset=utf-8");
+				return ow.server.httpd.reply("Unable to collect metrics\n", 500, "text/plain; charset=utf-8")
 			}
 		};
 		ow.server.httpd.route(aHs, ow.server.httpd.mapWithExistingRoutes(aHs, r));
@@ -3270,9 +3270,9 @@ OpenWrap.server.prototype.httpd = {
     // NIO locks are process-wide; pair them with a JVM-local mutex and bound both waits.
     // Do not use $flock.tryLock: it can swallow exceptions thrown by its callback.
     var _withOAuthFileLock = (file, timeout, fn) => {
-        var result, deadline = now() + timeout;
+        var result, deadline = now() + timeout
         var acquired = $lock("mcp-oauth-file-" + file).tryLock(() => {
-            var handle, lock;
+            var handle, lock
             try {
                 try { handle = new java.io.RandomAccessFile(file, "rw"); }
                 catch(e) { throw new Error("OAuth credential storage lock failed"); }
@@ -3280,87 +3280,87 @@ OpenWrap.server.prototype.httpd = {
                     try { lock = handle.getChannel().tryLock(); }
                     catch(e) {
                         if (!(e.javaException instanceof java.nio.channels.OverlappingFileLockException)) {
-                            throw new Error("OAuth credential storage lock failed");
+                            throw new Error("OAuth credential storage lock failed")
                         }
                     }
-                    if (isDef(lock) && !isNull(lock)) break;
-                    if (now() >= deadline) throw new Error("OAuth credential storage lock timed out");
-                    sleep(Math.min(50, Math.max(1, deadline - now())), true);
+                    if (isDef(lock) && !isNull(lock)) break
+                    if (now() >= deadline) throw new Error("OAuth credential storage lock timed out")
+                    sleep(Math.min(50, Math.max(1, deadline - now())), true)
                 }
-                result = fn();
+                result = fn()
             } finally {
                 try { if (isDef(lock) && !isNull(lock)) lock.release(); }
                 finally { if (isDef(handle)) handle.close(); }
             }
-        }, timeout);
-        if (!acquired) throw new Error("OAuth credential storage lock timed out");
-        return result;
-    };
+        }, timeout)
+        if (!acquired) throw new Error("OAuth credential storage lock timed out")
+        return result
+    }
     var _createOAuthSecretFile = (file, content) => {
-        var path = new java.io.File(file).toPath();
-        var attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 0);
-        var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix");
+        var path = new java.io.File(file).toPath()
+        var attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 0)
+        var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix")
         if (posix) {
-            attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 1);
+            attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 1)
             attrs[0] = java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
-                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"))
         }
         if (!io.fileExists(file)) {
-            java.nio.file.Files.createFile(path, attrs);
-            io.writeFileString(file, content);
+            java.nio.file.Files.createFile(path, attrs)
+            io.writeFileString(file, content)
         } else if (posix) {
             java.nio.file.Files.setPosixFilePermissions(path,
-                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"))
         }
-    };
+    }
     var _secTokenStore = cfg => {
-        var repo = _$(cfg.repo, "auth.tokenStore.repo").isString().default(defaultRepo);
-        if (!/^[a-zA-Z0-9_-]+$/.test(repo) || repo == "system") throw new Error("OAuth tokenStore requires a file-backed SBucket repo name");
-        var file = _$(cfg.file, "auth.tokenStore.file").isString().default(__gHDir() + "/.openaf-sec-" + repo + ".yml");
-        file = String(new java.io.File(file).getCanonicalPath());
-        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000);
-        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive");
-        var sec;
+        var repo = _$(cfg.repo, "auth.tokenStore.repo").isString().default(defaultRepo)
+        if (!/^[a-zA-Z0-9_-]+$/.test(repo) || repo == "system") throw new Error("OAuth tokenStore requires a file-backed SBucket repo name")
+        var file = _$(cfg.file, "auth.tokenStore.file").isString().default(__gHDir() + "/.openaf-sec-" + repo + ".yml")
+        file = String(new java.io.File(file).getCanonicalPath())
+        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000)
+        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive")
+        var sec
         return {
             withLock: (key, fn) => _withOAuthFileLock(file + ".lock", timeout, () => {
                 // A private channel alias avoids closing or reusing the caller's $sec handle.
-                var alias = "mcp-oauth-" + sha256(file), mainSecret = cfg.mainSecret;
+                var alias = "mcp-oauth-" + sha256(file), mainSecret = cfg.mainSecret
                 try {
-                    ow.loadSec();
+                    ow.loadSec()
                     if (isUnDef(mainSecret)) {
-                        var mainFile = String(new java.io.File(__gHDir() + "/.openaf-sec").getCanonicalPath());
+                        var mainFile = String(new java.io.File(__gHDir() + "/.openaf-sec").getCanonicalPath())
                         _withOAuthFileLock(mainFile + ".lock", timeout, () => {
                             try {
-                                _createOAuthSecretFile(mainFile, af.encrypt(sha512(genUUID())));
-                                mainSecret = io.readFileString(mainFile);
-                                if (mainSecret.length == 0) throw new Error("Empty key file");
+                                _createOAuthSecretFile(mainFile, af.encrypt(sha512(genUUID())))
+                                mainSecret = io.readFileString(mainFile)
+                                if (mainSecret.length == 0) throw new Error("Empty key file")
                             } catch(e) { throw new Error("OAuth credential storage key initialization failed"); }
-                        });
+                        })
                     }
                     try {
-                        _createOAuthSecretFile(file, "{}\n");
-                        if (!isMap(io.readFileYAML(file))) throw new Error("Invalid repository");
-                        sec = $sec(alias, cfg.bucket, cfg.lockSecret, mainSecret, file);
+                        _createOAuthSecretFile(file, "{}\n")
+                        if (!isMap(io.readFileYAML(file))) throw new Error("Invalid repository")
+                        sec = $sec(alias, cfg.bucket, cfg.lockSecret, mainSecret, file)
                     } catch(e) { throw new Error("OAuth credential storage read failed"); }
-                    return fn();
+                    return fn()
                 } finally {
                     if (isDef(sec)) { sec.close(); sec = __; }
                 }
             }),
             load: key => {
                 // Determine absence structurally; never interpret a decryption error as a miss.
-                var bucket = isString(cfg.bucket) ? cfg.bucket : "default";
-                var raw = io.readFileYAML(file);
-                if (!isMap(raw) || Object.keys(raw).some(k => !isMap(raw[k]))) throw new Error("Invalid repository");
-                if (isUnDef(raw[bucket])) return __;
-                if (raw[bucket].sbucket !== bucket || !isString(raw[bucket].v)) throw new Error("Invalid encrypted bucket");
-                return sec.get(key);
+                var bucket = isString(cfg.bucket) ? cfg.bucket : "default"
+                var raw = io.readFileYAML(file)
+                if (!isMap(raw) || Object.keys(raw).some(k => !isMap(raw[k]))) throw new Error("Invalid repository")
+                if (isUnDef(raw[bucket])) return __
+                if (raw[bucket].sbucket !== bucket || !isString(raw[bucket].v)) throw new Error("Invalid encrypted bucket")
+                return sec.get(key)
             },
             save: (key, record) => sec.set(key, record),
             clear: key => sec.unset(key)
-        };
-    };
-    return _secTokenStore(cfg);
+        }
+    }
+    return _secTokenStore(cfg)
   },
 
   /**
@@ -3381,66 +3381,66 @@ OpenWrap.server.prototype.httpd = {
    * </odoc>
    */
   oauth2: function(aOptions) {
-    aOptions = _$(aOptions, "oauth2 options").isMap().$_();
-    var httpd = this, pending, token, refreshToken, tokenType = "Bearer", expiresAt = 0;
-    var storeFailed = false, store, storeKey, storeHasRecord = false;
-    var lockName = "httpd-oauth2-" + genUUID();
+    aOptions = _$(aOptions, "oauth2 options").isMap().$_()
+    var httpd = this, pending, token, refreshToken, tokenType = "Bearer", expiresAt = 0
+    var storeFailed = false, store, storeKey, storeHasRecord = false
+    var lockName = "httpd-oauth2-" + genUUID()
     // Retain the caller's options, like $mcp, so operator policy can change between attempts.
     var storeConfig = function() {
-      return isUnDef(aOptions.tokenStore) ? { type: "sec", repo: "oauth2" } : aOptions.tokenStore;
-    };
+      return isUnDef(aOptions.tokenStore) ? { type: "sec", repo: "oauth2" } : aOptions.tokenStore
+    }
     var positive = function(value, name, fallback) {
-      value = _$(value, name).isNumber().default(fallback);
-      if (!isFinite(value) || value <= 0) throw new Error("OAuth " + name + " must be positive");
-      return value;
-    };
+      value = _$(value, name).isNumber().default(fallback)
+      if (!isFinite(value) || value <= 0) throw new Error("OAuth " + name + " must be positive")
+      return value
+    }
     var validate = function() {
       ["authURL", "tokenURL", "clientId", "redirectURI"].forEach(function(name) {
-        _$(aOptions[name], "oauth2." + name).isString().$_();
-        if (!aOptions[name].length) throw new Error("OAuth " + name + " is required");
+        _$(aOptions[name], "oauth2." + name).isString().$_()
+        if (!aOptions[name].length) throw new Error("OAuth " + name + " is required")
       });
       ["authURL", "tokenURL"].forEach(function(name) {
-        var endpoint;
+        var endpoint
         try { endpoint = new java.net.URI(aOptions[name]); } catch(e) {}
         if (isUnDef(endpoint) || ["http", "https"].indexOf(String(endpoint.getScheme())) < 0 ||
             endpoint.getHost() === null || endpoint.getRawUserInfo() !== null || endpoint.getRawFragment() !== null) {
-          throw new Error("OAuth " + name + " requires an HTTP(S) endpoint");
+          throw new Error("OAuth " + name + " requires an HTTP(S) endpoint")
         }
         // Client secrets, codes, PKCE verifiers and refresh tokens must not travel in clear text to remote hosts
         if (String(endpoint.getScheme()) === "http" && aOptions.allowHTTP !== true &&
             ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(endpoint.getHost()).toLowerCase()) < 0) {
-          throw new Error("OAuth " + name + " requires an HTTPS endpoint (plain HTTP is only allowed for loopback hosts or with allowHTTP=true)");
+          throw new Error("OAuth " + name + " requires an HTTPS endpoint (plain HTTP is only allowed for loopback hosts or with allowHTTP=true)")
         }
-      });
+      })
       var method = aOptions.tokenEndpointAuthMethod
       if (isDef(method) && ["none", "client_secret_basic", "client_secret_post"].indexOf(method) < 0) throw new Error("Unsupported OAuth client authentication method")
       if ((method == "client_secret_basic" || method == "client_secret_post") && (!isString(aOptions.clientSecret) || !aOptions.clientSecret.length)) throw new Error("OAuth client authentication requires a client secret")
-      var uri;
+      var uri
       try { uri = new java.net.URI(aOptions.redirectURI); } catch(e) {}
       if (isUnDef(uri) || String(uri.getScheme()) !== "http" ||
           ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(uri.getHost())) < 0 ||
           uri.getPort() <= 0 || uri.getPort() > 65535 || uri.getRawQuery() !== null ||
           uri.getRawFragment() !== null || uri.getRawUserInfo() !== null) {
-        throw new Error("OAuth callback requires an HTTP loopback redirectURI with an explicit port and no query or fragment");
+        throw new Error("OAuth callback requires an HTTP loopback redirectURI with an explicit port and no query or fragment")
       }
-      positive(aOptions.loginTimeoutMs, "loginTimeoutMs", 300000);
-      positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000);
-      var window = _$(aOptions.refreshWindowMs, "refreshWindowMs").isNumber().default(30000);
-      if (!isFinite(window) || window < 0) throw new Error("OAuth refreshWindowMs must be non-negative");
-      var reservedAuth = ["response_type", "client_id", "redirect_uri", "state", "code_challenge", "code_challenge_method", "scope", "audience", "resource"];
+      positive(aOptions.loginTimeoutMs, "loginTimeoutMs", 300000)
+      positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000)
+      var window = _$(aOptions.refreshWindowMs, "refreshWindowMs").isNumber().default(30000)
+      if (!isFinite(window) || window < 0) throw new Error("OAuth refreshWindowMs must be non-negative")
+      var reservedAuth = ["response_type", "client_id", "redirect_uri", "state", "code_challenge", "code_challenge_method", "scope", "audience", "resource"]
       var reservedToken = ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "refresh_token", "scope", "audience", "resource"];
       [["extraAuthParams", reservedAuth], ["extraParams", reservedToken]].forEach(function(pair) {
         if (isDef(aOptions[pair[0]])) {
-          _$(aOptions[pair[0]], pair[0]).isMap().$_();
+          _$(aOptions[pair[0]], pair[0]).isMap().$_()
           if (pair[1].some(function(k) { return isDef(aOptions[pair[0]][k]); })) {
-            throw new Error("OAuth does not allow protocol field overrides in " + pair[0]);
+            throw new Error("OAuth does not allow protocol field overrides in " + pair[0])
           }
         }
-      });
-      return uri;
-    };
+      })
+      return uri
+    }
     var fingerprint = function(cfg) {
-      var scope = String(aOptions.scope || "").split(/\s+/).filter(function(s) { return s.length > 0; }).sort();
+      var scope = String(aOptions.scope || "").split(/\s+/).filter(function(s) { return s.length > 0; }).sort()
       return sha256(stringify(sortMapKeys({
         version: 1, clientId: aOptions.clientId, authURL: aOptions.authURL, tokenURL: aOptions.tokenURL,
         scope: scope.filter(function(s, i) { return i == 0 || s != scope[i - 1]; }),
@@ -3448,172 +3448,172 @@ OpenWrap.server.prototype.httpd = {
         redirectURI: aOptions.redirectURI, grantType: "authorization_code", profile: cfg.profile || cfg.key || "default",
         extraParams: sha256(stringify(sortMapKeys(aOptions.extraParams || {}, true), __, "")),
         extraAuthParams: sha256(stringify(sortMapKeys(aOptions.extraAuthParams || {}, true), __, ""))
-      }, true), __, ""));
-    };
+      }, true), __, ""))
+    }
     var status = function() {
       return { authenticated: isString(token) && expiresAt > now() && !storeFailed,
-        expiresAt: expiresAt, refreshable: isString(refreshToken), persistent: storeConfig() !== false };
-    };
-    var reset = function() { token = __; refreshToken = __; tokenType = "Bearer"; expiresAt = 0; };
+        expiresAt: expiresAt, refreshable: isString(refreshToken), persistent: storeConfig() !== false }
+    }
+    var reset = function() { token = __; refreshToken = __; tokenType = "Bearer"; expiresAt = 0; }
     var clear = function() {
-      reset();
+      reset()
       if (isDef(store) && storeHasRecord) {
         try { store.clear(storeKey); storeHasRecord = false; }
         catch(e) { storeFailed = true; throw new Error("OAuth credential storage delete failed"); }
       }
-    };
+    }
     var withStore = function(fn, clearing) {
-      var cfg = storeConfig(), result, timeout = 60000;
+      var cfg = storeConfig(), result, timeout = 60000
       if (cfg !== false) {
-        _$(cfg, "tokenStore").isMap().$_();
-        timeout = positive(cfg.lockTimeoutMs, "tokenStore.lockTimeoutMs", 60000);
+        _$(cfg, "tokenStore").isMap().$_()
+        timeout = positive(cfg.lockTimeoutMs, "tokenStore.lockTimeoutMs", 60000)
       }
       if (!$lock(lockName).tryLock(function() {
-        validate();
+        validate()
         if (cfg === false) { result = fn(); return; }
-        if (storeFailed && !clearing) throw new Error("OAuth credential storage failed; clearAuth or recreate the client before retrying");
-        if (isDef(cfg.profile)) _$(cfg.profile, "tokenStore.profile").isString().$_();
-        if (isDef(cfg.key)) _$(cfg.key, "tokenStore.key").isString().$_();
-        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type");
-        var fp = fingerprint(cfg), key = isString(cfg.key) ? cfg.key : "oauth2-v1-" + fp;
-        var adapter;
+        if (storeFailed && !clearing) throw new Error("OAuth credential storage failed; clearAuth or recreate the client before retrying")
+        if (isDef(cfg.profile)) _$(cfg.profile, "tokenStore.profile").isString().$_()
+        if (isDef(cfg.key)) _$(cfg.key, "tokenStore.key").isString().$_()
+        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type")
+        var fp = fingerprint(cfg), key = isString(cfg.key) ? cfg.key : "oauth2-v1-" + fp
+        var adapter
         if (cfg.type == "sec" || !["load", "save", "clear", "withLock"].some(function(k) { return isDef(cfg[k]); })) {
-          adapter = httpd.__oauth2SecTokenStore(cfg, "oauth2");
+          adapter = httpd.__oauth2SecTokenStore(cfg, "oauth2")
         } else {
-          ["load", "save", "clear", "withLock"].forEach(function(k) { _$(cfg[k], "tokenStore." + k).isFunction().$_(); });
-          adapter = cfg;
+          ["load", "save", "clear", "withLock"].forEach(function(k) { _$(cfg[k], "tokenStore." + k).isFunction().$_(); })
+          adapter = cfg
         }
-        var entered = 0, active = true, completed = false, callbackError;
+        var entered = 0, active = true, completed = false, callbackError
         try {
           adapter.withLock(key, function() {
-            entered++;
-            if (!active || entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously once");
+            entered++
+            if (!active || entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously once")
             try {
-              var record;
+              var record
               try { record = adapter.load(key); } catch(e) { throw new Error("OAuth credential storage read failed"); }
-              store = adapter; storeKey = key; storeHasRecord = isDef(record);
+              store = adapter; storeKey = key; storeHasRecord = isDef(record)
               if (!clearing && isDef(record)) {
                 if (!isMap(record) || record.version !== 1 || record.fingerprint !== fp) {
-                  throw new Error("OAuth credential profile configuration mismatch; use another profile or clearAuth()");
+                  throw new Error("OAuth credential profile configuration mismatch; use another profile or clearAuth()")
                 }
                 if (!isString(record.token) || !record.token.length || !isString(record.tokenType) ||
                     !(record.expiresAt === null || (isNumber(record.expiresAt) && isFinite(record.expiresAt))) ||
-                    (isDef(record.refreshToken) && !isString(record.refreshToken))) throw new Error("OAuth credential profile is invalid");
-                var sameUnknown = record.expiresAt === null && token === record.token && expiresAt == Number.MAX_SAFE_INTEGER;
-                token = record.token; tokenType = record.tokenType; refreshToken = record.refreshToken;
-                expiresAt = record.expiresAt === null ? (sameUnknown ? Number.MAX_SAFE_INTEGER : 0) : record.expiresAt;
-              } else if (!clearing) reset();
-              result = fn(fp); completed = true;
-              return result;
+                    (isDef(record.refreshToken) && !isString(record.refreshToken))) throw new Error("OAuth credential profile is invalid")
+                var sameUnknown = record.expiresAt === null && token === record.token && expiresAt == Number.MAX_SAFE_INTEGER
+                token = record.token; tokenType = record.tokenType; refreshToken = record.refreshToken
+                expiresAt = record.expiresAt === null ? (sameUnknown ? Number.MAX_SAFE_INTEGER : 0) : record.expiresAt
+              } else if (!clearing) reset()
+              result = fn(fp); completed = true
+              return result
             } catch(e) { callbackError = e; throw e; }
             finally { store = __; }
-          });
+          })
         } catch(e) {
-          if (isDef(callbackError)) throw callbackError;
-          throw new Error("OAuth credential storage lock failed or timed out");
+          if (isDef(callbackError)) throw callbackError
+          throw new Error("OAuth credential storage lock failed or timed out")
         } finally { active = false; }
-        if (isDef(callbackError)) throw callbackError;
-        if (entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback once");
-        if (!completed) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously");
-      }, timeout)) throw new Error("OAuth credential storage lock timed out");
-      return result;
-    };
+        if (isDef(callbackError)) throw callbackError
+        if (entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback once")
+        if (!completed) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously")
+      }, timeout)) throw new Error("OAuth credential storage lock timed out")
+      return result
+    }
     var base64URL = function(bytes) {
-      return String(af.fromBytes2String(af.toBase64Bytes(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-    };
+      return String(af.fromBytes2String(af.toBase64Bytes(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")
+    }
     var oauthError = function(message, identifier) {
-      var error = new Error(message);
-      if (isString(identifier) && /^[a-zA-Z0-9_]+$/.test(identifier)) error.oauthError = identifier;
-      return error;
-    };
+      var error = new Error(message)
+      if (isString(identifier) && /^[a-zA-Z0-9_]+$/.test(identifier)) error.oauthError = identifier
+      return error
+    }
     var stop = function(attempt) {
       if (isDef(attempt) && isDef(attempt.server) && attempt.stopped.compareAndSet(false, true)) {
         // The callback handler signals the latch before its reply is written: give it a moment to reach
         // the browser before stopping the server (which interrupts handler threads)
-        if (isDef(attempt.result) && attempt.result.get() !== null) sleep(250, true);
-        httpd.stop(attempt.server);
+        if (isDef(attempt.result) && attempt.result.get() !== null) sleep(250, true)
+        httpd.stop(attempt.server)
       }
-    };
+    }
     var login = function() {
-      if (aOptions.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
-      var uri = validate(), host = String(uri.getHost()), path = String(uri.getPath()) || "/";
-      var random = new java.security.SecureRandom();
-      var verifierBytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 32);
-      var stateBytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 32);
-      random.nextBytes(verifierBytes); random.nextBytes(stateBytes);
-      var verifier = base64URL(verifierBytes), state = base64URL(stateBytes);
-      var params = merge({}, aOptions.extraAuthParams || {});
-      params.response_type = "code"; params.client_id = aOptions.clientId; params.redirect_uri = aOptions.redirectURI;
-      params.state = state; params.code_challenge_method = "S256";
+      if (aOptions.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled")
+      var uri = validate(), host = String(uri.getHost()), path = String(uri.getPath()) || "/"
+      var random = new java.security.SecureRandom()
+      var verifierBytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 32)
+      var stateBytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 32)
+      random.nextBytes(verifierBytes); random.nextBytes(stateBytes)
+      var verifier = base64URL(verifierBytes), state = base64URL(stateBytes)
+      var params = merge({}, aOptions.extraAuthParams || {})
+      params.response_type = "code"; params.client_id = aOptions.clientId; params.redirect_uri = aOptions.redirectURI
+      params.state = state; params.code_challenge_method = "S256"
       params.code_challenge = base64URL(java.security.MessageDigest.getInstance("SHA-256").digest(af.fromString2Bytes(verifier)));
-      ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; });
+      ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; })
       var url = aOptions.authURL + (aOptions.authURL.indexOf("?") >= 0 ? "&" : "?") +
-        Object.keys(params).map(function(k) { return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]); }).join("&");
+        Object.keys(params).map(function(k) { return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]); }).join("&")
       var attempt = { latch: new java.util.concurrent.CountDownLatch(1),
-        result: new java.util.concurrent.atomic.AtomicReference(), stopped: new java.util.concurrent.atomic.AtomicBoolean(false) };
+        result: new java.util.concurrent.atomic.AtomicReference(), stopped: new java.util.concurrent.atomic.AtomicBoolean(false) }
       try {
         try {
           // start() reuses registered ports. This listener must be exclusively owned.
-          if (isDef(httpd.getHS(Number(uri.getPort())))) throw new Error("Port in use");
-          plugin("HTTPServer");
+          if (isDef(httpd.getHS(Number(uri.getPort())))) throw new Error("Port in use")
+          plugin("HTTPServer")
           if (isDef(aOptions.__callbackReservation)) {
             attempt.server = aOptions.__callbackReservation
             aOptions.__callbackReservation = __
             if (Number(attempt.server.getPort()) != Number(uri.getPort())) throw new Error("Callback reservation mismatch")
-          } else attempt.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java");
+          } else attempt.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java")
         } catch(e) { throw new Error("OAuth callback port unavailable"); }
-        pending = attempt;
-        var routes = {}, headers = { "Cache-Control": "no-store" };
+        pending = attempt
+        var routes = {}, headers = { "Cache-Control": "no-store" }
         routes[path] = function(req) {
-          var requestPath = isString(req.path) ? req.path : String(req.uri || "").split("?")[0];
-          if (requestPath !== path) return httpd.reply("Not found", 404, "text/plain", headers);
-          var query;
+          var requestPath = isString(req.path) ? req.path : String(req.uri || "").split("?")[0]
+          if (requestPath !== path) return httpd.reply("Not found", 404, "text/plain", headers)
+          var query
           try {
             // URI.query is already decoded by the Java backend; use the raw URI instead.
-            var raw = new java.net.URI(String(req.uri)).getRawQuery();
-            query = {};
+            var raw = new java.net.URI(String(req.uri)).getRawQuery()
+            query = {}
             if (raw !== null) String(raw).split("&").forEach(function(pair) {
-              var eq = pair.indexOf("="), k = decodeURIComponent((eq < 0 ? pair : pair.substring(0, eq)).replace(/\+/g, " "));
-              if (Object.prototype.hasOwnProperty.call(query, k)) throw new Error("Duplicate query parameter");
-              query[k] = decodeURIComponent((eq < 0 ? "" : pair.substring(eq + 1)).replace(/\+/g, " "));
-            });
+              var eq = pair.indexOf("="), k = decodeURIComponent((eq < 0 ? pair : pair.substring(0, eq)).replace(/\+/g, " "))
+              if (Object.prototype.hasOwnProperty.call(query, k)) throw new Error("Duplicate query parameter")
+              query[k] = decodeURIComponent((eq < 0 ? "" : pair.substring(eq + 1)).replace(/\+/g, " "))
+            })
           } catch(e) { return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers); }
           if (req.method !== "GET" || query.state !== state) {
-            return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers);
+            return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers)
           }
-          var value;
-          if (isString(query.error) && query.error.length) value = { error: "OAuth authorization denied" };
-          else if (isString(query.code) && query.code.length) value = { code: query.code };
-          else return httpd.reply("Missing OAuth code", 400, "text/plain", headers);
-          if (!attempt.result.compareAndSet(null, value)) return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers);
-          attempt.latch.countDown();
-          return httpd.reply("Sign-in received. You may close this window.", 200, "text/plain", headers);
-        };
+          var value
+          if (isString(query.error) && query.error.length) value = { error: "OAuth authorization denied" }
+          else if (isString(query.code) && query.code.length) value = { code: query.code }
+          else return httpd.reply("Missing OAuth code", 400, "text/plain", headers)
+          if (!attempt.result.compareAndSet(null, value)) return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers)
+          attempt.latch.countDown()
+          return httpd.reply("Sign-in received. You may close this window.", 200, "text/plain", headers)
+        }
         // Java HTTPd keeps the query in req.uri; the default handler checks the exact decoded path too.
-        httpd.route(attempt.server, routes, routes[path]);
+        httpd.route(attempt.server, routes, routes[path])
         if (aOptions.disableOpenBrowser !== true) {
           try {
-            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().browse(new java.net.URI(url))
           } catch(ignoreBrowser) {}
         }
-        if (isFunction(aOptions.onAuthorizationURL)) aOptions.onAuthorizationURL(url);
+        if (isFunction(aOptions.onAuthorizationURL)) aOptions.onAuthorizationURL(url)
         if (!attempt.latch.await(positive(aOptions.loginTimeoutMs, "loginTimeoutMs", 300000), java.util.concurrent.TimeUnit.MILLISECONDS)) {
-          throw new Error("OAuth login timed out");
+          throw new Error("OAuth login timed out")
         }
-        var result = attempt.result.get();
-        if (isDef(result.error)) throw new Error(result.error);
-        return { grant_type: "authorization_code", code: result.code, redirect_uri: aOptions.redirectURI, code_verifier: verifier };
+        var result = attempt.result.get()
+        if (isDef(result.error)) throw new Error(result.error)
+        return { grant_type: "authorization_code", code: result.code, redirect_uri: aOptions.redirectURI, code_verifier: verifier }
       } finally { stop(attempt); if (pending === attempt) pending = __; }
-    };
+    }
     var exchange = function(params) {
-      params = merge(aOptions.extraParams || {}, params);
-      params.client_id = aOptions.clientId;
+      params = merge(aOptions.extraParams || {}, params)
+      params.client_id = aOptions.clientId
       if (isDef(aOptions.clientSecret) && ["none", "client_secret_basic"].indexOf(aOptions.tokenEndpointAuthMethod) < 0) params.client_secret = aOptions.clientSecret;
-      ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; });
-      var connection = ow.loadObj().rest.connectionFactory(), response, code;
+      ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; })
+      var connection = ow.loadObj().rest.connectionFactory(), response, code
       try {
-        connection.setThrowExceptions(false);
-        var timeout = positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000);
+        connection.setThrowExceptions(false)
+        var timeout = positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000)
         connection.client = connection.client.newBuilder().followRedirects(false).followSslRedirects(false)
           .callTimeout(timeout, java.util.concurrent.TimeUnit.MILLISECONDS).build()
         var tokenHeaders = {}
@@ -3622,57 +3622,57 @@ OpenWrap.server.prototype.httpd = {
           tokenHeaders.Authorization = "Basic " + af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(enc(aOptions.clientId) + ":" + enc(aOptions.clientSecret))))
         }
         response = $rest({ httpClient: connection, requestHeaders: tokenHeaders, urlEncode: true, timeout: timeout,
-          readTimeout: timeout, callTimeout: timeout }).post(aOptions.tokenURL, params);
-        code = connection.responseCode();
+          readTimeout: timeout, callTimeout: timeout }).post(aOptions.tokenURL, params)
+        code = connection.responseCode()
       } catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }
       finally { try { connection.close(); } catch(ignoreClose) {} }
       if (code < 200 || code >= 300 || !isMap(response) || !isString(response.access_token) || !response.access_token.length) {
-        throw oauthError("OAuth token request failed; provider did not return an access token", isMap(response) ? response.error : __);
+        throw oauthError("OAuth token request failed; provider did not return an access token", isMap(response) ? response.error : __)
       }
-      return response;
-    };
+      return response
+    }
     var authenticate = function(fp, retrying) {
       if (isString(token) && expiresAt > now() + _$(aOptions.refreshWindowMs).isNumber().default(30000)) {
-        var cached = { access_token: token, token_type: tokenType };
-        if (isString(refreshToken)) cached.refresh_token = refreshToken;
-        if (expiresAt != Number.MAX_SAFE_INTEGER) cached.expires_in = Math.max(0, Math.floor((expiresAt - now()) / 1000));
-        return cached;
+        var cached = { access_token: token, token_type: tokenType }
+        if (isString(refreshToken)) cached.refresh_token = refreshToken
+        if (expiresAt != Number.MAX_SAFE_INTEGER) cached.expires_in = Math.max(0, Math.floor((expiresAt - now()) / 1000))
+        return cached
       }
-      var refreshing = isString(refreshToken), response;
+      var refreshing = isString(refreshToken), response
       try { response = exchange(refreshing ? { grant_type: "refresh_token", refresh_token: refreshToken } : login()); }
       catch(e) {
         if (e.oauthError == "invalid_grant" || e.oauthError == "interaction_required") {
-          clear();
-          if (refreshing && e.oauthError == "invalid_grant" && !retrying) return authenticate(fp, true);
-          throw oauthError("OAuth login required; credentials expired or revoked", e.oauthError);
+          clear()
+          if (refreshing && e.oauthError == "invalid_grant" && !retrying) return authenticate(fp, true)
+          throw oauthError("OAuth login required; credentials expired or revoked", e.oauthError)
         }
-        throw e;
+        throw e
       }
-      token = response.access_token; tokenType = aOptions.tokenType || response.token_type || "Bearer";
-      if (isString(response.refresh_token) && response.refresh_token.length) refreshToken = response.refresh_token;
-      var lifetime = Number(response.expires_in);
-      expiresAt = isDef(response.expires_in) && response.expires_in !== null && isFinite(lifetime) && lifetime >= 0 ? now() + lifetime * 1000 : Number.MAX_SAFE_INTEGER;
+      token = response.access_token; tokenType = aOptions.tokenType || response.token_type || "Bearer"
+      if (isString(response.refresh_token) && response.refresh_token.length) refreshToken = response.refresh_token
+      var lifetime = Number(response.expires_in)
+      expiresAt = isDef(response.expires_in) && response.expires_in !== null && isFinite(lifetime) && lifetime >= 0 ? now() + lifetime * 1000 : Number.MAX_SAFE_INTEGER
       if (isDef(store)) {
         try {
           store.save(storeKey, { version: 1, fingerprint: fp, token: token, tokenType: tokenType,
-            expiresAt: expiresAt == Number.MAX_SAFE_INTEGER ? null : expiresAt, refreshToken: refreshToken });
-          storeHasRecord = true;
+            expiresAt: expiresAt == Number.MAX_SAFE_INTEGER ? null : expiresAt, refreshToken: refreshToken })
+          storeHasRecord = true
         } catch(e) { storeFailed = true; throw new Error("OAuth credential storage write failed; clearAuth or recreate the client before retrying"); }
       }
-      return response;
-    };
+      return response
+    }
     return {
       authenticate: function() { return withStore(function(fp) { return authenticate(fp, false); }); },
       getAuthStatus: function() { return withStore(status); },
       clearAuth: function() { return withStore(function() { clear(); storeFailed = false; return status(); }, true); },
       cancel: function() {
-        var attempt = pending;
+        var attempt = pending
         if (isDef(attempt)) {
-          attempt.result.compareAndSet(null, { error: "OAuth login cancelled" });
-          attempt.latch.countDown(); stop(attempt);
+          attempt.result.compareAndSet(null, { error: "OAuth login cancelled" })
+          attempt.latch.countDown(); stop(attempt)
         }
       }
-    };
+    }
   },
 
 	/**
@@ -3908,19 +3908,19 @@ OpenWrap.server.prototype.httpd = {
 						return parent.__defaultRoutes[aPort](req, aHTTPd);
 				}
 			} catch(e) {
-				if (ow.instrumentation && ow.instrumentation.isEnabled("http")) req.__openafInstrumentationError = true;
+				if (ow.instrumentation && ow.instrumentation.isEnabled("http")) req.__openafInstrumentationError = true
 				printErr("HTTPd route error: " + af.toSLON(req) + " | " + e)
 			}
-		};
+		}
         aHTTPd.add(aPath, function(req) {
-          var ins = ow.instrumentation;
-          if (!ins || !ins.isEnabled("http")) return __routeHandler(req);
-          var uri = String(req.uri || "").split("?")[0];
-          var inspection = ins._inspectionPaths || {};
-          if (Object.keys(inspection).some(function(k) { return k === aPort + ":" + uri || (k.indexOf(aPort + ":") === 0 && uri.indexOf(k.substring(String(aPort).length + 1) + "/") === 0); })) return ins.suppress(function() { return __routeHandler(req); });
-          var matched = Object.keys(parent.__routes[aPort] || {}).filter(function(p) { return uri === p || uri.indexOf(p + "/") === 0; }).sort(function(a,b) { return b.length - a.length; })[0] || "default";
-          return ins.httpHandler(__routeHandler, matched)(req);
-        });
+          var ins = ow.instrumentation
+          if (!ins || !ins.isEnabled("http")) return __routeHandler(req)
+          var uri = String(req.uri || "").split("?")[0]
+          var inspection = ins._inspectionPaths || {}
+          if (Object.keys(inspection).some(function(k) { return k === aPort + ":" + uri || (k.indexOf(aPort + ":") === 0 && uri.indexOf(k.substring(String(aPort).length + 1) + "/") === 0); })) return ins.suppress(function() { return __routeHandler(req); })
+          var matched = Object.keys(parent.__routes[aPort] || {}).filter(function(p) { return uri === p || uri.indexOf(p + "/") === 0; }).sort(function(a,b) { return b.length - a.length; })[0] || "default"
+          return ins.httpHandler(__routeHandler, matched)(req)
+        })
 		
 		aHTTPd.setDefault(aPath);
 	},
@@ -4100,20 +4100,20 @@ OpenWrap.server.prototype.httpd = {
 		if (isString(aBaseFilePath)) {
 			try {
 				// Determine the full canonical path
-				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile();
-				var basePath = baseFile.toPath();
+				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile()
+				var basePath = baseFile.toPath()
 				// Determine the full canonical path of the file to be served
 				var targetFile = (new java.io.File(baseFile,
-					(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalFile();
-				var furi = String(targetFile.getPath());
+					(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalFile()
+				var furi = String(targetFile.getPath())
 				
 				// If the file is a directory, try to find the documentRootArray
 				if (targetFile.equals(baseFile)) {
 					for(var i in documentRootArray) {
 						targetFile = (new java.io.File(baseFile,
-							(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalFile();
-						furi = String(targetFile.getPath());
-						if (targetFile.toPath().startsWith(basePath)) break;
+							(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalFile()
+						furi = String(targetFile.getPath())
+						if (targetFile.toPath().startsWith(basePath)) break
 					}
 				}
 			
@@ -4168,11 +4168,11 @@ OpenWrap.server.prototype.httpd = {
 		
 		if (isString(aBaseFilePath)) {
 			try {
-				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile();
-				var basePath = baseFile.toPath();
+				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile()
+				var basePath = baseFile.toPath()
 				var targetFile = (new java.io.File(baseFile,
-					(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile();
-				var furi = String(targetFile.getPath());
+					(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile()
+				var furi = String(targetFile.getPath())
 				
 				if (isUnDef(documentRootArray)) documentRootArray = [ "index.md" ];
 	
@@ -4180,15 +4180,15 @@ OpenWrap.server.prototype.httpd = {
 				if (io.fileExists(furi) && io.fileInfo(furi).isDirectory) {
 					for(var i in documentRootArray) {
 						targetFile = (new java.io.File(baseFile,
-							(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile();
-						furi = String(targetFile.getPath());
-						if (targetFile.toPath().startsWith(basePath)) break;
+							(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile()
+						furi = String(targetFile.getPath())
+						if (targetFile.toPath().startsWith(basePath)) break
 					}
 				}
 	
 				if (!(String(targetFile.getName()).match(/[^.]+\.[^.]+$/))) {
-					targetFile = (new java.io.File(furi + ".md")).getCanonicalFile();
-					furi = String(targetFile.getPath());
+					targetFile = (new java.io.File(furi + ".md")).getCanonicalFile()
+					furi = String(targetFile.getPath())
 				}
 	
 				if (targetFile.toPath().startsWith(basePath)) {
@@ -4676,11 +4676,11 @@ OpenWrap.server.prototype.httpd = {
 		if (isUnDef(parent.oauth_realms)) parent.oauth_realms = {};
 
 		if (!Object.prototype.hasOwnProperty.call(parent.oauth_realms, aRealm)) {
-			Object.defineProperty(parent.oauth_realms, aRealm, { value: Object.create(null), writable: true, enumerable: true, configurable: true });
+			Object.defineProperty(parent.oauth_realms, aRealm, { value: Object.create(null), writable: true, enumerable: true, configurable: true })
 		}
-		var records = parent.oauth_realms[aRealm];
-		var ownRecord = key => isString(key) && Object.prototype.hasOwnProperty.call(records, key);
-		var hasToken = record => isMap(record) && Object.prototype.hasOwnProperty.call(record, "access_token") && isString(record.access_token) && record.access_token.length > 0;
+		var records = parent.oauth_realms[aRealm]
+		var ownRecord = key => isString(key) && Object.prototype.hasOwnProperty.call(records, key)
+		var hasToken = record => isMap(record) && Object.prototype.hasOwnProperty.call(record, "access_token") && isString(record.access_token) && record.access_token.length > 0
 		var shouldLogin = false, session = _getSession(aReq);
 
 		// Logout redirect endpoint
@@ -4722,7 +4722,7 @@ OpenWrap.server.prototype.httpd = {
 							return aFnReply(aReq);
 						}
 					} else {
-						shouldLogin = true;
+						shouldLogin = true
 					}
 				} else {
 					shouldLogin = true;
@@ -4738,7 +4738,7 @@ OpenWrap.server.prototype.httpd = {
 		// If no session exists yet but there is a state the oauth token is invoked
 		if (aReq.uri == aMapOptions.uriCallBack) {
 			//if (Object.keys(parent.oauth_realms[aRealm]).length == 0) parent.oauth_realms[aRealm] = "/";
-			if (!isMap(aReq.params) || !ownRecord(aReq.params.state) || !isString(records[aReq.params.state])) return ow.server.httpd.replyRedirect(aHTTPd, "/", {});
+			if (!isMap(aReq.params) || !ownRecord(aReq.params.state) || !isString(records[aReq.params.state])) return ow.server.httpd.replyRedirect(aHTTPd, "/", {})
 			if (ownRecord(aReq.params.state)) {
 				var target = parent.oauth_realms[aRealm][aReq.params.state];
 				var res = $rest({ urlEncode: true }).post(aMapOptions.oauthTokenURL, {
@@ -4750,7 +4750,7 @@ OpenWrap.server.prototype.httpd = {
 				});
 
 				delete parent.oauth_realms[aRealm][aReq.params.state];
-				if (!hasToken(res) || !isString(res.session_state) || res.session_state.length == 0) return ow.server.httpd.replyRedirect(aHTTPd, "/", {});
+				if (!hasToken(res) || !isString(res.session_state) || res.session_state.length == 0) return ow.server.httpd.replyRedirect(aHTTPd, "/", {})
 				var jwt = ow.server.jwt.decode(res.access_token);
 				parent.oauth_realms[aRealm][res.session_state] = merge(res, { x: (jwt.exp * 1000) });
 

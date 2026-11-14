@@ -125,7 +125,7 @@ public class FTP extends ScriptableObject {
 
 	protected void connectFTP() throws IOException {
 		if (secure) {
-			client = createFTPSClient();
+            client = createFTPSClient();
 		} else {
 			client = new FTPClient();
 		}
@@ -159,12 +159,12 @@ public class FTP extends ScriptableObject {
 		applyModes();
 	}
 
-	protected FTPSClient createFTPSClient() {
-		FTPSClient ftps = new FTPSClient(protocol, implicit);
-		ftps.setEndpointCheckingEnabled(true);
-		ftps.setTrustManager(null);
-		return ftps;
-	}
+    protected FTPSClient createFTPSClient() {
+        FTPSClient ftps = new FTPSClient(protocol, implicit);
+        ftps.setEndpointCheckingEnabled(true);
+        ftps.setTrustManager(null);
+        return ftps;
+    }
 
 	protected void applyModes() throws IOException {
 		if (passive) {

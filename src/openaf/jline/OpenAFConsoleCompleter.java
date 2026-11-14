@@ -21,7 +21,7 @@ public class OpenAFConsoleCompleter extends ScriptableObject implements Complete
 	 * 
 	 */
 	private static final long serialVersionUID = 3655679646340836309L;
-	protected Function func;
+    protected Function func;
 
 	@Override
 	public int complete(final String buffer, final int cursor, final List<CharSequence> candidates) {
@@ -47,12 +47,12 @@ public class OpenAFConsoleCompleter extends ScriptableObject implements Complete
 		return "OpenAFConsoleCompleter";
 	}
 	
-	public OpenAFConsoleCompleter(Function func) {
+    public OpenAFConsoleCompleter(Function func) {
 		this.func = func;
 	}
 	
 	@JSConstructor
-	public void newOpenAFConsoleCompleter(Function func) {
+    public void newOpenAFConsoleCompleter(Function func) {
 		this.func = func;
 	}
 

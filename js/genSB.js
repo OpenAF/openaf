@@ -36,6 +36,6 @@ if (io.fileExists(expr)) {
     if (!isWin) $sh("chmod u+x " + expr)
                 .prefix("chmod")
                 .get(0)
-    log("Generated " + (isoJob ? "oJob" : (isoafp ? "oafp" : "OpenAF")) + " shebang file: " + expr);
-    if (!isoJob && !isoafp) log("On OpenAF use the 'params' variable to access any parameter you pass executing the script like: " + io.fileInfo(expr).canonicalPath + " abc=123 xzy=aaa");
+    log("Generated " + (isoJob ? "oJob" : (isoafp ? "oafp" : "OpenAF")) + " shebang file: " + expr)
+    if (!isoJob && !isoafp) log("On OpenAF use the 'params' variable to access any parameter you pass executing the script like: " + io.fileInfo(expr).canonicalPath + " abc=123 xzy=aaa")
 }

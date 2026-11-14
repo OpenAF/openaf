@@ -22,17 +22,17 @@ jobs:
    - name: DB::Prepared statement binds and cache
      from: DB::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testDBPreparedStatements;
+     exec: args.func = args.tests.testDBPreparedStatements
 
    - name: DB::Statement error cleanup
      from: DB::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testDBStatementCleanup;
+     exec: args.func = args.tests.testDBStatementCleanup
 
    - name: DB::JDBC URL policy
      from: DB::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testDBUrlPolicy;
+     exec: args.func = args.tests.testDBUrlPolicy
 
    - name: DB::Nullable values
      from: DB::Init

@@ -2,34 +2,46 @@ include:
 - autoTestAll.common.yaml
 
 jobs:
+
+# Languages::Init
 - name: Languages::Init
-  exec: args.tests = require("autoTestAll.Languages.js");
+  exec: args.tests = require("autoTestAll.Languages.js")
+
+# Languages::RoundTrips
 - name: Languages::RoundTrips
   from: Languages::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLanguageRoundTrips;
+  exec: args.func = args.tests.testLanguageRoundTrips
+
+# Languages::FailuresAndCleanup
 - name: Languages::FailuresAndCleanup
   from: Languages::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLanguageFailuresAndCleanup;
+  exec: args.func = args.tests.testLanguageFailuresAndCleanup
+
+# Languages::Registration
 - name: Languages::Registration
   from: Languages::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLanguageRegistration;
+  exec: args.func = args.tests.testLanguageRegistration
+
+# Languages::OJobIntegration
 - name: Languages::OJobIntegration
   from: Languages::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLanguageOJobIntegration;
+  exec: args.func = args.tests.testLanguageOJobIntegration
 
+# Languages::ProcessTree
 - name: Languages::ProcessTree
   from: Languages::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLanguageProcessTree;
+  exec: args.func = args.tests.testLanguageProcessTree
 
+# Languages::Configuration
 - name: Languages::Configuration
   from: Languages::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLanguageConfiguration;
+  exec: args.func = args.tests.testLanguageConfiguration
 
 todo:
 - Languages::RoundTrips

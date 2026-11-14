@@ -8,67 +8,67 @@ jobs:
    # --------------
    - name: AI::Init
      exec: |
-       args.tests = require("autoTestAll.AI.js");
+       args.tests = require("autoTestAll.AI.js")
 
    - name: AI::Perceptron XOR
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIPerceptronXOR;
+     exec: args.func = args.tests.testAIPerceptronXOR
 
    - name: AI::Perceptron XOR Put
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIPerceptronXORPut;
+     exec: args.func = args.tests.testAIPerceptronXORPut
 
    - name: AI::Perceptron XOR save and load
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAINetworkSave;
+     exec: args.func = args.tests.testAINetworkSave
 
    - name: AI::Liquid XOR
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAILiquidXOR;
+     exec: args.func = args.tests.testAILiquidXOR
 
    - name: AI::LSTM AND
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAILSTMAND;     
+     exec: args.func = args.tests.testAILSTMAND
 
    - name: AI::Perceptron network save and load
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAINetworkSave;
+     exec: args.func = args.tests.testAINetworkSave
 
    - name: AI::Liquid network save and load
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAILiquidXORSave;
+     exec: args.func = args.tests.testAILiquidXORSave
 
    - name: AI::LSTM network save and load
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAILSTMANDSave;
+     exec: args.func = args.tests.testAILSTMANDSave
 
    - name: AI::Normalize with schema
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testNormalizeWithSchema;
+     exec: args.func = args.tests.testNormalizeWithSchema
 
    - name: AI::Normalize features array
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testFeaturesArray;
+     exec: args.func = args.tests.testFeaturesArray
 
    - name: AI::Test ID3
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testID3;
+     exec: args.func = args.tests.testID3
 
    - name: AI::Test C45
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testC45;     
+     exec: args.func = args.tests.testC45
 
    - name: AI::Test KMeans
      from: AI::Init
@@ -88,27 +88,27 @@ jobs:
    - name: AI::OpenAI stats capture includes cached and reasoning
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIStatsCaptureIncludesCachedAndReasoning;
+     exec: args.func = args.tests.testAIOpenAIStatsCaptureIncludesCachedAndReasoning
 
    - name: AI::Anthropic prompt caching headers
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIAnthropicPromptCachingHeaders;
+     exec: args.func = args.tests.testAIAnthropicPromptCachingHeaders
 
    - name: AI::Anthropic tool loop keeps temperature unset
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIAnthropicToolLoopKeepsTemperatureUnset;
+     exec: args.func = args.tests.testAIAnthropicToolLoopKeepsTemperatureUnset
 
    - name: AI::Anthropic promptImage and attachments
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIAnthropicPromptImageAndAttachments;
+     exec: args.func = args.tests.testAIAnthropicPromptImageAndAttachments
 
    - name: AI::Anthropic prompt caching body and stats
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIAnthropicPromptCachingBodyAndStats;
+     exec: args.func = args.tests.testAIAnthropicPromptCachingBodyAndStats
 
    - name: AI::OpenAI tool recursion without duplication
      from: AI::Init
@@ -138,47 +138,47 @@ jobs:
    - name: AI::OpenAI rawResponse prefers responses
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIRawResponse;
+     exec: args.func = args.tests.testAIOpenAIRawResponse
 
    - name: AI::OpenAI schema hook
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAISchemaHook;
+     exec: args.func = args.tests.testAIOpenAISchemaHook
 
    - name: AI::OpenAI jsonSchemaPrompt
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIJsonSchemaPrompt;
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPrompt
 
    - name: AI::OpenAI jsonSchemaPromptWithStats
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptWithStats;
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptWithStats
 
    - name: AI::OpenAI jsonSchemaPrompt schema defaults
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptSchemaDefault;
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptSchemaDefault
 
    - name: AI::OpenAI rawResponse fallback to chat completions
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIRawResponseFallsBackToChatCompletions;
+     exec: args.func = args.tests.testAIOpenAIRawResponseFallsBackToChatCompletions
 
    - name: AI::OpenAI rawResponse caches chat fallback
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIRawResponseCachesChatFallback;
+     exec: args.func = args.tests.testAIOpenAIRawResponseCachesChatFallback
 
    - name: AI::OpenAI rawResponse keeps non availability errors
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIRawResponseDoesNotFallbackOnOtherErrors;
+     exec: args.func = args.tests.testAIOpenAIRawResponseDoesNotFallbackOnOtherErrors
 
    - name: AI::OpenAI jsonSchemaPrompt unsupported provider
      from: AI::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptUnsupportedProvider;
+     exec: args.func = args.tests.testAIOpenAIJsonSchemaPromptUnsupportedProvider
 
    - name: AI::OpenAI terminal responses do not retry
      from: AI::Init

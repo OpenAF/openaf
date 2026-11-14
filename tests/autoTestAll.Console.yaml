@@ -1,51 +1,72 @@
 include:
 - autoTestAll.common.yaml
+
 jobs:
+
+# Console::Init
 - name: Console::Init
-  exec: args.tests = require("autoTestAll.Console.js");
+  exec: args.tests = require("autoTestAll.Console.js")
+
+# Console::legacy history
 - name: Console::legacy history
   from: Console::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLegacyHistory;
+  exec: args.func = args.tests.testLegacyHistory
+
+# Console::completion callback
 - name: Console::completion callback
   from: Console::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testCompletionCallback;
+  exec: args.func = args.tests.testCompletionCallback
+
+# Console::facade
 - name: Console::facade
   from: Console::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testConsoleFacade;
+  exec: args.func = args.tests.testConsoleFacade
+
+# Console::launcher settings
 - name: Console::launcher settings
   from: Console::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLauncherSettings;
+  exec: args.func = args.tests.testLauncherSettings
+
+# Console::injected prompts
 - name: Console::injected prompts
   from: Console::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testInjectedPrompts;
+  exec: args.func = args.tests.testInjectedPrompts
 
+# Console::prompt family
 - name: Console::prompt family
   from: Console::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testPromptFamily;
+  exec: args.func = args.tests.testPromptFamily
+
+# Console::askKey
 - name: Console::askKey
   from: Console::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testAskKey;
+  exec: args.func = args.tests.testAskKey
 
+# Console::multiline prompts
 - name: Console::multiline prompts
   from: Console::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testMultilinePrompts;
+  exec: args.func = args.tests.testMultilinePrompts
 
+# Console::polling prompts
 - name: Console::polling prompts
   from: Console::Init
   to: OpenAF Test
   exec: args.func = args.tests.testPollingPrompts
+
+# Console::native polling line
 - name: Console::native polling line
   from: Console::Init
   to: OpenAF Test
   exec: args.func = args.tests.testNativePollingLine
+
 todo:
 - Console::polling prompts
 - Console::native polling line

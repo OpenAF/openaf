@@ -22,17 +22,17 @@
             if (aCases.every(c => Math.round(nn.get(c[0])) == c[1])) return nn
         }
         return nn
-    };
-    var __xor = [[[1,0],1],[[1,1],0],[[0,1],1],[[0,0],0]];
-    var __and = [[[1,0],0],[[1,1],1],[[0,1],0],[[0,0],0]];
+    }
+    var __xor = [[[1,0],1],[[1,1],0],[[0,1],1],[[0,0],0]]
+    var __and = [[[1,0],0],[[1,1],1],[[0,1],0],[[0,0],0]]
 
     exports.testAIPerceptronXOR = function() {
         ow.loadAI();
         var nn = __trained(() => {
-            var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]});
-            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}]);
-            return nn;
-        }, __xor);
+            var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]})
+            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}])
+            return nn
+        }, __xor)
         ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with ow.ai perceptron 1 XOR 0");
         ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with ow.ai perceptron 1 XOR 1");
         ow.test.assert(Math.round(nn.get([0,1])), 1, "Problem with ow.ai perceptron 0 XOR 1");
@@ -42,15 +42,15 @@
     exports.testAIPerceptronXORPut = function() {
         ow.loadAI();
         var nn = __trained(() => {
-            var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]});
+            var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]})
             for(var ii = 0; ii < 20000; ii++) {
-                nn.put([0, 0], [0]);
-                nn.put([0, 1], [1]);
-                nn.put([1, 0], [1]);
-                nn.put([1, 1], [0]);
+                nn.put([0, 0], [0])
+                nn.put([0, 1], [1])
+                nn.put([1, 0], [1])
+                nn.put([1, 1], [0])
             }
-            return nn;
-        }, __xor);
+            return nn
+        }, __xor)
 
         ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with ow.ai perceptron put 1 XOR 0");
         ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with ow.ai perceptron put 1 XOR 1");
@@ -61,10 +61,10 @@
     exports.testAILiquidXOR = function() {
         ow.loadAI();
         var nn = __trained(() => {
-            var nn = new ow.ai.network({ type: "liquid", args: [2, 40, 1, 2, 1]});
-            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}]);
-            return nn;
-        }, __xor);
+            var nn = new ow.ai.network({ type: "liquid", args: [2, 40, 1, 2, 1]})
+            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}])
+            return nn
+        }, __xor)
         ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with ow.ai liquid 1 XOR 0");
         ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with ow.ai liquid 1 XOR 1");
         ow.test.assert(Math.round(nn.get([0,1])), 1, "Problem with ow.ai liquid 0 XOR 1");
@@ -74,10 +74,10 @@
     exports.testAILSTMAND = function() {
         ow.loadAI();
         var nn = __trained(() => {
-            var nn = new ow.ai.network({ type: "lstm", args: [2, 4, 1]});
-            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [0]}, {input: [1,0], output: [0]}, {input: [1,1], output :[1]}]);
-            return nn;
-        }, __and);
+            var nn = new ow.ai.network({ type: "lstm", args: [2, 4, 1]})
+            nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [0]}, {input: [1,0], output: [0]}, {input: [1,1], output :[1]}])
+            return nn
+        }, __and)
         ow.test.assert(Math.round(nn.get([1,0])), 0, "Problem with ow.ai lstm 1 AND 0");
         ow.test.assert(Math.round(nn.get([1,1])), 1, "Problem with ow.ai lstm 1 AND 1");
         ow.test.assert(Math.round(nn.get([0,1])), 0, "Problem with ow.ai lstm 0 AND 1");
@@ -110,7 +110,7 @@
         var na = new ow.ai.network();
         na.readFile("autoTestAll.ai.andNet.lstm.gz");
 
-        __and.forEach(c => ow.test.assert(Math.round(na.get(c[0])), Math.round(nn.get(c[0])), "Problem with saved ow.ai lstm " + c[0].join(" AND ")));
+        __and.forEach(c => ow.test.assert(Math.round(na.get(c[0])), Math.round(nn.get(c[0])), "Problem with saved ow.ai lstm " + c[0].join(" AND ")))
 
         io.rm("autoTestAll.ai.andNet.lstm.gz");
     };
@@ -124,7 +124,7 @@
         var na = new ow.ai.network();
         na.readFile("autoTestAll.ai.xorNet.liquid.gz");
 
-        __xor.forEach(c => ow.test.assert(Math.round(na.get(c[0])), Math.round(nn.get(c[0])), "Problem with saved ow.ai liquid " + c[0].join(" XOR ")));
+        __xor.forEach(c => ow.test.assert(Math.round(na.get(c[0])), Math.round(nn.get(c[0])), "Problem with saved ow.ai liquid " + c[0].join(" XOR ")))
 
         io.rm("autoTestAll.ai.xorNet.liquid.gz");
     };   
@@ -422,13 +422,13 @@
         var openai = new ow.ai.gpt("openai", { key: "test-key", url: "https://api.openai.com" });
         var openaiTransport = openai.model.__debugTransport("chat/completions", "gpt-test");
         ow.test.assert(openaiTransport.url, "https://api.openai.com/v1/chat/completions", "Problem building default OpenAI chat URL.");
-        ow.test.assert(openai.model.__debugTransport("responses", "gpt-test").url, "https://api.openai.com/v1/responses", "Problem building default OpenAI responses URL.");
+        ow.test.assert(openai.model.__debugTransport("responses", "gpt-test").url, "https://api.openai.com/v1/responses", "Problem building default OpenAI responses URL.")
         ow.test.assert(isDef(openaiTransport.headers.Authorization), true, "Problem setting default OpenAI bearer authorization.");
         ow.test.assert(isUnDef(openaiTransport.headers["api-key"]), true, "Problem avoiding api-key on default OpenAI transport.");
 
         var openaiBaseUrl = new ow.ai.gpt("openai", { key: "test-key", url: "https://api.openai.com/v1" });
         ow.test.assert(openaiBaseUrl.model.__debugTransport("chat/completions", "gpt-test").url, "https://api.openai.com/v1/chat/completions", "Problem preserving an OpenAI v1 base URL.");
-        ow.test.assert(openaiBaseUrl.model.__debugTransport("responses", "gpt-test").url, "https://api.openai.com/v1/responses", "Problem preserving an OpenAI v1 responses URL.");
+        ow.test.assert(openaiBaseUrl.model.__debugTransport("responses", "gpt-test").url, "https://api.openai.com/v1/responses", "Problem preserving an OpenAI v1 responses URL.")
 
         var azureV1 = new ow.ai.gpt("openai", {
             key : "test-key",
@@ -437,7 +437,7 @@
         });
         var azureV1Transport = azureV1.model.__debugTransport("chat/completions", "deployment-a");
         ow.test.assert(azureV1Transport.url, "https://example.openai.azure.com/openai/v1/chat/completions", "Problem building Azure OpenAI v1 chat URL.");
-        ow.test.assert(azureV1.model.__debugTransport("responses", "deployment-a").url, "https://example.openai.azure.com/openai/v1/responses", "Problem building Azure OpenAI v1 responses URL.");
+        ow.test.assert(azureV1.model.__debugTransport("responses", "deployment-a").url, "https://example.openai.azure.com/openai/v1/responses", "Problem building Azure OpenAI v1 responses URL.")
         ow.test.assert("" + azureV1Transport.headers["api-key"], "test-key", "Problem setting Azure OpenAI v1 api-key header.");
         ow.test.assert(isUnDef(azureV1Transport.headers.Authorization), true, "Problem suppressing Azure OpenAI v1 bearer authorization.");
 
@@ -447,7 +447,7 @@
             mode: "azure-openai-v1"
         });
         ow.test.assert(azureV1BaseUrl.model.__debugTransport("chat/completions", "deployment-a").url, "https://example.openai.azure.com/openai/v1/chat/completions", "Problem preserving an Azure OpenAI v1 base URL.");
-        ow.test.assert(azureV1BaseUrl.model.__debugTransport("responses", "deployment-a").url, "https://example.openai.azure.com/openai/v1/responses", "Problem preserving an Azure OpenAI v1 responses URL.");
+        ow.test.assert(azureV1BaseUrl.model.__debugTransport("responses", "deployment-a").url, "https://example.openai.azure.com/openai/v1/responses", "Problem preserving an Azure OpenAI v1 responses URL.")
 
         var azureLegacy = new ow.ai.gpt("openai", {
             key       : "test-key",
@@ -458,7 +458,7 @@
         });
         var azureLegacyTransport = azureLegacy.model.__debugTransport("chat/completions", "ignored");
         ow.test.assert(azureLegacyTransport.url, "https://example.openai.azure.com/openai/deployments/deployment-a/chat/completions?api-version=2024-10-21", "Problem building Azure OpenAI legacy deployment chat URL.");
-        ow.test.assert(azureLegacy.model.__debugTransport("responses", "ignored").url, "https://example.openai.azure.com/openai/deployments/deployment-a/responses?api-version=2024-10-21", "Problem building Azure OpenAI legacy deployment responses URL.");
+        ow.test.assert(azureLegacy.model.__debugTransport("responses", "ignored").url, "https://example.openai.azure.com/openai/deployments/deployment-a/responses?api-version=2024-10-21", "Problem building Azure OpenAI legacy deployment responses URL.")
         ow.test.assert("" + azureLegacyTransport.headers["api-key"], "test-key", "Problem setting Azure OpenAI legacy api-key header.");
 
         var foundryV1 = new ow.ai.gpt("openai", {
@@ -468,7 +468,7 @@
         });
         var foundryV1Transport = foundryV1.model.__debugTransport("chat/completions", "deployment-a");
         ow.test.assert(foundryV1Transport.url, "https://example.services.ai.azure.com/openai/v1/chat/completions", "Problem building Foundry v1 chat URL.");
-        ow.test.assert(foundryV1.model.__debugTransport("responses", "deployment-a").url, "https://example.services.ai.azure.com/openai/v1/responses", "Problem building Foundry v1 responses URL.");
+        ow.test.assert(foundryV1.model.__debugTransport("responses", "deployment-a").url, "https://example.services.ai.azure.com/openai/v1/responses", "Problem building Foundry v1 responses URL.")
         ow.test.assert("" + foundryV1Transport.headers["api-key"], "test-key", "Problem setting Foundry v1 api-key header.");
 
         var foundryPreview = new ow.ai.gpt("openai", {
@@ -479,14 +479,14 @@
         });
         var foundryPreviewTransport = foundryPreview.model.__debugTransport("chat/completions", "deployment-a");
         ow.test.assert(foundryPreviewTransport.url, "https://example.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview", "Problem building Foundry model inference preview chat URL.");
-        ow.test.assert(foundryPreview.model.__debugTransport("responses", "deployment-a").url, "https://example.services.ai.azure.com/models/responses?api-version=2024-05-01-preview", "Problem building Foundry model inference preview responses URL.");
+        ow.test.assert(foundryPreview.model.__debugTransport("responses", "deployment-a").url, "https://example.services.ai.azure.com/models/responses?api-version=2024-05-01-preview", "Problem building Foundry model inference preview responses URL.")
         ow.test.assert("" + foundryPreviewTransport.headers["api-key"], "test-key", "Problem setting Foundry preview api-key header.");
     };
 
     exports.testAIOpenAIStatsCaptureIncludesCachedAndReasoning = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
         g.model._request = function(url, body) {
             return {
                 model: body.model,
@@ -508,29 +508,29 @@
                         reasoning_tokens: 11
                     }
                 }
-            };
-        };
+            }
+        }
 
-        g.rawPrompt("hello", "gpt-4o", 0.1, false, []);
-        var stats = g.getLastStats();
-        ow.test.assert(stats.tokens.cached, 90, "Problem capturing OpenAI cached prompt tokens.");
-        ow.test.assert(stats.tokens.audio, 5, "Problem capturing OpenAI audio prompt tokens.");
-        ow.test.assert(stats.tokens.reasoning, 11, "Problem capturing OpenAI reasoning completion tokens.");
-    };
+        g.rawPrompt("hello", "gpt-4o", 0.1, false, [])
+        var stats = g.getLastStats()
+        ow.test.assert(stats.tokens.cached, 90, "Problem capturing OpenAI cached prompt tokens.")
+        ow.test.assert(stats.tokens.audio, 5, "Problem capturing OpenAI audio prompt tokens.")
+        ow.test.assert(stats.tokens.reasoning, 11, "Problem capturing OpenAI reasoning completion tokens.")
+    }
 
     exports.testAIAnthropicPromptCachingHeaders = function() {
-        ow.loadAI();
-        ow.loadServer();
+        ow.loadAI()
+        ow.loadServer()
 
-        var port = findRandomOpenPort();
-        var captured = [];
-        var hs = ow.server.httpd.start(port, "127.0.0.1");
+        var port = findRandomOpenPort()
+        var captured = []
+        var hs = ow.server.httpd.start(port, "127.0.0.1")
         ow.server.httpd.route(hs, {
             "/v1/messages": function(req) {
-                captured.push(req.header);
-                return ow.server.httpd.reply({}, 200, "application/json", {});
+                captured.push(req.header)
+                return ow.server.httpd.reply({}, 200, "application/json", {})
             }
-        });
+        })
 
         try {
             [
@@ -540,128 +540,128 @@
             ].forEach(function(options) {
                 var g = new ow.ai.gpt("anthropic", merge({ key: "test-key", url: "http://127.0.0.1:" + port }, options));
                 ["_request", "_requestStream"].forEach(function(method) {
-                    captured = [];
-                    var response;
+                    captured = []
+                    var response
                     try {
-                        response = g.model[method]("v1/messages", {});
-                        ow.test.assert(captured.length, 1, "Anthropic request did not reach fixture");
-                        ow.test.assert(captured[0]["x-api-key"], "test-key", "Anthropic authentication header changed");
-                        ow.test.assert(captured[0]["anthropic-version"], "2023-06-01", "Anthropic API version changed");
-                        ow.test.assert(captured[0].accept, method == "_requestStream" ? "text/event-stream" : "*/*", "Anthropic Accept header changed");
+                        response = g.model[method]("v1/messages", {})
+                        ow.test.assert(captured.length, 1, "Anthropic request did not reach fixture")
+                        ow.test.assert(captured[0]["x-api-key"], "test-key", "Anthropic authentication header changed")
+                        ow.test.assert(captured[0]["anthropic-version"], "2023-06-01", "Anthropic API version changed")
+                        ow.test.assert(captured[0].accept, method == "_requestStream" ? "text/event-stream" : "*/*", "Anthropic Accept header changed")
                         if (isDef(options.headers)) {
-                            ow.test.assert(captured[0]["anthropic-beta"], "explicit-test-beta", "Explicit beta header was discarded");
-                            ow.test.assert(captured[0]["x-test-header"], "kept", "Custom header was discarded");
+                            ow.test.assert(captured[0]["anthropic-beta"], "explicit-test-beta", "Explicit beta header was discarded")
+                            ow.test.assert(captured[0]["x-test-header"], "kept", "Custom header was discarded")
                         } else {
-                            ow.test.assert(isUnDef(captured[0]["anthropic-beta"]), true, "Prompt caching must not inject an obsolete beta header");
+                            ow.test.assert(isUnDef(captured[0]["anthropic-beta"]), true, "Prompt caching must not inject an obsolete beta header")
                         }
                     } finally {
-                        if (isDef(response) && isDef(response.close)) response.close();
+                        if (isDef(response) && isDef(response.close)) response.close()
                     }
-                });
-            });
+                })
+            })
         } finally {
-            ow.server.httpd.stop(hs);
+            ow.server.httpd.stop(hs)
         }
-    };
+    }
 
     exports.testAIAnthropicToolLoopKeepsTemperatureUnset = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test" });
-        g.setTool("echo", "Echo", { type: "object", properties: { v: { type: "string" } } }, a => a.v);
-        var requests = [];
+        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test" })
+        g.setTool("echo", "Echo", { type: "object", properties: { v: { type: "string" } } }, a => a.v)
+        var requests = []
         g.model._request = function(url, body) {
-            requests.push(__cloneForTest(body));
+            requests.push(__cloneForTest(body))
             if (requests.length == 1) return {
                 id: "msg-1", model: "claude-test", type: "message", stop_reason: "tool_use",
                 content: [ { type: "tool_use", id: "tu-1", name: "echo", input: { v: "x" } } ],
                 usage: { input_tokens: 1, output_tokens: 1 }
-            };
+            }
             return {
                 id: "msg-2", model: "claude-test", type: "message", stop_reason: "end_turn",
                 content: [ { type: "text", text: "done" } ],
                 usage: { input_tokens: 1, output_tokens: 1 }
-            };
-        };
-        g.model.rawPrompt("hi");
-        ow.test.assert(requests.length, 2, "Anthropic tool loop did not recurse");
-        ow.test.assert(isUnDef(requests[0].temperature), true, "Anthropic first request sent an implicit temperature");
-        ow.test.assert(isUnDef(requests[1].temperature), true, "Anthropic tool follow-up sent an implicit temperature");
+            }
+        }
+        g.model.rawPrompt("hi")
+        ow.test.assert(requests.length, 2, "Anthropic tool loop did not recurse")
+        ow.test.assert(isUnDef(requests[0].temperature), true, "Anthropic first request sent an implicit temperature")
+        ow.test.assert(isUnDef(requests[1].temperature), true, "Anthropic tool follow-up sent an implicit temperature")
 
-        requests = [];
-        g.model.rawPrompt("hi", __, 0.2);
+        requests = []
+        g.model.rawPrompt("hi", __, 0.2)
         ow.test.assert(requests[1].temperature, 0.2, "Anthropic tool follow-up lost an explicit temperature");
 
         // Mini-A constructs multiple clients from the same configuration object.
         [__, 0, 0.2].forEach(function(temperature) {
-            var config = { key: "test-key", model: "claude-test" };
-            if (isDef(temperature)) config.temperature = temperature;
+            var config = { key: "test-key", model: "claude-test" }
+            if (isDef(temperature)) config.temperature = temperature
             for (var i = 0; i < 2; i++) {
-                var client = new ow.ai.gpt("anthropic", config);
-                ow.test.assert(config.temperature, temperature, "Anthropic construction mutated configured temperature");
-                var captured;
+                var client = new ow.ai.gpt("anthropic", config)
+                ow.test.assert(config.temperature, temperature, "Anthropic construction mutated configured temperature")
+                var captured
                 client.model._request = function(url, body) {
-                    captured = body;
-                    return { content: [ { type: "text", text: "ok" } ] };
-                };
+                    captured = body
+                    return { content: [ { type: "text", text: "ok" } ] }
+                }
                 client.model._requestStream = function(url, body) {
-                    captured = body;
-                    return af.fromString2InputStream("data: [DONE]\n\n");
-                };
-                client.model.rawPrompt("hi");
-                ow.test.assert(captured.temperature, temperature, "Reused Anthropic config changed request temperature");
-                client.model.rawPromptStream("hi");
-                ow.test.assert(captured.temperature, temperature, "Reused Anthropic config changed streaming temperature");
+                    captured = body
+                    return af.fromString2InputStream("data: [DONE]\n\n")
+                }
+                client.model.rawPrompt("hi")
+                ow.test.assert(captured.temperature, temperature, "Reused Anthropic config changed request temperature")
+                client.model.rawPromptStream("hi")
+                ow.test.assert(captured.temperature, temperature, "Reused Anthropic config changed streaming temperature")
             }
-        });
-    };
+        })
+    }
 
     exports.testAIAnthropicPromptImageAndAttachments = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
-        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test" });
-        var bodies = [];
+        var png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test" })
+        var bodies = []
         g.model._request = function(url, body) {
-            bodies.push(__cloneForTest(body));
+            bodies.push(__cloneForTest(body))
             return { id: "m", model: "claude-test", type: "message", stop_reason: "end_turn",
-                content: [ { type: "text", text: "ok" } ], usage: { input_tokens: 1, output_tokens: 1 } };
-        };
+                content: [ { type: "text", text: "ok" } ], usage: { input_tokens: 1, output_tokens: 1 } }
+        }
 
-        ow.test.assert(g.promptImage("what?", png), "ok", "Anthropic promptImage did not return text");
-        var c = bodies[0].messages[0].content;
-        ow.test.assert(c[0].type, "image", "Image block should come first");
-        ow.test.assert(c[0].source.type, "base64", "Image source type");
-        ow.test.assert(c[0].source.media_type, "image/png", "Image media type");
-        ow.test.assert(c[1].text, "what?", "Prompt text should follow the image");
-        ow.test.assert(g.getLastStats().images.length, 1, "Image stats missing");
+        ow.test.assert(g.promptImage("what?", png), "ok", "Anthropic promptImage did not return text")
+        var c = bodies[0].messages[0].content
+        ow.test.assert(c[0].type, "image", "Image block should come first")
+        ow.test.assert(c[0].source.type, "base64", "Image source type")
+        ow.test.assert(c[0].source.media_type, "image/png", "Image media type")
+        ow.test.assert(c[1].text, "what?", "Prompt text should follow the image")
+        ow.test.assert(g.getLastStats().images.length, 1, "Image stats missing")
 
-        var tmp = io.createTempFile("oafpdf", ".pdf");
-        io.writeFileString(tmp, "%PDF-1.4 test");
-        var txt = io.createTempFile("oaftxt", ".md");
-        io.writeFileString(txt, "# hello");
-        g.promptImage("sum", [ png, { file: tmp }, { file: txt } ]);
-        io.rm(tmp); io.rm(txt);
-        c = bodies[1].messages[bodies[1].messages.length - 1].content;
-        ow.test.assert(c.length, 4, "Expected 3 attachments + text");
-        ow.test.assert(c[1].type + c[1].source.media_type, "documentapplication/pdf", "PDF document block");
-        ow.test.assert(c[2].source.type + c[2].source.data, "text# hello", "Text document block");
+        var tmp = io.createTempFile("oafpdf", ".pdf")
+        io.writeFileString(tmp, "%PDF-1.4 test")
+        var txt = io.createTempFile("oaftxt", ".md")
+        io.writeFileString(txt, "# hello")
+        g.promptImage("sum", [ png, { file: tmp }, { file: txt } ])
+        io.rm(tmp); io.rm(txt)
+        c = bodies[1].messages[bodies[1].messages.length - 1].content
+        ow.test.assert(c.length, 4, "Expected 3 attachments + text")
+        ow.test.assert(c[1].type + c[1].source.media_type, "documentapplication/pdf", "PDF document block")
+        ow.test.assert(c[2].source.type + c[2].source.data, "text# hello", "Text document block")
 
-        g.promptImage("u", [ { url: "https://example.com/a.png" } ]);
-        ow.test.assert(bodies[2].messages[bodies[2].messages.length - 1].content[0].source.type, "url", "URL source");
+        g.promptImage("u", [ { url: "https://example.com/a.png" } ])
+        ow.test.assert(bodies[2].messages[bodies[2].messages.length - 1].content[0].source.type, "url", "URL source")
 
-        var failed = false;
+        var failed = false
         try { g.promptImage("x", [ { base64: "AAAA", mediaType: "application/zip" } ]); } catch(e) { failed = true; }
-        ow.test.assert(failed, true, "Unsupported attachment type should fail");
-    };
+        ow.test.assert(failed, true, "Unsupported attachment type should fail")
+    }
 
     exports.testAIAnthropicPromptCachingBodyAndStats = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test", promptCaching: true });
-        var requests = [];
+        var g = new ow.ai.gpt("anthropic", { key: "test-key", model: "claude-test", promptCaching: true })
+        var requests = []
         g.model._request = function(url, body) {
-            requests.push(__cloneForTest(body));
+            requests.push(__cloneForTest(body))
             return {
                 id: "msg-1",
                 model: "claude-test",
@@ -674,25 +674,25 @@
                     cache_creation_input_tokens: 300,
                     cache_read_input_tokens: 220
                 }
-            };
-        };
+            }
+        }
 
-        g.addSystemPrompt("You are concise.");
-        g.rawPrompt("Hello world", "claude-test", 0.2, false, []);
+        g.addSystemPrompt("You are concise.")
+        g.rawPrompt("Hello world", "claude-test", 0.2, false, [])
 
-        var body = requests[0];
-        ow.test.assert(isArray(body.system), true, "Problem converting Anthropic system prompt into content blocks when prompt caching is enabled.");
-        ow.test.assert(body.system[0].cache_control.type, "ephemeral", "Problem setting Anthropic system prompt cache_control marker.");
+        var body = requests[0]
+        ow.test.assert(isArray(body.system), true, "Problem converting Anthropic system prompt into content blocks when prompt caching is enabled.")
+        ow.test.assert(body.system[0].cache_control.type, "ephemeral", "Problem setting Anthropic system prompt cache_control marker.")
 
-        var lastMessage = body.messages[body.messages.length - 1];
-        var lastContentBlock = lastMessage.content[lastMessage.content.length - 1];
-        ow.test.assert(lastMessage.role, "user", "Problem preserving Anthropic last user message role when applying cache_control.");
-        ow.test.assert(lastContentBlock.cache_control.type, "ephemeral", "Problem setting Anthropic cache_control marker on last user message.");
+        var lastMessage = body.messages[body.messages.length - 1]
+        var lastContentBlock = lastMessage.content[lastMessage.content.length - 1]
+        ow.test.assert(lastMessage.role, "user", "Problem preserving Anthropic last user message role when applying cache_control.")
+        ow.test.assert(lastContentBlock.cache_control.type, "ephemeral", "Problem setting Anthropic cache_control marker on last user message.")
 
-        var stats = g.getLastStats();
-        ow.test.assert(stats.tokens.cacheCreation, 300, "Problem capturing Anthropic cache creation tokens.");
-        ow.test.assert(stats.tokens.cacheRead, 220, "Problem capturing Anthropic cache read tokens.");
-    };
+        var stats = g.getLastStats()
+        ow.test.assert(stats.tokens.cacheCreation, 300, "Problem capturing Anthropic cache creation tokens.")
+        ow.test.assert(stats.tokens.cacheRead, 220, "Problem capturing Anthropic cache read tokens.")
+    }
 
     exports.testAIOpenAIToolRecursionNoDuplication = function() {
         ow.loadAI();
@@ -948,10 +948,10 @@
     };
 
     exports.testAIOpenAIRawResponse = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
-        var requests = [];
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
+        var requests = []
         var schema = {
             name: "PersonInfo",
             description: "Extract person details",
@@ -965,10 +965,10 @@
                 additionalProperties: false
             },
             strict: true
-        };
+        }
 
         g.model._request = function(url, body) {
-            requests.push({ url: url, body: __cloneForTest(body) });
+            requests.push({ url: url, body: __cloneForTest(body) })
             return {
                 model: "gpt-4o",
                 output_text: '{"name":"Alice","age":30}',
@@ -980,23 +980,23 @@
                     }
                 ],
                 usage: { input_tokens: 20, output_tokens: 10, total_tokens: 30 }
-            };
-        };
+            }
+        }
 
-        var rawRes = g.model.rawResponse("Extract: Alice, 30", "gpt-4o", 0.5, false, [], schema);
-        ow.test.assert(requests.length, 1, "Problem: rawResponse should make exactly one request.");
-        ow.test.assert(requests[0].url.indexOf("responses") >= 0, true, "Problem: rawResponse should prefer the responses endpoint.");
-        ow.test.assert(requests[0].body.text.format.type, "json_schema", "Problem: rawResponse should set text.format.type to json_schema.");
-        ow.test.assert(requests[0].body.text.format.name, "PersonInfo", "Problem: rawResponse should pass schema name.");
-        ow.test.assert(requests[0].body.text.format.strict, true, "Problem: rawResponse should pass strict flag.");
-        ow.test.assert(requests[0].body.input[0].content[0].text, "Extract: Alice, 30", "Problem: rawResponse should convert prompt messages to responses input.");
-        ow.test.assert(rawRes.output_text, '{"name":"Alice","age":30}', "Problem: rawResponse should return the responses payload.");
-    };
+        var rawRes = g.model.rawResponse("Extract: Alice, 30", "gpt-4o", 0.5, false, [], schema)
+        ow.test.assert(requests.length, 1, "Problem: rawResponse should make exactly one request.")
+        ow.test.assert(requests[0].url.indexOf("responses") >= 0, true, "Problem: rawResponse should prefer the responses endpoint.")
+        ow.test.assert(requests[0].body.text.format.type, "json_schema", "Problem: rawResponse should set text.format.type to json_schema.")
+        ow.test.assert(requests[0].body.text.format.name, "PersonInfo", "Problem: rawResponse should pass schema name.")
+        ow.test.assert(requests[0].body.text.format.strict, true, "Problem: rawResponse should pass strict flag.")
+        ow.test.assert(requests[0].body.input[0].content[0].text, "Extract: Alice, 30", "Problem: rawResponse should convert prompt messages to responses input.")
+        ow.test.assert(rawRes.output_text, '{"name":"Alice","age":30}', "Problem: rawResponse should return the responses payload.")
+    }
 
     exports.testAIOpenAIJsonSchemaPrompt = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
         var schema = {
             name: "PersonInfo",
             description: "Extract person details",
@@ -1010,7 +1010,7 @@
                 additionalProperties: false
             },
             strict: true
-        };
+        }
 
         g.model._decisionRequest = function(url, body) {
             return {
@@ -1025,43 +1025,43 @@
                     }
                 ],
                 usage: { input_tokens: 20, output_tokens: 10, total_tokens: 30 }
-            };
-        };
+            }
+        }
 
-        var result = g.jsonSchemaPrompt("Extract: Alice, 30", schema, "gpt-4o", 0.5);
-        ow.test.assert(isMap(result), true, "Problem: jsonSchemaPrompt should return a parsed map.");
-        ow.test.assert(result.name, "Alice", "Problem: jsonSchemaPrompt should parse name from JSON.");
-        ow.test.assert(result.age, 30, "Problem: jsonSchemaPrompt should parse age from JSON.");
-    };
+        var result = g.jsonSchemaPrompt("Extract: Alice, 30", schema, "gpt-4o", 0.5)
+        ow.test.assert(isMap(result), true, "Problem: jsonSchemaPrompt should return a parsed map.")
+        ow.test.assert(result.name, "Alice", "Problem: jsonSchemaPrompt should parse name from JSON.")
+        ow.test.assert(result.age, 30, "Problem: jsonSchemaPrompt should parse age from JSON.")
+    }
 
     exports.testAIOpenAISchemaHook = function() {
-        ow.loadAI();
+        ow.loadAI()
         var descriptor = { name: "Value", schema: { type: "object", properties: { value: { anyOf: [{ type: "string", pattern: "^ok$" }, { type: "null" }] } }, required: ["value"], additionalProperties: false } };
         ["chat", "responses"].forEach(function(transport) {
-            var g = new ow.ai.gpt("openai", { key: "test", url: "https://example.invalid", schemaTransport: transport });
-            var before = JSON.stringify(descriptor), calls = 0;
+            var g = new ow.ai.gpt("openai", { key: "test", url: "https://example.invalid", schemaTransport: transport })
+            var before = JSON.stringify(descriptor), calls = 0
             g.model._decisionRequest = function(url, body) {
-                calls++;
-                var wire = transport == "chat" ? body.response_format.json_schema : body.text.format;
-                ow.test.assert(wire.name, "Value", "Schema name");
-                ow.test.assert(wire.strict, true, "Strict default");
-                return transport == "chat" ? { choices: [{ finish_reason: "stop", message: { content: '{"value":"ok"}' } }] } : { status: "completed", output: [{ type: "message", status: "completed", content: [{ type: "output_text", text: '{"value":"ok"}' }] }] };
-            };
-            ow.test.assert(g.jsonSchemaPrompt("Extract", descriptor).value, "ok", "Parsed schema response");
-            ow.test.assert(calls, 1, "Single request");
-            ow.test.assert(JSON.stringify(descriptor), before, "Descriptor preserved");
-            var history = JSON.stringify(g.model.conversation), failed = false;
-            g.model._decisionRequest = function() { return { choices: [{ finish_reason: "stop", message: { content: '{"value":"bad"}' } }] }; };
+                calls++
+                var wire = transport == "chat" ? body.response_format.json_schema : body.text.format
+                ow.test.assert(wire.name, "Value", "Schema name")
+                ow.test.assert(wire.strict, true, "Strict default")
+                return transport == "chat" ? { choices: [{ finish_reason: "stop", message: { content: '{"value":"ok"}' } }] } : { status: "completed", output: [{ type: "message", status: "completed", content: [{ type: "output_text", text: '{"value":"ok"}' }] }] }
+            }
+            ow.test.assert(g.jsonSchemaPrompt("Extract", descriptor).value, "ok", "Parsed schema response")
+            ow.test.assert(calls, 1, "Single request")
+            ow.test.assert(JSON.stringify(descriptor), before, "Descriptor preserved")
+            var history = JSON.stringify(g.model.conversation), failed = false
+            g.model._decisionRequest = function() { return { choices: [{ finish_reason: "stop", message: { content: '{"value":"bad"}' } }] }; }
             try { g.jsonSchemaPrompt("Extract", descriptor); } catch(e) { failed = true; }
-            ow.test.assert(failed, true, "Pattern validation rejects invalid output");
-            ow.test.assert(JSON.stringify(g.model.conversation), history, "Failed response preserves history");
-        });
-    };
+            ow.test.assert(failed, true, "Pattern validation rejects invalid output")
+            ow.test.assert(JSON.stringify(g.model.conversation), history, "Failed response preserves history")
+        })
+    }
 
     exports.testAIOpenAIJsonSchemaPromptWithStats = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
         var schema = {
             name: "PersonInfo",
             schema: {
@@ -1073,7 +1073,7 @@
                 additionalProperties: false
             },
             strict: true
-        };
+        }
 
         g.model._decisionRequest = function(url, body) {
             return {
@@ -1089,25 +1089,25 @@
                     }
                 ],
                 usage: { input_tokens: 15, output_tokens: 8, total_tokens: 23 }
-            };
-        };
+            }
+        }
 
-        var result = g.jsonSchemaPromptWithStats("Get name: Bob", schema);
-        ow.test.assert(isMap(result), true, "Problem: jsonSchemaPromptWithStats should return a map.");
-        ow.test.assert(isDef(result.response), true, "Problem: jsonSchemaPromptWithStats should have response field.");
-        ow.test.assert(isDef(result.stats), true, "Problem: jsonSchemaPromptWithStats should have stats field.");
-        ow.test.assert(result.response.name, "Bob", "Problem: jsonSchemaPromptWithStats response should contain parsed name.");
-        ow.test.assert(result.stats.tokens.total, 23, "Problem: jsonSchemaPromptWithStats stats should contain token usage.");
-    };
+        var result = g.jsonSchemaPromptWithStats("Get name: Bob", schema)
+        ow.test.assert(isMap(result), true, "Problem: jsonSchemaPromptWithStats should return a map.")
+        ow.test.assert(isDef(result.response), true, "Problem: jsonSchemaPromptWithStats should have response field.")
+        ow.test.assert(isDef(result.stats), true, "Problem: jsonSchemaPromptWithStats should have stats field.")
+        ow.test.assert(result.response.name, "Bob", "Problem: jsonSchemaPromptWithStats response should contain parsed name.")
+        ow.test.assert(result.stats.tokens.total, 23, "Problem: jsonSchemaPromptWithStats stats should contain token usage.")
+    }
 
     exports.testAIOpenAIJsonSchemaPromptSchemaDefault = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
-        var requests = [];
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
+        var requests = []
 
         g.model._request = function(url, body) {
-            requests.push(__cloneForTest(body));
+            requests.push(__cloneForTest(body))
             return {
                 model: "gpt-4o",
                 output_text: '{"val":1}',
@@ -1119,23 +1119,23 @@
                     }
                 ],
                 usage: { input_tokens: 5, output_tokens: 5, total_tokens: 10 }
-            };
-        };
+            }
+        }
 
         // Schema without description or strict – should use defaults
         g.model.rawResponse("test", "gpt-4o", 0.5, false, [], {
             name: "MySchema",
             schema: { type: "object", additionalProperties: false }
-        });
-        ow.test.assert(requests[0].text.format.description, "API Response", "Problem: rawResponse should default description to 'API Response'.");
-        ow.test.assert(requests[0].text.format.strict, true, "Problem: rawResponse should default strict to true.");
-    };
+        })
+        ow.test.assert(requests[0].text.format.description, "API Response", "Problem: rawResponse should default description to 'API Response'.")
+        ow.test.assert(requests[0].text.format.strict, true, "Problem: rawResponse should default strict to true.")
+    }
 
     exports.testAIOpenAIRawResponseFallsBackToChatCompletions = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
-        var requests = [];
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
+        var requests = []
         var schema = {
             name: "PersonInfo",
             schema: {
@@ -1146,10 +1146,10 @@
                 required: ["name"],
                 additionalProperties: false
             }
-        };
+        }
 
         g.model._request = function(url, body) {
-            requests.push({ url: url, body: __cloneForTest(body) });
+            requests.push({ url: url, body: __cloneForTest(body) })
             if (url.indexOf("responses") >= 0) {
                 return {
                     error: {
@@ -1157,7 +1157,7 @@
                         code: "not_found"
                     },
                     status: 404
-                };
+                }
             }
             return {
                 model: "gpt-4o",
@@ -1168,22 +1168,22 @@
                     }
                 ],
                 usage: { prompt_tokens: 8, completion_tokens: 4, total_tokens: 12 }
-            };
-        };
+            }
+        }
 
-        var rawRes = g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], schema);
-        ow.test.assert(requests.length, 2, "Problem: rawResponse should retry with chat/completions when responses is unavailable.");
-        ow.test.assert(requests[0].url.indexOf("responses") >= 0, true, "Problem: rawResponse should try responses first.");
-        ow.test.assert(requests[1].url.indexOf("chat/completions") >= 0, true, "Problem: rawResponse should fall back to chat/completions.");
-        ow.test.assert(requests[1].body.response_format.type, "json_schema", "Problem: chat fallback should keep json_schema response_format.");
-        ow.test.assert(isArray(rawRes.choices) && rawRes.choices.length > 0, true, "Problem: chat fallback should return the chat response payload.");
-    };
+        var rawRes = g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], schema)
+        ow.test.assert(requests.length, 2, "Problem: rawResponse should retry with chat/completions when responses is unavailable.")
+        ow.test.assert(requests[0].url.indexOf("responses") >= 0, true, "Problem: rawResponse should try responses first.")
+        ow.test.assert(requests[1].url.indexOf("chat/completions") >= 0, true, "Problem: rawResponse should fall back to chat/completions.")
+        ow.test.assert(requests[1].body.response_format.type, "json_schema", "Problem: chat fallback should keep json_schema response_format.")
+        ow.test.assert(isArray(rawRes.choices) && rawRes.choices.length > 0, true, "Problem: chat fallback should return the chat response payload.")
+    }
 
     exports.testAIOpenAIRawResponseCachesChatFallback = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
-        var requests = [];
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
+        var requests = []
         var schema = {
             name: "PersonInfo",
             schema: {
@@ -1194,10 +1194,10 @@
                 required: ["name"],
                 additionalProperties: false
             }
-        };
+        }
 
         g.model._request = function(url, body) {
-            requests.push(url);
+            requests.push(url)
             if (url.indexOf("responses") >= 0) {
                 return {
                     error: {
@@ -1205,7 +1205,7 @@
                         code: "not_found"
                     },
                     status: 404
-                };
+                }
             }
             return {
                 model: "gpt-4o",
@@ -1216,60 +1216,60 @@
                     }
                 ],
                 usage: { prompt_tokens: 8, completion_tokens: 4, total_tokens: 12 }
-            };
-        };
+            }
+        }
 
-        g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], schema);
-        g.model.rawResponse("Extract: Alice again", "gpt-4o", 0.5, false, [], schema);
-        ow.test.assert(requests.filter(r => r.indexOf("responses") >= 0).length, 1, "Problem: rawResponse should stop retrying responses after endpoint unavailability.");
-        ow.test.assert(requests.filter(r => r.indexOf("chat/completions") >= 0).length, 2, "Problem: rawResponse should reuse chat/completions fallback after responses becomes unavailable.");
-    };
+        g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], schema)
+        g.model.rawResponse("Extract: Alice again", "gpt-4o", 0.5, false, [], schema)
+        ow.test.assert(requests.filter(r => r.indexOf("responses") >= 0).length, 1, "Problem: rawResponse should stop retrying responses after endpoint unavailability.")
+        ow.test.assert(requests.filter(r => r.indexOf("chat/completions") >= 0).length, 2, "Problem: rawResponse should reuse chat/completions fallback after responses becomes unavailable.")
+    }
 
     exports.testAIOpenAIRawResponseDoesNotFallbackOnOtherErrors = function() {
-        ow.loadAI();
+        ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" });
-        var requests = [];
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
+        var requests = []
 
         g.model._request = function(url, body) {
-            requests.push(url);
+            requests.push(url)
             return {
                 error: {
                     message: "Invalid schema for text.format",
                     code: "invalid_request_error"
                 },
                 status: 400
-            };
-        };
+            }
+        }
 
         var res = g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], {
             name: "PersonInfo",
             schema: { type: "object" }
-        });
-        ow.test.assert(requests.length, 1, "Problem: rawResponse should not fall back for non-availability errors.");
-        ow.test.assert(requests[0].indexOf("responses") >= 0, true, "Problem: rawResponse should return the original responses error.");
-        ow.test.assert(isMap(res.error), true, "Problem: rawResponse should return the original error response.");
-    };
+        })
+        ow.test.assert(requests.length, 1, "Problem: rawResponse should not fall back for non-availability errors.")
+        ow.test.assert(requests[0].indexOf("responses") >= 0, true, "Problem: rawResponse should return the original responses error.")
+        ow.test.assert(isMap(res.error), true, "Problem: rawResponse should return the original error response.")
+    }
 
     exports.testAIOpenAIJsonSchemaPromptUnsupportedProvider = function() {
         ow.loadAI();
 
         [ "ollama", "anthropic" ].forEach(provider => {
-            var g = provider == "ollama" ? new ow.ai.gpt(provider, { url: "http://127.0.0.1:11434", model: "llama-test" }) : new ow.ai.gpt(provider, { key: "test-key" });
+            var g = provider == "ollama" ? new ow.ai.gpt(provider, { url: "http://127.0.0.1:11434", model: "llama-test" }) : new ow.ai.gpt(provider, { key: "test-key" })
             // Test the unsupported-capability boundary, not a provider-name assumption:
             // these providers can now implement structuredSchemaPrompt themselves.
             g.model.structuredSchemaPrompt = __
             g.model.rawResponse = __
-            var threw = false;
+            var threw = false
             try {
-                g.jsonSchemaPrompt("test", { name: "T", schema: {} });
+                g.jsonSchemaPrompt("test", { name: "T", schema: {} })
             } catch(e) {
-                threw = true;
-                ow.test.assert(String(e), "JSON Schema responses not supported by this provider", "Problem: unsupported providers should throw a consistent error.");
+                threw = true
+                ow.test.assert(String(e), "JSON Schema responses not supported by this provider", "Problem: unsupported providers should throw a consistent error.")
             }
-            ow.test.assert(threw, true, "Problem: jsonSchemaPrompt should throw for providers that don't support rawResponse.");
-        });
-    };
+            ow.test.assert(threw, true, "Problem: jsonSchemaPrompt should throw for providers that don't support rawResponse.")
+        })
+    }
 
     exports.testAIOpenAITerminalResponsesDoNotRetry = function() {
         ow.loadAI()

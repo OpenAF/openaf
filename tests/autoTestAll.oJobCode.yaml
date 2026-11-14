@@ -2,23 +2,28 @@ include:
 - autoTestAll.common.yaml
 
 jobs:
-- name: oJobCode::Init
-  exec: args.tests = require("autoTestAll.oJobCode.js");
 
+# oJobCode::Init
+- name: oJobCode::Init
+  exec: args.tests = require("autoTestAll.oJobCode.js")
+
+# oJobCode::EmbeddedCall
 - name: oJobCode::EmbeddedCall
   from: oJobCode::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testEmbeddedBodyWithFunctionCall;
+  exec: args.func = args.tests.testEmbeddedBodyWithFunctionCall
 
+# oJobCode::EmbeddedAssignment
 - name: oJobCode::EmbeddedAssignment
   from: oJobCode::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testEmbeddedBodyWithoutFunctionCall;
+  exec: args.func = args.tests.testEmbeddedBodyWithoutFunctionCall
 
+# oJobCode::EmbeddedModule
 - name: oJobCode::EmbeddedModule
   from: oJobCode::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testEmbeddedModuleStillRequires;
+  exec: args.func = args.tests.testEmbeddedModuleStillRequires
 
 todo:
 - oJobCode::EmbeddedCall

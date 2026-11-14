@@ -8,8 +8,8 @@
     exports.testMD2HTML = function() {
         var md = "# test 1";
 
-        ow.loadTemplate();
-        var out = ow.template.parseMD2HTML(md);
+        ow.loadTemplate()
+        var out = ow.template.parseMD2HTML(md)
         ow.test.assert(out, "<h1 id=\"test-1\">test 1</h1>", "Problem with ow.template.parseMD2HTML");
 
         // TODO: Need to improve this test
@@ -18,16 +18,16 @@
     };
 
     exports.testMD2HTMLDisplayMathKeepsLineBreaks = function() {
-        var md = "Before\n\n$$\na \\\\\nb\n$$\n\nAfter";
+        var md = "Before\n\n$$\na \\\\\nb\n$$\n\nAfter"
 
-        ow.loadTemplate();
-        var out = ow.template.parseMD2HTML(md);
-        var math = out.match(/\$\$[\s\S]*?\$\$/);
+        ow.loadTemplate()
+        var out = ow.template.parseMD2HTML(md)
+        var math = out.match(/\$\$[\s\S]*?\$\$/)
 
-        ow.test.assert(isDef(math), true, "Problem with ow.template.parseMD2HTML display math block.");
-        ow.test.assert(/<br\s*\/?>/i.test(math[0]), false, "Problem with ow.template.parseMD2HTML inserted line break inside display math.");
-        ow.test.assert(math[0].indexOf("a \\\\\nb") >= 0, true, "Problem with ow.template.parseMD2HTML preserving display math newlines.");
-    };
+        ow.test.assert(isDef(math), true, "Problem with ow.template.parseMD2HTML display math block.")
+        ow.test.assert(/<br\s*\/?>/i.test(math[0]), false, "Problem with ow.template.parseMD2HTML inserted line break inside display math.")
+        ow.test.assert(math[0].indexOf("a \\\\\nb") >= 0, true, "Problem with ow.template.parseMD2HTML preserving display math newlines.")
+    }
 
     exports.testMD2HTMLWithPrefix = function() {
         var md = "# test 1"

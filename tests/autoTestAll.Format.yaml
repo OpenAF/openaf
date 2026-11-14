@@ -7,27 +7,27 @@ jobs:
    - name: Format::Pause navigation
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testPauseNavigation;
+     exec: args.func = args.tests.testPauseNavigation
 
    - name: Format::Pause search
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testPauseSearch;
+     exec: args.func = args.tests.testPauseSearch
 
    - name: Format::Pause search ANSI
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testPauseSearchAnsi;
+     exec: args.func = args.tests.testPauseSearchAnsi
 
    - name: Format::Print tree without console
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testPrintTreeWithoutConsole;
+     exec: args.func = args.tests.testPrintTreeWithoutConsole
 
    - name: Format::String hex
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testStringHex;
+     exec: args.func = args.tests.testStringHex
 
    - name: Format::AnsiClipClusters
      from: Format::Init
@@ -137,222 +137,222 @@ jobs:
    # Format tests
    # --------------
    - name: Format::Init
-     exec: args.tests = require("autoTestAll.Format.js");
+     exec: args.tests = require("autoTestAll.Format.js")
 
    - name: Format::Load Format
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testLoadFormat; 
+     exec: args.func = args.tests.testLoadFormat
 
    - name: Format::Add number separator
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testAddNumberSeparator;
+     exec: args.func = args.tests.testAddNumberSeparator
 
    - name: Format::Number abbreviation
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testAbbreviation;
+     exec: args.func = args.tests.testAbbreviation
 
    - name: Format::Number rounding
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testRound;
+     exec: args.func = args.tests.testRound
 
    - name: Format::Time ago
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testTimeAgo;
+     exec: args.func = args.tests.testTimeAgo
 
    - name: Format::Date to/from
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testDate;     
+     exec: args.func = args.tests.testDate
 
    - name: Format::Date ISO from
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testISODate;
+     exec: args.func = args.tests.testISODate
 
    - name: Format::Escape strings
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testEscape;      
+     exec: args.func = args.tests.testEscape
 
    - name: Format::Word wrap
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testWordWrap; 
+     exec: args.func = args.tests.testWordWrap
 
    - name: Format::Visible length emoji presentation
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testVisibleLengthEmojiPresentation;
+     exec: args.func = args.tests.testVisibleLengthEmojiPresentation
 
    - name: Format::Visible length subdivision flag
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testVisibleLengthSubdivisionFlag;
+     exec: args.func = args.tests.testVisibleLengthSubdivisionFlag
 
    - name: Format::Visible length unicode
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testVisibleLengthUnicode;
+     exec: args.func = args.tests.testVisibleLengthUnicode
 
    - name: Format::PrintTable emoji alignment
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintTableEmojiAlignment;
+     exec: args.func = args.tests.testPrintTableEmojiAlignment
 
    - name: Format::PrintTable subdivision flag alignment
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintTableSubdivisionFlagAlignment;
+     exec: args.func = args.tests.testPrintTableSubdivisionFlagAlignment
 
    - name: Format::PrintTable header alignment
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintTableHeaderLeftAlignment;
+     exec: args.func = args.tests.testPrintTableHeaderLeftAlignment
 
    - name: Format::PrintTable borderless
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintTableBorderless;
+     exec: args.func = args.tests.testPrintTableBorderless
 
    - name: Format::PrintTable borderless wrapping
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintTableBorderlessWrapping;
+     exec: args.func = args.tests.testPrintTableBorderlessWrapping
 
    - name: Format::$output borderless
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testOutputBorderless;
+     exec: args.func = args.tests.testOutputBorderless
 
    - name: Format::PrintTable borderless colors
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintTableBorderlessColors;
+     exec: args.func = args.tests.testPrintTableBorderlessColors
 
    - name: Format::Markdown wrap
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testWithMDWrap;
+     exec: args.func = args.tests.testWithMDWrap
 
    - name: Format::Markdown lists
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testWithMDLists;
+     exec: args.func = args.tests.testWithMDLists
 
    - name: Format::$output Markdown
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testOutputMarkdown;
+     exec: args.func = args.tests.testOutputMarkdown
 
    - name: Format::String pad
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPad;
+     exec: args.func = args.tests.testPad
 
    - name: Format::Side line emoji header footer
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testWithSideLineEmojiHeaderFooter;
+     exec: args.func = args.tests.testWithSideLineEmojiHeaderFooter
 
    - name: Format::Terminal capabilities
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testTermCapabilities;
+     exec: args.func = args.tests.testTermCapabilities
 
    - name: Format::Viz frame diff
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testVizDiffFrames;
+     exec: args.func = args.tests.testVizDiffFrames
 
    - name: Format::Viz benchmark
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testVizBenchmarkRender;
+     exec: args.func = args.tests.testVizBenchmarkRender
 
    - name: Format::Viz create canvas
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testVizCreateCanvas;
+     exec: args.func = args.tests.testVizCreateCanvas
 
    - name: Format::Viz layout
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testVizLayout;
+     exec: args.func = args.tests.testVizLayout
 
    - name: Format::Print sparkline
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintSparkline;
+     exec: args.func = args.tests.testPrintSparkline
 
    - name: Format::Print chart array
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintChartArray;
+     exec: args.func = args.tests.testPrintChartArray
 
    - name: Format::Print histogram
      from: Format::Init
@@ -366,7 +366,7 @@ jobs:
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintHeatmap;
+     exec: args.func = args.tests.testPrintHeatmap
 
    - name: Format::Print bullet value formats
      from: Format::Init
@@ -380,84 +380,84 @@ jobs:
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testPrintDashboard;
+     exec: args.func = args.tests.testPrintDashboard
 
    - name: Format::Date diff
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testDateDiff;      
+     exec: args.func = args.tests.testDateDiff
 
    - name: Format::Cron
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testCron;  
+     exec: args.func = args.tests.testCron
 
    - name: Format::Actual Time
      from: Format::Init
      to  : OpenAF Test
      deps:
        - Format::Load Format
-     exec: args.func = args.tests.testActualTime;
+     exec: args.func = args.tests.testActualTime
 
    - name: Format::Conversions
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testConversions;  
+     exec: args.func = args.tests.testConversions
 
    - name: Format::LSH
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testLSH;     
+     exec: args.func = args.tests.testLSH
 
    - name: Format::Host
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testHost;  
-      
+     exec: args.func = args.tests.testHost
+
    - name: Format::Unix date to/from
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testUnixDateConversions; 
+     exec: args.func = args.tests.testUnixDateConversions
 
    - name: Format::LDAP date to/from
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testLDAPDateConversions;
+     exec: args.func = args.tests.testLDAPDateConversions
 
    - name: Format::Escape/Unescape HTML4
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testHTML4;
+     exec: args.func = args.tests.testHTML4
 
    - name: Format::Cron How Many Ago
      from: Format::Init
      to  : OpenAF Test
-     deps: 
+     deps:
        - Format::Load Format
-     exec: args.func = args.tests.testCronHowManyAgo;      
+     exec: args.func = args.tests.testCronHowManyAgo
 
    - name: Format::SLON
      from: Format::Init
      to  : OpenAF Test
      deps:
      - Format::Load Format
-     exec: args.func = args.tests.testSLON;
+     exec: args.func = args.tests.testSLON
 
    - name: Format::TimeAbbreviation
      from: Format::Init
@@ -490,17 +490,17 @@ jobs:
    - name: Format::Ansi clip and pad
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testAnsiClipPad;
+     exec: args.func = args.tests.testAnsiClipPad
 
    - name: Format::Tree table arrays heterogeneous
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testTreeTableArraysHeterogeneous;
+     exec: args.func = args.tests.testTreeTableArraysHeterogeneous
 
    - name: Format::Default table format
      from: Format::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testDefaultTableFormat;
+     exec: args.func = args.tests.testDefaultTableFormat
 
 todo:
    - Format::Pause navigation
@@ -509,7 +509,7 @@ todo:
    - Format::Print tree without console
    # Format tests
    # ------------
-   
+
    - Format::Load Format
    - Format::VizFrameTerminalState
    - Format::VizWatchResize

@@ -23,22 +23,22 @@ jobs:
    - name: Obj::REST closes owned client after failure
      from: Obj::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testRESTClosesOwnedClientAfterFailure;
+     exec: args.func = args.tests.testRESTClosesOwnedClientAfterFailure
 
    - name: Obj::Edge cases
      from: Obj::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testObjectEdgeCases;
+     exec: args.func = args.tests.testObjectEdgeCases
 
    - name: Obj::Array to ordered object
      from: Obj::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testArray2OrdObj;
+     exec: args.func = args.tests.testArray2OrdObj
 
    - name: Obj::Ordered object to array
      from: Obj::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testOrdObj2Array;
+     exec: args.func = args.tests.testOrdObj2Array
 
    - name: Obj::Get Path
      from: Obj::Init
@@ -118,22 +118,22 @@ jobs:
    - name: Obj::Object pool capacity
      from: Obj::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testObjPoolCapacity;
+     exec: args.func = args.tests.testObjPoolCapacity
 
    - name: Obj::Object pool batch growth
      from: Obj::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testObjPoolBatchGrowth;
+     exec: args.func = args.tests.testObjPoolBatchGrowth
 
    - name: Obj::Object pool stop without close
      from: Obj::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testObjPoolStopWithoutClose;
+     exec: args.func = args.tests.testObjPoolStopWithoutClose
 
    - name: Obj::Object pool added and failed batch
      from: Obj::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testObjPoolAddedAndFailedBatch;
+     exec: args.func = args.tests.testObjPoolAddedAndFailedBatch
 
    - name: Obj::Object pool health retries
      from: Obj::Init

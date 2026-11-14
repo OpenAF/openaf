@@ -5,12 +5,12 @@ include:
 
 jobs:
   - name: SSH::Init
-    exec: args.tests = require("autoTestAll.SSH.js");
+    exec: args.tests = require("autoTestAll.SSH.js")
 
   - name: SSH::SCP download target containment
     from: SSH::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testScpDownloadTarget;
+    exec: args.func = args.tests.testScpDownloadTarget
 
 todo:
   - SSH::Init

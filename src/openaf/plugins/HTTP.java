@@ -46,29 +46,29 @@ public class HTTP extends ScriptableObject {
 	protected String l = null;
 	protected String p = null;
 	protected String lpsID = null;
-	protected ConcurrentHashMap<String, LPs> lps = new ConcurrentHashMap<String, LPs>();
-	protected volatile URL defaultCredentialOrigin = null;
+    protected ConcurrentHashMap<String, LPs> lps = new ConcurrentHashMap<String, LPs>();
+    protected volatile URL defaultCredentialOrigin = null;
 	
 	protected class LPs {
 		String l;
 		String p;
-		String realm;
-		String scheme;
+        String realm;
+        String scheme;
 
 		public LPs(String ll, String pp) {
 			this.l = ll;
 			this.p = pp;
 		}
 
-		public synchronized boolean accepts(String requestRealm, String requestScheme) {
-			if (realm == null && scheme == null) {
-				realm = requestRealm;
-				scheme = requestScheme;
-				return true;
-			}
-			return (realm == null ? requestRealm == null : realm.equals(requestRealm))
-					&& (scheme == null ? requestScheme == null : scheme.equalsIgnoreCase(requestScheme));
-		}
+        public synchronized boolean accepts(String requestRealm, String requestScheme) {
+            if (realm == null && scheme == null) {
+                realm = requestRealm;
+                scheme = requestScheme;
+                return true;
+            }
+            return (realm == null ? requestRealm == null : realm.equals(requestRealm))
+                    && (scheme == null ? requestScheme == null : scheme.equalsIgnoreCase(requestScheme));
+        }
 	}
 
 	/**
@@ -86,7 +86,7 @@ public class HTTP extends ScriptableObject {
 		public String contentType;
 		public Map<String, List<String>> responseHeaders;
 		public InputStream responseStream;
-		private HttpURLConnection connection;
+        private HttpURLConnection connection;
 		
 		public HTTPResponse(String response, int responseCode, Map<String, List<String>> map, String contentType) {
 			this.response = response;
@@ -109,10 +109,10 @@ public class HTTP extends ScriptableObject {
 			this.contentType = contentType;
 		}
 
-		public void close() throws IOException {
-			if (responseStream != null) responseStream.close();
-			if (connection != null) connection.disconnect();
-		}
+        public void close() throws IOException {
+            if (responseStream != null) responseStream.close();
+            if (connection != null) connection.disconnect();
+        }
 
 	}
 	
@@ -155,8 +155,8 @@ public class HTTP extends ScriptableObject {
 			urlPartial = "default";
 		}		
 
-		lps.put(urlPartial, new LPs(user, pass));
-		if (urlPartial.equals("default")) defaultCredentialOrigin = null;
+        lps.put(urlPartial, new LPs(user, pass));
+        if (urlPartial.equals("default")) defaultCredentialOrigin = null;
 
 		l = user;
 		p = pass;
@@ -168,83 +168,83 @@ public class HTTP extends ScriptableObject {
 		SimpleLog.log(SimpleLog.logtype.DEBUG, "HTTP connection with authentication for " + user, null);
 	}
 
-	protected int effectivePort(URL url) {
-		int port = url.getPort();
-		return port >= 0 ? port : url.getDefaultPort();
-	}
+    protected int effectivePort(URL url) {
+        int port = url.getPort();
+        return port >= 0 ? port : url.getDefaultPort();
+    }
 
-	protected boolean sameOrigin(URL first, URL second) {
-		return first != null && second != null
-				&& first.getProtocol().equalsIgnoreCase(second.getProtocol())
-				&& first.getHost().equalsIgnoreCase(second.getHost())
-				&& effectivePort(first) == effectivePort(second);
-	}
+    protected boolean sameOrigin(URL first, URL second) {
+        return first != null && second != null
+                && first.getProtocol().equalsIgnoreCase(second.getProtocol())
+                && first.getHost().equalsIgnoreCase(second.getHost())
+                && effectivePort(first) == effectivePort(second);
+    }
 
-	protected boolean pathMatches(URL scope, URL requestURL) {
-		String scopePath = scope.getPath();
-		String requestPath = requestURL.getPath();
-		if (scopePath == null || scopePath.length() == 0 || scopePath.equals("/")) return true;
-		if (requestPath == null) return false;
-		return requestPath.equals(scopePath) || requestPath.startsWith(scopePath.endsWith("/") ? scopePath : scopePath + "/");
-	}
+    protected boolean pathMatches(URL scope, URL requestURL) {
+        String scopePath = scope.getPath();
+        String requestPath = requestURL.getPath();
+        if (scopePath == null || scopePath.length() == 0 || scopePath.equals("/")) return true;
+        if (requestPath == null) return false;
+        return requestPath.equals(scopePath) || requestPath.startsWith(scopePath.endsWith("/") ? scopePath : scopePath + "/");
+    }
 
-	protected synchronized URL bindDefaultCredentialOrigin(URL requestURL) {
-		if (lps.containsKey("default") && defaultCredentialOrigin == null) defaultCredentialOrigin = requestURL;
-		return defaultCredentialOrigin;
-	}
+    protected synchronized URL bindDefaultCredentialOrigin(URL requestURL) {
+        if (lps.containsKey("default") && defaultCredentialOrigin == null) defaultCredentialOrigin = requestURL;
+        return defaultCredentialOrigin;
+    }
 
-	protected LPs findCredentials(URL requestURL) {
-		String selectedKey = null;
-		for (String key : lps.keySet()) {
-			if (key.equals("default")) continue;
-			try {
-				URL scope = URI.create(key).toURL();
-				if (sameOrigin(scope, requestURL) && pathMatches(scope, requestURL)
-						&& (selectedKey == null || key.length() > selectedKey.length())) selectedKey = key;
-			} catch (Exception e) {
-				// Invalid URL scopes cannot safely authorize a credential challenge.
-			}
-		}
-		if (selectedKey != null) return lps.get(selectedKey);
+    protected LPs findCredentials(URL requestURL) {
+        String selectedKey = null;
+        for (String key : lps.keySet()) {
+            if (key.equals("default")) continue;
+            try {
+                URL scope = URI.create(key).toURL();
+                if (sameOrigin(scope, requestURL) && pathMatches(scope, requestURL)
+                        && (selectedKey == null || key.length() > selectedKey.length())) selectedKey = key;
+            } catch (Exception e) {
+                // Invalid URL scopes cannot safely authorize a credential challenge.
+            }
+        }
+        if (selectedKey != null) return lps.get(selectedKey);
 
-		LPs defaultCredentials = lps.get("default");
-		if (defaultCredentials != null && sameOrigin(defaultCredentialOrigin, requestURL)) return defaultCredentials;
-		return null;
-	}
+        LPs defaultCredentials = lps.get("default");
+        if (defaultCredentials != null && sameOrigin(defaultCredentialOrigin, requestURL)) return defaultCredentials;
+        return null;
+    }
 
-	protected Authenticator createAuthenticator() {
-		final Authenticator inheritedAuthenticator = Authenticator.getDefault();
-		return new Authenticator() {
-			@Override
-			protected PasswordAuthentication getPasswordAuthentication() {
-				if (getRequestorType() == RequestorType.PROXY) {
-					if (inheritedAuthenticator == null) return null;
-					return Authenticator.requestPasswordAuthentication(inheritedAuthenticator, getRequestingHost(), getRequestingSite(),
-							getRequestingPort(), getRequestingProtocol(), getRequestingPrompt(), getRequestingScheme(),
-							getRequestingURL(), getRequestorType());
-				}
-				if (getRequestorType() != RequestorType.SERVER) return null;
-				LPs credentials = findCredentials(getRequestingURL());
-				if (credentials == null) return null;
-				if (!credentials.accepts(getRequestingPrompt(), getRequestingScheme())) return null;
-				return new PasswordAuthentication(AFCmdBase.afc.dIP(credentials.l), AFCmdBase.afc.dIP(credentials.p).toCharArray());
-			}
-		};
-	}
+    protected Authenticator createAuthenticator() {
+        final Authenticator inheritedAuthenticator = Authenticator.getDefault();
+        return new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                if (getRequestorType() == RequestorType.PROXY) {
+                    if (inheritedAuthenticator == null) return null;
+                    return Authenticator.requestPasswordAuthentication(inheritedAuthenticator, getRequestingHost(), getRequestingSite(),
+                            getRequestingPort(), getRequestingProtocol(), getRequestingPrompt(), getRequestingScheme(),
+                            getRequestingURL(), getRequestorType());
+                }
+                if (getRequestorType() != RequestorType.SERVER) return null;
+                LPs credentials = findCredentials(getRequestingURL());
+                if (credentials == null) return null;
+                if (!credentials.accepts(getRequestingPrompt(), getRequestingScheme())) return null;
+                return new PasswordAuthentication(AFCmdBase.afc.dIP(credentials.l), AFCmdBase.afc.dIP(credentials.p).toCharArray());
+            }
+        };
+    }
 
-	protected URL authenticationURL(String aURL) throws Exception {
-		URI uri = URI.create(aURL);
-		String scheme = uri.getScheme();
-		if (scheme.equalsIgnoreCase("ws")) scheme = "http";
-		if (scheme.equalsIgnoreCase("wss")) scheme = "https";
-		return new URI(scheme, uri.getRawUserInfo(), uri.getHost(), uri.getPort(), uri.getRawPath(), uri.getRawQuery(), null).toURL();
-	}
+    protected URL authenticationURL(String aURL) throws Exception {
+        URI uri = URI.create(aURL);
+        String scheme = uri.getScheme();
+        if (scheme.equalsIgnoreCase("ws")) scheme = "http";
+        if (scheme.equalsIgnoreCase("wss")) scheme = "https";
+        return new URI(scheme, uri.getRawUserInfo(), uri.getHost(), uri.getPort(), uri.getRawPath(), uri.getRawQuery(), null).toURL();
+    }
 
-	protected LPs credentialsForURL(String aURL) throws Exception {
-		URL url = authenticationURL(aURL);
-		bindDefaultCredentialOrigin(url);
-		return findCredentials(url);
-	}
+    protected LPs credentialsForURL(String aURL) throws Exception {
+        URL url = authenticationURL(aURL);
+        bindDefaultCredentialOrigin(url);
+        return findCredentials(url);
+    }
 	
 	/**
 	 * <odoc>
@@ -439,77 +439,77 @@ public class HTTP extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>HTTP.wsConnect(anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned) : WebSocketClient</key>
-	 * <![CDATA[
+     * <![CDATA[
 	 * Tries to establish a websocket connection (ws or wss) and returns a jetty WebSocketClient java object.
-	 * As callbacks you should defined `onConnect`, `onMsg`, `onError` and `onClose`. The `onConnect` callback will
-	 * provide, as argument, the created session that you should use to send data; the `onMsg` callback will
-	 * provide, as arguments, `aType` (either "text" or "bytes"), `aPayload` (string or array of bytes) and an offset
-	 * and length (in case type is "bytes"); the `onError` callback will provide the cause; the `onClose` callback
-	 * will provide `aStatusCode` and `aReason`. You can optionally provide `aTimeout` (number) and indicate if self signed SSL
-	 * certificates should be accepted (`supportSelfSigned` = true). Example:
-	 *
-	 * ```javascript
-	 * plugin("HTTP");
-	 * var session; var output = "";
-	 * var client = (new HTTP()).wsConnect("ws://echo.websocket.org",
-	 *   function(aSession) { log("Connected"); session = aSession; },
-	 *   function(aType, aPayload, aOffset, aLength) { if (aType == "text") output += aPayload; },
-	 *   function(aCause) { logErr(aCause); },
-	 *   function(aStatusCode, aReason) { log("Closed (" + aReason + ")"); }
-	 * );
-	 * session.getRemote().sendString("Hello World!");
-	 * while(output.length < 1) { sleep(100); };
-	 * client.stop();
-	 * print(output);
-	 * ```
-	 *
-	 * NOTE: this functionality is only available if used with JVM >= 1.8
-	 * ]]>
+     * As callbacks you should defined `onConnect`, `onMsg`, `onError` and `onClose`. The `onConnect` callback will
+     * provide, as argument, the created session that you should use to send data; the `onMsg` callback will
+     * provide, as arguments, `aType` (either "text" or "bytes"), `aPayload` (string or array of bytes) and an offset
+     * and length (in case type is "bytes"); the `onError` callback will provide the cause; the `onClose` callback
+     * will provide `aStatusCode` and `aReason`. You can optionally provide `aTimeout` (number) and indicate if self signed SSL
+     * certificates should be accepted (`supportSelfSigned` = true). Example:
+     *
+     * ```javascript
+     * plugin("HTTP");
+     * var session; var output = "";
+     * var client = (new HTTP()).wsConnect("ws://echo.websocket.org",
+     *   function(aSession) { log("Connected"); session = aSession; },
+     *   function(aType, aPayload, aOffset, aLength) { if (aType == "text") output += aPayload; },
+     *   function(aCause) { logErr(aCause); },
+     *   function(aStatusCode, aReason) { log("Closed (" + aReason + ")"); }
+     * );
+     * session.getRemote().sendString("Hello World!");
+     * while(output.length < 1) { sleep(100); };
+     * client.stop();
+     * print(output);
+     * ```
+     *
+     * NOTE: this functionality is only available if used with JVM >= 1.8
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsConnect(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
-		LPs credentials = credentialsForURL(anURL);
-		return WebSockets.wsConnect(null, credentials == null ? null : credentials.l, credentials == null ? null : credentials.p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
+    public Object wsConnect(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+        LPs credentials = credentialsForURL(anURL);
+        return WebSockets.wsConnect(null, credentials == null ? null : credentials.l, credentials == null ? null : credentials.p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
 
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>HTTP.wsClient(anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned) : WebSocketsReply</key>
-	 * <![CDATA[
+     * <![CDATA[
 	 * Tries to establish a websocket connection (ws or wss) and returns a jetty WebSocketClient java object.
-	 * As callbacks you should defined `onConnect`, `onMsg`, `onError` and `onClose`. The `onConnect` callback will
-	 * provide, as argument, the created session that you should use to send data; the `onMsg` callback will
-	 * provide, as arguments, `aType` (either "text" or "bytes"), `aPayload` (string or array of bytes) and an offset
-	 * and length (in case type is "bytes"); the `onError` callback will provide the cause; the `onClose` callback
-	 * will provide `aStatusCode` and `aReason`. You can optionally provide `aTimeout` (number) and indicate if self signed SSL
-	 * certificates should be accepted (`supportSelfSigned` = true). Example:
-	 *
-	 * ```javascript
-	 * plugin("HTTP");
-	 * var session; var output = "";
-	 * var res = (new HTTP()).wsClient("ws://echo.websocket.org",
-	 *   function(aSession) { log("Connected"); session = aSession; },
-	 *   function(aType, aPayload, aOffset, aLength) { if (aType == "text") output += aPayload; },
-	 *   function(aCause) { logErr(aCause); },
-	 *   function(aStatusCode, aReason) { log("Closed (" + aReason + ")"); }
-	 * );
-	 * session.getRemote().sendString("Hello World!");
-	 * while(output.length < 1) { sleep(100); };
-	 * res.client.stop();
-	 * print(output);
-	 * ```
-	 *
-	 * NOTE: this functionality is only available if used with JVM >= 1.8
-	 * ]]>
+     * As callbacks you should defined `onConnect`, `onMsg`, `onError` and `onClose`. The `onConnect` callback will
+     * provide, as argument, the created session that you should use to send data; the `onMsg` callback will
+     * provide, as arguments, `aType` (either "text" or "bytes"), `aPayload` (string or array of bytes) and an offset
+     * and length (in case type is "bytes"); the `onError` callback will provide the cause; the `onClose` callback
+     * will provide `aStatusCode` and `aReason`. You can optionally provide `aTimeout` (number) and indicate if self signed SSL
+     * certificates should be accepted (`supportSelfSigned` = true). Example:
+     *
+     * ```javascript
+     * plugin("HTTP");
+     * var session; var output = "";
+     * var res = (new HTTP()).wsClient("ws://echo.websocket.org",
+     *   function(aSession) { log("Connected"); session = aSession; },
+     *   function(aType, aPayload, aOffset, aLength) { if (aType == "text") output += aPayload; },
+     *   function(aCause) { logErr(aCause); },
+     *   function(aStatusCode, aReason) { log("Closed (" + aReason + ")"); }
+     * );
+     * session.getRemote().sendString("Hello World!");
+     * while(output.length < 1) { sleep(100); };
+     * res.client.stop();
+     * print(output);
+     * ```
+     *
+     * NOTE: this functionality is only available if used with JVM >= 1.8
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsClient(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
-		LPs credentials = credentialsForURL(anURL);
-		return WebSockets.wsClient(null, credentials == null ? null : credentials.l, credentials == null ? null : credentials.p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
+    public Object wsClient(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+        LPs credentials = credentialsForURL(anURL);
+        return WebSockets.wsClient(null, credentials == null ? null : credentials.l, credentials == null ? null : credentials.p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
 
 	/**
@@ -526,13 +526,13 @@ public class HTTP extends ScriptableObject {
 		CookieHandler.setDefault(ckman);
 		
 		URL url = URI.create(aURL).toURL();
-		bindDefaultCredentialOrigin(url);
+        bindDefaultCredentialOrigin(url);
 		
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
-		if (!forceBasic && !lps.isEmpty()) {
-			authenticator = createAuthenticator();
-			con.setAuthenticator(authenticator);
-		}
+        if (!forceBasic && !lps.isEmpty()) {
+            authenticator = createAuthenticator();
+            con.setAuthenticator(authenticator);
+        }
 		con.setRequestMethod(method);
 	
 		//con.addRequestProperty("Accept-Charset", Charset.defaultCharset().displayName());
@@ -546,10 +546,10 @@ public class HTTP extends ScriptableObject {
 		}
 		
 		if (forceBasic) {
-			LPs credentials = findCredentials(url);
-			if (credentials != null) {
-				con.addRequestProperty("Authorization", "Basic " + new String(Base64.encodeBase64(new String(credentials.l + ":" + credentials.p).getBytes())));
-			}
+            LPs credentials = findCredentials(url);
+            if (credentials != null) {
+                con.addRequestProperty("Authorization", "Basic " + new String(Base64.encodeBase64(new String(credentials.l + ":" + credentials.p).getBytes())));
+            }
 		}
 		
 		if (timeout > 0) con.setConnectTimeout(timeout);
@@ -589,7 +589,7 @@ public class HTTP extends ScriptableObject {
 		}
 		
 		//con.connect(); 
-		boolean returningStream = false;
+        boolean returningStream = false;
 		try {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; cookiesize = " + ckman.getCookieStore().getCookies().size(),  null);
 			//SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; responsecode = " + con.getResponseCode() + "; cookiesize = " + ckman.getCookieStore().getCookies().size(), null);
@@ -602,19 +602,19 @@ public class HTTP extends ScriptableObject {
 			String contentType = con.getContentType();
 			
 			if (bytes) {
-				if (stream) {
+                if (stream) {
 					r = new HTTPResponse(is, responseCode, headerFields, contentType);
-					returningStream = true;
-				} else
+                    returningStream = true;
+                } else
 					r = new HTTPResponse(IOUtils.toByteArray(is), responseCode, headerFields, contentType);
 			} else {
-				if (stream) {
+                if (stream) {
 					r = new HTTPResponse(is, responseCode, headerFields, contentType);
-					returningStream = true;
-				} else
+                    returningStream = true;
+                } else
 					r = new HTTPResponse(IOUtils.toString(is, Charset.defaultCharset()), responseCode, headerFields, contentType);
 			}
-			r.connection = con;
+            r.connection = con;
 			
 			//if (this.authenticator != null) 
 			//	Authenticator.setDefault(null);
@@ -629,11 +629,11 @@ public class HTTP extends ScriptableObject {
 				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream(), Charset.defaultCharset()), e);
 			}
 			throw e;
-		} finally {
-			if (!returningStream) {
-				IOUtils.closeQuietly(is);
-				con.disconnect();
-			}
+        } finally {
+            if (!returningStream) {
+                IOUtils.closeQuietly(is);
+                con.disconnect();
+            }
 		}
 	}
 }

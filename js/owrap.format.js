@@ -218,7 +218,7 @@ OpenWrap.format.prototype.string = {
 		_$(maxTableSize, "maxTableSize").isNumber().$_()
 		sepFunc = _$(sepFunc, "sepFunc").isFunction().default(__)
 		sepLen = _$(sepLen, "sepLen").isNumber().default(1)
-		perRowHeight = _$(perRowHeight, "perRowHeight").isBoolean().default(false);
+		perRowHeight = _$(perRowHeight, "perRowHeight").isBoolean().default(false)
 	
 		if (ar.length == 0) return []
 	
@@ -281,7 +281,7 @@ OpenWrap.format.prototype.string = {
 		var _lines = [], _idx = [ ], _newSize = []
 		var _keys = Object.keys(ar[0])
 		ar.forEach(_ar => {
-		  if (perRowHeight) maxSubLines = 0;
+		  if (perRowHeight) maxSubLines = 0
 		  // Processing line
 		  let lines = []
 		  for(var i = 0; i < _keys.length; i++) {
@@ -1166,7 +1166,7 @@ OpenWrap.format.prototype.string = {
 	toHex: function(aByteArray, aSeparator) {
 		aSeparator = _$(aSeparator).isString().default(" ");
 
-		var res =  "", hex = String(Packages.jakarta.xml.bind.DatatypeConverter.printHexBinary(aByteArray));
+		var res =  "", hex = String(Packages.jakarta.xml.bind.DatatypeConverter.printHexBinary(aByteArray))
 		for(var ii = 0; ii < hex.length; ii = ii + 2) {
 			//res += ow.format.string.leftPad(ow.format.toHex(Number(aByteArray[ii] & 255)).toUpperCase(), 2, "0");
 			res += hex[ii] + hex[ii+1] + ((ii + 2) >= hex.length ? "" : aSeparator);
@@ -6709,115 +6709,115 @@ OpenWrap.format.__colors.__namedColors = {
   coral:   { ansi16: 91, idx256: 209, rgb: [255, 135, 95],  css: "#ff875f" },
   slate:   { ansi16: 90, idx256: 60,  rgb: [95, 95, 135],   css: "#5f5f87" },
   sky:     { ansi16: 96, idx256: 117, rgb: [135, 215, 255], css: "#87d7ff" }
-};
+}
 
 OpenWrap.format.__colors.__rgbTo256 = function(r, g, b) {
-  r = Math.max(0, Math.min(255, Math.round(Number(r) || 0)));
-  g = Math.max(0, Math.min(255, Math.round(Number(g) || 0)));
-  b = Math.max(0, Math.min(255, Math.round(Number(b) || 0)));
+  r = Math.max(0, Math.min(255, Math.round(Number(r) || 0)))
+  g = Math.max(0, Math.min(255, Math.round(Number(g) || 0)))
+  b = Math.max(0, Math.min(255, Math.round(Number(b) || 0)))
   if (r === g && g === b) {
-    if (r < 8) return 16;
-    if (r > 248) return 231;
-    return Math.round(((r - 8) / 247) * 24) + 232;
+    if (r < 8) return 16
+    if (r > 248) return 231
+    return Math.round(((r - 8) / 247) * 24) + 232
   }
-  var cr = Math.round((r / 255) * 5), cg = Math.round((g / 255) * 5), cb = Math.round((b / 255) * 5);
-  return 16 + (36 * cr) + (6 * cg) + cb;
-};
+  var cr = Math.round((r / 255) * 5), cg = Math.round((g / 255) * 5), cb = Math.round((b / 255) * 5)
+  return 16 + (36 * cr) + (6 * cg) + cb
+}
 
 OpenWrap.format.__colors.__rgbTo16 = function(r, g, b) {
-  var best = 37, bestDist = Infinity;
-  var names = Object.keys(OpenWrap.format.__colors.__namedColors);
+  var best = 37, bestDist = Infinity
+  var names = Object.keys(OpenWrap.format.__colors.__namedColors)
   for (var i = 0; i < 16 && i < names.length; i++) {
-    var entry = OpenWrap.format.__colors.__namedColors[names[i]];
-    var dr = r - entry.rgb[0], dg = g - entry.rgb[1], db = b - entry.rgb[2];
-    var dist = dr * dr + dg * dg + db * db;
+    var entry = OpenWrap.format.__colors.__namedColors[names[i]]
+    var dr = r - entry.rgb[0], dg = g - entry.rgb[1], db = b - entry.rgb[2]
+    var dist = dr * dr + dg * dg + db * db
     if (dist < bestDist) { bestDist = dist; best = entry.ansi16; }
   }
-  return best;
-};
+  return best
+}
 
 OpenWrap.format.__colors.__256ToRgb = function(idx) {
-  idx = Math.max(0, Math.min(255, Math.round(Number(idx) || 0)));
+  idx = Math.max(0, Math.min(255, Math.round(Number(idx) || 0)))
   if (idx < 16) {
-    var keys = ["black","red","green","yellow","blue","magenta","cyan","white","bright_black","bright_red","bright_green","bright_yellow","bright_blue","bright_magenta","bright_cyan","bright_white"];
-    return OpenWrap.format.__colors.__namedColors[keys[idx]].rgb.slice();
+    var keys = ["black","red","green","yellow","blue","magenta","cyan","white","bright_black","bright_red","bright_green","bright_yellow","bright_blue","bright_magenta","bright_cyan","bright_white"]
+    return OpenWrap.format.__colors.__namedColors[keys[idx]].rgb.slice()
   }
   if (idx >= 232) {
-    var v = 8 + (idx - 232) * 10;
-    return [v, v, v];
+    var v = 8 + (idx - 232) * 10
+    return [v, v, v]
   }
-  var n = idx - 16;
-  var steps = [0, 95, 135, 175, 215, 255];
-  return [steps[Math.floor(n / 36) % 6], steps[Math.floor(n / 6) % 6], steps[n % 6]];
-};
+  var n = idx - 16
+  var steps = [0, 95, 135, 175, 215, 255]
+  return [steps[Math.floor(n / 36) % 6], steps[Math.floor(n / 6) % 6], steps[n % 6]]
+}
 
 OpenWrap.format.__colors.parseColor = function(spec) {
-  if (isUnDef(spec) || spec === null || spec === "") return null;
+  if (isUnDef(spec) || spec === null || spec === "") return null
   if (typeof spec == "number" && isFinite(spec) && spec >= 0 && spec <= 255) {
-    var idx = Math.round(spec), rgb = OpenWrap.format.__colors.__256ToRgb(idx);
+    var idx = Math.round(spec), rgb = OpenWrap.format.__colors.__256ToRgb(idx)
     return {
       type: "256", r: rgb[0], g: rgb[1], b: rgb[2], idx256: idx,
       ansi16: OpenWrap.format.__colors.__rgbTo16(rgb[0], rgb[1], rgb[2]),
       css: "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")"
-    };
+    }
   }
   if (Array.isArray(spec) && spec.length === 3 && spec.every(function(x) { return typeof x == "number" && isFinite(x) && x >= 0 && x <= 255; })) {
-    var r = Math.round(spec[0]), g = Math.round(spec[1]), b = Math.round(spec[2]);
+    var r = Math.round(spec[0]), g = Math.round(spec[1]), b = Math.round(spec[2])
     return {
       type: "rgb", r: r, g: g, b: b,
       idx256: OpenWrap.format.__colors.__rgbTo256(r, g, b),
       ansi16: OpenWrap.format.__colors.__rgbTo16(r, g, b),
       css: "rgb(" + r + "," + g + "," + b + ")"
-    };
+    }
   }
-  if (typeof spec != "string") return null;
-  var s = spec.trim();
-  if (!s || s.toLowerCase() == "default" || s.toLowerCase() == "none") return null;
-  var lower = s.toLowerCase().replace(/[\s-]+/g, "_");
-  if (lower.indexOf("fg_") === 0) lower = lower.substring(3);
-  else if (lower.indexOf("bg_") === 0) lower = lower.substring(3);
+  if (typeof spec != "string") return null
+  var s = spec.trim()
+  if (!s || s.toLowerCase() == "default" || s.toLowerCase() == "none") return null
+  var lower = s.toLowerCase().replace(/[\s-]+/g, "_")
+  if (lower.indexOf("fg_") === 0) lower = lower.substring(3)
+  else if (lower.indexOf("bg_") === 0) lower = lower.substring(3)
   if (Object.prototype.hasOwnProperty.call(OpenWrap.format.__colors.__namedColors, lower)) {
-    var c = OpenWrap.format.__colors.__namedColors[lower];
-    return { type: "named", name: lower, r: c.rgb[0], g: c.rgb[1], b: c.rgb[2], idx256: c.idx256, ansi16: c.ansi16, css: c.css };
+    var c = OpenWrap.format.__colors.__namedColors[lower]
+    return { type: "named", name: lower, r: c.rgb[0], g: c.rgb[1], b: c.rgb[2], idx256: c.idx256, ansi16: c.ansi16, css: c.css }
   }
-  var m;
+  var m
   if ((m = /^#([0-9a-fA-F]{3})$/.exec(s))) {
-    var r1 = parseInt(m[1][0] + m[1][0], 16), g1 = parseInt(m[1][1] + m[1][1], 16), b1 = parseInt(m[1][2] + m[1][2], 16);
-    return { type: "rgb", r: r1, g: g1, b: b1, idx256: OpenWrap.format.__colors.__rgbTo256(r1, g1, b1), ansi16: OpenWrap.format.__colors.__rgbTo16(r1, g1, b1), css: "rgb(" + r1 + "," + g1 + "," + b1 + ")" };
+    var r1 = parseInt(m[1][0] + m[1][0], 16), g1 = parseInt(m[1][1] + m[1][1], 16), b1 = parseInt(m[1][2] + m[1][2], 16)
+    return { type: "rgb", r: r1, g: g1, b: b1, idx256: OpenWrap.format.__colors.__rgbTo256(r1, g1, b1), ansi16: OpenWrap.format.__colors.__rgbTo16(r1, g1, b1), css: "rgb(" + r1 + "," + g1 + "," + b1 + ")" }
   }
   if ((m = /^#([0-9a-fA-F]{6})$/.exec(s))) {
-    var r2 = parseInt(m[1].substring(0, 2), 16), g2 = parseInt(m[1].substring(2, 4), 16), b2 = parseInt(m[1].substring(4, 6), 16);
-    return { type: "rgb", r: r2, g: g2, b: b2, idx256: OpenWrap.format.__colors.__rgbTo256(r2, g2, b2), ansi16: OpenWrap.format.__colors.__rgbTo16(r2, g2, b2), css: "#" + m[1].toLowerCase() };
+    var r2 = parseInt(m[1].substring(0, 2), 16), g2 = parseInt(m[1].substring(2, 4), 16), b2 = parseInt(m[1].substring(4, 6), 16)
+    return { type: "rgb", r: r2, g: g2, b: b2, idx256: OpenWrap.format.__colors.__rgbTo256(r2, g2, b2), ansi16: OpenWrap.format.__colors.__rgbTo16(r2, g2, b2), css: "#" + m[1].toLowerCase() }
   }
   if ((m = /^(?:(?:fg_|bg_)?rgb)\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i.exec(s))) {
-    var r3 = Number(m[1]), g3 = Number(m[2]), b3 = Number(m[3]);
+    var r3 = Number(m[1]), g3 = Number(m[2]), b3 = Number(m[3])
     if (r3 <= 255 && g3 <= 255 && b3 <= 255) {
-      return { type: "rgb", r: r3, g: g3, b: b3, idx256: OpenWrap.format.__colors.__rgbTo256(r3, g3, b3), ansi16: OpenWrap.format.__colors.__rgbTo16(r3, g3, b3), css: "rgb(" + r3 + "," + g3 + "," + b3 + ")" };
+      return { type: "rgb", r: r3, g: g3, b: b3, idx256: OpenWrap.format.__colors.__rgbTo256(r3, g3, b3), ansi16: OpenWrap.format.__colors.__rgbTo16(r3, g3, b3), css: "rgb(" + r3 + "," + g3 + "," + b3 + ")" }
     }
   }
   if ((m = /^(?:(?:fg|bg|color)\(\s*(\d{1,3})\s*\)|(\d{1,3}))$/i.exec(s))) {
-    var idx2 = Number(m[1] || m[2]);
-    if (idx2 >= 0 && idx2 <= 255) return this.parseColor(idx2);
+    var idx2 = Number(m[1] || m[2])
+    if (idx2 >= 0 && idx2 <= 255) return this.parseColor(idx2)
   }
-  return null;
-};
+  return null
+}
 
 OpenWrap.format.__colors.colorSeq = function(spec, isBg, colorMode) {
-  var mode = colorMode || "none";
-  if (mode == "none") return "";
-  var c = (isMap(spec) && isNumber(spec.idx256)) ? spec : this.parseColor(spec);
-  if (!c) return "";
+  var mode = colorMode || "none"
+  if (mode == "none") return ""
+  var c = (isMap(spec) && isNumber(spec.idx256)) ? spec : this.parseColor(spec)
+  if (!c) return ""
   if (mode == "truecolor" && (c.type == "rgb" || c.type == "named")) {
-    return (isBg ? "48;2;" : "38;2;") + c.r + ";" + c.g + ";" + c.b;
+    return (isBg ? "48;2;" : "38;2;") + c.r + ";" + c.g + ";" + c.b
   }
   if (mode == "truecolor" || mode == "256") {
     if (c.type == "named" && c.idx256 < 16 && mode == "16") {
-      return String(isBg ? c.ansi16 + 10 : c.ansi16);
+      return String(isBg ? c.ansi16 + 10 : c.ansi16)
     }
-    return (isBg ? "48;5;" : "38;5;") + c.idx256;
+    return (isBg ? "48;5;" : "38;5;") + c.idx256
   }
-  return String(isBg ? c.ansi16 + 10 : c.ansi16);
-};
+  return String(isBg ? c.ansi16 + 10 : c.ansi16)
+}
 
 
 // Internal terminal visualization primitives. Dimensions are terminal columns/rows.

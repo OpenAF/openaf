@@ -1635,7 +1635,7 @@ OpenWrap.template.prototype.html = {
 		aSuffix = _$(aSuffix, "aSuffix").isString().default("");
 
 		ow.loadServer();
-		var src = "data:" + ow.server.httpd.getMimeType(aFile) +";base64," + __streamCodec.encodeFile(aFile);
+		var src = "data:" + ow.server.httpd.getMimeType(aFile) +";base64," + __streamCodec.encodeFile(aFile)
 		return aPrefix + src + aSuffix;
 	},
 	/**
@@ -1651,14 +1651,14 @@ OpenWrap.template.prototype.html = {
 		var h = new ow.obj.http();
 		try {
 			var u = new java.net.URL(aURL);
-			var stream = h.getStream(aURL);
-			var b = { contentType: h.responseType() };
-			var encoded = __streamCodec.use([stream], () => __streamCodec.encodeToString(stream));
+			var stream = h.getStream(aURL)
+			var b = { contentType: h.responseType() }
+			var encoded = __streamCodec.use([stream], () => __streamCodec.encodeToString(stream))
             try { h.close(); } catch(e2) {}
-			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + encoded + aSuffix;
+			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + encoded + aSuffix
 			} catch(e1) {
 				try { h.close(); } catch(e2) {}
-				return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
+				return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix)
 			}
 	},
 	/**
@@ -1717,12 +1717,12 @@ OpenWrap.template.prototype.html = {
 			var h = new ow.obj.http();
 			try {
 				var u = new java.net.URL(aURL);
-				var stream = h.getStream(aURL);
-			var b = { contentType: h.responseType() };
+				var stream = h.getStream(aURL)
+			var b = { contentType: h.responseType() }
                 var content = __streamCodec.use([stream], () => withContents
-                    ? af.fromInputStream2String(stream) : __streamCodec.encodeToString(stream));
+                    ? af.fromInputStream2String(stream) : __streamCodec.encodeToString(stream))
                 try { h.close(); } catch(e4) {}
-                return withContents ? content : "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") + ";base64," + content;
+                return withContents ? content : "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") + ";base64," + content
 				} catch(e1) {
 				try { h.close(); } catch(e4) {}
 				try {
@@ -1742,7 +1742,7 @@ OpenWrap.template.prototype.html = {
 					}
 					}
 				}
-			};
+			}
 		var resolveRelativeURL = (aBaseURL, aRelativeURL) => {
 			if (!isString(aRelativeURL)) return aRelativeURL
 			if (aRelativeURL.match(/^[a-z]+:\/\//i) || aRelativeURL.startsWith("//") || aRelativeURL.startsWith("data:") || aRelativeURL.startsWith("blob:") || aRelativeURL.startsWith("#")) return aRelativeURL
@@ -1792,7 +1792,7 @@ OpenWrap.template.prototype.html = {
 		srcs_replaces = [];
 		for(var ii in srcs) {
 			var href = srcs[ii].match(/<link rel=\"stylesheet\" href=\"(.+?)\">/)[1]
-			srcs_replaces[srcs[ii]] = inlineCSSURLs(testURL(href, true), href);
+			srcs_replaces[srcs[ii]] = inlineCSSURLs(testURL(href, true), href)
 		}
 		for(var ii in srcs_replaces) {
 			anOriginalHTML = anOriginalHTML.replace(ii, "<style>" + srcs_replaces[ii] + "</style>");

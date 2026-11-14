@@ -5,17 +5,17 @@ include:
 
 jobs:
   - name: SecurityTransport::Init
-    exec: args.tests = require("autoTestAll.SecurityTransport.js");
+    exec: args.tests = require("autoTestAll.SecurityTransport.js")
 
   - name: SecurityTransport::SMTP STARTTLS requirement
     from: SecurityTransport::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testEmailTLSRequirement;
+    exec: args.func = args.tests.testEmailTLSRequirement
 
   - name: SecurityTransport::FTPS trust configuration
     from: SecurityTransport::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testFTPSTrustConfiguration;
+    exec: args.func = args.tests.testFTPSTrustConfiguration
 
 todo:
   - SecurityTransport::Init

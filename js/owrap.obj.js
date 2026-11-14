@@ -340,13 +340,13 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 	function getFlatUniqKey(aK, aP) {
 		var key = "";
 		if (isDef(aP)) {
-			key = aP.split(".").join(aSeparator) + (isNumber(aK) ? "" : aSeparator + aK.split(".").join(aSeparator));
+			key = aP.split(".").join(aSeparator) + (isNumber(aK) ? "" : aSeparator + aK.split(".").join(aSeparator))
 		} else {
-			key = aK.split(".").join(aSeparator);
+			key = aK.split(".").join(aSeparator)
 		}
 	
-		key = key.replace(/\["?\d+"?\]/g, "");
-		return key.indexOf(aSeparator) == 0 ? key.substring(aSeparator.length) : key;
+		key = key.replace(/\["?\d+"?\]/g, "")
+		return key.indexOf(aSeparator) == 0 ? key.substring(aSeparator.length) : key
 	}
 	
 	function getFlatKeys(anArrayOfMaps) {
@@ -404,7 +404,7 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 					if (isObject(aD[_keys[j]][l])) {
 						res = res.concat(_trav(nm, aD[_keys[j]][l], newParent));
 					} else {
-						nm[getFlatUniqKey(_keys[j], parent)] = aD[_keys[j]][l];
+						nm[getFlatUniqKey(_keys[j], parent)] = aD[_keys[j]][l]
 						res.push(nm);
 					}
 				}
@@ -497,11 +497,11 @@ OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ig
 				var ky = okeys[k];
 				var vy = ow.obj.__getObj4Path(aValue, ky);
 				if (useRegEx && (typeof aPartialMap[ky] == "string")) {
-					var vs = aPartialMap[ky].match(/^([<>]=?)([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)$/);
+					var vs = aPartialMap[ky].match(/^([<>]=?)([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)$/)
 					if (vs) {
-						if (typeof vy != "number" && typeof vy != "string") return undefined;
-						if (typeof vy == "string" && vy.trim().length == 0) return undefined;
-						var actual = Number(vy), limit = Number(vs[2]);
+						if (typeof vy != "number" && typeof vy != "string") return undefined
+						if (typeof vy == "string" && vy.trim().length == 0) return undefined
+						var actual = Number(vy), limit = Number(vs[2])
 						if (vs[1] == ">=" && !(actual >= limit)) { return undefined; }
 						if (vs[1] == ">"  && !(actual > limit)) { return undefined; }
 						if (vs[1] == "<=" && !(actual <= limit)) { return undefined; }
@@ -936,20 +936,20 @@ OpenWrap.obj.prototype.pool = {
 					obj = parent.__factory();
 					if (!parent.add(obj, inUse)) {
 						try { if (isDef(parent.__close)) parent.__close(obj); } catch(e) {}
-						return undefined;
+						return undefined
 					}
 					for(var i = 1; i < parent.__inc && parent.__checkLimits(); i++) {
-						var extra;
+						var extra
 						try {
-							extra = parent.__factory();
+							extra = parent.__factory()
 						} catch(e) {
 							// Keep the requested object tracked and available if batch growth fails.
-							if (inUse) parent.checkIn(obj);
-							throw e;
+							if (inUse) parent.checkIn(obj)
+							throw e
 						}
 						if (!parent.add(extra, false)) {
 							try { if (isDef(parent.__close)) parent.__close(extra); } catch(e) {}
-							break;
+							break
 						}
 					}
 				}
@@ -1035,9 +1035,9 @@ OpenWrap.obj.prototype.pool = {
 						this.__currentSize--;
 					}
 				}
-				this.__currentFree = 0;
-				this.__currentSize = 0;
-				this.__pool = [];
+				this.__currentFree = 0
+				this.__currentSize = 0
+				this.__pool = []
 			},
 			
 			/**
@@ -2109,9 +2109,9 @@ OpenWrap.obj.prototype.http.prototype.__exec = function(aURL, aRequestType, aIn,
 	return this.outputObj
 }
 OpenWrap.obj.prototype.http.prototype.exec = function() {
-  if (ow.instrumentation && ow.instrumentation.isEnabled("http")) return ow.instrumentation.httpClient(this, arguments, this.__exec);
-  return this.__exec.apply(this, arguments);
-};
+  if (ow.instrumentation && ow.instrumentation.isEnabled("http")) return ow.instrumentation.httpClient(this, arguments, this.__exec)
+  return this.__exec.apply(this, arguments)
+}
 
 /**
  * <odoc>
@@ -2507,8 +2507,8 @@ OpenWrap.obj.prototype.http0.prototype.__exec = function(aUrl, aRequestType, aIn
 	return this.outputObj;
 }
 OpenWrap.obj.prototype.http0.prototype.exec = function() {
-  if (ow.instrumentation && ow.instrumentation.isEnabled("http")) return ow.instrumentation.httpClient(this, arguments, this.__exec);
-  return this.__exec.apply(this, arguments);
+  if (ow.instrumentation && ow.instrumentation.isEnabled("http")) return ow.instrumentation.httpClient(this, arguments, this.__exec)
+  return this.__exec.apply(this, arguments)
 };
 ;
 
@@ -2639,12 +2639,12 @@ OpenWrap.obj.prototype.http0.prototype.responseType = function() {
  * </odoc>
  */
 OpenWrap.obj.prototype.http0.prototype.close = function() {
-	if (isDef(this.__r)) this.__r.close();
+	if (isDef(this.__r)) this.__r.close()
 	if (isDef(this.__h)) {
-		this.__h.close();
-		this.__h = __;
+		this.__h.close()
+		this.__h = __
 	}
-};
+}
 
 OpenWrap.obj.prototype.rest = {
 
@@ -2674,7 +2674,7 @@ OpenWrap.obj.prototype.rest = {
 	 */
 	getContentLength: function(aURL, _l, _p, _t, aRequestMap, __h) {
 		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
-		var res;
+		var res
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2700,7 +2700,7 @@ OpenWrap.obj.prototype.rest = {
 		   e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 		   throw e;
 		} finally {
-			if (isUnDef(__h)) h.close();
+			if (isUnDef(__h)) h.close()
 		}
 	},
 	
@@ -2715,7 +2715,7 @@ OpenWrap.obj.prototype.rest = {
 	get: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes, options) { 
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res
 		
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2740,7 +2740,7 @@ OpenWrap.obj.prototype.rest = {
 			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 			throw e;
 		} finally {
-			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close()
 		}
 	},
 	
@@ -2768,7 +2768,7 @@ OpenWrap.obj.prototype.rest = {
 	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2797,7 +2797,7 @@ OpenWrap.obj.prototype.rest = {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		} finally {
-			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close()
 		}
 	},
 
@@ -2812,7 +2812,7 @@ OpenWrap.obj.prototype.rest = {
 	 */
 	upload: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod, options) {
 		aMethod = _$(aMethod, "aMethod").isString().default("POST");
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2844,7 +2844,7 @@ OpenWrap.obj.prototype.rest = {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		} finally {
-			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close()
 		}
 	},
 	
@@ -2886,7 +2886,7 @@ OpenWrap.obj.prototype.rest = {
 	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2915,7 +2915,7 @@ OpenWrap.obj.prototype.rest = {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		} finally {
-			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close()
 		}
 	},
 
@@ -2944,7 +2944,7 @@ OpenWrap.obj.prototype.rest = {
 	patch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2973,7 +2973,7 @@ OpenWrap.obj.prototype.rest = {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		} finally {
-			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close()
 		}
 	},
 	/**
@@ -2999,7 +2999,7 @@ OpenWrap.obj.prototype.rest = {
 	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes, options) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res;
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory(), res
 				
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -3024,7 +3024,7 @@ OpenWrap.obj.prototype.rest = {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		} finally {
-			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close();
+			if (isUnDef(__h) && (!retBytes || !isJavaObject(res))) h.close()
 		}
 	},
 	/**
@@ -3074,7 +3074,7 @@ OpenWrap.obj.prototype.rest = {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		} finally {
-			if (isUnDef(__h)) h.close();
+			if (isUnDef(__h)) h.close()
 		}
 	},
 	/**
@@ -3334,7 +3334,7 @@ OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
     var a = aPath.split('.');
     for (var i = 0, n = a.length; i < n; ++i) {
         var k = a[i];
-        if (!isObject(aObj)) return undefined;
+        if (!isObject(aObj)) return undefined
         if (k in aObj) {
             aObj = aObj[k];
         } else {
@@ -3820,108 +3820,108 @@ OpenWrap.obj.prototype.syncArray.prototype.forEach = function(fn) {
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaInit = function(aOptions) {
-  if (isDef(global.__ajvState)) return;
-  aOptions = _$(aOptions).isMap().default({ $data: true, $comment: true, useDefaults: true });
-  var options = {}, mode = "fast";
-  Object.keys(aOptions).forEach(function(k) { options[k] = aOptions[k]; });
-  var has = function(k) { return Object.prototype.hasOwnProperty.call(options, k); };
+  if (isDef(global.__ajvState)) return
+  aOptions = _$(aOptions).isMap().default({ $data: true, $comment: true, useDefaults: true })
+  var options = {}, mode = "fast"
+  Object.keys(aOptions).forEach(function(k) { options[k] = aOptions[k]; })
+  var has = function(k) { return Object.prototype.hasOwnProperty.call(options, k); }
   if (has("format")) {
-    if ([true, false, "fast", "full"].indexOf(options.format) < 0) throw new Error("schemaInit: format must be true, false, fast or full");
-    mode = options.format === "full" ? "full" : "fast";
-    if (!has("validateFormats")) options.validateFormats = options.format !== false;
-    delete options.format;
+    if ([true, false, "fast", "full"].indexOf(options.format) < 0) throw new Error("schemaInit: format must be true, false, fast or full")
+    mode = options.format === "full" ? "full" : "fast"
+    if (!has("validateFormats")) options.validateFormats = options.format !== false
+    delete options.format
   }
   if (has("jsonPointers")) {
-    if (!has("jsPropertySyntax")) options.jsPropertySyntax = !options.jsonPointers;
-    delete options.jsonPointers;
+    if (!has("jsPropertySyntax")) options.jsPropertySyntax = !options.jsonPointers
+    delete options.jsonPointers
   }
   if (has("strictKeywords") || has("strictDefaults")) {
-    if (!has("strictSchema") && !has("strict")) options.strictSchema = !!(options.strictKeywords || options.strictDefaults);
-    delete options.strictKeywords;
-    delete options.strictDefaults;
+    if (!has("strictSchema") && !has("strict")) options.strictSchema = !!(options.strictKeywords || options.strictDefaults)
+    delete options.strictKeywords
+    delete options.strictDefaults
   }
-  var removed = ["errorDataPath", "nullable", "extendRefs", "missingRefs", "processCode", "sourceCode", "unicode", "uniqueItems", "unknownFormats", "cache", "serialize", "schemaId", "ajvErrors"];
+  var removed = ["errorDataPath", "nullable", "extendRefs", "missingRefs", "processCode", "sourceCode", "unicode", "uniqueItems", "unknownFormats", "cache", "serialize", "schemaId", "ajvErrors"]
   removed.forEach(function(k) {
-    if (has(k)) throw new Error("schemaInit: Ajv v6 option '" + k + "' is unsupported; see docs/json-schema.md for migration");
-  });
-  var strictGiven = has("strict");
-  var schemas = options.schemas;
-  delete options.schemas;
-  if (!has("strict")) options.strict = false;
-  options.code = Object.assign({ es5: true }, options.code);
-  loadAjv();
-  var state = { options: options, mode: mode, engines: {}, cache: {}, owners: new Map() };
+    if (has(k)) throw new Error("schemaInit: Ajv v6 option '" + k + "' is unsupported; see docs/json-schema.md for migration")
+  })
+  var strictGiven = has("strict")
+  var schemas = options.schemas
+  delete options.schemas
+  if (!has("strict")) options.strict = false
+  options.code = Object.assign({ es5: true }, options.code)
+  loadAjv()
+  var state = { options: options, mode: mode, engines: {}, cache: {}, owners: new Map() }
   // Publish only after successful creation, so a failed initialization can be retried.
-  var legacy = { unicodeRegExp: false };
-  if (!strictGiven && !has("strictNumbers")) legacy.strictNumbers = false;
-  state.engines["07"] = Ajv.OpenAF.create("07", Object.assign(legacy, options), mode);
+  var legacy = { unicodeRegExp: false }
+  if (!strictGiven && !has("strictNumbers")) legacy.strictNumbers = false
+  state.engines["07"] = Ajv.OpenAF.create("07", Object.assign(legacy, options), mode)
   // Set the draft-07 reference policy after construction to avoid upstream deprecation noise.
-  if (!has("ignoreKeywordsWithRef")) state.engines["07"].opts.ignoreKeywordsWithRef = true;
-  state.cache["07"] = new Map();
-  global.__ajv = state.engines["07"];
-  global.__ajvState = state;
+  if (!has("ignoreKeywordsWithRef")) state.engines["07"].opts.ignoreKeywordsWithRef = true
+  state.cache["07"] = new Map()
+  global.__ajv = state.engines["07"]
+  global.__ajvState = state
   try {
-    if (isArray(schemas)) ow.obj.schemaAdd(__, schemas);
-    else if (isMap(schemas)) Object.keys(schemas).forEach(function(k) { ow.obj.schemaAdd(k, schemas[k]); });
+    if (isArray(schemas)) ow.obj.schemaAdd(__, schemas)
+    else if (isMap(schemas)) Object.keys(schemas).forEach(function(k) { ow.obj.schemaAdd(k, schemas[k]); })
   } catch(e) {
-    delete global.__ajvState;
-    delete global.__ajv;
-    throw e;
+    delete global.__ajvState
+    delete global.__ajv
+    throw e
   }
-};
+}
 
 // Internal routing and cache helpers. Content caching retains v6's reuse of equivalent schema objects.
 OpenWrap.obj.prototype.__schemaDraft = function(schema) {
-  if (!isMap(schema) || isUnDef(schema.$schema)) return "07";
-  var uri = String(schema.$schema).replace(/#$/, "");
+  if (!isMap(schema) || isUnDef(schema.$schema)) return "07"
+  var uri = String(schema.$schema).replace(/#$/, "")
   switch (uri) {
-  case "http://json-schema.org/draft-07/schema": return "07";
-  case "https://json-schema.org/draft/2019-09/schema": return "2019-09";
-  case "https://json-schema.org/draft/2020-12/schema": return "2020-12";
-  default: throw new Error("Unsupported JSON Schema dialect: " + schema.$schema);
+  case "http://json-schema.org/draft-07/schema": return "07"
+  case "https://json-schema.org/draft/2019-09/schema": return "2019-09"
+  case "https://json-schema.org/draft/2020-12/schema": return "2020-12"
+  default: throw new Error("Unsupported JSON Schema dialect: " + schema.$schema)
   }
-};
+}
 
 OpenWrap.obj.prototype.__schemaEngine = function(draft) {
-  ow.obj.schemaInit();
-  var state = global.__ajvState;
+  ow.obj.schemaInit()
+  var state = global.__ajvState
   if (isUnDef(state.engines[draft])) {
-    state.engines[draft] = Ajv.OpenAF.create(draft, Object.assign({}, state.options), state.mode);
-    state.cache[draft] = new Map();
+    state.engines[draft] = Ajv.OpenAF.create(draft, Object.assign({}, state.options), state.mode)
+    state.cache[draft] = new Map()
   }
-  return state.engines[draft];
-};
+  return state.engines[draft]
+}
 
 OpenWrap.obj.prototype.__schemaKey = function(schema) {
   var sorted = function(value) {
-    if (Array.isArray(value)) return value.map(sorted);
+    if (Array.isArray(value)) return value.map(sorted)
     if (isMap(value)) {
-      var result = Object.create(null);
-      Object.keys(value).sort().forEach(function(k) { result[k] = sorted(value[k]); });
-      return result;
+      var result = Object.create(null)
+      Object.keys(value).sort().forEach(function(k) { result[k] = sorted(value[k]); })
+      return result
     }
-    return value;
-  };
-  return JSON.stringify(sorted(schema));
-};
+    return value
+  }
+  return JSON.stringify(sorted(schema))
+}
 
 OpenWrap.obj.prototype.__schemaClaim = function(schema, key, draft, publish) {
-  var owners = global.__ajvState.owners;
+  var owners = global.__ajvState.owners
   Ajv.OpenAF.schemaIds(global.__ajvState.engines[draft], schema, key).forEach(function(id) {
-    if (!isString(id)) return;
-    id = id.replace(/#$/, "");
-    if (owners.has(id) && owners.get(id) !== draft) throw new Error("Schema key or $id '" + id + "' is already registered for draft-" + owners.get(id));
-    if (publish) owners.set(id, draft);
-  });
-};
+    if (!isString(id)) return
+    id = id.replace(/#$/, "")
+    if (owners.has(id) && owners.get(id) !== draft) throw new Error("Schema key or $id '" + id + "' is already registered for draft-" + owners.get(id))
+    if (publish) owners.set(id, draft)
+  })
+}
 
 OpenWrap.obj.prototype.__schemaCompileError = function(error, draft) {
   if (isDef(error.missingSchema)) {
-    var owners = global.__ajvState.owners;
-    var owner = owners.get(String(error.missingSchema).replace(/#$/, ""));
-    if (isDef(owner) && owner !== draft) throw new Error("Cross-draft $ref is unsupported: draft-" + draft + " references draft-" + owner + " schema " + error.missingSchema);
+    var owners = global.__ajvState.owners
+    var owner = owners.get(String(error.missingSchema).replace(/#$/, ""))
+    if (isDef(owner) && owner !== draft) throw new Error("Cross-draft $ref is unsupported: draft-" + draft + " references draft-" + owner + " schema " + error.missingSchema)
   }
-  throw error;
+  throw error
 };
 
 /**
@@ -3932,24 +3932,24 @@ OpenWrap.obj.prototype.__schemaCompileError = function(error, draft) {
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaCompile = function(aSchema) {
-  var draft = ow.obj.__schemaDraft(aSchema), engine = ow.obj.__schemaEngine(draft);
-  var key = ow.obj.__schemaKey(aSchema), cache = global.__ajvState.cache[draft], entry = cache.get(key);
-  if (isDef(entry) && isDef(entry.validate)) return entry.validate;
-  ow.obj.__schemaClaim(aSchema, __, draft, false);
+  var draft = ow.obj.__schemaDraft(aSchema), engine = ow.obj.__schemaEngine(draft)
+  var key = ow.obj.__schemaKey(aSchema), cache = global.__ajvState.cache[draft], entry = cache.get(key)
+  if (isDef(entry) && isDef(entry.validate)) return entry.validate
+  ow.obj.__schemaClaim(aSchema, __, draft, false)
   try {
-    var schema = isDef(entry) ? entry.schema : aSchema;
-    var validate = engine.compile(schema);
-    cache.set(key, { schema: schema, validate: validate });
-    if (engine.opts.addUsedSchema) ow.obj.__schemaClaim(schema, __, draft, true);
-    return validate;
+    var schema = isDef(entry) ? entry.schema : aSchema
+    var validate = engine.compile(schema)
+    cache.set(key, { schema: schema, validate: validate })
+    if (engine.opts.addUsedSchema) ow.obj.__schemaClaim(schema, __, draft, true)
+    return validate
   } catch(e) {
     // Ajv retains an added schema even when a reference prevents compilation.
     // Keep its identity and ownership so callers can register dependencies and retry.
     if (engine._cache.has(schema)) {
-      cache.set(key, { schema: schema });
-      if (engine.opts.addUsedSchema) ow.obj.__schemaClaim(schema, __, draft, true);
+      cache.set(key, { schema: schema })
+      if (engine.opts.addUsedSchema) ow.obj.__schemaClaim(schema, __, draft, true)
     }
-    ow.obj.__schemaCompileError(e, draft);
+    ow.obj.__schemaCompileError(e, draft)
   }
 };
 
@@ -3962,17 +3962,17 @@ OpenWrap.obj.prototype.schemaCompile = function(aSchema) {
  */
 OpenWrap.obj.prototype.schemaAdd = function(aKey, aSchema) {
   if (isArray(aSchema)) {
-    aSchema.forEach(function(schema) { ow.obj.schemaAdd(__, schema); });
-    return;
+    aSchema.forEach(function(schema) { ow.obj.schemaAdd(__, schema); })
+    return
   }
-  var draft = ow.obj.__schemaDraft(aSchema), engine = ow.obj.__schemaEngine(draft);
-  var key = ow.obj.__schemaKey(aSchema), cache = global.__ajvState.cache[draft], entry = cache.get(key);
-  var schema = isDef(entry) ? entry.schema : aSchema;
-  var alias = aKey || (isMap(schema) ? schema.$id : __) || "";
-  ow.obj.__schemaClaim(schema, alias, draft, false);
-  engine.addSchema(schema, aKey);
-  ow.obj.__schemaClaim(schema, alias, draft, true);
-  if (isUnDef(entry)) cache.set(key, { schema: schema });
+  var draft = ow.obj.__schemaDraft(aSchema), engine = ow.obj.__schemaEngine(draft)
+  var key = ow.obj.__schemaKey(aSchema), cache = global.__ajvState.cache[draft], entry = cache.get(key)
+  var schema = isDef(entry) ? entry.schema : aSchema
+  var alias = aKey || (isMap(schema) ? schema.$id : __) || ""
+  ow.obj.__schemaClaim(schema, alias, draft, false)
+  engine.addSchema(schema, aKey)
+  ow.obj.__schemaClaim(schema, alias, draft, true)
+  if (isUnDef(entry)) cache.set(key, { schema: schema })
 };
 
 /**
@@ -3983,29 +3983,29 @@ OpenWrap.obj.prototype.schemaAdd = function(aKey, aSchema) {
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaRemove = function(aKey) {
-  ow.obj.schemaInit();
-  var state = global.__ajvState;
+  ow.obj.schemaInit()
+  var state = global.__ajvState
   Object.keys(state.engines).forEach(function(draft) {
-    var cache = state.cache[draft], engine = state.engines[draft];
-    var content = isMap(aKey) || isBoolean(aKey) ? ow.obj.__schemaKey(aKey) : __;
-    var entry = isDef(content) ? cache.get(content) : __;
+    var cache = state.cache[draft], engine = state.engines[draft]
+    var content = isMap(aKey) || isBoolean(aKey) ? ow.obj.__schemaKey(aKey) : __
+    var entry = isDef(content) ? cache.get(content) : __
     // Ajv removes schema objects by identity; resolve the v6-compatible content cache first.
-    engine.removeSchema(isDef(entry) ? entry.schema : aKey);
+    engine.removeSchema(isDef(entry) ? entry.schema : aKey)
     // Retain the original schema identities for entries still held by Ajv.
     cache.forEach(function(value, key) {
-      if (!engine._cache.has(value.schema)) cache.delete(key);
-    });
-  });
-  state.owners.clear();
+      if (!engine._cache.has(value.schema)) cache.delete(key)
+    })
+  })
+  state.owners.clear()
   Object.keys(state.engines).forEach(function(draft) {
     var engine = state.engines[draft];
     [engine.schemas, engine.refs].forEach(function(schemas) {
       Object.keys(schemas).forEach(function(key) {
-        var env = schemas[key];
-        if (env && !env.meta) state.owners.set(key.replace(/#$/, ""), draft);
-      });
-    });
-  });
+        var env = schemas[key]
+        if (env && !env.meta) state.owners.set(key.replace(/#$/, ""), draft)
+      })
+    })
+  })
 };
 
 /**
@@ -4016,7 +4016,7 @@ OpenWrap.obj.prototype.schemaRemove = function(aKey) {
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaCheck = function(aSchema) {
-  return ow.obj.__schemaEngine(ow.obj.__schemaDraft(aSchema)).validateSchema(aSchema);
+  return ow.obj.__schemaEngine(ow.obj.__schemaDraft(aSchema)).validateSchema(aSchema)
 };
 
 /**
@@ -4028,26 +4028,26 @@ OpenWrap.obj.prototype.schemaCheck = function(aSchema) {
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) {
-  aErrorOptions = _$(aErrorOptions).isMap().default({ dataVar: "args" });
-  ow.obj.schemaInit();
-  var val, engine;
+  aErrorOptions = _$(aErrorOptions).isMap().default({ dataVar: "args" })
+  ow.obj.schemaInit()
+  var val, engine
   if (isString(aSchema)) {
-    var state = global.__ajvState, id = aSchema.replace(/#$/, "");
-    var draft = state.owners.get(id);
-    var drafts = isDef(draft) ? [draft] : Object.keys(state.engines);
+    var state = global.__ajvState, id = aSchema.replace(/#$/, "")
+    var draft = state.owners.get(id)
+    var drafts = isDef(draft) ? [draft] : Object.keys(state.engines)
     for (var i = 0; i < drafts.length; i++) {
-      engine = state.engines[drafts[i]];
+      engine = state.engines[drafts[i]]
       try { val = engine.getSchema(aSchema); }
       catch(e) { ow.obj.__schemaCompileError(e, drafts[i]); }
-      if (isDef(val)) break;
+      if (isDef(val)) break
     }
-    if (isUnDef(val)) throw new Error("JSON Schema is not registered: " + aSchema);
+    if (isUnDef(val)) throw new Error("JSON Schema is not registered: " + aSchema)
   } else {
-    engine = ow.obj.__schemaEngine(ow.obj.__schemaDraft(aSchema));
-    val = ow.obj.schemaCompile(aSchema);
+    engine = ow.obj.__schemaEngine(ow.obj.__schemaDraft(aSchema))
+    val = ow.obj.schemaCompile(aSchema)
   }
-  if (val(aData)) return true;
-  throw engine.errorsText(val.errors, aErrorOptions);
+  if (val(aData)) return true
+  throw engine.errorsText(val.errors, aErrorOptions)
 };
 
 /**

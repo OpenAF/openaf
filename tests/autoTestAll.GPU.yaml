@@ -3,9 +3,13 @@ include:
 
 ojob:
   catch: false
+
 todo:
 - GPU delegation
+
 jobs:
+
+# GPU delegation
 - name: GPU delegation
   to: OpenAF Test
   exec: args.func = require("autoTestAll.GPU.js").testGPUDelegation

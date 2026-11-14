@@ -7,19 +7,19 @@ jobs:
   - name: oPack::Credential scope
     from: oPack::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testCredentialScope;
+    exec: args.func = args.tests.testCredentialScope
   - name: oPack::Init
-    exec: args.tests = require("autoTestAll.oPack.js");
+    exec: args.tests = require("autoTestAll.oPack.js")
 
   - name: oPack::Copy-only containment
     from: oPack::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testCopyContainment;
+    exec: args.func = args.tests.testCopyContainment
 
   - name: oPack::Copy-only useunzip data boundary
     from: oPack::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testCopyUseUnzipIsDataOnly;
+    exec: args.func = args.tests.testCopyUseUnzipIsDataOnly
 
 todo:
   - oPack::Init

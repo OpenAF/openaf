@@ -1,12 +1,16 @@
 package openaf;
+
 import java.io.*;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
+
 /** Streaming HotSpot HPROF reader. No object graph is retained. Java 8 compatible. */
 public final class HPROFReader {
     public interface Visitor {
         boolean visit(Map<String,Object> record);
     }
+
+    // Store reader state and metadata
     private DataInputStream in;
     private long offset;
     private int ids;
@@ -17,17 +21,27 @@ public final class HPROFReader {
     private int metadataLimit = 1000000;
     private long records, objects;
     private boolean stopped;
+
+    // Read unsigned values
     private long u(int n) throws IOException {
-        long v=0;
-        for(int i=0;i<n;i++) {
-            v=(v<<8)|in.readUnsignedByte();
+        // Initialize the value
+        long v = 0;
+
+        // Read bytes in network order
+        for (int i = 0; i < n; i++) {
+            v = (v << 8) | in.readUnsignedByte();
             offset++;
         }
+
+        // Return the decoded value
         return v;
     }
+
     private String id() throws IOException {
         return "0x"+Long.toHexString(u(ids));
     }
+
+    // Skip record data
     private void skip(long n) throws IOException {
         if(n<0) fail("negative length");
         while(n>0) {

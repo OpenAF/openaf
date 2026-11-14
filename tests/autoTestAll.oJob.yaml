@@ -10,6 +10,7 @@ jobs:
   exec: |
     args.tests = require("autoTestAll.oJob.js");
 
+# oJob::oJobHelpExamples
 - name: oJob::oJobHelpExamples
   from: oJob::Init
   to  : OpenAF Test
@@ -60,36 +61,43 @@ jobs:
   to  : OpenAF Test
   exec: args.func = args.tests.testOJobEncryptedJSON
 
+# oJob::oJobExternalExecArgs
 - name: oJob::oJobExternalExecArgs
   from: oJob::Init
   to  : OpenAF Test
   exec: args.func = args.tests.testOJobExternalExecArgs
 
+# oJob::oJobStrictParsing
 - name: oJob::oJobStrictParsing
   from: oJob::Init
   to  : OpenAF Test
   exec: args.func = args.tests.testOJobStrictParsing
 
+# oJob::oJobIntegritySingleFetch
 - name: oJob::oJobIntegritySingleFetch
   from: oJob::Init
   to  : OpenAF Test
   exec: args.func = args.tests.testOJobIntegritySingleFetch
 
+# oJob::oJobAuthorizedDomainRedirects
 - name: oJob::oJobAuthorizedDomainRedirects
   from: oJob::Init
   to  : OpenAF Test
   exec: args.func = args.tests.testOJobAuthorizedDomainRedirects
 
+# oJob::oJobShutdownConsole
 - name: oJob::oJobShutdownConsole
   from: oJob::Init
   to  : OpenAF Test
   exec: args.func = args.tests.testOJobShutdownConsole
 
+# oJob::OJobDependencyScores
 - name: oJob::OJobDependencyScores
   from: oJob::Init
   to: OpenAF Test
   exec: args.func = args.tests.testOJobDependencyScores
 
+# oJob::OJobDependencyExecutionOrder
 - name: oJob::OJobDependencyExecutionOrder
   from: oJob::Init
   to: OpenAF Test

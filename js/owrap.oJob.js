@@ -15,7 +15,7 @@ OpenWrap.oJob = function(isNonLocal) {
 
 	this.__promises = [];
 	// guards __promises: jobs can be started concurrently (async todos, periodic/subscribed jobs, nested $job)
-	this.__promisesSync = new java.lang.Object();
+	this.__promisesSync = new java.lang.Object()
 	var parent = this;
 
 	this.__host = "localhost";
@@ -119,8 +119,8 @@ OpenWrap.oJob = function(isNonLocal) {
 	};
 
 
-	this.__languageLock = new java.util.concurrent.locks.ReentrantLock();
-	this.__languageDefaults();
+	this.__languageLock = new java.util.concurrent.locks.ReentrantLock()
+	this.__languageDefaults()
 	this.periodicFuncs = [];
 	this.__periodicFunc = () => {
 		this.periodicFuncs.forEach((f) => f());
@@ -269,38 +269,38 @@ OpenWrap.oJob.prototype.__verifyIntegrityBudgeted = function(aFileOrPath, aConte
     }
 
 	if (isDef(OJOB_INTEGRITY[aFileOrPath])) {
-		var stream, http, digestStream, capturedFile;
+		var stream, http, digestStream, capturedFile
 		var valid = false;
 		try {
 			if (isUrl) {
-				stream = new java.io.ByteArrayInputStream(this.__readAuthorizedRemoteBytes(aFileOrPath));
+				stream = new java.io.ByteArrayInputStream(this.__readAuthorizedRemoteBytes(aFileOrPath))
 			} else {
-				stream = io.readFileStream(aFileOrPath);
+				stream = io.readFileStream(aFileOrPath)
 			}
 
 			if (isFunction(aContentCallback)) {
-				capturedFile = java.nio.file.Files.createTempFile("openaf-ojob-integrity-", ".tmp");
-				java.nio.file.Files.copy(stream, capturedFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-				digestStream = java.nio.file.Files.newInputStream(capturedFile);
+				capturedFile = java.nio.file.Files.createTempFile("openaf-ojob-integrity-", ".tmp")
+				java.nio.file.Files.copy(stream, capturedFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+				digestStream = java.nio.file.Files.newInputStream(capturedFile)
 			} else {
-				digestStream = stream;
+				digestStream = stream
 			}
 
 			if (OJOB_INTEGRITY[aFileOrPath].indexOf("-") >= 0) {
-				var _p = OJOB_INTEGRITY[aFileOrPath].split("-"), alg = _p[0], h = _p[1];
+				var _p = OJOB_INTEGRITY[aFileOrPath].split("-"), alg = _p[0], h = _p[1]
 				switch (alg) {
 				case "sha256":
-					valid = (sha256(digestStream) == h);
-					break;
+					valid = (sha256(digestStream) == h)
+					break
 				case "sha512":
-					valid = (sha512(digestStream) == h);
-					break;
+					valid = (sha512(digestStream) == h)
+					break
 				case "sha384":
-					valid = (sha384(digestStream) == h);
-					break;
+					valid = (sha384(digestStream) == h)
+					break
 				case "sha1"  :
-					valid = (sha1(digestStream) == h);
-					break;
+					valid = (sha1(digestStream) == h)
+					break
 				case "md5"   :
 					valid = (md5(digestStream) == h)
 					break
@@ -308,7 +308,7 @@ OpenWrap.oJob.prototype.__verifyIntegrityBudgeted = function(aFileOrPath, aConte
 					valid = (md2(digestStream) == h)
 					break
 				default      :
-					valid = false;
+					valid = false
 				}
 			}
 			if (OJOB_INTEGRITY[aFileOrPath].indexOf(":") >= 0) {
@@ -318,11 +318,11 @@ OpenWrap.oJob.prototype.__verifyIntegrityBudgeted = function(aFileOrPath, aConte
 
 			if (isFunction(aContentCallback)) {
 				try { digestStream.close(); } catch(e) {}
-				digestStream = __;
-				aContentCallback(() => java.nio.file.Files.readAllBytes(capturedFile), valid, aFileOrPath);
+				digestStream = __
+				aContentCallback(() => java.nio.file.Files.readAllBytes(capturedFile), valid, aFileOrPath)
 			}
 
-			return valid;
+			return valid
 		} finally {
 			try { if (isDef(digestStream)) digestStream.close(); } catch(e) {}
 			try { if (isDef(stream)) stream.close(); } catch(e) {}
@@ -717,13 +717,13 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	}
 
 	if (isDef(ojob.instrumentation)) {
-    var __ins = ow.loadInstrumentation();
-    if (ojob.instrumentation === true) __ins.enable();
-    else if (ojob.instrumentation === false) __ins.disable();
+    var __ins = ow.loadInstrumentation()
+    if (ojob.instrumentation === true) __ins.enable()
+    else if (ojob.instrumentation === false) __ins.disable()
     else {
-      __ins.configure(ojob.instrumentation);
-      if (ojob.instrumentation.enabled === true) __ins.enable();
-      else if (ojob.instrumentation.enabled === false) __ins.disable();
+      __ins.configure(ojob.instrumentation)
+      if (ojob.instrumentation.enabled === true) __ins.enable()
+      else if (ojob.instrumentation.enabled === false) __ins.disable()
     }
   }
 
@@ -940,7 +940,7 @@ OpenWrap.oJob.prototype.__loadJSONBudgeted = function(aJSON, dontLoadTodos, dont
 			Object.keys(res.code).forEach(k => {
 				// A source may be both a require module and an execFile body.
 				// Keep the body even when the legacy module heuristic matches it.
-				this._code[k] = res.code[k];
+				this._code[k] = res.code[k]
 				if (k.endsWith(".js")) {
 					try {
 						if (res.code[k].trim().match(/\(.+\);?/)) {
@@ -1071,7 +1071,7 @@ OpenWrap.oJob.prototype.__loadFile = function() {
 }
 
 OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isInclude) {
-	var res = {}, parent = this, validation = false, signatureRejected = false, verifiedContent, aOrigFile = aFile;
+	var res = {}, parent = this, validation = false, signatureRejected = false, verifiedContent, aOrigFile = aFile
 
 	function _readRemoteBytes(url) {
 		return parent.__readAuthorizedRemoteBytes(url)
@@ -1079,54 +1079,54 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 
 	function _readLocalBytes(file) {
 		try {
-			return io.readFileBytes(file);
+			return io.readFileBytes(file)
 		} catch(e1) {
-			if (isUnDef(e1.message) || !e1.message.match(/FileNotFoundException|NoSuchFileException/)) throw e1;
-			var paths = getOPackPaths(), found;
-			if (io.fileExists(__flags.OJOB_LOCALPATH)) paths["__ojobs_local"] = __flags.OJOB_LOCALPATH;
+			if (isUnDef(e1.message) || !e1.message.match(/FileNotFoundException|NoSuchFileException/)) throw e1
+			var paths = getOPackPaths(), found
+			if (io.fileExists(__flags.OJOB_LOCALPATH)) paths["__ojobs_local"] = __flags.OJOB_LOCALPATH
 			for(var i in paths) {
 				try {
-					found = (paths[i] + "/" + file).replace(/\\+/g, "/").replace(/\/+/g, "/");
-					return io.readFileBytes(found);
+					found = (paths[i] + "/" + file).replace(/\\+/g, "/").replace(/\/+/g, "/")
+					return io.readFileBytes(found)
 				} catch(e2) {
-					if (isUnDef(e2.message) || !e2.message.match(/FileNotFoundException|NoSuchFileException/)) throw e2;
+					if (isUnDef(e2.message) || !e2.message.match(/FileNotFoundException|NoSuchFileException/)) throw e2
 				}
 			}
-			throw "File not found! (" + file + ")";
+			throw "File not found! (" + file + ")"
 		}
 	}
 
 	function _parseYAML(content, unsafe) {
-		if (unsafe) return af.fromYAML(content, true);
-		loadJSYAML();
+		if (unsafe) return af.fromYAML(content, true)
+		loadJSYAML()
 		var t = new jsyaml.Type("tag:yaml.org,2002:js/eval", {
 			kind: "scalar",
 			resolve: function() { return true; },
 			construct: function(d) { return "!!js/eval " + d; }
-		});
-		var parsed = jsyaml.loadAll(content, { schema: jsyaml.DEFAULT_SCHEMA.extend([t]) });
-		return (isArray(parsed) && parsed.length == 1) ? parsed[0] : parsed;
+		})
+		var parsed = jsyaml.loadAll(content, { schema: jsyaml.DEFAULT_SCHEMA.extend([t]) })
+		return (isArray(parsed) && parsed.length == 1) ? parsed[0] : parsed
 	}
 
 	function _parseCaptured(content, unsafe) {
-		var clean = String(aFile).replace(/[?#].*$/, ""), encrypted = clean.match(/\.enc$/i), text;
+		var clean = String(aFile).replace(/[?#].*$/, ""), encrypted = clean.match(/\.enc$/i), text
 		if (encrypted) {
-			text = String(Packages.openaf.AFCmdBase.afc.dbIP(content));
-			clean = clean.replace(/\.enc$/i, "");
+			text = String(Packages.openaf.AFCmdBase.afc.dbIP(content))
+			clean = clean.replace(/\.enc$/i, "")
 		} else {
-			text = af.fromBytes2String(content);
+			text = af.fromBytes2String(content)
 		}
 
-		if (clean.match(/\.ya?ml$/i)) return _parseYAML(text, unsafe);
+		if (clean.match(/\.ya?ml$/i)) return _parseYAML(text, unsafe)
 		if (clean.match(/\.js(on)?$/i)) {
-			var parsed = encrypted ? JSON.parse(text) : jsonParse(text, true);
+			var parsed = encrypted ? JSON.parse(text) : jsonParse(text, true)
 			if (unsafe && isMap(parsed) && __JSONformat.unsafe) {
-				traverse(parsed, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+				traverse(parsed, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); })
 			}
-			return parsed;
+			return parsed
 		}
-		if (String(aFile).match(/^https?:\/\//i)) return _parseYAML(text, unsafe);
-		return text;
+		if (String(aFile).match(/^https?:\/\//i)) return _parseYAML(text, unsafe)
+		return text
 	}
 
 	var fnDown = url => {
@@ -1138,7 +1138,7 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 		else {
 			if (url.endsWith("/")) url += "index.json"
 			
-			var res = af.fromBytes2String(_readRemoteBytes(url));
+			var res = af.fromBytes2String(_readRemoteBytes(url))
 			if (isString(res)) {
 				var parsed = jsonParse(res, true)
 				if (isString(parsed)) {
@@ -1160,7 +1160,7 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var _r = af.fromBytes2String(_readRemoteBytes(url));
+			var _r = af.fromBytes2String(_readRemoteBytes(url))
 			if (isMap(_r)) {
 				if (__JSONformat.unsafe) traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
 				return _r;
@@ -1176,7 +1176,7 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var _r = _readRemoteBytes(url);
+			var _r = _readRemoteBytes(url)
 			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
 			if (isString(_r)) {
 				try {
@@ -1198,7 +1198,7 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var _r = _readRemoteBytes(url);
+			var _r = _readRemoteBytes(url)
 			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
 			if (isString(_r)) {
 				try {
@@ -1272,9 +1272,9 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 		
 		// Check for internal signature
 		if (OJOB_SIGNATURE_STRICT && (isUnDef(res) || isUnDef(res.__jwt) || isUnDef(OJOB_SIGNATURE_KEY))) {
-			logErr("SIGNATURE: Verification of '" + aFile + "' failed. Strict signature enforced. Not loading oJob definition.");
-			signatureRejected = true;
-			return {};
+			logErr("SIGNATURE: Verification of '" + aFile + "' failed. Strict signature enforced. Not loading oJob definition.")
+			signatureRejected = true
+			return {}
 		}
 		if (isDef(res) && isDef(res.__jwt) && isDef(OJOB_SIGNATURE_KEY)) {
 			ow.loadObj();
@@ -1282,7 +1282,7 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 			if (!ow.obj.signVerify(OJOB_SIGNATURE_KEY, res)) {
 				if (OJOB_SIGNATURE_STRICT) {
 					logErr("SIGNATURE: Verification of '" + aFile + "' failed. Strict signature enforced. Not loading oJob definition.");
-					signatureRejected = true;
+					signatureRejected = true
 					return {};
 				} else {
 					logWarn("SIGNATURE: Verification of '" + aFile + "' failed. Please check the source and update the corresponding signature. Execution will continue.");
@@ -1317,8 +1317,8 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 			Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "oJob checking integrity of '" + aFile + "'", null);
 
 			var ig = parent.verifyIntegrity(aFile, (readContent, valid) => {
-				if (valid || OJOB_INTEGRITY_WARN) verifiedContent = readContent();
-			});
+				if (valid || OJOB_INTEGRITY_WARN) verifiedContent = readContent()
+			})
 			if (isDef(ig) && ig == false) {
 				if (OJOB_INTEGRITY_WARN) {
 					logWarn("INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list. Execution will continue.");
@@ -1334,14 +1334,14 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 			}
 		}
 
-		var isRemote = aFile.match(/^https?:\/\//i);
-		var domainAuthorized = !isRemote || parent.authorizedDomains.indexOf(String((new java.net.URL(aFile)).getHost())) >= 0;
-		var preauthParse = OJOB_SIGNATURE_STRICT || (OJOB_VALIDATION_STRICT && !validation);
+		var isRemote = aFile.match(/^https?:\/\//i)
+		var domainAuthorized = !isRemote || parent.authorizedDomains.indexOf(String((new java.net.URL(aFile)).getHost())) >= 0
+		var preauthParse = OJOB_SIGNATURE_STRICT || (OJOB_VALIDATION_STRICT && !validation)
 		if (domainAuthorized && (isDef(verifiedContent) || preauthParse)) {
-			if (isUnDef(verifiedContent)) verifiedContent = isRemote ? _readRemoteBytes(aFile) : _readLocalBytes(aFile);
-			res = this.__merge(_load(() => _parseCaptured(verifiedContent, !preauthParse)), res);
+			if (isUnDef(verifiedContent)) verifiedContent = isRemote ? _readRemoteBytes(aFile) : _readLocalBytes(aFile)
+			res = this.__merge(_load(() => _parseCaptured(verifiedContent, !preauthParse)), res)
 			if (preauthParse && !signatureRejected && validation) {
-				res = this.__merge(_parseCaptured(verifiedContent, true), {});
+				res = this.__merge(_parseCaptured(verifiedContent, true), {})
 			}
 		} else if (aFile.match(/\.ya?ml\.enc$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
@@ -1359,13 +1359,13 @@ OpenWrap.oJob.prototype.__loadFileBudgeted = function(aFile, removeTodos, isIncl
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
 			} else {
-				res = this.__merge(_load(f => parent.__readCachedFile(f, io.readFileYAML)), res);
+				res = this.__merge(_load(f => parent.__readCachedFile(f, io.readFileYAML)), res)
 			}
 		} else if (aFile.match(/\.js(on)?$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDown), res);
 			} else {
-				res = this.__merge(_load(f => parent.__readCachedFile(f, io.readFileJSON)), res);
+				res = this.__merge(_load(f => parent.__readCachedFile(f, io.readFileJSON)), res)
 			}
 		} else if (aFile.match(/^https?:\/\//)) {
 			res = this.__merge(_load(fnDown), res);
@@ -1617,7 +1617,7 @@ OpenWrap.oJob.prototype.getRawIncludes = function(aFile) {
 			if (this.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) {
 				return { include: [], jobsInclude: [] };
 			}
-			content = af.fromBytes2String(this.__readAuthorizedRemoteBytes(f));
+			content = af.fromBytes2String(this.__readAuthorizedRemoteBytes(f))
 		} else {
 			content = io.readFileString(f);
 		}
@@ -1627,14 +1627,14 @@ OpenWrap.oJob.prototype.getRawIncludes = function(aFile) {
 		} else if (isString(content)) {
 			var fclean = f.replace(/[?#].*$/, "");
 			if (fclean.match(/\.js(on)?$/i)) {
-				res = jsonParse(content, true);
+				res = jsonParse(content, true)
 			} else if (fclean.match(/\.ya?ml$/i)) {
-				res = af.fromYAML(content);
+				res = af.fromYAML(content)
 			} else {
 				try {
-					res = af.fromYAML(content);
+					res = af.fromYAML(content)
 				} catch(e1) {
-					res = jsonParse(content, true);
+					res = jsonParse(content, true)
 				}
 			}
 		}
@@ -1751,7 +1751,7 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 	for(var i in todoList) { 
 		var name = isDef(todoList[i].name) ? todoList[i].name : Object.keys(todoList[i])[0]
 		if(isObject(todoList[i]) && (isDef(todoList[i].args) || isDef(aJobArgs)))
-			todoList[i].args = this.__processArgs(todoList[i].args, aJobArgs, aId, true);
+			todoList[i].args = this.__processArgs(todoList[i].args, aJobArgs, aId, true)
 
 		if (isMap(todoList[i])) {
 			todoList[i] = this.parseTodo(todoList[i])
@@ -1907,11 +1907,11 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			ansis = Boolean(__conAnsi && (java.lang.System.console() != null));
 			try {
 				var s = "", ss = "", sn = "", se = "";
-				var w = this.__conWidth;
+				var w = this.__conWidth
 				// Console state can disappear during shutdown. Formatting must not
 				// prevent start/success/error events from being logged.
 				try {
-					if (isDef(__con) && __con != null) w = __con.getTerminal().getWidth();
+					if (isDef(__con) && __con != null) w = __con.getTerminal().getWidth()
 				} catch (terminalError) { ansis = false; }
 				var jansi = JavaImporter(Packages.org.fusesource.jansi);
 				
@@ -2074,8 +2074,8 @@ OpenWrap.oJob.prototype.stop = function() {
 	}
 
 	if (this.running) {
-		var _pending = syncFn(() => this.__promises.slice(), this.__promisesSync);
-		$doWait($doAll(_pending));
+		var _pending = syncFn(() => this.__promises.slice(), this.__promisesSync)
+		$doWait($doAll(_pending))
 		if (isDef(ow.metrics)) ow.metrics.stopCollecting( isDef(this.__ojob.metrics) && isDef(this.__ojob.metrics.chName) ? this.__ojob.metrics.chName : __ );
 		//this.getLogCh().waitForJobs(250);
 		this.getLogCh().waitForJobs();
@@ -2100,9 +2100,9 @@ OpenWrap.oJob.prototype.stop = function() {
 		if (this.__ojob.logToConsole && Boolean(__conAnsi && (java.lang.System.console() != null))) ansiStop();
 	}
 	if (isDef(this.__languageCleanups)) {
-		var cleanups = this.__languageCleanups;
-		this.__languageCleanups = {};
-		Object.keys(cleanups).forEach(k => cleanups[k]());
+		var cleanups = this.__languageCleanups
+		this.__languageCleanups = {}
+		Object.keys(cleanups).forEach(k => cleanups[k]())
 	}
 };
 
@@ -2229,7 +2229,7 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 			argss = this.__mergeArgs(argss, { __oJobRepeat: aArgsA });	
 		} else {
 			if (isObject(aArgsA)) {
-				argss = this.__mergeArgs(argss, aArgsA);
+				argss = this.__mergeArgs(argss, aArgsA)
 			} else {
 				if (isString(aArgsA)) {
 					argss = this.__mergeArgs(argss, { __oJobExec: aArgsA });
@@ -2259,9 +2259,9 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 OpenWrap.oJob.prototype.askOnHelp = function(aHelpMap, aUI) {
 	_$(aHelpMap, "helpMap").isMap().$_()
 
-  var ownedUI = aUI === true;
-  if (ownedUI) aUI = askConsole();
-  var write = aUI ? aUI.write : print;
+  var ownedUI = aUI === true
+  if (ownedUI) aUI = askConsole()
+  var write = aUI ? aUI.write : print
   try {
 	if (!aUI && !__flags.OJOB_HELPSIMPLEUI) __initializeCon()
 
@@ -2470,7 +2470,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
         // Active (push) and passive metrics
 		if (isDef(this.__ojob.metrics)) {
-			if (isBoolean(this.__ojob.metrics) && this.__ojob.metrics) ow.server.telemetry.passive(__, __, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp, this.__ojob.metrics.openMetricsStrict);
+			if (isBoolean(this.__ojob.metrics) && this.__ojob.metrics) ow.server.telemetry.passive(__, __, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp, this.__ojob.metrics.openMetricsStrict)
 			if (isMap(this.__ojob.metrics)) {
 				if (isDef(this.__ojob.metrics.collect)) {
 					if (isBoolean(this.__ojob.metrics.collect) && this.__ojob.metrics.collect) ow.metrics.startCollecting();
@@ -2535,7 +2535,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 				} 
 				// Passive
 				if (passive) {
-					ow.server.telemetry.passive(this.__ojob.metrics.port, this.__ojob.metrics.uri, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp, this.__ojob.metrics.openMetricsStrict);
+					ow.server.telemetry.passive(this.__ojob.metrics.port, this.__ojob.metrics.uri, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp, this.__ojob.metrics.openMetricsStrict)
 				}
 			}
 		}
@@ -2545,7 +2545,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		if (isString(this.__ojob.daemonFunc)) {
 			var parent = this;
 			this.periodicFuncs.push(() => {
-				var res = (parent.__getCachedFn(parent.__ojob.daemonFunc))();
+				var res = (parent.__getCachedFn(parent.__ojob.daemonFunc))()
 				if (isDef(res) && res == true) {
 					parent.oJobShouldStop = true;
 				}
@@ -2621,7 +2621,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 	var t = new Threads();
 	this.mt = new Threads();
-	var __instrumentationContext = ow.instrumentation && ow.instrumentation.isEnabled("jobs") ? ow.instrumentation.captureContext() : __;
+	var __instrumentationContext = ow.instrumentation && ow.instrumentation.isEnabled("jobs") ? ow.instrumentation.captureContext() : __
 
 	//var parent = this;
 	var altId = (isDef(aId) ? aId : "");
@@ -2631,7 +2631,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		this.__mtStart = now();
 		this.mt.addScheduleThreadAtFixedRate(function() {
 			if (isDef(parent.__ojob.checkStall.checkFunc)) {
-				var res = (parent.__getCachedFn(parent.__ojob.checkStall.checkFunc))(parent.__mtStart);
+				var res = (parent.__getCachedFn(parent.__ojob.checkStall.checkFunc))(parent.__mtStart)
 				if (res) exit(-1);
 			}
 			if ((now() - parent.__mtStart) > (parent.__ojob.checkStall.killAfterSeconds * 1000)) {
@@ -2735,7 +2735,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 								job.typeArgs = merge(job.typeArgs, todo.typeArgs)
 							}
 
-							var res = ow.instrumentation && ow.instrumentation.isEnabled("jobs") ? ow.instrumentation.withContext(__instrumentationContext, function() { return parent.runJob(job, argss, aId, !(parent.__ojob.async)); }) : parent.runJob(job, argss, aId, !(parent.__ojob.async));
+							var res = ow.instrumentation && ow.instrumentation.isEnabled("jobs") ? ow.instrumentation.withContext(__instrumentationContext, function() { return parent.runJob(job, argss, aId, !(parent.__ojob.async)); }) : parent.runJob(job, argss, aId, !(parent.__ojob.async))
 							if (res != false) {
 								parent.getTodoCh().unset({ 
 									"ojobId": todo.ojobId,
@@ -2773,9 +2773,9 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 				} else {
 					if (__flags.OJOB_ADAPTIVE_POLL) {
 						_pollDelay = (isDef(parentOJob) && parentOJob.length <= 0) ? Math.min(_pollDelay * 2, 250) : 50
-						sleep(_pollDelay, true);
+						sleep(_pollDelay, true)
 					} else {
-						sleep(50, true);
+						sleep(50, true)
 					}
 				}
 			}
@@ -2917,7 +2917,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					if (isDef(depInf) && depInf.success) {
 						canContinue = true;
 						if (isDef(aJob.deps[j].onSuccess)) {
-							var res = (parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onSuccess))(provideArgs, aJob, aId);
+							var res = (parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onSuccess))(provideArgs, aJob, aId)
 							canContinue = res;
 						}
 						depInfo[dep].result = true;
@@ -3039,14 +3039,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			})
 		}
 
-		var f = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
+		var f = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;")
     if (ow.instrumentation && ow.instrumentation.isEnabled("jobs") && isDef(args.__oJobRepeat)) {
-      var __repeatFn = f;
-      f = function() { var __args = arguments; return ow.instrumentation.withSpan("ojob " + job.name + " repeat", function() { return __repeatFn.apply(null, __args); }); };
+      var __repeatFn = f
+      f = function() { var __args = arguments; return ow.instrumentation.withSpan("ojob " + job.name + " repeat", function() { return __repeatFn.apply(null, __args); }); }
     }
 		var fe, fint;
-		if (isDef(parent.__ojob.catch)) fe = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + parent.__ojob.catch + "})(); return { args: args, res: _res };");
-		if (isDef(aJob.catch)) fint = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + aJob.catch + "})(); return { args: args, res: _res };");
+		if (isDef(parent.__ojob.catch)) fe = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + parent.__ojob.catch + "})(); return { args: args, res: _res };")
+		if (isDef(aJob.catch)) fint = parent.__getCachedFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + aJob.catch + "})(); return { args: args, res: _res };")
 		
 		var stopWhen, timeout, tb = false, tbres;
 		if (isDef(aJob.typeArgs.timeout))  { tb = true; timeout = aJob.typeArgs.timeout; }
@@ -3207,7 +3207,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					this.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 				} else {
 					var _jp = $do(() => {
-						_run(aJob.exec, args, aJob, aId);
+						_run(aJob.exec, args, aJob, aId)
 					}).then(() => {
 						parent.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 					}).catch((e) => {
@@ -3238,7 +3238,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					if (isUnDef(args.__oJobRepeat)) args = this.__mergeArgs(args, aJob.args);
 
 					var f = isDef(aJob.typeArgs.file) ? aJob.typeArgs.file : aJob.typeArgs.url;
-					if (ow.instrumentation && ow.instrumentation.isEnabled("jobs")) ow.instrumentation.withSpan("ojob " + aJob.name, function() { return parent.runFile(f, args, f, true); }); else parent.runFile(f, args, f, true);
+					if (ow.instrumentation && ow.instrumentation.isEnabled("jobs")) ow.instrumentation.withSpan("ojob " + aJob.name, function() { return parent.runFile(f, args, f, true); }); else parent.runFile(f, args, f, true)
 					this.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 
 					//return true;
@@ -3565,7 +3565,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 			var m = parent.__langs[aJobTypeArgs.lang]
 			if (isDef(aJobTypeArgs.lang) && isUnDef(m) && ["javascript", "oaf", "js", "python"].indexOf(aJobTypeArgs.lang) === -1) throw "Language '" + aJobTypeArgs.lang + "' not supported or defined for job '" + aName + "'."
-			if ((!m || (m.protocol != "json-file-v1" && m.processOptions !== true)) && ["langExecutable", "langExecutableArgs", "langTimeout"].some(k => isDef(aJobTypeArgs[k]))) throw new Error("Language " + aJobTypeArgs.lang + " does not support local process options");
+			if ((!m || (m.protocol != "json-file-v1" && m.processOptions !== true)) && ["langExecutable", "langExecutableArgs", "langTimeout"].some(k => isDef(aJobTypeArgs[k]))) throw new Error("Language " + aJobTypeArgs.lang + " does not support local process options")
 			if (isDef(m) && isUnDef(aJobTypeArgs.returnRE) && isDef(m.returnRE)) aJobTypeArgs.returnRE = m.returnRE
 			if (isDef(m) && isUnDef(aJobTypeArgs.returnFn) && isDef(m.returnFn)) aJobTypeArgs.returnFn = m.returnFn
 
@@ -3586,7 +3586,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 			}
 			if (isDef(m) && m.protocol == "json-file-v1") {
-				res += "\nargs = ow.oJob.__runLanguage(" + stringify(aJobTypeArgs.lang) + ", " + stringify(origRes) + ", args, " + stringify(aJobTypeArgs) + ", " + stringify(aName) + ");\n";
+				res += "\nargs = ow.oJob.__runLanguage(" + stringify(aJobTypeArgs.lang) + ", " + stringify(origRes) + ", args, " + stringify(aJobTypeArgs) + ", " + stringify(aName) + ");\n"
 			} else switch(aJobTypeArgs.lang) {
 			case "javascript":
 			case "js":
@@ -3603,7 +3603,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					} else {
 						res += orig + ";try { args = merge(args, $py(templify(" + stringify(origRes) + ", args) + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
 					}
-					res += "} catch(e) { throw e; };\n";
+					res += "} catch(e) { throw e; };\n"
 				}
 				break;
 			case "ssh":
@@ -4499,20 +4499,20 @@ OpenWrap.oJob.prototype.output = $output
  * </odoc>
  */
 OpenWrap.oJob.prototype.runLanguageProcess = function(command, options) {
-  _$(command, "language command").isArray().$_();
-  if (command.length == 0 || command.some(v => !isString(v))) throw new Error("Language command must be a nonempty string array");
-  options = _$(options).isMap().default({});
-  var request = { command: command };
-  if (isDef(options.pwd)) request.cwd = _$(options.pwd, "pwd").isString().$_();
-  if (isDef(options.env)) request.env = _$(options.env, "env").isMap().$_();
+  _$(command, "language command").isArray().$_()
+  if (command.length == 0 || command.some(v => !isString(v))) throw new Error("Language command must be a nonempty string array")
+  options = _$(options).isMap().default({})
+  var request = { command: command }
+  if (isDef(options.pwd)) request.cwd = _$(options.pwd, "pwd").isString().$_()
+  if (isDef(options.env)) request.env = _$(options.env, "env").isMap().$_()
   if (isDef(options.maxOutputBytes)) request.maxOutputBytes = options.maxOutputBytes
   if (isDef(options.clearEnvironment)) request.clearEnvironment = options.clearEnvironment
   if (isDef(options.timeout)) {
-    if (!isNumber(options.timeout) || !isFinite(options.timeout) || options.timeout <= 0) throw new Error("Language timeout must be positive milliseconds");
-    request.timeout = Math.max(1, Math.ceil(options.timeout));
+    if (!isNumber(options.timeout) || !isFinite(options.timeout) || options.timeout <= 0) throw new Error("Language timeout must be positive milliseconds")
+    request.timeout = Math.max(1, Math.ceil(options.timeout))
   }
-  return jsonParse(String(Packages.openaf.OJobLanguageProcess.run(stringify(request, __, ""))));
-};
+  return jsonParse(String(Packages.openaf.OJobLanguageProcess.run(stringify(request, __, ""))))
+}
 
 OpenWrap.oJob.prototype.__languageDefaults = function() {
   var defs = {
@@ -4537,100 +4537,100 @@ OpenWrap.oJob.prototype.__languageDefaults = function() {
     java: { executable: String(java.lang.System.getProperty("java.home")) + "/bin/java" + (ow.format.isWindows() ? ".exe" : ""), extension: ".java", versionArgs: ["-version"],
       pre: 'import java.util.*;\nimport java.nio.file.*;\nimport java.nio.charset.StandardCharsets;\nimport com.google.gson.*;\nimport com.google.gson.reflect.TypeToken;\n{{#each langArgs.javaImports}}import {{{this}}};\n{{/each}}class OJobJava { public static void main(String[] argv) throws Exception {\nGson _ojobJson = new GsonBuilder().serializeNulls().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();\nMap<String,Object> args = _ojobJson.fromJson(Files.readString(Path.of(System.getenv("OJOB_ARGS_FILE")), StandardCharsets.UTF_8), new TypeToken<Map<String,Object>>(){}.getType());\n',
       pos: '\nFiles.writeString(Path.of(System.getenv("OJOB_RESULT_FILE")), _ojobJson.toJson(args), StandardCharsets.UTF_8);\n}}\n' }
-  };
+  }
   Object.keys(defs).forEach(k => {
-    defs[k].lang = k;
-    defs[k].protocol = "json-file-v1";
-    defs[k].kind = "local-process";
-    this.__langs[k] = defs[k];
-  });
-};
+    defs[k].lang = k
+    defs[k].protocol = "json-file-v1"
+    defs[k].kind = "local-process"
+    this.__langs[k] = defs[k]
+  })
+}
 
 // An unrepacked distribution stores Gson as a nested JAR, which javac cannot read directly.
 OpenWrap.oJob.prototype.__languageJavaDependency = function(directory, jarPath) {
-  var jar = new java.util.jar.JarFile(jarPath || getOpenAFJar());
+  var jar = new java.util.jar.JarFile(jarPath || getOpenAFJar())
   try {
-    var entries = jar.entries();
+    var entries = jar.entries()
     while (entries.hasMoreElements()) {
-      var entry = entries.nextElement();
+      var entry = entries.nextElement()
       if (/^gson-[^/]+\.jar$/.test(String(entry.getName()))) {
-        var target = new java.io.File(directory, "gson.jar").toPath();
-        var input = jar.getInputStream(entry);
+        var target = new java.io.File(directory, "gson.jar").toPath()
+        var input = jar.getInputStream(entry)
         try { java.nio.file.Files.copy(input, target); } finally { input.close(); }
-        return String(target.toAbsolutePath());
+        return String(target.toAbsolutePath())
       }
     }
   } finally { jar.close(); }
-  return String(new java.io.File(java.lang.Class.forName("com.google.gson.Gson").getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath());
-};
+  return String(new java.io.File(java.lang.Class.forName("com.google.gson.Gson").getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath())
+}
 
 OpenWrap.oJob.prototype.__languageLogs = function(result, prefix) {
   var output = (value, error) => {
-    if (!isString(value) || value.length == 0) return;
-    if (isDef(prefix)) value = value.split(/\r?\n/).map(l => l.length ? "[" + prefix + "] " + l : l).join("\n");
-    if (error) printErrnl(value); else printnl(value);
-  };
-  output(result.stdout, false);
-  output(result.stderr, true);
-};
+    if (!isString(value) || value.length == 0) return
+    if (isDef(prefix)) value = value.split(/\r?\n/).map(l => l.length ? "[" + prefix + "] " + l : l).join("\n")
+    if (error) printErrnl(value); else printnl(value)
+  }
+  output(result.stdout, false)
+  output(result.stderr, true)
+}
 
 OpenWrap.oJob.prototype.__runLanguage = function(lang, source, args, options, name) {
-  var definition = this.__langs[lang];
-  options = _$(options).isMap().default({});
-  var label = "Job '" + name + "' language '" + lang + "'", directory;
-  var stage = "prepare";
+  var definition = this.__langs[lang]
+  options = _$(options).isMap().default({})
+  var label = "Job '" + name + "' language '" + lang + "'", directory
+  var stage = "prepare"
   try {
-    var executable = _$(options.langExecutable, "langExecutable").isString().default(definition.executable);
-    if (!isString(executable) || executable.length == 0) throw new Error("Missing executable");
-    var extra = _$(options.langExecutableArgs, "langExecutableArgs").isArray().default([]);
-    if (extra.some(v => !isString(v))) throw new Error("langExecutableArgs must contain strings");
-    if (isDef(options.langTimeout) && (!isNumber(options.langTimeout) || !isFinite(options.langTimeout) || options.langTimeout <= 0)) throw new Error("langTimeout must be positive milliseconds");
-    directory = String(java.nio.file.Files.createTempDirectory("ojob-language-"));
-    var input = directory + "/args.json", resultFile = directory + "/result.json";
-    var script = directory + "/OJobJava" + _$(definition.extension).isString().default(".txt");
-    io.writeFileString(input, stringify(args, __, ""), "UTF-8");
-    var context = { argsFile: input, resultFile: resultFile, langArgs: clone(options.langArgs || {}) };
-    if (lang == "go" && isArray(context.langArgs.goImports)) context.langArgs.goImports = context.langArgs.goImports.filter(v => ['"os"', '"fmt"', '"encoding/json"'].indexOf(v) < 0);
-    var literal = isDef(options.noTemplate) ? options.noTemplate : lang == "java";
-    if (!literal) source = templify(source, args);
+    var executable = _$(options.langExecutable, "langExecutable").isString().default(definition.executable)
+    if (!isString(executable) || executable.length == 0) throw new Error("Missing executable")
+    var extra = _$(options.langExecutableArgs, "langExecutableArgs").isArray().default([])
+    if (extra.some(v => !isString(v))) throw new Error("langExecutableArgs must contain strings")
+    if (isDef(options.langTimeout) && (!isNumber(options.langTimeout) || !isFinite(options.langTimeout) || options.langTimeout <= 0)) throw new Error("langTimeout must be positive milliseconds")
+    directory = String(java.nio.file.Files.createTempDirectory("ojob-language-"))
+    var input = directory + "/args.json", resultFile = directory + "/result.json"
+    var script = directory + "/OJobJava" + _$(definition.extension).isString().default(".txt")
+    io.writeFileString(input, stringify(args, __, ""), "UTF-8")
+    var context = { argsFile: input, resultFile: resultFile, langArgs: clone(options.langArgs || {}) }
+    if (lang == "go" && isArray(context.langArgs.goImports)) context.langArgs.goImports = context.langArgs.goImports.filter(v => ['"os"', '"fmt"', '"encoding/json"'].indexOf(v) < 0)
+    var literal = isDef(options.noTemplate) ? options.noTemplate : lang == "java"
+    if (!literal) source = templify(source, args)
     // Preserve Perl's # return a,b convention, but write the result through the JSON bridge.
     if (lang == "perl") source = source.replace(/\s*#\s+return ([^\n]+)(?:\n|$)/, function(all, fields) {
-      var keys = fields.split(",").map(k => k.trim());
-      if (keys.some(k => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k))) throw new Error("Invalid Perl return variable");
-      return "\n$args = {" + keys.map(k => "'" + k + "' => $" + k).join(",") + "};\n";
-    });
-    io.writeFileString(script, (lang == "powershell" ? "\uFEFF" : "") + templify(definition.pre || "", context) + source + (definition.pos || ""), "UTF-8");
-    var command = [executable].concat(extra);
-    if (lang == "go") command.push("run");
-    if (lang == "powershell") command = command.concat(["-NoProfile", "-NonInteractive", "-File"]);
+      var keys = fields.split(",").map(k => k.trim())
+      if (keys.some(k => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k))) throw new Error("Invalid Perl return variable")
+      return "\n$args = {" + keys.map(k => "'" + k + "' => $" + k).join(",") + "};\n"
+    })
+    io.writeFileString(script, (lang == "powershell" ? "\uFEFF" : "") + templify(definition.pre || "", context) + source + (definition.pos || ""), "UTF-8")
+    var command = [executable].concat(extra)
+    if (lang == "go") command.push("run")
+    if (lang == "powershell") command = command.concat(["-NoProfile", "-NonInteractive", "-File"])
     if (lang == "java") {
-      var classpath = _$(context.langArgs.javaClasspath, "javaClasspath").isArray().default([]);
-      if (classpath.some(v => !isString(v))) throw new Error("javaClasspath must contain strings");
-      var gson = this.__languageJavaDependency(directory);
-      command = command.concat(["--class-path", [gson].concat(classpath).join(String(java.io.File.pathSeparator))]);
+      var classpath = _$(context.langArgs.javaClasspath, "javaClasspath").isArray().default([])
+      if (classpath.some(v => !isString(v))) throw new Error("javaClasspath must contain strings")
+      var gson = this.__languageJavaDependency(directory)
+      command = command.concat(["--class-path", [gson].concat(classpath).join(String(java.io.File.pathSeparator))])
     }
-    if (isArray(definition.scriptArgs)) command = command.concat(definition.scriptArgs);
-    command.push(script);
+    if (isArray(definition.scriptArgs)) command = command.concat(definition.scriptArgs)
+    command.push(script)
     // Large structured values belong in the input file, not the process environment.
-    var env = { OJOB_ARGS_FILE: input, OJOB_RESULT_FILE: resultFile };
-    stage = "execute";
-    var result = this.runLanguageProcess(command, { pwd: options.pwd, env: env, timeout: options.langTimeout });
-    this.__languageLogs(result, isDef(options.shellPrefix) ? objOrStr(args, String(options.shellPrefix)) : __);
-    if (result.timedOut) throw new Error("timed out after " + options.langTimeout + "ms");
-    if (result.exitcode != 0) throw new Error("exit status " + result.exitcode);
-    stage = "result";
-    if (!io.fileExists(resultFile)) throw new Error("Missing JSON result file");
-    var returned;
+    var env = { OJOB_ARGS_FILE: input, OJOB_RESULT_FILE: resultFile }
+    stage = "execute"
+    var result = this.runLanguageProcess(command, { pwd: options.pwd, env: env, timeout: options.langTimeout })
+    this.__languageLogs(result, isDef(options.shellPrefix) ? objOrStr(args, String(options.shellPrefix)) : __)
+    if (result.timedOut) throw new Error("timed out after " + options.langTimeout + "ms")
+    if (result.exitcode != 0) throw new Error("exit status " + result.exitcode)
+    stage = "result"
+    if (!io.fileExists(resultFile)) throw new Error("Missing JSON result file")
+    var returned
     try { returned = JSON.parse(io.readFileString(resultFile, "UTF-8")); } catch (e) { throw new Error("Invalid JSON result file"); }
-    if (!isMap(returned)) throw new Error("Language result must be a JSON object");
-    return merge(args, returned);
+    if (!isMap(returned)) throw new Error("Language result must be a JSON object")
+    return merge(args, returned)
   } catch (e) {
-    throw new Error(label + " (" + stage + "): " + e);
+    throw new Error(label + " (" + stage + "): " + e)
   } finally {
     // a cleanup failure (e.g. a file still locked on Windows) must not replace the job's own result/error
     if (isDef(directory)) try { io.rm(directory); } catch (e) { logWarn("Couldn't remove language temporary directory '" + directory + "': " + e); }
   }
-};
+}
 
 /**
  * <odoc>
@@ -4640,34 +4640,34 @@ OpenWrap.oJob.prototype.__runLanguage = function(lang, source, args, options, na
  * </odoc>
  */
 OpenWrap.oJob.prototype.getLanguages = function(probe) {
-  var names = ["oaf", "js", "javascript", "python", "winssh"].concat(Object.keys(this.__langs));
+  var names = ["oaf", "js", "javascript", "python", "winssh"].concat(Object.keys(this.__langs))
   return names.map(name => {
-    var d = this.__langs[name] || {};
-    var local = d.protocol == "json-file-v1" || d.processOptions === true;
+    var d = this.__langs[name] || {}
+    var local = d.protocol == "json-file-v1" || d.processOptions === true
     var r = { lang: name, kind: d.kind || (name == "python" ? "python-bridge" : ["oaf", "js", "javascript"].indexOf(name) >= 0 ? "embedded" : ["ssh", "winssh"].indexOf(name) >= 0 ? "remote" : ["sh", "shell"].indexOf(name) >= 0 ? "shell" : "custom"),
       options: local ? ["langExecutable", "langExecutableArgs", "langTimeout", "pwd"] : [],
-      prerequisites: d.prerequisites || (name == "java" ? "JDK 21+" : d.executable || (name == "python" ? "Python (OAF_PYTHON)" : "See adapter documentation")) };
+      prerequisites: d.prerequisites || (name == "java" ? "JDK 21+" : d.executable || (name == "python" ? "Python (OAF_PYTHON)" : "See adapter documentation")) }
     if (probe === true) {
-      if (r.kind == "embedded") r.available = true;
+      if (r.kind == "embedded") r.available = true
       else if (isString(d.executable) && isArray(d.versionArgs)) {
         try {
-          var result = this.runLanguageProcess([d.executable].concat(d.versionArgs), { timeout: 5000 });
-          r.available = !result.timedOut && result.exitcode == 0;
+          var result = this.runLanguageProcess([d.executable].concat(d.versionArgs), { timeout: 5000 })
+          r.available = !result.timedOut && result.exitcode == 0
           if (name == "java" && isNull(javax.tools.ToolProvider.getSystemJavaCompiler())) { r.available = false; result.stderr += " JDK compiler unavailable"; }
-          r.diagnostic = result.timedOut ? "Availability probe timed out" : (result.stdout + result.stderr).trim();
+          r.diagnostic = result.timedOut ? "Availability probe timed out" : (result.stdout + result.stderr).trim()
         } catch (e) { r.available = false; r.diagnostic = String(e); }
       } else if (name == "python") {
         try {
-          ow.loadPython();
-          var result = this.runLanguageProcess([ow.python.python, "--version"], { timeout: 5000 });
-          r.available = !result.timedOut && result.exitcode == 0;
-          r.diagnostic = (result.stdout + result.stderr).trim();
+          ow.loadPython()
+          var result = this.runLanguageProcess([ow.python.python, "--version"], { timeout: 5000 })
+          r.available = !result.timedOut && result.exitcode == 0
+          r.diagnostic = (result.stdout + result.stderr).trim()
         } catch (e) { r.available = false; r.diagnostic = String(e); }
       } else { r.available = null; r.diagnostic = "No local availability probe defined"; }
     }
-    return r;
-  });
-};
+    return r
+  })
+}
 
 /**
  * <odoc>
@@ -4676,8 +4676,8 @@ OpenWrap.oJob.prototype.getLanguages = function(probe) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.registerLanguageCleanup = function(name, fn) {
-  _$(name, "language cleanup name").isString().$_();
-  _$(fn, "language cleanup function").isFunction().$_();
-  if (isUnDef(this.__languageCleanups)) this.__languageCleanups = {};
-  this.__languageCleanups[name] = fn;
-};
+  _$(name, "language cleanup name").isString().$_()
+  _$(fn, "language cleanup function").isFunction().$_()
+  if (isUnDef(this.__languageCleanups)) this.__languageCleanups = {}
+  this.__languageCleanups[name] = fn
+}

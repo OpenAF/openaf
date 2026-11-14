@@ -44,16 +44,16 @@ import java.lang.String;
  */
 public class AFCmdOS extends AFCmdBase {
 
-	/**
-	 * Runs any registered OpenAF shutdown hooks synchronously and then terminates the process at the
-	 * operating system level (bypassing the JVM's own shutdown sequence, which can otherwise stall for
-	 * several seconds behind a still-running JIT compilation). Used for this class's own internal,
-	 * short-lived bootstrap commands (install/check/update/example help).
-	 */
-	private static void fastExit(int anExitCode) {
-		Threads.runOpenAFShutdownHooksNow();
-		Threads.nativeExit(anExitCode);
-	}
+    /**
+     * Runs any registered OpenAF shutdown hooks synchronously and then terminates the process at the
+     * operating system level (bypassing the JVM's own shutdown sequence, which can otherwise stall for
+     * several seconds behind a still-running JIT compilation). Used for this class's own internal,
+     * short-lived bootstrap commands (install/check/update/example help).
+     */
+    private static void fastExit(int anExitCode) {
+        Threads.runOpenAFShutdownHooksNow();
+        Threads.nativeExit(anExitCode);
+    }
 
 	final public static String argHelp = "Usage: openaf [options]\n\n"
 			+ "Options:\n" 
@@ -150,10 +150,10 @@ public class AFCmdOS extends AFCmdBase {
 				return (String) aPass;
 			}
 		} 
-		if (aPass instanceof Function) {
+        if (aPass instanceof Function) {
 			try {
 				Context cx = (Context) AFCmdBase.jse.enterContext();
-				return (String) ((Function) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                return (String) ((Function) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
                             cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
                             new Object[] { });
 			} catch(Exception e) {
@@ -218,7 +218,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 		}
 		
-		fastExit(0);
+        fastExit(0);
 	}
 	
 	/**
@@ -242,7 +242,7 @@ public class AFCmdOS extends AFCmdBase {
 				} catch(Exception e) { }
 			}
 		}
-		fastExit(0);
+        fastExit(0);
 	}
 	
 	/**
@@ -267,7 +267,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 		}
 		
-		fastExit(0);
+        fastExit(0);
 	}
 	
 	/**
@@ -289,7 +289,7 @@ public class AFCmdOS extends AFCmdBase {
 			if (is != null) is.close();
 		}
 		
-		fastExit(0);		
+        fastExit(0);
 	}
 	
 	/**
@@ -546,14 +546,14 @@ public class AFCmdOS extends AFCmdBase {
 		
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
 		
-		if (pipe && !"pyoaf_js".equals(injectclassfile)) {
+        if (pipe && !"pyoaf_js".equals(injectclassfile)) {
 			String lineO = "";
 			while((lineO = br.readLine()) != null) {
 				input.append(lineO);
 				input.append("\n");
 			}
 		} else {
-			if (!filescript && !ojob && !injectcode && !"pyoaf_js".equals(injectclassfile)) {
+            if (!filescript && !ojob && !injectcode && !"pyoaf_js".equals(injectclassfile)) {
 				while (br.ready()) {
 					input.append(br.readLine());
 					input.append("\n");
@@ -807,15 +807,15 @@ public class AFCmdOS extends AFCmdBase {
 				afScript = (Scriptable) jse.newObject(gscope, "AF");
 				
 				if (!ScriptableObject.hasProperty(gscope, "af"))
-					gscope.put("af", gscope, afScript);
+                    gscope.put("af", gscope, afScript);
 
 				// Add the IO object
 				if (!ScriptableObject.hasProperty(gscope, "io"))
-					gscope.put("io", gscope, jse.newObject(gscope, "IO"));
+                    gscope.put("io", gscope, jse.newObject(gscope, "IO"));
 				
 			}
 
-			AFBase.runFromClass(newScriptInstance("openaf_js"));
+            AFBase.runFromClass(newScriptInstance("openaf_js"));
 			//cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
@@ -833,7 +833,7 @@ public class AFCmdOS extends AFCmdBase {
 			} 
 
 			if (injectclass) {
-				res = AFBase.runFromClass(newScriptInstance(injectclassfile));
+                res = AFBase.runFromClass(newScriptInstance(injectclassfile));
 			}
 			
 			if (isolatePMs && res != null && !(res instanceof Undefined)) {
@@ -883,57 +883,57 @@ public class AFCmdOS extends AFCmdBase {
 		}*/
 		
 		try {
-			afc.execute(System.in, System.out, "");
+            afc.execute(System.in, System.out, "");
 		} catch (Exception e1) {
 			SimpleLog.log(SimpleLog.logtype.ERROR, "Error while executing operation: " + e1.getMessage(), null);
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "", e1);
 		}
 	}
 
-	private static Script newScriptInstance(String className) throws Exception {
-		Class<?> cls = Class.forName(className);
-		try {
-			Script script = (Script) cls.getDeclaredConstructor().newInstance();
-			AFBase.initCompiledClass(cls);
-			return script;
-		} catch (NoSuchMethodException e) {
-			try {
-				Class.forName(className + "Main", true, cls.getClassLoader());
-				Field field = cls.getDeclaredField("_descriptors");
-				field.setAccessible(true);
-				JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
-				if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
-					throw new IllegalStateException("Missing JS descriptors for " + className);
-				}
-				AFBase.initCompiledClass(cls);
-				return new JSScript((JSDescriptor) descriptors[0], null);
-			} catch (Throwable initFailure) {
-				try {
-					return compileScriptFromResource(cls, className);
-				} catch (Exception fallbackFailure) {
-					fallbackFailure.addSuppressed(initFailure);
-					throw fallbackFailure;
-				}
-			}
-		}
-	}
+    private static Script newScriptInstance(String className) throws Exception {
+        Class<?> cls = Class.forName(className);
+        try {
+            Script script = (Script) cls.getDeclaredConstructor().newInstance();
+            AFBase.initCompiledClass(cls);
+            return script;
+        } catch (NoSuchMethodException e) {
+            try {
+                Class.forName(className + "Main", true, cls.getClassLoader());
+                Field field = cls.getDeclaredField("_descriptors");
+                field.setAccessible(true);
+                JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
+                if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
+                    throw new IllegalStateException("Missing JS descriptors for " + className);
+                }
+                AFBase.initCompiledClass(cls);
+                return new JSScript((JSDescriptor) descriptors[0], null);
+            } catch (Throwable initFailure) {
+                try {
+                    return compileScriptFromResource(cls, className);
+                } catch (Exception fallbackFailure) {
+                    fallbackFailure.addSuppressed(initFailure);
+                    throw fallbackFailure;
+                }
+            }
+        }
+    }
 
-	private static Script compileScriptFromResource(Class<?> cls, String className) throws Exception {
-		// Compiled class names map back to their js/ source (e.g. openaf_js -> js/openaf.js, owrap_format_js -> js/owrap.format.js)
-		String simpleName = className.substring(className.lastIndexOf('.') + 1);
-		String resourceName = "js/" + simpleName.replaceAll("_js$", "").replace('_', '.') + ".js";
-		try (InputStream in = cls.getClassLoader().getResourceAsStream(resourceName)) {
-			if (in == null) {
-				throw new IllegalStateException("Unable to load " + resourceName + " for " + className);
-			}
-			Context cx = (Context) AFCmdBase.jse.enterContext();
-			try {
-				InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
-				return cx.compileReader(reader, resourceName, 1, null);
-			} finally {
-				AFCmdBase.jse.exitContext();
-			}
-		}
-	}
+    private static Script compileScriptFromResource(Class<?> cls, String className) throws Exception {
+        // Compiled class names map back to their js/ source (e.g. openaf_js -> js/openaf.js, owrap_format_js -> js/owrap.format.js)
+        String simpleName = className.substring(className.lastIndexOf('.') + 1);
+        String resourceName = "js/" + simpleName.replaceAll("_js$", "").replace('_', '.') + ".js";
+        try (InputStream in = cls.getClassLoader().getResourceAsStream(resourceName)) {
+            if (in == null) {
+                throw new IllegalStateException("Unable to load " + resourceName + " for " + className);
+            }
+            Context cx = (Context) AFCmdBase.jse.enterContext();
+            try {
+                InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
+                return cx.compileReader(reader, resourceName, 1, null);
+            } finally {
+                AFCmdBase.jse.exitContext();
+            }
+        }
+    }
 
 }

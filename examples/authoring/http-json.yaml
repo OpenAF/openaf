@@ -4,18 +4,23 @@ help:
   - name: url
     desc: URL returning a JSON array
     mandatory: true
+
 ojob:
   logToConsole: false
   catch: |
-    printErr("http-json: " + exception);
-    exit(1);
+    printErr("http-json: " + exception)
+    exit(1)
+
 jobs:
+
+# Fetch
 - name: Fetch
   check:
     in:
       url: isString
   exec: |
-    var result = $rest({ throwExceptions: true, connectionTimeout: 5000 }).get(args.url);
-    print(stringify(_$(result, "response").isArray().$_(), __, ""));
+    var result = $rest({ throwExceptions: true, connectionTimeout: 5000 }).get(args.url)
+    print(stringify(_$(result, "response").isArray().$_(), __, ""))
+
 todo:
 - Fetch

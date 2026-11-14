@@ -3,27 +3,27 @@ include:
 
 jobs:
   - name: CDS::Init
-    exec: args.tests = require("autoTestAll.CDS.js");
+    exec: args.tests = require("autoTestAll.CDS.js")
 
   - name: CDS::Preserve launcher arguments
     from: CDS::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testVMArguments;
+    exec: args.func = args.tests.testVMArguments
 
   - name: CDS::Platform coverage fallback
     from: CDS::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testPlatformClassList;
+    exec: args.func = args.tests.testPlatformClassList
 
   - name: CDS::Training profile isolation
     from: CDS::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testTrainingProfiles;
+    exec: args.func = args.tests.testTrainingProfiles
 
   - name: CDS::Failed probe preserves archive
     from: CDS::Init
     to: OpenAF Test
-    exec: args.func = args.tests.testFailedProbePreservesArchive;
+    exec: args.func = args.tests.testFailedProbePreservesArchive
 
 todo:
   - CDS::Preserve launcher arguments

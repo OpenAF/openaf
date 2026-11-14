@@ -143,29 +143,29 @@ OpenWrap.dev.prototype.loadPoolDB = function() {
  * </odoc>
  */
 OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isClient, aOptions) {
-	if (isUnDef(ow.dev.__i)) ow.dev.__i = Object.create(null);
-	var defaultGrid = isUnDef(aGridName) ? "default" : aGridName;
-	if (isDef(getOPackPath("plugin-Ignite"))) loadExternalJars(getOPackPath("plugin-Ignite"));
-	plugin("Ignite");
+	if (isUnDef(ow.dev.__i)) ow.dev.__i = Object.create(null)
+	var defaultGrid = isUnDef(aGridName) ? "default" : aGridName
+	if (isDef(getOPackPath("plugin-Ignite"))) loadExternalJars(getOPackPath("plugin-Ignite"))
+	plugin("Ignite")
 	if (isUnDef(aIgnite) && isUnDef(ow.dev.__i[defaultGrid])) {
-		aIgnite = new Ignite();
-		if (isDef(aOptions)) aIgnite.configure(aOptions);
-		aIgnite.start(aGridName, secretKey, isClient === true);
+		aIgnite = new Ignite()
+		if (isDef(aOptions)) aIgnite.configure(aOptions)
+		aIgnite.start(aGridName, secretKey, isClient === true)
 	}
-	if (isDef(aIgnite)) ow.dev.__i[defaultGrid] = aIgnite;
+	if (isDef(aIgnite)) ow.dev.__i[defaultGrid] = aIgnite
 
 	oPromise.prototype.thenAny = function(aFunc, aRejFunc, aGridName) {
 		return this.then(function() {
-			var grid = isUnDef(aGridName) ? defaultGrid : aGridName;
-			_$(ow.dev.__i[grid], "Ignite grid " + grid).$_();
-			return ow.dev.__i[grid].call(ow.dev.__i[grid].getIgnite(), "return (" + aFunc.toString() + ")();");
+			var grid = isUnDef(aGridName) ? defaultGrid : aGridName
+			_$(ow.dev.__i[grid], "Ignite grid " + grid).$_()
+			return ow.dev.__i[grid].call(ow.dev.__i[grid].getIgnite(), "return (" + aFunc.toString() + ")();")
 		}, aRejFunc);
 	};
 	oPromise.prototype.thenAll = function(aFunc, aRejFunc, aGridName) {
 		return this.then(function() {
-			var grid = isUnDef(aGridName) ? defaultGrid : aGridName;
-			_$(ow.dev.__i[grid], "Ignite grid " + grid).$_();
-			return ow.dev.__i[grid].broadcast(ow.dev.__i[grid].getIgnite(), "return (" + aFunc.toString() + ")();");
+			var grid = isUnDef(aGridName) ? defaultGrid : aGridName
+			_$(ow.dev.__i[grid], "Ignite grid " + grid).$_()
+			return ow.dev.__i[grid].broadcast(ow.dev.__i[grid].getIgnite(), "return (" + aFunc.toString() + ")();")
 		}, aRejFunc);
 	};
 };

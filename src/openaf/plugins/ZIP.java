@@ -66,7 +66,7 @@ public class ZIP extends ScriptableObject {
 	 */
 	private static final long serialVersionUID = -411758788276719694L;
 	protected ZipFile zipFile;
-	private final java.util.Set<ZipFile> streamFiles = ConcurrentHashMap.newKeySet();
+    private final java.util.Set<ZipFile> streamFiles = ConcurrentHashMap.newKeySet();
 	protected Map<String, ZipEntry> zipEntries = new ConcurrentHashMap<String, ZipEntry>();
 	protected Map<String, byte[]> zipData = new ConcurrentHashMap<String, byte[]>();
 
@@ -163,44 +163,44 @@ public class ZIP extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>ZIP.close()</key>
-	 * Closes the loaded ZIP file and all outstanding entry streams associated with this object.
+     * Closes the loaded ZIP file and all outstanding entry streams associated with this object.
 	 * </odoc>
 	 */
 	@JSFunction
-	public synchronized void close() throws IOException {
+    public synchronized void close() throws IOException {
 		clean();
-		IOException failure = null;
-		if (zipFile != null) {
-			streamFiles.add(zipFile);
-			zipFile = null;
-		}
-		for (ZipFile file : streamFiles) {
-			try {
-				file.close();
-			} catch (IOException e) {
-				if (failure == null) failure = e;
-				else failure.addSuppressed(e);
-			}
-		}
-		streamFiles.clear();
-		if (failure != null) throw failure;
+        IOException failure = null;
+        if (zipFile != null) {
+            streamFiles.add(zipFile);
+            zipFile = null;
+        }
+        for (ZipFile file : streamFiles) {
+            try {
+                file.close();
+            } catch (IOException e) {
+                if (failure == null) failure = e;
+                else failure.addSuppressed(e);
+            }
+        }
+        streamFiles.clear();
+        if (failure != null) throw failure;
 	}
 
 	/**
 	 * <odoc>
 	 * <key>ZIP.getFile(aFilename) : anArrayOfBytes</key>
-	 * Will uncompress the corresponding aFilename from the ZIP contents into an array of bytes. Returns null if the entry is absent.
+     * Will uncompress the corresponding aFilename from the ZIP contents into an array of bytes. Returns null if the entry is absent.
 	 * </odoc>
 	 */
 	@JSFunction
-	public synchronized Object getFile(String name) throws IOException {
+    public synchronized Object getFile(String name) throws IOException {
 		Object res = zipData.get(name);
 		if (res != null) {
 			return res;
 		} else {
-			ZipEntry entry = zipEntries.get(name);
-			if (zipFile == null || entry == null) return null;
-			try (InputStream is = ArchiveLimits.entry(zipFile.getInputStream(entry), entry)) {
+            ZipEntry entry = zipEntries.get(name);
+            if (zipFile == null || entry == null) return null;
+            try (InputStream is = ArchiveLimits.entry(zipFile.getInputStream(entry), entry)) {
 				return IOUtils.toByteArray(is);
 			}
 		}
@@ -248,59 +248,59 @@ public class ZIP extends ScriptableObject {
 	 * <odoc>
 	 * <key>ZIP.streamGetFile(aFilePath, aName) : anArrayOfBytes</key>
 	 * Retrieves aName file from aFilePath zip file without loading the zip file contents into memory returning the 
-	 * file contents as an array of bytes, or null if the entry is absent. Uses an independent archive handle.
+     * file contents as an array of bytes, or null if the entry is absent. Uses an independent archive handle.
 	 * </odoc>
 	 */
 	@JSFunction
 	public Object streamGetFile(String aFilePath, String name) throws IOException {
         ArchiveLimits.checkFile(aFilePath);
-		try (ZipFile file = new ZipFile(aFilePath)) {
+        try (ZipFile file = new ZipFile(aFilePath)) {
             ArchiveLimits.checkZipFile(file);
-			ZipEntry entry = file.getEntry(name);
-			if (entry == null) return null;
-			try (InputStream stream = ArchiveLimits.entry(file.getInputStream(entry), entry)) {
-				return IOUtils.toByteArray(stream);
-			}
+            ZipEntry entry = file.getEntry(name);
+            if (entry == null) return null;
+            try (InputStream stream = ArchiveLimits.entry(file.getInputStream(entry), entry)) {
+                return IOUtils.toByteArray(stream);
+            }
 		}
-	}
+    }
 
 	/**
 	 * <odoc>
 	 * <key>ZIP.streamGetFileStream(aFilePath, aName) : JavaInputStream</key>
 	 * Retrieves aName file from aFilePath zip file without loading the zip file contents into memory returning a 
-	 * Java InputStream, or null if the entry is absent. Each stream owns an independent archive handle.
-	 * Close the stream after use to release that handle. ZIP.close() also closes outstanding streams.
+     * Java InputStream, or null if the entry is absent. Each stream owns an independent archive handle.
+     * Close the stream after use to release that handle. ZIP.close() also closes outstanding streams.
 	 * </odoc>
 	 */
 	@JSFunction
-	public synchronized Object streamGetFileStream(String aFilePath, String name) throws Exception {
+    public synchronized Object streamGetFileStream(String aFilePath, String name) throws Exception {
         ArchiveLimits.checkFile(aFilePath);
-		final ZipFile file = new ZipFile(aFilePath);
-		try {
+        final ZipFile file = new ZipFile(aFilePath);
+        try {
             ArchiveLimits.checkZipFile(file);
-			ZipEntry entry = file.getEntry(name);
-			if (entry == null) {
-				file.close();
-				return null;
-			}
-			InputStream stream = new FilterInputStream(ArchiveLimits.entry(file.getInputStream(entry), entry)) {
-				@Override
-				public void close() throws IOException {
-					synchronized (ZIP.this) {
-						try (ZipFile archive = file) {
-							super.close();
-						} finally {
-							streamFiles.remove(file);
-						}
-					}
+            ZipEntry entry = file.getEntry(name);
+            if (entry == null) {
+                file.close();
+                return null;
+            }
+            InputStream stream = new FilterInputStream(ArchiveLimits.entry(file.getInputStream(entry), entry)) {
+                @Override
+                public void close() throws IOException {
+                    synchronized (ZIP.this) {
+                        try (ZipFile archive = file) {
+                            super.close();
+                        } finally {
+                            streamFiles.remove(file);
+                        }
+                    }
 				}
-			};
-			streamFiles.add(file);
-			return stream;
-		} catch (Exception e) {
-			try { file.close(); } catch (IOException closeError) { e.addSuppressed(closeError); }
-			throw e;
-		}
+            };
+            streamFiles.add(file);
+            return stream;
+        } catch (Exception e) {
+            try { file.close(); } catch (IOException closeError) { e.addSuppressed(closeError); }
+            throw e;
+        }
 	}
 
 	/**
@@ -470,25 +470,25 @@ public class ZIP extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>ZIP.generate(aMapOfOptions, dontReload) : anArrayOfBytes</key>
-	 * <![CDATA[
-	 * Will generate a ZIP `anArrayOfBytes` contents (that can then by saved into a file) given the provided options (a map
-	 * where you can specify the compressionLevel as a number). If `dontReload` = true then the internal ZIP object contents
-	 * won't be reloaded after generating. Example:
-	 *
-	 * ```javascript
-	 * plugin("ZIP");
-	 * var zip = new ZIP();
-	 * var text = new java.lang.String("Some example test to zip into a zip file");
-	 * var openaf = io.readFileBytes("c:\\apps\\OpenAF\\openaf.jar");
-	 * zip.putFile("text.txt", text.getBytes());
-	 * zip.putFile("openaf.jar", openaf);
-	 * var newZip = zip.generate({"compressionLevel": 9});
-	 * var zip = new ZIP(newZip);
-	 * print(beautifier(zip.list()));
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Will generate a ZIP `anArrayOfBytes` contents (that can then by saved into a file) given the provided options (a map
+     * where you can specify the compressionLevel as a number). If `dontReload` = true then the internal ZIP object contents
+     * won't be reloaded after generating. Example:
+     *
+     * ```javascript
+     * plugin("ZIP");
+     * var zip = new ZIP();
+     * var text = new java.lang.String("Some example test to zip into a zip file");
+     * var openaf = io.readFileBytes("c:\\apps\\OpenAF\\openaf.jar");
+     * zip.putFile("text.txt", text.getBytes());
+     * zip.putFile("openaf.jar", openaf);
+     * var newZip = zip.generate({"compressionLevel": 9});
+     * var zip = new ZIP(newZip);
+     * print(beautifier(zip.list()));
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -514,7 +514,7 @@ public class ZIP extends ScriptableObject {
 						IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
 					else
 						if(!newZe.isDirectory()) 
-							try (InputStream in = ArchiveLimits.entry(zipFile.getInputStream(newZe), zipEntries.get(ze))) {
+                            try (InputStream in = ArchiveLimits.entry(zipFile.getInputStream(newZe), zipEntries.get(ze))) {
                                 IOUtils.copy(in, zos);
                             }
 					
@@ -565,7 +565,7 @@ public class ZIP extends ScriptableObject {
 						IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
 					else
 						if(!newZe.isDirectory()) 
-							try (InputStream in = ArchiveLimits.entry(zipFile.getInputStream(newZe), zipEntries.get(ze))) {
+                            try (InputStream in = ArchiveLimits.entry(zipFile.getInputStream(newZe), zipEntries.get(ze))) {
                                 IOUtils.copy(in, zos);
                             }
 					
@@ -618,7 +618,7 @@ public class ZIP extends ScriptableObject {
 	 * <key>ZIP.list(aFilePath) : Map</key>
 	 * Will list all files and folders of the loaded ZIP contents into a Map with name, size, compressedSize, comment,
 	 * crc and time. Optionally you can provide a zip aFilePath instead of using the current in-memory zip.
-	 * File traversal reads every payload and checks its integrity. Use listMetadata for a faster directory-only listing.
+     * File traversal reads every payload and checks its integrity. Use listMetadata for a faster directory-only listing.
 	 * </odoc>
 	 * @throws IOException 
 	 */
@@ -706,7 +706,7 @@ public class ZIP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public synchronized ZIP loadFile(String filename) throws IOException {
+    public synchronized ZIP loadFile(String filename) throws IOException {
         ArchiveLimits.checkFile(filename);
         ZipFile next = new ZipFile(filename);
         Map<String, ZipEntry> entries = new ConcurrentHashMap<>();
@@ -736,11 +736,11 @@ public class ZIP extends ScriptableObject {
 	
 	@JSFunction
 	public Object getArchiveInputStream(Object inputStream) throws ArchiveException {
-		return ArchiveLimits.archive((InputStream) inputStream);
+        return ArchiveLimits.archive((InputStream) inputStream);
 	}
 	
 	@JSFunction
-	public Object getCompressInputStream(Object inputStream) throws CompressorException, IOException {
-		return ArchiveLimits.compressor((InputStream) inputStream);
+    public Object getCompressInputStream(Object inputStream) throws CompressorException, IOException {
+        return ArchiveLimits.compressor((InputStream) inputStream);
 	}
 }
