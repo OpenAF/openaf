@@ -2010,10 +2010,14 @@ function update(args) {
 			log("Found existing installation at: " + originalInstallPath)
 		}
 
+		// Resolve named packages through the catalog before selecting the install source
+		var updateSource = _pack, fromRepository = false
 		if (!isUnDef(packag) &&
 			(typeof packag.name == 'undefined' ||
-			packag.__filelocation == 'local'))
+			packag.__filelocation == 'local')) {
 			packag = getOPackRemoteDB()[$from(Object.keys(getOPackRemoteDB())).equals(_pack).at(0)]
+			fromRepository = true
+		}
 
 		// Verify version
 		if (!isUnDef(packag) &&
@@ -2025,9 +2029,7 @@ function update(args) {
 				return
 			}
 			if (_res > 0) {
-				if ((typeof packag.__filelocation !== 'undefined') &&
-					!(packag.__filelocation.match(/opack/))
-					) {
+				if (fromRepository) {
 					switch(packag.repository.type) {
 					case "path":
 						if (isUnDef(packag.repository.path)) {
@@ -2035,7 +2037,7 @@ function update(args) {
 							_stats.failed++
 							return
 						}
-						pack = packag.repository.path
+						updateSource = packag.repository.path
 						break
 					case "http":
 					default    :
@@ -2044,7 +2046,7 @@ function update(args) {
 							_stats.failed++
 							return
 						}
-						pack = packag.repository.url
+						updateSource = packag.repository.url
 					}
 				}
 				log("UPDATING -- " + packag.name + " version " + packag.version);
@@ -2074,6 +2076,7 @@ function update(args) {
 			return
 		}
 
+        // Keep verification and erase hooks attached to the resolved update source
         var beforeInstallCommit
         if (ferase) beforeInstallCommit = function(oldPack) {
             if (isUnDef(oldPack)) return
@@ -2081,7 +2084,7 @@ function update(args) {
             _stats.erasedToUpdate += erased.erased
             if (erased.failed > 0) throw "Cannot erase previous package for update"
         }
-		var installArgs = [_pack]
+		var installArgs = [updateSource]
 		if (isDef(originalInstallPath)) {
 			installArgs.push("-d")
 			installArgs.push(originalInstallPath)

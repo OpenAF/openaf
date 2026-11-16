@@ -127,6 +127,8 @@ Invoke it as `openaf --opack <verb> [args...] [options]` (packaged distributions
 - `-justcopy` — copy files without registering in the DB or checking versions (used internally by `oJob-common`'s packaging job, see §5).
 - `update` also adds: `-all` (update every installed package), `-noerase` (don't delete the old version's files before installing the new one), `-erasefolder` (do remove the old version's install folder — the "keep folder" behavior is the default).
 
+Named updates, including `opack update -all`, install from the repository source selected by the catalog. A same-named installed folder beneath the current directory does not override that source. The standalone regression can be run from the checkout root with `java -jar openaf.jar -f tests/opack-update-source.js`.
+
 ### Integrity checks
 
 Installation copies every listed file into a private temporary directory and checks that exact snapshot before either incoming install hook or any destination write. Every non-description payload needs a matching `filesHash` value unless `-noverify` is explicitly used. Missing files, failed reads, missing/malformed hashes and mismatches abort the package without reporting success or registering it. Updates defer erasing the old package until the incoming snapshot passes. JSON/YAML descriptions are written from the parsed manifest used for the operation rather than fetched again.
