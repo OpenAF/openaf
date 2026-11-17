@@ -293,10 +293,23 @@ exports.installOperations = function(options, validate) {
 
       const logo = prefixURL(_$(options.logo, "logo").isString().default("/fonts/openaf_small.png"))
       var content = "## " + breadcrumb( puri ) + "<img style=\"padding-left: 1em;\" align=\"right\" src=\"" + logo + "\">\n\n"
+      if (options.query && options.query.enabled || options._operation) {
+        content += '<style>' + [
+          '.browse-controls{display:flex;flex-wrap:wrap;align-items:center;gap:0.5em 1em;margin:0.25em 0 0.75em;padding-left:0.5em;color:#a0a0a0;font-family:-apple-system,Calibri,"DejaVu Sans",sans-serif;font-size:0.95em}',
+          '.browse-controls label{display:inline-flex;align-items:center;gap:0.5em;min-width:0;max-width:100%}',
+          '.browse-controls .browse-search{flex:1 1 14em;max-width:32em}',
+          '.browse-controls input{box-sizing:border-box;min-width:0;max-width:100%;padding:0.15em 0.25em;border:0;border-bottom:1px solid #a0a0a0;border-radius:0;background:transparent;color:inherit;font:inherit}',
+          '.browse-controls input[name=q]{flex:1;width:100%}.browse-controls input[name=size]{width:4.5em}',
+          '.browse-controls button,.browse-controls a{padding:0;border:0;background:transparent;color:#a0a0a0;font:inherit;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap}',
+          '.browse-controls button:hover,.browse-controls a:hover{color:#707070;text-decoration:underline}',
+          '.browse-controls input:focus-visible,.browse-controls button:focus-visible,.browse-controls a:focus-visible{outline:1px solid currentColor;outline-offset:3px}',
+          '@media(max-width:480px){.browse-controls .browse-search{flex-basis:100%;max-width:100%}}'
+        ].join('') + '</style>\n\n'
+      }
       if (options.query && options.query.enabled) {
-        content += '<form method="get"><label>Search <input name="q" value="' + escapeText((request.params||{}).q || '') + '"></label> <label>Sort <select name="sort">'
-        ;(lst.sortFields || lst.fields).forEach(field => { content += '<option value="' + escapeText(field) + '"' + (lst.sortInfo && lst.sortInfo.field == field ? ' selected' : '') + '>' + escapeText(field) + '</option>' })
-        content += '</select></label> <select name="order"><option value="asc">Ascending</option><option value="desc"' + (lst.sortInfo && lst.sortInfo.order == 'desc' ? ' selected' : '') + '>Descending</option></select> <label>Per page <input type="number" name="size" min="1" max="' + (options.query.maxPageSize || 500) + '" value="' + (_pageSize || options.query.pageSize || 100) + '"></label> <button type="submit">Apply</button></form>\n'
+        content += '<form class="browse-controls" method="get"><label class="browse-search">Search <input name="q" value="' + escapeText((request.params||{}).q || '') + '"></label>'
+        content += '<input type="hidden" name="sort" value="' + escapeText(lst.sortInfo ? lst.sortInfo.field : String(lst.key)) + '"><input type="hidden" name="order" value="' + (lst.sortInfo && lst.sortInfo.order == 'desc' ? 'desc' : 'asc') + '">'
+        content += ' <label>Per page <input type="number" name="size" min="1" max="' + (options.query.maxPageSize || 500) + '" value="' + (_pageSize || options.query.pageSize || 100) + '"></label> <button type="submit">Apply</button></form>\n'
       }
 
       // Pagination controls (if metadata is provided)
@@ -331,7 +344,40 @@ exports.installOperations = function(options, validate) {
         }
       }
 
-      content += "|  |" + lst.fields.join(" | ") + " |\n"
+      // Match sortTab's header controls while sorting the full result on the server.
+      var headers = lst.fields
+      var headerControls = []
+      if (options.query && options.query.enabled) {
+        content += '<style>' + [
+          '.sorter-container{float:right;font-size:10px;margin-left:4px}',
+          '.sorter-container .sort-button{display:none;padding:0;margin:0 2px;border:none;background:transparent;cursor:pointer;text-decoration:none;transition:color 0.2s ease}',
+          'th:hover .sorter-container .sort-button,th:focus-within .sorter-container .sort-button,.sorter-container .sort-button:focus,.sorter-container .sort-button.active{display:inline-block}',
+          '.sorter-container:focus-within .sort-button{display:inline-block}',
+          '.sorter-container .sort-button{color:#c0c0c0}',
+          'th:hover .sorter-container .sort-button,th:focus-within .sorter-container .sort-button{color:#909090}',
+          '@media(prefers-color-scheme:dark){.sorter-container .sort-button{color:#404040}th:hover .sorter-container .sort-button,th:focus-within .sorter-container .sort-button{color:#606060}}'
+        ].join('') + '</style>\n'
+        var sortURL = (field, order) => {
+          var params = request.params || {}
+          var keys = Object.keys(params).filter(k => ["page", "sort", "order"].indexOf(k) < 0 && !k.startsWith("NanoHttpd."))
+          var query = keys.map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k]))
+          if (order != "none") query = query.concat(["sort=" + encodeURIComponent(field), "order=" + order])
+          return "?" + query.concat(["page=1"]).join("&amp;")
+        }
+        headers = lst.fields.map((field, index) => {
+          var label = escapeText(field)
+          if ((lst.sortFields || lst.fields).indexOf(field) < 0) return label
+          var active = lst.sortInfo && lst.sortInfo.field == field
+          var controls = '<span class="sorter-container" tabindex="0" aria-label="' + escapeText('Sort: ' + field) + '">'
+          ;[ ["asc", "&#9650;", "Ascending"], ["desc", "&#9660;", "Descending"], ["none", "x", "Reset sorting"] ].forEach(control => {
+            var selected = active && lst.sortInfo.order == control[0]
+            controls += '<a class="sort-button' + (selected ? ' active' : '') + '" href="' + sortURL(field, control[0]) + '" title="' + control[2] + '" aria-label="' + escapeText(control[2] + ': ' + field) + '"' + (selected ? ' aria-current="true"' : '') + '>' + control[1] + '</a>'
+          })
+          headerControls[index + 1] = controls + '</span>'
+          return label
+        })
+      }
+      content += "|  |" + headers.join(" | ") + " |\n"
       if (lst.alignFields) {
           content += "|---"
           lst.alignFields.forEach((a, i) => {
@@ -378,7 +424,7 @@ exports.installOperations = function(options, validate) {
           content += "\n" + options.footer + "\n"
       }
       if (options._operation) {
-        content += '<form method="post" action="' + prefixURL(options.parentURI.replace(/\/$/,"") + '/@@/refresh') + '"><input type="hidden" name="path" value="' + escapeText(puri) + '"><input type="hidden" name="csrf" value="' + options._refreshToken + '"><button type="submit">Refresh now</button> <a href="' + prefixURL(options.parentURI.replace(/\/$/,"") + '/@@/status') + '">Status</a></form>\n'
+        content += '<form class="browse-controls" method="post" action="' + prefixURL(options.parentURI.replace(/\/$/,"") + '/@@/refresh') + '"><input type="hidden" name="path" value="' + escapeText(puri) + '"><input type="hidden" name="csrf" value="' + options._refreshToken + '"><button type="submit">Refresh now</button> <a href="' + prefixURL(options.parentURI.replace(/\/$/,"") + '/@@/status') + '">Status</a></form>\n'
       }
 
       if (options.sortTab && !(lst.queryInfo && lst.queryInfo.applied)) {
@@ -388,7 +434,18 @@ exports.installOperations = function(options, validate) {
           }
       }
 
-      return ow.template.parseMD2HTML( content, true )
+      // Add controls after Markdown has generated header IDs from plain field labels.
+      var html = ow.template.parseMD2HTML( content, true )
+      if (headerControls.length > 0) {
+        html = String(html).replace(/(<thead>\s*<tr>)([\s\S]*?)(<\/tr>\s*<\/thead>)/, (match, start, row, end) => {
+          var column = 0
+          return start + row.replace(/<th\b[^>]*>[\s\S]*?<\/th>/g, cell => {
+            var controls = headerControls[column++] || ""
+            return cell.replace(/<\/th>$/, () => controls + "</th>")
+          }) + end
+        })
+      }
+      return html
     }
     if(!isFunction(custom.renderObj))fns.renderObj=(obj, server, request, options) => {
       const uri = request.uri

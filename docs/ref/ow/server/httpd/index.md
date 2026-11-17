@@ -16,7 +16,7 @@ Adds a new HTTP aCodeNum number that will be referenced by the name aCodeRef.
 
 Sources:
 
-- js/owrap.server.js:4839
+- js/owrap.server.js:4847
 
 <a id="api-ow-server-httpd-addmimetype-719c2762"></a>
 
@@ -28,7 +28,7 @@ Adds a new aMimeType for the corresponding anExtension.
 
 Sources:
 
-- js/owrap.server.js:4829
+- js/owrap.server.js:4837
 
 <a id="api-ow-server-httpd-authbasic-bc6ae650"></a>
 
@@ -67,7 +67,7 @@ function(req) {
 
 Sources:
 
-- js/owrap.server.js:4774
+- js/owrap.server.js:4782
 
 <a id="api-ow-server-httpd-authoauth-a134965f"></a>
 
@@ -93,7 +93,7 @@ provides the OAuth configurations to follow:
 
 Sources:
 
-- js/owrap.server.js:4627
+- js/owrap.server.js:4635
 
 <a id="api-ow-server-httpd-getfromopenaf-c36927b5"></a>
 
@@ -141,7 +141,7 @@ Tries to determine the mime type of aFilename and returns it. If not determined 
 
 Sources:
 
-- js/owrap.server.js:4611
+- js/owrap.server.js:4619
 
 <a id="api-ow-server-httpd-maprouteswithlibs-2a37582f"></a>
 
@@ -189,7 +189,7 @@ Builds the map response for a HTTP server request using aObject (map, array, str
 
 Sources:
 
-- js/owrap.server.js:4901
+- js/owrap.server.js:4909
 
 <a id="api-ow-server-httpd-replybrowse-20f2869b"></a>
 
@@ -315,7 +315,7 @@ modern is false/omitted) are handled exactly as before -- zero behavior change.
 
 Sources:
 
-- js/owrap.server.js:4337
+- js/owrap.server.js:4345
 
 <a id="api-ow-server-httpd-replymcp-54fad509"></a>
 
@@ -348,7 +348,7 @@ left fully unchanged.
 
 Sources:
 
-- js/owrap.server.js:4476
+- js/owrap.server.js:4484
 
 <a id="api-ow-server-httpd-replyredirect-606665d3"></a>
 
