@@ -80,7 +80,7 @@ Lists registered languages, prerequisites and supported process options. With pr
 
 Sources:
 
-- js/owrap.oJob.js:4636
+- js/owrap.oJob.js:4639
 
 <a id="api-ojob-load-e1234a36"></a>
 
@@ -116,7 +116,7 @@ Registers one cleanup per adapter, run after oJob workers stop. Replacing a name
 
 Sources:
 
-- js/owrap.oJob.js:4673
+- js/owrap.oJob.js:4676
 
 <a id="api-ojob-removejob-abee67f4"></a>
 
@@ -140,7 +140,7 @@ Runs an argv array locally with concurrent UTF-8 output capture. Options: pwd, e
 
 Sources:
 
-- js/owrap.oJob.js:4495
+- js/owrap.oJob.js:4498
 
 <a id="api-ojob-setjob-18a75b65"></a>
 

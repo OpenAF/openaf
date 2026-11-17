@@ -12391,6 +12391,9 @@ const $cache = function(aName) {
 		this.msize = __
 		this.method = "t"
 		this.default = __
+		this.achType  = __
+		this.achOpts  = __
+		this.achOwned = false
 	}
 
 	/**
@@ -12413,7 +12416,41 @@ const $cache = function(aName) {
 	 * Uses a pre-existing channel (e.g. aChannelName) as the cache channel.
 	 * </odoc>
 	 */
-	__c.prototype.ch        = function(aCh)   { this.ach    = aCh;      return this }
+	__c.prototype.ch        = function(aCh)   {
+		this.ach      = aCh
+		this.achType  = __
+		this.achOpts  = __
+		this.achOwned = false
+		return this
+	}
+	/**
+	 * <odoc format="markdown">
+	 * <key>$cache.chType(aType, aOptions, aChName) : Object</key>
+	 * <![CDATA[
+	 * Uses a new channel of type `aType` (e.g. `mvs`, `redis`, `etcd`) created with `aOptions` as the cache channel instead of the default one.
+	 * Optionally `aChName` can be provided to name the channel (defaults to `<cache name>::chcache`). The channel is created on `.create()`
+	 * (if it doesn't exist yet) and destroyed on `.destroy()`. To use an already existing channel use `$cache.ch` instead.
+	 *
+	 * ```javascript
+	 * $cache("users")
+	 * .ttl(60000)
+	 * .fn(k => ...)
+	 * .chType("mvs", { file: "users.db", compact: true })
+	 * .create()
+	 * ```
+	 * ]]>
+	 * </odoc>
+	 */
+	__c.prototype.chType = function(aType, aOptions, aChName) {
+		_$(aType, "aType").isString().$_()
+
+		this.achType  = aType
+		this.achOpts  = _$(aOptions, "aOptions").isMap().default({})
+		this.ach      = _$(aChName, "aChName").isString().default(this.name + "::chcache")
+		this.achOwned = true
+
+		return this
+	}
 	/**
 	 * <odoc>
 	 * <key>$cache.maxSize(aSize) : Object</key>
@@ -12424,17 +12461,15 @@ const $cache = function(aName) {
 	/**
 	 * <odoc>
 	 * <key>$cache.inFile(aFile) : Object</key>
-	 * Creates a mvs channel to hold the cache data in aFile. Note: don't use $cache.ch if you use this option.
+	 * Creates a mvs channel to hold the cache data in aFile. Shortcut for $cache.chType("mvs", {...}). Note: don't use $cache.ch if you use this option.
 	 * </odoc>
 	 */
 	__c.prototype.inFile = function(aFile) {
-		$ch(this.name + "::filecache").create(1, "mvs", {
+		return this.chType("mvs", {
 			file: aFile,
 			compact: true,
 			map: this.name
-		})
-		this.ach = this.name + "::filecache"
-		return this
+		}, this.name + "::filecache")
 	}
 	/**
 	 * <odoc>
@@ -12465,6 +12500,9 @@ const $cache = function(aName) {
 
 		syncFn(() => {
 			if ($ch().list().indexOf(this.name) < 0) {
+				// Create owned backing channel
+				if (isDef(this.achType) && $ch().list().indexOf(this.ach) < 0) $ch(this.ach).create(1, this.achType, this.achOpts)
+
 				$ch(this.name).create(1, "cache", {
 					func: this.func,
 					ttl: this.attl,
@@ -12494,6 +12532,9 @@ const $cache = function(aName) {
 	 * $cache("numbers").get(myKey);
 	 *
 	 * $cache("numbers").destroy();
+	 *
+	 * // Using a specific channel type for the cache data
+	 * $cache("persisted").fn(k => ...).chType("mvs", { file: "cache.db" }).create()
 	 * ```
 	 * ]]>
 	 * </odoc>
@@ -12510,7 +12551,8 @@ const $cache = function(aName) {
 			this.create()
 		}
 		
-		if (isDef(this.ach)) {
+		// Destroy only owned backing channels
+		if (isDef(this.ach) && this.achOwned) {
 			if (isString(this.ach)) 
 				$ch(this.ach).destroy()
 			else

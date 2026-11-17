@@ -18,6 +18,7 @@
 - [$cache.byDefault](cache/index.md#api-cache-bydefault-43e343a9)
 - [$cache.byPopularity](cache/index.md#api-cache-bypopularity-0e069639)
 - [$cache.ch](cache/index.md#api-cache-ch-10dae75b)
+- [$cache.chType](cache/index.md#api-cache-chtype-01994e06)
 - [$cache.fn](cache/index.md#api-cache-fn-ebd23afc)
 - [$cache.get](cache/index.md#api-cache-get-9bf85ff6)
 - [$cache.inFile](cache/index.md#api-cache-infile-d0aeff45)

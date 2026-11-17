@@ -397,6 +397,9 @@ jobs:
         ttl  : __ttl
         out  : __out
         key  : __key
+        cacheCh       : __cacheCh
+        cacheChType   : __cacheChType
+        cacheChOptions: __cacheChOptions
   help :
     text   : "Retrieves a specific map key (or path) from an YAML or JSON file provided."
     expects:
@@ -413,6 +416,12 @@ jobs:
       desc: The path on args to set the map key/path contents
     - name: __key
       desc: If __out is not defined will set the content into the provided key
+    - name: __cacheCh
+      desc: "Name of an existing channel to use as the cache channel (the shared cache is configured on its first creation)"
+    - name: __cacheChType
+      desc: "Channel type (e.g. mvs) to create as the cache channel (the shared cache is configured on its first creation)"
+    - name: __cacheChOptions
+      desc: "Map with the options to create the channel type provided in __cacheChType"
   check:
     in:
       __file : isString 
@@ -421,11 +430,19 @@ jobs:
       __ttl  : isNumber.default(__)
       __out  : isString.default(__)
       __key  : isString.default("res")
+      __cacheCh       : isString.default(__)
+      __cacheChType   : isString.default(__)
+      __cacheChOptions: isMap.default({})
   exec : |
     var res;
     if (args.__cache) {
       var c = $cache("__ojob_file_get");
       if (isDef(args.__ttl)) c= c.ttl(args.__ttl);
+
+      // Set cache channel
+      if (isDef(args.__cacheChType)) c = c.chType(args.__cacheChType, args.__cacheChOptions)
+      else if (isDef(args.__cacheCh)) c = c.ch(args.__cacheCh)
+
       c = c.fn(aK => {
         if (isDef(aK.file)) {
           if (aK.file.endsWith(".json")) {

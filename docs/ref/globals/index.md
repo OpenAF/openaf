@@ -28,7 +28,7 @@ $a2m(['a', 'b', 'c'], [1, 2, 3])    // { a: 1, b: 2, c: 3 }
 
 Sources:
 
-- js/openaf.js:15464
+- js/openaf.js:15506
 
 <a id="api-a4m-7ca46bb3"></a>
 
@@ -57,7 +57,7 @@ $a4m(a, "key");
 
 Sources:
 
-- js/openaf.js:15405
+- js/openaf.js:15447
 
 <a id="api-atomic-cc485bd3"></a>
 
@@ -91,7 +91,7 @@ Creates an atomic object of `aType` (defaults to long) to be get/set atomically 
 
 Sources:
 
-- js/openaf.js:16914
+- js/openaf.js:16956
 
 <a id="api-await-a5b9c25f"></a>
 
@@ -103,7 +103,7 @@ Wrapper around the Java wait/notify mechanism. For the provided name will reture
 
 Sources:
 
-- js/openaf.js:17309
+- js/openaf.js:17351
 
 <a id="api-ch-98a1b084"></a>
 
@@ -151,7 +151,7 @@ Inter-channel HTTP REST:
 
 Sources:
 
-- js/openaf.js:16212
+- js/openaf.js:16254
 
 <a id="api-channels-efe21d2e"></a>
 
@@ -200,7 +200,7 @@ Inter-channel HTTP REST:
 
 Sources:
 
-- js/openaf.js:16097
+- js/openaf.js:16139
 
 <a id="api-csv-2b66fcda"></a>
 
@@ -221,7 +221,7 @@ $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray(
 
 Sources:
 
-- js/openaf.js:18399
+- js/openaf.js:18441
 
 <a id="api-do-426a9998"></a>
 
@@ -233,7 +233,7 @@ Instantiates and returns a oPromise. If you provide aFunction, this aFunction wi
 
 Sources:
 
-- js/openaf.js:17407
+- js/openaf.js:17449
 
 <a id="api-doa2b-872aa422"></a>
 
@@ -245,7 +245,7 @@ Will call aAFunction with a function as argument that should be used to "send" v
 
 Sources:
 
-- js/openaf.js:17348
+- js/openaf.js:17390
 
 <a id="api-doall-f50c55aa"></a>
 
@@ -257,7 +257,7 @@ Returns an oPromise that will be resolved when all oPromise part of the anArray 
 
 Sources:
 
-- js/openaf.js:17439
+- js/openaf.js:17481
 
 <a id="api-dofirst-6e3ae5c8"></a>
 
@@ -269,7 +269,7 @@ Returns an oPromise that will be resolved when any oPromise part of the anArray 
 
 Sources:
 
-- js/openaf.js:17450
+- js/openaf.js:17492
 
 <a id="api-dov-e673d541"></a>
 
@@ -281,7 +281,7 @@ Equivalent to $do but using virtual threads (if available) to execute the aFunct
 
 Sources:
 
-- js/openaf.js:17425
+- js/openaf.js:17467
 
 <a id="api-dowait-16fbe1be"></a>
 
@@ -293,7 +293,7 @@ Blocks until aPromise is fullfilled or rejected. Optionally you can specify aWai
 
 Sources:
 
-- js/openaf.js:17461
+- js/openaf.js:17503
 
 <a id="api-err-4a701167"></a>
 
@@ -305,7 +305,7 @@ Prints the exception stack trace and the code where it was thrown. If rethrow is
 
 Sources:
 
-- js/openaf.js:18969
+- js/openaf.js:19011
 
 <a id="api-f-dda9a73f"></a>
 
@@ -378,7 +378,7 @@ Tries to retrieve an array of function argument names for the provided search st
 
 Sources:
 
-- js/openaf.js:15326
+- js/openaf.js:15368
 
 <a id="api-fnm-b366d0ce"></a>
 
@@ -396,7 +396,7 @@ $fnM("h.get", { aUrl: "https://openaf.io/release" });
 
 Sources:
 
-- js/openaf.js:15509
+- js/openaf.js:15551
 
 <a id="api-fnm2a-853209a9"></a>
 
@@ -415,7 +415,7 @@ $fnM2A(h.get, h, $fnDef4Help("HTTP.get"), { aUrl: "https://openaf.io/build", isB
 
 Sources:
 
-- js/openaf.js:15487
+- js/openaf.js:15529
 
 <a id="api-from-8cb42383"></a>
 
@@ -451,7 +451,7 @@ Returns a value previously set with $set with aKey.
 
 Sources:
 
-- js/openaf.js:18572
+- js/openaf.js:18614
 
 <a id="api-gpt-903f1f26"></a>
 
@@ -514,7 +514,7 @@ Shortcut to oJobRunJob and ow.oJob.runJob to execute aJob with args and returned
 
 Sources:
 
-- js/openaf.js:12872
+- js/openaf.js:12914
 
 <a id="api-jq-da82c766"></a>
 
@@ -616,7 +616,7 @@ Shortcut for $gpt on the owrap.AI library.
 
 Sources:
 
-- js/openaf.js:14134
+- js/openaf.js:14176
 
 <a id="api-m2a-ad7c39f1"></a>
 
@@ -632,7 +632,7 @@ $m2a(['c', 'b', 'a'], { a: 1, b: 2, c: 3 })    // [ 3, 2, 1 ]
 
 Sources:
 
-- js/openaf.js:15348
+- js/openaf.js:15390
 
 <a id="api-m4a-6d59cb28"></a>
 
@@ -660,7 +660,7 @@ $m4a(a, "key");
 
 Sources:
 
-- js/openaf.js:15435
+- js/openaf.js:15477
 
 <a id="api-mcp-da09ecd4"></a>
 
@@ -968,7 +968,7 @@ $output("# Results\n\n**Complete**", { __format: "md" });
 
 Sources:
 
-- js/openaf.js:18616
+- js/openaf.js:18658
 
 <a id="api-path-78ad0d4d"></a>
 
@@ -1147,7 +1147,7 @@ If `anArray` is provided, it will be added to the queue using addAll.
 
 Sources:
 
-- js/openaf.js:12606
+- js/openaf.js:12648
 
 <a id="api-retry-151a6992"></a>
 
@@ -1159,7 +1159,7 @@ Tries to execute aFunction and return the corresponding returned result. If aNum
 
 Sources:
 
-- js/openaf.js:16991
+- js/openaf.js:17033
 
 <a id="api-set-e3b59d79"></a>
 
@@ -1171,7 +1171,7 @@ Sets aValue with aKey so it can be retrieved with $get later.
 
 Sources:
 
-- js/openaf.js:18555
+- js/openaf.js:18597
 
 <a id="api-sql-3f61f134"></a>
 
@@ -1187,7 +1187,7 @@ NOTE: In "h2" you can use the table _TMP for your queries.
 
 Sources:
 
-- js/openaf.js:14146
+- js/openaf.js:14188
 
 <a id="api-stream-4ae3ffed"></a>
 
@@ -1222,7 +1222,7 @@ s.run(() => {
 
 Sources:
 
-- js/openaf.js:12570
+- js/openaf.js:12612
 
 <a id="api-tb-dd3151c8"></a>
 
@@ -1253,7 +1253,7 @@ Returns a function that tries to execute aFunc and throws and exception if the r
 
 Sources:
 
-- js/openaf.js:16974
+- js/openaf.js:17016
 
 <a id="api-unset-0dc709e5"></a>
 
@@ -1265,7 +1265,7 @@ Unset a previously set value with aKey.
 
 Sources:
 
-- js/openaf.js:18590
+- js/openaf.js:18632
 
 <a id="api-odoc-1868dc1d"></a>
 
@@ -1360,7 +1360,7 @@ Same as &#95;$ but if aValue is not defined and aPrefixMessage if defined it wil
 
 Sources:
 
-- js/openaf.js:12981
+- js/openaf.js:13023
 
 <a id="api-addopackremotedb-6d159092"></a>
 
@@ -1488,7 +1488,7 @@ Stops for user interaction prompting aPrompt waiting for an entire line of chara
 
 Sources:
 
-- js/openaf.js:15628
+- js/openaf.js:15670
 
 <a id="api-ask1-49aec0bc"></a>
 
@@ -1500,7 +1500,7 @@ Stops for user interaction prompting aPrompt waiting for a single character with
 
 Sources:
 
-- js/openaf.js:15679
+- js/openaf.js:15721
 
 <a id="api-askchoose-9faf557a"></a>
 
@@ -1514,7 +1514,7 @@ Optional aUI is the console/write/ansi map returned by askConsole (or a compatib
 
 Sources:
 
-- js/openaf.js:15753
+- js/openaf.js:15795
 
 <a id="api-askchoosemultiple-e8bc7b16"></a>
 
@@ -1526,7 +1526,7 @@ Stops for user interaction prompting aPrompt waiting for a single character to c
 
 Sources:
 
-- js/openaf.js:15885
+- js/openaf.js:15927
 
 <a id="api-askconsole-347dd601"></a>
 
@@ -1538,7 +1538,7 @@ Opens an independent controlling terminal (including with piped stdin/redirected
 
 Sources:
 
-- js/openaf.js:15092
+- js/openaf.js:15134
 
 <a id="api-askdef-f7aa713d"></a>
 
@@ -1550,7 +1550,7 @@ An optional sixth aOptions forwards onIdle/pollInterval to the input helper. If 
 
 Sources:
 
-- js/openaf.js:15732
+- js/openaf.js:15774
 
 <a id="api-askencrypt-68348c61"></a>
 
@@ -1562,7 +1562,7 @@ Similar to ask but the return user input will be encrypted. If an empty string i
 
 Sources:
 
-- js/openaf.js:15664
+- js/openaf.js:15706
 
 <a id="api-askkey-026b3a72"></a>
 
@@ -1574,7 +1574,7 @@ Reads a single key from aUI (a map returned by askConsole or compatible, providi
 
 Sources:
 
-- js/openaf.js:15117
+- js/openaf.js:15159
 
 <a id="api-askn-80ce7809"></a>
 
@@ -1586,7 +1586,7 @@ An optional fourth aOptions forwards onIdle/pollInterval to each line prompt. St
 
 Sources:
 
-- js/openaf.js:15708
+- js/openaf.js:15750
 
 <a id="api-askstruct-1604e2eb"></a>
 
@@ -1620,7 +1620,7 @@ An optional third aOptions forwards onIdle/pollInterval to each input helper.
 
 Sources:
 
-- js/openaf.js:16035
+- js/openaf.js:16077
 
 <a id="api-bcrypt-d8123d5b"></a>
 
@@ -1728,7 +1728,7 @@ Clears the interval with the provided uuid returned by setInterval.
 
 Sources:
 
-- js/openaf.js:12718
+- js/openaf.js:12760
 
 <a id="api-clone-b5d61dc8"></a>
 
@@ -1896,7 +1896,7 @@ Deletes the array element at anIndex from the provided anArray. Returns the new 
 
 Sources:
 
-- js/openaf.js:12746
+- js/openaf.js:12788
 
 <a id="api-desctype-bc35f5cd"></a>
 
@@ -2064,7 +2064,7 @@ Returns the current value of the operating system anEnvironmentVariable.
 
 Sources:
 
-- js/openaf.js:12912
+- js/openaf.js:12954
 
 <a id="api-getenvs-c1981d33"></a>
 
@@ -2280,7 +2280,7 @@ Ensures that aOPackName is installed. Optionally you can provide a minimal opack
 
 Sources:
 
-- js/openaf.js:16869
+- js/openaf.js:16911
 
 <a id="api-index-1bc04b52"></a>
 
@@ -2688,8 +2688,8 @@ Mimics, using Java, the javascript match function. Supported mods are "g", "m" a
 
 Sources:
 
-- js/openaf.js:16764
-- js/openaf.js:16795
+- js/openaf.js:16806
+- js/openaf.js:16837
 
 ### javaRegExp(text).matchAll(regExp, mods) : Array
 
@@ -2697,7 +2697,7 @@ Mimics, using Java, the javascript match function with the "g" modifier. Support
 
 Sources:
 
-- js/openaf.js:16782
+- js/openaf.js:16824
 
 ### javaRegExp(text).replaceAll(regExp, mods) : Array
 
@@ -2705,7 +2705,7 @@ Mimics, using Java, the javascript replace function with the "g" modifier. Suppo
 
 Sources:
 
-- js/openaf.js:16810
+- js/openaf.js:16852
 
 ### javaRegExp().preCompile(regExp, mods)
 
@@ -2713,7 +2713,7 @@ Pre-compiles the regExp with the corresponding mods to be used by match, matchAl
 
 Sources:
 
-- js/openaf.js:16821
+- js/openaf.js:16863
 
 ### javaRegExp().removePreCompiled(regExp, mods)
 
@@ -2721,7 +2721,7 @@ Removes a previously added pre compiled combination of regExp and mods.
 
 Sources:
 
-- js/openaf.js:16831
+- js/openaf.js:16873
 
 ### javaRegExp(text).split(regExp, mods) : Array
 
@@ -2729,7 +2729,7 @@ Returns an array of the result of spliting text using the provided regExp and mo
 
 Sources:
 
-- js/openaf.js:16840
+- js/openaf.js:16882
 
 ### javaRegExp(text).test(regExp, mods) : boolean
 
@@ -2737,7 +2737,7 @@ Mimics, using Java, the javascript RegExp test function. Supported mods are "g",
 
 Sources:
 
-- js/openaf.js:16855
+- js/openaf.js:16897
 
 <a id="api-joniregexp-c4f214d3"></a>
 
@@ -2749,7 +2749,7 @@ Compiles an Oniguruma (Ruby syntax) pattern once. Options are ignoreCase, dotAll
 
 Sources:
 
-- js/openaf.js:16655
+- js/openaf.js:16697
 
 <a id="api-jsonparse-2f1285ac"></a>
 
@@ -2919,7 +2919,7 @@ Loads the JS-YAML library.
 
 Sources:
 
-- js/openaf.js:12924
+- js/openaf.js:12966
 
 <a id="api-loadlib-888db8ac"></a>
 
@@ -2967,7 +2967,7 @@ sprint($get("myresult"))
 
 Sources:
 
-- js/openaf.js:12945
+- js/openaf.js:12987
 
 <a id="api-loadpy-4bd2e1bd"></a>
 
@@ -2991,7 +2991,7 @@ Loads the TOON image encoding/decoding library.
 
 Sources:
 
-- js/openaf.js:12934
+- js/openaf.js:12976
 
 <a id="api-loadunderscore-36404deb"></a>
 
@@ -3177,7 +3177,7 @@ Builds a new Function handling any debug needs if necessary.
 
 Sources:
 
-- js/openaf.js:13014
+- js/openaf.js:13056
 
 <a id="api-newjavaarray-a991a1da"></a>
 
@@ -3292,7 +3292,7 @@ Runs a oJob from aJson definition with the provided args (arguments). Optionally
 
 Sources:
 
-- js/openaf.js:12814
+- js/openaf.js:12856
 
 <a id="api-ojobrunfile-7e321fea"></a>
 
@@ -3304,7 +3304,7 @@ Runs a oJob aFile with the provided args (arguments). Optionally you can provide
 
 Sources:
 
-- js/openaf.js:12774
+- js/openaf.js:12816
 
 <a id="api-ojobrunfileasync-2a43d4d6"></a>
 
@@ -3316,7 +3316,7 @@ Runs a oJob aFile async with the provided args (arguments). Optionally you can p
 
 Sources:
 
-- js/openaf.js:12799
+- js/openaf.js:12841
 
 <a id="api-ojobrunjob-685a5807"></a>
 
@@ -3328,7 +3328,7 @@ Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob. Optionally you 
 
 Sources:
 
-- js/openaf.js:12835
+- js/openaf.js:12877
 
 <a id="api-ojobrunjobasync-5d0c58f9"></a>
 
@@ -3340,7 +3340,7 @@ Creates an oPromise to run the same arguments for oJobRunJob thus executing the 
 
 Sources:
 
-- js/openaf.js:12898
+- js/openaf.js:12940
 
 <a id="api-opack-9804c1d1"></a>
 
@@ -3365,7 +3365,7 @@ Custom Promise-like implementation. If you provide aFunction, this aFunction wil
 
 Sources:
 
-- js/openaf.js:16349
+- js/openaf.js:16391
 
 <a id="api-objorstr-8199ad59"></a>
 
@@ -3795,7 +3795,7 @@ Generates an array with aCount of numbers starting at 1. Optionally you can prov
 
 Sources:
 
-- js/openaf.js:12730
+- js/openaf.js:12772
 
 <a id="api-repeat-25e2b6b1"></a>
 
@@ -3927,7 +3927,7 @@ Tries to execute aFunction every aPeriod milliseconds. Returns an id that can be
 
 Sources:
 
-- js/openaf.js:12693
+- js/openaf.js:12735
 
 <a id="api-setlog-e7467b03"></a>
 
@@ -3984,7 +3984,7 @@ var id = setInterval(() => { print("Hello after 2 seconds"); clearInterval(id); 
 
 Sources:
 
-- js/openaf.js:12668
+- js/openaf.js:12710
 
 <a id="api-sh-89c4ec9f"></a>
 
@@ -4101,7 +4101,7 @@ Tries to sort the first level map keys returning the rewritten map.  If moreLeve
 
 Sources:
 
-- js/openaf.js:15372
+- js/openaf.js:15414
 
 <a id="api-splitarray-c72950ff"></a>
 
@@ -4323,7 +4323,7 @@ Meant to be use as a stopFunction for threadBox will return true if Ctrl-C is de
 
 Sources:
 
-- js/openaf.js:12644
+- js/openaf.js:12686
 
 <a id="api-tlog-f563a8b7"></a>
 

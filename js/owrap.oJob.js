@@ -4301,7 +4301,10 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((cache"   : "__cache",
 			"((ttl"     : "__ttl",
 			"((out"     : "__out",
-			"((key"     : "__key"
+			"((key"     : "__key",
+			"((cacheCh"       : "__cacheCh",
+			"((cacheChType"   : "__cacheChType",
+			"((cacheChOptions": "__cacheChOptions"
 		}
 	}, {
 		name : "(todo",

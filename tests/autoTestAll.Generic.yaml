@@ -230,6 +230,11 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testCache
 
+   - name: OpenAF::Cache chType
+     from: OpenAF::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testCacheChType
+
    - name: OpenAF::Retry
      from: OpenAF::Init
      to  : OpenAF Test
@@ -357,6 +362,7 @@ todo:
    - OpenAF::Encrypt/Decrypt
    - OpenAF::YAML
    - OpenAF::Cache
+   - OpenAF::Cache chType
    - OpenAF::Retry
    - OpenAF::Await
    - OpenAF::AwaitAll

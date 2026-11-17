@@ -279,6 +279,54 @@
         io.rm("autoTestAll.Cache.db")
     }
 
+    exports.testCacheChType = function() {
+        var dbFile = "autoTestAll.CacheT.db"
+        io.rm(dbFile)
+
+        // Create with a channel type
+        $cache("cacheT")
+        .fn(k => merge(k, { _T: nowUTC() }))
+        .ttl(60000)
+        .chType("mvs", { file: dbFile, compact: true })
+        .create()
+
+        var ini = $cache("cacheT").get({ a: 1 })
+        ow.test.assert($cache("cacheT").get({ a: 1 })._T, ini._T, "Problem with chType cache.")
+        ow.test.assert($ch().list().indexOf("cacheT::chcache") >= 0, true, "Default chType channel name not created.")
+        $cache("cacheT").destroy()
+        ow.test.assert($ch().list().indexOf("cacheT::chcache"), -1, "Owned channel wasn't destroyed.")
+
+        // Recreate and check persistence
+        $cache("cacheT")
+        .fn(k => merge(k, { _T: nowUTC() }))
+        .ttl(60000)
+        .chType("mvs", { file: dbFile, compact: true })
+        .create()
+        ow.test.assert($cache("cacheT").get({ a: 1 })._T, ini._T, "Problem with chType cache persistence.")
+        $cache("cacheT").destroy()
+        io.rm(dbFile)
+
+        // Custom channel name
+        $cache("cacheN")
+        .fn(k => k)
+        .chType("simple", {}, "cacheN::mych")
+        .create()
+        $cache("cacheN").get({ a: 1 })
+        ow.test.assert($ch().list().indexOf("cacheN::mych") >= 0, true, "Custom channel name not used.")
+        $cache("cacheN").destroy()
+
+        // Existing channel isn't destroyed
+        $ch("cacheE::mine").create()
+        $cache("cacheE")
+        .fn(k => k)
+        .ch("cacheE::mine")
+        .create()
+        $cache("cacheE").get({ a: 1 })
+        $cache("cacheE").destroy()
+        ow.test.assert($ch().list().indexOf("cacheE::mine") >= 0, true, "Existing channel shouldn't be destroyed.")
+        $ch("cacheE::mine").destroy()
+    }
+
     exports.testMerge = function() {
         var a = { a: 1, b: 2}
         var b = { b: 3, c: 1}

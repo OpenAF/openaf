@@ -293,26 +293,57 @@ exports.installOperations = function(options, validate) {
 
       const logo = prefixURL(_$(options.logo, "logo").isString().default("/fonts/openaf_small.png"))
       var content = "## " + breadcrumb( puri ) + "<img style=\"padding-left: 1em;\" align=\"right\" src=\"" + logo + "\">\n\n"
-      if (options.query && options.query.enabled || options._operation) {
+      // Keep small controls consistent with the listing in either theme.
+      var icon = name => {
+        var paths = {
+          refresh: '<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 11-2l3 3M4 16l3 3a7 7 0 0 0 11-2"/>',
+          status: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
+          clear: '<circle cx="12" cy="12" r="8"/><path d="m9 9 6 6M9 15l6-6"/>',
+          close: '<path d="m6 6 12 12M6 18 18 6"/>'
+        }
+        return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + paths[name] + '</svg>'
+      }
+      var hasQuery = options.query && options.query.enabled
+      var hasSearch = hasQuery && !!(request.params || {}).q
+      var pageSize = _pageSize || (options.query || {}).pageSize || 100
+      if (hasQuery || options._operation) {
         content += '<style>' + [
-          '.browse-controls{display:flex;flex-wrap:wrap;align-items:center;gap:0.5em 1em;margin:0.25em 0 0.75em;padding-left:0.5em;color:#a0a0a0;font-family:-apple-system,Calibri,"DejaVu Sans",sans-serif;font-size:0.95em}',
-          '.browse-controls label{display:inline-flex;align-items:center;gap:0.5em;min-width:0;max-width:100%}',
-          '.browse-controls .browse-search{flex:1 1 14em;max-width:32em}',
-          '.browse-controls input{box-sizing:border-box;min-width:0;max-width:100%;padding:0.15em 0.25em;border:0;border-bottom:1px solid #a0a0a0;border-radius:0;background:transparent;color:inherit;font:inherit}',
-          '.browse-controls input[name=q]{flex:1;width:100%}.browse-controls input[name=size]{width:4.5em}',
-          '.browse-controls button,.browse-controls a{padding:0;border:0;background:transparent;color:#a0a0a0;font:inherit;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap}',
-          '.browse-controls button:hover,.browse-controls a:hover{color:#707070;text-decoration:underline}',
-          '.browse-controls input:focus-visible,.browse-controls button:focus-visible,.browse-controls a:focus-visible{outline:1px solid currentColor;outline-offset:3px}',
-          '@media(max-width:480px){.browse-controls .browse-search{flex-basis:100%;max-width:100%}}'
+          '.markdown-body{--browse-fg:#747d86;--browse-hover:#414951;--browse-border:#c6cbd1;--browse-bg:#fff;--browse-soft:#f6f8fa;--browse-dark:0}',
+          '.markdown-body-dark{--browse-fg:#919ba6;--browse-hover:#d0d7de;--browse-border:#444c56;--browse-bg:#0d1117;--browse-soft:#161b22;--browse-dark:1;color-scheme:dark}',
+          '.browse-actions{display:flex;align-items:center;gap:0.5em;margin:0.75em 0 0;padding:0.6em 0 0;border-top:1px solid var(--browse-border);color:var(--browse-fg)}.browse-actions form{display:inline-flex;margin:0}.browse-actions .browse-icon{width:auto;gap:0.4em;padding:4px 6px;font-size:0.9em}',
+          '.browse-options{position:fixed;inset:auto;margin:0;box-sizing:border-box;width:19em;min-width:min(19em,calc(100vw - 16px));max-width:calc(100vw - 16px);resize:horizontal;overflow:auto;padding:0.85em;border:1px solid var(--browse-border);border-radius:6px;background:var(--browse-bg);color:var(--browse-fg);box-shadow:0 4px 16px #0002;font-size:0.9em}',
+          '.browse-controls{display:grid;gap:0.75em;margin:0;font-family:-apple-system,Calibri,"DejaVu Sans",sans-serif}.browse-controls label{display:flex;align-items:center;gap:0.5em;min-width:0}',
+          '.browse-live-status{font-size:0.85em}.browse-live-status:empty{display:none}.browse-controls .browse-search{display:grid;gap:0.35em}.browse-options-row{display:flex;align-items:center;justify-content:space-between;gap:1em}',
+          '.browse-controls input{box-sizing:border-box;min-width:0;max-width:100%;padding:0.2em 0.25em;border:0;border-bottom:1px solid var(--browse-border);border-radius:0;background:transparent;color:var(--browse-hover);font:inherit}',
+          '.browse-controls input[name=q]{width:100%}.browse-controls input[name=size]{width:4.5em}.browse-search-row{display:flex;align-items:center;gap:0.6em}.browse-search-row input{flex:1}.browse-search-row button{flex:none}.browse-search-row input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}',
+          '.browse-apply{padding:0.25em 0.4em;border:0;border-radius:4px;background:transparent;color:var(--browse-hover);font:inherit;cursor:pointer}.browse-apply:hover{background:var(--browse-soft)}',
+          '.browse-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:26px;height:26px;padding:4px;border:0;border-radius:4px;background:transparent;color:var(--browse-fg,#747d86);font:inherit;vertical-align:middle;cursor:pointer;text-decoration:none}',
+          '.browse-icon svg{display:block;flex:none}.browse-icon:hover,.browse-icon[aria-expanded=true]{color:var(--browse-hover);background:var(--browse-soft)}.browse-icon:disabled{opacity:0.45;cursor:wait}',
+          '#browse-clear-search:disabled{cursor:default;opacity:0.3}',
+          '#browse-options-toggle{width:24px;height:24px;font-size:18px;line-height:1}.browse-filtered::after{content:"";position:absolute;right:3px;top:3px;width:4px;height:4px;border-radius:50%;background:currentColor}',
+          '.browse-icon:focus-visible,.browse-controls input:focus-visible,.browse-apply:focus-visible,.browse-status:focus-visible{outline:2px solid var(--browse-fg);outline-offset:2px}',
+          '.browse-status{box-sizing:border-box;width:max-content;min-width:18em;max-width:min(48em,calc(100vw - 2em));max-height:80vh;padding:1em;border:1px solid var(--browse-border);border-radius:6px;background:var(--browse-bg);color:var(--browse-hover);box-shadow:0 8px 30px #0003}',
+          '.browse-status::backdrop{background:#0005}.browse-status-heading{display:flex;align-items:center;justify-content:space-between;gap:1em;margin-bottom:0.75em;font-weight:600}.browse-status-content{overflow:auto;max-height:65vh;font-size:0.9em}',
+          '.browse-status-content table{margin:0}.browse-status-content td{white-space:normal;overflow-wrap:anywhere}'
         ].join('') + '</style>\n\n'
       }
-      if (options.query && options.query.enabled) {
-        content += '<form class="browse-controls" method="get"><label class="browse-search">Search <input name="q" value="' + escapeText((request.params||{}).q || '') + '"></label>'
-        content += '<input type="hidden" name="sort" value="' + escapeText(lst.sortInfo ? lst.sortInfo.field : String(lst.key)) + '"><input type="hidden" name="order" value="' + (lst.sortInfo && lst.sortInfo.order == 'desc' ? 'desc' : 'asc') + '">'
-        content += ' <label>Per page <input type="number" name="size" min="1" max="' + (options.query.maxPageSize || 500) + '" value="' + (_pageSize || options.query.pageSize || 100) + '"></label> <button type="submit">Apply</button></form>\n'
+      if (hasQuery || options._operation) {
+        content += '<div id="browse-options" class="browse-options" popover="auto" role="dialog" aria-label="Table options">'
+        if (hasQuery) {
+          var sortInputs = '<input type="hidden" name="sort" value="' + escapeText(lst.sortInfo ? lst.sortInfo.field : String(lst.key)) + '"><input type="hidden" name="order" value="' + (lst.sortInfo && lst.sortInfo.order == 'desc' ? 'desc' : 'asc') + '">'
+          content += '<form class="browse-controls" method="get"><div class="browse-search"><label for="browse-search-input">Search</label><div class="browse-search-row"><input id="browse-search-input" type="search" name="q" autofocus value="' + escapeText((request.params||{}).q || '') + '"><button id="browse-clear-search" class="browse-icon" type="button" title="Clear search" aria-label="Clear search"' + (hasSearch ? '' : ' disabled') + '>' + icon('clear') + '</button></div></div>' + sortInputs
+          content += '<div class="browse-options-row"><label>Per page <input type="number" name="size" min="1" max="' + (options.query.maxPageSize || 500) + '" value="' + pageSize + '"></label><button class="browse-apply" type="submit">Apply</button></div><span class="browse-live-status" role="status"></span></form>'
+        }
+        if (options._operation) {
+          var operationsURL = prefixURL(options.parentURI.replace(/\/$/, "") + '/@@/')
+          content += '<div class="browse-actions"><form id="browse-refresh" method="post" action="' + operationsURL + 'refresh"><input type="hidden" name="path" value="' + escapeText(puri) + '"><input type="hidden" name="csrf" value="' + options._refreshToken + '"><button class="browse-icon" type="submit" title="Refresh now" aria-label="Refresh now">' + icon('refresh') + '<span>Refresh</span></button></form>'
+          content += '<button id="browse-status-toggle" class="browse-icon" type="button" title="Status" aria-label="Status" aria-haspopup="dialog" data-url="' + operationsURL + 'status?path=' + encodeURIComponent(puri) + '">' + icon('status') + '<span>Status</span></button></div>'
+        }
+        content += '</div>\n\n'
       }
 
       // Pagination controls (if metadata is provided)
+      content += '<div id="browse-pagination">\n'
       if (isDef(lst.pageInfo) && isDef(lst.pageInfo.pageSize) && lst.pageInfo.pageSize > 0) {
         var _totalPages = Math.max(1, Math.ceil(lst.pageInfo.total / lst.pageInfo.pageSize))
         if (_totalPages == 1 && _page <= 1) {
@@ -344,18 +375,23 @@ exports.installOperations = function(options, validate) {
         }
       }
 
+      content += '</div>\n\n'
+
       // Match sortTab's header controls while sorting the full result on the server.
       var headers = lst.fields
       var headerControls = []
+      if (hasQuery || options._operation) {
+        var optionsTitle = 'Table options' + (hasSearch ? ' (search: ' + (request.params || {}).q + ')' : '')
+        headerControls[0] = '<button id="browse-options-toggle" class="browse-icon' + (hasSearch ? ' browse-filtered' : '') + '" type="button" title="' + escapeText(optionsTitle) + '" aria-label="' + escapeText(optionsTitle) + '" aria-haspopup="dialog" aria-controls="browse-options" aria-expanded="false" popovertarget="browse-options"><span aria-hidden="true">&#8943;</span></button>'
+      }
       if (options.query && options.query.enabled) {
         content += '<style>' + [
           '.sorter-container{float:right;font-size:10px;margin-left:4px}',
           '.sorter-container .sort-button{display:none;padding:0;margin:0 2px;border:none;background:transparent;cursor:pointer;text-decoration:none;transition:color 0.2s ease}',
           'th:hover .sorter-container .sort-button,th:focus-within .sorter-container .sort-button,.sorter-container .sort-button:focus,.sorter-container .sort-button.active{display:inline-block}',
           '.sorter-container:focus-within .sort-button{display:inline-block}',
-          '.sorter-container .sort-button{color:#c0c0c0}',
-          'th:hover .sorter-container .sort-button,th:focus-within .sorter-container .sort-button{color:#909090}',
-          '@media(prefers-color-scheme:dark){.sorter-container .sort-button{color:#404040}th:hover .sorter-container .sort-button,th:focus-within .sorter-container .sort-button{color:#606060}}'
+          '.sorter-container .sort-button{color:var(--browse-fg,#747d86);opacity:0.7}',
+          'th:hover .sorter-container .sort-button,th:focus-within .sorter-container .sort-button,.sorter-container .sort-button.active{color:var(--browse-hover,#414951);opacity:1}'
         ].join('') + '</style>\n'
         var sortURL = (field, order) => {
           var params = request.params || {}
@@ -379,7 +415,7 @@ exports.installOperations = function(options, validate) {
       }
       content += "|  |" + headers.join(" | ") + " |\n"
       if (lst.alignFields) {
-          content += "|---"
+          content += "|:--:"
           lst.alignFields.forEach((a, i) => {
               if (a == "left") {
                   content += "|:--"
@@ -424,7 +460,186 @@ exports.installOperations = function(options, validate) {
           content += "\n" + options.footer + "\n"
       }
       if (options._operation) {
-        content += '<form class="browse-controls" method="post" action="' + prefixURL(options.parentURI.replace(/\/$/,"") + '/@@/refresh') + '"><input type="hidden" name="path" value="' + escapeText(puri) + '"><input type="hidden" name="csrf" value="' + options._refreshToken + '"><button type="submit">Refresh now</button> <a href="' + prefixURL(options.parentURI.replace(/\/$/,"") + '/@@/status') + '">Status</a></form>\n'
+        content += '\n<dialog id="browse-status" class="browse-status" aria-labelledby="browse-status-title"><div class="browse-status-heading"><span id="browse-status-title">Status</span><button id="browse-status-close" class="browse-icon" type="button" title="Close status" aria-label="Close status">' + icon('close') + '</button></div><div id="browse-status-content" class="browse-status-content" aria-live="polite"></div></dialog>\n\n'
+        content += '<script src="' + prefixURL('/js/openafsigil.js') + '"></script><script src="' + prefixURL('/js/njsmap.js') + '"></script><link rel="stylesheet" href="' + prefixURL('/css/nJSMap.css') + '">\n'
+      }
+      if (hasQuery || options._operation) {
+        content += `<script>
+        document.addEventListener('DOMContentLoaded', function() {
+          // Anchor the shared options popover without shifting the table.
+          var optionsButton = document.getElementById('browse-options-toggle')
+          var optionsPanel = document.getElementById('browse-options')
+          var cancelLiveSearch = function() {}
+          if (optionsButton && optionsPanel) {
+            var positionOptions = function() {
+              if (!optionsPanel.matches(':popover-open')) return
+              var rect = optionsButton.getBoundingClientRect()
+              var width = optionsPanel.offsetWidth, height = optionsPanel.offsetHeight
+              var left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
+              var top = rect.bottom + 5
+              if (top + height > window.innerHeight - 8) top = Math.max(8, rect.top - height - 5)
+              optionsPanel.style.left = left + 'px'
+              optionsPanel.style.top = top + 'px'
+            }
+            optionsPanel.addEventListener('toggle', function(event) {
+              var open = event.newState == 'open'
+              optionsButton.setAttribute('aria-expanded', String(open))
+              if (!open) cancelLiveSearch()
+              if (open) {
+                positionOptions()
+                var search = optionsPanel.querySelector('input[name=q]')
+                if (search) search.focus()
+              }
+            })
+            optionsPanel.addEventListener('keydown', function(event) {
+              if (event.key == 'Escape') {
+                event.preventDefault()
+                event.stopPropagation()
+                cancelLiveSearch()
+                optionsPanel.hidePopover()
+                optionsButton.focus()
+              }
+            })
+            new ResizeObserver(positionOptions).observe(optionsPanel)
+            window.addEventListener('resize', positionOptions)
+            document.addEventListener('scroll', positionOptions, true)
+          }
+          // Preview only quick server searches; Apply remains available for slower providers.
+          var searchForm = optionsPanel && optionsPanel.querySelector('form.browse-controls')
+          if (searchForm) {
+            var searchInput = searchForm.querySelector('input[name=q]')
+            var clearSearch = document.getElementById('browse-clear-search')
+            var syncClearSearch = function() {
+              clearSearch.disabled = !searchInput.value && !new URLSearchParams(window.location.search).get('q')
+            }
+            searchInput.addEventListener('input', syncClearSearch)
+            syncClearSearch()
+            var liveMessage = searchForm.querySelector('.browse-live-status')
+            var searchTimer, liveController, searchRevision = 0, liveAvailable = true
+            cancelLiveSearch = function() {
+              searchRevision++
+              clearTimeout(searchTimer)
+              if (liveController) liveController.abort()
+            }
+            var showSearchMessage = function(message) {
+              liveMessage.textContent = message
+              positionOptions()
+            }
+            var previewSearch = async function(revision) {
+              liveController = new AbortController()
+              var controller = liveController
+              var began = performance.now()
+              var deadline = setTimeout(function() { controller.abort() }, 350)
+              try {
+                var url = new URL(searchForm.action || window.location.href)
+                url.search = new URLSearchParams(new FormData(searchForm)).toString()
+                url.hash = ''
+                var response = await fetch(url, { credentials:'same-origin', cache:'no-store', signal:controller.signal })
+                if (!response.ok) throw new Error('Search unavailable')
+                var parsed = new DOMParser().parseFromString(await response.text(), 'text/html')
+                if (revision != searchRevision) return
+                if (performance.now() - began > 350) throw new Error('Search is slow')
+                var table = parsed.getElementById('browse-listing')
+                var pager = parsed.getElementById('browse-pagination')
+                if (!table || !pager) throw new Error('Search preview unavailable')
+                document.getElementById('browse-listing').replaceWith(table)
+                document.getElementById('browse-pagination').replaceWith(pager)
+                optionsButton = document.getElementById('browse-options-toggle')
+                optionsButton.setAttribute('aria-expanded', String(optionsPanel.matches(':popover-open')))
+                window.history.replaceState(null, '', url)
+                syncClearSearch()
+                showSearchMessage('Results updated')
+              } catch (error) {
+                if (revision != searchRevision) return
+                liveAvailable = false
+                showSearchMessage('Press Apply to search')
+              } finally { clearTimeout(deadline) }
+            }
+            var queueSearch = function(event) {
+              cancelLiveSearch()
+              if (event && event.isComposing) return
+              if (!liveAvailable) { showSearchMessage('Press Apply to search'); return }
+              showSearchMessage('')
+              var revision = searchRevision
+              searchTimer = setTimeout(function() { previewSearch(revision) }, 180)
+            }
+            searchInput.addEventListener('input', queueSearch)
+            searchInput.addEventListener('compositionstart', cancelLiveSearch)
+            searchInput.addEventListener('compositionend', queueSearch)
+            searchForm.querySelector('input[name=size]').addEventListener('input', cancelLiveSearch)
+            searchForm.addEventListener('submit', cancelLiveSearch)
+            clearSearch.addEventListener('click', function() {
+              cancelLiveSearch()
+              searchInput.value = ''
+              searchForm.requestSubmit(searchForm.querySelector('.browse-apply'))
+            })
+          }
+          var dialog = document.getElementById('browse-status')
+          if (!dialog) return
+          var output = document.getElementById('browse-status-content')
+          var statusData, pending
+          // nJSMap expects HTML text; escape provider strings and keys before rendering.
+          var escape = function(value) {
+            return String(value).replace(/[&<>"']/g, function(c) {
+              return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+            })
+          }
+          var safeMap = function(value) {
+            if (typeof value == 'string') return escape(value)
+            if (Array.isArray(value)) return value.map(safeMap)
+            if (value && typeof value == 'object') return Object.fromEntries(Object.keys(value).map(function(key) { return [escape(key), safeMap(value[key])] }))
+            return value
+          }
+          var renderStatus = function() {
+            if (!dialog.open || statusData === undefined) return
+            var dark = getComputedStyle(document.body).getPropertyValue('--browse-dark').trim() == '1'
+            dialog.classList.toggle('njsmap_dark', dark)
+            output.innerHTML = nJSMap(safeMap(statusData), undefined, dark)
+          }
+          document.getElementById('browse-status-close').addEventListener('click', function() { dialog.close() })
+          dialog.addEventListener('click', function(event) {
+            var rect = dialog.getBoundingClientRect()
+            if (event.target == dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close()
+          })
+          dialog.addEventListener('close', function() {
+            if (pending) pending.abort()
+            statusData = undefined
+            output.textContent = ''
+            optionsButton.focus()
+          })
+          var theme = window.matchMedia('(prefers-color-scheme: dark)')
+          theme.addEventListener('change', function() { requestAnimationFrame(renderStatus) })
+          document.getElementById('browse-status-toggle').addEventListener('click', async function() {
+            statusData = undefined
+            output.textContent = 'Loading status…'
+            if (optionsPanel.matches(':popover-open')) optionsPanel.hidePopover()
+            dialog.showModal()
+            pending = new AbortController()
+            try {
+              var response = await fetch(this.dataset.url, { credentials:'same-origin', signal:pending.signal })
+              if (!response.ok) throw new Error('Unable to load status (HTTP ' + response.status + ').')
+              statusData = await response.json()
+              renderStatus()
+            } catch (error) {
+              if (error.name != 'AbortError') output.textContent = error.message
+            }
+          })
+          document.getElementById('browse-refresh').addEventListener('submit', async function(event) {
+            event.preventDefault()
+            var button = this.querySelector('button')
+            button.disabled = true
+            if (optionsPanel.matches(':popover-open')) optionsPanel.hidePopover()
+            try {
+              var response = await fetch(this.action, { method:'POST', credentials:'same-origin', body:new URLSearchParams(new FormData(this)) })
+              if (!response.ok) throw new Error('Unable to refresh (HTTP ' + response.status + ').')
+              window.location.reload()
+            } catch (error) {
+              output.textContent = error.message
+              dialog.showModal()
+            } finally { button.disabled = false }
+          })
+        })
+        </script>\n`
       }
 
       if (options.sortTab && !(lst.queryInfo && lst.queryInfo.applied)) {
@@ -445,6 +660,8 @@ exports.installOperations = function(options, validate) {
           }) + end
         })
       }
+      // Keep listing targets stable while live search replaces only results and pagination.
+      html = String(html).replace(/<table(?=[\s>])/, '<table id="browse-listing"')
       return html
     }
     if(!isFunction(custom.renderObj))fns.renderObj=(obj, server, request, options) => {
