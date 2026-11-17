@@ -4313,7 +4313,15 @@ OpenWrap.server.prototype.httpd = {
 	replyBrowse: function(server, request, _options) {
 		try {
 			var _out = ""
-			var _lst = _options._fns.getList(request, _options)
+            var support = ow.server.httpd.browse.support
+            var relative = support ? support.relative(request.uri, _options.parentURI) : ""
+            if (_options._operation && relative.startsWith("@@/")) {
+                var target = Object.assign({}, request)
+                target.uri = _options.parentURI.replace(/\/$/, "") + "/" + String((request.params || {}).path || "").replace(/^\/+/, "")
+                return _options._operation(relative.substring(3), target, server, false)
+            }
+            var _lst = _options.query && _options.query.enabled && (request.params || {}).q && isFunction(_options._fns.search)
+                ? _options._fns.search(request, _options) : _options._fns.getList(request, _options)
 			if (_lst.isList) {
 				_out = _options._fns.renderList(_lst, server, request, _options)
 				if (isMap(_out)) return _out
@@ -4329,7 +4337,7 @@ OpenWrap.server.prototype.httpd = {
 			return server.replyOKHTML( String(_out) )
 		} catch(e) {
 			$err(e)
-			return { data: "Internal error", mimetype: "text/plain", status: 500, header: {} }
+            return { data: "Browse request failed", mimetype: "text/plain", status: [400,403,404,405,501,503].indexOf(e.httpStatus) >= 0 ? e.httpStatus : 500, header: {} }
 		}
 	},
 
@@ -5208,10 +5216,18 @@ OpenWrap.server.prototype.httpd.browse = {
 	 * - `default` (string) The default file to show (defaults to undefined)
 	 * - `logo` (string) The logo to show in the file browser (defaults to undefined)
 	 * - `footer` (string) The footer to show in the file browser (defaults to undefined)
+     * - `query.enabled` adds server sorting, pagination and bounded literal search.
+     * - `preview.formats` replaces viewers with an extension or `name:` allowlist; `{}` disables previews.
+     * - `preview.maxBytes` bounds formatted reads, preserving complete raw downloads.
+     * - `operations.enabled` reserves `@@/status`, `@@/freshness`, POST `@@/refresh`, and `@@/metrics`.
 	 * ]]>
 	 * </odoc>
 	 */
 	files: function(aURI, aOptions) {
+        if (!ow.server.httpd.browse.support) {
+            loadLib(getOpenAFJar() + "::js/owrap.server.browse.js")
+            return ow.server.httpd.browse.files(aURI, aOptions)
+        }
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		aOptions.path = _$(aOptions.path, "options.path").isString().default(".")
@@ -5489,6 +5505,10 @@ OpenWrap.server.prototype.httpd.browse = {
 	 * </odoc>
 	 */
 	odoc: function(aURI, aOptions) {
+        if (!ow.server.httpd.browse.support) {
+            loadLib(getOpenAFJar() + "::js/owrap.server.browse.js")
+            return ow.server.httpd.browse.odoc(aURI, aOptions)
+        }
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		
@@ -5574,6 +5594,10 @@ OpenWrap.server.prototype.httpd.browse = {
 	 * </odoc>
 	 */
 	opacks: function(aURI, aOptions) {
+        if (!ow.server.httpd.browse.support) {
+            loadLib(getOpenAFJar() + "::js/owrap.server.browse.js")
+            return ow.server.httpd.browse.opacks(aURI, aOptions)
+        }
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		
