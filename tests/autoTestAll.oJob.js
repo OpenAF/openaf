@@ -623,6 +623,56 @@
         }
     }
 
+    // Trust the generated loopback certificate in this fixture's HTTP clients only.
+    function startOJobTLSFixture() {
+        ow.loadServer()
+        ow.loadObj()
+        var dir = io.createTempDir("ojob-tls-")
+        var path = dir + "/loopback.p12", password = "fixture-password", server
+        var factory = ow.obj.rest.connectionFactory, thread = java.lang.Thread.currentThread()
+        var close = function() {
+            ow.obj.rest.connectionFactory = factory
+            try {
+                if (isDef(server)) ow.server.httpd.stop(server)
+            } finally { io.rm(dir) }
+        }
+        try {
+            // Generate a short-lived certificate valid for both loopback host spellings.
+            var keytool = $sh([ow.format.getJavaHome() + "/bin/keytool", "-genkeypair", "-alias", "loopback",
+                "-keystore", path, "-storetype", "PKCS12", "-storepass", password, "-keyalg", "RSA",
+                "-keysize", "2048", "-validity", "1", "-dname", "CN=localhost",
+                "-ext", "SAN=DNS:localhost,IP:127.0.0.1", "-noprompt"]).get(0)
+            ow.test.assert(keytool.exitcode, 0, "Generate TLS fixture certificate: " + keytool.stderr)
+
+            // Install certificate trust without changing JVM defaults or hostname verification.
+            var keyStore = java.security.KeyStore.getInstance("PKCS12")
+            var input = new java.io.FileInputStream(path)
+            try { keyStore.load(input, new java.lang.String(password).toCharArray()) } finally { input.close() }
+            var trustStore = java.security.KeyStore.getInstance("PKCS12")
+            trustStore.load(null, null)
+            trustStore.setCertificateEntry("loopback", keyStore.getCertificate("loopback"))
+            var tmf = javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm())
+            tmf.init(trustStore)
+            var managers = tmf.getTrustManagers()
+            var context = javax.net.ssl.SSLContext.getInstance("TLS")
+            context.init(null, managers, null)
+            ow.obj.rest.connectionFactory = function() {
+                var http = factory.call(this)
+                if (thread.equals(java.lang.Thread.currentThread())) {
+                    http.client = http.client.newBuilder().sslSocketFactory(context.getSocketFactory(), managers[0]).build()
+                }
+                return http
+            }
+
+            // Start a server on an available loopback port.
+            server = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1", path, password, __, __, __, "java")
+            return { server: server, url: "https://127.0.0.1:" + server.getPort(), close: close }
+        } catch(e) {
+            close()
+            throw e
+        }
+    }
+
     exports.testOJobIntegritySingleFetch = function() {
         ow.loadOJob()
         ow.loadServer()
@@ -631,7 +681,7 @@
         var oldSignatureStrict = OJOB_SIGNATURE_STRICT, oldDomains = ow.oJob.authorizedDomains.slice(0)
         var marker = io.createTempFile("oJobIntegrity", ".marker").replace(/\\/g, "/")
         var localFile = io.createTempFile("oJobIntegrity", ".json").replace(/\\/g, "/")
-        var server, requests = 0
+        var tls, requests = 0
         io.rm(marker)
         try {
             var benign = stringify({ todo: [], jobs: [] })
@@ -650,15 +700,16 @@
             OJOB_INTEGRITY[canonical] = "sha256-" + sha256("different")
             ow.test.assert(ow.oJob.verifyIntegrity(localFile), false, "Integrity mismatches must remain false.")
 
-            var port = findRandomOpenPort()
-            server = ow.server.httpd.start(port, "127.0.0.1", __, __, __, __, __, "java")
+            // Serve the definition over authenticated loopback TLS.
+            tls = startOJobTLSFixture()
+            var server = tls.server
             ow.server.httpd.route(server, {
                 "/job.json": function(req) {
                     return server.replyOKText(requests++ == 0 ? benign : malicious)
                 }
             })
 
-            var url = "http://127.0.0.1:" + port + "/job.json"
+            var url = tls.url + "/job.json"
             ow.oJob.authorizedDomains.push("127.0.0.1")
             OJOB_INTEGRITY = {}
             OJOB_INTEGRITY[url] = "sha256-" + sha256(benign)
@@ -671,7 +722,7 @@
             ow.test.assert(requests, 1, "Integrity-checked oJobs must fetch the definition once.")
             ow.test.assert(io.fileExists(marker), false, "A later remote response must not replace the verified bytes.")
         } finally {
-            if (isDef(server)) ow.server.httpd.stop(server)
+            if (isDef(tls)) tls.close()
             if (io.fileExists(marker)) io.rm(marker)
             if (io.fileExists(localFile)) io.rm(localFile)
             OJOB_INTEGRITY = oldIntegrity
@@ -684,17 +735,22 @@
     }
 
     exports.testOJobAuthorizedDomainRedirects = function() {
-        var oldDomains = ow.oJob.authorizedDomains.slice(0), oldFile = ow.oJob.__file, oldFileList = ow.oJob.fileList.slice(0), server
+        var oldDomains = ow.oJob.authorizedDomains.slice(0), oldFile = ow.oJob.__file, oldFileList = ow.oJob.fileList.slice(0), tls
         var deniedRequests = new java.util.concurrent.atomic.AtomicInteger(0)
         var allowedRequests = new java.util.concurrent.atomic.AtomicInteger(0)
         var credentialAuthorization
         var oldJSONUnsafe = __JSONformat.unsafe
         try {
-            var port = findRandomOpenPort()
-            server = ow.server.httpd.start(port, "127.0.0.1", __, __, __, __, __, "java")
+            // Exercise redirect handling after the initial HTTPS request is authorized.
+            tls = startOJobTLSFixture()
+            var server = tls.server, port = server.getPort()
+            var insecureURL = tls.url.replace(/^https:/, "http:")
             ow.server.httpd.route(server, {
                 "/denied.json": function() {
-                    return server.reply("", "text/plain", 302, { Location: "http://localhost:" + port + "/payload.json" })
+                    return server.reply("", "text/plain", 302, { Location: "https://localhost:" + port + "/payload.json" })
+                },
+                "/downgrade.json": function() {
+                    return server.reply("", "text/plain", 302, { Location: insecureURL + "/payload.json" })
                 },
                 "/payload.json": function() {
                     deniedRequests.incrementAndGet()
@@ -721,25 +777,32 @@
             })
 
             ow.oJob.authorizedDomains = [ "127.0.0.1" ]
-            var denied = false
-            try { ow.oJob.__loadFile("http://127.0.0.1:" + port + "/denied.json") } catch(e) { denied = String(e).indexOf("Unauthorized URL redirect") >= 0 }
-            ow.test.assert(denied, true, "A redirect to a forbidden hostname should be rejected.")
-            ow.test.assert(deniedRequests.get(), 0, "The forbidden redirect destination should not be contacted.")
+            // Distinguish host authorization from the HTTPS requirement.
+            var assertRejected = function(url, reason) {
+                var error = ""
+                try { ow.oJob.__loadFile(url) } catch(e) { error = String(e) }
+                ow.test.assert(error.indexOf(reason) >= 0, true, "Expected " + reason + " for " + url + ", got " + error)
+            }
+            assertRejected(insecureURL + "/payload.json", "HTTPS required")
+            assertRejected(tls.url + "/downgrade.json", "HTTPS required")
+            assertRejected(tls.url + "/denied.json", "Unauthorized URL redirect")
+            ow.test.assert(deniedRequests.get(), 0, "Rejected destinations should not be contacted.")
 
-            ow.oJob.__loadFile("http://127.0.0.1:" + port + "/allowed.json")
+            // Retain the existing positive controls over TLS.
+            ow.oJob.__loadFile(tls.url + "/allowed.json")
             ow.test.assert(allowedRequests.get(), 1, "An authorized relative redirect should still load.")
 
-            var yaml = ow.oJob.__loadFile("http://127.0.0.1:" + port + "/control-yaml")
+            var yaml = ow.oJob.__loadFile(tls.url + "/control-yaml")
             ow.test.assert(yaml.jobs[0].name, "YAML control", "Extensionless authorized YAML should retain its legacy parsing behavior.")
 
             __JSONformat.unsafe = true
-            var executableJSON = ow.oJob.__loadFile("http://127.0.0.1:" + port + "/unsafe-json")
+            var executableJSON = ow.oJob.__loadFile(tls.url + "/unsafe-json")
             ow.test.assert(executableJSON.ojob.probe, 42, "Trusted authorized JSON executable values should remain supported outside strict validation.")
 
-            ow.oJob.__loadFile("http://user:password@127.0.0.1:" + port + "/credential.json")
+            ow.oJob.__loadFile(tls.url.replace("https://", "https://user:password@") + "/credential.json")
             ow.test.assert(isDef(credentialAuthorization) && String(credentialAuthorization).startsWith("Basic "), true, "Authorized credential URLs should still authenticate to their original origin.")
         } finally {
-            if (isDef(server)) ow.server.httpd.stop(server)
+            if (isDef(tls)) tls.close()
             ow.oJob.authorizedDomains = oldDomains
             ow.oJob.__file = oldFile
             ow.oJob.fileList = oldFileList

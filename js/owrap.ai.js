@@ -638,7 +638,7 @@ OpenWrap.ai.prototype.__decision = {
             if (e && /^LLM_DECISION_/.test(e.code || "")) throw e
             throw this.error("LLM_DECISION_PROVIDER_ERROR", provider)
         }
-        if (this.map(raw) && this.has(raw, "error")) throw this.error("LLM_DECISION_PROVIDER_ERROR", provider, typeof raw.status == "number" ? raw.status : __, this.providerMessage(raw))
+        if (this.map(raw) && ((this.has(raw, "error") && raw.error != null) || raw.status === "failed")) throw this.error("LLM_DECISION_PROVIDER_ERROR", provider, typeof raw.status == "number" ? raw.status : __, this.providerMessage(raw))
         return raw
     },
     capabilities: function(native, structured, nativeContract, availability) {
@@ -706,6 +706,23 @@ OpenWrap.ai.prototype.__httpRequest = function(http, options, verb, url, data, s
     }
 }
 
+// Validate an entire provider tool turn before invoking any local callback.
+OpenWrap.ai.prototype.__prepareProviderTools = function(calls, resolve) {
+    var ids = new Set()
+    return calls.map(call => {
+        if (!isMap(call) || !isString(call.name) || call.name.length == 0) throw new Error("Invalid tool call")
+        if (call.id != null) {
+            if (!isString(call.id) || call.id.length == 0 || ids.has(call.id)) throw new Error("Invalid or duplicate tool call ID")
+            ids.add(call.id)
+        }
+        var tool = resolve(call.name)
+        if (!isMap(tool) || !isFunction(tool.fn)) throw new Error("Tool '" + call.name + "' is not available")
+        var args = isString(call.args) ? JSON.parse(call.args) : call.args
+        if (!isMap(args)) throw new Error("Tool '" + call.name + "' requires an argument object")
+        return { name: call.name, id: call.id, args: args, fn: tool.fn }
+    })
+}
+
 OpenWrap.ai.prototype.__gpttypes = {
     openai: {
         create: (aOptions) => {
@@ -730,6 +747,14 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.authType = _$(aOptions.authType, "aOptions.authType").isString().default([ "azure-openai-v1", "azure-v1", "azure-openai-legacy", "azure-legacy", "foundry", "azure-foundry" ].indexOf(aOptions.mode) >= 0 ? "api-key" : "bearer")
             aOptions.authType = aOptions.authType.toLowerCase()
 
+            // Keep Chat Completions as the default for ordinary prompts.
+            var _promptTransport = _$(aOptions.promptTransport, "aOptions.promptTransport").isString().default("chat")
+            if (["chat", "responses"].indexOf(_promptTransport) < 0) throw new Error("promptTransport must be chat or responses")
+
+            var _datedFoundry = ["foundry", "azure-foundry"].includes(aOptions.mode) && aOptions.apiVersion != "v1"
+            if (_datedFoundry && _promptTransport == "responses") {
+                throw ow.ai.__decision.error("LLM_DECISION_UNSUPPORTED", "openai", __, "Responses requires Foundry API v1")
+            }
             var _decisionApi = isUnDef(aOptions.decisionApi) ? "openai" : aOptions.decisionApi
             var _decisionUrl
             if (["openai", "openrouter", "microsoft"].indexOf(_decisionApi) < 0) ow.ai.__decision.invalid()
@@ -745,7 +770,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             }
             if (_decisionApi == "microsoft") {
                 if (["foundry", "azure-foundry"].indexOf(aOptions.mode) < 0 || aOptions.apiVersion != "v1") ow.ai.__decision.invalid()
-                var base = aOptions.url.replace(/\/+$/, "")
+                var base = aOptions.url.replace(/\/+$/, "").replace(/\/openai(?:\/v1)?$/i, "")
                 _decisionUrl = aOptions.decisionUrl
                 if (isUnDef(_decisionUrl)) {
                     if (/^https?:\/\/[^\s/?#]+$/.test(base)) _decisionUrl = base + "/providers/microsoft/v1/systemone"
@@ -825,6 +850,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _appendQuery("openai/deployments/" + _dep + "/" + aEndpoint, { "api-version": aOptions.apiVersion })
                 case "foundry":
                 case "azure-foundry":
+                    if (_datedFoundry && aEndpoint == "responses") {
+                        throw ow.ai.__decision.error("LLM_DECISION_UNSUPPORTED", "openai", __, "Responses requires Foundry API v1")
+                    }
                     return _foundryPath(aEndpoint)
                 default:
                     return _openAIPath(aEndpoint)
@@ -846,7 +874,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 return merge(_h, aOptions.headers)
             }
             var _buildURL = aURI => _joinURL(aOptions.url, aURI)
-            var _responsesAvailable = __
+            var _unavailableResponsesRoutes = new Set()
             var _normalizeResponseSchema = aResponseSchema => {
                 if (!isMap(aResponseSchema)) return __
                 return {
@@ -876,8 +904,155 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                 })
             }
+            // Convert conversation messages and tool results to Responses input items.
+            var _promptResponsesInput = messages => {
+                var input = []
+                messages.forEach(message => {
+                    if (message.role == "tool") {
+                        input.push({ type: "function_call_output", call_id: message.tool_call_id, output: _toResponseInputText(message.content) })
+                        return
+                    }
+                    if (isString(message.type) || message.content != null || !isArray(message.tool_calls)) {
+                        var item = _toResponsesInput([message])[0]
+                        if (isArray(item.content)) {
+                            item.content = item.content.map(part => {
+                                if (part.type == "text") return { type: "input_text", text: part.text }
+                                if (part.type == "image_url") return { type: "input_image", image_url: part.image_url.url, detail: part.image_url.detail || "auto" }
+                                return part
+                            })
+                        }
+                        input.push(item)
+                    }
+                    if (isArray(message.tool_calls)) {
+                        message.tool_calls.forEach(call => {
+                            input.push({ type: "function_call", call_id: call.id, name: call.function.name, arguments: call.function.arguments })
+                        })
+                    }
+                })
+                return input
+            }
+            // Validate all local calls before invoking any callback.
+            var _prepareToolCalls = (calls, tools) => {
+                var selected = (tools || []).filter(t => t.type == "function").map(t => isMap(t.function) ? t.function.name : t.name)
+                if (!calls.every(call => isMap(call) && isMap(call.function))) throw new Error("Invalid OpenAI tool call")
+                if (calls.some(call => !selected.includes(call.function.name) || !Object.prototype.hasOwnProperty.call(_r.tools, call.function.name) ||
+                    !isFunction(_r.tools[call.function.name].fn))) return
+
+                var ids = []
+                return calls.map(call => {
+                    if (!isString(call.id) || call.id.length == 0 || ids.includes(call.id)) throw new Error("Invalid OpenAI tool call ID")
+                    ids.push(call.id)
+                    var args = JSON.parse(call.function.arguments)
+                    if (!isMap(args)) throw new Error("OpenAI tool arguments must be an object")
+                    return { call: call, args: args, fn: _r.tools[call.function.name].fn }
+                })
+            }
+            // Serialize tool results in the conversation format shared with Chat Completions.
+            var _toolMessages = prepared => prepared.map(entry => {
+                var result = entry.fn(entry.args)
+                return { role: "tool", tool_call_id: entry.call.id, content: isUnDef(result) ? "" : stringify(result, __, "") }
+            })
+            // Convert the ordinary prompt options to Responses request fields.
+            var _responsesPrompt = (body, messages, streaming, onDelta) => {
+                var uri = _route("responses", body.model)
+                var format = body.response_format
+                if (isMap(format)) {
+                    var textFormat = format.type == "json_schema" ? merge({ type: format.type }, format.json_schema) : format
+                    body.text = merge({ format: textFormat }, body.text || {})
+                }
+                if (isUnDef(body.max_output_tokens)) {
+                    var limit = isDef(body.max_completion_tokens) ? body.max_completion_tokens : body.max_tokens
+                    if (isDef(limit)) body.max_output_tokens = limit
+                }
+                if (isMap(body.tool_choice) && isMap(body.tool_choice.function)) body.tool_choice = { type: "function", name: body.tool_choice.function.name }
+                if (isArray(body.tools)) {
+                    body.tools = body.tools.map(tool => isMap(tool.function) && tool.type == "function" ?
+                        merge({ type: "function", strict: false }, tool.function) : tool)
+                }
+                var chatFields = ["messages", "response_format", "max_completion_tokens", "max_tokens", "stream_options"]
+                chatFields.forEach(key => delete body[key])
+                body.store = false
+                body.include = (isArray(body.include) ? body.include : []).filter(key => key != "reasoning.encrypted_content").concat("reasoning.encrypted_content")
+                if (streaming) body.stream = true
+                else delete body.stream
+                _applyReasoning(body, true)
+
+                // Use terminal output for continuation and emit only text deltas to the callback.
+                var events = [], totals = {}, content = ""
+                var input = _promptResponsesInput(messages)
+                for (var turn = 0; turn < 16; turn++) {
+                    body.input = input
+                    if (isDef(_debugCh)) $ch(_debugCh).set({ _t: nowNano(), _f: "client" }, body)
+                    var response, streamError
+                    if (streaming) {
+                        streamError = _readSseStream(_r._requestStream(uri, body), payload => {
+                            var event = isMap(payload) ? payload : jsonParse(payload, __, __, true)
+                            if (!isMap(event)) return payload === "[DONE]"
+                            events.push(event)
+                            if (event.type == "response.output_text.delta" && isString(event.delta) && isFunction(onDelta)) onDelta(event.delta, event)
+                            if (["response.completed", "response.failed", "response.incomplete"].includes(event.type)) {
+                                response = event.response
+                                return true
+                            }
+                            if (event.type == "error") {
+                                response = { error: { message: event.message, code: event.code, param: event.param } }
+                                return true
+                            }
+                        })
+                        response = streamError || response || { error: { message: "OpenAI Responses stream ended before a terminal event" } }
+                    } else {
+                        response = _r._request(uri, body)
+                    }
+                    if (isDef(_debugCh)) $ch(_debugCh).set({ _t: nowNano(), _f: "llm" }, response)
+                    var stats = _captureStats(response, body)
+                    if (stats && stats.tokens) {
+                        Object.keys(stats.tokens).forEach(key => { totals[key] = (totals[key] || 0) + stats.tokens[key] })
+                        stats.tokens = clone(totals)
+                    }
+                    if (!isMap(response) || response.error != null) return response
+                    if (response.status == "failed") return merge(response, { error: { message: "OpenAI Responses request failed" } })
+                    if (!isArray(response.output) || !["completed", "incomplete"].includes(response.status)) {
+                        return merge(response, { error: { message: "Invalid OpenAI Responses output" } })
+                    }
+
+                    // Keep ordinary history portable while retaining encrypted reasoning for replay.
+                    var calls = [], history = [], text = "", refusal = ""
+                    response.output.forEach(item => {
+                        if (item.type == "message" && isArray(item.content)) {
+                            item.content.forEach(part => {
+                                if (part.type == "output_text" && isString(part.text)) text += part.text
+                                if (part.type == "refusal" && isString(part.refusal)) refusal += part.refusal
+                            })
+                        } else if (item.type == "function_call") {
+                            calls.push({ id: item.call_id, type: "function", function: { name: item.name, arguments: item.arguments } })
+                        } else if (item.type != "reasoning" || isString(item.encrypted_content)) {
+                            history.push(item)
+                        }
+                    })
+                    var message = { role: "assistant", content: text || null }
+                    if (calls.length) message.tool_calls = calls
+                    if (refusal.length) message.refusal = refusal
+                    var reason = response.status == "incomplete" ?
+                        (response.incomplete_details && response.incomplete_details.reason == "max_output_tokens" ? "length" : "content_filter") :
+                        (refusal.length ? "content_filter" : (calls.length ? "tool_calls" : "stop"))
+                    if (stats) stats.finishReasons = [reason]
+                    var prepared = reason == "tool_calls" ? _prepareToolCalls(calls, body.tools) : __
+                    content += text
+                    if (isDef(prepared)) {
+                        if (turn == 15) throw new Error("OpenAI Responses tool continuation limit reached")
+                        var results = _toolMessages(prepared)
+                        _r.conversation = _r.conversation.concat(history, [message], results)
+                        input = input.concat(response.output.filter(item => item.type != "reasoning" || isString(item.encrypted_content)), _promptResponsesInput(results))
+                        continue
+                    }
+                    if (response.status == "completed") _r.conversation = _r.conversation.concat(history, [message])
+                    if (streaming) return { content: content, events: events, toolCalls: calls, finishReason: reason }
+                    return merge(response, { choices: [{ index: 0, finish_reason: reason, message: message }] })
+                }
+            }
             var _extractResponseErrorMessage = aResponse => {
                 if (!isMap(aResponse)) return ""
+                if (isString(aResponse.error)) return aResponse.error
                 if (isMap(aResponse.error)) {
                     if (isString(aResponse.error.message)) return aResponse.error.message
                     if (isString(aResponse.error.error)) return aResponse.error.error
@@ -886,34 +1061,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                 if (isString(aResponse.message)) return aResponse.message
                 return stringify(aResponse, __, "")
             }
-            var _isResponsesUnavailable = aResponse => {
-                if (!isMap(aResponse)) return false
-                var _status = isDef(aResponse.status) ? Number(aResponse.status) : (isMap(aResponse.error) && isDef(aResponse.error.status) ? Number(aResponse.error.status) : __)
-                if ([ 404, 405, 410, 501 ].indexOf(_status) >= 0) return true
-
-                var _code = (isMap(aResponse.error) && isDef(aResponse.error.code) ? aResponse.error.code : aResponse.code)
-                if (isDef(_code)) {
-                    _code = String(_code).toLowerCase()
-                    if (_code.indexOf("not_found") >= 0 || _code.indexOf("unsupported") >= 0 || _code.indexOf("unknown_url") >= 0 || _code.indexOf("unknown_endpoint") >= 0) return true
-                }
-
-                var _type = (isMap(aResponse.error) && isDef(aResponse.error.type) ? aResponse.error.type : aResponse.type)
-                if (isDef(_type)) {
-                    _type = String(_type).toLowerCase()
-                    if (_type.indexOf("not_found") >= 0 || _type.indexOf("unsupported") >= 0) return true
-                }
-
-                var _msg = _extractResponseErrorMessage(aResponse).toLowerCase()
-                return (
-                    _msg.indexOf("/responses") >= 0 && (
-                        _msg.indexOf("not found") >= 0 ||
-                        _msg.indexOf("unsupported") >= 0 ||
-                        _msg.indexOf("unknown") >= 0 ||
-                        _msg.indexOf("not available") >= 0 ||
-                        _msg.indexOf("unavailable") >= 0 ||
-                        _msg.indexOf("does not exist") >= 0
-                    )
-                ) || _msg.indexOf("unknown endpoint") >= 0 || _msg.indexOf("unknown url") >= 0
+            // Fall back only when the error identifies the endpoint or HTTP method.
+            var _isResponsesUnavailable = response => {
+                if (!isMap(response) || response.error == null) return false
+                var detail = response.error
+                var code = isMap(detail) ? String(detail.code || detail.type || "") : ""
+                var message = _extractResponseErrorMessage(response)
+                if (/model|parameter/i.test(code) || (isMap(detail) && detail.param != null)) return false
+                if (/^(unknown_url|unknown_endpoint|endpoint_not_found|route_not_found|unsupported_endpoint|method_not_allowed)$/.test(code)) return true
+                if (/unknown (endpoint|url|route)|cannot post \/[^\s]*responses/i.test(message)) return true
+                return /(?:\/responses|responses (?:api|endpoint|route)).{0,35}(?:not found|unsupported|not supported|not available|unavailable|does not exist)/i.test(message)
             }
             var _captureStats = (aResponse, aRequestBody) => {
                 if (!isMap(aResponse)) {
@@ -974,12 +1131,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var payload = dataLines.join("\n")
                     dataLines = []
                     var parsedPayload = jsonParse(payload, __, __, true)
-                    if (isMap(parsedPayload) && isDef(parsedPayload.error)) errorObj = parsedPayload
+                    if (isMap(parsedPayload) && parsedPayload.error != null) errorObj = parsedPayload
                     if (aOnPayload(payload) === true) stop = true
                 }
                 if (isMap(aStream)) {
                     // Check if this is an error response (has error field)
-                    if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
+                    if (isMap(aStream) && aStream.error != null) {
                         errorObj = aStream
                         aOnPayload(aStream)
                     } else {
@@ -1023,6 +1180,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 if (isString(r)) {
                                     return { role: "user", content: r }
                                 } else if (isMap(r)) {
+                                    if (isString(r.type) && isUnDef(r.role)) return r
                                     if (isDef(r.role) && r.role == "model") {
                                         r.role = "assistant"
                                     }
@@ -1039,7 +1197,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var i = 0
                     while (i < _r.conversation.length) {
                         var msg = _r.conversation[i]
-                        if (!isMap(msg)) { i++; continue }
+                        if (!isMap(msg) || (isString(msg.type) && isUnDef(msg.role))) { i++; continue }
                         var role = msg.role
                         if (role == "developer") role = "system"
                         if (role == "tool") {
@@ -1167,14 +1325,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var d = ow.ai.__decision, po = request.providerOptions
                     if (d.has(po, "safetyIdentifier")) d.invalid()
                     // Select transport before HTTP; never consult or update chat's fallback cache.
-                    var transport = po.transport || aOptions.decisionTransport || "responses"
+                    var transport = po.transport || aOptions.decisionTransport || (_datedFoundry ? "chat" : "responses")
                     if (["responses", "chat"].indexOf(transport) < 0) d.invalid()
                     var schema = request.descriptor || { name: "OpenAFDecision", schema: request.schema, strict: true }
                     var messages = request.messages || [{ role: "system", content: request.instructions }, { role: "user", content: typeof request.state == "string" ? request.state : JSON.stringify(request.state) }]
                     var body = { model: request.model }, endpoint
                     if (transport == "responses") {
                         endpoint = "responses"
-                        body.input = _toResponsesInput(messages)
+                        body.input = _promptResponsesInput(messages)
                         body.text = { format: merge({ type: "json_schema" }, schema) }
                         body.store = false
                         if (isDef(po.maxOutputTokens)) body.max_output_tokens = po.maxOutputTokens
@@ -1236,7 +1394,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var messages = conversation.concat([{ role: "user", content: prompt }])
                     if (_noSystem) messages = messages.map(m => { if (m.role == "system") m.role = "developer"; return m; })
                     var request = { model: model, schema: descriptor.schema, descriptor: descriptor, messages: messages, validate: validate,
-                        providerOptions: { transport: aOptions.schemaTransport || aOptions.decisionTransport || "responses" } }
+                        providerOptions: { transport: aOptions.schemaTransport || aOptions.decisionTransport || (_datedFoundry ? "chat" : "responses") } }
                     if (isDef(temperature)) request.providerOptions.temperature = temperature
                     var selected = isDef(tools) ? tools : Object.keys(_r.tools)
                     var wireTools = selected.map(t => {
@@ -1249,7 +1407,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var officialSchemaEndpoint = aOptions.mode == "openai" && /^https:\/\/api\.openai\.com(?:\/v1)?\/?$/.test(aOptions.url)
                     var toolTransport = aOptions.schemaTransport || aOptions.decisionTransport || (officialSchemaEndpoint ? "responses" : "chat")
                     if (["responses", "chat"].indexOf(toolTransport) < 0) d.invalid()
-                    var responseItems = _toResponsesInput(messages)
+                    var responseItems = _promptResponsesInput(messages)
                     var executed = false, totals = {}, execution, response
                     try {
                         while (true) {
@@ -1260,6 +1418,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                     body = merge(d.copy(params), { model: model, input: d.copy(responseItems), store: false,
                                         text: { format: merge({ type: "json_schema" }, descriptor) },
                                         tools: wireTools.map(t => merge({ type: "function", strict: false }, t.function)) })
+                                    body.include = Array.from(new Set((isArray(body.include) ? body.include : []).concat("reasoning.encrypted_content")))
                                 }
                                 if (isDef(temperature)) body.temperature = temperature
                                 _applyReasoning(body, toolTransport == "responses")
@@ -1273,16 +1432,18 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var functionCalls = output.filter(item => item.type == "function_call")
                                 if (functionCalls.length) {
                                     if (execution.raw.status != "completed" || execution.raw.incomplete_details) d.badResponse()
-                                    responseItems = responseItems.concat(d.copy(output))
+                                    if (output.some(item => item.type == "message" && isArray(item.content) && item.content.some(part => part.type == "refusal"))) d.badResponse()
+                                    var prepared
+                                    try {
+                                        prepared = _prepareToolCalls(functionCalls.map(tc => ({ id: tc.call_id, function: { name: tc.name, arguments: tc.arguments } })), wireTools)
+                                    } catch(e) { d.badResponse() }
+                                    if (isUnDef(prepared)) d.badResponse()
+                                    responseItems = responseItems.concat(d.copy(output.filter(item => item.type != "reasoning" || isString(item.encrypted_content))))
                                     _r.conversation = d.copy(responseItems)
-                                    functionCalls.forEach(tc => {
-                                        if (!isString(tc.call_id) || !isString(tc.arguments)) d.badResponse()
-                                        var tool = _r.tools[tc.name]
-                                        if (!wireTools.some(t => t.function.name == tc.name) || !tool || !isFunction(tool.fn)) d.badResponse()
-                                        var args = d.parse(tc.arguments)
+                                    prepared.forEach(entry => {
                                         executed = true
-                                        var result = tool.fn(args)
-                                        responseItems.push({ type: "function_call_output", call_id: tc.call_id, output: isString(result) ? result : JSON.stringify(result) })
+                                        var result = entry.fn(entry.args)
+                                        responseItems.push({ type: "function_call_output", call_id: entry.call.id, output: isString(result) ? result : JSON.stringify(result) })
                                         _r.conversation = d.copy(responseItems)
                                     })
                                     continue
@@ -1292,16 +1453,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var choice = execution.raw.choices[0], msg = choice.message
                                 if (choice.finish_reason == "tool_calls" && isMap(msg) && isArray(msg.tool_calls) && msg.tool_calls.length) {
                                     if (msg.refusal) d.badResponse()
+                                    var prepared
+                                    try { prepared = _prepareToolCalls(msg.tool_calls, wireTools) } catch(e) { d.badResponse() }
+                                    if (isUnDef(prepared)) d.badResponse()
                                     messages.push(d.copy(msg))
                                     _r.conversation = d.copy(messages)
-                                    msg.tool_calls.forEach(tc => {
-                                        if (!isMap(tc.function) || !isString(tc.id)) d.badResponse()
-                                        var tool = _r.tools[tc.function.name]
-                                        if (!wireTools.some(t => t.function.name == tc.function.name) || !tool || !isFunction(tool.fn)) d.badResponse()
-                                        var args = d.parse(tc.function.arguments)
+                                    prepared.forEach(entry => {
                                         executed = true
-                                        var result = tool.fn(args)
-                                        messages.push({ role: "tool", tool_call_id: tc.id, content: isString(result) ? result : JSON.stringify(result) })
+                                        var result = entry.fn(entry.args)
+                                        messages.push({ role: "tool", tool_call_id: entry.call.id, content: isString(result) ? result : JSON.stringify(result) })
                                         _r.conversation = d.copy(messages)
                                     })
                                     continue
@@ -1433,6 +1593,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (_paramTools.length > 0) body.tools = _paramTools
                         else if (isDef(body.tools)) delete body.tools
                     }
+                    if (_promptTransport == "responses") return _responsesPrompt(body, body.messages, false)
                     _applyReasoning(body, false)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var _res = _r._request(_route("chat/completions", aModel), body)
@@ -1450,44 +1611,22 @@ OpenWrap.ai.prototype.__gpttypes = {
                             _res = _r._request(_route("chat/completions", aModel), _retryBody)
                         }
                     }
-                    if (isDef(_res) && isArray(_res.choices)) {
-                        // call tools
-                        var _p = [], stopWith = false
-                        _res.choices.forEach(tc => {
-                            if (isDef(tc.message) && isArray(tc.message.tool_calls)) {
-                                tc.message.tool_calls.forEach(tci => {
-                                    var _t = _r.tools[tci.function.name]
-                                    if (isDef(_t) && isFunction(_t.fn)) {
-                                        var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
-                                        _p.push({ role: "assistant", tool_calls: [ tci ]})
-                                        _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
-                                    }
-                                })
+                    // Continue only the selected assistant turn and keep its calls together.
+                    var choice = isMap(_res) && isArray(_res.choices) ? _res.choices[0] : __
+                    if (isMap(choice) && isMap(choice.message)) {
+                        var message = merge({ role: "assistant" }, choice.message)
+                        if (_res.error == null && (choice.finish_reason == "tool_calls" || choice.finish_reason == null) &&
+                            isArray(message.tool_calls) && message.tool_calls.length > 0) {
+                            var prepared = _prepareToolCalls(message.tool_calls, body.tools)
+                            if (isDef(prepared)) {
+                                _r.conversation = _r.conversation.concat([message], _toolMessages(prepared))
+                                return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
                             }
-                            if (isDef(tc.finish_reason) && tc.finish_reason == "stop") {
-                                _p.push({ role: "assistant", content: tc.message.content })
-                                stopWith = true
-                            }
-                        })
-                        if (stopWith) {
-                            _r.conversation = _r.conversation.concat(isString(_res) ? { role: "assistant", content: _res } : _res.choices[0].message)
-                            _captureStats(_res, body)
-                            return _res
-                        } else if (_p.length > 0) {
-                            _r.conversation = _r.conversation.concat(_p)
-                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
-                        } else {
-                            // Terminal responses such as length/content_filter are not tool continuations.
-                            if (_res.choices.length > 0 && isMap(_res.choices[0].message)) {
-                                _r.conversation = _r.conversation.concat(_res.choices[0].message)
-                            }
-                            _captureStats(_res, body)
-                            return _res
                         }
-                    } else {
-                        _captureStats(_res, body)
-                        return _res
+                        if (_res.error == null) _r.conversation = _r.conversation.concat(message)
                     }
+                    _captureStats(_res, body)
+                    return _res
                 },
                 rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
@@ -1550,6 +1689,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (_paramTools.length > 0) body.tools = _paramTools
                         else if (isDef(body.tools)) delete body.tools
                     }
+                    if (_promptTransport == "responses") return _responsesPrompt(body, body.messages, true, aOnDelta)
                     _applyReasoning(body, false)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
 
@@ -1561,12 +1701,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var _stream = _r._requestStream(_route("chat/completions", aModel), body)
                     var streamError = _readSseStream(_stream, payload => {
                         if (payload === "[DONE]") return true
-                        var data = jsonParse(payload, __, __, true)
+                        var data = isMap(payload) ? payload : jsonParse(payload, __, __, true)
                         if (isDef(data)) {
                             events.push(data)
                             lastResponse = data
                             if (isArray(data.choices)) {
-                                data.choices.forEach(choice => {
+                                data.choices.filter((choice, index) => (choice.index == null ? index : choice.index) === 0).forEach(choice => {
                                     if (isString(choice.finish_reason)) finishReason = choice.finish_reason
                                     if (isMap(choice.delta)) {
                                         if (isString(choice.delta.content)) {
@@ -1603,39 +1743,19 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
                     var toolCalls = Object.keys(toolCallsMap).map(k => toolCallsMap[k])
                     
-                    // Handle tool calling similar to non-streaming version
-                    if (isArray(toolCalls) && toolCalls.length > 0) {
-                        var _p = []
-                        toolCalls.forEach(tc => {
-                            var _t = _r.tools[tc.function.name]
-                            if (isDef(_t) && isFunction(_t.fn)) {
-                                var _args = jsonParse(tc.function.arguments, __, __, true)
-                                if (isUnDef(_args)) _args = {}
-                                var _tr = stringify(_t.fn(_args), __, "")
-                                _p.push({ role: "assistant", tool_calls: [ tc ]})
-                                _p.push({ role: "tool", content: _tr, tool_call_id: tc.id })
-                            }
-                        })
-                        if (_p.length > 0) {
-                            _r.conversation = _r.conversation.concat(_p)
-                            // Recursively call rawPromptStream to continue streaming with tool results
-                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
-                            if (isMap(toolResult)) {
-                                // Merge events from both calls
-                                if (isArray(toolResult.events)) {
-                                    toolResult.events = events.concat(toolResult.events)
-                                }
-                                // Append content from tool execution response
-                                if (isString(toolResult.content)) {
-                                    toolResult.content = content + toolResult.content
-                                }
-                                return toolResult
-                            }
-                            return toolResult
+                    // Only a completed tool turn may execute its assembled calls.
+                    if (finishReason == "tool_calls" && toolCalls.length > 0) {
+                        var prepared = _prepareToolCalls(toolCalls, body.tools)
+                        var message = { role: "assistant", content: content || null, tool_calls: toolCalls }
+                        if (isDef(prepared)) {
+                            _r.conversation = _r.conversation.concat([message], _toolMessages(prepared))
+                            var result = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            if (isArray(result.events)) result.events = events.concat(result.events)
+                            if (isString(result.content)) result.content = content + result.content
+                            return result
                         }
-                    }
-                    
-                    if (content.length > 0) {
+                        _r.conversation = _r.conversation.concat(message)
+                    } else if (content.length > 0) {
                         _r.conversation = _r.conversation.concat({ role: "assistant", content: content })
                     }
                     _captureStats(lastResponse, body)
@@ -1643,7 +1763,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
-                    if (isMap(res) && isDef(res.error)) return res
+                    if (isMap(res) && res.error != null) return res
                     return res.content
                 },
                 rawResponse: (aPrompt, aModel, aTemperature, aJsonSchemaFlag, aTools, aResponseSchema) => {
@@ -1669,7 +1789,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var _schema = _normalizeResponseSchema(aResponseSchema)
                     var _responsesBody = {
                         model      : aModel,
-                        input      : _toResponsesInput(msgs)
+                        input      : _promptResponsesInput(msgs)
                     }
                     if (isDef(_schema)) {
                         _responsesBody.text = {
@@ -1697,19 +1817,18 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     var _res = __
                     var _requestBody = __
-                    if (_responsesAvailable !== false) {
+                    var responsesRoute = _datedFoundry ? __ : _route("responses", aModel)
+                    if (isDef(responsesRoute) && !_unavailableResponsesRoutes.has(responsesRoute)) {
                         _requestBody = _responsesBody
                         if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, _requestBody))
-                        _res = _r._request(_route("responses", aModel), _requestBody)
+                        _res = _r._request(responsesRoute, _requestBody)
                         if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
-                        if (isMap(_res) && isMap(_res.error) && _isResponsesUnavailable(_res)) {
-                            _responsesAvailable = false
+                        if (_isResponsesUnavailable(_res)) {
+                            _unavailableResponsesRoutes.add(responsesRoute)
                             _requestBody = _chatBody
                             if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, _requestBody))
                             _res = _r._request(_route("chat/completions", aModel), _requestBody)
                             if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
-                        } else if (!isMap(_res) || isUnDef(_res.error)) {
-                            _responsesAvailable = true
                         }
                     } else {
                         _requestBody = _chatBody
@@ -1850,7 +1969,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(15 * 60000)
-            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gemini-2.5-flash")
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gemini-3.5-flash-lite")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://generativelanguage.googleapis.com/v1beta")
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
@@ -1896,6 +2015,29 @@ OpenWrap.ai.prototype.__gpttypes = {
                 if (Object.keys(stats).filter(k => k != "vendor").length == 0) stats = __
                 _lastStats = stats
                 return stats
+            }
+            // Replay the provider's complete model turn and answer parallel calls together.
+            var _geminiToolResults = (parts, tools) => {
+                var calls = parts.filter(part => part.functionCall != null).map(part => part.functionCall)
+                var prepared = ow.ai.__prepareProviderTools(calls.map(call => ({
+                    name: call.name, id: call.id, args: call.args === __ ? {} : call.args
+                })), name => {
+                    var selected = tools.find(tool => isString(tool) ? tool == name : isMap(tool) && tool.name == name)
+                    return isString(selected) ? _r.tools.find(tool => tool.name == name) : selected
+                })
+
+                return prepared.map(call => {
+                    var result = call.fn(call.args)
+                    var json = isString(result) ? result : (isMap(result) && Object.keys(result).length == 1 ? result.result : __)
+                    if (isString(json)) {
+                        var parsed = jsonParse(json, __, __, true)
+                        if (isDef(parsed)) result = parsed
+                    }
+                    var content = isMap(result) ? result : (isArray(result) ? { items: result } : (isDef(result) ? { result: result } : {}))
+                    var response = { name: call.name, response: { name: call.name, content: content } }
+                    if (call.id != null) response.id = call.id
+                    return { functionResponse: response }
+                })
             }
             var _readSseStream = (aStream, aOnPayload) => {
                 var dataLines = []
@@ -2001,7 +2143,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                             if (isArray(_entry.parts) && _entry.parts.length > 0) {
                                 // Only extract text from parts that have text (skip functionCall, functionResponse, etc.)
-                                var textParts = _entry.parts.filter(p => isDef(p) && isDef(p.text))
+                                var textParts = _entry.parts.filter(p => isMap(p) && p.thought !== true && isString(p.text))
                                 if (textParts.length > 0) {
                                     _entry.content = textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
                                 } else {
@@ -2043,7 +2185,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (!isMap(msg)) return
                         var role = msg.role == "model" ? "assistant" : msg.role
                         if (isArray(msg.parts) && msg.parts.length > 0) {
-                            var textParts = msg.parts.filter(p => isMap(p) && isDef(p.text))
+                            var textParts = msg.parts.filter(p => isMap(p) && p.thought !== true && isString(p.text))
                             var fnCallParts = msg.parts.filter(p => isMap(p) && isDef(p.functionCall))
                             var fnRespParts = msg.parts.filter(p => isMap(p) && isDef(p.functionResponse))
                             if (fnCallParts.length > 0) {
@@ -2272,10 +2414,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
                     var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
-                    if (isArray(__r.candidates) && isArray(__r.candidates[0].content.parts) && __r.candidates[0].content.parts.length > 0) {
+                    if (isMap(__r) && isArray(__r.candidates) && __r.candidates.length && isMap(__r.candidates[0].content) && isArray(__r.candidates[0].content.parts)) {
                         if (__r.candidates[0].finishReason == "STOP") {
                            // Only extract text from parts that have text (skip functionCall, functionResponse, etc.)
-                           var textParts = __r.candidates[0].content.parts.filter(p => isDef(p) && isDef(p.text))
+                           var textParts = __r.candidates[0].content.parts.filter(p => isMap(p) && p.thought !== true && isString(p.text))
                            if (textParts.length > 0) return textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
                            // Avoid returning empty text when Gemini emits only functionCall/functionResponse parts.
                            return stringify(__r, __, "")
@@ -2306,15 +2448,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                         })
                     })
                     
-                    var __r = _r.rawPrompt({ parts: body }, aModel, aTemperature, aJsonFlag)
+                    var __r = _r.rawPrompt([{ role: aRole, parts: body }], aModel, aTemperature, aJsonFlag)
 
                     _lastStats = _lastStats || {}
                     _lastStats.images = prepared.map(function(i) { return { width:i.width, height:i.height, resized:i.resized, originalBytes:i.originalBytes, bytes:i.bytes }; })
 
-                    if (isArray(__r.candidates) && isArray(__r.candidates[0].content.parts) && __r.candidates[0].content.parts.length > 0) {
+                    if (isMap(__r) && isArray(__r.candidates) && __r.candidates.length && isMap(__r.candidates[0].content) && isArray(__r.candidates[0].content.parts)) {
                         if (__r.candidates[0].finishReason == "STOP") {
                            // Only extract text from parts that have text (skip functionCall, functionResponse, etc.)
-                           var textParts = __r.candidates[0].content.parts.filter(p => isDef(p) && isDef(p.text))
+                           var textParts = __r.candidates[0].content.parts.filter(p => isMap(p) && p.thought !== true && isString(p.text))
                            if (textParts.length > 0) return textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
                            return __r
                         }
@@ -2407,74 +2549,18 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var _res = _r._request("models/" + aModel + ":generateContent", body)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))   
-                    if (isDef(_res) && isArray(_res.candidates)) {
-                        // Tool calling for Gemini 2.5/3: model replies with functionCall parts and expects
-                        // functionResponse parts in a follow-up user turn. Some models return args as JSON strings.
-                        var _p = [], stopWith = false
-                        _res.candidates.forEach(tc => {
-                            if (isArray(tc.content.parts) && tc.finishReason == "STOP") {
-                                stopWith = true
-                                var fnParts = tc.content.parts.filter(p => isDef(p.functionCall))
-                                if (fnParts.length > 0) {
-                                    _p.push({ role: "model", parts: tc.content.parts })
-                                    fnParts.forEach(p => {
-                                        var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
-                                        var _args = p.functionCall.args
-                                        if (isString(_args)) _args = jsonParse(_args, __, __, true)
-                                        if (isUnDef(_args)) _args = {}
-                                        var _tr = _t.fn(_args)
-                                        var _tryParse = v => {
-                                            if (isString(v)) {
-                                                return jsonParse(v, __, __, true)
-                                            }
-                                            return __
-                                        }
-                                        if (isString(_tr)) {
-                                            var _pjson = _tryParse(_tr)
-                                            if (isDef(_pjson)) _tr = _pjson
-                                        } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
-                                            var _pjson2 = _tryParse(_tr.result)
-                                            if (isDef(_pjson2)) _tr = _pjson2
-                                        }
-                                        var _content = __
-                                        if (isMap(_tr)) {
-                                            _content = _tr
-                                        } else if (isArray(_tr)) {
-                                            _content = { items: _tr }
-                                        } else if (isDef(_tr)) {
-                                            _content = { result: _tr }
-                                        } else {
-                                            _content = {}
-                                        }
-                                        _p.push({ role: "user", parts: [{
-                                            functionResponse: {
-                                                name: p.functionCall.name,
-                                                response: {
-                                                    name: p.functionCall.name,
-                                                    content: _content
-                                                }
-                                            }
-                                        }]})
-                                    })
-                                    stopWith = false
-                                }
-                            }
-                        })
-                        if (stopWith) {
-                            // Add the new user prompt(s) and the model response to conversation
-                            _r.conversation = _r.conversation.concat(newPrompts).concat(_res.candidates[0].content)
-                            _captureStats(_res, aModel)
-                            return _res
-                        } else {
-                            // Add the new user prompt(s), then the function call/response to conversation
-                            // This ensures the conversation starts with a user turn before the model's functionCall
-                            _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
-                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, [])
+                    // Process the same candidate the prompt wrapper exposes.
+                    var candidate = isMap(_res) && isArray(_res.candidates) ? _res.candidates[0] : __
+                    if (isMap(candidate) && candidate.finishReason == "STOP" && isMap(candidate.content) && isArray(candidate.content.parts)) {
+                        var results = _geminiToolResults(candidate.content.parts, aTools)
+                        _r.conversation = _r.conversation.concat(newPrompts, [candidate.content])
+                        if (results.length) {
+                            _r.conversation.push({ role: "user", parts: results })
+                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
                         }
-                    } else {
-                        _captureStats(_res, aModel)
-                        return _res
                     }
+                    _captureStats(_res, aModel)
+                    return _res
                 },
                 rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
@@ -2554,128 +2640,47 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var events = []
                     var content = ""
                     var lastResponse = __
+                    // Collect one candidate and retain the parts needed to continue it.
+                    var parts = [], finishReason, providerError
                     var _stream = _r._requestStream("models/" + aModel + ":streamGenerateContent?alt=sse", body)
                     var streamError = _readSseStream(_stream, payload => {
-                        var data = __
-                        if (isMap(payload)) {
-                            data = payload
-                        } else if (isString(payload)) {
-                            if (payload === "[DONE]") return true
-                            data = jsonParse(payload, __, __, true)
+                        var data = isMap(payload) ? payload : jsonParse(payload, __, __, true)
+                        if (!isMap(data)) return payload === "[DONE]"
+                        if (data.error != null) {
+                            providerError = data
+                            return true
                         }
-                        if (isDef(data)) {
-                            if (isMap(data) && (isMap(data.error) || isDef(data.error))) return true
-                            events.push(data)
-                            lastResponse = data
-                            if (isArray(data.candidates)) {
-                                data.candidates.forEach(c => {
-                                    if (isMap(c.content) && isArray(c.content.parts)) {
-                                        c.content.parts.forEach(p => {
-                                            if (isString(p.text)) {
-                                                content += p.text
-                                                if (isFunction(aOnDelta)) aOnDelta(p.text, data)
-                                            }
-                                        })
-                                    }
-                                })
-                            }
-                        }
-                    })
-                    // If there was a stream error, return it immediately
-                    if (isDef(streamError)) {
-                        _captureStats(streamError, aModel)
-                        return streamError
-                    }
-                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
-                    
-                    // Handle tool calling for Gemini streaming.
-                    // Gemini can emit functionCall parts in an earlier event and a separate final STOP event with empty text.
-                    var _p = []
-                    var modelToolParts = []
-                    var seenFnCalls = {}
-                    events.forEach(ev => {
-                        if (isArray(ev.candidates)) {
-                            ev.candidates.forEach(tc => {
-                                if (isMap(tc.content) && isArray(tc.content.parts)) {
-                                    tc.content.parts.forEach(p => {
-                                        if (isDef(p.functionCall)) {
-                                            var _fck = p.functionCall.name + "::" + stringify(p.functionCall.args, __, "")
-                                            if (isUnDef(seenFnCalls[_fck])) {
-                                                seenFnCalls[_fck] = true
-                                                modelToolParts.push(p)
-                                            }
-                                        }
-                                    })
-                                }
-                            })
-                        }
-                    })
-                    if (modelToolParts.length > 0) {
-                        _p.push({ role: "model", parts: modelToolParts })
-                        modelToolParts.forEach(p => {
-                            var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
-                            if (isDef(_t) && isFunction(_t.fn)) {
-                                var _args = p.functionCall.args
-                                if (isString(_args)) _args = jsonParse(_args, __, __, true)
-                                if (isUnDef(_args)) _args = {}
-                                var _tr = _t.fn(_args)
-                                var _tryParse = v => {
-                                    if (isString(v)) {
-                                        return jsonParse(v, __, __, true)
-                                    }
-                                    return __
-                                }
-                                if (isString(_tr)) {
-                                    var _pjson = _tryParse(_tr)
-                                    if (isDef(_pjson)) _tr = _pjson
-                                } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
-                                    var _pjson2 = _tryParse(_tr.result)
-                                    if (isDef(_pjson2)) _tr = _pjson2
-                                }
-                                var _content
-                                if (isMap(_tr)) {
-                                    _content = _tr
-                                } else if (isArray(_tr)) {
-                                    _content = { items: _tr }
-                                } else if (isDef(_tr)) {
-                                    _content = { result: _tr }
-                                } else {
-                                    _content = {}
-                                }
-                                _p.push({ role: "user", parts: [{
-                                    functionResponse: {
-                                        name: p.functionCall.name,
-                                        response: {
-                                            name: p.functionCall.name,
-                                            content: _content
-                                        }
-                                    }
-                                }]})
+                        events.push(data)
+                        if (!lastResponse) lastResponse = data
+                        else lastResponse = merge(lastResponse, data)
+                        if (!isArray(data.candidates)) return
+                        var candidate = data.candidates.find((item, index) => (item.index == null ? index : item.index) === 0)
+                        if (!candidate) return
+                        if (isString(candidate.finishReason)) finishReason = candidate.finishReason
+                        if (!isMap(candidate.content) || !isArray(candidate.content.parts)) return
+                        candidate.content.parts.forEach(part => {
+                            parts.push(part)
+                            if (part.thought !== true && isString(part.text)) {
+                                content += part.text
+                                if (isFunction(aOnDelta)) aOnDelta(part.text, data)
                             }
                         })
-                    }
-                    if (_p.length > 0) {
-                            _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
-                            // Recursively call rawPromptStream to continue streaming with tool results
-                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, [], aOnDelta)
-                            if (isMap(toolResult)) {
-                                // Merge events from both calls
-                                if (isArray(toolResult.events)) {
-                                    toolResult.events = events.concat(toolResult.events)
-                                }
-                                // Append content from tool execution response
-                                if (isString(toolResult.content)) {
-                                    toolResult.content = content + toolResult.content
-                                }
-                                return toolResult
-                            }
-                            return toolResult
-                        }
-                    
-                    if (content.length > 0) {
-                        _r.conversation = _r.conversation.concat(newPrompts).concat({ role: "model", parts: [ { text: content } ] })
-                    }
+                    })
+                    if (providerError || (streamError && streamError.error != null)) return providerError || streamError
                     _captureStats(lastResponse, aModel)
+                    if (!finishReason) return { error: { message: "Gemini stream ended before the candidate finished" }, content: content, events: events }
+                    if (finishReason !== "STOP") return { content: content, events: events, finishReason: finishReason }
+
+                    // Execute only the complete selected turn and retain all signed parts.
+                    var results = _geminiToolResults(parts, aTools)
+                    if (parts.length) _r.conversation = _r.conversation.concat(newPrompts, [{ role: "model", parts: parts }])
+                    if (results.length) {
+                        _r.conversation.push({ role: "user", parts: results })
+                        var result = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                        if (isArray(result.events)) result.events = events.concat(result.events)
+                        if (isString(result.content) && result.error == null) result.content = content + result.content
+                        return result
+                    }
                     return { content: content, events: events }
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
@@ -2743,12 +2748,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
-                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-004")
+                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("gemini-embedding-2")
                     aDimensions = _$(aDimensions, "aDimensions").isNumber().default(__)
 
                     _resetStats()
+                    var modelPath = aEmbeddingModel.startsWith("models/") ? aEmbeddingModel : "models/" + aEmbeddingModel
                     var body = {
-                        model: aEmbeddingModel,
+                        model: modelPath,
                         content: {
                             parts: [{
                                 text: isArray(aInput) ? aInput.join("\n") : String(aInput)
@@ -2760,7 +2766,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     body = merge(body, aOptions.params)
                     
-                    var _res = _r._request("models/" + aEmbeddingModel + ":embedContent", body)
+                    var _res = _r._request(modelPath + ":embedContent", body)
                     _captureStats(_res, aEmbeddingModel)
                     return _res
                 },
@@ -2812,6 +2818,20 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().$_()
 
             ow.loadObj()
+            // Resolve the advertised calls before running ordinary or structured tool turns.
+            var _prepareOllamaTools = (calls, tools) => ow.ai.__prepareProviderTools(calls.map(call => ({
+                id: call.id,
+                name: call.function && call.function.name,
+                args: call.function && call.function.arguments
+            })), name => tools.find(tool => isMap(tool) && (isMap(tool.function) ? tool.function.name : tool.name) == name))
+            var _ollamaToolResult = call => {
+                var result = call.fn(call.args)
+                var content = isString(result) ? result : (isUnDef(result) ? "" : stringify(result, __, ""))
+                var message = { role: "tool", tool_name: call.name, content: content }
+                if (call.id != null) message.tool_call_id = call.id
+                return message
+            }
+
             var _timeout = aOptions.timeout
             var _model = aOptions.model
             var _temperature = aOptions.temperature
@@ -2988,7 +3008,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                         var res = _r._request('/api/chat', body)
                         if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, res))
-                        if (!isMap(res) || !isMap(res.message)) d.badResponse()
+                        if (!isMap(res) || res.error != null || !isMap(res.message)) d.badResponse()
                         _captureStats(res, model)
                         Object.keys((_lastStats || {}).tokens || {}).forEach(k => {
                             if (typeof _lastStats.tokens[k] == "number") totals[k] = (totals[k] || 0) + _lastStats.tokens[k]
@@ -2997,20 +3017,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (res.done !== true || (isDef(res.done_reason) && res.done_reason != "stop")) d.badResponse()
                         if (isArray(msg.tool_calls) && msg.tool_calls.length) {
                             if (!toolPhase) d.badResponse()
+                            var prepared
+                            try { prepared = _prepareOllamaTools(msg.tool_calls, tools) } catch(e) { d.badResponse() }
                             messages.push(d.copy(msg))
-                            msg.tool_calls.forEach(tc => {
-                                if (!isMap(tc) || !isMap(tc.function)) d.badResponse()
-                                var tool = tools.find(t => (t.function && t.function.name == tc.function.name) || t.name == tc.function.name)
-                                if (isUnDef(tool)) throw "Tool '" + tc.function.name + "' not found"
-                                var args = tc.function.arguments
-                                if (isString(args)) { try { args = jsonParse(args, __, __, true); } catch(e) { args = {}; } }
-                                if (!isMap(args)) args = {}
-                                if (!isFunction(tool.fn)) d.badResponse()
+                            prepared.forEach(call => {
                                 executed = true
-                                var result = tool.fn(args)
-                                var tm = { role: "tool", content: isString(result) ? result : stringify(result, __, ""), tool_name: tc.function.name }
-                                if (isDef(tc.id)) tm.tool_call_id = tc.id
-                                messages.push(tm)
+                                messages.push(_ollamaToolResult(call))
                             })
                             continue
                         }
@@ -3181,55 +3193,19 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var _res = _r._request(uri, body)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
 
-                    if (isDef(_res) && isDef(_res.message) && isArray(_res.message["tool_calls"]) && _res.message["tool_calls"].length > 0) {
-                        // call tools
-                        var _toolCalls = _res.message["tool_calls"]
-                        var _p = []
-                        var _toolResults = []
-
-                        _p.push({
-                            role: "assistant",
-                            content: isString(_res.message.content) ? _res.message.content : "",
-                            tool_calls: _toolCalls
-                        })
-
-                        _toolCalls.forEach(tc => {
-                            if (isMap(tc) && isMap(tc.function)) {
-                                var _t = aTools.find(tool => (tool.function && tool.function.name == tc.function.name) || tool.name == tc.function.name)
-                                if (isUnDef(_t) && isDef(global.$from)) _t = $from(aTools).equals("function.name", tc.function.name).at(0)
-                                if (isUnDef(_t)) throw "Tool '" + tc.function.name + "' not found"
-                                var _args = tc.function.arguments
-                                if (isString(_args)) {
-                                    try { _args = jsonParse(_args, __, __, true) } catch(e) { _args = {} }
-                                }
-                                if (!isMap(_args)) _args = {}
-                                var _tr = isFunction(_t.fn) ? _t.fn(_args) : ""
-                                var toolMsg = {
-                                    role: "tool",
-                                    content: isString(_tr) ? _tr : stringify(_tr, __, "")
-                                }
-                                if (isDef(tc.id)) toolMsg.tool_call_id = tc.id
-                                if (isDef(tc.function.name)) toolMsg.tool_name = tc.function.name
-                                _toolResults.push(toolMsg)
-                            }
-                        })
-                        _p = _p.concat(_toolResults)
-                        // Also ensure all pushed messages have string content
-                        _p = _p.map(m => {
-                            if (isMap(m) && isDef(m.content) && !isString(m.content)) m.content = stringify(m.content, __, "")
-                            return m
-                        })
-                        _r.conversation = _r.conversation.concat(_p)
-                        return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
-                    } else {
-                        if (isDef(_res) && isDef(_res.message) && isString(_res.message.content)) {
-                            _r.conversation.push({ role: "assistant", content: _res.message.content })
-                        } else {
-                            _r.conversation.push({ role: "assistant", content: _res })
+                    // Continue only after Ollama returns a completed assistant turn.
+                    if (isMap(_res) && _res.error == null && isMap(_res.message)) {
+                        var message = merge({ role: "assistant", content: "" }, _res.message)
+                        if (_res.done === true && (_res.done_reason == null || _res.done_reason == "stop" || _res.done_reason == "tool_calls") &&
+                            isArray(message.tool_calls) && message.tool_calls.length) {
+                            var results = _prepareOllamaTools(message.tool_calls, aTools).map(_ollamaToolResult)
+                            _r.conversation = _r.conversation.concat([message], results)
+                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
                         }
-                        _captureStats(_res, aModel)
-                        return _res
+                        _r.conversation.push(message)
                     }
+                    _captureStats(_res, aModel)
+                    return _res
                 },
                 rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
@@ -3285,103 +3261,56 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var events = []
                     var content = ""
                     var lastResponse = __
-                    var streamedToolCalls = []
+                    var streamedToolCalls = [], thinking = "", providerError
                     var _stream = _r._requestStream(uri, body)
-                    // Check if _stream is an error object
-                    if (isMap(_stream) && (isMap(_stream.error) || isDef(_stream.error))) {
-                        _captureStats(_stream, aModel)
-                        return _stream
-                    }
+                    if (isMap(_stream)) return _stream
                     try {
                         ioStreamReadLines(_stream, line => {
-                            var _line = String(line).trim()
-                            if (_line.length == 0) return
-                            var data = jsonParse(_line, __, __, true)
-                            if (isDef(data)) {
-                                events.push(data)
-                                lastResponse = data
-                                if (isMap(data.message)) {
-                                    if (isString(data.message.content) && data.message.content.length > 0) {
-                                        content += data.message.content
-                                        if (isFunction(aOnDelta)) aOnDelta(data.message.content, data)
-                                    }
-                                    if (isArray(data.message.tool_calls) && data.message.tool_calls.length > 0) {
-                                        streamedToolCalls = streamedToolCalls.concat(data.message.tool_calls)
-                                    }
-                                }
-                                if (data.done === true) return true
+                            var record = String(line).trim()
+                            if (!record.length) return
+                            var data = jsonParse(record, __, __, true)
+                            if (!isMap(data)) {
+                                providerError = { error: { message: "Invalid Ollama stream record" } }
+                                return true
                             }
+                            if (data.error != null) {
+                                providerError = data
+                                return true
+                            }
+                            events.push(data)
+                            lastResponse = data
+                            if (isMap(data.message)) {
+                                if (isString(data.message.thinking)) thinking += data.message.thinking
+                                if (isString(data.message.content) && data.message.content.length) {
+                                    content += data.message.content
+                                    if (isFunction(aOnDelta)) aOnDelta(data.message.content, data)
+                                }
+                                if (isArray(data.message.tool_calls)) streamedToolCalls = streamedToolCalls.concat(data.message.tool_calls)
+                            }
+                            return data.done === true
                         }, "\n", false)
                     } finally {
                         try { _stream.close() } catch(e) {}
                     }
 
-                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
-
-                    if (isMap(lastResponse) && isMap(lastResponse.message) && isArray(lastResponse.message.tool_calls)) {
-                        lastResponse.message.tool_calls.forEach(tc => {
-                            if (!streamedToolCalls.some(stc => stc === tc || (isMap(stc.function) && isMap(tc.function) && stc.function.name === tc.function.name && stringify(stc.function.arguments) === stringify(tc.function.arguments)))) {
-                                streamedToolCalls.push(tc)
-                            }
-                        })
-                    }
-
-                    // Handle tool calling for Ollama streaming
-                    if (streamedToolCalls.length > 0) {
-                        var _p = []
-                        var _toolResults = []
-
-                        _p.push({
-                            role: "assistant",
-                            content: content || "",
-                            tool_calls: streamedToolCalls
-                        })
-
-                        streamedToolCalls.forEach(tc => {
-                            if (isMap(tc) && isMap(tc.function)) {
-                                var _t = aTools.find(tool => (tool.function && tool.function.name == tc.function.name) || tool.name == tc.function.name)
-                                if (isUnDef(_t) && isDef(global.$from)) _t = $from(aTools).equals("function.name", tc.function.name).at(0)
-                                if (isDef(_t) && isFunction(_t.fn)) {
-                                    var _args = tc.function.arguments
-                                    if (isString(_args)) {
-                                        try { _args = jsonParse(_args, __, __, true) } catch(e) { _args = {} }
-                                    }
-                                    if (!isMap(_args)) _args = {}
-                                    var _tr = isFunction(_t.fn) ? _t.fn(_args) : ""
-                                    var toolMsg = {
-                                        role: "tool",
-                                        content: isString(_tr) ? _tr : stringify(_tr, __, "")
-                                    }
-                                    if (isDef(tc.id)) toolMsg.tool_call_id = tc.id
-                                    if (isDef(tc.function.name)) toolMsg.tool_name = tc.function.name
-                                    _toolResults.push(toolMsg)
-                                }
-                            }
-                        })
-                        if (_toolResults.length > 0) {
-                            _p = _p.concat(_toolResults)
-                            _r.conversation = _r.conversation.concat(_p)
-                            // Recursively call rawPromptStream to continue streaming with tool results
-                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
-                            if (isMap(toolResult)) {
-                                // Merge events from both calls
-                                if (isArray(toolResult.events)) {
-                                    toolResult.events = events.concat(toolResult.events)
-                                }
-                                // Append content from tool execution response
-                                if (isString(toolResult.content)) {
-                                    toolResult.content = content + toolResult.content
-                                }
-                                return toolResult
-                            }
-                            return toolResult
-                        }
-                    }
-                    
-                    if (content.length > 0) {
-                        _r.conversation.push({ role: "assistant", content: content })
-                    }
+                    // Preserve the assistant's reasoning and reject incomplete streams before callbacks.
+                    if (providerError) return providerError
                     _captureStats(lastResponse, aModel)
+                    if (!lastResponse || lastResponse.done !== true) {
+                        return { error: { message: "Ollama stream ended before done" }, content: content, events: events }
+                    }
+                    var message = { role: "assistant", content: content }
+                    if (thinking.length) message.thinking = thinking
+                    if (streamedToolCalls.length && (lastResponse.done_reason == null || lastResponse.done_reason == "stop" || lastResponse.done_reason == "tool_calls")) {
+                        var results = _prepareOllamaTools(streamedToolCalls, aTools).map(_ollamaToolResult)
+                        message.tool_calls = streamedToolCalls
+                        _r.conversation = _r.conversation.concat([message], results)
+                        var result = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                        if (isArray(result.events)) result.events = events.concat(result.events)
+                        if (isString(result.content) && result.error == null) result.content = content + result.content
+                        return result
+                    }
+                    if (content.length || thinking.length) _r.conversation.push(message)
                     return { content: content, events: events }
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
@@ -3436,7 +3365,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     _resetStats()
                     var body = {
                         model: aEmbeddingModel,
-                        input: isArray(aInput) ? aInput.join("\n") : String(aInput)
+                        input: isArray(aInput) ? aInput : String(aInput)
                     }
                     if (isDef(aDimensions)) {
                         body.dimensions = aDimensions
@@ -3506,6 +3435,24 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _temperatureProvided = isDef(aOptions.temperature)
             var _temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.anthropic.com/")
+            // Foundry hosts the same Messages protocol under its resource-level Anthropic route.
+            var _foundry = ["foundry", "azure-foundry"].includes(aOptions.mode)
+            var _authType = _$(aOptions.authType, "aOptions.authType").isString().default("api-key")
+            if (!["api-key", "bearer"].includes(_authType)) throw new Error("Invalid Anthropic authType")
+            var _baseURL = aOptions.url.replace(/\/+$/, "")
+            if (_foundry && !/\/anthropic$/.test(_baseURL)) _baseURL += "/anthropic"
+            var _anthropicHeaders = accept => {
+                var headers = merge(aOptions.headers, { "anthropic-version": "2023-06-01", Accept: accept })
+                if (_foundry || _authType == "bearer") {
+                    Object.keys(headers).forEach(name => {
+                        if (/^(authorization|x-api-key|api-key)$/i.test(name)) delete headers[name]
+                    })
+                }
+                var key = Packages.openaf.AFCmdBase.afc.dIP(_key)
+                if (_authType == "bearer") headers.Authorization = "Bearer " + key
+                else headers["x-api-key"] = key
+                return headers
+            }
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
             aOptions.promptCaching = _$(aOptions.promptCaching, "aOptions.promptCaching").isBoolean().default(false)
             // If noSystem=true it will not output the system messages
@@ -3554,6 +3501,18 @@ OpenWrap.ai.prototype.__gpttypes = {
                 if (Object.keys(stats).filter(k => k != "vendor").length == 0) stats = __
                 _lastStats = stats
                 return _lastStats
+            }
+            // Validate the tool batch, then send its results in a single user turn.
+            var _anthropicToolResults = (blocks, tools) => {
+                var calls = blocks.filter(block => block.type == "tool_use")
+                if (calls.some(call => !isString(call.id))) throw new Error("Anthropic tool call is missing an ID")
+                var prepared = ow.ai.__prepareProviderTools(calls.map(call => ({ id: call.id, name: call.name, args: call.input })),
+                    name => tools.includes(name) && Object.prototype.hasOwnProperty.call(_r.tools, name) ? _r.tools[name] : __)
+                return prepared.map(call => ({
+                    type: "tool_result",
+                    tool_use_id: call.id,
+                    content: _normalizeToolResultForAnthropic(call.fn(call.args))
+                }))
             }
             var _readSseStream = (aStream, aOnPayload) => {
                 var dataLines = []
@@ -3907,46 +3866,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
                     _captureStats(_res, aModel)
 
-                    if (isMap(_res) && isArray(_res.content)) {
-                        var assistantMsg = { role: "assistant", content: _res.content }
-                        _r.conversation.push(assistantMsg)
-
-                        var toolCalls = _res.content.filter(c => isMap(c) && c.type == "tool_use")
-                        if (toolCalls.length > 0) {
-                            var followUps = []
-                            toolCalls.forEach(tc => {
-                                if (!isString(tc.name)) throw "Invalid tool call without name"
-                                var _tool = _r.tools[tc.name]
-                                if (isUnDef(_tool)) throw "Tool '" + tc.name + "' not found"
-                                if (!isFunction(_tool.fn)) throw "Tool '" + tc.name + "' missing function implementation"
-                                var _args = tc.input
-                                var _result = _tool.fn(_args)
-                                var _content = _normalizeToolResultForAnthropic(_result)
-                                followUps.push({
-                                    role: "user",
-                                    content: [
-                                        {
-                                            type: "tool_result",
-                                            tool_use_id: tc.id,
-                                            content: _content
-                                        }
-                                    ]
-                                })
-                            })
-                            if (followUps.length > 0) {
-                                _r.conversation = _r.conversation.concat(followUps)
-                                return _r.rawPrompt([], aModel, _temperatureExplicit ? aTemperature : __, aJsonFlag, aTools)
-                            }
+                    // Keep the original blocks, including thinking and signatures.
+                    if (isMap(_res) && _res.error == null && isArray(_res.content)) {
+                        var results = _res.stop_reason == "tool_use" ? _anthropicToolResults(_res.content, aTools) : []
+                        _r.conversation.push({ role: "assistant", content: _res.content })
+                        if (results.length) {
+                            _r.conversation.push({ role: "user", content: results })
+                            return _r.rawPrompt([], aModel, _temperatureExplicit ? aTemperature : __, aJsonFlag, aTools)
                         }
-
-                        return _res
-                    } else {
-                        _r.conversation.push({
-                            role: "assistant",
-                            content: _res
-                        })
-                        return _res
                     }
+                    return _res
                 },
                 rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
@@ -4064,120 +3993,74 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var _suppressJsonStreaming = aJsonFlag === true
                     var lastMessage = __
                     var _stream = _r._requestStream("v1/messages", body)
+                    // Reassemble indexed content blocks and merge cumulative usage fields.
+                    var blocks = [], openBlocks = new Set(), partialInputs = {}, providerError, stopped = false
                     var streamError = _readSseStream(_stream, payload => {
                         if (payload === "[DONE]") return true
-                        var data = jsonParse(payload, __, __, true)
-                        if (isDef(data)) {
-                            events.push(data)
-                            lastMessage = data
-                            if (data.type == "content_block_delta" && isMap(data.delta) && isString(data.delta.text)) {
-                                content += data.delta.text
-                                if (isFunction(aOnDelta) && !_suppressJsonStreaming) {
-                                    if (_deferToolStreaming) {
-                                        _textDeltas.push({ text: data.delta.text, data: data })
-                                    } else {
-                                        aOnDelta(data.delta.text, data)
-                                    }
-                                }
-                            }
-                            if (data.type == "message_delta" && isMap(data.delta) && isDef(data.delta.stop_reason)) {
-                                lastMessage.stop_reason = data.delta.stop_reason
+                        var event = isMap(payload) ? payload : jsonParse(payload, __, __, true)
+                        if (!isMap(event)) return
+                        events.push(event)
+                        if (event.type == "error" || event.error != null) {
+                            providerError = event
+                            return true
+                        }
+                        if (event.type == "message_start") lastMessage = clone(event.message)
+                        if (event.type == "message_delta") {
+                            lastMessage = merge(lastMessage || {}, event.delta || {})
+                            if (isMap(event.usage)) lastMessage.usage = merge(lastMessage.usage || {}, event.usage)
+                        }
+                        if (event.type == "message_stop") {
+                            stopped = true
+                            return true
+                        }
+                        if (event.type == "content_block_start" && isMap(event.content_block)) {
+                            blocks[event.index] = clone(event.content_block)
+                            openBlocks.add(event.index)
+                        }
+                        if (event.type == "content_block_stop") openBlocks.delete(event.index)
+                        if (event.type != "content_block_delta" || !isMap(event.delta)) return
+                        var delta = event.delta, block = blocks[event.index]
+                        if (isMap(block)) {
+                            if (delta.type == "text_delta") block.text = (block.text || "") + delta.text
+                            if (delta.type == "thinking_delta") block.thinking = (block.thinking || "") + delta.thinking
+                            if (delta.type == "signature_delta") block.signature = (block.signature || "") + delta.signature
+                            if (delta.type == "input_json_delta") partialInputs[event.index] = (partialInputs[event.index] || "") + delta.partial_json
+                            if (delta.type == "citations_delta") block.citations = (block.citations || []).concat(delta.citation)
+                        }
+                        if ((delta.type == "text_delta" || isUnDef(delta.type)) && isString(delta.text)) {
+                            content += delta.text
+                            if (isFunction(aOnDelta) && !_suppressJsonStreaming) {
+                                if (_deferToolStreaming) _textDeltas.push({ text: delta.text, data: event })
+                                else aOnDelta(delta.text, event)
                             }
                         }
                     })
-                    // If there was a stream error, return it immediately
-                    if (isDef(streamError)) {
-                        _captureStats(streamError, aModel)
-                        return streamError
+                    if (providerError || streamError || !stopped || !lastMessage || openBlocks.size) {
+                        if (_deferToolStreaming && !_suppressJsonStreaming && isFunction(aOnDelta)) _textDeltas.forEach(d => aOnDelta(d.text, d.data))
+                        return providerError || streamError || { error: { message: "Anthropic stream ended before a complete message" }, content: content, events: events }
                     }
-                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
-                    
-                    // Handle tool calling for Anthropic streaming
-                    // Track tool_use blocks by Anthropic content index (not filtered array position).
-                    var toolUseBlocksByIndex = {}
-                    var toolUseBlocks = []
-                    events.forEach(e => {
-                        if (e.type == "content_block_start" && isMap(e.content_block) && e.content_block.type == "tool_use") {
-                            var _tu = {
-                                id: e.content_block.id,
-                                name: e.content_block.name,
-                                input: ""
-                            }
-                            if (isDef(e.content_block.input)) {
-                                if (isString(e.content_block.input)) {
-                                    _tu.input = e.content_block.input
-                                } else if (isMap(e.content_block.input)) {
-                                    // Anthropic often starts tool_use with input:{} and then streams real args in input_json_delta.
-                                    if (Object.keys(e.content_block.input).length > 0) {
-                                        _tu.input = stringify(e.content_block.input, __, "")
-                                    }
-                                } else {
-                                    _tu.input = stringify(e.content_block.input, __, "")
-                                }
-                            }
-                            if (isDef(e.index)) toolUseBlocksByIndex[e.index] = _tu
-                            toolUseBlocks.push(_tu)
-                        }
-                    })
-                    // Collect tool arguments from streamed input deltas.
-                    events.forEach(e => {
-                        if (e.type == "content_block_delta" && isMap(e.delta) && e.delta.type == "input_json_delta") {
-                            var _tu = toolUseBlocksByIndex[e.index]
-                            if (isMap(_tu)) {
-                                if (!isString(_tu.input)) _tu.input = stringify(_tu.input, __, "")
-                                _tu.input += _$(e.delta.partial_json).default("")
-                            }
-                        }
-                    })
-
-                    // Flush deferred deltas only for terminal non-tool turns.
-                    if (_deferToolStreaming && !_suppressJsonStreaming && isFunction(aOnDelta) && (!isArray(toolUseBlocks) || toolUseBlocks.length == 0)) {
-                        _textDeltas.forEach(d => aOnDelta(d.text, d.data))
-                    }
-                    
-                    if (isArray(toolUseBlocks) && toolUseBlocks.length > 0) {
-                        var _p = []
-                        // Build content array with text and tool_use blocks
-                        var contentBlocks = []
-                        if (content.length > 0) contentBlocks.push({ type: "text", text: content })
-                        toolUseBlocks.forEach(tu => contentBlocks.push({ type: "tool_use", id: tu.id, name: tu.name, input: jsonParse(tu.input || "{}", __, __, true) || {} }))
-                        
-                        if (contentBlocks.length > 0) {
-                            _p.push({ role: "assistant", content: contentBlocks })
-                        }
-                        
-                        // Execute tools and build responses
-                        toolUseBlocks.forEach(tc => {
-                            var _t = _r.tools[tc.name]
-                            if (isDef(_t) && isFunction(_t.fn)) {
-                                var _args = isString(tc.input) ? jsonParse(tc.input, __, __, true) : tc.input
-                                if (isUnDef(_args)) _args = {}
-                                var _result = _t.fn(_args)
-                                var _resultStr = _normalizeToolResultForAnthropic(_result)
-                                _p.push({ role: "user", content: [{ type: "tool_result", tool_use_id: tc.id, content: _resultStr }] })
-                            }
-                        })
-                        
-                        if (_p.length > 0) {
-                            _r.conversation = _r.conversation.concat(_p)
-                            // Recursively call rawPromptStream to continue streaming with tool results
-                            var toolResult = _r.rawPromptStream([], aModel, _temperatureExplicit ? aTemperature : __, aJsonFlag, aTools, aOnDelta)
-                            if (isMap(toolResult)) {
-                                // Merge events from both calls
-                                if (isArray(toolResult.events)) {
-                                    toolResult.events = events.concat(toolResult.events)
-                                }
-                                // Don't prepend intermediary tool-turn text.
-                                return toolResult
-                            }
-                            return toolResult
-                        }
-                    }
-                    
-                    if (content.length > 0) {
-                        _r.conversation.push({ role: "assistant", content: content })
-                    }
+                    var contentBlocks = blocks.filter(isDef)
+                    lastMessage.content = contentBlocks
                     _captureStats(lastMessage, aModel)
+
+                    // Parse all tool inputs before any callback and retain the complete assistant turn.
+                    if (lastMessage.stop_reason == "tool_use") {
+                        Object.keys(partialInputs).forEach(index => {
+                            if (blocks[index].type == "tool_use") blocks[index].input = JSON.parse(partialInputs[index])
+                        })
+                        var results = _anthropicToolResults(contentBlocks, aTools)
+                        if (results.length) {
+                            _r.conversation = _r.conversation.concat([
+                                { role: "assistant", content: contentBlocks },
+                                { role: "user", content: results }
+                            ])
+                            var result = _r.rawPromptStream([], aModel, _temperatureExplicit ? aTemperature : __, aJsonFlag, aTools, aOnDelta)
+                            if (isArray(result.events)) result.events = events.concat(result.events)
+                            return result
+                        }
+                    }
+                    if (_deferToolStreaming && !_suppressJsonStreaming && isFunction(aOnDelta)) _textDeltas.forEach(d => aOnDelta(d.text, d.data))
+                    if (contentBlocks.length) _r.conversation.push({ role: "assistant", content: contentBlocks })
                     return { content: content, events: events }
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
@@ -4238,18 +4121,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aVerb = _$(aVerb, "aVerb").isString().default("POST")
                  
                     var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
-                    var _reqHeaders = merge(aOptions.headers, {
-                       "x-api-key"        : Packages.openaf.AFCmdBase.afc.dIP(_key),
-                       "anthropic-version": "2023-06-01",
-                       Accept             : "*/*"
-                    })
+                    var _reqHeaders = _anthropicHeaders("*/*")
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
                        requestHeaders: _reqHeaders
                     } 
                  
-                    return ow.ai.__httpRequest(_h, __m, aVerb, aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData, false, true)
+                    return ow.ai.__httpRequest(_h, __m, aVerb, _baseURL + "/" + aURI, aData, false, true)
                 },
                 _requestStream: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -4257,18 +4136,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aVerb = _$(aVerb, "aVerb").isString().default("POST")
                  
                     var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
-                    var _reqHeaders = merge(aOptions.headers, {
-                       "x-api-key"        : Packages.openaf.AFCmdBase.afc.dIP(_key),
-                       "anthropic-version": "2023-06-01",
-                       Accept             : "text/event-stream"
-                    })
+                    var _reqHeaders = _anthropicHeaders("text/event-stream")
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
                        requestHeaders: _reqHeaders
                     } 
 
-                    return ow.ai.__httpRequest(_h, __m, aVerb, aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData, true, true)
+                    return ow.ai.__httpRequest(_h, __m, aVerb, _baseURL + "/" + aURI, aData, true, true)
                 }
             }
             return _r
@@ -4416,6 +4291,7 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
  * - `model`: default model name or deployment name.
  * - `url`: provider base URL. For OpenAI defaults to "https://api.openai.com".
  * - `temperature`: model temperature. The OpenAI adapter sends it only if configured or provided per call.
+ * - `promptTransport`: use "responses" to send ordinary prompts and streams to Responses. Defaults to "chat".
  * - `reasoningEffort`: optional OpenAI reasoning effort. Chat requests for GPT-6 Luna with function tools default to `none`.
  * - `timeout`: request timeout in milliseconds (defaults to 15 minutes).
  * - `headers`: extra request headers. These override generated headers with the same names.

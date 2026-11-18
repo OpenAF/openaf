@@ -479,7 +479,9 @@
         });
         var foundryPreviewTransport = foundryPreview.model.__debugTransport("chat/completions", "deployment-a");
         ow.test.assert(foundryPreviewTransport.url, "https://example.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview", "Problem building Foundry model inference preview chat URL.");
-        ow.test.assert(foundryPreview.model.__debugTransport("responses", "deployment-a").url, "https://example.services.ai.azure.com/models/responses?api-version=2024-05-01-preview", "Problem building Foundry model inference preview responses URL.")
+        var unsupported
+        try { foundryPreview.model.__debugTransport("responses", "deployment-a") } catch(e) { unsupported = e.code }
+        ow.test.assert(unsupported, "LLM_DECISION_UNSUPPORTED", "Dated Foundry Responses fails before HTTP")
         ow.test.assert("" + foundryPreviewTransport.headers["api-key"], "test-key", "Problem setting Foundry preview api-key header.");
     };
 
@@ -1243,22 +1245,141 @@
 
         g.model._request = function(url, body) {
             requests.push(url)
-            return {
-                error: {
-                    message: "Invalid schema for text.format",
-                    code: "invalid_request_error"
-                },
-                status: 400
-            }
-        }
+            if (body.model == "missing") return { error: { message: "Model not found", code: "model_not_found" }, status: 404 }
+            return { error: null, status: "completed", output: [] }
+            ow.test.assert(g.model.rawResponse("Try again", "gpt-4o").status, "completed", "Model error does not disable Responses")
+        ow.test.assert(requests.length, 2, "Successful call makes one additional request")
+        ow.test.assert(requests[1].indexOf("responses") >= 0, true, "Second model still uses Responses")
+    }
 
-        var res = g.model.rawResponse("Extract: Alice", "gpt-4o", 0.5, false, [], {
+        var res = g.model.rawResponse("Extract: Alice", "missing", 0.5, false, [], {
             name: "PersonInfo",
             schema: { type: "object" }
         })
         ow.test.assert(requests.length, 1, "Problem: rawResponse should not fall back for non-availability errors.")
         ow.test.assert(requests[0].indexOf("responses") >= 0, true, "Problem: rawResponse should return the original responses error.")
         ow.test.assert(isMap(res.error), true, "Problem: rawResponse should return the original error response.")
+    }
+
+    exports.testAIOpenAIPromptResponsesTransport = function() {
+        ow.loadAI()
+        ow.loadServer()
+        var server = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1")
+        var url = "http://127.0.0.1:" + server.getPort()
+        var requests = [], calls = [], deltas = []
+        var text = { type: "message", role: "assistant", status: "completed", content: [{ type: "output_text", text: "done" }] }
+        var reasoning = { type: "reasoning", id: "rs_1", summary: [], encrypted_content: "fixture" }
+        var toolCall = (id, args) => ({ type: "function_call", call_id: id, name: "echo", arguments: args, status: "completed" })
+        var reply = (output, status) => ({ status: status || "completed", error: null, output: output, usage: { total_tokens: 5 } })
+        var event = item => "data: " + JSON.stringify(item) + "\n\n"
+        var register = g => g.setTool("echo", "Echo", { type: "object", properties: {} }, args => { calls.push(args); return args })
+        var request = req => {
+            var body = JSON.parse(req.files.postData)
+            requests.push(body)
+            return body
+        }
+        var responses = req => {
+            var body = request(req)
+            if (body.model == "missing") return ow.server.httpd.reply({ error: { code: "model_not_found", message: "Model not found" } }, 404, "application/json", {})
+            var hasResults = body.input.some(item => item.type == "function_call_output")
+            var output = body.tools && !hasResults ? [reasoning, toolCall("a", '{"n":1}'), toolCall("b", '{"n":2}')] : [text]
+            var response = reply(output)
+            if (!body.stream) return ow.server.httpd.reply(response, 200, "application/json", {})
+            var data = event({ type: "response.function_call_arguments.delta", delta: '{"n":' })
+            if (body.metadata && body.metadata.disconnect == "true") return ow.server.httpd.reply(af.fromString2Bytes(data), 200, "text/event-stream", {})
+            if (output[0] === text) data = event({ type: "response.output_text.delta", delta: "done" })
+            return ow.server.httpd.reply(af.fromString2Bytes(data + event({ type: "response.completed", response: response })), 200, "text/event-stream", {})
+        }
+        ow.server.httpd.route(server, {
+            "/v1/chat/completions": req => {
+                request(req)
+                return ow.server.httpd.reply({ choices: [{ finish_reason: "stop", message: { role: "assistant", content: "chat" } }] }, 200, "application/json", {})
+            },
+            "/openai/v1/responses": responses,
+            "/v1/responses": responses
+        })
+        try {
+            var chat = new ow.ai.gpt("openai", { key: "test", url: url })
+            ow.test.assert(chat.prompt("hi"), "chat", "Default continues to support a Chat-only route")
+            var azure = new ow.ai.gpt("openai", { key: "test", url: url, mode: "azure-v1", promptTransport: "responses", params: { max_completion_tokens: 20 } })
+            ow.test.assert(azure.prompt([{ role: "user", content: [{ type: "text", text: "Output JSON" }, { type: "image_url", image_url: { url: "https://example.invalid/image.png" } }] }], __, __, true, []), "done", "Azure Responses routing and image prompt")
+            ow.test.assert(requests[1].input[1].content[1].type, "input_image", "Responses image part")
+            ow.test.assert(requests[1].text.format.type, "json_object", "Responses JSON mode")
+            ow.test.assert(requests[1].max_output_tokens, 20, "Responses token limit")
+
+            var g = new ow.ai.gpt("openai", { key: "test", url: url + "/v1", promptTransport: "responses", reasoningEffort: "low" })
+            register(g)
+            var result = g.rawPromptStream("use tools", __, __, false, ["echo"], delta => deltas.push(delta))
+            ow.test.assert(result.content, "done", "Responses stream content")
+            ow.test.assert(deltas, ["done"], "Only text deltas reach callback")
+            ow.test.assert(calls, [{ n: 1 }, { n: 2 }], "Execute each terminal tool call exactly once")
+            ow.test.assert(requests[2].tools[0].name, "echo", "Flat Responses function declaration")
+            ow.test.assert(requests[2].reasoning.effort, "low", "Responses reasoning effort")
+            ow.test.assert(requests[2].store, false, "Stateless Responses")
+            ow.test.assert(requests[3].input.map(item => item.type || item.role),
+                ["user", "reasoning", "function_call", "function_call", "function_call_output", "function_call_output"], "Replay reasoning and correlated results")
+            ow.test.assert(requests[3].input[5].call_id, "b", "Second tool output uses call_id")
+            ow.test.assert(g.getLastStats().tokens.total, 10, "Sum usage for both Responses turns")
+            ow.test.assert(g.exportConversation().filter(item => item.toolCalls).length, 1, "Parallel calls share one assistant turn")
+
+            var disconnected = new ow.ai.gpt("openai", { key: "test", url: url, promptTransport: "responses", params: { metadata: { disconnect: "true" } } })
+            register(disconnected)
+            ow.test.assert(isMap(disconnected.rawPromptStream("use tools").error), true, "A disconnected stream returns an error")
+            ow.test.assert(calls.length, 2, "A disconnected stream cannot execute tool calls")
+            ow.test.assert(requests.length, 5, "No hidden fallback or continuation")
+
+            var missing = chat.model.rawResponse("model unavailable", "missing")
+            ow.test.assert(missing.error.code, "model_not_found", "HTTP model error does not trigger Chat fallback")
+            ow.test.assert(chat.model.rawResponse("try another model", "fixture").status, "completed", "Model-specific 404 does not disable real HTTP route")
+            ow.test.assert(requests.length, 7, "Model-specific 404 makes one request")
+        } finally {
+            ow.server.httpd.stop(server)
+        }
+    }
+
+    exports.testAIOpenAIChatToolBatchValidation = function() {
+        ow.loadAI()
+        var g = new ow.ai.gpt("openai", { key: "test" })
+        var calls = 0, requests = []
+        g.setTool("echo", "Echo", { type: "object", properties: {} }, args => { calls++; return args })
+        var toolCalls = ["a", "b"].map(id => ({ id: id, type: "function", function: { name: "echo", arguments: "{}" } }))
+        var malformed = true
+        g.model._request = (uri, body) => {
+            requests.push(__cloneForTest(body))
+            if (requests.length == 3) return { choices: [{ finish_reason: "stop", message: { content: "done" } }] }
+            toolCalls[1].function.arguments = malformed ? "{" : "{}"
+            return { choices: [{ finish_reason: "tool_calls", message: { role: "assistant", content: null, tool_calls: toolCalls } }] }
+        }
+        var failed = false
+        try { g.rawPrompt("use tools") } catch(e) { failed = true }
+        ow.test.assert(failed, true, "Invalid arguments fail the batch")
+        ow.test.assert(calls, 0, "Invalid second call prevents the first callback")
+        malformed = false
+        g.cleanPrompt()
+        ow.test.assert(g.prompt("use tools"), "done", "Valid batch continues")
+        ow.test.assert(calls, 2, "Both tools execute once")
+        ow.test.assert(requests[2].messages.map(msg => msg.role), ["user", "assistant", "tool", "tool"], "Chat continuation sends one assistant turn")
+
+        // A terminal Chat chunk is required, and malformed fragments cannot run a callback.
+        var terminal = false
+        g.model._requestStream = () => {
+            var fragments = [
+                { choices: [{ delta: { tool_calls: [{ index: 0, id: "call", type: "function", function: { name: "echo", arguments: '{"n":' } }] } }] },
+                { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: "broken}" } }] } }] }
+            ]
+            if (terminal) fragments.push({ choices: [{ delta: {}, finish_reason: "tool_calls" }] })
+            return __makeOpenAISse(fragments)
+        }
+        g.cleanPrompt()
+        g.rawPromptStream("truncated tool turn")
+        ow.test.assert(calls, 2, "Stream ending before tool finish cannot execute a callback")
+        terminal = true
+        failed = false
+        g.cleanPrompt()
+        try { g.rawPromptStream("malformed tool turn") } catch(e) { failed = true }
+        ow.test.assert(failed, true, "Malformed streamed arguments fail")
+        ow.test.assert(calls, 2, "Malformed streamed arguments cannot execute a callback")
+
     }
 
     exports.testAIOpenAIJsonSchemaPromptUnsupportedProvider = function() {
@@ -1302,6 +1423,169 @@
                 ow.test.assert(g.getLastStats().finishReasons, ["length"], "Terminal finish reason is captured")
             }
         })
+    }
+
+    exports.testAIProviderCompleteToolStreams = function() {
+        ow.loadAI()
+        var schema = { type: "object", properties: {} }
+        var start = { type: "message_start", message: { id: "msg", usage: { input_tokens: 8 } } }
+        var block = (index, value) => ({ type: "content_block_start", index: index, content_block: value })
+        var delta = (index, value) => ({ type: "content_block_delta", index: index, delta: value })
+        var stop = index => ({ type: "content_block_stop", index: index })
+        var finish = reason => [{ type: "message_delta", delta: { stop_reason: reason }, usage: { output_tokens: 3 } }, { type: "message_stop" }]
+        var candidate = (parts, reason) => ({ candidates: [{ index: 0, content: { role: "model", parts: parts }, finishReason: reason }] })
+        var fixtures = [
+            {
+                type: "anthropic", options: { key: "test-key" }, encode: __makeOpenAISse,
+                calls: args => [start, block(0, { type: "thinking", thinking: "", signature: "" }),
+                    delta(0, { type: "thinking_delta", thinking: "private" }), delta(0, { type: "signature_delta", signature: "sig" }), stop(0),
+                    block(1, { type: "tool_use", name: "echo", id: "a", input: {} }), stop(1),
+                    block(2, { type: "tool_use", name: "echo", id: "b", input: {} }),
+                    delta(2, { type: "input_json_delta", partial_json: args }), stop(2)],
+                terminal: finish("tool_use"),
+                answer: [start, block(0, { type: "text", text: "" }), delta(0, { type: "text_delta", text: "done" }), stop(0)].concat(finish("end_turn")),
+                verify: (body, stats) => {
+                    ow.test.assert(body.messages[1].content[0].signature, "sig", "Anthropic replays the signature")
+                    ow.test.assert(body.messages[2].content.map(x => x.tool_use_id), ["a", "b"], "Anthropic groups results")
+                    ow.test.assert([stats.tokens.prompt, stats.tokens.completion], [8, 3], "Anthropic combines usage")
+                }
+            },
+            {
+                type: "gemini", options: { key: "test-key" }, encode: __makeOpenAISse,
+                calls: args => [candidate([{ text: "private", thought: true },
+                    { thoughtSignature: "sig", functionCall: { name: "echo", id: "a", args: {} } },
+                    { functionCall: { name: "echo", id: "b", args: args } }])],
+                terminal: [candidate([], "STOP")],
+                answer: [{ candidates: [{ index: 1, content: { parts: [{ text: "other" }] } },
+                    { index: 0, content: { parts: [{ text: "secret", thought: true }, { text: "done" }] }, finishReason: "STOP" }] }],
+                verify: body => {
+                    ow.test.assert(body.contents[1].parts[1].thoughtSignature, "sig", "Gemini preserves the signed part")
+                    ow.test.assert(body.contents[2].parts.map(x => x.functionResponse.id), ["a", "b"], "Gemini keeps identical calls distinct")
+                }
+            },
+            {
+                type: "ollama", options: { url: "http://127.0.0.1:1" }, encode: __makeOllamaStream,
+                calls: args => [{ message: { thinking: "private", tool_calls: [
+                    { id: "a", function: { name: "echo", arguments: {} } },
+                    { id: "b", function: { name: "echo", arguments: args } }
+                ] } }],
+                terminal: [{ done: true }],
+                answer: [{ done: true, message: { content: "done" } }],
+                verify: body => {
+                    ow.test.assert(body.messages[1].thinking, "private", "Ollama replays thinking")
+                    ow.test.assert(body.messages.slice(2).map(x => x.tool_call_id), ["a", "b"], "Ollama correlates results")
+                }
+            }
+        ]
+        fixtures.forEach(fixture => {
+            var g = new ow.ai.gpt(fixture.type, fixture.options), count = 0, requests = [], output = []
+            g.setTool("echo", "Echo", schema, args => { count++; return args })
+            g.model._request = () => ({ done: true })
+            var valid = fixture.calls("{}")
+            var records = valid, continueTurn = false
+            g.model._requestStream = (uri, body) => {
+                requests.push(__cloneForTest(body))
+                return fixture.encode(continueTurn && requests.length == 2 ? fixture.answer : records)
+            }
+            ow.test.assert(isDef(g.rawPromptStream("use tools").error), true, fixture.type + " reports interrupted stream")
+            g.cleanPrompt()
+            records = valid.concat([{ error: { message: "fixture error" } }])
+            ow.test.assert(g.rawPromptStream("use tools").error.message, "fixture error", fixture.type + " surfaces provider error")
+            g.cleanPrompt()
+            records = fixture.calls("{").concat(fixture.terminal)
+            var failed = false
+            try { g.rawPromptStream("use tools") } catch(e) { failed = true }
+            ow.test.assert(failed, true, fixture.type + " rejects malformed tool batch")
+            ow.test.assert(count, 0, fixture.type + " executes no partial batch")
+            ow.test.assert(requests.length, 3, fixture.type + " never continues failed streams")
+
+            g.cleanPrompt()
+            requests = []
+            records = valid.concat(fixture.terminal)
+            continueTurn = true
+            var result = g.rawPromptStream("use tools", __, __, false, __, chunk => output.push(chunk))
+            ow.test.assert([result.content, count, requests.length], ["done", 2, 2], fixture.type + " completes both calls")
+            ow.test.assert(output, ["done"], fixture.type + " emits visible text only")
+            fixture.verify(requests[1], g.getLastStats())
+        })
+    }
+
+    exports.testAIProviderEmbeddingUpgrades = function() {
+        ow.loadAI()
+        var ollama = new ow.ai.gpt("ollama", { url: "http://127.0.0.1:1" })
+        ollama.model._request = (uri, body) => {
+            ow.test.assert(uri, "/api/embed", "Ollama embedding route")
+            ow.test.assert(body.input, ["a", "b"], "Ollama sends separate ordered inputs")
+            return { embeddings: [[1], [2]] }
+        }
+        ow.test.assert(ollama.getEmbeddings(["a", "b"]).embeddings, [[1], [2]], "Ollama returns separate ordered vectors")
+        var gemini = new ow.ai.gpt("gemini", { key: "test-key" }), models = []
+        ow.test.assert(gemini.getModelName(), "gemini-3.5-flash-lite", "Gemini chat default")
+        gemini.model._request = (uri, body) => {
+            models.push([uri, body.model])
+            return { embedding: { values: [1] } }
+        }
+        gemini.getEmbeddings("a")
+        gemini.getEmbeddings("a", __, "explicit-model")
+        gemini.getEmbeddings("a", __, "models/explicit-model")
+        ow.test.assert(models, [
+            ["models/gemini-embedding-2:embedContent", "models/gemini-embedding-2"],
+            ["models/explicit-model:embedContent", "models/explicit-model"],
+            ["models/explicit-model:embedContent", "models/explicit-model"]
+        ], "Gemini embedding default and explicit model forms")
+    }
+
+    exports.testAIFoundryProviderRoutes = function() {
+        ow.loadAI()
+        ow.loadServer()
+        var server = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1")
+        var root = "http://127.0.0.1:" + server.getPort(), records = []
+        var record = req => {
+            var body = JSON.parse(req.files.postData)
+            records.push({ body: body, headers: req.header })
+            return body
+        }
+        var json = body => ow.server.httpd.reply(body, 200, "application/json", {})
+        ow.server.httpd.route(server, {
+            "/anthropic/v1/messages": req => {
+                if (!record(req).stream) return json({ stop_reason: "end_turn", content: [{ type: "text", text: "ok" }] })
+                var events = [
+                    { type: "message_start", message: {} },
+                    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+                    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "ok" } },
+                    { type: "content_block_stop", index: 0 }, { type: "message_stop" }
+                ]
+                var data = events.map(event => "data: " + JSON.stringify(event) + "\n\n").join("")
+                return ow.server.httpd.reply(af.fromString2Bytes(data), 200, "text/event-stream", {})
+            },
+            "/models/chat/completions": req => {
+                record(req)
+                return json({ choices: [{ finish_reason: "stop", message: { role: "assistant", content: "ok" } }] })
+            },
+            "/openai/v1/embeddings": req => {
+                record(req)
+                return json({ data: [{ embedding: [1] }] })
+            }
+        })
+        try {
+            var claude = new ow.ai.gpt("anthropic", { key: "fixture-key", mode: "foundry", url: root, model: "claude-deployment" })
+            var entra = new ow.ai.gpt("anthropic", { key: "fixture-token", mode: "azure-foundry", authType: "bearer", url: root + "/anthropic/", model: "claude-deployment" })
+            ow.test.assert(claude.prompt("hello"), "ok", "Foundry Messages buffered API")
+            ow.test.assert(entra.rawPromptStream("hello").content, "ok", "Foundry Messages streaming API")
+            ow.test.assert(records[0].headers["x-api-key"], "fixture-key", "Foundry Anthropic uses x-api-key")
+            ow.test.assert(records[1].headers["x-api-key"], __, "Foundry Anthropic omits x-api-key for Entra")
+            ow.test.assert(records[1].headers.authorization, "Bearer fixture-token", "Foundry Anthropic uses Entra token")
+            ow.test.assert(records[1].body.model, "claude-deployment", "Foundry Messages deployment name")
+            var dated = new ow.ai.gpt("openai", { key: "fixture-key", mode: "foundry", url: root + "/models", model: "chat-deployment", apiVersion: "2024-05-01-preview" })
+            ow.test.assert(dated.model.rawResponse("hello").choices[0].message.content, "ok", "Dated Foundry rawResponse uses Chat")
+            var v1 = new ow.ai.gpt("openai", { key: "fixture-key", mode: "foundry", url: root + "/openai/v1" })
+            v1.getEmbeddings("a", __, "embed-deployment")
+            ow.test.assert(records[2].body.model, "chat-deployment", "Dated Foundry chat deployment")
+            ow.test.assert(records[3].body.model, "embed-deployment", "Foundry embedding deployment")
+            ow.test.assert(records.length, 4, "Exactly one HTTP request per public call")
+        } finally {
+            ow.server.httpd.stop(server)
+        }
     }
 
     exports.testAIHTTPResponseOwnership = function() {

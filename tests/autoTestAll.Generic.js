@@ -431,36 +431,52 @@
     }
 
     exports.testRest = function() {
-        var res = $rest({
-            timeout: 1,
-            default: { no: "way" }
-        }).get("https://dns.google.com/resolv?" + $rest().query({ type: "a", name: "openaf.io" }))
-
-        ow.test.assert(res, { no: "way" }, "Problem with rest timeout.")
-
-        res = $rest({
-            timeout: 2500,
-            default: { no: "way" }
-        }).get("https://dns.google.com/resolve?" + $rest().query({ type: "a", name: "openaf.io" }))
-
-        ow.test.assert(isDef(res.Status), true, "Problem with rest call.")
-
-        res = $rest({
-            throwExceptions: false,
-            default: { found: "n/a" }
-        }).put("https://openaf.impossible.domain.local", { mission: "impossible" })
-
-        ow.test.assert(res.found, "n/a", "Problem with throwExceptions.")
-
-        res = $rest({
-            preAction: (m) => {
-                m.reqHeaders = {
-                    openaf: "true"
+        // Serve deterministic REST responses on loopback.
+        ow.loadServer()
+        var server = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1")
+        var url = "http://127.0.0.1:" + server.getPort()
+        try {
+            ow.server.httpd.route(server, {
+                "/slow": function() {
+                    try { sleep(500) } catch(e) {
+                        // The server may stop while the timed-out request is still waiting.
+                        return ow.server.httpd.reply("", 503, "text/plain")
+                    }
+                    return ow.server.httpd.reply({ ready: true }, 200, "application/json")
+                },
+                "/resolve": function(req) {
+                    return ow.server.httpd.reply({ type: req.params.type, name: req.params.name }, 200, "application/json")
+                },
+                "/unavailable": function() {
+                    return ow.server.httpd.reply({ message: "Service unavailable" }, 503, "application/json")
+                },
+                "/headers": function(req) {
+                    return ow.server.httpd.reply({ openaf: req.header.openaf }, 200, "application/json")
                 }
-                return m
-            }
-        }).get("https://postman-echo.com/get")
-        ow.test.assert(res.headers.openaf, "true", "Problem with preAction.")
+            })
+
+            // Check timeout and HTTP error defaults alongside the successful requests.
+            var res = $rest({ timeout: 50, default: { ready: false } }).get(url + "/slow")
+            ow.test.assert(res.ready, false, "The delayed REST request uses the timeout default.")
+
+            var query = $rest().query({ type: "a", name: "openaf.io" })
+            res = $rest().get(url + "/resolve?" + query)
+            ow.test.assert(res, { type: "a", name: "openaf.io" }, "REST sends the query and parses the JSON response.")
+
+            res = $rest({ throwExceptions: false, default: { found: "n/a" } })
+                .put(url + "/unavailable", { mission: "impossible" })
+            ow.test.assert(res.found, "n/a", "The REST error uses the configured default.")
+
+            res = $rest({
+                preAction: m => {
+                    m.reqHeaders = { openaf: "true" }
+                    return m
+                }
+            }).get(url + "/headers")
+            ow.test.assert(res.openaf, "true", "The REST preAction sets the request header.")
+        } finally {
+            ow.server.httpd.stop(server)
+        }
     }
 
     exports.testRest2Stream = function() {

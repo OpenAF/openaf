@@ -249,9 +249,9 @@ Results retain contract version 1 and `provider: "openai"`. `rawDecide()` preser
 
 For an opt-in live smoke, supply the example configuration as `OAF_MODEL` and run `OPENAF_DECISIONS_LIVE=1 java -jar openaf.jar -f tests/ai-decisions-live.js`. The script uses native decisions and requires probabilities when `decisionApi` is `openrouter`. Fixture success is separate from live model/account verification.
 
-## Microsoft-Decision-1 native decisions through Foundry
+## Microsoft Decision models through Foundry
 
-Set `decisionApi: "microsoft"` with `type: "openai"`, `mode: "foundry"` (or `"azure-foundry"`) and API version `v1`. Deploy Microsoft-Decision-1 first and put **your deployment name** in `model`; it need not match the catalog model name. See [Microsoft's deployment and API guide](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+Set `decisionApi: "microsoft"` with `type: "openai"`, `mode: "foundry"` (or `"azure-foundry"`) and API version `v1`. Deploy Microsoft-Decision-1.1 or Microsoft-Decision-1 and put **your deployment name** in `model`. For example, a deployment named `ticket-router-prod` can serve Microsoft-Decision-1.1. [Microsoft-Decision-1.1 API examples](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/introducing-microsoft-decision-1-1-build-faster-more-efficient-ai-applications-w/4573877)
 
 ```javascript
 var llm = $llm({
@@ -270,7 +270,7 @@ var result = llm.decide("The API returns 500 on every call.", {
 }, { requireProbabilities: true });
 ```
 
-The resource-root URL becomes `POST /providers/microsoft/v1/systemone`. A URL already ending in that complete path is also accepted, with trailing slashes removed. Other base paths (including `/models`, `/openai/v1`, and project endpoints) require an explicit absolute HTTP(S) `decisionUrl`; routes are never guessed. Native routing does not add `/openai/v1` or an `api-version` query parameter.
+The resource-root URL and its `/openai` or `/openai/v1` bases resolve to `POST /providers/microsoft/v1/systemone` on the resource. The complete decision endpoint is also accepted. For `/models`, project endpoints, and other custom paths, supply an explicit absolute HTTP(S) `decisionUrl`.
 
 Foundry defaults to `api-key` authentication. For Microsoft Entra ID, pass a caller-acquired access token as `key` and set `authType: "bearer"`; acquire the token for `https://cognitiveservices.azure.com/.default`. Token acquisition and renewal remain the caller's responsibility. Existing encrypted-key handling, custom headers, and timeout apply to both authentication styles.
 
@@ -283,7 +283,7 @@ var entraLlm = $llm({
 });
 ```
 
-Requests contain only `{model, state, questions}`; state remains text or JSON, and public `boolean` becomes `noul` with optional criteria preserved. Per-call `options.model` selects a different deployment. Images and all native `providerOptions` fail before HTTP. Conversational history, tools, and generation parameters are excluded.
+Requests contain only `{model, state, questions}`; state remains text or JSON, and public `boolean` becomes `noul` with optional criteria preserved. Per-call `options.model` selects a different deployment. OpenAF supports text and JSON evidence for this integration. Microsoft-Decision-1.1 also offers an image-assets API, which requires direct API access. Conversational history, tools, and generation parameters are excluded.
 
 `auto` selects native decisions with this selector. Capabilities report choice/boolean/score, probabilities with four-decimal validation tolerance, text/JSON input, and unknown deployment availability. Returned probabilities are preserved without renormalization; boolean uses `P(true) >= 0.5`, score `level` is the first modal index, and `expectedScore` retains the weighted score. The response's underlying model name can differ from the requested deployment name. `rawDecide`, `decideWithStats`, and zero-valued token usage retain their existing contracts. No automatic retry or structured fallback occurs on failure.
 

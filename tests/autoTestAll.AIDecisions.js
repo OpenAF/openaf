@@ -210,11 +210,16 @@
         ow.test.assert(record.headers["X-Fixture"], "yes", "Configured headers retained")
         ow.test.assert(record.headers.Authorization.indexOf("Bearer "), 0, "Bearer authentication retained")
       })
-      var g = make("openai", { model: "gpt-6-luna" });
-      [401, 404, 429, 500].forEach(code => { status = code; payload = '{"error":{"message":"Model unavailable"},"request":"SECRET"}'; var e = expectError(() => g.decide("SECRET", questions), "LLM_DECISION_PROVIDER_ERROR"); ow.test.assert(e.status, code, "HTTP status retained"); ow.test.assert(String(e).indexOf("SECRET"), -1, "Unrelated response fields excluded"); ow.test.assert(e.providerMessage, "Model unavailable", "Provider error retained"); ow.test.assert(String(e).indexOf("HTTP " + code) >= 0, true, "HTTP status visible"); })
+      var g = make("openai", { model: "gpt-6-luna" })
+      payload = JSON.stringify(merge(openaiNativeFixture(), { error: null }))
+      ow.test.assert(g.decide("state", questions).answers.route.value, "billing", "Native success accepts null error")
+      ow.test.assert(g.rawDecide("state", questions).raw.error, null, "Raw decision preserves null error")
+      status = 429
+      ow.test.assert(expectError(() => g.rawDecide("state", questions), "LLM_DECISION_PROVIDER_ERROR").status, 429, "HTTP failure takes precedence over null error")
+      ;[401, 404, 429, 500].forEach(code => { status = code; payload = '{"error":{"message":"Model unavailable"},"request":"SECRET"}'; var e = expectError(() => g.decide("SECRET", questions), "LLM_DECISION_PROVIDER_ERROR"); ow.test.assert(e.status, code, "HTTP status retained"); ow.test.assert(String(e).indexOf("SECRET"), -1, "Unrelated response fields excluded"); ow.test.assert(e.providerMessage, "Model unavailable", "Provider error retained"); ow.test.assert(String(e).indexOf("HTTP " + code) >= 0, true, "HTTP status visible"); })
       status = 200; payload = "malformed SECRET"
       expectError(() => g.rawDecide("state", questions), "LLM_DECISION_INVALID_RESPONSE")
-      ow.test.assert(records.length, 9, "No strategy fallback or additional inference")
+      ow.test.assert(records.length, 12, "No strategy fallback or additional inference")
     } finally { ow.obj.http = original; }
   }
   exports.testDecisionOpenRouter = function() {
@@ -222,6 +227,7 @@
     var config = { decisionApi: "openrouter", url: "https://openrouter.ai/api/v1/", model: "microsoft/microsoft-decision-1", params: { tools: ["ignored"] } }
     var g = make("openai", config), calls = [], fixture = nativeFixture()
     fixture.model = "microsoft/microsoft-decision-1:resolved"
+    fixture.error = null
     fixture.usage.cost = 0
     g.getGPT().model._decisionRequest = function(uri, body) { calls.push({ uri: uri, body: body }); return copy(fixture); }
     g.withInstructions("private history").withContext({ private: true }, "private context")
@@ -386,7 +392,7 @@
     ow.test.assert(g.decide("state", q, { strategy: "structured" }).strategy, "structured", "Explicit structured retained")
     ow.test.assert(calls[calls.length - 1].uri, "openai/v1/responses", "Existing Foundry structured route");
     [{ mode: "openai" }, { mode: "azure-openai-v1" }, { apiVersion: "2024-05-01-preview" },
-      { url: "https://resource/openai/v1" }, { url: "https://resource/models" }, { url: "https://resource/api/projects/p" },
+      { url: "https://resource/models" }, { url: "https://resource/api/projects/p" },
       { url: "https://resource?x=1" }, { decisionUrl: "/relative" }, { model: "" }, { model: "   " }].forEach(opts => {
       expectError(() => make("openai", merge(config, opts)).getCapabilities(), "LLM_DECISION_INVALID_REQUEST")
     })
@@ -408,7 +414,7 @@
         this.client = builder; this.setThrowExceptions = function() {}; this.close = function() {}
         this.exec = function(url, method, body, headers) { records.push({ url: url, method: method, body: JSON.parse(body), headers: headers }); return { responseCode: status, response: payload }; }
       };
-      [config.url, config.url + "///", config.url + "/providers/microsoft/v1/systemone/"].forEach(url => {
+      [config.url, config.url + "///", config.url + "/providers/microsoft/v1/systemone/", config.url + "/openai/", config.url + "/openai/v1/"].forEach(url => {
         make("openai", merge(config, { url: url, headers: { "X-Fixture": "yes" } })).decide("state", questions)
         var r = records[records.length - 1]
         ow.test.assert(r.url, config.url + "/providers/microsoft/v1/systemone", "Exact HTTP endpoint")
@@ -419,10 +425,10 @@
         ow.test.assert(r.body.model, "deployment", "HTTP deployment name")
       })
       make("openai", merge(config, { mode: "azure-foundry", authType: "bearer" })).decide("state", questions)
-      ow.test.assert(records[3].headers.Authorization, "Bearer fixture-key", "Entra token authentication")
-      ow.test.assert(isUnDef(records[3].headers["api-key"]), true, "Bearer replaces API key")
+      ow.test.assert(records[5].headers.Authorization, "Bearer fixture-key", "Entra token authentication")
+      ow.test.assert(isUnDef(records[5].headers["api-key"]), true, "Bearer replaces API key")
       make("openai", merge(config, { url: "https://proxy/custom", decisionUrl: "https://proxy/decide" })).decide("state", questions)
-      ow.test.assert(records[4].url, "https://proxy/decide", "Explicit endpoint override")
+      ow.test.assert(records[6].url, "https://proxy/decide", "Explicit endpoint override")
       var g = make("openai", config);
       [401, 403, 404, 422, 429, 500].forEach(code => {
         status = code; payload = '{"error":{"message":"Model unavailable"},"request":"SECRET"}'
@@ -434,6 +440,29 @@
       status = 200; payload = "invalid SECRET"
       expectError(() => g.rawDecide("state", questions), "LLM_DECISION_INVALID_RESPONSE")
     } finally { ow.obj.http = original; }
+
+    // Exercise the public decision method on the resource route with real HTTP.
+    ow.loadServer()
+    var server = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1")
+    var requests = []
+    var upgraded = merge(fixture, { model: "microsoft-decision-1.1", error: null })
+    try {
+      ow.server.httpd.route(server, {
+        "/providers/microsoft/v1/systemone": req => {
+          requests.push({ body: JSON.parse(req.files.postData), headers: req.header })
+          return ow.server.httpd.reply(upgraded, 200, "application/json", {})
+        }
+      })
+      var url = "http://127.0.0.1:" + server.getPort() + "/openai/v1/"
+      var model = "ticket-router-prod"
+      var result = $llm(merge(config, { type: "openai", key: "fixture-key", url: url, model: model }))
+        .decide("state", questions, { requireProbabilities: true })
+      ow.test.assert(result.model, "microsoft-decision-1.1", "Public decision preserves the 1.1 catalog model")
+      ow.test.assert(result.answers.route.value, fixture.answers.route.choice, "Normalize 1.1 named answers")
+      ow.test.assert(requests.length, 1, "One request to the dedicated Microsoft Decision route")
+      ow.test.assert(requests[0].body.model, model, "Decision sends the deployment alias")
+      ow.test.assert(requests[0].headers["api-key"], "fixture-key", "Decision uses the resource key")
+    } finally { ow.server.httpd.stop(server) }
   }
   exports.testDecisionOpenAIStructured = function() {
     ow.loadAI()
@@ -531,9 +560,12 @@
           fixture = r; expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE")
         })
       } else {
-        fixture = openaiFixture('{}'); fixture.status = "incomplete"
+        fixture = merge(openaiFixture('{}'), { status: "failed", error: null })
+        expectError(function() { g.decide("state", questions); }, "LLM_DECISION_PROVIDER_ERROR")
+        fixture = merge(openaiFixture('{}'), { status: "incomplete", error: null })
         expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE")
-        fixture = openaiFixture('{}'); fixture.output[1].content = [{ type: "refusal", refusal: "blocked" }]
+        fixture = merge(openaiFixture('{}'), { error: null })
+        fixture.output[1].content = [{ type: "refusal", refusal: "blocked" }]
         expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE")
         fixture = { choices: [{ finish_reason: "length", message: { content: '{}' } }] }
         expectError(function() { g.decide("state", questions); }, "LLM_DECISION_INVALID_RESPONSE")
@@ -671,6 +703,14 @@
     g.getGPT().model._request = function() { return { prompt_eval_count: 3, eval_count: 2, done: true, message: { role: "assistant", content: '{"value":3}' } }; }
     expectError(function() { g.jsonSchemaPrompt("Bad", schema, undefined, undefined, []); }, "LLM_DECISION_INVALID_RESPONSE")
     ow.test.assert(stringify(g.getGPT().getConversation()), before, "Failed final response does not commit history")
+    g.getGPT().model._request = () => ({
+      done: true, message: { role: "assistant", content: "", tool_calls: [
+        { function: { name: "lookup", arguments: {} } },
+        { function: { name: "lookup", arguments: "{" } }
+      ] }
+    })
+    var invalid = expectError(() => g.jsonSchemaPrompt("Malformed parallel call", schema), "LLM_DECISION_INVALID_RESPONSE")
+    ow.test.assert([calls, invalid.toolsExecuted, invalid.safeToRetry], [1, false, true], "Ollama validates the whole schema tool batch")
     var step = 0
     g.getGPT().model._request = function() {
       if (++step == 1) return { done: true, message: { role: "assistant", content: "", tool_calls: [{ function: { name: "lookup", arguments: {} } }] } }
@@ -877,8 +917,8 @@
     g.getGPT().model._decisionRequest = function(uri, body) {
       ow.test.assert(uri.indexOf("responses") >= 0, true, "Responses transport retained")
       bodies.push(copy(body))
-      if (bodies.length == 1) return { status: "completed", output: [{ type: "reasoning", id: "r1", summary: [] }, { type: "function_call", id: "fc1", call_id: "call1", name: "lookup", arguments: "{}", status: "completed" }], usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 } }
-      return openaiFixture('{"value":"found"}')
+      if (bodies.length == 1) return { status: "completed", error: null, output: [{ type: "reasoning", id: "r1", summary: [], encrypted_content: "fixture" }, { type: "function_call", id: "fc1", call_id: "call1", name: "lookup", arguments: "{}", status: "completed" }], usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 } }
+      return merge(openaiFixture('{"value":"found"}'), { error: null })
     }
     var descriptor = { name: "Lookup", schema: { type: "object", properties: { value: { type: "string" } }, required: ["value"], additionalProperties: false } }
     var result = g.jsonSchemaPromptWithStats("lookup", descriptor)

@@ -115,6 +115,7 @@ Common `aOptions` properties include:
 - `model`: default model name or deployment name.
 - `url`: provider base URL. For OpenAI defaults to "https://api.openai.com".
 - `temperature`: model temperature. The OpenAI adapter sends it only if configured or provided per call.
+- `promptTransport`: use "responses" to send ordinary prompts and streams to Responses. Defaults to "chat".
 - `reasoningEffort`: optional OpenAI reasoning effort. Chat requests for GPT-6 Luna with function tools default to `none`.
 - `timeout`: request timeout in milliseconds (defaults to 15 minutes).
 - `headers`: extra request headers. These override generated headers with the same names.

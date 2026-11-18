@@ -195,6 +195,32 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testAIStreamingCallbackFailureClosesResponse
 
+   # OpenAI transport and tool continuation regressions
+   - name: AI::OpenAI opt-in Responses prompts
+     from: AI::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testAIOpenAIPromptResponsesTransport
+
+   - name: AI::OpenAI validates Chat tool batches
+     from: AI::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testAIOpenAIChatToolBatchValidation
+
+   - name: AI::Provider complete tool streams
+     from: AI::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testAIProviderCompleteToolStreams
+
+   - name: AI::Provider embedding upgrades
+     from: AI::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testAIProviderEmbeddingUpgrades
+
+   - name: AI::Foundry provider routes
+     from: AI::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testAIFoundryProviderRoutes
+
 todo:
    # ow.ai tests
    # -----------
@@ -235,3 +261,9 @@ todo:
    - AI::OpenAI terminal responses do not retry
    - AI::HTTP response ownership
    - AI::Streaming callback failure closes response
+
+   - AI::OpenAI opt-in Responses prompts
+   - AI::OpenAI validates Chat tool batches
+   - AI::Provider complete tool streams
+   - AI::Provider embedding upgrades
+   - AI::Foundry provider routes
