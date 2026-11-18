@@ -4,14 +4,14 @@ const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
 const context = vm.createContext({ document: { addEventListener() {} } })
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/mdtablesort.js'), 'utf8'), context)
+vm.runInContext(fs.readFileSync(process.env.MDTABLESORT_MODULE || path.join(__dirname, '../js/mdtablesort.js'), 'utf8'), context)
 
-function table(values, directions = ['asc']) {
+function table(values, directions = ['asc'], label = '') {
   const rows = values.map((value, index) => ({
     dataset: { originalIndex: String(index) },
     children: (Array.isArray(value) ? value : [value]).map(text => ({ textContent: String(text) }))
   }))
-  const headers = directions.map(sortDirection => ({ dataset: { sortDirection } }))
+  const headers = directions.map(sortDirection => ({ textContent: label, dataset: { sortDirection } }))
   const body = {
     querySelectorAll() { return rows.slice() },
     appendChild(row) { rows.splice(rows.indexOf(row), 1); rows.push(row) }
@@ -46,3 +46,48 @@ const multi = table([['a', '2'], ['b', '1'], ['a', '100'], ['a', '2']], ['asc', 
 assert.deepEqual(multi.sort(), [['a', '100'], ['a', '2'], ['a', '2'], ['b', '1']])
 assert.deepEqual(multi.reset(), [['a', '2'], ['b', '1'], ['a', '100'], ['a', '2']])
 console.log('PASS numeric/date/unit/version sorting, multiple columns, stable ties and original-order reset')
+
+// SemVer 2 precedence, validation, ignored metadata, and arbitrary-size identifiers.
+assert.deepEqual(table(['2.4','2.4.2','1.2','2.4.1','docs','2.10','2.8'], ['desc'], 'Object').sort().flat(),
+  ['docs','2.10','2.8','2.4.2','2.4.1','2.4','1.2'])
+const versions = ['1.0.0-alpha','1.0.0-alpha.1','1.0.0-alpha.beta','1.0.0-beta','1.0.0-beta.2','1.0.0-beta.11','1.0.0-rc.1','1.0.0','1.2.0','1.10.0','2.0.0']
+check(versions.slice().reverse(), versions)
+check(versions, versions.slice().reverse(), 'desc')
+check(['1.0.0+z','1.0.0+a','1.0.0'], ['1.0.0+z','1.0.0+a','1.0.0'])
+check(['9007199254740993.0.0','9007199254740992.0.0'], ['9007199254740992.0.0','9007199254740993.0.0'])
+check(['1.0.0-9007199254740993','1.0.0-9007199254740992'], ['1.0.0-9007199254740992','1.0.0-9007199254740993'])
+check(['1.0.0-a','1.0.0-A','1.0.0-1'], ['1.0.0-1','1.0.0-A','1.0.0-a'])
+check(['latest','1.10.0','1.2.0'], ['1.2.0','1.10.0','latest'])
+for (const invalid of ['01.0.0','1.01.0','1.0.01','1.0.0-01','1.0.0-a.01','1.0.0-','1.0.0+','1.0.0-a..b','1.0.0+a..b','1.2','1.2.3.4']) assert.equal(context.parseSemVer(invalid), null)
+assert.equal(context.compareSemVer(context.parseSemVer('1.0.0+001'), context.parseSemVer('1.0.0+002')), 0)
+console.log('PASS SemVer 2 precedence, validation, metadata, large identifiers and mixed values')
+
+// A mixed page can contain a server listing and independently sortable Markdown tables.
+function sortHeader(existingControls = false) {
+  const children = existingControls ? [{ className: 'sorter-container' }] : []
+  return {
+    children,
+    dataset: {},
+    querySelector() { return children.find(child => child.className === 'sorter-container') },
+    appendChild(child) { children.push(child) }
+  }
+}
+function listing(header, server = false) {
+  return {
+    hasAttribute(name) { return server && name === 'data-browse-server-sort' },
+    querySelector(selector) { return selector === 'thead tr' ? { querySelectorAll: () => [header] } : null }
+  }
+}
+const serverHeader = sortHeader()
+const oldServerHeader = sortHeader(true)
+const markdownHeader = sortHeader()
+context.document.querySelectorAll = () => [listing(serverHeader, true), listing(oldServerHeader), listing(markdownHeader)]
+context.document.createElement = () => ({ dataset: {}, addEventListener() {}, appendChild() {} })
+context.document.head = { appendChild() {} }
+context.initializeTableSorters()
+context.initializeTableSorters()
+assert.equal(serverHeader.children.length, 0)
+assert.equal(oldServerHeader.children.length, 1)
+assert.equal(markdownHeader.children.length, 1)
+assert.equal(markdownHeader.dataset.sortDirection, 'none')
+console.log('PASS server sort controls are preserved and Markdown initialization is idempotent')

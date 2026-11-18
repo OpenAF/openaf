@@ -12,7 +12,7 @@ Tries to decode the JWT aToken provided.
 
 Sources:
 
-- js/owrap.server.js:5175
+- js/owrap.server.js:5183
 
 <a id="api-ow-server-jwt-genkey-038400cc"></a>
 
@@ -24,7 +24,7 @@ Generates a key for the provided aAlgorithm (defaults to HS256). If aAlgorithm i
 
 Sources:
 
-- js/owrap.server.js:5020
+- js/owrap.server.js:5028
 
 <a id="api-ow-server-jwt-sign-01fc276a"></a>
 
@@ -49,7 +49,7 @@ Expected keys for `aData`:
 
 Sources:
 
-- js/owrap.server.js:5112
+- js/owrap.server.js:5120
 
 <a id="api-ow-server-jwt-verify-ba4a1f75"></a>
 
@@ -61,5 +61,5 @@ Verifies the JWT provided with aToken using aSecret1 (key (either a string or ja
 
 Sources:
 
-- js/owrap.server.js:5057
+- js/owrap.server.js:5065
 

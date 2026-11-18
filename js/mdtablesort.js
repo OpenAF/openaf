@@ -9,6 +9,8 @@ function initializeTableSorters() {
   const tables = document.querySelectorAll('table');
 
   tables.forEach((table) => {
+    if (table.hasAttribute('data-browse-server-sort')) return;
+
     // Identify header row: prefer a <thead> if available
     let headerRow = table.querySelector('thead tr');
     if (!headerRow) {
@@ -18,6 +20,8 @@ function initializeTableSorters() {
 
     // For each header cell, add sort control buttons
     const headerCells = headerRow.querySelectorAll('th, td');
+    // Preserve existing controls, including server sort links from older Browse pages.
+    if (Array.from(headerCells).some(cell => cell.querySelector(':scope > .sorter-container'))) return;
     headerCells.forEach((cell, index) => {
       // Create a container for the sort buttons and assign a class for styling
       const sorterContainer = document.createElement('span');
@@ -193,66 +197,50 @@ function parseNumberWithUnits(value) {
   return numberPart * multiplier;
 }
 
-// Parse a semantic version string and return normalized components.
-function parseSemVer(value) {
-  if (value === null || value === undefined) return null;
-  const cleaned = String(value).trim();
-  if (!cleaned) return null;
-
-  const match = cleaned.match(
-    /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/
-  );
-  if (!match) return null;
-
-  return {
-    major: parseInt(match[1], 10),
-    minor: parseInt(match[2], 10),
-    patch: parseInt(match[3], 10),
-    prerelease: match[4] ? match[4].split('.') : []
-  };
+// Parse complete SemVer 2 values; retain the existing optional v display prefix.
+function parseSemVer(value, allowShort) {
+  if (value === null || value === undefined) return null
+  var text = String(value).trim()
+  // In version or name columns, a bare major.minor label denotes patch zero.
+  if (allowShort && /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(text)) text += ".0"
+  var match = text.match(/^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/)
+  if (!match) return null
+  var prerelease = match[4] ? match[4].split('.') : []
+  if (prerelease.some(id => /^\d+$/.test(id) && id.length > 1 && id[0] === '0')) return null
+  return { major:match[1], minor:match[2], patch:match[3], prerelease:prerelease }
 }
 
 function isNumericIdentifier(value) {
-  return /^\d+$/.test(value);
+  return /^\d+$/.test(value)
 }
 
-// Compare semantic versions according to SemVer precedence rules.
+// Digit strings preserve precedence beyond Number's safe integer range.
+function compareSemVerNumber(a, b) {
+  if (a.length !== b.length) return a.length < b.length ? -1 : 1
+  return a === b ? 0 : (a < b ? -1 : 1)
+}
+
 function compareSemVer(a, b) {
-  if (a.major !== b.major) return a.major < b.major ? -1 : 1;
-  if (a.minor !== b.minor) return a.minor < b.minor ? -1 : 1;
-  if (a.patch !== b.patch) return a.patch < b.patch ? -1 : 1;
-
-  const aHasPre = a.prerelease.length > 0;
-  const bHasPre = b.prerelease.length > 0;
-  if (!aHasPre && !bHasPre) return 0;
-  if (!aHasPre) return 1;
-  if (!bHasPre) return -1;
-
-  const len = Math.max(a.prerelease.length, b.prerelease.length);
-  for (let i = 0; i < len; i++) {
-    const ai = a.prerelease[i];
-    const bi = b.prerelease[i];
-
-    if (ai === undefined) return -1;
-    if (bi === undefined) return 1;
-    if (ai === bi) continue;
-
-    const aiNum = isNumericIdentifier(ai);
-    const biNum = isNumericIdentifier(bi);
-
-    if (aiNum && biNum) {
-      const aNum = parseInt(ai, 10);
-      const bNum = parseInt(bi, 10);
-      if (aNum !== bNum) return aNum < bNum ? -1 : 1;
-      continue;
-    }
-
-    if (aiNum && !biNum) return -1;
-    if (!aiNum && biNum) return 1;
-    return ai < bi ? -1 : 1;
+  var keys = ['major', 'minor', 'patch']
+  for (var part = 0; part < keys.length; part++) {
+    var key = keys[part]
+    var result = compareSemVerNumber(a[key], b[key])
+    if (result) return result
   }
-
-  return 0;
+  if (!a.prerelease.length && !b.prerelease.length) return 0
+  if (!a.prerelease.length) return 1
+  if (!b.prerelease.length) return -1
+  for (var i = 0; i < Math.max(a.prerelease.length, b.prerelease.length); i++) {
+    var ai = a.prerelease[i], bi = b.prerelease[i]
+    if (ai === undefined) return -1
+    if (bi === undefined) return 1
+    if (ai === bi) continue
+    var an = isNumericIdentifier(ai), bn = isNumericIdentifier(bi)
+    if (an && bn) return compareSemVerNumber(ai, bi)
+    if (an !== bn) return an ? -1 : 1
+    return ai < bi ? -1 : 1
+  }
+  return 0
 }
 
 // Add helper function to support "yyyy-MM-dd HH:mm:ss" format.
@@ -302,7 +290,8 @@ function sortTable(table) {
   headerCells.forEach((cell, colIndex) => {
     const dir = cell.dataset.sortDirection;
     if (dir && dir !== 'none') {
-      criteria.push({ colIndex: colIndex, direction: dir });
+      const allowShort = /^(?:object|filename|version|tag)\b/i.test((cell.textContent || "").trim());
+      criteria.push({ colIndex: colIndex, direction: dir, allowShort });
     }
   });
 
@@ -325,8 +314,10 @@ function sortTable(table) {
         let valB = cellB ? cellB.textContent.trim() : '';
 
         // Attempt semantic version parsing before generic date/string checks
-        const semverA = parseSemVer(valA);
-        const semverB = parseSemVer(valB);
+        const semverA = parseSemVer(valA, crit.allowShort);
+        const semverB = parseSemVer(valB, crit.allowShort);
+        // Keep recognized versions together for a consistent order in mixed columns.
+        if (!!semverA !== !!semverB) return (semverA ? -1 : 1) * (crit.direction === 'asc' ? 1 : -1)
         if (semverA && semverB) {
           const semverCmp = compareSemVer(semverA, semverB);
           if (semverCmp < 0) return crit.direction === 'asc' ? -1 : 1;

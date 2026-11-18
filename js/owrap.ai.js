@@ -716,7 +716,8 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(15 * 60000)
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
-            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(__)
+            aOptions.reasoningEffort = _$(aOptions.reasoningEffort, "aOptions.reasoningEffort").isString().default(__)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.openai.com")
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
             // If noSystem=true it will not output the system messages
@@ -757,6 +758,19 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _timeout = aOptions.timeout
             var _model = aOptions.model
             var _temperature = aOptions.temperature
+            // Shape reasoning options for the selected OpenAI transport.
+            var _applyReasoning = (body, responses) => {
+                var effort = isDef(body.reasoning_effort) ? body.reasoning_effort : aOptions.reasoningEffort
+                if (responses) {
+                    if (isDef(effort)) body.reasoning = merge({ effort: effort }, body.reasoning || {})
+                    delete body.reasoning_effort
+                } else if (isDef(effort)) {
+                    body.reasoning_effort = effort
+                } else if (body.model === "gpt-6-luna" && isArray(body.tools) && body.tools.some(tool => isMap(tool) && tool.type === "function")) {
+                    body.reasoning_effort = "none"
+                }
+                return body
+            }
             var _noSystem = aOptions.noSystem
             var _lastStats = __
             var _debugCh = __
@@ -1171,7 +1185,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isDef(po.maxOutputTokens)) body.max_completion_tokens = po.maxOutputTokens
                     }
                     if (isDef(po.temperature)) body.temperature = po.temperature
-                    if (request.descriptor) body = merge(d.copy(aOptions.params || {}), body)
+                    if (request.descriptor) body = _applyReasoning(merge(d.copy(aOptions.params || {}), body), transport == "responses")
                     var raw = d.execution(() => _r._decisionRequest(_route(endpoint, request.model), body), "openai")
                     return { raw: raw, stats: _captureStats(raw, body) }
                 },
@@ -1207,7 +1221,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (typeof prompt != "string") d.invalid()
                     model = isDef(model) ? model : _model
                     temperature = isDef(temperature) ? temperature : _temperature
-                    if (!d.text(model) || typeof temperature != "number" || !isFinite(temperature)) d.invalid()
+                    if (!d.text(model) || (isDef(temperature) && (typeof temperature != "number" || !isFinite(temperature)))) d.invalid()
                     var params = aOptions.params || {}
                     if (["response_format", "text", "tools", "tool_choice", "messages", "input", "model"].some(k => d.has(params, k))) d.invalid()
                     // A private validator must never inherit global coercion/default/removal settings.
@@ -1222,7 +1236,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var messages = conversation.concat([{ role: "user", content: prompt }])
                     if (_noSystem) messages = messages.map(m => { if (m.role == "system") m.role = "developer"; return m; })
                     var request = { model: model, schema: descriptor.schema, descriptor: descriptor, messages: messages, validate: validate,
-                        providerOptions: { transport: aOptions.schemaTransport || aOptions.decisionTransport || "responses", temperature: temperature } }
+                        providerOptions: { transport: aOptions.schemaTransport || aOptions.decisionTransport || "responses" } }
+                    if (isDef(temperature)) request.providerOptions.temperature = temperature
                     var selected = isDef(tools) ? tools : Object.keys(_r.tools)
                     var wireTools = selected.map(t => {
                         var tool = isString(t) ? _r.tools[t] : t
@@ -1239,13 +1254,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     try {
                         while (true) {
                             if (wireTools.length) {
-                                var body = merge(d.copy(params), { model: model, temperature: temperature, messages: d.copy(messages),
+                                var body = merge(d.copy(params), { model: model, messages: d.copy(messages),
                                     tools: wireTools, response_format: { type: "json_schema", json_schema: descriptor } })
                                 if (toolTransport == "responses") {
-                                    body = merge(d.copy(params), { model: model, temperature: temperature, input: d.copy(responseItems), store: false,
+                                    body = merge(d.copy(params), { model: model, input: d.copy(responseItems), store: false,
                                         text: { format: merge({ type: "json_schema" }, descriptor) },
                                         tools: wireTools.map(t => merge({ type: "function", strict: false }, t.function)) })
                                 }
+                                if (isDef(temperature)) body.temperature = temperature
+                                _applyReasoning(body, toolTransport == "responses")
                                 var raw = d.execution(() => _r._decisionRequest(_route(toolTransport == "responses" ? "responses" : "chat/completions", model), body), "openai")
                                 execution = { raw: raw, stats: _captureStats(raw, body) }
                             } else execution = _r.rawStructuredPrompt(request)
@@ -1377,7 +1394,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
                     var body = {
                         model: aModel,
-                        temperature: aTemperature,
                         messages: msgs
                     }
                     // IMPORTANT: OpenAI JSON mode (response_format) cannot be combined with tool/function calling.
@@ -1386,6 +1402,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (!aOptions.noResponseFormat && aJsonFlag && (!isArray(aTools) || aTools.length === 0)) {
                         body.response_format = { type: "json_object" }
                     }
+                    if (isDef(aTemperature)) body.temperature = aTemperature
                     body = merge(body, aOptions.params)
                     // Preserve any tools already set via aOptions.params (e.g. built-in tools like web_search_preview)
                     var _paramTools = isArray(body.tools) ? body.tools : []
@@ -1416,6 +1433,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (_paramTools.length > 0) body.tools = _paramTools
                         else if (isDef(body.tools)) delete body.tools
                     }
+                    _applyReasoning(body, false)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var _res = _r._request(_route("chat/completions", aModel), body)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
@@ -1496,13 +1514,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
                     var body = {
                         model: aModel,
-                        temperature: aTemperature,
                         messages: msgs,
                         stream: true
                     }
                     if (!aOptions.noResponseFormat && aJsonFlag && (!isArray(aTools) || aTools.length === 0)) {
                         body.response_format = { type: "json_object" }
                     }
+                    if (isDef(aTemperature)) body.temperature = aTemperature
                     body = merge(body, aOptions.params)
                     // Preserve any tools already set via aOptions.params (e.g. built-in tools like web_search_preview)
                     var _paramTools = isArray(body.tools) ? body.tools : []
@@ -1532,6 +1550,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (_paramTools.length > 0) body.tools = _paramTools
                         else if (isDef(body.tools)) delete body.tools
                     }
+                    _applyReasoning(body, false)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
 
                     var events = []
@@ -1577,6 +1596,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     })
                     // If there was a stream error, return it immediately
                     if (isDef(streamError)) {
+                        if (isDef(_debugCh)) $ch(_debugCh).set({ _t: nowNano(), _f: "llm" }, merge({ _t: nowNano(), _f: "llm" }, streamError))
                         _captureStats(streamError, body)
                         return streamError
                     }
@@ -1649,7 +1669,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var _schema = _normalizeResponseSchema(aResponseSchema)
                     var _responsesBody = {
                         model      : aModel,
-                        temperature: aTemperature,
                         input      : _toResponsesInput(msgs)
                     }
                     if (isDef(_schema)) {
@@ -1660,7 +1679,6 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     var _chatBody = {
                         model      : aModel,
-                        temperature: aTemperature,
                         messages   : msgs
                     }
                     if (isDef(_schema)) {
@@ -1670,8 +1688,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                         }
                     }
 
-                    _responsesBody = merge(_responsesBody, aOptions.params)
-                    _chatBody = merge(_chatBody, aOptions.params)
+                    if (isDef(aTemperature)) {
+                        _responsesBody.temperature = aTemperature
+                        _chatBody.temperature = aTemperature
+                    }
+                    _responsesBody = _applyReasoning(merge(_responsesBody, aOptions.params), true)
+                    _chatBody = _applyReasoning(merge(_chatBody, aOptions.params), false)
 
                     var _res = __
                     var _requestBody = __
@@ -4393,7 +4415,8 @@ OpenWrap.ai.prototype.agent = function(aOptions) {
  * - `key`: provider API key when required.
  * - `model`: default model name or deployment name.
  * - `url`: provider base URL. For OpenAI defaults to "https://api.openai.com".
- * - `temperature`: default model temperature.
+ * - `temperature`: model temperature. The OpenAI adapter sends it only if configured or provided per call.
+ * - `reasoningEffort`: optional OpenAI reasoning effort. Chat requests for GPT-6 Luna with function tools default to `none`.
  * - `timeout`: request timeout in milliseconds (defaults to 15 minutes).
  * - `headers`: extra request headers. These override generated headers with the same names.
  * - `params`: extra request body parameters merged into prompt, image and embedding calls.

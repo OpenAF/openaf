@@ -697,7 +697,7 @@
     exports.testAIOpenAIToolRecursionNoDuplication = function() {
         ow.loadAI();
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-test" });
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-6-luna" });
         var requests = [];
         g.setTool("echo", "Echo", { type: "object", properties: { value: { type: "number" } } }, function(args) {
             return { echoed: args.value };
@@ -736,7 +736,11 @@
             };
         };
 
-        var res = g.rawPrompt("use tool", "gpt-test", 0.1, false, [ "echo" ]);
+        var res = g.rawPrompt("use tool", "gpt-6-luna", 0, false, [ "echo" ]);
+        requests.forEach(function(body) {
+            ow.test.assert(body.reasoning_effort, "none", "Luna native tools use the Chat Completions compatibility effort")
+            ow.test.assert(body.temperature, 0, "An explicit temperature of zero is preserved")
+        })
         ow.test.assert(res.choices[0].message.content, "done", "Problem finishing OpenAI tool recursion.");
         ow.test.assert(requests.length, 2, "Problem with number of OpenAI tool recursion requests.");
         ow.test.assert(requests[1].messages.length, 3, "Problem duplicating OpenAI tool recursion messages.");
@@ -747,7 +751,7 @@
     exports.testAIOpenAIStreamingToolRecursionNoDuplication = function() {
         ow.loadAI();
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-test" });
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-6-luna" });
         var requests = [];
         g.setTool("echo", "Echo", { type: "object", properties: { value: { type: "number" } } }, function(args) {
             return { echoed: args.value };
@@ -806,7 +810,11 @@
             ]);
         };
 
-        var res = g.rawPromptStream("use tool", "gpt-test", 0.1, false, [ "echo" ]);
+        var res = g.rawPromptStream("use tool", "gpt-6-luna", __, false, [ "echo" ]);
+        requests.forEach(function(body) {
+            ow.test.assert(body.reasoning_effort, "none", "Luna native tools use the Chat Completions compatibility effort")
+            ow.test.assert(Object.prototype.hasOwnProperty.call(body, "temperature"), false, "Streaming leaves temperature to the provider")
+        })
         ow.test.assert(res.content, "done", "Problem finishing OpenAI streaming tool recursion.");
         ow.test.assert(requests.length, 2, "Problem with number of OpenAI streaming tool recursion requests.");
         ow.test.assert(requests[1].messages.length, 3, "Problem duplicating OpenAI streaming tool recursion messages.");
@@ -950,7 +958,7 @@
     exports.testAIOpenAIRawResponse = function() {
         ow.loadAI()
 
-        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o" })
+        var g = new ow.ai.gpt("openai", { key: "test-key", model: "gpt-4o", reasoningEffort: "low" })
         var requests = []
         var schema = {
             name: "PersonInfo",
@@ -984,6 +992,8 @@
         }
 
         var rawRes = g.model.rawResponse("Extract: Alice, 30", "gpt-4o", 0.5, false, [], schema)
+        ow.test.assert(requests[0].body.reasoning.effort, "low", "Responses receives nested reasoning effort")
+        ow.test.assert(isUnDef(requests[0].body.reasoning_effort), true, "Responses uses its own reasoning field")
         ow.test.assert(requests.length, 1, "Problem: rawResponse should make exactly one request.")
         ow.test.assert(requests[0].url.indexOf("responses") >= 0, true, "Problem: rawResponse should prefer the responses endpoint.")
         ow.test.assert(requests[0].body.text.format.type, "json_schema", "Problem: rawResponse should set text.format.type to json_schema.")

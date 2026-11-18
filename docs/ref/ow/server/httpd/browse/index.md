@@ -24,7 +24,7 @@ Provides a simple file browser for the provided `aURI`. The `aOptions` map can c
 
 Sources:
 
-- js/owrap.server.js:5207
+- js/owrap.server.js:5215
 
 <a id="api-ow-server-httpd-browse-odoc-571c1b36"></a>
 
@@ -43,7 +43,7 @@ Provides a simple oDoc browser. The `aOptions` map can contain the following key
 
 Sources:
 
-- js/owrap.server.js:5493
+- js/owrap.server.js:5498
 
 <a id="api-ow-server-httpd-browse-opacks-9d1ec6c5"></a>
 
@@ -62,5 +62,5 @@ Provides a simple oPack browser. The `aOptions` map can contain the following ke
 
 Sources:
 
-- js/owrap.server.js:5582
+- js/owrap.server.js:5587
 

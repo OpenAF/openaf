@@ -1,3 +1,141 @@
 /* Author: Nuno Aguiar */
 
+/* Inline tree controls and theme colors */
+.njsmap_tree {
+  --tree-border: #cbd5e1;
+  --tree-row: #fff;
+  --tree-alt: #f3f6fa;
+  --tree-key: #1e3a5f;
+  --tree-text: #27374a;
+  --tree-number: #254c8a;
+  --tree-bool: #315c70;
+  --tree-control: #787e86;
+  --tree-control-rest: #858a90;
+  --tree-count: #646b76;
+}
+.njsmap_dark .njsmap_tree,
+.njsmap_tree.njsmap_dark {
+  --tree-border: #3b4858;
+  --tree-row: #141c26;
+  --tree-alt: #1c2734;
+  --tree-key: #c9d9ef;
+  --tree-text: #cfdae6;
+  --tree-number: #a9c9ff;
+  --tree-bool: #9ad8cd;
+  --tree-control: #838a92;
+  --tree-control-rest: #727a83;
+  --tree-count: #939aa3;
+}
+.njsmap_tree .avalue > .njsmap_table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--tree-border);
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  background: transparent;
+  line-height: 1.45;
+}
+.njsmap_tree .njsmap_table .njsmap_tablecell {
+  padding: .25rem .55rem;
+  border: 0;
+  font-size: .8125rem;
+  color: var(--tree-text);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.njsmap_tree .njsmap_tablecell + .njsmap_tablecell { border-inline-start: 1px solid var(--tree-border); }
+.njsmap_tree .njsmap_table tr + tr > .njsmap_tablecell { border-top: 1px solid var(--tree-border); }
+.njsmap_tree .njsmap_table > tbody > tr { background: var(--tree-row); }
+.njsmap_tree .njsmap_table > tbody > tr:nth-child(even) { background: var(--tree-alt); }
+.njsmap_tree .njsmap_records > thead > tr > th {
+  background: var(--tree-alt);
+  color: var(--tree-key);
+  text-align: start;
+  padding: .25rem .55rem;
+  border: 0;
+  border-bottom: 1px solid var(--tree-border);
+}
+.njsmap_tree table:not(.njsmap_records) > tbody > tr > .njsmap_tablecell:first-child > span { color: var(--tree-key) !important; }
+.njsmap_tree .njsmap_valueNumber { color: var(--tree-number) !important; }
+.njsmap_tree .njsmap_valueString { color: var(--tree-text) !important; }
+.njsmap_tree .njsmap_valueBool { color: var(--tree-bool) !important; }
+.njsmap_tree .avalue {
+  color: var(--tree-text);
+}
+.njsmap_tree .njsmap_tree_hint {
+  color: var(--tree-control);
+  font-family: ui-monospace, Menlo, monospace;
+}
+.njsmap_tree .njsmap_tree_count {
+  margin-inline-start: .45em;
+  color: var(--tree-count);
+  font-size: .9em;
+}
+.njsmap_tree [aria-expanded="true"] + .njsmap_tree_hint .njsmap_tree_count {
+  display: none;
+}
+.njsmap_tree_branch:not([hidden]) {
+  display: block;
+  margin: .4em 0 0 .4em;
+}
+.njsmap_tree :is(.njsmap_tree_toggle, .njsmap_tree_page) {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  margin-right: .15em;
+  border: 0;
+  border-radius: 50%;
+  color: var(--tree-control-rest);
+  transition: color 150ms ease-out;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+}
+.njsmap_tree :is(.njsmap_tree_toggle, .njsmap_tree_page):hover:not(:disabled),
+.njsmap_tree :is(.njsmap_tree_toggle, .njsmap_tree_page):focus {
+  color: var(--tree-key);
+  outline: 1px solid currentColor;
+  outline-offset: -3px;
+}
+.njsmap_tree :is(.njsmap_tree_toggle, .njsmap_tree_page):focus-visible { outline-width: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .njsmap_tree :is(.njsmap_tree_toggle, .njsmap_tree_page) { transition: none; }
+}
+.njsmap_tree .njsmap_tree_page:disabled { opacity: .45; cursor: default; }
+.njsmap_tree .njsmap_tree_bulk {
+  position: relative;
+  height: 0;
+  margin: 0;
+}
+.njsmap_tree .njsmap_tree_bulk_button {
+  position: absolute;
+  inset-block-start: 1px;
+  inset-inline-start: 2px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+}
+.njsmap_tree .njsmap_tree_bulk_button svg {
+  width: 14px;
+  height: 14px;
+}
+.njsmap_tree .njsmap_tree_bulk_inline {
+  position: static;
+  display: inline-grid;
+  margin-inline-start: 2px;
+  vertical-align: middle;
+}
+.njsmap_tree .njsmap_tree_bulk_inline svg {
+  width: 12px;
+  height: 12px;
+}
+.njsmap_tree .njsmap_tree_bulk_button[data-collapse="true"] svg { transform: rotate(180deg); }
+.njsmap_tree .njsmap_tree_bulk:not([hidden]) + .njsmap_tree_rows > .avalue > table > tbody > tr:first-child > td:first-child {
+  padding-inline-start: 28px;
+}
+
 .njsmap_value {color: #0000AA;font-size: small;}.njsmap_valueNA {color: #AAAAAA;font-size: small;}.njsmap_valueNumber {color: midnightblue;}.njsmap_valueString {color: DarkSlateGray;}.njsmap_valueBool {color: steelblue;}.njsmap_valueDate {color: #0000AA;}.njsmap_table {border: 0px solid lightgray;border-spacing: 0;line-height: 1;box-sizing: border-box;border-collapse: collapse;font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;color: #000088;margin-top: 5;margin-left: 5;margin-right: 5;margin-bottom: 5;font-size: 12px;}.njsmap_tablehead {padding: 3px;border: 1px solid lightgray;font-size: small;text-align: left;}.njsmap_tablecell {padding: 3px;border: 1px solid lightgray;color: #0000AA;font-size: small;text-align: left;}.njsmap_tablecell tr:nth-child(even) {background: rgb(250, 250, 250);}body.njsmap_dark {background-color: #000000;}a:link.njsmap_dark,a:visited.njsmap_dark {color: #528b8b;}.njsmap_dark .njsmap_value {color: #88AAFF;font-size: small;}.njsmap_dark .njsmap_valueNA {color: #666666;font-size: small;}.njsmap_dark .njsmap_valueNumber {color: #a2b5cd;}.njsmap_dark .njsmap_valueString {color: #528b8b;}.njsmap_dark .njsmap_valueBool {color: #8AB6D6;}.njsmap_dark .njsmap_valueDate {color: #88AAFF }.njsmap_dark .njsmap_table {border: 0px solid #444444;border-spacing: 0;line-height: 1;box-sizing: border-box;border-collapse: collapse;font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;color: #88AAFF;margin-top: 5;margin-left: 5;margin-right: 5;margin-bottom: 5;font-size: 12px;background-color: #1a1a1a;}.njsmap_dark .njsmap_tablehead {padding: 3px;border: 1px solid #444444;font-size: small;text-align: left;background-color: #2a2a2a;}.njsmap_dark .njsmap_tablecell {padding: 3px;border: 1px solid #444444;color: #88AAFF;font-size: small;text-align: left;}.njsmap_dark .njsmap_tablecell tr:nth-child(even) {background: #252525;}

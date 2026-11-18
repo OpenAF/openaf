@@ -4320,6 +4320,12 @@ OpenWrap.server.prototype.httpd = {
                 target.uri = _options.parentURI.replace(/\/$/, "") + "/" + String((request.params || {}).path || "").replace(/^\/+/, "")
                 return _options._operation(relative.substring(3), target, server, false)
             }
+            if ((request.params || {})._browsePrefetch === "1" && (request.header || {})["x-openaf-browse-prefetch"] === "1") {
+                if (request.method != "GET") return { data: "", status: 405, header: { Allow: "GET" } }
+                if (_options.prefetch !== true || !isFunction(_options._fns.prefetch)) return { data: "", status: 404, header: {} }
+                var queued = _options._fns.prefetch(request, _options)
+                return { data: "", status: queued ? 202 : 204, header: { "Cache-Control": "private, no-store" } }
+            }
             var _lst = _options.query && _options.query.enabled && (request.params || {}).q && isFunction(_options._fns.search)
                 ? _options._fns.search(request, _options) : _options._fns.getList(request, _options)
 			if (_lst.isList) {
@@ -4334,7 +4340,9 @@ OpenWrap.server.prototype.httpd = {
 				}
 			}
 	
-			return server.replyOKHTML( String(_out) )
+			var reply = server.replyOKHTML(String(_out))
+            if (_options.query && _options.query.enabled) reply.header = Object.assign({}, reply.header, { Vary: "X-OpenAF-Browse-Fragment" })
+            return reply
 		} catch(e) {
 			$err(e)
             return { data: "Browse request failed", mimetype: "text/plain", status: [400,403,404,405,501,503].indexOf(e.httpStatus) >= 0 ? e.httpStatus : 500, header: {} }
@@ -5395,13 +5403,11 @@ OpenWrap.server.prototype.httpd.browse = {
 					  }
 					}
 			  
-					if (obj.type == "asciidoc" && isDef(getOPackPath("Asciidoc"))) {
+					if (obj.type == "asciidoc" && isDef(getOPackPath("Asciidoc")) && (isDef(obj.stream) || isDef(obj.file))) {
 					  loadLib("asciidoc.js")
-					  if (isUnDef(obj.file) && isDef(obj.stream)) {
-						return  ow.server.httpd.replyAsciidoc(server, obj.stream)
-					  } else {
-						return ow.server.httpd.replyAsciidoc(server, obj.file)
-					  }
+					  const stream = new java.io.BufferedInputStream(isDef(obj.file) ? io.readFileStream(obj.file) : obj.stream)
+					  try { return ow.server.httpd.replyAsciidoc(server, stream) }
+					  finally { stream.close() }
 					}
 			  
 					if (isDef(obj.stream)) {
@@ -5463,9 +5469,8 @@ OpenWrap.server.prototype.httpd.browse = {
 					  }
 					} else {
 					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span><span onclick=\"downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; float: right; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\">&darr;</a></span></span></span>\n\n"
-					  content += "```" + obj.type + "\n"
-					  content += isMap(obj.data) ? stringify(obj.data) : String(obj.data)
-					  content += "\n```\n\n"
+					  content += "<div><pre><code class=\"language-" + ow.format.escapeHTML(obj.type) + "\">" +
+					    ow.format.escapeHTML(isMap(obj.data) ? stringify(obj.data) : String(obj.data)) + "</code></pre></div>\n\n"
 			  
 					  if (isDef(options.footer)) {
 						content += "\n" + options.footer + "\n"
