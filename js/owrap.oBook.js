@@ -57,7 +57,7 @@ OpenWrap.oBook.prototype.book.prototype.printPart = function(partId) {
     }
     
     //if (includeCode) txt += "\n" + this.struct[partId].code + "\n"
-    print(ow.format.withSideLine(head + ow.format.withMD(txt), __, "YELLOW", __, thm))
+    print(ow.format.withSideLine(head + ow.format.withMD(txt, __, __, "none"), __, "YELLOW", __, thm))
     if (includeCode) print(ansiColor("ITALIC,WHITE", "Copy+paste the following code or adapt it, if needed, as instructed:\n\n") + this.struct[partId].code)
 
     if (!includeCode) {
@@ -83,7 +83,7 @@ OpenWrap.oBook.prototype.book.prototype.bookEnd = function() {
 
     var thm = ow.format.withSideLineThemes().openTopCurvedRect
 
-    print(ow.format.withSideLine(ow.format.withMD("(📖 obook end)"), __, "YELLOW", __, thm))
+    print(ow.format.withSideLine(ow.format.withMD("(📖 obook end)", __, __, "none"), __, "YELLOW", __, thm))
     if (this.exitOnEnd) exit(0)
 }
 
@@ -96,7 +96,7 @@ OpenWrap.oBook.prototype.book.prototype.bookEnd = function() {
 OpenWrap.oBook.prototype.book.prototype.bookStart = function() {
     var thm = ow.format.withSideLineThemes().openBottomCurvedRect
 
-    print(ow.format.withSideLine(ow.format.withMD("(📖 obook start)"), __, "YELLOW", __, thm))
+    print(ow.format.withSideLine(ow.format.withMD("(📖 obook start)", __, __, "none"), __, "YELLOW", __, thm))
 }
 
 /**

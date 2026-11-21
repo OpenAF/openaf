@@ -16,7 +16,7 @@ $flock(aLockFile).destroy()
 
 Sources:
 
-- js/openaf.js:17178
+- js/openaf.js:17235
 
 <a id="api-flock-islocallocked-efef711b"></a>
 
@@ -32,7 +32,7 @@ $flock(aLockFile).isLocalLocked()
 
 Sources:
 
-- js/openaf.js:17144
+- js/openaf.js:17201
 
 <a id="api-flock-islocked-ad59e751"></a>
 
@@ -48,7 +48,7 @@ $flock(aLockFile).isLocked()
 
 Sources:
 
-- js/openaf.js:17163
+- js/openaf.js:17220
 
 <a id="api-flock-lock-fdc2ef5f"></a>
 
@@ -64,7 +64,7 @@ $flock(aLockFile).lock()
 
 Sources:
 
-- js/openaf.js:17097
+- js/openaf.js:17154
 
 <a id="api-flock-trylock-48fdfc41"></a>
 
@@ -81,7 +81,7 @@ $flock(aLockFile).tryLock(() => { ... })
 
 Sources:
 
-- js/openaf.js:17203
+- js/openaf.js:17260
 
 <a id="api-flock-unlock-81243d85"></a>
 
@@ -97,5 +97,5 @@ $flock(aLockFile).unlock()
 
 Sources:
 
-- js/openaf.js:17120
+- js/openaf.js:17177
 

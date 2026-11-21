@@ -3253,7 +3253,7 @@ OpenWrap.format.prototype.printDashboard = function(widgets, aOptions) {
 					break
 				}
 				case "md":
-					content = ow.format.string.wordWrap(ow.format.withMD(String(_$(widget.data).default(""))), iW, ansiColor("RESET", "\n"))
+					content = ow.format.string.wordWrap(ow.format.withMD(String(_$(widget.data).default("")), __, __, "none"), iW, ansiColor("RESET", "\n"))
 					break
 				case "map":
 					content = printMap(widget.data, iW, "utf", true)
@@ -5446,13 +5446,43 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
 	this.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, slog);
 };
 
+// Resolves a friendly color name (or raw ansiColor attributes) to a markdown background ansiColor string
+OpenWrap.format.prototype._mdBgAnsi = function(aBg) {
+	if (!isString(aBg)) return ""
+
+	var _k = aBg.trim().toLowerCase()
+	if (_k.length == 0 || _k == "none") return ""
+
+	var _names = {
+		white      : "BG_WHITE,BLACK",
+		lightgrey  : "BG(252),BLACK",
+		lightgray  : "BG(252),BLACK",
+		grey       : "BG(244),BLACK",
+		gray       : "BG(244),BLACK",
+		darkgrey   : "BG(236),WHITE",
+		darkgray   : "BG(236),WHITE",
+		black      : "BG_BLACK,WHITE",
+		red        : "BG_RED,WHITE",
+		green      : "BG_GREEN,BLACK",
+		yellow     : "BG_YELLOW,BLACK",
+		blue       : "BG_BLUE,WHITE",
+		magenta    : "BG_MAGENTA,WHITE",
+		cyan       : "BG_CYAN,BLACK"
+	}
+
+	return isDef(_names[_k]) ? _names[_k] : aBg.trim()
+}
+
 /**
  * <odoc>
  * <key>ow.format.withMD(aString, defaultAnsi, aLineWidth, aBgColor) : String</key>
  * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi), provide aLineWidth
  * to override the detected console width when line width is needed, and provide aBgColor (an ansiColor color name, e.g. "BG_BLUE")
- * to maintain a background color throughout the output and pass it to sub-functions where applicable.
+ * to maintain a background color throughout the output and pass it to sub-functions where applicable. aBgColor also accepts friendly names
+ * (white, lightgrey, grey, darkgrey, black, red, green, yellow, blue, magenta, cyan). Use "none" to disable any background for the call.
+ * When aBgColor is not provided and `__colorFormat.md.bg` is set (friendly name or ansiColor attributes, e.g. "grey" or "BG(236),WHITE"), that background
+ * is used and every line is filled up to the line width, producing a solid colored panel.
  * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets (`*`, `-`, `+`), numbered lines (`1.` or `1)`),
  * task lists (`- [ ]`, `- [x]`), nested lists, links, block quotes (that can contain lists) and
  * simple LaTeX-like math symbols (e.g. "$\rightarrow$", "$\alpha$", "$\leq$") which are converted to their unicode equivalent.
@@ -5465,6 +5495,16 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("")
 	aLineWidth = _$(aLineWidth, "aLineWidth").isNumber().default(__)
 	aBgColor = _$(aBgColor, "aBgColor").isString().default("")
+
+	// Resolve background: explicit aBgColor first, then opt-in __colorFormat.md.bg (full-width fill)
+	var _bgFill = false
+	if (aBgColor.length > 0) {
+		aBgColor = this._mdBgAnsi(aBgColor)
+	} else if (isDef(__colorFormat.md) && isString(__colorFormat.md.bg)) {
+		aBgColor = this._mdBgAnsi(__colorFormat.md.bg)
+		_bgFill = aBgColor.length > 0
+	}
+
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "") + (aBgColor.length > 0 ? ansiColor(aBgColor, "") : "")
 	var _withColor = (base, bg) => (bg && bg.length > 0) ? (base && base.length > 0 ? base + "," + bg : bg) : base
 
@@ -5847,6 +5887,17 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi, aLineWidth, aB
 				}
 			}
 		}).filter(isString).join("\n")
+	}
+
+	// Fill every line with the background color up to the line width
+	if (_bgFill) {
+		var _bgOn = ansiColor(aBgColor, "").replace(/\u001b\[0?m$/, "")
+		if (_bgOn.length > 0) {
+			res = res.split("\n").map(l => {
+				var _pad = Math.max(0, _aSize - visibleLength(ow.format.string._stripAnsi(l)))
+				return _bgOn + l.replace(/\u001b\[0?m/g, m => m + _bgOn) + repeat(_pad, " ") + "\u001b[0m"
+			}).join("\n")
+		}
 	}
 
 	return res

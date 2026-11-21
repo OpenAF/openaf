@@ -277,6 +277,48 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testWithMDWrap
 
+   - name: Format::Markdown color format bg
+     from: Format::Init
+     to  : OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithMDColorFormatBg
+
+   - name: Format::Markdown color format bg raw
+     from: Format::Init
+     to  : OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithMDColorFormatBgRaw
+
+   - name: Format::Markdown color format bg none
+     from: Format::Init
+     to  : OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithMDColorFormatBgNone
+
+   - name: Format::Color format themes
+     from: Format::Init
+     to  : OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testColorFormatThemes
+
+   - name: Format::Markdown color format bg unset
+     from: Format::Init
+     to  : OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithMDColorFormatBgUnset
+
+   - name: Format::Markdown color format bg blocks
+     from: Format::Init
+     to  : OpenAF Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithMDColorFormatBgBlocks
+
    - name: Format::Markdown lists
      from: Format::Init
      to  : OpenAF Test
@@ -544,6 +586,12 @@ todo:
    - Format::$output borderless
    - Format::PrintTable borderless colors
    - Format::Markdown wrap
+   - Format::Markdown color format bg
+   - Format::Markdown color format bg raw
+   - Format::Markdown color format bg none
+   - Format::Color format themes
+   - Format::Markdown color format bg unset
+   - Format::Markdown color format bg blocks
    - Format::$output Markdown
    - Format::String pad
    - Format::Terminal capabilities

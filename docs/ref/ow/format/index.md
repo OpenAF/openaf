@@ -107,7 +107,7 @@ Shortcut for ow.format.elapsedTime4ms calculating the absolute difference, in ms
 
 Sources:
 
-- js/owrap.format.js:6175
+- js/owrap.format.js:6226
 
 <a id="api-ow-format-elapsedtime4ms-a28435a8"></a>
 
@@ -472,7 +472,7 @@ Performs a DNS over HTTPs query with aAddr. Optionally you can provide the aType
 
 Sources:
 
-- js/owrap.format.js:6448
+- js/owrap.format.js:6499
 
 <a id="api-ow-format-gethostaddress-762e699d"></a>
 
@@ -580,7 +580,7 @@ Tries to retrieve the reverse DNS of aIP using DNS over HTTPs. Optionally you ca
 
 Sources:
 
-- js/owrap.format.js:6486
+- js/owrap.format.js:6537
 
 <a id="api-ow-format-gettlscertificates-8053d633"></a>
 
@@ -918,7 +918,7 @@ Narrow areas fall back to signed text. Input order is retained; categories are n
 
 Sources:
 
-- js/owrap.format.js:7242
+- js/owrap.format.js:7293
 
 <a id="api-ow-format-printdonut-2ac4a85d"></a>
 
@@ -932,7 +932,7 @@ clip/omit are alternatives. All other options match `printPie`.
 
 Sources:
 
-- js/owrap.format.js:7176
+- js/owrap.format.js:7227
 
 <a id="api-ow-format-printheatmap-6db6fffb"></a>
 
@@ -989,7 +989,7 @@ Legends mark unsampled positive slices with `*`. Excess categories group as Othe
 
 Sources:
 
-- js/owrap.format.js:7157
+- js/owrap.format.js:7208
 
 <a id="api-ow-format-printscatter-1fced013"></a>
 
@@ -1030,7 +1030,7 @@ All renderers return strings without printing. Explicit dimensions include legen
 
 Sources:
 
-- js/owrap.format.js:6993
+- js/owrap.format.js:7044
 
 <a id="api-ow-format-printstackedcolumns-1d2793d3"></a>
 
@@ -1044,7 +1044,7 @@ Missing categories are zero. Absolute mode uses one shared max. Too narrow a box
 
 Sources:
 
-- js/owrap.format.js:7187
+- js/owrap.format.js:7238
 
 <a id="api-ow-format-printstatusmatrix-dee29abc"></a>
 
@@ -1085,7 +1085,7 @@ a stacked distribution. `legend: "none"` devotes the whole area to geometry.
 
 Sources:
 
-- js/owrap.format.js:7298
+- js/owrap.format.js:7349
 
 <a id="api-ow-format-printwithfooter-2c861232"></a>
 
@@ -1644,11 +1644,11 @@ Sources:
 
 ### ow.format.withMD(aString, defaultAnsi, aLineWidth, aBgColor) : String
 
-Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi), provide aLineWidth to override the detected console width when line width is needed, and provide aBgColor (an ansiColor color name, e.g. "BG&#95;BLUE") to maintain a background color throughout the output and pass it to sub-functions where applicable. Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets (&#96;&#42;&#96;, &#96;-&#96;, &#96;+&#96;), numbered lines (&#96;1.&#96; or &#96;1)&#96;), task lists (&#96;- &#91; &#93;&#96;, &#96;- &#91;x&#93;&#96;), nested lists, links, block quotes (that can contain lists) and simple LaTeX-like math symbols (e.g. "$&#92;rightarrow$", "$&#92;alpha$", "$&#92;leq$") which are converted to their unicode equivalent. List items are wrapped with a hanging indent, numbers are right-aligned per list and continuation lines are merged into their item. Bullet and task glyphs can be changed with &#96;&#95;&#95;flags.WITHMD.bullets&#96; (one per nesting level) and &#96;&#95;&#95;flags.WITHMD.tasks&#96;.
+Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi), provide aLineWidth to override the detected console width when line width is needed, and provide aBgColor (an ansiColor color name, e.g. "BG&#95;BLUE") to maintain a background color throughout the output and pass it to sub-functions where applicable. aBgColor also accepts friendly names (white, lightgrey, grey, darkgrey, black, red, green, yellow, blue, magenta, cyan). Use "none" to disable any background for the call. When aBgColor is not provided and &#96;&#95;&#95;colorFormat.md.bg&#96; is set (friendly name or ansiColor attributes, e.g. "grey" or "BG(236),WHITE"), that background is used and every line is filled up to the line width, producing a solid colored panel. Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets (&#96;&#42;&#96;, &#96;-&#96;, &#96;+&#96;), numbered lines (&#96;1.&#96; or &#96;1)&#96;), task lists (&#96;- &#91; &#93;&#96;, &#96;- &#91;x&#93;&#96;), nested lists, links, block quotes (that can contain lists) and simple LaTeX-like math symbols (e.g. "$&#92;rightarrow$", "$&#92;alpha$", "$&#92;leq$") which are converted to their unicode equivalent. List items are wrapped with a hanging indent, numbers are right-aligned per list and continuation lines are merged into their item. Bullet and task glyphs can be changed with &#96;&#95;&#95;flags.WITHMD.bullets&#96; (one per nesting level) and &#96;&#95;&#95;flags.WITHMD.tasks&#96;.
 
 Sources:
 
-- js/owrap.format.js:5450
+- js/owrap.format.js:5477
 
 <a id="api-ow-format-withsideline-6b45ecda"></a>
 
@@ -1663,7 +1663,7 @@ left or right or center) and footerAlign (left or right or center).
 
 Sources:
 
-- js/owrap.format.js:6051
+- js/owrap.format.js:6102
 
 <a id="api-ow-format-withsidelinethemes-1c539475"></a>
 
@@ -1689,5 +1689,5 @@ print(ow.format.withSideLine("hello", __, "GREEN", __, ow.format.withSideLineThe
 
 Sources:
 
-- js/owrap.format.js:5856
+- js/owrap.format.js:5907
 

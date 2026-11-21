@@ -24,7 +24,7 @@ Copies an exclusive byte range discovered by io.scanJSON using bounded buffers. 
 
 Sources:
 
-- js/openaf.js:15079
+- js/openaf.js:15136
 
 <a id="api-io-cp-eb6e24c8"></a>
 
@@ -72,7 +72,7 @@ Copies the JSON value at a literal key/index path to a borrowed output stream. A
 
 Sources:
 
-- js/openaf.js:15105
+- js/openaf.js:15162
 
 <a id="api-io-fileexists-7e8100df"></a>
 
@@ -210,7 +210,7 @@ Tries to determine if the provided aFile is a binary or text file by checking th
 
 Sources:
 
-- js/openaf.js:15219
+- js/openaf.js:15276
 
 <a id="api-io-listfilenames-1988261a"></a>
 
@@ -246,7 +246,7 @@ Given aTARfile (or output stream (with isGzip = true/false)) will return an arra
 
 Sources:
 
-- js/openaf.js:14783
+- js/openaf.js:14840
 
 <a id="api-io-lz4-64c012a2"></a>
 
@@ -258,7 +258,7 @@ Compresses anInput using LZ4 compression and returns the compressed bytes.
 
 Sources:
 
-- js/openaf.js:13854
+- js/openaf.js:13911
 
 <a id="api-io-mkdir-b7906454"></a>
 
@@ -306,7 +306,7 @@ $doWait(p);
 
 Sources:
 
-- js/openaf.js:15243
+- js/openaf.js:15300
 
 <a id="api-io-pipech-23e74759"></a>
 
@@ -318,7 +318,7 @@ Starts a wait on stdin calling aFunc everytime a character is sent to stdin. The
 
 Sources:
 
-- js/openaf.js:14591
+- js/openaf.js:14648
 
 <a id="api-io-pipeln-7278e975"></a>
 
@@ -330,7 +330,7 @@ Starts a wait on stdin calling aFunc everytime a line is sent to stdin. The wait
 
 Sources:
 
-- js/openaf.js:14574
+- js/openaf.js:14631
 
 <a id="api-io-randomaccessfile-57e0a985"></a>
 
@@ -394,7 +394,7 @@ Tries to read aFile in read-only mode (even if being used by another process) an
 
 Sources:
 
-- js/openaf.js:14607
+- js/openaf.js:14664
 
 <a id="api-io-readfilegzipstream-692bc550"></a>
 
@@ -426,7 +426,7 @@ Tries to read aJSONFile into a javascript object.
 
 Sources:
 
-- js/openaf.js:14837
+- js/openaf.js:14894
 
 <a id="api-io-readfilejsonc-f31b7fb1"></a>
 
@@ -439,7 +439,7 @@ Reads and parses JSONC using `af.fromJSONC`. Options include `allowTrailingComma
 
 Sources:
 
-- js/openaf.js:13607
+- js/openaf.js:13664
 
 <a id="api-io-readfilelz4stream-9f4d7e19"></a>
 
@@ -451,7 +451,7 @@ Reads aFile as a LZ4 compressed stream and returns the InputStream to read from.
 
 Sources:
 
-- js/openaf.js:13935
+- js/openaf.js:13992
 
 <a id="api-io-readfilestream-df650cc9"></a>
 
@@ -497,7 +497,7 @@ Given aTARFile (or stream) will call aFunc(tion) with the corresponding Java TAR
 
 Sources:
 
-- js/openaf.js:14663
+- js/openaf.js:14720
 
 <a id="api-io-readfiletarbytes-6a82bde9"></a>
 
@@ -509,7 +509,7 @@ Given aTARFile (or stream) will try to retrieve aFilePath and return the corresp
 
 Sources:
 
-- js/openaf.js:14621
+- js/openaf.js:14678
 
 <a id="api-io-readfiletarstream-eb900b5a"></a>
 
@@ -521,7 +521,7 @@ Given aTARFile (or stream) will try to retrieve aFilePath and call aFunc(tion) w
 
 Sources:
 
-- js/openaf.js:14643
+- js/openaf.js:14700
 
 <a id="api-io-readfiletoml-5caa48e0"></a>
 
@@ -533,7 +533,7 @@ Tries to read aFile and parse it as TOML into a javascript object.
 
 Sources:
 
-- js/openaf.js:13644
+- js/openaf.js:13701
 
 <a id="api-io-readfilexml-518dc58c"></a>
 
@@ -559,7 +559,7 @@ Tries to read aYAMLFile into a javascript object.
 
 Sources:
 
-- js/openaf.js:14824
+- js/openaf.js:14881
 
 <a id="api-io-readjsonarray-0b5a9c2d"></a>
 
@@ -571,7 +571,7 @@ Reads a top-level JSON array from a filename or a Java input stream, retaining o
 
 Sources:
 
-- js/openaf.js:14900
+- js/openaf.js:14957
 
 <a id="api-io-readlinesndjson-e7062771"></a>
 
@@ -583,7 +583,7 @@ Opens aNDJSONFile (a newline delimited JSON) (a filename or an input stream) as 
 
 Sources:
 
-- js/openaf.js:14876
+- js/openaf.js:14933
 
 <a id="api-io-readstreamjson-e0289a46"></a>
 
@@ -605,7 +605,7 @@ var amap = io.readStreamJSON("someFile.har",
 
 Sources:
 
-- js/openaf.js:14931
+- js/openaf.js:14988
 
 <a id="api-io-rename-698eb9d3"></a>
 
@@ -641,7 +641,7 @@ Visits UTF-8 JSON without materializing values. Events have phase (value/end), p
 
 Sources:
 
-- js/openaf.js:14999
+- js/openaf.js:15056
 
 <a id="api-io-unlz4-2e35d4b5"></a>
 
@@ -653,7 +653,7 @@ Decompresses anInput using LZ4 compression and returns the decompressed map or s
 
 Sources:
 
-- js/openaf.js:13899
+- js/openaf.js:13956
 
 <a id="api-io-unzip-2696e954"></a>
 
@@ -670,7 +670,7 @@ The `logFn` will receive the following object:
 
 Sources:
 
-- js/openaf.js:13687
+- js/openaf.js:13744
 
 <a id="api-io-writefile-aee2a07a"></a>
 
@@ -738,7 +738,7 @@ Tries to write a javascript aObj into a aJSONFile with an optional aSpace.
 
 Sources:
 
-- js/openaf.js:14853
+- js/openaf.js:14910
 
 <a id="api-io-writefilejsonc-628f4e5f"></a>
 
@@ -752,7 +752,7 @@ See `af.toJSONC` for comment-map examples. I/O errors propagate.
 
 Sources:
 
-- js/openaf.js:13619
+- js/openaf.js:13676
 
 <a id="api-io-writefilelz4stream-32c07e75"></a>
 
@@ -764,7 +764,7 @@ Reads aFile as a LZ4 compressed file and returns the InputStream to read from. T
 
 Sources:
 
-- js/openaf.js:13885
+- js/openaf.js:13942
 
 <a id="api-io-writefilestream-7362e7c3"></a>
 
@@ -808,7 +808,7 @@ Given aTARfile (or output stream (with isGzip = true/false)) will call aFunc wit
 
 Sources:
 
-- js/openaf.js:14701
+- js/openaf.js:14758
 
 <a id="api-io-writefiletarbytes-d72391ac"></a>
 
@@ -820,7 +820,7 @@ Given aTARfile (or output stream (with isGzip = true/false)) will write aArrayBy
 
 Sources:
 
-- js/openaf.js:14740
+- js/openaf.js:14797
 
 <a id="api-io-writefiletarstream-da934286"></a>
 
@@ -832,7 +832,7 @@ Given aTARfile (or output stream (with isGzip = true/false)) will call aFunc(tio
 
 Sources:
 
-- js/openaf.js:14752
+- js/openaf.js:14809
 
 <a id="api-io-writefiletoml-7b4d8d50"></a>
 
@@ -844,7 +844,7 @@ Tries to write aObj into aFile as TOML.
 
 Sources:
 
-- js/openaf.js:13677
+- js/openaf.js:13734
 
 <a id="api-io-writefilexml-b9746c2b"></a>
 
@@ -868,7 +868,7 @@ Tries to write a javascript aObj into a aYAMLFile. If multiDoc = true and aJson 
 
 Sources:
 
-- js/openaf.js:14846
+- js/openaf.js:14903
 
 <a id="api-io-writelinendjson-710927a0"></a>
 
@@ -880,7 +880,7 @@ Writes aObj into a single line on aNDJSONFile (newline delimited JSON) (or an ou
 
 Sources:
 
-- js/openaf.js:14861
+- js/openaf.js:14918
 
 <a id="api-io-zip-0734d9cb"></a>
 
@@ -897,5 +897,5 @@ The `logFn` will receive the following object:
 
 Sources:
 
-- js/openaf.js:13800
+- js/openaf.js:13857
 

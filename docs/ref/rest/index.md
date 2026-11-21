@@ -12,7 +12,7 @@ Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOpt
 
 Sources:
 
-- js/openaf.js:9188
+- js/openaf.js:9245
 
 <a id="api-rest-delete2file-76721f15"></a>
 
@@ -24,7 +24,7 @@ Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOpt
 
 Sources:
 
-- js/openaf.js:9216
+- js/openaf.js:9273
 
 <a id="api-rest-delete2stream-729f5a36"></a>
 
@@ -36,7 +36,7 @@ Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOpt
 
 Sources:
 
-- js/openaf.js:9202
+- js/openaf.js:9259
 
 <a id="api-rest-get-bf35c8ab"></a>
 
@@ -48,7 +48,7 @@ Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions (
 
 Sources:
 
-- js/openaf.js:8985
+- js/openaf.js:9042
 
 <a id="api-rest-get2file-392a4064"></a>
 
@@ -60,7 +60,7 @@ Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions (
 
 Sources:
 
-- js/openaf.js:9013
+- js/openaf.js:9070
 
 <a id="api-rest-get2stream-6f64dbc2"></a>
 
@@ -72,7 +72,7 @@ Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions (
 
 Sources:
 
-- js/openaf.js:8999
+- js/openaf.js:9056
 
 <a id="api-rest-head-4024f956"></a>
 
@@ -84,7 +84,7 @@ Shortcut for ow.obj.rest.head (see help ow.obj.rest.head) using aOptions ($rest(
 
 Sources:
 
-- js/openaf.js:9314
+- js/openaf.js:9371
 
 <a id="api-rest-index-fd93b41a"></a>
 
@@ -96,7 +96,7 @@ Shortcut for ow.obj.rest.writeIndexes (see help ow.obj.rest.writeIndexes).
 
 Sources:
 
-- js/openaf.js:9337
+- js/openaf.js:9394
 
 <a id="api-rest-patch-d727eb19"></a>
 
@@ -108,7 +108,7 @@ Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptio
 
 Sources:
 
-- js/openaf.js:9237
+- js/openaf.js:9294
 
 <a id="api-rest-patch2file-f259c015"></a>
 
@@ -120,7 +120,7 @@ Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptio
 
 Sources:
 
-- js/openaf.js:9293
+- js/openaf.js:9350
 
 <a id="api-rest-patch2stream-f64d142a"></a>
 
@@ -132,7 +132,7 @@ Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptio
 
 Sources:
 
-- js/openaf.js:9251
+- js/openaf.js:9308
 
 <a id="api-rest-patchupload-5b510f07"></a>
 
@@ -144,7 +144,7 @@ Shortcut for ow.obj.rest.upload (see help ow.obj.rest.upload with patch) using a
 
 Sources:
 
-- js/openaf.js:9265
+- js/openaf.js:9322
 
 <a id="api-rest-patchupload2stream-86c5c817"></a>
 
@@ -156,7 +156,7 @@ Shortcut for ow.obj.rest.upload (see help ow.obj.rest.upload with patch) using a
 
 Sources:
 
-- js/openaf.js:9279
+- js/openaf.js:9336
 
 <a id="api-rest-post-1029acb0"></a>
 
@@ -168,7 +168,7 @@ Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOpt
 
 Sources:
 
-- js/openaf.js:9034
+- js/openaf.js:9091
 
 <a id="api-rest-post2file-29871401"></a>
 
@@ -180,7 +180,7 @@ Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOpt
 
 Sources:
 
-- js/openaf.js:9090
+- js/openaf.js:9147
 
 <a id="api-rest-post2stream-10de01c2"></a>
 
@@ -192,7 +192,7 @@ Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOpt
 
 Sources:
 
-- js/openaf.js:9048
+- js/openaf.js:9105
 
 <a id="api-rest-postupload-fd64594b"></a>
 
@@ -204,7 +204,7 @@ Shortcut for ow.obj.rest.upload (see help ow.obj.rest.upload with post) using aO
 
 Sources:
 
-- js/openaf.js:9062
+- js/openaf.js:9119
 
 <a id="api-rest-postupload2stream-2b8ff859"></a>
 
@@ -216,7 +216,7 @@ Shortcut for ow.obj.rest.upload (see help ow.obj.rest.upload with post) using aO
 
 Sources:
 
-- js/openaf.js:9076
+- js/openaf.js:9133
 
 <a id="api-rest-put-129580ea"></a>
 
@@ -228,7 +228,7 @@ Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions (
 
 Sources:
 
-- js/openaf.js:9111
+- js/openaf.js:9168
 
 <a id="api-rest-put2file-c342bd6f"></a>
 
@@ -240,7 +240,7 @@ Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions (
 
 Sources:
 
-- js/openaf.js:9167
+- js/openaf.js:9224
 
 <a id="api-rest-put2stream-e3b7c564"></a>
 
@@ -252,7 +252,7 @@ Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions (
 
 Sources:
 
-- js/openaf.js:9125
+- js/openaf.js:9182
 
 <a id="api-rest-putupload-7c69bb76"></a>
 
@@ -264,7 +264,7 @@ Shortcut for ow.obj.rest.upload (see help ow.obj.rest.upload with put) using aOp
 
 Sources:
 
-- js/openaf.js:9139
+- js/openaf.js:9196
 
 <a id="api-rest-putupload2stream-20bbb7f5"></a>
 
@@ -276,7 +276,7 @@ Shortcut for ow.obj.rest.upload (see help ow.obj.rest.upload with post) using aO
 
 Sources:
 
-- js/openaf.js:9153
+- js/openaf.js:9210
 
 <a id="api-rest-query-df597796"></a>
 
@@ -288,5 +288,5 @@ Shortcut for ow.obj.rest.writeQuery (see help ow.obj.rest.writeQuery).
 
 Sources:
 
-- js/openaf.js:9328
+- js/openaf.js:9385
 

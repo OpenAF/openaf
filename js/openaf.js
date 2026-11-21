@@ -235,6 +235,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
         USE_JAVA_GENUUID           : true,
 	ANSICOLOR_CACHE            : true,
 	ANSICOLOR_ASK              : true,
+	COLOR_THEME                : __,     // Built-in color theme name (see getColorFormatThemes) applied to __colorFormat at startup, before .openaf_profile is read (set it through OAF_FLAGS or a pre-defined __flags)
+	COLOR_THEME_MDBG           : false,  // If true, applying a built-in color theme also applies its md.bg markdown background; if a string, it is used as the forced md.bg color (friendly name or ansiColor attributes)
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
 	TREE: {
 		fullKeySize: true,
@@ -2227,12 +2229,18 @@ const stringify = function(aobj, replacer, space) {
  * - `tree`: { lines } color for tree connecting lines (other tree options are merged with `__flags.TREE`).
  * - `md`: colors used by `ow.format.withMD`: codeBlock {line, text, theme}, codeInline {text, surround}, heads {h1..h4}, line, link {text, url},
  *   bullets, list, task {open, done}, strike and note {line, text, theme}. Missing md entries are filled with defaults on first use.
+ *   The optional `md.bg` (unset by default) sets a background for the whole markdown output, filling each line up to the line width. It accepts
+ *   friendly names (white, lightgrey, grey, darkgrey, black, red, green, yellow, blue, magenta, cyan) or ansiColor attributes (e.g. "BG(236),WHITE").
  *
  * Example:
  *
  * ```javascript
  * __colorFormat.string = "GREEN"; __colorFormat.table.title = "BOLD,UNDERLINE"; __colorFormat.md.heads.h1 = "CYAN,BOLD"
+ * __colorFormat.md.bg = "grey"
  * ```
+ *
+ * Built-in themes can be applied with `setColorFormat` (see `getColorFormatThemes` for the list). Setting `__flags.COLOR_THEME` (e.g. through `OAF_FLAGS`)
+ * applies a theme at startup, before `.openaf_profile` is read; `__flags.COLOR_THEME_MDBG` opts in to the theme's `md.bg` background (true) or forces a markdown background color (string).
  * ]]>
  * </odoc>
  */
@@ -2285,6 +2293,55 @@ var __colorFormat = {
 			theme: "simpleLine"
 		}
 	}
+};
+var __colorFormatOrig = JSON.parse(JSON.stringify(__colorFormat));
+
+/**
+ * <odoc>
+ * <key>getColorFormatThemes() : Array</key>
+ * Returns the sorted list of built-in color theme names that can be used with `setColorFormat` or `__flags.COLOR_THEME`.
+ * </odoc>
+ */
+const getColorFormatThemes = function() {
+	loadCompiledLib("openaf_colorThemes_js")
+	return Object.keys(__colorFormatThemes).sort()
+};
+
+/**
+ * <odoc>
+ * <key>setColorFormat(aTheme, withMdBg)</key>
+ * Sets __colorFormat from a built-in color theme name (see `getColorFormatThemes`) or from a format map. The theme is always applied over the
+ * original default __colorFormat so nothing is left over from a previously applied theme. The theme `md.bg` markdown background is only kept
+ * if withMdBg is true; if withMdBg is a string it is used as the forced `md.bg` color (a friendly name like "grey" or ansiColor attributes like "BG(236),WHITE")
+ * instead of the theme's one. It defaults to `__flags.COLOR_THEME_MDBG`. Throws an error if the theme name is not found.
+ * </odoc>
+ */
+const setColorFormat = function(aTheme, withMdBg) {
+	// Resolve md.bg option: boolean opt-in or a string forcing the markdown background
+	if (isUnDef(withMdBg)) withMdBg = __flags.COLOR_THEME_MDBG
+	if (!isBoolean(withMdBg) && !isString(withMdBg)) withMdBg = false
+
+	var _fmt
+	if (isMap(aTheme)) {
+		_fmt = aTheme
+	} else {
+		_$(aTheme, "aTheme").isString().$_()
+		loadCompiledLib("openaf_colorThemes_js")
+		if (!Object.prototype.hasOwnProperty.call(__colorFormatThemes, aTheme)) throw "Color theme not found: " + aTheme
+		_fmt = __colorFormatThemes[aTheme]
+	}
+
+	// Apply over a pristine copy
+	var _new = merge(JSON.parse(JSON.stringify(__colorFormatOrig)), JSON.parse(JSON.stringify(_fmt)))
+	if (isString(withMdBg) && withMdBg.trim().length > 0) {
+		if (!isMap(_new.md)) _new.md = {}
+		_new.md.bg = withMdBg.trim()
+	} else if (withMdBg !== true && isMap(_new.md)) {
+		delete _new.md.bg
+	}
+	__colorFormat = _new
+
+	return __colorFormat
 };
 /**
  * <odoc>
@@ -19171,6 +19228,15 @@ if (isDef(__flags.NET_IGNORE_SSL_DOMAINS)) {
     ow.loadJava().setIgnoreSSLDomains(_a)
     printErr("WARNING: TLS/SSL certificate validation is disabled for network connections matching these domains: " + af.toSLON(_a))
   }
+}
+
+// Set color theme (before the profile is read)
+if (isString(__flags.COLOR_THEME) && __flags.COLOR_THEME.length > 0) {
+	try {
+		setColorFormat(__flags.COLOR_THEME)
+	} catch(e) {
+		printErr("WARNING: unable to set color theme '" + __flags.COLOR_THEME + "': " + e)
+	}
 }
 
 // -------------------------------------

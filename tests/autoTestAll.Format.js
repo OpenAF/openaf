@@ -579,6 +579,111 @@
         }
     }
 
+    // Run a withMD call with a mocked console and a given __colorFormat.md.bg
+    var _withMDBg = function(aBg, aText, aWidth, aExplicitBg) {
+        var _oldCon = __con
+        var _oldConStatus = __conStatus
+        var _hadBg = isDef(__colorFormat.md) && isDef(__colorFormat.md.bg)
+        var _oldBg = _hadBg ? __colorFormat.md.bg : __
+        var _oldFlag = __ansiColorFlag, _oldConsole = __conConsole
+
+        __ansiColorFlag = true
+        __conConsole = true
+        __con = { getTerminal: () => ({ getWidth: () => aWidth }) }
+        __conStatus = true
+        __colorFormat.md = isDef(__colorFormat.md) ? __colorFormat.md : {}
+        if (isDef(aBg)) __colorFormat.md.bg = aBg; else delete __colorFormat.md.bg
+
+        try {
+            return ow.format.withMD(aText, __, aWidth, aExplicitBg)
+        } finally {
+            __con = _oldCon
+            __conStatus = _oldConStatus
+            __ansiColorFlag = _oldFlag
+            __conConsole = _oldConsole
+            if (_hadBg) __colorFormat.md.bg = _oldBg; else delete __colorFormat.md.bg
+        }
+    }
+
+    var _bgCode = a => ansiColor(a, "", true, true, true)
+
+    exports.testWithMDColorFormatBg = function() {
+        var strip = s => s.replace(/\033\[[0-9;?]*[ -\/]*[@-~]/g, "")
+        var rendered = _withMDBg("white", "# Title\n\nSome **bold** text", 20)
+
+        ow.test.assert(rendered.indexOf(_bgCode("BG_WHITE,BLACK")) >= 0, true, "Problem with md.bg white background code.")
+        rendered.split("\n").forEach(line => {
+            ow.test.assert(visibleLength(line), 20, "Problem with md.bg full width fill.")
+        })
+        ow.test.assert(strip(rendered).split("\n").map(l => l.trim()).join("\n").indexOf("Some bold text") >= 0, true, "Problem with md.bg content.")
+    }
+
+    exports.testWithMDColorFormatBgRaw = function() {
+        var rendered = _withMDBg("BG(236)", "hello", 10)
+
+        ow.test.assert(rendered.indexOf(_bgCode("BG(236)")) >= 0, true, "Problem with md.bg raw 256-color attribute.")
+    }
+
+    exports.testWithMDColorFormatBgNone = function() {
+        var rendered = _withMDBg("grey", "hello", 10, "none")
+
+        ow.test.assert(rendered.indexOf(_bgCode("BG(244),BLACK")) < 0, true, "Problem with md.bg disabled by none.")
+        ow.test.assert(visibleLength(rendered) <= 5, true, "Problem with md.bg none padding.")
+    }
+
+    exports.testColorFormatThemes = function() {
+        var _orig = __colorFormat
+
+        try {
+            var names = getColorFormatThemes()
+            ow.test.assert(names.length, 28, "Problem with the number of built-in color themes.")
+            ow.test.assert(names.indexOf("default") >= 0 && names.indexOf("night-owl") >= 0, true, "Problem with built-in color theme names.")
+
+            // Without md.bg opt-in
+            setColorFormat("night-owl", false)
+            ow.test.assert(__colorFormat.number, "FG(" + __colorFormat.number.replace(/\D/g, "") + ")", "Problem applying theme number color.")
+            ow.test.assert(isUnDef(__colorFormat.md.bg), true, "Problem with md.bg applied without opt-in.")
+
+            // With md.bg opt-in
+            setColorFormat("night-owl", true)
+            ow.test.assert(isString(__colorFormat.md.bg) && __colorFormat.md.bg.length > 0, true, "Problem with md.bg not applied with opt-in.")
+
+            // Forced md.bg color
+            setColorFormat("night-owl", "grey")
+            ow.test.assert(__colorFormat.md.bg, "grey", "Problem with forced md.bg color.")
+            setColorFormat("basic", "BG(236),WHITE")
+            ow.test.assert(__colorFormat.md.bg, "BG(236),WHITE", "Problem with forced md.bg color on a theme without md.bg.")
+
+            // Switching themes leaves nothing behind
+            setColorFormat("basic", false)
+            ow.test.assert(isUnDef(__colorFormat.md.bg), true, "Problem with md.bg left over after switching themes.")
+            ow.test.assert(__colorFormat.tree.curved, false, "Problem with tree.curved after switching themes.")
+
+            // Unknown theme
+            var _thrown = false
+            try { setColorFormat("this-theme-does-not-exist") } catch(e) { _thrown = true }
+            ow.test.assert(_thrown, true, "Problem with unknown color theme not throwing.")
+        } finally {
+            __colorFormat = _orig
+        }
+    }
+
+    exports.testWithMDColorFormatBgUnset = function() {
+        var a = _withMDBg(__, "alpha **beta**", 20)
+
+        ow.test.assert(a.indexOf(_bgCode("BG_WHITE")) < 0 && a.indexOf(_bgCode("BG(236)")) < 0, true, "Problem with unset md.bg adding background.")
+        ow.test.assert(visibleLength(a) <= 10, true, "Problem with unset md.bg padding.")
+    }
+
+    exports.testWithMDColorFormatBgBlocks = function() {
+        var rendered = _withMDBg("black", "# Head\n\n```\ncode\n```\n\n| a | b |\n|---|---|\n| 1 | 2 |", 30)
+
+        rendered.split("\n").forEach(line => {
+            ow.test.assert(visibleLength(line), 30, "Problem with md.bg fill on headings, code blocks and tables.")
+            ow.test.assert(line.indexOf(_bgCode("BG_BLACK,WHITE")) == 0, true, "Problem with md.bg line start background.")
+        })
+    }
+
     exports.testWithMDWrapOverrideWithBgColor = function() {
         var _oldCon = __con
         var _oldConStatus = __conStatus

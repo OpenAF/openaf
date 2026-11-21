@@ -18,7 +18,7 @@ ow.format.xls.autoFilter(sheet, "A1:D1");
 
 Sources:
 
-- js/owrap.format.js:6313
+- js/owrap.format.js:6364
 
 <a id="api-ow-format-xls-getstyle-684feb5b"></a>
 
@@ -67,7 +67,7 @@ Fill patterns:
 
 Sources:
 
-- js/owrap.format.js:6198
+- js/owrap.format.js:6249
 
 <a id="api-ow-format-xls-settable-d320282f"></a>
 
@@ -79,5 +79,5 @@ Shortcut for xls.setTable that given aXLS object, a corresponding aSheet object 
 
 Sources:
 
-- js/owrap.format.js:6419
+- js/owrap.format.js:6470
 
