@@ -95,7 +95,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
    aRepo = rep;
 
    const _ensureOpen = () => {
-      if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret, aFile);
+      if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret, aFile)
    }
 
    return {
@@ -107,7 +107,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       list: (aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
 
@@ -120,7 +120,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       get: (aKey, aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -134,7 +134,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       getObj: (aKey, aExtraArgs, aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -148,7 +148,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       getFn: (aKey, aExtraArgs, aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -161,7 +161,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       set: (aKey, aObj, aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -175,7 +175,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       setObj: (aKey, aObj, aArgs, aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -189,7 +189,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       setFn: (aKey, aFn, aArgs, aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -202,7 +202,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       unset: (aKey, aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          aKey        = _$(aKey, "aKey").isString().default(dKey);
@@ -215,7 +215,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       unsetBucket: (aBucket) => {
-         _ensureOpen();
+         _ensureOpen()
          return ow.sec._sb[aRepo].destroyBucket(aBucket);
       },
       /**
@@ -225,7 +225,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       unsetRepo: () => {
-         _ensureOpen();
+         _ensureOpen()
          return ow.sec.purgeSBuckets(aRepo, aFile);
       },
       /**
@@ -235,7 +235,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       close: () => {
-         _ensureOpen();
+         _ensureOpen()
          return ow.sec.closeSBuckets(aRepo, aFile);
       },
       /**
@@ -246,7 +246,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       getBucket: (aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].getBucket(aBucket, aLockSecret);
@@ -259,7 +259,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       setBucket: (aBucketString, aBucket, aLockSecret) => {
-         _ensureOpen();
+         _ensureOpen()
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].setBucket(aBucket, aLockSecret, aBucketString);
@@ -770,9 +770,9 @@ OpenWrap.sec.prototype.SBucket.prototype.getNewObj = function(sBucket, aLockSecr
        try {
           margs = $fnDef4Help(v._obj);
        } catch(e) {
-          margs = [];
+          margs = []
        }
-       if (margs.length == 0) margs = $fnDef4Help(v._obj + "." + v._obj);
+       if (margs.length == 0) margs = $fnDef4Help(v._obj + "." + v._obj)
        margs.map(a => {
           var vv = (isDef(v._args[a]) ? v._args[a] : defaultArgs[a]);
           if (isUnDef(vv)) {
@@ -855,4 +855,4 @@ OpenWrap.sec.prototype.SBucket.prototype.getNewFn = function(sBucket, aLockSecre
  */
 OpenWrap.sec.prototype.SBucket.prototype.getSNewFn = function(aKey) {
     return this.getNewFn(__, __, aKey);
-};
+}

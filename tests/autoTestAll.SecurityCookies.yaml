@@ -5,12 +5,12 @@ include:
 
 jobs:
   - name: SecurityCookies::Init
-    exec: args.tests = require("autoTestAll.SecurityCookies.js");
+    exec: args.tests = require("autoTestAll.SecurityCookies.js")
 
   - name: SecurityCookies::Host-only binding
     from: SecurityCookies::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testHostOnlyCookieBinding;
+    exec: args.func = args.tests.testHostOnlyCookieBinding
 
 todo:
   - SecurityCookies::Init

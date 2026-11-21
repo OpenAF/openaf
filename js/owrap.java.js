@@ -150,7 +150,7 @@ OpenWrap.java.prototype.maven.prototype.search = function(aTerm) {
  * </odoc>
  */
 OpenWrap.java.prototype.maven.prototype.getLatestVersion = function(aURI, onlyStable) {
-    if (onlyStable) return this.getLatestStableVersion(aURI);
+    if (onlyStable) return this.getLatestStableVersion(aURI)
 
     plugin("XML");
     var xml = new XML(ow.obj.rest.get(this._getURL() + "/" + aURI + "/maven-metadata.xml").response);
@@ -169,12 +169,12 @@ OpenWrap.java.prototype.maven.prototype.getLatestVersion = function(aURI, onlySt
  * </odoc>
  */
 OpenWrap.java.prototype.maven.prototype.getVersions = function(aURI) {
-    plugin("XML");
-    var x = new XML(ow.obj.rest.get(this._getURL() + "/" + aURI + "/maven-metadata.xml").response).toNativeXML();
-    var vs = x.versioning.versions.version, r = [];
-    for(var ii = 0; ii < vs.length(); ii++) r.push(String(vs[ii].toString()).trim());
-    return r.filter(v => v.length > 0);
-};
+    plugin("XML")
+    var x = new XML(ow.obj.rest.get(this._getURL() + "/" + aURI + "/maven-metadata.xml").response).toNativeXML()
+    var vs = x.versioning.versions.version, r = []
+    for(var ii = 0; ii < vs.length(); ii++) r.push(String(vs[ii].toString()).trim())
+    return r.filter(v => v.length > 0)
+}
 
 /**
  * <odoc>
@@ -184,19 +184,19 @@ OpenWrap.java.prototype.maven.prototype.getVersions = function(aURI) {
  * </odoc>
  */
 OpenWrap.java.prototype.maven.prototype.isStableVersion = function(aVersion) {
-    var v = String(aVersion).trim();
-    if (v.length == 0) return false;
+    var v = String(aVersion).trim()
+    if (v.length == 0) return false
     // Tokens such as alpha, alpha1, alpha-1, a1, beta2, b3, M1, RC1, CR2, pre, preview, ea, SNAPSHOT, dev, nightly...
-    var _pre = /^(alpha|a|beta|b|m|milestone|rc|cr|pre|preview|ea|snapshot|dev|nightly|incubating|canary|next|draft|test)\d*$/i;
-    var tokens = v.split(/[\.\-_+~]/);
+    var _pre = /^(alpha|a|beta|b|m|milestone|rc|cr|pre|preview|ea|snapshot|dev|nightly|incubating|canary|next|draft|test)\d*$/i
+    var tokens = v.split(/[\.\-_+~]/)
     for(var ii = 0; ii < tokens.length; ii++) {
-        var t = tokens[ii];
-        if (_pre.test(t)) return false;
+        var t = tokens[ii]
+        if (_pre.test(t)) return false
         // Glued qualifiers like 1.0b2, 2.0rc1, 3.0M1, 1.0alpha
-        if (/^\d+(alpha|a|beta|b|m|rc|cr|pre|ea|dev)\d*$/i.test(t)) return false;
+        if (/^\d+(alpha|a|beta|b|m|rc|cr|pre|ea|dev)\d*$/i.test(t)) return false
     }
-    return true;
-};
+    return true
+}
 
 /**
  * <odoc>
@@ -206,11 +206,11 @@ OpenWrap.java.prototype.maven.prototype.isStableVersion = function(aVersion) {
  * </odoc>
  */
 OpenWrap.java.prototype.maven.prototype.getLatestStableVersion = function(aURI) {
-    ow.loadFormat();
-    var lst = this.getVersions(aURI).filter(v => this.isStableVersion(v));
-    if (lst.length == 0) return __;
-    return lst.reduce((a, b) => (ow.format.compareVersion(b, a) > 0 ? b : a));
-};
+    ow.loadFormat()
+    var lst = this.getVersions(aURI).filter(v => this.isStableVersion(v))
+    if (lst.length == 0) return __
+    return lst.reduce((a, b) => (ow.format.compareVersion(b, a) > 0 ? b : a))
+}
 
 /**
  * <odoc format="markdown">
@@ -282,13 +282,13 @@ OpenWrap.java.prototype.maven.prototype.getFileVersion = function(artifactId, aF
         version: version
     });
 
-    var h, rstream, wstream;
+    var h, rstream, wstream
     try {
-        h = new ow.obj.http(this._getURL() + "/" + aURI + "/" + version + "/" + filename, "GET", "", __, true, __, true);
-        io.mkdir(aOutputDir);
-        rstream = h.responseStream();
-        wstream = io.writeFileStream(aOutputDir + "/" + filename);
-        ioStreamCopy(wstream, rstream);
+        h = new ow.obj.http(this._getURL() + "/" + aURI + "/" + version + "/" + filename, "GET", "", __, true, __, true)
+        io.mkdir(aOutputDir)
+        rstream = h.responseStream()
+        wstream = io.writeFileStream(aOutputDir + "/" + filename)
+        ioStreamCopy(wstream, rstream)
     } finally {
         try { if (isDef(wstream)) wstream.close(); } catch(e) {}
         try { if (isDef(rstream)) rstream.close(); } catch(e) {}
@@ -478,7 +478,7 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersionsSpecific = function(art
     });
     var filenameT = "^" + aFilenameTemplate.split(/\{\{\{?\s*version\s*\}\}\}?/)
         .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-        .join(".*") + "$";
+        .join(".*") + "$"
 
     if (isUnDef(aFunction)) {
         aFunction = function() { return true; };
@@ -982,8 +982,8 @@ OpenWrap.java.prototype.IMAP.prototype.__getFolder = function(aFolder) {
 OpenWrap.java.prototype.IMAP.prototype.close = function(aFolder) {
     var _c = (aF) => {
         if (isDef(this.folders[aF])) {
-            if (this.folders[aF].isOpen()) this.folders[aF].close();
-            delete this.folders[aF];
+            if (this.folders[aF].isOpen()) this.folders[aF].close()
+            delete this.folders[aF]
         }
     };
 
@@ -1008,8 +1008,8 @@ OpenWrap.java.prototype.IMAP.prototype.getMessages = function(aFolder, aNumber) 
 
     var res = [];
     var end = Number(this.getMessageCount(aFolder));
-    aNumber = Math.max(0, Math.floor(aNumber));
-    var start = Math.max(1, end - aNumber + 1);
+    aNumber = Math.max(0, Math.floor(aNumber))
+    var start = Math.max(1, end - aNumber + 1)
 
     for(var ii = end; ii >= start; ii--) {
         res.push(this.getMessage(aFolder, ii));
@@ -1029,38 +1029,38 @@ OpenWrap.java.prototype.IMAP.prototype.getSortedMessages = function(aFolder, aTy
     aNumber = _$(aNumber, "number").isNumber().default(5);
     aType   = _$(aType, "type").isString().default("from");
     aTerm   = _$(aTerm, "term").isString().default("");
-    aNumber = Math.max(0, Math.floor(aNumber));
-    if (aNumber == 0) return [];
-    var searchTerm = null;
+    aNumber = Math.max(0, Math.floor(aNumber))
+    if (aNumber == 0) return []
+    var searchTerm = null
 
     switch(aType.toUpperCase()) {
     case "FROM": 
         aType = Packages.com.sun.mail.imap.SortTerm.FROM;
-        searchTerm = new javax.mail.search.FromStringTerm(aTerm);
+        searchTerm = new javax.mail.search.FromStringTerm(aTerm)
         break;
     case "ARRIVAL": aType = Packages.com.sun.mail.imap.SortTerm.ARRIVAL; break;
     case "CC": 
         aType = Packages.com.sun.mail.imap.SortTerm.CC; 
-        searchTerm = new javax.mail.search.RecipientStringTerm(javax.mail.Message.RecipientType.CC, aTerm);
+        searchTerm = new javax.mail.search.RecipientStringTerm(javax.mail.Message.RecipientType.CC, aTerm)
         break;
     case "DATE": aType = Packages.com.sun.mail.imap.SortTerm.DATE; break;
     case "REVERSE": aType = Packages.com.sun.mail.imap.SortTerm.REVERSE; break;
     case "SIZE": aType = Packages.com.sun.mail.imap.SortTerm.SIZE; break;
     case "SUBJECT": 
         aType = Packages.com.sun.mail.imap.SortTerm.SUBJECT; 
-        searchTerm = new javax.mail.search.SubjectTerm(aTerm);
+        searchTerm = new javax.mail.search.SubjectTerm(aTerm)
         break;
     case "TO": 
         aType = Packages.com.sun.mail.imap.SortTerm.TO; 
-        searchTerm = new javax.mail.search.RecipientStringTerm(javax.mail.Message.RecipientType.TO, aTerm);
+        searchTerm = new javax.mail.search.RecipientStringTerm(javax.mail.Message.RecipientType.TO, aTerm)
         break;
-    default: throw "Unsupported IMAP sort type: " + aType;
+    default: throw "Unsupported IMAP sort type: " + aType
     }
 
     var fold = this.__getFolder(aFolder);
-    var msgs = fold.getSortedMessages([aType], searchTerm);
+    var msgs = fold.getSortedMessages([aType], searchTerm)
 
-    var res = [];
+    var res = []
     for(var ii = 0; ii < msgs.length && ii < aNumber; ii++) {
         res.push(this.__translateMsg(msgs[ii]));
     }
@@ -1133,7 +1133,7 @@ OpenWrap.java.prototype.IMAP.prototype.getMessage = function(aFolder, aNum) {
 OpenWrap.java.prototype.IMAP.prototype.__translateMsg = function(res) {
     var msg = {};
     if (isDef(res)) {
-        var content = res.getContent();
+        var content = res.getContent()
         msg = {
             num: res.getMessageNumber(),
             from: af.fromJavaArray(res.getFrom()),
@@ -2298,8 +2298,8 @@ OpenWrap.java.prototype.getClassVersion = function(aClassBytes) {
 
     if (isUnDef(aClassBytes) || aClassBytes.length < 8 ||
         (aClassBytes[0] & 255) != 202 || (aClassBytes[1] & 255) != 254 ||
-        (aClassBytes[2] & 255) != 186 || (aClassBytes[3] & 255) != 190) return __;
-    var major = ((aClassBytes[6] & 255) << 8) | (aClassBytes[7] & 255);
+        (aClassBytes[2] & 255) != 186 || (aClassBytes[3] & 255) != 190) return __
+    var major = ((aClassBytes[6] & 255) << 8) | (aClassBytes[7] & 255)
     switch(major) {
     case 45: ver = "1.1"; break;
     case 46: ver = "1.2"; break;
@@ -2315,7 +2315,7 @@ OpenWrap.java.prototype.getClassVersion = function(aClassBytes) {
     case 56: ver = "12"; break;
     case 57: ver = "13"; break;
     case 58: ver = "14"; break;
-    default: if (major >= 59) ver = String(major - 44);
+    default: if (major >= 59) ver = String(major - 44)
     }
 
     return ver;
@@ -2609,11 +2609,11 @@ OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
 
     var tmf = javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
     var ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
-    var trustStream = new java.io.FileInputStream(new java.io.File(file));
+    var trustStream = new java.io.FileInputStream(new java.io.File(file))
     try {
-        ks.load(trustStream, (new java.lang.String(aPassword)).toCharArray());
+        ks.load(trustStream, (new java.lang.String(aPassword)).toCharArray())
     } finally {
-        trustStream.close();
+        trustStream.close()
     }
     tmf.init(ks);
     var tmf0 = tmf.getTrustManagers()[0];
@@ -2625,49 +2625,49 @@ OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
             tmf0.checkClientTrusted(certs, authType);
         },
         checkServerTrusted: function(certs, authType) {
-            var ignore = isUnDef(aList);
+            var ignore = isUnDef(aList)
             if (!ignore && certs.length > 0) {
-                var checks = [], hasDNS = false;
-                var sans = certs[0].getSubjectAlternativeNames();
+                var checks = [], hasDNS = false
+                var sans = certs[0].getSubjectAlternativeNames()
                 if (sans != null) {
                     af.fromJavaArray(sans.toArray()).forEach(san => {
-                        var type = Number(san.get(0));
+                        var type = Number(san.get(0))
                         if (type == 2 || type == 7) {
-                            checks.push({ name: String(san.get(1)).toLowerCase(), dns: type == 2 });
-                            if (type == 2) hasDNS = true;
+                            checks.push({ name: String(san.get(1)).toLowerCase(), dns: type == 2 })
+                            if (type == 2) hasDNS = true
                         }
-                    });
+                    })
                 }
                 if (!hasDNS) {
-                    var dn = new javax.naming.ldap.LdapName(String(certs[0].getSubjectX500Principal().getName()));
+                    var dn = new javax.naming.ldap.LdapName(String(certs[0].getSubjectX500Principal().getName()))
                     af.fromJavaArray(dn.getRdns().toArray()).forEach(rdn => {
                         if (String(rdn.getType()).toLowerCase() == "cn")
-                            checks.push({ name: String(rdn.getValue()).toLowerCase(), dns: true });
-                    });
+                            checks.push({ name: String(rdn.getValue()).toLowerCase(), dns: true })
+                    })
                 }
                 ignore = checks.some(check => aList.some(domain => {
-                    domain = String(domain).toLowerCase().replace(/\.$/, "");
-                    var name = check.name.replace(/\.$/, "");
+                    domain = String(domain).toLowerCase().replace(/\.$/, "")
+                    var name = check.name.replace(/\.$/, "")
                     // a leading dot (e.g. ".corp.local") keeps its previous meaning: any subdomain of it
-                    var subOnly = domain.startsWith(".");
-                    domain = domain.replace(/^\.+/, "");
+                    var subOnly = domain.startsWith(".")
+                    domain = domain.replace(/^\.+/, "")
                     return domain.length > 0 && ((!subOnly && name == domain) ||
-                        (check.dns && name.endsWith("." + domain)));
-                }));
+                        (check.dns && name.endsWith("." + domain)))
+                }))
             }
 
             try {
                 tmf0.checkServerTrusted(certs, authType);
             } catch(e) {
-                if (!ignore) throw e;
+                if (!ignore) throw e
             }
         },
         getAcceptedIssuers: function() {
             //print("accept issuer");
             return tmf0.getAcceptedIssuers();
         }
-      });
-    ctx.init(null, [trustManager], new java.security.SecureRandom());
+      })
+    ctx.init(null, [trustManager], new java.security.SecureRandom())
       
     javax.net.ssl.SSLContext.setDefault(ctx);
     javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(ctx.getSocketFactory());
@@ -2751,7 +2751,7 @@ OpenWrap.java.prototype.jsonMemComm.prototype.send = function(aObj) {
     
     this.idx.lock();
     try {
-        this.idx.rewind();
+        this.idx.rewind()
         var index = jsonParse(this.idx.receive(), true);
 
         var s = stringify(aObj, __, "");
@@ -2760,9 +2760,9 @@ OpenWrap.java.prototype.jsonMemComm.prototype.send = function(aObj) {
         index[t] = n;
         var tmp = new ow.java.memComm(this.dir + "/" + n, s.length * 4);
         try {
-            tmp.send(s);
+            tmp.send(s)
         } finally {
-            tmp.close();
+            tmp.close()
         }
     
         this.idx.rewind();
@@ -2775,25 +2775,25 @@ OpenWrap.java.prototype.jsonMemComm.prototype.send = function(aObj) {
 };
 
 OpenWrap.java.prototype.jsonMemComm.prototype.receive = function() {
-    var received = false, obj = [];
+    var received = false, obj = []
     do {
         try {
             this.idx.lock();
             this.idx.rewind();
             var entries = jsonParse(this.idx.receive(), true);
             Object.keys(entries).forEach(r => {
-                var file = this.dir + "/" + entries[r];
-                var tmp = new ow.java.memComm(file, io.fileInfo(file).size);
+                var file = this.dir + "/" + entries[r]
+                var tmp = new ow.java.memComm(file, io.fileInfo(file).size)
                 try {
                     obj.push({
                         t: r,
                         o: jsonParse(tmp.receive(), true)
-                    });
+                    })
                 } finally {
-                    tmp.close();
+                    tmp.close()
                 }
                 received = true;
-                io.rm(file);
+                io.rm(file)
                 delete entries[r];
 
                 this.idx.rewind();
@@ -2806,7 +2806,7 @@ OpenWrap.java.prototype.jsonMemComm.prototype.receive = function() {
     } while(!received);
 
     return obj;
-};
+}
 
 // Convert diagnostic Java collections to plain JavaScript values.
 OpenWrap.java.prototype.__diagMap = function(v) {

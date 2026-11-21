@@ -3,14 +3,18 @@ ojob:
   logToConsole: false
 
 jobs:
+
+# Normalize
 - name: Normalize
   check:
     in:
       text: isString.default("hello")
   execRequire: handlers.js
   to: Print result
+
+# Print result
 - name: Print result
-  exec: print(args.text);
+  exec: print(args.text)
 
 todo:
 - Normalize

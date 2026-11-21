@@ -2,33 +2,40 @@ include:
 - autoTestAll.common.yaml
 
 jobs:
+
+# Metrics::Strict output
 - name: Metrics::Strict output
   from: Metrics::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOpenMetricsStrict;
+  exec: args.func = args.tests.testOpenMetricsStrict
 
+# Metrics::HTTP endpoint
 - name: Metrics::HTTP endpoint
   from: Metrics::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOpenMetricsEndpoint;
+  exec: args.func = args.tests.testOpenMetricsEndpoint
 
+# Metrics::Init
 - name: Metrics::Init
-  exec: args.tests = require("autoTestAll.Metrics.js");
+  exec: args.tests = require("autoTestAll.Metrics.js")
 
+# Metrics::Quoted labels
 - name: Metrics::Quoted labels
   from: Metrics::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOpenMetricsLabels;
+  exec: args.func = args.tests.testOpenMetricsLabels
 
+# Metrics::Compatibility
 - name: Metrics::Compatibility
   from: Metrics::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOpenMetricsCompatibility;
+  exec: args.func = args.tests.testOpenMetricsCompatibility
 
+# Metrics::Invalid labels
 - name: Metrics::Invalid labels
   from: Metrics::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOpenMetricsInvalidLabels;
+  exec: args.func = args.tests.testOpenMetricsInvalidLabels
 
 todo:
 - Metrics::Strict output

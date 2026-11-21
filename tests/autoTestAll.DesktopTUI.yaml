@@ -1,40 +1,60 @@
 include:
 - autoTestAll.common.yaml
+
 jobs:
+
+# DesktopTUI::Init
 - name: DesktopTUI::Init
-  exec: args.tests = require("autoTestAll.DesktopTUI.js");
+  exec: args.tests = require("autoTestAll.DesktopTUI.js")
+
+# DesktopTUI::View validation
 - name: DesktopTUI::View validation
   from: DesktopTUI::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testViewValidation;
+  exec: args.func = args.tests.testViewValidation
+
+# DesktopTUI::Native views and updates
 - name: DesktopTUI::Native views and updates
   from: DesktopTUI::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testNativeViews;
+  exec: args.func = args.tests.testNativeViews
+
+# DesktopTUI::Controls and messages
 - name: DesktopTUI::Controls and messages
   from: DesktopTUI::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testControlsAndMessages;
+  exec: args.func = args.tests.testControlsAndMessages
+
+# DesktopTUI::Tabs resize and escapes
 - name: DesktopTUI::Tabs resize and escapes
   from: DesktopTUI::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testTabsResizeAndEscapes;
+  exec: args.func = args.tests.testTabsResizeAndEscapes
+
+# DesktopTUI::Ownership and failure
 - name: DesktopTUI::Ownership and failure
   from: DesktopTUI::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testOwnershipAndFailure;
+  exec: args.func = args.tests.testOwnershipAndFailure
+
+# DesktopTUI::Event security and graphical rendering
 - name: DesktopTUI::Event security and graphical rendering
   from: DesktopTUI::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testEventSecurityAndHTML;
+  exec: args.func = args.tests.testEventSecurityAndHTML
+
+# DesktopTUI::Screen styling align and UTF8
 - name: DesktopTUI::Screen styling align and UTF8
   from: DesktopTUI::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testScreenStylingAlignAndUTF8;
+  exec: args.func = args.tests.testScreenStylingAlignAndUTF8
+
+# DesktopTUI::Mouse
 - name: DesktopTUI::Mouse
   from: DesktopTUI::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testMouse;
+  exec: args.func = args.tests.testMouse
+
 todo:
 - DesktopTUI::Mouse
 - DesktopTUI::View validation

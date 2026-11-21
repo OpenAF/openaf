@@ -8,7 +8,7 @@
 
 ### af.compile(aScriptString, aSourceName) : Object
 
-Compiles the aScriptString executing it and returning the corresponding result.  Optionally you can provide aSourceName.
+Compiles the aScriptString executing it and returning the corresponding result. Optionally you can provide aSourceName.
 
 Sources:
 
@@ -202,7 +202,7 @@ Sources:
 
 ### af.eval(aScript) : Object
 
-Performs the equivalent version of the javascript eval function for the provided aScript. Returns  the corresponding result of the evaluation.
+Performs the equivalent version of the javascript eval function for the provided aScript. Returns the corresponding result of the evaluation.
 
 Sources:
 
@@ -241,7 +241,7 @@ Sources:
 
 ### af.externalClassLoader(anArrayOfClasspathEntries) : ClassLoader
 
-Returns a ClassLoader suitable to be use with af.getClass to dynamically load Java classes that weren't included  on the initial OpenAF's classpath and are included in the jars/folders provided in anArrayOfClasspathEntries.
+Returns a ClassLoader suitable to be use with af.getClass to dynamically load Java classes that weren't included on the initial OpenAF's classpath and are included in the jars/folders provided in anArrayOfClasspathEntries.
 
 Sources:
 
@@ -310,7 +310,7 @@ Sources:
 
 ### af.fromBytes2Array(anArrayOfBytes) : Array
 
-Converts a Java anArrayOfBytes into a javascript array of integers with the value representation of  each byte.
+Converts a Java anArrayOfBytes into a javascript array of integers with the value representation of each byte.
 
 Sources:
 
@@ -377,6 +377,21 @@ Sources:
 
 - src/openaf/AFBase.java:2214
 
+<a id="api-af-fromjsonc-b892a251"></a>
+
+## af.fromJSONC
+
+### af.fromJSONC(aString, options) : Object
+
+Parses JSON with line and block comments into ordinary JavaScript values,
+discarding comments. `options.allowTrailingComma` defaults to false. Accepts a
+leading BOM. Invalid, empty or comment-only input throws; input is never evaluated.
+Example: `af.fromJSONC('{"port":8080, // HTTP\n}', {allowTrailingComma:true})`.
+
+Sources:
+
+- js/openaf.js:13521
+
 <a id="api-af-fromjava2js-430856a7"></a>
 
 ## af.fromJava2JS
@@ -387,7 +402,7 @@ Tries to convert the provided Java object to a native javascript object
 
 Sources:
 
-- js/openaf.js:7003
+- js/openaf.js:7060
 
 <a id="api-af-fromjavamap-9ff8d92b"></a>
 
@@ -411,7 +426,7 @@ Tries to convert aMap into a similiar XML strucuture returned as string. Note th
 
 Sources:
 
-- js/openaf.js:14234
+- js/openaf.js:14517
 
 <a id="api-af-fromstring2bytes-ce6e043a"></a>
 
@@ -460,7 +475,7 @@ Tries to parse aTOML into a javascript object
 
 Sources:
 
-- js/openaf.js:13422
+- js/openaf.js:13690
 
 <a id="api-af-fromtoonjava-8f35360a"></a>
 
@@ -496,7 +511,7 @@ Tries to convert a XML object into a javascript object. Tag attributes will be i
 
 Sources:
 
-- js/openaf.js:14157
+- js/openaf.js:14440
 
 <a id="api-af-get2fatoken-66496fde"></a>
 
@@ -508,7 +523,7 @@ Given 2FA aKey it will return the current token. Note: it will use the current d
 
 Sources:
 
-- src/openaf/AFBase.java:2392
+- src/openaf/AFBase.java:2389
 
 <a id="api-af-getclass-c096574c"></a>
 
@@ -615,7 +630,7 @@ Sources:
 
 ### af.loadRequire(arrayOfPaths, isSandboxed)
 
-Will redefine the require function on the current scope to use the arrayOfPaths provided.  Optionally you can the require function can provide a sandbox enviroment if isSandboxed = true.
+Will redefine the require function on the current scope to use the arrayOfPaths provided. Optionally you can the require function can provide a sandbox enviroment if isSandboxed = true.
 
 Sources:
 
@@ -680,7 +695,7 @@ Returns aValue if it is defined or aDefault otherwise.
 
 Sources:
 
-- js/openaf.js:13458
+- js/openaf.js:13726
 
 <a id="api-af-p-0acd93a2"></a>
 
@@ -784,7 +799,7 @@ Sources:
 
 ### af.rm(aFilePath)
 
-Tries to delete a file or a directory on the provided aFilePath. In case it's a directory it will try to  recursively delete all directory contents.
+Tries to delete a file or a directory on the provided aFilePath. In case it's a directory it will try to recursively delete all directory contents.
 
 Sources:
 
@@ -826,7 +841,7 @@ myOpen; // AF Class
 
 Sources:
 
-- js/openaf.js:13035
+- js/openaf.js:13134
 
 <a id="api-af-securerandom-5e705186"></a>
 
@@ -949,6 +964,26 @@ Sources:
 
 - src/openaf/AFBase.java:496
 
+<a id="api-af-tojsonc-c6f3c698"></a>
+
+## af.toJSONC
+
+### af.toJSONC(aValue, comments, options) : String
+
+Serializes with native JSON semantics and optional comments. `options.indent`
+defaults to 2 (integer 1-10). `comments` maps JSON Pointer paths to leading
+text or `{before:"text", inline:"text"}`. The empty path addresses the root;
+escape `~` as `~0` and `/` as `~1`. Example:
+`af.toJSONC({port:8080}, {"/port":{before:"HTTP port",inline:"Restart required"}})`.
+Leading text may span lines; inline text must be single-line. Comments use
+`//`; container inline comments follow the closing delimiter and any comma.
+Invalid comments, unmatched paths, cycles and values without JSON output throw.
+Original formatting and comments are not preserved. Output uses LF without trailing commas.
+
+Sources:
+
+- js/openaf.js:13598
+
 <a id="api-af-totoml-e8f9d2d1"></a>
 
 ## af.toTOML
@@ -959,7 +994,7 @@ Tries to convert aObj into a TOML string.
 
 Sources:
 
-- js/openaf.js:13443
+- js/openaf.js:13711
 
 <a id="api-af-totoonjava-ac6d392a"></a>
 
@@ -983,7 +1018,7 @@ Given aToken and a 2FA aKey returns true if it's valid. Note: it will use the cu
 
 Sources:
 
-- src/openaf/AFBase.java:2378
+- src/openaf/AFBase.java:2375
 
 <a id="api-af-visiblelength-51f4bb06"></a>
 

@@ -17,10 +17,14 @@ Provides a simple file browser for the provided `aURI`. The `aOptions` map can c
 - `default` (string) The default file to show (defaults to undefined)
 - `logo` (string) The logo to show in the file browser (defaults to undefined)
 - `footer` (string) The footer to show in the file browser (defaults to undefined)
+- `query.enabled` adds server sorting, pagination and bounded literal search.
+- `preview.formats` replaces viewers with an extension or `name:` allowlist; `{}` disables previews.
+- `preview.maxBytes` bounds formatted reads, preserving complete raw downloads.
+- `operations.enabled` reserves `@@/status`, `@@/freshness`, POST `@@/refresh`, and `@@/metrics`.
 
 Sources:
 
-- js/owrap.server.js:5199
+- js/owrap.server.js:5215
 
 <a id="api-ow-server-httpd-browse-odoc-571c1b36"></a>
 
@@ -39,7 +43,7 @@ Provides a simple oDoc browser. The `aOptions` map can contain the following key
 
 Sources:
 
-- js/owrap.server.js:5477
+- js/owrap.server.js:5498
 
 <a id="api-ow-server-httpd-browse-opacks-9d1ec6c5"></a>
 
@@ -58,5 +62,5 @@ Provides a simple oPack browser. The `aOptions` map can contain the following ke
 
 Sources:
 
-- js/owrap.server.js:5562
+- js/owrap.server.js:5587
 

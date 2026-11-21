@@ -100,7 +100,7 @@ var verb;
 var arg;
 var __remoteUser;
 var __remotePass;
-var __remoteCredentialScope;
+var __remoteCredentialScope
 
 // *********
 // FUNCTIONS
@@ -662,22 +662,22 @@ function verifyHashList(startPath, filesHash, localPaths) {
 
 		switch(location) {
 		case "local": 
-			hash = generateHash(isDef(localPaths) && Object.prototype.hasOwnProperty.call(localPaths, file) ? localPaths[file] : startPath + "/" + file, filesHash[file]);
+			hash = generateHash(isDef(localPaths) && Object.prototype.hasOwnProperty.call(localPaths, file) ? localPaths[file] : startPath + "/" + file, filesHash[file])
 			break;
 		case "http":
-			hash = generateHash(http, filesHash[file]);
+			hash = generateHash(http, filesHash[file])
 			break;
 		case "opack":
 			if (location == "opack") 
-				hash = generateHash(zip.streamGetFile(file), filesHash[file]);
+				hash = generateHash(zip.streamGetFile(file), filesHash[file])
 			else
-				hash = generateHash(zip.getFile(file), filesHash[file]);
+				hash = generateHash(zip.getFile(file), filesHash[file])
 			break;
 		case "opackhttp":
 			if (location == "opackhttp")
-				hash = generateHash(zip.streamGetFile(file), filesHash[file]);
+				hash = generateHash(zip.streamGetFile(file), filesHash[file])
 			else
-				hash = generateHash(zip.getFile(file), filesHash[file]);
+				hash = generateHash(zip.getFile(file), filesHash[file])
 			break;
 		}
 
@@ -1455,7 +1455,7 @@ function checkVersion(packag, force) {
 		return 0
 	}
 	if (_c == 0) {
-		log(packag.name + ", version " + installedVersion + ", already installed in '" + findLocalDBTargetByName(packag.name) + "'.");
+		log(packag.name + ", version " + installedVersion + ", already installed in '" + findLocalDBTargetByName(packag.name) + "'.")
 		return 0
 	}
 	return 1
@@ -1867,7 +1867,7 @@ function __opack_script(args, isDaemon, isJob) {
 		s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
 		s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
 		s = s + "\n";
-		s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -jar $OPENAF_DIR " + options + "\n";
+		s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -jar $OPENAF_DIR " + options + "\n"
 		s = s + "EXITCODE=$?\n";
 		s = s + "stty icanon echo 2>/dev/null\n";
 		s = s + "exit $EXITCODE\n";
@@ -2010,10 +2010,14 @@ function update(args) {
 			log("Found existing installation at: " + originalInstallPath)
 		}
 
+		// Resolve named packages through the catalog before selecting the install source
+		var updateSource = _pack, fromRepository = false
 		if (!isUnDef(packag) &&
 			(typeof packag.name == 'undefined' ||
-			packag.__filelocation == 'local'))
+			packag.__filelocation == 'local')) {
 			packag = getOPackRemoteDB()[$from(Object.keys(getOPackRemoteDB())).equals(_pack).at(0)]
+			fromRepository = true
+		}
 
 		// Verify version
 		if (!isUnDef(packag) &&
@@ -2025,9 +2029,7 @@ function update(args) {
 				return
 			}
 			if (_res > 0) {
-				if ((typeof packag.__filelocation !== 'undefined') &&
-					!(packag.__filelocation.match(/opack/))
-					) {
+				if (fromRepository) {
 					switch(packag.repository.type) {
 					case "path":
 						if (isUnDef(packag.repository.path)) {
@@ -2035,7 +2037,7 @@ function update(args) {
 							_stats.failed++
 							return
 						}
-						pack = packag.repository.path
+						updateSource = packag.repository.path
 						break
 					case "http":
 					default    :
@@ -2044,7 +2046,7 @@ function update(args) {
 							_stats.failed++
 							return
 						}
-						pack = packag.repository.url
+						updateSource = packag.repository.url
 					}
 				}
 				log("UPDATING -- " + packag.name + " version " + packag.version);
@@ -2074,6 +2076,7 @@ function update(args) {
 			return
 		}
 
+        // Keep verification and erase hooks attached to the resolved update source
         var beforeInstallCommit
         if (ferase) beforeInstallCommit = function(oldPack) {
             if (isUnDef(oldPack)) return
@@ -2081,7 +2084,7 @@ function update(args) {
             _stats.erasedToUpdate += erased.erased
             if (erased.failed > 0) throw "Cannot erase previous package for update"
         }
-		var installArgs = [_pack]
+		var installArgs = [updateSource]
 		if (isDef(originalInstallPath)) {
 			installArgs.push("-d")
 			installArgs.push(originalInstallPath)
@@ -2522,11 +2525,11 @@ function genpack(args) {
 	// .openaf_precompiled holds classes compiled for one specific OpenAF distribution+version
 	// (see js/openaf.js's __precompiledArtifact); shipping it inside an .opack would let a different
 	// version silently load/purge someone else's precompiled cache instead of just recompiling.
-	var excludeList = [ ".svn", ".git", ".openaf_precompiled" ];
+	var excludeList = [ ".svn", ".git", ".openaf_precompiled" ]
 	try { packag = getPackage(args[0]) } catch(e) {};
 
 	for(let i in args) {
-    	if (args[i] == "--includeSCM") excludeList = [ ".openaf_precompiled" ];
+        if (args[i] == "--includeSCM") excludeList = [ ".openaf_precompiled" ]
 	}
 	for(let i in args) {
     	if (args[i] == "--exclude") {

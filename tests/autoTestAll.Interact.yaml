@@ -1,7 +1,10 @@
 include:
 - autoTestAll.common.yaml
 - ../ojob.yaml
+
 jobs:
+
+# Interact::Init
 - name: Interact::Init
   exec: |
     ow.loadScreen()
@@ -15,11 +18,17 @@ jobs:
       load("../js/owrap.desktop.ui.js")
     }
     args.tests = require("autoTestAll.Interact.js")
+
+# Interact fixture handler
 - name: Interact fixture handler
   exec: |
     sleep(args.delay || 0, true)
+
+# Interact fixture failure
 - name: Interact fixture failure
   exec: throw "fixture failure"
+
+# Interact fixture reducer
 - name: Interact fixture reducer
   exec: |
     if (args.state.stopOnInit) args.close = true
@@ -30,46 +39,67 @@ jobs:
     if (args.result && args.result.label) args.state.completed.push(args.result.label)
     if (args.result && args.result.tick) args.state.ticks++
     if (args.state.completed.length == 2 || args.state.ticks == 2) args.close = true
+
+# Interact::Concurrent results
 - name: Interact::Concurrent results
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testConcurrentResults
+
+# Interact::Timer
 - name: Interact::Timer
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testTimer
+
+# Interact::Close drain
 - name: Interact::Close drain
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testCloseDrain
+
+# Interact::Validation
 - name: Interact::Validation
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testValidation
+
+# Interact::Handler failure
 - name: Interact::Handler failure
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testHandlerFailure
+
+# Interact::Reducer failure
 - name: Interact::Reducer failure
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testReducerFailure
+
+# Interact::TUI
 - name: Interact::TUI
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testTUI
+
+# Interact::Capacity
 - name: Interact::Capacity
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testCapacity
+
+# Interact::Embedded shortcut
 - name: Interact::Embedded shortcut
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testEmbedded
+
+# Interact::Console controls
 - name: Interact::Console controls
   from: Interact::Init
   to: OpenAF Test
   exec: args.func = args.tests.testConsoleControls
+
 todo:
 - Interact::Console controls
 - Interact::Embedded shortcut

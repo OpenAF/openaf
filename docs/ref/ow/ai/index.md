@@ -46,7 +46,7 @@ global.__a2a__.registerAgent(weatherAgent.meta, weatherAgent.handler);
 
 Sources:
 
-- js/owrap.ai.js:4258
+- js/owrap.ai.js:4155
 
 <a id="api-ow-ai-cluster-13a1e7b2"></a>
 
@@ -64,7 +64,7 @@ clustering:
 
 Sources:
 
-- js/owrap.ai.js:7422
+- js/owrap.ai.js:7321
 
 <a id="api-ow-ai-decisiontree-57df3dad"></a>
 
@@ -99,7 +99,7 @@ C45:
 
 Sources:
 
-- js/owrap.ai.js:6573
+- js/owrap.ai.js:6472
 
 <a id="api-ow-ai-gpt-e6d70a57"></a>
 
@@ -114,7 +114,9 @@ Common `aOptions` properties include:
 - `key`: provider API key when required.
 - `model`: default model name or deployment name.
 - `url`: provider base URL. For OpenAI defaults to "https://api.openai.com".
-- `temperature`: default model temperature.
+- `temperature`: model temperature. The OpenAI adapter sends it only if configured or provided per call.
+- `promptTransport`: use "responses" to send ordinary prompts and streams to Responses. Defaults to "chat".
+- `reasoningEffort`: optional OpenAI reasoning effort. Chat requests for GPT-6 Luna with function tools default to `none`.
 - `timeout`: request timeout in milliseconds (defaults to 15 minutes).
 - `headers`: extra request headers. These override generated headers with the same names.
 - `params`: extra request body parameters merged into prompt, image and embedding calls.
@@ -144,7 +146,7 @@ Usage stats note: `getLastStats()` now includes OpenAI cached prompt tokens (`to
 
 Sources:
 
-- js/owrap.ai.js:4386
+- js/owrap.ai.js:4283
 
 <a id="api-ow-ai-network-6f71c866"></a>
 
@@ -156,7 +158,7 @@ Creates a neural network given the parameters in aMap. aMap should contain a "ty
 
 Sources:
 
-- js/owrap.ai.js:5901
+- js/owrap.ai.js:5800
 
 <a id="api-ow-ai-regression-63c957b5"></a>
 

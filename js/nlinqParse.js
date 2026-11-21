@@ -3060,4 +3060,4 @@ module.exports = {
   StartRules: ["nLinq_text"],
   SyntaxError: peg$SyntaxError,
   parse: peg$parse
-};
+}

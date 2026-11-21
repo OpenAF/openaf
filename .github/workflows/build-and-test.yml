@@ -18,13 +18,16 @@ on:
         required: false
         default: ''
 
+# Build and test code, including remote jobs, must never receive write access.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
 
     steps:
     # --------------------------
@@ -37,9 +40,12 @@ jobs:
     # --------------
     - name: Checkout
       uses: actions/checkout@v3.5.2
+      with:
+        persist-credentials: false
 
     - name: Check documentation links and example copies
       run: |
+        python3 tests/test-workflow-permissions.py
         python3 -m unittest discover -s tools/docs -p 'test_check.py'
         python3 tools/docs/check.py
 
@@ -49,16 +55,6 @@ jobs:
       with:
         ojob: ojob.io/ojob/compile
         args: "source=ojob.yaml target=ojob.json"
-        #dist: t8
-
-    # -------------
-    - name: Checkin
-      uses: openaf/ojob-action@v7
-      env :
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        ojob: ojob.io/git/hub/checkIn
-        args: 'message="Update\ ojob.json"'
         #dist: t8
 
     # --------------------
@@ -96,8 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
 
     steps:
     # --------------------------
@@ -110,6 +105,8 @@ jobs:
     # --------------
     - name: Checkout
       uses: actions/checkout@v3.5.2
+      with:
+        persist-credentials: false
 
     # --------------------
     - name: Setup Java JDK
@@ -263,25 +260,6 @@ jobs:
               args.color = "green"
               if (args.fail > 0) args.color = "red"
      
-    # --------------
-    - name: Check in
-      uses: openaf/ojob-action@v7
-      env :
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        def : |
-          todo:
-          - (if    ): > 
-              "{{$env 'GITHUB_EVENT_NAME'}}" != "pull_request"
-            ((then)):
-            - (runfile): ojob.io/git/hub/contentIn
-              ((args )):
-                message: "Test results badge"
-                paths  : "tests/results.svg,tests/asserts.svg,tests/autoTestAll.md"
-            ((else)):
-            - (log): Ignoring check in on pull request
-        dist: t8
-    
     # ------------------
     - name: Test results
       run : |
@@ -299,6 +277,8 @@ jobs:
       contents: read
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - uses: actions/setup-java@v4
       with:
         java-version: 25
@@ -346,6 +326,8 @@ jobs:
       contents: read
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - uses: actions/setup-java@v4
       with:
         java-version: ${{ matrix.java }}

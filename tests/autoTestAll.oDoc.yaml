@@ -21,47 +21,47 @@ jobs:
 
    - name: oDoc::MemoryAndSearch
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testMemoryAndSearch;
+     exec: args.func = require("autoTestAll.oDoc.js").testMemoryAndSearch
 
    - name: oDoc::StoragePaths
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testStoragePaths;
+     exec: args.func = require("autoTestAll.oDoc.js").testStoragePaths
 
    - name: oDoc::Offline
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testOffline;
+     exec: args.func = require("autoTestAll.oDoc.js").testOffline
 
    - name: oDoc::Generator
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testGenerator;
+     exec: args.func = require("autoTestAll.oDoc.js").testGenerator
 
    - name: oDoc::WebAppend
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testWebAppend;
+     exec: args.func = require("autoTestAll.oDoc.js").testWebAppend
 
    - name: oDoc::MarkdownSourceEntries
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testMarkdownSourceEntries;
+     exec: args.func = require("autoTestAll.oDoc.js").testMarkdownSourceEntries
 
    - name: oDoc::WebFallback
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testWebFallback;
+     exec: args.func = require("autoTestAll.oDoc.js").testWebFallback
 
    - name: oDoc::SearchHelp
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testSearchHelp;
+     exec: args.func = require("autoTestAll.oDoc.js").testSearchHelp
 
    - name: oDoc::ResourceCleanup
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testResourceCleanup;
+     exec: args.func = require("autoTestAll.oDoc.js").testResourceCleanup
 
    - name: oDoc::ConsoleDisplay
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testConsoleDisplay;
+     exec: args.func = require("autoTestAll.oDoc.js").testConsoleDisplay
 
    - name: oDoc::BrowserHandlers
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.oDoc.js").testBrowserHandlers;
+     exec: args.func = require("autoTestAll.oDoc.js").testBrowserHandlers
 
 todo:
    # oDoc Tests

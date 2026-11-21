@@ -128,7 +128,7 @@ function buildSource() {
 	excludeFilter = "plugins/Wedo";
 	var arrayList = listFiles(OPENAF_SRC, new RegExp(".+\.java$"), excludeFilter);
 	log("Found #" + arrayList.length + " java sources.");
-	sourcePath = arrayList;
+	sourcePath = arrayList
 
 	return sourcePath;
 }
@@ -255,7 +255,7 @@ io.mkdir(OPENAF_BUILD_HOME + "/jsmin");
 // current function count, but addCompiledClasses() zips in every file matching the script's name
 // prefix. If a script's function count ever decreases between builds, higher-numbered classes from
 // the previous build survive as dead weight and get bundled into openaf.jar anyway.
-io.rm(OPENAF_BUILD_HOME + "/jslib");
+io.rm(OPENAF_BUILD_HOME + "/jslib")
 io.mkdir(OPENAF_BUILD_HOME + "/jslib");
 
 var zipJSlib = new ZIP();
@@ -285,14 +285,14 @@ var compileJS2Java = (classfile, script, path) => {
 }
 
 var addCompiledClasses = (baseName) => {
-	var listfiles = io.listFiles(OPENAF_BUILD_HOME + "/jslib");
-	if (isUndefined(listfiles) || isUndefined(listfiles.files)) return;
+	var listfiles = io.listFiles(OPENAF_BUILD_HOME + "/jslib")
+	if (isUndefined(listfiles) || isUndefined(listfiles.files)) return
 	for (var i in listfiles.files) {
-		var f = listfiles.files[i];
-		if (f.isDirectory) continue;
-		if (f.filename.indexOf(baseName) != 0) continue;
-		if (!f.filename.match(/\.class$/)) continue;
-		zipJSlib.putFile(f.filename, io.readFileBytes(f.filepath));
+		var f = listfiles.files[i]
+		if (f.isDirectory) continue
+		if (f.filename.indexOf(baseName) != 0) continue
+		if (!f.filename.match(/\.class$/)) continue
+		zipJSlib.putFile(f.filename, io.readFileBytes(f.filepath))
 	}
 }
 
@@ -360,7 +360,7 @@ try {
 			}
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
-				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) addCompiledClasses(file.filename.replace(/\./g, "_"));
+				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) addCompiledClasses(file.filename.replace(/\./g, "_"))
 			}, tempJar);
 		} else {
 			try {
@@ -376,7 +376,7 @@ try {
 			  }   
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
-				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) addCompiledClasses(file.filename.replace(/\./g, "_"));				
+				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) addCompiledClasses(file.filename.replace(/\./g, "_"))
 			}, tempJar);
 		}
 	}

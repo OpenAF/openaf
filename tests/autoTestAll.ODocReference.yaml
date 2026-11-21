@@ -3,15 +3,23 @@ include:
 - autoTestAll.common.yaml
 
 jobs:
+
+# ODocReference::Wiki
 - name: ODocReference::Wiki
   to: OpenAF Test
   exec: args.func = require('autoTestAll.ODocReference.js').testWiki
+
+# ODocReference::StreamBoundaries
 - name: ODocReference::StreamBoundaries
   to: OpenAF Test
   exec: args.func = require('autoTestAll.ODocReference.js').testStreamBoundaries
+
+# ODocReference::ErrorsAndRefresh
 - name: ODocReference::ErrorsAndRefresh
   to: OpenAF Test
   exec: args.func = require('autoTestAll.ODocReference.js').testErrorsAndRefresh
+
+# ODocReference::TraversalAndMemory
 - name: ODocReference::TraversalAndMemory
   to: OpenAF Test
   exec: args.func = require('autoTestAll.ODocReference.js').testTraversalAndMemory

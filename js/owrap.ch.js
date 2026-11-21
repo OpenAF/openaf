@@ -17,7 +17,7 @@ OpenWrap.ch.prototype.type = {};
 OpenWrap.ch.prototype.lock = {};
 OpenWrap.ch.prototype.lock2 = {};
 // One reentrant lock also protects backend registries shared by different channel names.
-OpenWrap.ch.prototype.__lifecycleLock = new java.util.concurrent.locks.ReentrantLock();
+OpenWrap.ch.prototype.__lifecycleLock = new java.util.concurrent.locks.ReentrantLock()
 
 OpenWrap.ch.prototype.__types = {
 	// Obj BIG channel implementation
@@ -918,13 +918,13 @@ OpenWrap.ch.prototype.__types = {
 						if (isDef(ow.ch.__types.buffer.__s[c])) ow.ch.__types.buffer.__s[c].stop();
 					}
 					for(var c in ow.ch.__types.buffer.__f) {
-						ow.ch.__types.buffer.__f[c](true);
+						ow.ch.__types.buffer.__f[c](true)
 						// Bound the combined wait to the channel's configured timeout instead of applying it
 						// to each waitForJobs call (which could double the per-channel shutdown delay).
-						var _waitStart = now();
+						var _waitStart = now()
 						$ch(ow.ch.__types.buffer.__bt[c]).waitForJobs(ow.ch.__types.buffer.__t[c]);
-						var _waitLeft = ow.ch.__types.buffer.__t[c] - (now() - _waitStart);
-						$ch(ow.ch.__types.buffer.__bc[c]).waitForJobs(_waitLeft > 0 ? _waitLeft : 0);
+						var _waitLeft = ow.ch.__types.buffer.__t[c] - (now() - _waitStart)
+						$ch(ow.ch.__types.buffer.__bc[c]).waitForJobs(_waitLeft > 0 ? _waitLeft : 0)
 					}
 				});
 			}
@@ -1159,7 +1159,7 @@ OpenWrap.ch.prototype.__types = {
 				op: "unsetAll", name: this.__channels[aName].chTarget, k: aKs, v: aVs, timestamp: aTimestamp
 			};
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
-			return $ch(this.__channels[aName].chTarget).unsetAll(m.k, m.v, m.timestamp);
+			return $ch(this.__channels[aName].chTarget).unsetAll(m.k, m.v, m.timestamp)
 		},		
 		get          : function(aName, aK) {
 			var m = { op: "get", name: this.__channels[aName].chTarget, k: aK };
@@ -1170,14 +1170,14 @@ OpenWrap.ch.prototype.__types = {
 			var m = { op: "pop", name: this.__channels[aName].chTarget };
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
 			// The channel wrapper reads and removes the value using this key.
-			var keys = $ch(this.__channels[aName].chTarget).getSortedKeys();
-			return keys[keys.length - 1];
+			var keys = $ch(this.__channels[aName].chTarget).getSortedKeys()
+			return keys[keys.length - 1]
 		},
 		shift        : function(aName) {
 			var m = { op: "shift", name: this.__channels[aName].chTarget };
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
 			// The channel wrapper reads and removes the value using this key.
-			return $ch(this.__channels[aName].chTarget).getSortedKeys()[0];
+			return $ch(this.__channels[aName].chTarget).getSortedKeys()[0]
 		},
 		unset        : function(aName, aK, aTimestamp) {
 			var m = { op: "unset", name: this.__channels[aName].chTarget, k: aK, timestamp: aTimestamp };
@@ -1705,8 +1705,8 @@ OpenWrap.ch.prototype.__types = {
 				this.__ul(this.__channels[aName]);
 			}
 			Object.keys(m).forEach(k => {
-				var key = jsonParse(k);
-				if (!isMap(key)) key = k;
+				var key = jsonParse(k)
+				if (!isMap(key)) key = k
 				if (this.__channels[aName].multifile) {
 					try { aFunction(key, this.__rf(this.__channels[aName], key)) } catch(e) {}
 				} else {
@@ -1849,7 +1849,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},		
 		get          : function(aName, aK) {
-			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
+			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] }
 			if (this.__channels[aName].multifile) {
 				return this.__rf(this.__channels[aName], aK)
 			} else {
@@ -2018,8 +2018,8 @@ OpenWrap.ch.prototype.__types = {
 			var o = c.opts
 			if (o.readOnly) return false
 			if (isDef(o.store)) {
-				$ch(c.st.names.meta).set({ k: "meta" }, { k: "meta", state: clone(c.state) });
-				return true;
+				$ch(c.st.names.meta).set({ k: "meta" }, { k: "meta", state: clone(c.state) })
+				return true
 			}
 			this.__l(o)
 			try {
@@ -3891,107 +3891,107 @@ OpenWrap.ch.prototype.__types = {
 	mvs: {
 		__open: function(absFile, shouldCompress) {
 			if (isUnDef(this.__f[absFile])) {
-				var s = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled();
-				if (absFile != "memory") s = s.fileName(absFile);
-				if (shouldCompress) s = s.compress();
-				this.__f[absFile] = s.open();
+				var s = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled()
+				if (absFile != "memory") s = s.fileName(absFile)
+				if (shouldCompress) s = s.compress()
+				this.__f[absFile] = s.open()
 			}
-			if (absFile != "memory") this.__f[absFile].setReuseSpace(true);
-			return this.__f[absFile];
+			if (absFile != "memory") this.__f[absFile].setReuseSpace(true)
+			return this.__f[absFile]
 		},
 		// Shard file names for a multifile path (mvs-00.db, mvs-01.db, ...)
 		__fnames: function(aPath, aN) {
-			var width = Math.max(2, String(aN - 1).length);
-			var res = [];
+			var width = Math.max(2, String(aN - 1).length)
+			var res = []
 			for(var i = 0; i < aN; i++) {
-				var n = String(i);
-				while(n.length < width) n = "0" + n;
-				res.push(aPath + "/mvs-" + n + ".db");
+				var n = String(i)
+				while(n.length < width) n = "0" + n
+				res.push(aPath + "/mvs-" + n + ".db")
 			}
-			return res;
+			return res
 		},
 		// Shard index for an already canonical (untrimmed) key string
 		__hidx: function(aCanonicalKey, aN) {
-			if (aN <= 1) return 0;
-			return Number(java.lang.Math.floorMod(new java.lang.String(aCanonicalKey).hashCode(), aN));
+			if (aN <= 1) return 0
+			return Number(java.lang.Math.floorMod(new java.lang.String(aCanonicalKey).hashCode(), aN))
 		},
 		__idx: function(aName, aKey) {
 			// Always hash the untrimmed canonical key so internalTrim can't move keys between files
-			return this.__hidx(stringify(sortMapKeys(aKey), __, ""), this.__o[aName].files);
+			return this.__hidx(stringify(sortMapKeys(aKey), __, ""), this.__o[aName].files)
 		},
 		__st: function(aName, aKey) {
-			return this.__ss[aName][this.__idx(aName, aKey)];
+			return this.__ss[aName][this.__idx(aName, aKey)]
 		},
 		__k: function(aName, aKey) {
-			return stringify(sortMapKeys(aKey), __, this.__o[aName].stry);
+			return stringify(sortMapKeys(aKey), __, this.__o[aName].stry)
 		},
 		__page: function(aName, full, fn) {
-			var res = [];
-			full = _$(full, "full").isMap().default({});
+			var res = []
+			full = _$(full, "full").isMap().default({})
 
-			var mapName = this.__m[aName](full);
-			var maps = this.__ss[aName].map(s => s.openMap(mapName));
+			var mapName = this.__m[aName](full)
+			var maps = this.__ss[aName].map(s => s.openMap(mapName))
 
 			if (isDef(full.start) || isDef(full.end)) {
-				var start = _$(full.start, "full.start").isNumber().default(0);
-				var limit = _$(full.end, "full.end").isNumber().default(Infinity);
+				var start = _$(full.start, "full.start").isNumber().default(0)
+				var limit = _$(full.end, "full.end").isNumber().default(Infinity)
 
-				var offset = 0;
+				var offset = 0
 				for(var m = 0; m < maps.length && offset < limit; m++) {
-					var size = Number(maps[m].sizeAsLong());
+					var size = Number(maps[m].sizeAsLong())
 					for(var i = Math.max(start - offset, 0); i < size && offset + i < limit; i++) {
-						res.push(fn(maps[m], maps[m].getKey(i)));
+						res.push(fn(maps[m], maps[m].getKey(i)))
 					}
-					offset += size;
+					offset += size
 				}
 			} else {
 				maps.forEach(map => {
-					af.fromJavaArray(map.keyList()).forEach(k => res.push(fn(map, k)));
-				});
+					af.fromJavaArray(map.keyList()).forEach(k => res.push(fn(map, k)))
+				})
 			}
 
-			return res;
+			return res
 		},
 		create       : function(aName, shouldCompress, options) {
 			if (isUnDef(options)) options = {};
 			if (isUnDef(options.file)) options.file = undefined;
 
 			if (isUnDef(this.__s)) this.__s = {};
-			if (isUnDef(this.__ss)) this.__ss = {};
+			if (isUnDef(this.__ss)) this.__ss = {}
 			if (isUnDef(this.__f)) this.__f = {};
 			if (isUnDef(this.__m)) this.__m = {};
 			if (isUnDef(this.__o)) this.__o = {};
 
 			var shut = _$(options.closeOnShutdown).isBoolean().default(true);
-			options.multifile = _$(options.multifile, "options.multifile").isBoolean().default(false);
+			options.multifile = _$(options.multifile, "options.multifile").isBoolean().default(false)
 
-			var absFiles = [];
+			var absFiles = []
 			if (options.multifile) {
-				_$(options.path, "options.path").isString().$_();
-				var absPath = String((new java.io.File(options.path)).getAbsoluteFile());
-				io.mkdir(absPath);
+				_$(options.path, "options.path").isString().$_()
+				var absPath = String((new java.io.File(options.path)).getAbsoluteFile())
+				io.mkdir(absPath)
 
-				var manifestFile = absPath + "/mvs-multifile.json";
-				var manifest = io.fileExists(manifestFile) ? io.readFileJSON(manifestFile) : __;
+				var manifestFile = absPath + "/mvs-multifile.json"
+				var manifest = io.fileExists(manifestFile) ? io.readFileJSON(manifestFile) : __
 				if (isMap(manifest) && isNumber(manifest.files)) {
-					if (isDef(options.files) && options.files != manifest.files) throw "mvs multifile: options.files (" + options.files + ") doesn't match the " + manifest.files + " files already in use on " + absPath;
-					options.files = manifest.files;
+					if (isDef(options.files) && options.files != manifest.files) throw "mvs multifile: options.files (" + options.files + ") doesn't match the " + manifest.files + " files already in use on " + absPath
+					options.files = manifest.files
 				} else {
-					options.files = _$(options.files, "options.files").isNumber().default(4);
-					if (options.files < 1 || options.files != Math.floor(options.files)) throw "mvs multifile: options.files needs to be an integer >= 1";
-					io.writeFileJSON(manifestFile, { files: options.files, hash: "javaStringHashCode", version: 1 }, "");
+					options.files = _$(options.files, "options.files").isNumber().default(4)
+					if (options.files < 1 || options.files != Math.floor(options.files)) throw "mvs multifile: options.files needs to be an integer >= 1"
+					io.writeFileJSON(manifestFile, { files: options.files, hash: "javaStringHashCode", version: 1 }, "")
 				}
 
-				absFiles = this.__fnames(absPath, options.files);
+				absFiles = this.__fnames(absPath, options.files)
 			} else {
-				options.files = 1;
-				absFiles.push(isDef(options.file) ? String((new java.io.File(options.file)).getAbsoluteFile()) : "memory");
+				options.files = 1
+				absFiles.push(isDef(options.file) ? String((new java.io.File(options.file)).getAbsoluteFile()) : "memory")
 			}
-			options.absFile  = absFiles[0];
-			options.absFiles = absFiles;
+			options.absFile  = absFiles[0]
+			options.absFiles = absFiles
 
-			this.__ss[aName] = absFiles.map(f => this.__open(f, shouldCompress));
-			this.__s[aName]  = this.__ss[aName][0];
+			this.__ss[aName] = absFiles.map(f => this.__open(f, shouldCompress))
+			this.__s[aName]  = this.__ss[aName][0]
 
 			if (isUnDef(options.map)) {
 				options.map = function() { return "default"; };
@@ -4004,7 +4004,7 @@ OpenWrap.ch.prototype.__types = {
 			this.__m[aName] = options.map;
 
 			if ((isDef(options.file) || options.multifile) && isDef(options.compact) && options.compact) {
-				this.__ss[aName].forEach(s => s.compactFile(2500));
+				this.__ss[aName].forEach(s => s.compactFile(2500))
 			}
 
 			this.__o[aName] = options;
@@ -4016,26 +4016,26 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		destroy      : function(aName) {
-			var o = this.__o[aName], sts = this.__ss[aName];
+			var o = this.__o[aName], sts = this.__ss[aName]
 
 			o.absFiles.forEach((f, i) => {
-				if (f != "memory" && isDef(o.compact) && o.compact) sts[i].compactFile(2500);
+				if (f != "memory" && isDef(o.compact) && o.compact) sts[i].compactFile(2500)
 
-				var found = Object.keys(this.__o).some(n => n != aName && this.__o[n].absFiles.indexOf(f) >= 0);
+				var found = Object.keys(this.__o).some(n => n != aName && this.__o[n].absFiles.indexOf(f) >= 0)
 				if (!found) {
-					sts[i].close();
-					delete this.__f[f];
+					sts[i].close()
+					delete this.__f[f]
 				}
-			});
+			})
 
 			delete this.__s[aName];
-			delete this.__ss[aName];
+			delete this.__ss[aName]
 			delete this.__o[aName];
 		},
 		size         : function(aName) {
-			var mapName = this.__m[aName](), size = 0;
-			this.__ss[aName].forEach(s => size += Number(s.openMap(mapName).sizeAsLong()));
-			return size;
+			var mapName = this.__m[aName](), size = 0
+			this.__ss[aName].forEach(s => size += Number(s.openMap(mapName).sizeAsLong()))
+			return size
 		},
 		forEach      : function(aName, aFunction, x) {
 			var aKs = this.getKeys(aName, x);
@@ -4045,10 +4045,10 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getKeys      : function(aName, full) {
-			return this.__page(aName, full, (map, k) => jsonParse(k, true));
+			return this.__page(aName, full, (map, k) => jsonParse(k, true))
 		},
 		getAll      : function(aName, full) {
-			return this.__page(aName, full, (map, k) => jsonParse(map.get(k), true));
+			return this.__page(aName, full, (map, k) => jsonParse(map.get(k), true))
 		},
 		getSortedKeys: function(aName, full) {
 			return this.getKeys(aName, full);
@@ -4062,74 +4062,74 @@ OpenWrap.ch.prototype.__types = {
 				if (isDef(outcome)) outcome.changed = true
 				return result
 			}
-			return undefined;
+			return undefined
 		},
 		set          : function(aName, ak, av, aTimestamp) {
-			var s = this.__st(aName, ak);
-			var map = s.openMap(this.__m[aName](ak));
+			var s = this.__st(aName, ak)
+			var map = s.openMap(this.__m[aName](ak))
 
-			map.put(this.__k(aName, ak), stringify(av, __, this.__o[aName].stry));
-			s.commit();
+			map.put(this.__k(aName, ak), stringify(av, __, this.__o[aName].stry))
+			s.commit()
 			return ak;
 		},
 		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			ow.loadObj();
-			var touched = {};
+			var touched = {}
 			for(var iii in anArrayOfMapData) {
 				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
 				var av = anArrayOfMapData[iii];
-				var idx = this.__idx(aName, ak);
-				var map = this.__ss[aName][idx].openMap(this.__m[aName](ak));
-				map.put(this.__k(aName, ak), stringify(av, __, this.__o[aName].stry));
-				touched[idx] = true;
+				var idx = this.__idx(aName, ak)
+				var map = this.__ss[aName][idx].openMap(this.__m[aName](ak))
+				map.put(this.__k(aName, ak), stringify(av, __, this.__o[aName].stry))
+				touched[idx] = true
 			}
 			Object.keys(touched).forEach(i => {
-				this.__ss[aName][i].sync();
-				this.__ss[aName][i].commit();
-			});
+				this.__ss[aName][i].sync()
+				this.__ss[aName][i].commit()
+			})
 		},
 		unsetAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			ow.loadObj();
-			var touched = {};
+			var touched = {}
 			for(var iii in anArrayOfMapData) {
 				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
-				var idx = this.__idx(aName, ak);
-				var map = this.__ss[aName][idx].openMap(this.__m[aName](ak));
-				map.remove(this.__k(aName, ak));
-				touched[idx] = true;
+				var idx = this.__idx(aName, ak)
+				var map = this.__ss[aName][idx].openMap(this.__m[aName](ak))
+				map.remove(this.__k(aName, ak))
+				touched[idx] = true
 			}
 			Object.keys(touched).forEach(i => {
-				this.__ss[aName][i].sync();
-				this.__ss[aName][i].commit();
-			});
+				this.__ss[aName][i].sync()
+				this.__ss[aName][i].commit()
+			})
 		},
 		get          : function(aName, aKey) {
-			var map = this.__st(aName, aKey).openMap(this.__m[aName](aKey));
+			var map = this.__st(aName, aKey).openMap(this.__m[aName](aKey))
 
-			var r = map.get(this.__k(aName, aKey));
+			var r = map.get(this.__k(aName, aKey))
 			if (r == null || isUnDef(r)) return __; else return jsonParse(r, true);
 		},
 		// pop/shift return the key; ow.ch.pop/shift then get and unset it
 		pop          : function(aName) {
-			var mapName = this.__m[aName](), sts = this.__ss[aName];
+			var mapName = this.__m[aName](), sts = this.__ss[aName]
 			for(var i = sts.length - 1; i >= 0; i--) {
-				var map = sts[i].openMap(mapName);
-				if (map.sizeAsLong() > 0) return jsonParse(map.lastKey(), true);
+				var map = sts[i].openMap(mapName)
+				if (map.sizeAsLong() > 0) return jsonParse(map.lastKey(), true)
 			}
-			return __;
+			return __
 		},
 		shift        : function(aName) {
-			var mapName = this.__m[aName](), sts = this.__ss[aName];
+			var mapName = this.__m[aName](), sts = this.__ss[aName]
 			for(var i = 0; i < sts.length; i++) {
-				var map = sts[i].openMap(mapName);
-				if (map.sizeAsLong() > 0) return jsonParse(map.firstKey(), true);
+				var map = sts[i].openMap(mapName)
+				if (map.sizeAsLong() > 0) return jsonParse(map.firstKey(), true)
 			}
-			return __;
+			return __
 		},
 		unset        : function(aName, aKey) {
-			var map = this.__st(aName, aKey).openMap(this.__m[aName](aKey));
+			var map = this.__st(aName, aKey).openMap(this.__m[aName](aKey))
 
-			return jsonParse(map.remove(this.__k(aName, aKey)), true);
+			return jsonParse(map.remove(this.__k(aName, aKey)), true)
 		}
 	},
 	/**
@@ -4152,49 +4152,49 @@ OpenWrap.ch.prototype.__types = {
 		__channels: Object.create(null),
 		_key: function(aKey) {
 			return JSON.stringify(aKey, function(key, value) {
-				if (!isMap(value)) return value;
-				var sorted = Object.create(null);
-				Object.keys(value).sort().forEach(function(k) { sorted[k] = value[k]; });
-				return sorted;
-			});
+				if (!isMap(value)) return value
+				var sorted = Object.create(null)
+				Object.keys(value).sort().forEach(function(k) { sorted[k] = value[k]; })
+				return sorted
+			})
 		},
 		create: function(aName, shouldCompress, options) {
-			options = _$(options).isMap().default({});
+			options = _$(options).isMap().default({})
 			if (isDef(getOPackPath("plugin-Ignite"))) loadExternalJars(getOPackPath("plugin-Ignite"));
 			plugin("Ignite");
-			var ig = isDef(options.ignite) ? options.ignite : new Ignite();
+			var ig = isDef(options.ignite) ? options.ignite : new Ignite()
 			if (!ig.isStarted()) {
-				var config = clone(_$(options.configuration).isMap().default({}));
-				if (isDef(options.persist)) config.workDir = options.persist;
-				ig.configure(config);
-				ig.start(options.gridName, __, options.client === true);
+				var config = clone(_$(options.configuration).isMap().default({}))
+				if (isDef(options.persist)) config.workDir = options.persist
+				ig.configure(config)
+				ig.start(options.gridName, __, options.client === true)
 			}
-			this.__channels[aName] = { ignite: ig, cache: ig.getOrCreateCache(_$(options.cacheName).isString().default(aName)), keepOnDestroy: options.keepOnDestroy === true };
+			this.__channels[aName] = { ignite: ig, cache: ig.getOrCreateCache(_$(options.cacheName).isString().default(aName)), keepOnDestroy: options.keepOnDestroy === true }
 		},
 		destroy: function(aName) {
-			var state = this.__channels[aName];
-			if (!state.keepOnDestroy) state.cache.destroy();
-			delete this.__channels[aName];
+			var state = this.__channels[aName]
+			if (!state.keepOnDestroy) state.cache.destroy()
+			delete this.__channels[aName]
 		},
 		size: function(aName) { return Number(this.__channels[aName].cache.size()); },
 		forEach: function(aName, aFunction) {
-			var parent = this;
-			this.getKeys(aName).forEach(function(key) { aFunction(key, parent.get(aName, key)); });
+			var parent = this
+			this.getKeys(aName).forEach(function(key) { aFunction(key, parent.get(aName, key)); })
 		},
 		getKeys: function(aName, full) {
-			var keys = this.__channels[aName].cache.keys(), result = [];
-			for (var i = 0; i < keys.length; i++) result.push(JSON.parse(String(keys[i])));
-			return result;
+			var keys = this.__channels[aName].cache.keys(), result = []
+			for (var i = 0; i < keys.length; i++) result.push(JSON.parse(String(keys[i])))
+			return result
 		},
 		getSortedKeys: function(aName, full) { return this.getKeys(aName, full); },
 		getSet: function(aName, aMatch, aK, aV, aTimestamp, x, outcome) {
 			if (isDef(outcome)) outcome.changed = false
-			var cache = this.__channels[aName].cache, key = this._key(aK), value = JSON.stringify(aV);
+			var cache = this.__channels[aName].cache, key = this._key(aK), value = JSON.stringify(aV)
 			// Retry against the actual value if a writer wins between the read and CAS.
 			while (true) {
-				var previous = cache.get(key);
-				var current = isNull(previous) ? __ : JSON.parse(String(previous));
-				if (!$stream([current]).anyMatch(aMatch)) return __;
+				var previous = cache.get(key)
+				var current = isNull(previous) ? __ : JSON.parse(String(previous))
+				if (!$stream([current]).anyMatch(aMatch)) return __
 				if (isNull(previous) ? cache.putIfAbsent(key, value) : cache.replace(key, String(previous), value)) {
 					if (isDef(outcome)) outcome.changed = true
 					return aV
@@ -4202,22 +4202,22 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		set: function(aName, aKey, aValue, aTimestamp) {
-			this.__channels[aName].cache.put(this._key(aKey), JSON.stringify(aValue));
-			return aKey;
+			this.__channels[aName].cache.put(this._key(aKey), JSON.stringify(aValue))
+			return aKey
 		},
 		setAll: function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
-			for (var i in anArrayOfMapData) this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
+			for (var i in anArrayOfMapData) this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp)
 		},
 		unsetAll: function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
-			for (var i in anArrayOfMapData) this.unset(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]));
+			for (var i in anArrayOfMapData) this.unset(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]))
 		},
 		get: function(aName, aKey) {
-			var value = this.__channels[aName].cache.get(this._key(aKey));
-			return isNull(value) ? __ : JSON.parse(String(value));
+			var value = this.__channels[aName].cache.get(this._key(aKey))
+			return isNull(value) ? __ : JSON.parse(String(value))
 		},
 		pop: function(aName) {
-			var keys = this.getSortedKeys(aName);
-			return keys[keys.length - 1];
+			var keys = this.getSortedKeys(aName)
+			return keys[keys.length - 1]
 		},
 		shift: function(aName) { return this.getSortedKeys(aName)[0]; },
 		unset: function(aName, aKey) { return this.__channels[aName].cache.remove(this._key(aKey)); }
@@ -4652,24 +4652,24 @@ OpenWrap.ch.prototype.__types = {
  * </odoc>
  */
 OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
-	this.__lifecycleLock.lock();
+	this.__lifecycleLock.lock()
 	try {
 		if (Object.keys(this.channels).indexOf(aName) < 0) {
-			type = (isDef(type)) ? type : "simple";
-			this.__types[type].create(aName, shouldCompress, options);
+			type = (isDef(type)) ? type : "simple"
+			this.__types[type].create(aName, shouldCompress, options)
 
-			this.subscribers[aName] = {};
-			this.peers[aName] = {};
-			this.expose[aName] = [];
-			this.jobs[aName] = {};
-			this.vers[aName] = nowUTC();
-			this.lock[aName] = new java.util.concurrent.locks.ReentrantLock();
-			this.lock2[aName] = new java.util.concurrent.locks.ReentrantLock();
+			this.subscribers[aName] = {}
+			this.peers[aName] = {}
+			this.expose[aName] = []
+			this.jobs[aName] = {}
+			this.vers[aName] = nowUTC()
+			this.lock[aName] = new java.util.concurrent.locks.ReentrantLock()
+			this.lock2[aName] = new java.util.concurrent.locks.ReentrantLock()
 			// Publish only after all per-channel state is initialized.
-			this.channels[aName] = type;
+			this.channels[aName] = type
 		}
 	} finally {
-		this.__lifecycleLock.unlock();
+		this.__lifecycleLock.unlock()
 	}
 	return this;
 };
@@ -4737,11 +4737,11 @@ OpenWrap.ch.prototype.stopAllJobs = function(aName) {
  * </odoc>
  */
 OpenWrap.ch.prototype.list = function() {
-	this.__lifecycleLock.lock();
+	this.__lifecycleLock.lock()
 	try {
-		return Object.keys(this.channels);
+		return Object.keys(this.channels)
 	} finally {
-		this.__lifecycleLock.unlock();
+		this.__lifecycleLock.unlock()
 	}
 };
 	 
@@ -4754,23 +4754,23 @@ OpenWrap.ch.prototype.list = function() {
  * </odoc>
  */
 OpenWrap.ch.prototype.destroy = function(aName) {
-	this.__lifecycleLock.lock();
+	this.__lifecycleLock.lock()
 	try {
 		if (isDef(this.__types[this.channels[aName]])) {
 			// Preserve the registration if backend cleanup fails so it can be retried.
-			this.__types[this.channels[aName]].destroy(aName);
+			this.__types[this.channels[aName]].destroy(aName)
 
-			delete this.channels[aName];
-			delete this.subscribers[aName];
-			delete this.peers[aName];
-			delete this.expose[aName];
-			delete this.jobs[aName];
-			delete this.vers[aName];
-			delete this.lock[aName];
-			delete this.lock2[aName];
+			delete this.channels[aName]
+			delete this.subscribers[aName]
+			delete this.peers[aName]
+			delete this.expose[aName]
+			delete this.jobs[aName]
+			delete this.vers[aName]
+			delete this.lock[aName]
+			delete this.lock2[aName]
 		}
 	} finally {
-		this.__lifecycleLock.unlock();
+		this.__lifecycleLock.unlock()
 	}
 
 	return this;
@@ -5366,7 +5366,7 @@ OpenWrap.ch.prototype.shift = function(aName) {
 		ow.ch.lock2[aName].unlock();
 	}
 
-	if (isDef(error)) throw error;
+	if (isDef(error)) throw error
 
 	return out;
 };
@@ -6253,77 +6253,77 @@ OpenWrap.ch.prototype.utils = {
 		 * </odoc>
 		 */
 		reshard: function(aPath, aNewFiles, shouldCompress) {
-			_$(aPath, "aPath").isString().$_();
-			_$(aNewFiles, "aNewFiles").isNumber().$_();
-			if (aNewFiles < 1 || aNewFiles != Math.floor(aNewFiles)) throw "aNewFiles needs to be an integer >= 1";
+			_$(aPath, "aPath").isString().$_()
+			_$(aNewFiles, "aNewFiles").isNumber().$_()
+			if (aNewFiles < 1 || aNewFiles != Math.floor(aNewFiles)) throw "aNewFiles needs to be an integer >= 1"
 
-			var t = ow.ch.__types.mvs;
-			var absPath = String((new java.io.File(aPath)).getAbsoluteFile());
-			var manifestFile = absPath + "/mvs-multifile.json";
-			var manifest = io.fileExists(manifestFile) ? io.readFileJSON(manifestFile) : __;
-			if (!isMap(manifest) || !isNumber(manifest.files)) throw "No mvs multifile manifest found on " + absPath;
+			var t = ow.ch.__types.mvs
+			var absPath = String((new java.io.File(aPath)).getAbsoluteFile())
+			var manifestFile = absPath + "/mvs-multifile.json"
+			var manifest = io.fileExists(manifestFile) ? io.readFileJSON(manifestFile) : __
+			if (!isMap(manifest) || !isNumber(manifest.files)) throw "No mvs multifile manifest found on " + absPath
 
-			var oldFiles = t.__fnames(absPath, manifest.files);
-			var inUse = isMap(t.__o) && Object.keys(t.__o).some(n => t.__o[n].absFiles.some(f => oldFiles.indexOf(f) >= 0));
-			if (inUse) throw "Channels using " + absPath + " need to be destroyed before resharding";
-			if (manifest.files == aNewFiles) return 0;
+			var oldFiles = t.__fnames(absPath, manifest.files)
+			var inUse = isMap(t.__o) && Object.keys(t.__o).some(n => t.__o[n].absFiles.some(f => oldFiles.indexOf(f) >= 0))
+			if (inUse) throw "Channels using " + absPath + " need to be destroyed before resharding"
+			if (manifest.files == aNewFiles) return 0
 
-			var tmpPath = absPath + "/.reshard-tmp";
-			if (io.fileExists(tmpPath)) io.rm(tmpPath);
-			io.mkdir(tmpPath);
+			var tmpPath = absPath + "/.reshard-tmp"
+			if (io.fileExists(tmpPath)) io.rm(tmpPath)
+			io.mkdir(tmpPath)
 
-			var newFiles = t.__fnames(tmpPath, aNewFiles);
-			var sources = [], targets = [], moved = 0, expected = 0;
+			var newFiles = t.__fnames(tmpPath, aNewFiles)
+			var sources = [], targets = [], moved = 0, expected = 0
 			var open = (f, comp) => {
-				var b = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled().fileName(f);
-				if (comp) b = b.compress();
-				return b.open();
-			};
+				var b = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled().fileName(f)
+				if (comp) b = b.compress()
+				return b.open()
+			}
 
 			try {
-				sources = oldFiles.map(f => open(f, shouldCompress));
-				targets = newFiles.map(f => open(f, shouldCompress));
+				sources = oldFiles.map(f => open(f, shouldCompress))
+				targets = newFiles.map(f => open(f, shouldCompress))
 
 				sources.forEach(src => {
 					af.fromJavaArray(src.getMapNames().toArray()).forEach(mapName => {
-						mapName = String(mapName);
-						var smap = src.openMap(mapName);
+						mapName = String(mapName)
+						var smap = src.openMap(mapName)
 						af.fromJavaArray(smap.keyList()).forEach(k => {
 							// Same placement rule as the channel: hash of the untrimmed canonical key
-							var idx = t.__hidx(stringify(sortMapKeys(jsonParse(String(k), true)), __, ""), aNewFiles);
-							targets[idx].openMap(mapName).put(k, smap.get(k));
-							moved++;
-						});
-						expected += Number(smap.sizeAsLong());
-					});
-				});
+							var idx = t.__hidx(stringify(sortMapKeys(jsonParse(String(k), true)), __, ""), aNewFiles)
+							targets[idx].openMap(mapName).put(k, smap.get(k))
+							moved++
+						})
+						expected += Number(smap.sizeAsLong())
+					})
+				})
 
-				var total = 0;
+				var total = 0
 				targets.forEach(tgt => {
-					tgt.commit();
-					af.fromJavaArray(tgt.getMapNames().toArray()).forEach(mapName => total += Number(tgt.openMap(String(mapName)).sizeAsLong()));
-				});
-				if (total != expected) throw "reshard failed: expected " + expected + " entries but copied " + total;
+					tgt.commit()
+					af.fromJavaArray(tgt.getMapNames().toArray()).forEach(mapName => total += Number(tgt.openMap(String(mapName)).sizeAsLong()))
+				})
+				if (total != expected) throw "reshard failed: expected " + expected + " entries but copied " + total
 			} catch(e) {
-				targets.forEach(tgt => { try { tgt.close() } catch(ee) {} });
-				sources.forEach(src => { try { src.close() } catch(ee) {} });
-				io.rm(tmpPath);
-				throw e;
+				targets.forEach(tgt => { try { tgt.close() } catch(ee) {} })
+				sources.forEach(src => { try { src.close() } catch(ee) {} })
+				io.rm(tmpPath)
+				throw e
 			}
 
-			targets.forEach(tgt => tgt.close());
-			sources.forEach(src => src.close());
+			targets.forEach(tgt => tgt.close())
+			sources.forEach(src => src.close())
 
 			// Swap: remove the old files, move the new ones and finally update the manifest
-			oldFiles.forEach(f => { if (io.fileExists(f)) io.rm(f); });
-			t.__fnames(absPath, aNewFiles).forEach((f, i) => io.mv(newFiles[i], f));
-			io.writeFileJSON(manifestFile, { files: aNewFiles, hash: "javaStringHashCode", version: 1 }, "");
-			io.rm(tmpPath);
+			oldFiles.forEach(f => { if (io.fileExists(f)) io.rm(f); })
+			t.__fnames(absPath, aNewFiles).forEach((f, i) => io.mv(newFiles[i], f))
+			io.writeFileJSON(manifestFile, { files: aNewFiles, hash: "javaStringHashCode", version: 1 }, "")
+			io.rm(tmpPath)
 
-			return moved;
+			return moved
 		}
 	}
-};
+}
 
 /**
  * <odoc format="markdown">
@@ -6369,17 +6369,17 @@ OpenWrap.ch.prototype.utils.graph = {
 		)
 	},
 	metadata: function(aName, aValue) {
-		var gt = ow.ch.__types.graph, c = gt.__c(aName);
+		var gt = ow.ch.__types.graph, c = gt.__c(aName)
 		if (isDef(aValue)) {
-			gt.__rw(c);
-			if (!isMap(aValue)) throw "metadata must be a map";
-			Object.keys(aValue).forEach(k => { if ([ "nodes", "edges", "_edgeIndex" ].indexOf(k) >= 0) throw "metadata cannot replace graph entities"; });
-			Object.keys(aValue).forEach(k => { c.state[k] = clone(aValue[k]); });
-			gt.__flush(c);
+			gt.__rw(c)
+			if (!isMap(aValue)) throw "metadata must be a map"
+			Object.keys(aValue).forEach(k => { if ([ "nodes", "edges", "_edgeIndex" ].indexOf(k) >= 0) throw "metadata cannot replace graph entities"; })
+			Object.keys(aValue).forEach(k => { c.state[k] = clone(aValue[k]); })
+			gt.__flush(c)
 		}
-		var out = {};
-		Object.keys(c.state).forEach(k => { if ([ "nodes", "edges", "_edgeIndex" ].indexOf(k) < 0) out[k] = clone(c.state[k]); });
-		return out;
+		var out = {}
+		Object.keys(c.state).forEach(k => { if ([ "nodes", "edges", "_edgeIndex" ].indexOf(k) < 0) out[k] = clone(c.state[k]); })
+		return out
 	},
 	neighbors: function(aName, anId, aOptions) {
 		var id = this.__id(anId)
@@ -6437,7 +6437,7 @@ OpenWrap.ch.prototype.utils.graph = {
 		aOptions = _$(aOptions, "options").isMap().default({})
 		var types = this.__arr(aOptions.type), text = isString(aOptions.text) ? aOptions.text.toLowerCase() : __
 		var gt = ow.ch.__types.graph
-		return gt.__nodeIds(aName).map(id => gt.__getNode(aName, id)).filter(n => 
+		return gt.__nodeIds(aName).map(id => gt.__getNode(aName, id)).filter(n =>
 			(isUnDef(types) || types.indexOf(n.type) >= 0) && (isUnDef(text) || (n.id + " " + stringify(n.props, __, "")).toLowerCase().indexOf(text) >= 0)
 		).map(n => gt.__nodeVal(n))
 	},
@@ -6852,7 +6852,7 @@ OpenWrap.ch.prototype.utils.timeseries = {
 	}
 	wrap(OpenWrap.ch.prototype.__types.timeseries, [ "destroy", "size", "forEach", "getAll", "getKeys", "getSortedKeys", "getSet", "set", "setAll", "unset", "unsetAll", "get", "pop", "shift" ])
 	wrap(OpenWrap.ch.prototype.utils.timeseries, [ "series", "labels", "latest", "range", "drop", "stats", "housekeep", "rebuildRollups", "compact", "save", "toOpenMetrics" ])
-})();
+})()
 
 OpenWrap.ch.prototype.comms = {
 	__counter: {},

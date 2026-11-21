@@ -40,16 +40,16 @@ public class Console extends ScriptableObject {
 	 * Creates a new instance of the object Console.
 	 * </odoc>
 	 */
-	public void newConsole() throws IOException { newConsole(false); }
+    public void newConsole() throws IOException { newConsole(false); }
 
 	@JSConstructor
-	public void newConsole(Object interactive) throws IOException {
-		if (Boolean.TRUE.equals(interactive)) {
-			ownedTerminal = jline.Terminal.interactive();
-			cr = new ConsoleReader(ownedTerminal);
-			cr.setHandleUserInterrupt(true);
-			return;
-		}
+    public void newConsole(Object interactive) throws IOException {
+        if (Boolean.TRUE.equals(interactive)) {
+            ownedTerminal = jline.Terminal.interactive();
+            cr = new ConsoleReader(ownedTerminal);
+            cr.setHandleUserInterrupt(true);
+            return;
+        }
 		try {
 			cr = new ConsoleReader();
 		} catch(Exception e) {
@@ -155,7 +155,7 @@ public class Console extends ScriptableObject {
 	 */
 	@JSFunction
 	public int readCharNB() throws IOException {
-		return cr.readCharacter(false);
+        return cr.readCharacter(false);
 	}
 	
 	/**
@@ -167,7 +167,7 @@ public class Console extends ScriptableObject {
 	 */
 	@JSFunction
 	public int readCharB() throws IOException {
-		return cr.readCharacter(true);
+        return cr.readCharacter(true);
 	}
 	/**
 	 * <odoc>

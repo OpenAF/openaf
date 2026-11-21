@@ -19,14 +19,52 @@ The GPT types system provides a consistent API across different LLM providers th
 
 ### Responses API
 
-For the `openai` provider, structured decisions use the OpenAI Responses API (`/responses`, JSON Schema `text.format`) by default; `decisionTransport: "chat"` (or `providerOptions.transport`) selects Chat Completions. Regular prompts that carry a response schema try `/responses` first and fall back to `/chat/completions` once if the endpoint is reported unavailable; the outcome is cached per wrapper instance.
+For the `openai` provider, structured decisions default to Responses with
+`text.format`. Set `decisionTransport: "chat"` or `providerOptions.transport`
+to use Chat Completions. `rawResponse` tries Responses first and caches the
+Chat Completions fallback per route when the provider identifies a missing
+or unsupported Responses endpoint.
+
+Ordinary prompts and streams default to Chat Completions. Set
+`promptTransport: "responses"` in the OpenAI provider options to use Responses
+on a compatible endpoint. This setting covers text, image inputs, JSON mode,
+and registered function tools. It uses stateless requests and carries
+encrypted reasoning across tool continuations when the provider returns it.
+A prompt can use up to 16 Responses requests, including the final answer.
+Configure `schemaTransport` separately for `jsonSchemaPrompt`.
+
+```javascript
+var llm = $llm({ type: "openai", options: {
+  key: "...", model: "gpt-6-luna", promptTransport: "responses"
+}})
+var answer = llm.prompt("Write a one-sentence summary of the Responses API.")
+```
 
 ### Prompt caching and usage statistics
 
 - Anthropic: constructor option `promptCaching: true` adds `cache_control` markers (default `false`); no beta header is required.
 - OpenAI-compatible models report cached prompt tokens in `getLastStats().tokens.cached` when the provider returns them (also via the `*WithStats` methods). Gemini reports `cachedContentTokenCount` the same way.
 
+### Gemini and Ollama embedding compatibility
+
+Gemini defaults to `gemini-3.5-flash-lite` for prompts and `gemini-embedding-2`
+for embeddings. Specify a model explicitly to pin it. When changing an
+embedding model, rebuild indexes that contain vectors from the previous model.
+
+Ollama returns one embedding per input string in an array, in input order.
+Join the strings before calling `getEmbeddings` when they form a single document.
+
 ### OpenAI-Compatible Transport Modes
+
+For Azure AI Foundry Claude deployments, use `type: "anthropic"` with
+`mode: "foundry"`, a resource URL or its `/anthropic` base, and the deployment
+name in `model`. Set `key` to the resource API key, or set `authType: "bearer"`
+and pass a current Microsoft Entra token in `key`.
+
+Foundry Responses uses API v1. Dated Foundry inference configurations use Chat
+Completions for `rawResponse` and for implicit schema transport selection.
+Microsoft Decision derives its endpoint from the resource root, `/openai`,
+or `/openai/v1` base. A configured `decisionUrl` takes precedence.
 
 The `openai` provider can target OpenAI, Azure OpenAI, and Azure AI Foundry model inference endpoints through `aOptions.mode`.
 
@@ -463,7 +501,7 @@ Capabilities contain `contractVersion: 1`, `inputTypes: ["text", "json"]`, `stre
 | --- | --- | --- | --- |
 | Ollama | System One; implemented, contract verified | Unsupported | Provider distributions/P(true), separate expectation/confidence |
 | Gemini | Unsupported | GenerateContent; implemented | Null probability/expectation fields |
-| OpenAI | Contract unverified; no outbound native request | Responses or explicit Chat; implemented | Null probability/expectation fields |
+| OpenAI | Decisions API with `gpt-6-luna`; OpenRouter and Microsoft through explicit decision adapters | Responses or explicit Chat | Native probability distributions; null probability fields for structured decisions |
 | Legacy third-party adapters | Unsupported absent hooks | Unsupported absent hooks | Existing methods remain available |
 
 `rawDecide()` returns `{ contractVersion, provider, model, strategy, raw }`; it does not require a second inference. `decideWithStats()` receives statistics from the execution result rather than rereading mutable shared state. Last-call statistics remain compatible but are not a concurrency-safe result channel. A failed native request never triggers structured generation, and an OpenAI structured request never uses the legacy chat fallback cache.

@@ -195,54 +195,54 @@ public class XML extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>XML.x(aRoot) : Object</key>
-	 * <![CDATA[
-	 * Starts a XMLBuilder2 object given a root element string. This code:
-	 *
-	 * ```javascript
-	 * plugin("XML");
-	 * plugin("Beautifiers");
-	 * var xml = new XML();
-	 * xml.x("test")
-	 *  .e("test1").a("status", "ok").a("language", "javascript")
-	 *   .e("path").a("type", "sharepath")
-	 *    .t("\\\\machine\\share\\test1")
-	 *   .up()
-	 *  .up()
-	 *  .e("test2").a("status", "ongoing").a("language", "python")
-	 *   .e("path").a("type", "URL")
-	 *    .t("http://some.url/test2");
-	 *
-	 * print(beautify.xml(xml.w()));
-	 *
-	 * var nodes = xml.findAll("/test/*");
-	 * for(var i = 0; i < nodes.getLength(); i++) {
-	 *   var name = nodes.item(i).getNodeName();
-	 *    var status = nodes.item(i).getAttributes().getNamedItem("status").getNodeValue();
-	 *    //var value = notes.item(i).getTextContent();
-	 *    print("name = " + name +
-	 * 	  "; status = " + status + "; " +
-	 * 	  "; " + xml.get("//" + name + "/path/@type") +
-	 *        " = " + xml.get("//" + name + "/path"));
-	 * }
-	 * ```
-	 *
-	 * will generate the following output:
-	 *
-	 * ```text
-	 * <test>
-	 *    <test1 language="javascript" status="ok">
-	 *        <path type="sharepath">\\machine\share\test1</path>
-	 *    </test1>
-	 *    <test2 language="python" status="ongoing">
-	 *       <path type="URL">http://some.url/test2</path>
-	 *    </test2>
-	 * </test>
-	 * name = test1; status = ok; ; sharepath = \\machine\share\test1
-	 * name = test2; status = ongoing; ; URL = http://some.url/test2
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Starts a XMLBuilder2 object given a root element string. This code:
+     *
+     * ```javascript
+     * plugin("XML");
+     * plugin("Beautifiers");
+     * var xml = new XML();
+     * xml.x("test")
+     *  .e("test1").a("status", "ok").a("language", "javascript")
+     *   .e("path").a("type", "sharepath")
+     *    .t("\\\\machine\\share\\test1")
+     *   .up()
+     *  .up()
+     *  .e("test2").a("status", "ongoing").a("language", "python")
+     *   .e("path").a("type", "URL")
+     *    .t("http://some.url/test2");
+     *
+     * print(beautify.xml(xml.w()));
+     *
+     * var nodes = xml.findAll("/test/*");
+     * for(var i = 0; i < nodes.getLength(); i++) {
+     *   var name = nodes.item(i).getNodeName();
+     *    var status = nodes.item(i).getAttributes().getNamedItem("status").getNodeValue();
+     *    //var value = notes.item(i).getTextContent();
+     *    print("name = " + name +
+     * 	  "; status = " + status + "; " +
+     * 	  "; " + xml.get("//" + name + "/path/@type") +
+     *        " = " + xml.get("//" + name + "/path"));
+     * }
+     * ```
+     *
+     * will generate the following output:
+     *
+     * ```text
+     * <test>
+     *    <test1 language="javascript" status="ok">
+     *        <path type="sharepath">\\machine\share\test1</path>
+     *    </test1>
+     *    <test2 language="python" status="ongoing">
+     *       <path type="URL">http://some.url/test2</path>
+     *    </test2>
+     * </test>
+     * name = test1; status = ok; ; sharepath = \\machine\share\test1
+     * name = test2; status = ongoing; ; URL = http://some.url/test2
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction

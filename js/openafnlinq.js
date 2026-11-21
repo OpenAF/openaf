@@ -633,7 +633,7 @@ var nLinq = function(anObject, aK) {
         at     : aParam => {
             _$(aParam, "index").isNumber().$_();
 
-            res = applyConditions(res, void 0, true);
+            res = applyConditions(res, void 0, true)
             return res[Number(aParam)];
         },
         all    : (aFallback) => { res = applyConditions(res, void 0, true); return $$(res).isArray() ? res.length == anObject.length : aFallback; },
@@ -912,7 +912,7 @@ var nLinq = function(anObject, aK) {
         },
         // Main selector
         select : aParam => {
-            res = applyConditions(res, void 0, true);
+            res = applyConditions(res, void 0, true)
             // no parameters
             if ($$(aParam).isUnDef()) {
                 return res;
@@ -1045,32 +1045,32 @@ var nLinq = function(anObject, aK) {
 		},
 		// OpenAF-only, explicit per-query opt-in. Filters/projections execute once before reduction.
 		gpu: options => {
-		    if (options !== undefined && (options === null || typeof options != "object" || Array.isArray(options))) throw new TypeError("gpu options must be a map");
-		    code.__gpuOptions = options === undefined ? {} : options;
+		    if (options !== undefined && (options === null || typeof options != "object" || Array.isArray(options))) throw new TypeError("gpu options must be a map")
+		    code.__gpuOptions = options === undefined ? {} : options
 		    if (!code.__gpuWrapped) {
 		        ["sum", "average", "min", "max"].forEach(operation => {
-		            var original = code[operation];
-		            code[operation] = key => key === undefined ? code._gpuAggregate(operation) : original(key);
-		        });
-		        code.__gpuWrapped = true;
+		            var original = code[operation]
+		            code[operation] = key => key === undefined ? code._gpuAggregate(operation) : original(key)
+		        })
+		        code.__gpuWrapped = true
 		    }
-		    return code;
+		    return code
 		},
 		_gpuAggregate: operation => {
-		    var rows = code.select(), options = code.__gpuOptions;
-		    var fallback = () => nLinq(rows)[operation]();
-		    if (!options || options.useGPU === false || __flags.PFOREACH.useGPU === false || /^(false|0|no|off)$/i.test(String(java.lang.System.getenv("OAF_PFOREACH_GPU")))) return fallback();
-		    var service;
+		    var rows = code.select(), options = code.__gpuOptions
+		    var fallback = () => nLinq(rows)[operation]()
+		    if (!options || options.useGPU === false || __flags.PFOREACH.useGPU === false || /^(false|0|no|off)$/i.test(String(java.lang.System.getenv("OAF_PFOREACH_GPU")))) return fallback()
+		    var service
 		    try {
 		        if (typeof ow.loadGPU != "function") {
-		            var root = getOPackPath("GPU");
-		            if (isUnDef(root)) return fallback();
-		            loadLib(root + "/gpu.js");
+		            var root = getOPackPath("GPU")
+		            if (isUnDef(root)) return fallback()
+		            loadLib(root + "/gpu.js")
 		        }
-		        service = ow.loadGPU();
+		        service = ow.loadGPU()
 		    } catch(e) { return fallback(); }
 		    // Do not retry if a caller-supplied fallback throws.
-		    return typeof service.aggregate == "function" ? service.aggregate(rows, operation, fallback, options) : fallback();
+		    return typeof service.aggregate == "function" ? service.aggregate(rows, operation, fallback, options) : fallback()
 		}
 		
     };
@@ -1078,4 +1078,4 @@ var nLinq = function(anObject, aK) {
     return code;
 };
 
-var $from = nLinq;
+var $from = nLinq

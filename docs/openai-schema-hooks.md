@@ -17,22 +17,24 @@ var result = llm.jsonSchemaPrompt("Extract the name: Alice", {
 });
 ```
 
-`schemaTransport` accepts `responses` (default) or `chat`. If absent,
-`decisionTransport` is respected. Schema requests make one inference call and
-never silently fall back to JSON mode or another endpoint. Compatible services
-must support the selected schema wire format. Existing URL, Azure routing,
-authentication and ordinary prompt behavior continue to apply.
+`schemaTransport` accepts `responses` or `chat`. When omitted, the hook
+uses `decisionTransport` if configured. Tool-free requests default to Responses.
+Requests with tools default to Responses on the official OpenAI endpoint and
+Chat Completions on compatible endpoints. Each request uses the chosen protocol
+throughout the tool loop. The endpoint must support the selected wire format.
 
-Responses uses `text.format`; Chat Completions uses `response_format.json_schema`.
-The explicit schema takes precedence over generic parameters; conflicting
-`text`, `response_format`, tools, input, messages and model parameters are
-rejected. `noResponseFormat` disables schema requests. Explicit nonempty tools
-are unsupported by this hook; registered tools are not invoked.
+Responses uses `text.format`. Chat Completions uses
+`response_format.json_schema`. Pass a schema descriptor to control the output
+format, and register functions with `withTool` or `setTool` for prompts that
+need local tools. The client validates a batch of tool calls before invoking
+its callbacks. `noResponseFormat` disables the schema hook.
 
 A private Ajv validator checks results without coercion, defaults or property
 removal. The service's supported schema subset still applies. Refusals,
-incomplete output, unexpected tool calls and invalid results fail without
-committing conversation history. Statistics accompany successful results through
-`jsonSchemaPromptWithStats`.
+incomplete output, unexpected tool calls and invalid results fail validation.
+The hook restores conversation history when a failure occurs before any tool
+callback runs. If a callback has already run, the error reports
+`toolsExecuted: true` and `safeToRetry: false`. Statistics accompany successful
+results through `jsonSchemaPromptWithStats`.
 
 Reference: https://developers.openai.com/api/docs/guides/structured-outputs

@@ -22,7 +22,7 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 
 	protected int max;
 	protected int[] maxAr;
-	protected static Function callback;
+    protected static Function callback;
 
 	public WidthAnsiLongestWordTab(int maxSize) {
 		if (maxSize < 3) {
@@ -43,7 +43,7 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 		this.maxAr = maxAr;
 	}
 
-	public static void setCallback(Function callback) {
+    public static void setCallback(Function callback) {
 		WidthAnsiLongestWordTab.callback = callback;
 	}
 

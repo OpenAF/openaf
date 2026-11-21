@@ -1,6 +1,6 @@
 // Run with: openaf -f examples/desktop-view.js
 // Change only this selector to "javafx" to use the optional graphical provider.
-ow.loadDesktop({ provider: "tui", providerOptions: { tui: { theme: "default", border: "rounded" } } });
+ow.loadDesktop({ provider: "tui", providerOptions: { tui: { theme: "default", border: "rounded" } } })
 var view = {
   title: "OpenAF Desktop",
   subtitle: "Shared terminal & graphical declarative view",
@@ -14,18 +14,18 @@ var view = {
     { id: "greet", type: "button", label: "Greet", align: "center" },
     { id: "close", type: "button", label: "Close", align: "center" }
   ]
-};
-var win = ow.desktop.window({ title: "OpenAF shared view", view: view });
+}
+var win = ow.desktop.window({ title: "OpenAF shared view", view: view })
 win.on("message", function(event) {
-  var message = event.message;
-  if (message.type != "action") return;
+  var message = event.message
+  if (message.type != "action") return
   if (message.payload.id == "close") { win.close(); return; }
-  var values = message.payload.values;
-  view.items[0].text = values.language + ", " + (values.name || "OpenAF") + "!";
-  view.items[2].value = values.name;
-  view.items[3].value = values.language;
-  win.setView(view);
-});
-win.on("error", function(event) { logErr(event.error.message); });
-win.show();
-ow.desktop.wait();
+  var values = message.payload.values
+  view.items[0].text = values.language + ", " + (values.name || "OpenAF") + "!"
+  view.items[2].value = values.name
+  view.items[3].value = values.language
+  win.setView(view)
+})
+win.on("error", function(event) { logErr(event.error.message); })
+win.show()
+ow.desktop.wait()

@@ -12,7 +12,7 @@ Given aCron expression and a date/unix time of a lastUpdate will return a map wi
 
 Sources:
 
-- js/owrap.format.js:6647
+- js/owrap.format.js:6698
 
 <a id="api-ow-format-cron-iscronmatch-a2d0d0b2"></a>
 
@@ -24,7 +24,7 @@ Returns trues if the provided aDate is a match for the provided aCronExpression.
 
 Sources:
 
-- js/owrap.format.js:6614
+- js/owrap.format.js:6665
 
 <a id="api-ow-format-cron-nextscheduled-bc35998f"></a>
 
@@ -36,7 +36,7 @@ Given a cron expr returns the next Date object when it will occur. If count &#62
 
 Sources:
 
-- js/owrap.format.js:6552
+- js/owrap.format.js:6603
 
 <a id="api-ow-format-cron-parse-70858085"></a>
 
@@ -60,7 +60,7 @@ Example:
 
 Sources:
 
-- js/owrap.format.js:6526
+- js/owrap.format.js:6577
 
 <a id="api-ow-format-cron-prevscheduled-71690761"></a>
 
@@ -72,7 +72,7 @@ Given a cron expr returns the previous Date object when it will occur. If count 
 
 Sources:
 
-- js/owrap.format.js:6563
+- js/owrap.format.js:6614
 
 <a id="api-ow-format-cron-set2localtime-1d87f157"></a>
 
@@ -84,7 +84,7 @@ Sets the default system-wide cron expression evaluation to the local time (defau
 
 Sources:
 
-- js/owrap.format.js:6604
+- js/owrap.format.js:6655
 
 <a id="api-ow-format-cron-set2utc-911c5e48"></a>
 
@@ -96,7 +96,7 @@ Sets the default system-wide cron expression evaluation to UTC (the default).
 
 Sources:
 
-- js/owrap.format.js:6594
+- js/owrap.format.js:6645
 
 <a id="api-ow-format-cron-sleepuntilnext-1b3c5643"></a>
 
@@ -108,7 +108,7 @@ Sleeps until the cron expr is expected to be true.
 
 Sources:
 
-- js/owrap.format.js:6584
+- js/owrap.format.js:6635
 
 <a id="api-ow-format-cron-timeuntilnext-8477903c"></a>
 
@@ -120,5 +120,5 @@ Returns a number of ms until the cron expr is expected to be true.
 
 Sources:
 
-- js/owrap.format.js:6574
+- js/owrap.format.js:6625
 

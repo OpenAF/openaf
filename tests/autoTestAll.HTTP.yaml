@@ -33,7 +33,7 @@ jobs:
    - name: HTTP::Persistent query state
      from: HTTP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testHTTPPersistentQueryState;
+     exec: args.func = args.tests.testHTTPPersistentQueryState
 
 todo:
    # HTTP tests
