@@ -12,7 +12,7 @@ Declares a new module, aId, as the provided exports literal.
 
 Sources:
 
-- js/openaf.js:7322
+- js/openaf.js:7333
 
 <a id="api-pods-define-928f34ca"></a>
 
@@ -24,7 +24,7 @@ Defines a new module given aId, aDepsArray with depend id modules and a factory 
 
 Sources:
 
-- js/openaf.js:7283
+- js/openaf.js:7294
 
 <a id="api-pods-require-89601f9a"></a>
 
@@ -36,5 +36,5 @@ Requires a module or a list of modules and all of its dependencies. Optionally y
 
 Sources:
 
-- js/openaf.js:7356
+- js/openaf.js:7367
 

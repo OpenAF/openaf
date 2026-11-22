@@ -544,6 +544,11 @@ jobs:
      to  : OpenAF Test
      exec: args.func = args.tests.testDefaultTableFormat
 
+   - name: Format::Table band with inline ANSI
+     from: Format::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testTableBandWithInlineAnsi
+
 todo:
    - Format::Pause navigation
    - Format::Pause search
@@ -619,4 +624,5 @@ todo:
    - Format::TimeAbbreviation
    - Format::Ansi clip and pad
    - Format::Default table format
+   - Format::Table band with inline ANSI
    - Format::Tree table arrays heterogeneous

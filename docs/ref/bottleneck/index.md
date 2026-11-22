@@ -12,7 +12,7 @@ Destroys any existing bottleneck definition.
 
 Sources:
 
-- js/openaf.js:12383
+- js/openaf.js:12394
 
 <a id="api-bottleneck-exec-8b9e021e"></a>
 
@@ -33,7 +33,7 @@ $bottleneck("myFunc").exec(2, 2);
 
 Sources:
 
-- js/openaf.js:12393
+- js/openaf.js:12404
 
 <a id="api-bottleneck-maxexec-3e0e78fe"></a>
 
@@ -45,7 +45,7 @@ Creates a bottleneck to a maximum concurrent execution number of aMaxNumber.
 
 Sources:
 
-- js/openaf.js:12376
+- js/openaf.js:12387
 
 <a id="api-bottleneck-maxwait-0c262f4a"></a>
 
@@ -57,5 +57,5 @@ Creates a bottleneck holding the function execution for a max period of aMs.
 
 Sources:
 
-- js/openaf.js:12369
+- js/openaf.js:12380
 

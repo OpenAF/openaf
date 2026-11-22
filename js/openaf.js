@@ -1276,7 +1276,18 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				//var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
-				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > (!borderless && useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(!borderless && useRowSep ? 2 : 1)][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
+				if (useAnsi) {
+					var _cellColor = _getColor(row[col], ii, ii > (!borderless && useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(!borderless && useRowSep ? 2 : 1)][col] : __)
+
+					// Restore the cell color (e.g. band background) after any reset embedded in the value
+					if (value.indexOf("\u001b[") >= 0) {
+						var _cellOn = ansiColor(_cellColor, "", __, __, true)
+						if (_cellOn.length > 0) value = value.replace(/\u001b\[0?m/g, m => m + _cellOn)
+					}
+					output.push(ansiColor(_cellColor, value + _pe, __, __, jj != cols.length -1))
+				} else {
+					output.push(value + _pe)
+				}
 				if (colNum < (cols.length-1)) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 			}
 			colNum++

@@ -467,6 +467,28 @@
         }
     }
 
+    exports.testTableBandWithInlineAnsi = function() {
+        var oldFlag = __ansiColorFlag, oldConsole = __conConsole, oldBand = __colorFormat.table.bandRow
+        try {
+            __ansiColorFlag = true
+            __conConsole = true
+            __colorFormat.table.bandRow = "BG(224)"
+
+            // Banded cell with embedded resets (e.g. inline code) must keep its background
+            var bg = ansiColor("BG(224)", "", __, __, true)
+            var code = ansiColor("YELLOW", "code")
+            var out = printTable([{ A: "x" }, { A: code + " tail" }, { A: "y" }], 80, __, true, "utf", __, true, false, true)
+            var band = out.split("\n").filter(l => l.indexOf("tail") >= 0)[0]
+            ow.test.assert(isDef(band), true, "Banded row should be rendered")
+            var after = band.substring(band.indexOf("code") + 4, band.indexOf(" tail"))
+            ow.test.assert(after.indexOf(bg.replace(/\u001b\[0?m$/, "")) >= 0, true, "Band background should be restored after an embedded reset")
+        } finally {
+            __ansiColorFlag = oldFlag
+            __conConsole = oldConsole
+            __colorFormat.table.bandRow = oldBand
+        }
+    }
+
     exports.testOutputBorderless = function() {
         var oldAnsi = __conAnsi, oldCon = __con, oldFormat = global.__format
         try {

@@ -12,7 +12,7 @@ Changes the behaviour of the cache to either use the default value (aDefault) if
 
 Sources:
 
-- js/openaf.js:12543
+- js/openaf.js:12554
 
 <a id="api-cache-bypopularity-0e069639"></a>
 
@@ -24,7 +24,7 @@ Changes the behaviour of the cache to use the most popular entries and prefer to
 
 Sources:
 
-- js/openaf.js:12532
+- js/openaf.js:12543
 
 <a id="api-cache-ch-10dae75b"></a>
 
@@ -36,7 +36,7 @@ Uses a pre-existing channel (e.g. aChannelName) as the cache channel.
 
 Sources:
 
-- js/openaf.js:12471
+- js/openaf.js:12482
 
 <a id="api-cache-chtype-01994e06"></a>
 
@@ -58,7 +58,7 @@ $cache("users")
 
 Sources:
 
-- js/openaf.js:12484
+- js/openaf.js:12495
 
 <a id="api-cache-fn-ebd23afc"></a>
 
@@ -70,7 +70,7 @@ Defines the aFunction use to get aKey. The returned object will be cached.
 
 Sources:
 
-- js/openaf.js:12457
+- js/openaf.js:12468
 
 <a id="api-cache-get-9bf85ff6"></a>
 
@@ -96,7 +96,7 @@ $cache("persisted").fn(k => ...).chType("mvs", { file: "cache.db" }).create()
 
 Sources:
 
-- js/openaf.js:12578
+- js/openaf.js:12589
 
 <a id="api-cache-infile-d0aeff45"></a>
 
@@ -108,7 +108,7 @@ Creates a mvs channel to hold the cache data in aFile. Shortcut for $cache.chTyp
 
 Sources:
 
-- js/openaf.js:12519
+- js/openaf.js:12530
 
 <a id="api-cache-maxsize-26dd2668"></a>
 
@@ -120,7 +120,7 @@ Establishes the max number of entries cached at any given point in time.
 
 Sources:
 
-- js/openaf.js:12512
+- js/openaf.js:12523
 
 <a id="api-cache-ttl-c30f4193"></a>
 
@@ -132,5 +132,5 @@ Defines the time-to-live (aTTL) to consider a cached result as valid.
 
 Sources:
 
-- js/openaf.js:12464
+- js/openaf.js:12475
 
