@@ -50,12 +50,14 @@ ojob:
   logToConsole: false
 
 jobs:
+
+# Greet
 - name: Greet
   check:
     in:
       name: isString.default("OpenAF")
   exec: |
-    print("Hello, " + args.name + "!");
+    print("Hello, " + args.name + "!")
 
 todo:
 - Greet

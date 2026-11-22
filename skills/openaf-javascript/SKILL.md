@@ -52,12 +52,12 @@ Save this as `filter-records.js` (also bundled in [assets/filter-records.js](ass
 
 ```javascript
 // Run: openaf -f filter-records.js -e 'input=records.json;status=active'
-var options = processExpr();
-var input = _$(options.input, "input").isString().$_();
-var status = _$(options.status, "status").isString().default("active");
-var records = _$(io.readFileJSON(input), "records").isArray().$_();
-var result = $from(records).equals("status", status).select();
-print(stringify(result, __, ""));
+var options = processExpr()
+var input = _$(options.input, "input").isString().$_()
+var status = _$(options.status, "status").isString().default("active")
+var records = _$(io.readFileJSON(input), "records").isArray().$_()
+var result = $from(records).equals("status", status).select()
+print(stringify(result, __, ""))
 ```
 
 For `records.json` containing `[{"id":1,"status":"active"},{"id":2,"status":"inactive"}]`:

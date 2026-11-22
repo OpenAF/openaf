@@ -54,12 +54,12 @@ Use `opack info <name>` to inspect the candidate and `opack install <name>` when
 Save this as `format-summary.js` (also bundled in [assets/format-summary.js](assets/format-summary.js)):
 
 ```javascript
-ow.loadFormat();
-ow.loadTest();
+ow.loadFormat()
+ow.loadTest()
 
-var day = ow.format.fromDate(new Date(0), "yyyy-MM-dd", "UTC");
-ow.test.assert(day, "1970-01-01", "UTC date formatting");
-print(stringify({ day: day, size: ow.format.toBytesAbbreviation(2048) }, __, ""));
+var day = ow.format.fromDate(new Date(0), "yyyy-MM-dd", "UTC")
+ow.test.assert(day, "1970-01-01", "UTC date formatting")
+print(stringify({ day: day, size: ow.format.toBytesAbbreviation(2048) }, __, ""))
 ```
 
 Run it with `openaf -f format-summary.js`. The assertion verifies UTC date formatting; the output contains `1970-01-01` and a formatted size. Deliver the runnable code, dependencies, invocation, and what was actually tested.
