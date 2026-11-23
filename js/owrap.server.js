@@ -5236,6 +5236,8 @@ OpenWrap.server.prototype.httpd.browse = {
             loadLib(getOpenAFJar() + "::js/owrap.server.browse.js")
             return ow.server.httpd.browse.files(aURI, aOptions)
         }
+		const arrow = ow.server.httpd.browse.support.arrow
+
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		aOptions.path = _$(aOptions.path, "options.path").isString().default(".")
@@ -5353,15 +5355,15 @@ OpenWrap.server.prototype.httpd.browse = {
 						content += "|\n"
 			  
 						if (puri != "/" && puri != "") {
-						  content += "| <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8598;</span> | __[..](<" + publicParentURI + puri.replace(/[^\/]+\/?$/, "") + ">)__ | | |\n"
+						  content += "| " + arrow("parent", true) + " | __[..](<" + publicParentURI + puri.replace(/[^\/]+\/?$/, "") + ">)__ | | |\n"
 						}
 			  
 						$from(lst.list).sort("-isDirectory", "values." + lst.key).select(r => {
 							content += "|"
 							if (r.isDirectory) {
-								content += " <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8600;</span> |"
+								content += " " + arrow("directory", true) + " |"
 							} else {
-								content += " <span style=\"font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"" + publicParentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + "?raw=true\" download=\"" + r.values[lst.key] + "\">&darr;</a></span> |"
+								content += " <a href=\"" + publicParentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + "?raw=true\" download=\"" + r.values[lst.key] + "\" aria-label=\"Download\">" + arrow("down") + "</a> |"
 							}
 							lst.fields.forEach((f, i) => {
 							  if (r.isDirectory) {
@@ -5460,7 +5462,7 @@ OpenWrap.server.prototype.httpd.browse = {
 					const logo = ow.server.httpd.withPrefix(server, (isString(options.logo) ? options.logo : "/fonts/openaf_small.png"))
 					var content
 					if (obj.type == "raw") {
-					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span></span></span>\n\n"
+					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\" aria-label=\"Back\">" + arrow("left") + "</a></span></span></span>\n\n"
 					  content += (options.useMDTemplate ? $t(String(obj.data), { request: request }) : String(obj.data))
 					  content += "\n\n"
 			  
@@ -5468,7 +5470,7 @@ OpenWrap.server.prototype.httpd.browse = {
 						content += "\n" + options.footer + "\n"
 					  }
 					} else {
-					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span><span onclick=\"downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; float: right; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\">&darr;</a></span></span></span>\n\n"
+					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\" aria-label=\"Back\">" + arrow("left") + "</a></span><span onclick=\"downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; float: right; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\" aria-label=\"Download\">" + arrow("down") + "</a></span></span></span>\n\n"
 					  content += "<div><pre><code class=\"language-" + ow.format.escapeHTML(obj.type) + "\">" +
 					    ow.format.escapeHTML(isMap(obj.data) ? stringify(obj.data) : String(obj.data)) + "</code></pre></div>\n\n"
 			  

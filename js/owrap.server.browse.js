@@ -150,9 +150,46 @@ exports.format = function(name, preview, defaults) {
   if (isDef(type) && (!isString(type) || !/^[a-z][a-z0-9-]*$/.test(type))) exports.error(400, "Invalid preview format")
   return type
 }
+// Draw font-independent arrows in the surrounding text or link color.
+exports.arrow = (() => {
+  const paths = {
+    left: "M20 12H4m6-6-6 6 6 6",
+    right: "M4 12h16m-6-6 6 6-6 6",
+    down: "M12 4v16m-6-6 6 6 6-6",
+    parent: "M18 18 6 6m0 9V6h9",
+    directory: "M6 6l12 12m0-9v9H9"
+  }
+  return (direction, muted) => '<svg class="browse-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" ' +
+    'stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" ' +
+    'aria-hidden="true" focusable="false" style="width:1em;height:1em;vertical-align:-.125em' +
+    (muted ? ';opacity:.45' : '') + '"><path d="' + paths[direction] + '"/></svg>'
+})()
+
+// Keep the pager muted in either theme and label its icon-only links.
+exports.pager = (page, totalPages, previous, next) => {
+  const control = (url, direction, label) => {
+    const arrow = exports.arrow(direction)
+    return isDef(url) && String(url).length > 0
+      ? '<a href="' + url + '" aria-label="' + label + '">' + arrow + '</a>'
+      : '<span>' + arrow + '</span>'
+  }
+  const separator = '<span class="browse-page-divider" aria-hidden="true">|</span>'
+  return '<style>.browse-pager{margin:.25em 0 .75em;padding-left:.5em}' +
+    '.markdown-body-dark .browse-pager{--browse-pager-muted:.65;--browse-pager-link:.72}' +
+    '.browse-pager > span,.browse-pager > a{color:inherit;opacity:var(--browse-pager-muted,.45)}' +
+    '.browse-pager > a{opacity:var(--browse-pager-link,.55)}' +
+    '.browse-pager > a:hover,.browse-pager > a:focus-visible{opacity:.8;text-decoration:none}' +
+    '.browse-page-divider{padding:0 .6em}' +
+    '.browse-page-count{font: .95em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}</style>' +
+    '<div class="browse-pager" role="navigation" aria-label="Pagination">' +
+    control(previous, "left", "Previous page") + separator +
+    '<span class="browse-page-count">' + page + ' / ' + totalPages + '</span>' + separator +
+    control(next, "right", "Next page") + '</div>\n'
+}
+
 // Load JSON in the browser while keeping the server on the streaming path.
 exports.previewBackArrow = '<button type="button" onclick="history.back()" aria-label="Back" title="Back" ' +
-  'style="float:right;border:0;background:none;color:inherit;cursor:pointer;font:inherit;padding:0 0 0 1em">&larr;</button>'
+  'style="float:right;border:0;background:none;color:inherit;cursor:pointer;font:inherit;padding:0 0 0 1em">' + exports.arrow("left") + '</button>'
 
 exports.previewDocument = (server, arrow) => ({
   getPort: () => server.getPort(),
@@ -669,22 +706,7 @@ exports.installOperations = function(options, validate) {
         }
         var _prev = _page > 1 ? pageURL(_page - 1) : __
         var _next = (_page < _totalPages) ? pageURL(_page + 1) : __
-        var _pager = "<div style=\"margin: 0.25em 0 0.75em 0; padding-left: 0.5em; font-family: -apple-system, Calibri, DejaVu Sans;\">"
-        if (isDef(_prev) && String(_prev).length > 0) {
-          _pager += "<a style=\"text-decoration: none; font-weight: 600; color: #a0a0a0;\" onmouseover=\"this.style.color='#707070'\" onmouseout=\"this.style.color='#a0a0a0'\" href=\"" + _prev + "\">&#8592;</a>"
-        } else {
-          _pager += "<span style=\"color: #a0a0a0;\">&#8592;</span>"
-        }
-        _pager += "<span style=\"color: #a0a0a0; padding: 0 0.6em;\">|</span>"
-        _pager += "<span style=\"color: #a0a0a0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; font-size: 0.95em;\">" + _page + " / " + _totalPages + "</span>"
-        _pager += "<span style=\"color: #a0a0a0; padding: 0 0.6em;\">|</span>"
-        if (isDef(_next) && String(_next).length > 0) {
-          _pager += "<a style=\"text-decoration: none; font-weight: 600; color: #a0a0a0;\" onmouseover=\"this.style.color='#707070'\" onmouseout=\"this.style.color='#a0a0a0'\" href=\"" + _next + "\">&#8594;</a>"
-        } else {
-          _pager += "<span style=\"color: #a0a0a0;\">&#8594;</span>"
-        }
-        _pager += "</div>\n"
-        content += _pager
+        content += support.pager(_page, _totalPages, _prev, _next)
         }
       }
 
@@ -742,7 +764,7 @@ exports.installOperations = function(options, validate) {
           content += "|\n"
 
           if (puri != "/" && puri != "") {
-            content += "| <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8598;</span> | __[..](<../>)__ | | |\n"
+            content += "| " + support.arrow("parent", true) + " | __[..](<../>)__ | | |\n"
           }
 
           var rows = lst.sortInfo || lst.queryInfo && lst.queryInfo.applied ? lst.list : $from(lst.list).sort("-isDirectory", "values." + lst.key).select()
@@ -751,9 +773,9 @@ exports.installOperations = function(options, validate) {
               if (r.imageDigest && /^sha256:[a-f0-9]{64}$/.test(r.imageDigest)) {
                   content += " |"
               } else if (r.isDirectory) {
-                  content += " <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8600;</span> |"
+                  content += " " + support.arrow("directory", true) + " |"
               } else {
-                  content += " <span style=\"font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"" + fileLink(r.values[lst.key]) + "?raw=true\" download=\"" + escapeText(r.values[lst.key]) + "\">&darr;</a></span> |"
+                  content += " <a href=\"" + fileLink(r.values[lst.key]) + "?raw=true\" download=\"" + escapeText(r.values[lst.key]) + "\" aria-label=\"Download\">" + support.arrow("down") + "</a> |"
               }
               lst.fields.forEach((f, i) => {
                 if (r.isDirectory) {
@@ -1182,7 +1204,7 @@ exports.installOperations = function(options, validate) {
         }
       } else {
         const filename = support.fileLink(puri.substring(puri.lastIndexOf("/") + 1))
-        const download = `<button type="button" onclick="downloadText(decodeURIComponent('${filename}'))" aria-label="Download" title="Download" style="float:right;border:0;background:none;color:inherit;cursor:pointer;font:inherit;padding:0 0 0 1em">&darr;</button>`
+        const download = `<button type="button" onclick="downloadText(decodeURIComponent('${filename}'))" aria-label="Download" title="Download" style="float:right;border:0;background:none;color:inherit;cursor:pointer;font:inherit;padding:0 0 0 1em">${support.arrow("down")}</button>`
         content = heading + download + breadcrumb(puri) + "\n\n"
         // Protect already escaped source from Showdown's standalone pre/code pass.
         if (obj.sourceOnly) content += '<p><a href="' + support.jsonViewURL(request, "json") + '">Render</a></p>' + "\n\n"

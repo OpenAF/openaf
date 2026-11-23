@@ -1672,4 +1672,98 @@
             ow.test.assert(closed, true, type + " closes stream when callback throws")
         })
     }
+
+    exports.testAIOpenAIToolReasoningRecovery = function() {
+        ow.loadAI()
+        ow.loadServer()
+        var server = ow.server.httpd.start(findRandomOpenPort(), "127.0.0.1")
+        var url = "http://127.0.0.1:" + server.getPort()
+        var requests = []
+        var rejection = { error: { type: "invalid_request_error", param: "reasoning_effort",
+            message: "Function tools with reasoning_effort are not supported for gpt-6.1-terra in /v1/chat/completions." } }
+        var event = item => "data: " + JSON.stringify(item) + "\n\n"
+        var reply = (body, payload, data) => body.stream ?
+            ow.server.httpd.reply(af.fromString2Bytes(data), 200, "text/event-stream", {}) :
+            ow.server.httpd.reply(payload, 200, "application/json", {})
+        ow.server.httpd.route(server, {
+            "/v1/chat/completions": req => {
+                var body = JSON.parse(req.files.postData)
+                requests.push({ route: "chat", body: body })
+                if (body.tools && body.reasoning_effort != "none") return ow.server.httpd.reply(rejection, 400, "application/json", {})
+                var tool = { id: "call1", type: "function", function: { name: "echo", arguments: "{}" } }
+                var call = body.tools && !body.messages.some(message => message.role == "tool")
+                var message = call ? { role: "assistant", tool_calls: [tool] } : { role: "assistant", content: "done" }
+                var reason = call ? "tool_calls" : "stop"
+                return reply(body, { choices: [{ message: message, finish_reason: reason }] },
+                    event({ choices: [{ delta: message, finish_reason: reason }] }) + "data: [DONE]\n\n")
+            },
+            "/v1/responses": req => {
+                var body = JSON.parse(req.files.postData)
+                requests.push({ route: "responses", body: body })
+                var call = body.tools && !body.input.some(item => item.type == "function_call_output")
+                var output = call ? { type: "function_call", name: "echo", call_id: "call1", arguments: "{}" } :
+                    { type: "message", role: "assistant", content: [{ type: "output_text", text: "done" }] }
+                var result = { status: "completed", output: [output] }
+                var delta = call ? "" : event({ type: "response.output_text.delta", delta: "done" })
+                return reply(body, result, delta + event({ type: "response.completed", response: result }))
+            }
+        })
+        try {
+            ;[false, true].forEach(streaming => {
+                ;[{}, { reasoningEffort: "low" }].forEach(options => {
+                    requests = []
+                    var calls = 0
+                    var g = new ow.ai.gpt("openai", merge({ key: "test", model: "deployment-alias", url: url }, options))
+                    g.setTool("echo", "Echo", { type: "object", properties: {} }, () => {
+                        calls++
+                        return "tool result"
+                    })
+                    var prompt = tools => streaming ? g.promptStream("hello", __, __, false, tools) :
+                        g.prompt("hello", __, __, false, tools)
+                    var route = options.reasoningEffort ? "responses" : "chat"
+                    ow.test.assert(prompt(["echo"]), "done", "Recovery completes the tool turn")
+                    ow.test.assert(calls, 1, "Tool executes once")
+                    ow.test.assert(requests.map(r => r.route), ["chat", route, route], "One retry and one continuation")
+                    ow.test.assert(route == "chat" ? requests[1].body.reasoning_effort : requests[1].body.reasoning.effort,
+                        options.reasoningEffort || "none", "Recovered effort")
+                    g.setConversation([])
+                    ow.test.assert(prompt(["echo"]), "done", "Subsequent prompt succeeds")
+                    ow.test.assert(requests[3].route, route, "Cache reuses working route")
+                    ow.test.assert(calls, 2, "Subsequent tool also executes once")
+                    g.setConversation([])
+                    ow.test.assert(prompt([]), "done", "Tool-free prompt succeeds")
+                    ow.test.assert(requests[5].route, "chat", "Tool-free prompt uses configured default")
+                    ow.test.assert(requests[5].body.reasoning_effort, options.reasoningEffort, "Tool-free effort follows profile")
+                })
+            })
+            // A pinned or incompatible transport and an unrelated rejection must never be retried.
+            ;[
+                { settings: { promptTransport: "chat", reasoningEffort: "low" }, error: rejection },
+                { settings: { reasoningEffort: "none" }, error: rejection },
+                { settings: { mode: "foundry", apiVersion: "2025-01-01", reasoningEffort: "low" }, error: rejection },
+                { settings: {}, error: { error: { type: "invalid_request_error", param: "temperature", message: "Unsupported temperature" } } }
+            ].forEach(fixture => {
+                var g = new ow.ai.gpt("openai", merge({ key: "test", url: url }, fixture.settings))
+                var attempts = 0
+                g.model._request = () => { attempts++; return fixture.error }
+                var tools = [{ type: "function", function: { name: "echo", parameters: { type: "object", properties: {} } } }]
+                ow.test.assert(g.rawPrompt("hello", __, __, false, tools).error, fixture.error.error, "Keep the original provider rejection")
+                ow.test.assert(attempts, 1, "Skip ineligible retry")
+            })
+
+            var partial = new ow.ai.gpt("openai", { key: "test", url: url })
+            var streamAttempts = 0, deltas = []
+            partial.model._requestStream = () => {
+                streamAttempts++
+                return __makeOpenAISse([{ choices: [{ delta: { content: "partial" } }] }, rejection])
+            }
+            var tools = [{ type: "function", function: { name: "echo", parameters: { type: "object", properties: {} } } }]
+            var result = partial.rawPromptStream("hello", __, __, false, tools, delta => deltas.push(delta))
+            ow.test.assert(result.error, rejection.error, "Keep the rejection after output starts")
+            ow.test.assert(deltas, ["partial"], "Preserve the already emitted output")
+            ow.test.assert(streamAttempts, 1, "Never replay a partially delivered stream")
+        } finally {
+            ow.server.httpd.stop(server)
+        }
+    }
 })();

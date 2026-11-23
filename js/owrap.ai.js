@@ -796,6 +796,33 @@ OpenWrap.ai.prototype.__gpttypes = {
                 }
                 return body
             }
+            var _toolReasoningRoutes = new Map()
+            // Reuse a working route only for matching function-tool requests.
+            var _toolReasoningKey = body => isArray(body.tools) && body.tools.some(tool => isMap(tool) && tool.type == "function") ?
+                JSON.stringify([body.model, _deploymentName(body.model), body.reasoning_effort, body.reasoning]) : __
+
+            // Recover only a provider rejection of the specific tools and effort combination.
+            var _toolReasoningRetry = (error, body, key) => {
+                if (isUnDef(key) || body.reasoning_effort == "none" || _toolReasoningRoutes.has(key)) return
+                var detail = isMap(error) ? error.error : __
+                if (isString(detail)) {
+                    detail = jsonParse(detail, __, __, true)
+                    if (isMap(detail) && isMap(detail.error)) detail = detail.error
+                }
+                if (!isMap(detail) || detail.param != "reasoning_effort" ||
+                    (isDef(detail.type) && detail.type != "invalid_request_error" && detail.type != "error") ||
+                    !/function tools with reasoning_effort/i.test(detail.message)) return
+                if (isUnDef(body.reasoning_effort)) return "none"
+                if (isUnDef(aOptions.promptTransport) && !_datedFoundry &&
+                    !["azure-legacy", "azure-openai-legacy"].includes(aOptions.mode)) return "responses"
+            }
+
+            // Use the standard Responses tool loop for a recovered prompt.
+            var _recoverWithResponses = (body, key, streaming, onDelta) => {
+                var result = _responsesPrompt(body, body.messages, streaming, onDelta)
+                if (isMap(result) && result.error == null) _toolReasoningRoutes.set(key, "responses")
+                return result
+            }
             var _noSystem = aOptions.noSystem
             var _lastStats = __
             var _debugCh = __
@@ -1595,9 +1622,22 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (_promptTransport == "responses") return _responsesPrompt(body, body.messages, false)
                     _applyReasoning(body, false)
+                    var reasoningKey = _toolReasoningKey(body)
+                    var reasoningRoute = _toolReasoningRoutes.get(reasoningKey)
+                    if (reasoningRoute == "responses") return _responsesPrompt(body, body.messages, false)
+                    if (reasoningRoute == "none") body.reasoning_effort = "none"
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var _res = _r._request(_route("chat/completions", aModel), body)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
+                    var retry = _toolReasoningRetry(_res, body, reasoningKey)
+                    if (retry == "responses") return _recoverWithResponses(body, reasoningKey, false)
+                    if (retry == "none") {
+                        body.reasoning_effort = "none"
+                        _res = _r._request(_route("chat/completions", aModel), body)
+                        if (isMap(_res) && _res.error == null && isArray(_res.choices) && _res.choices.length > 0) {
+                            _toolReasoningRoutes.set(reasoningKey, retry)
+                        }
+                    }
                     // If OpenAI rejects a provided json_schema for missing properties, retry with json_object
                     if (isMap(_res) && isMap(_res.error)) {
                         var _msg = "" + (isDef(_res.error.message) ? _res.error.message : _res.error)
@@ -1691,6 +1731,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (_promptTransport == "responses") return _responsesPrompt(body, body.messages, true, aOnDelta)
                     _applyReasoning(body, false)
+                    var reasoningKey = _toolReasoningKey(body)
+                    var reasoningRoute = _toolReasoningRoutes.get(reasoningKey)
+                    if (reasoningRoute == "responses") return _responsesPrompt(body, body.messages, true, aOnDelta)
+                    if (reasoningRoute == "none") body.reasoning_effort = "none"
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
 
                     var events = []
@@ -1698,8 +1742,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var toolCallsMap = {}
                     var lastResponse = __
                     var finishReason = __
-                    var _stream = _r._requestStream(_route("chat/completions", aModel), body)
-                    var streamError = _readSseStream(_stream, payload => {
+                    var hasOutput = false
+                    var readChatStream = () => _readSseStream(_r._requestStream(_route("chat/completions", aModel), body), payload => {
                         if (payload === "[DONE]") return true
                         var data = isMap(payload) ? payload : jsonParse(payload, __, __, true)
                         if (isDef(data)) {
@@ -1709,6 +1753,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 data.choices.filter((choice, index) => (choice.index == null ? index : choice.index) === 0).forEach(choice => {
                                     if (isString(choice.finish_reason)) finishReason = choice.finish_reason
                                     if (isMap(choice.delta)) {
+                                        if (Object.keys(choice.delta).some(key => key != "role" && choice.delta[key] != null)) hasOutput = true
                                         if (isString(choice.delta.content)) {
                                             content += choice.delta.content
                                             if (isFunction(aOnDelta)) aOnDelta(choice.delta.content, data)
@@ -1734,6 +1779,18 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         }
                     })
+                    var streamError = readChatStream()
+                    if (isDef(streamError) && !hasOutput && isUnDef(finishReason)) {
+                        var retry = _toolReasoningRetry(streamError, body, reasoningKey)
+                        if (retry == "responses") return _recoverWithResponses(body, reasoningKey, true, aOnDelta)
+                        if (retry == "none") {
+                            body.reasoning_effort = "none"
+                            events = []
+                            lastResponse = __
+                            streamError = readChatStream()
+                            if (isUnDef(streamError) && isDef(finishReason)) _toolReasoningRoutes.set(reasoningKey, retry)
+                        }
+                    }
                     // If there was a stream error, return it immediately
                     if (isDef(streamError)) {
                         if (isDef(_debugCh)) $ch(_debugCh).set({ _t: nowNano(), _f: "llm" }, merge({ _t: nowNano(), _f: "llm" }, streamError))

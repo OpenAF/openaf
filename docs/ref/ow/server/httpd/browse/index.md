@@ -43,7 +43,7 @@ Provides a simple oDoc browser. The `aOptions` map can contain the following key
 
 Sources:
 
-- js/owrap.server.js:5498
+- js/owrap.server.js:5500
 
 <a id="api-ow-server-httpd-browse-opacks-9d1ec6c5"></a>
 
@@ -62,5 +62,5 @@ Provides a simple oPack browser. The `aOptions` map can contain the following ke
 
 Sources:
 
-- js/owrap.server.js:5587
+- js/owrap.server.js:5589
 
