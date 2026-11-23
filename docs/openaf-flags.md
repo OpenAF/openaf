@@ -41,6 +41,10 @@ Each flag selects a native Java implementation over the bundled JavaScript one w
 | path | true | Native Java JMESPath engine behind `$path` (`af.pathJava`, see [path-java.md](./path-java.md)); `false` uses the bundled JavaScript `jmespath` |
 | jsonParse, merge, extend, traverse, colorify, listFilesRecursive, restart | true | See `openaf.js` ODoc for each |
 
+## Archive decompression
+
+Set `__flags.ARCHIVE` in a trusted script or profile, or supply it through `OAF_FLAGS`. See [ZIP decompression limits](./plugins/ZIP.md#decompression-limits) for the available fields, defaults, and JVM property precedence.
+
 ## AI/LLM Configuration
 
 | Env | Default | Purpose |

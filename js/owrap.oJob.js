@@ -530,8 +530,12 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	// Add todos
 	this.addTodos(todo, args, aId);
 
-    // Flags change
-	if (isDef(ojob.flags) && isMap(ojob.flags)) __flags = merge(__flags, ojob.flags)
+	// Apply job flags while reserving archive quotas for trusted runtime configuration.
+	if (isDef(ojob.flags) && isMap(ojob.flags)) {
+		var flags = Object.assign({}, ojob.flags)
+		delete flags.ARCHIVE
+		__flags = merge(__flags, flags)
+	}
 
 	// Check ojob settings
 	if (isDef(ojob.debug)) this.__ojob.debug = ojob.debug;

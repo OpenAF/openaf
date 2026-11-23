@@ -6,15 +6,25 @@ The `ZIP` plugin provides in-memory and streaming NIO (`jar:` FileSystem) ZIP ar
 
 ## Decompression limits
 
-ZIP/GZIP reads, `io.gunzip`, `io.gunzipStream`, `io.readFileGzipStream`, `io.unzip`, and the generic decompression bridges enforce finite operation-scoped quotas. Trusted process configuration can override positive limits with Java system properties:
+ZIP/GZIP reads, `io.gunzip`, `io.gunzipStream`, `io.readFileGzipStream`, `io.unzip`, and the generic decompression bridges enforce finite operation-scoped quotas. OpenAF resolves each limit from the Java system property, then the `__flags.ARCHIVE` field, then the built-in default.
 
-| Property | Default |
-| --- | --- |
-| `openaf.archive.maxInputBytes` | 256 MiB |
-| `openaf.archive.maxEntryBytes` | 64 MiB |
-| `openaf.archive.maxTotalBytes` | 256 MiB |
-| `openaf.archive.maxEntries` | 100,000 |
-| `openaf.archive.maxRatio` | 1,000 |
+| Java system property | `__flags.ARCHIVE` field | Default |
+| --- | --- | --- |
+| `openaf.archive.maxInputBytes` | `maxInputBytes` | 256 MiB |
+| `openaf.archive.maxEntryBytes` | `maxEntryBytes` | 64 MiB |
+| `openaf.archive.maxTotalBytes` | `maxTotalBytes` | 256 MiB |
+| `openaf.archive.maxEntries` | `maxEntries` | 100,000 |
+| `openaf.archive.maxRatio` | `maxRatio` | 1,000 |
+
+Remote oPacks stream to private staging and use a 128 MiB per-entry default. The same explicit Java property and runtime flag take precedence. See [oPack integrity checks](../opacks.md#integrity-checks).
+
+Set flags to positive safe integers in trusted scripts or in `.openaf_profile` before opening the archive. For example, `__flags.ARCHIVE.maxEntryBytes = 100 * 1024 * 1024` allows entries up to 100 MiB. For a single invocation, pass the same group through `OAF_FLAGS`.
+
+```sh
+OAF_FLAGS='{"ARCHIVE":{"maxEntryBytes":104857600}}' opack install ./jdbc-duckdb.opack
+```
+
+OpenAF reserves `__flags.ARCHIVE` for trusted runtime configuration. The declarative `ojob.flags` merge skips this group.
 
 The ratio check has a 1 MiB startup allowance. Streaming readers count actual input and output; random-access ZIP readers preflight central-directory count, sizes and ratio and enforce actual output against declared and configured limits. These are per-operation limits, not a process-wide memory quota. Repeated independent reads are separate operations. Compressed bytes already buffered by the caller cannot be retroactively bounded.
 

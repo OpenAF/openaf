@@ -5,7 +5,7 @@ try {
   var source = io.readFileString("js/opack.js")
     .replace(/getOPackLocalDB/g, "fixtureLocalDB")
     .replace(/getOPackRemoteDB/g, "fixtureRemoteDB")
-  var installed, available, target, archive, fixtureNumber = 0
+  var installed, available, target, archivePath, archiveRequests, fixtureNumber = 0
   var fixtureLocalDB = () => {
     var db = {}
     if (isDef(installed)) db[target] = clone(installed)
@@ -24,11 +24,15 @@ try {
   findLocalDBByName = () => installed
   addLocalDB = function(packag) { installed = clone(packag) }
   removeLocalDB = function() { installed = undefined }
-  getHTTPOPack = () => archive
-  getPackage = function(path) {
+  execHTTPWithCred = function(url, method, input, headers, bytes, timeout, stream) {
+    assert(url == available.repository.url && stream === true, "Unexpected archive fetch: " + url)
+    archiveRequests++
+    return io.readFileStream(archivePath)
+  }
+  getPackage = function(path, archives) {
     readSources.push(path)
     // Simulate a same-named installed folder beneath the working directory
-    return readPackage(path == available.name ? target : path)
+    return readPackage(path == available.name ? target : path, archives)
   }
   function assert(value, message) { if (!value) throw new Error(message) }
 
@@ -47,12 +51,13 @@ try {
     available.repository = kind == "path" ? { type: "path", path: origin } : { type: "http", url: "https://fixture.invalid/" + name + ".opack" }
     io.writeFileJSON(origin + "/" + PACKAGEJSON, available)
     io.writeFileString(origin + "/payload.js", "new")
-    if (isDef(archive)) archive.close()
-    archive = new ZIP()
+    var archive = new ZIP()
     archive.putFile(PACKAGEJSON, af.fromString2Bytes(stringify(available)))
     archive.putFile("payload.js", af.fromString2Bytes("new"))
-    var archivePath = root + "/fixture.opack"
+    archivePath = root + "/fixture.opack"
     io.writeFileBytes(archivePath, archive.generate(__, true))
+    archive.close()
+    archiveRequests = 0
     remoteDB = undefined
     readSources = []
     return archivePath
@@ -62,6 +67,7 @@ try {
     assert(result.updated == 1 && result.failed == 0 && result.notNeeded == 0, "Update skipped or failed: " + stringify(result))
     assert(installed.version == "20261115", "New version was not registered")
     assert(readSources.indexOf(expectedSource) >= 0, "Resolved source was not read: " + expectedSource)
+    assert(archiveRequests == (expectedSource.startsWith("http") ? 1 : 0), "Unexpected remote archive fetch count")
     assert(io.readFileString(target + "/payload.js") == "new", "New payload was not installed")
     assert(!io.fileExists(target + "/obsolete.txt"), "Obsolete payload was retained")
     assert(io.readFileString(target + "/unrelated.txt") == "keep", "Unrelated file was changed")
@@ -79,15 +85,14 @@ try {
     })
 
     // Preserve explicitly supplied archive sources and individual named updates
-    var archivePath = fixture("AWS", "20261030", "http")
-    verifyUpdate([archivePath], archivePath)
+    var localArchive = fixture("AWS", "20261030", "http")
+    verifyUpdate([localArchive], localArchive)
     fixture("AWS", "20261105", "http")
     verifyUpdate([available.repository.url], available.repository.url)
     fixture("AWS", "20261105", "http")
     verifyUpdate(["AWS"], available.repository.url)
     print("oPack update source selection: 15 regression cases PASS")
   } finally {
-    if (isDef(archive)) archive.close()
     io.rm(base)
   }
   exit(0)

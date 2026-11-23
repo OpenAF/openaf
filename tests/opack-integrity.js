@@ -4,7 +4,7 @@ try {
     var source = io.readFileString("js/opack.js")
     eval(source.substring(0, source.indexOf("// MAIN\n")))
     var base = String(java.nio.file.Files.createTempDirectory("opack-integrity-"))
-    var calls, installed, remoteZip, remoteBytes, manifestBytes, failPre, blockCommit, fixtureNumber = 0
+    var calls, installed, archiveBytes, remoteBytes, manifestBytes, failPre, blockCommit, fixtureNumber = 0
     log = logWarn = logErr = function() {}
     var originalCheckVersion = checkVersion, originalErase = erase
     sortPackagesByDeps = packages => packages
@@ -21,9 +21,13 @@ try {
         }
         return !(failPre && script == "pre")
     }
-    getHTTPOPack = () => remoteZip
     execHTTPWithCred = function(url, method, input, headers, bytes, timeout, stream) {
         if (url.endsWith("/" + PACKAGEJSON)) return manifestBytes
+        if (url.endsWith(".opack")) {
+            assert(stream === true, "Remote archive fetched into memory")
+            calls.archive++
+            return af.fromBytes2InputStream(archiveBytes)
+        }
         if (!url.endsWith("/payload.js")) throw "Unexpected fixture URL: " + url
         return stream ? af.fromBytes2InputStream(remoteBytes) : remoteBytes
     }
@@ -36,13 +40,12 @@ try {
     }
     function assert(value, message) { if (!value) throw new Error(message) }
     function fixture(kind, payload, hash) {
-        if (isDef(remoteZip)) remoteZip.close()
         var root = base + "/" + (++fixtureNumber), origin = root + "/source", target = root + "/target"
         io.mkdir(origin); io.mkdir(target)
         io.writeFileString(target + "/payload.js", "old")
         io.writeFileString(target + "/obsolete.txt", "old-extra")
         io.writeFileString(target + "/unrelated.txt", "keep")
-        calls = { pre: 0, post: 0, preerase: 0, posterase: 0, register: 0, erase: 0 }; failPre = false; blockCommit = false
+        calls = { pre: 0, post: 0, preerase: 0, posterase: 0, register: 0, erase: 0, archive: 0 }; failPre = false; blockCommit = false
         installed = { name: "IntegrityFixture", version: "0", files: ["payload.js", "obsolete.txt"], scripts: {}, __target: target }
         var packag = { name: "IntegrityFixture", version: "1", files: ["payload.js", PACKAGEJSON], filesHash: {}, scripts: { preinstall: "pre", postinstall: "post" }, dependencies: {} }
         if (isDef(hash)) packag.filesHash["payload.js"] = hash
@@ -52,9 +55,9 @@ try {
         io.writeFileBytes(origin + "/payload.js", remoteBytes)
         var zip = new ZIP()
         zip.putFile(PACKAGEJSON, manifestBytes); zip.putFile("payload.js", remoteBytes)
-        var archiveBytes = zip.generate(__, true)
+        archiveBytes = zip.generate(__, true)
         io.writeFileBytes(root + "/fixture.opack", archiveBytes)
-        zip.close(); remoteZip = new ZIP(archiveBytes)
+        zip.close()
         var pack = kind == "local" ? origin : kind == "opacklocal" ? root + "/fixture.opack" : kind == "url" ? "http://fixture.invalid/package" : "http://fixture.invalid/fixture.opack"
         return { pack: pack, target: target, origin: origin }
     }
@@ -75,6 +78,7 @@ try {
             result = install([f.pack, "-d", f.target])
             assert(result.installed == 1 && result.failed == 0, "Valid install failed: " + kind)
             assert(io.readFileString(f.target + "/payload.js") == "trusted", "Verified snapshot not promoted")
+            if (kind == "opackurl") assert(calls.archive == 1, "Remote archive was fetched again")
             assert(calls.pre == 1 && calls.post == 1 && calls.register == 1, "Valid workflow hooks/registration failed")
             assert(!io.fileExists(f.target + "/obsolete.txt") && io.readFileString(f.target + "/unrelated.txt") == "keep", "Obsolete cleanup changed unrelated files")
         })
@@ -138,6 +142,6 @@ try {
         f = fixture("local", "trusted", "invalid-hash")
         assert(install([f.pack, "-d", f.target]).failed == 1, "Malformed hash accepted"); unchanged(f)
         print("oPack staged integrity, sources, hooks, updates and controls PASS")
-    } finally { if (isDef(remoteZip)) remoteZip.close(); io.rm(base) }
+    } finally { io.rm(base) }
     exit(0)
 } catch(e) { printErr(String(e)); exit(1) }

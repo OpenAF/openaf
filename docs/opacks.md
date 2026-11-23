@@ -139,6 +139,8 @@ Legacy 40-digit SHA-1 values remain accepted, including LF/CRLF text compatibili
 
 Only verified staged files are promoted. Unrelated destination files are retained and affected files are backed up for restoration on promotion/hook failure. Rollback failures are reported; arbitrary hook side effects and interruption are not transactional. Staging needs temporary disk space for the payload and backups. Copy-only installs still verify by default, and `-noverify` remains an explicit integrity bypass. The standalone regression can be run from the checkout root with `java -jar openaf.jar -f tests/opack-integrity.js`.
 
+Remote ZIP-based packages are streamed directly into private staging for install, update, and info. The same download supplies the manifest and payload, and staging is removed when the package operation ends. Remote entries default to a 128 MiB expanded limit, and each root manifest is limited to 4 MiB. The remaining archive quotas keep their standard defaults. JVM `openaf.archive.maxEntryBytes` settings take precedence over `__flags.ARCHIVE.maxEntryBytes`, followed by the remote default. See [ZIP decompression limits](./plugins/ZIP.md#decompression-limits). Run the constrained-heap HTTP regression with `python3 tests/opack-streaming.py openaf.jar`.
+
 ### 3.2 Examples
 
 ```bash

@@ -207,6 +207,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_FNCACHE_SIZE          : 512,    // Max entries in the oJob compiled-function cache before it's cleared
 	OJOB_INCLUDE_CACHE         : true,   // If true, oJob include files and ojob.saved.json are parsed/read once and cached
 	OPACK_LOCALDB_CACHE        : true,   // If true, getOPackLocalDB results are cached and validated by DB file mtime+size
+	ARCHIVE                    : {},     // Archive quota overrides for trusted runtime configuration
 	OJOB_ADAPTIVE_POLL         : false,  // If true, the oJob scan loop backs off its poll interval on idle cycles
 	OJOB_SHAREARGS             : true,
 	OJOB_HELPSIMPLEUI          : false,

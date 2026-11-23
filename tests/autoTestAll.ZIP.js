@@ -35,6 +35,46 @@
         }
     }
 
+    exports.testArchiveLimitFlags = function() {
+        // Set up a fixture and save the active configuration.
+        plugin("ZIP")
+        var key = "openaf.archive.maxEntryBytes"
+        var previousProperty = java.lang.System.getProperty(key)
+        var previousFlags = __flags.ARCHIVE
+        var zip = new ZIP()
+        try {
+            zip.putFile("data.txt", af.fromString2Bytes("x".repeat(128)))
+            var bytes = zip.generate()
+            java.lang.System.clearProperty(key)
+
+            // Check runtime changes and the JVM override.
+            __flags.ARCHIVE = { maxEntryBytes: 16 }
+            var failure = ""
+            try { zip.load(bytes) } catch(e) { failure = String(e) }
+            ow.test.assert(failure.indexOf("Archive quota exceeded: expanded entry bytes") >= 0, true, "ZIP load ignored the runtime quota")
+            __flags.ARCHIVE.maxEntryBytes = 128
+            zip.load(bytes)
+            ow.test.assert(zip.getFile("data.txt").length, 128, "Updated runtime quota did not apply")
+            java.lang.System.setProperty(key, "16")
+            failure = ""
+            try { zip.load(bytes) } catch(e) { failure = String(e) }
+            ow.test.assert(failure.indexOf("Archive quota exceeded: expanded entry bytes") >= 0, true, "JVM quota did not override the runtime quota")
+
+            // Reject malformed flag values.
+            java.lang.System.clearProperty(key)
+            __flags.ARCHIVE.maxEntryBytes = 128.5
+            failure = ""
+            try { zip.load(bytes) } catch(e) { failure = String(e) }
+            ow.test.assert(failure.indexOf("__flags.ARCHIVE.maxEntryBytes must be a positive safe integer") >= 0, true, "Fractional archive flag was accepted")
+        } finally {
+            // Restore the configuration for subsequent tests.
+            __flags.ARCHIVE = previousFlags
+            if (isNull(previousProperty)) java.lang.System.clearProperty(key)
+            else java.lang.System.setProperty(key, previousProperty)
+            zip.close()
+        }
+    }
+
     exports.testZIP = function() {
         plugin("ZIP");
 

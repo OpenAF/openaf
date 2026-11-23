@@ -5,7 +5,13 @@ import java.nio.file.*;
 import java.util.Enumeration;
 import java.util.zip.*;
 
-/** Operation-scoped decompression quotas. Properties are trusted process configuration. */
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.Undefined;
+
+import openaf.AFCmdBase;
+import openaf.JSEngine;
+
+/** Operation-scoped decompression quotas configured by the JVM or trusted runtime code. */
 public final class ArchiveLimits {
     private ArchiveLimits() {}
 
@@ -13,20 +19,50 @@ public final class ArchiveLimits {
         public LimitException(String quota) { super("Archive quota exceeded: " + quota); }
     }
 
-    private static long setting(String name, long fallback) {
-        long value = Long.parseLong(System.getProperty("openaf.archive." + name, Long.toString(fallback)));
-        if (value < 1 || value > Long.MAX_VALUE / 2) throw new IllegalArgumentException("Archive quota must be positive: " + name);
-        return value;
+    private static Scriptable archiveFlags() {
+        JSEngine engine = AFCmdBase.jse;
+        if (engine == null || !(engine.getGlobalscope() instanceof Scriptable scope)) return null;
+        if (!(scope.get("__flags", scope) instanceof Scriptable flags)) return null;
+        return flags.get("ARCHIVE", flags) instanceof Scriptable archive ? archive : null;
+    }
+
+    private static long setting(Scriptable flags, String name, long fallback) {
+        // JVM settings take precedence over runtime flags.
+        String property = System.getProperty("openaf.archive." + name);
+        if (property != null) {
+            long value = Long.parseLong(property);
+            if (value < 1 || value > Long.MAX_VALUE / 2) throw new IllegalArgumentException("Archive quota must be positive: " + name);
+            return value;
+        }
+
+        // Accept positive, exactly representable JavaScript integers.
+        Object flag = flags == null ? Scriptable.NOT_FOUND : flags.get(name, flags);
+        if (flag == Scriptable.NOT_FOUND || Undefined.isUndefined(flag)) return fallback;
+        if (flag instanceof Number number) {
+            double value = number.doubleValue();
+            if (value >= 1 && value <= 9_007_199_254_740_991L && value == Math.floor(value)) return (long) value;
+        }
+        throw new IllegalArgumentException("__flags.ARCHIVE." + name + " must be a positive safe integer");
     }
 
     public static final class Budget {
-        final long input = setting("maxInputBytes", 256L * 1024 * 1024);
-        final long entry = setting("maxEntryBytes", 64L * 1024 * 1024);
-        final long total = setting("maxTotalBytes", 256L * 1024 * 1024);
-        final long count = setting("maxEntries", 100000);
-        final long ratio = setting("maxRatio", 1000);
+        final long input, entry, total, count, ratio;
         long entries, expanded, current;
         IOException failure;
+
+        public Budget() {
+            this(64L * 1024 * 1024);
+        }
+
+        private Budget(long defaultEntryBytes) {
+            // Capture the configured limits when the archive operation starts.
+            Scriptable flags = archiveFlags();
+            input = setting(flags, "maxInputBytes", 256L * 1024 * 1024);
+            entry = setting(flags, "maxEntryBytes", defaultEntryBytes);
+            total = setting(flags, "maxTotalBytes", 256L * 1024 * 1024);
+            count = setting(flags, "maxEntries", 100000);
+            ratio = setting(flags, "maxRatio", 1000);
+        }
 
         public void next() throws IOException {
             healthy();
@@ -123,39 +159,80 @@ public final class ArchiveLimits {
 
     /** ZipInputStream overrides include implicit draining in getNextEntry/closeEntry. */
     public static ZipInputStream zip(InputStream source) throws IOException {
-        Budget budget = new Budget();
-        Counted counted = new Counted(source, budget);
-        return new ZipInputStream(counted) {
-            boolean active;
-            @Override public ZipEntry getNextEntry() throws IOException {
-                budget.healthy();
-                if (active) closeEntry();
-                ZipEntry next = super.getNextEntry();
-                if (next != null) { budget.next(); active = true; }
-                return next;
+        return new ZipStream(new Counted(source, new Budget()));
+    }
+
+    /** Remote oPacks stage expanded bytes on disk and have a larger default entry limit. */
+    public static ZipStream opackZip(InputStream source) {
+        return new ZipStream(new Counted(source, new Budget(128L * 1024 * 1024)));
+    }
+
+    public static final class ZipStream extends ZipInputStream {
+        private final Counted counted;
+        private final Budget budget;
+        private boolean active, endOfEntries;
+        private long entryLimit;
+
+        private ZipStream(Counted counted) {
+            super(counted);
+            this.counted = counted;
+            budget = counted.budget;
+            entryLimit = budget.entry;
+        }
+
+        @Override public ZipEntry getNextEntry() throws IOException {
+            budget.healthy();
+            if (active) closeEntry();
+            if (endOfEntries) return null;
+            ZipEntry next = super.getNextEntry();
+            if (next != null) {
+                budget.next();
+                entryLimit = budget.entry;
+                active = true;
+            } else {
+                endOfEntries = true;
             }
-            @Override public void closeEntry() throws IOException {
-                budget.healthy();
-                if (active) {
-                    byte[] buffer = new byte[8192];
-                    while (read(buffer) >= 0) {}
-                    active = false;
+            return next;
+        }
+
+        @Override public void closeEntry() throws IOException {
+            budget.healthy();
+            if (active) {
+                byte[] buffer = new byte[8192];
+                while (read(buffer) >= 0) {}
+                active = false;
+            }
+        }
+
+        @Override public int read(byte[] b, int off, int len) throws IOException {
+            budget.healthy();
+            try {
+                int n = super.read(b, off, (int) Math.min(len, Math.min(8192, entryLimit - budget.current + 1)));
+                if (n > 0) {
+                    budget.produced(n, counted.bytes);
+                    if (budget.current > entryLimit) budget.fail("package manifest bytes");
                 }
+                return n;
+            } catch (IOException e) {
+                budget.failure = e;
+                try { close(); } catch (IOException cleanup) { e.addSuppressed(cleanup); }
+                throw e;
             }
-            @Override public int read(byte[] b, int off, int len) throws IOException {
-                budget.healthy();
-                try {
-                    int n = super.read(b, off, (int) Math.min(len, Math.min(8192, budget.entry - budget.current + 1)));
-                    if (n > 0) budget.produced(n, counted.bytes);
-                    return n;
-                } catch (IOException e) {
-                    budget.failure = e;
-                    try { close(); } catch (IOException cleanup) { e.addSuppressed(cleanup); }
-                    throw e;
-                }
-            }
-            @Override public long skip(long n) throws IOException { return skipByReading(this, n); }
-        };
+        }
+
+        @Override public long skip(long n) throws IOException { return skipByReading(this, n); }
+
+        public void limitPackageManifest() {
+            if (!active || budget.current != 0) throw new IllegalStateException("Manifest limit must be set before reading the entry");
+            entryLimit = Math.min(budget.entry, 4L * 1024 * 1024);
+        }
+
+        public void finish() throws IOException {
+            // ZIP readers stop at the central directory. Bytes already read ahead were counted.
+            budget.healthy();
+            if (!endOfEntries) throw new IOException("ZIP entries have not been fully read");
+            counted.transferTo(OutputStream.nullOutputStream());
+        }
     }
 
     /** Preflight the raw central directory before deduplication or entry extraction. */
