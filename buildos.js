@@ -458,7 +458,9 @@ try {
 		"scopesigil": OPENAF_BUILD_HOME + "/js/openafsigil.js",
 		"index": OPENAF_BUILD_HOME + "/js/example.js"
 	};
-	loadHelp()
+
+	// Use the checkout's parser so the bootstrap version cannot omit newer oDoc entries.
+	af.load(OPENAF_BUILD_HOME + "/js/odoc.js")
 	var helpGen = new ODocsGen(helpFiles)
 	// Keep lazy reporter documentation in the existing ow.test help subject.
 	helpGen.odoc["ow.test"].addAll(helpGen.genODoc(OPENAF_BUILD_HOME + "/js/owrap.test.report.js").getAll())
@@ -469,7 +471,7 @@ try {
 	new ODocs(OPENAF_BUILD_HOME + "/odocweb", helpDocs).saveWeb()
 	tempJar.putFile(".odoc.db", io.readFileBytes(OPENAF_BUILD_HOME + "/.odoc.db"));
 } catch (e) {
-	logErr(e);
+	throw new Error("Could not build ODoc documentation: " + e)
 }
 
 if (isUnDef(OPENAF_JSON)) {

@@ -177,17 +177,35 @@ ODocs.prototype.saveWeb = function() {
   io.mkdir(this.aFilename)
   var odocskeys = {}
   var keysPath = this.aFilename + "/" + this.keysfile + ".gz"
-  if (io.fileExists(keysPath)) {
-    var input = io.readFileStream(keysPath)
-    odocskeys = __streamCodec.use([input], () => af.fromJson(__streamCodec.gunzipText(input)))
+
+  // Support bootstrap JARs that predate the stream codec.
+  var hasStreamCodec = typeof __streamCodec !== "undefined"
+  var writeGzip = (path, data) => {
+    var text = beautifier(data)
+    if (hasStreamCodec) {
+      var output = io.writeFileStream(path)
+      __streamCodec.use([output], () => __streamCodec.gzipText(text, output))
+    } else {
+      io.writeFileBytes(path, io.gzip(af.fromString2Bytes(text)))
+    }
   }
+
+  // Load the existing index before updating subjects.
+  if (io.fileExists(keysPath)) {
+    if (hasStreamCodec) {
+      var input = io.readFileStream(keysPath)
+      odocskeys = __streamCodec.use([input], () => af.fromJson(__streamCodec.gunzipText(input)))
+    } else {
+      odocskeys = af.fromJson(af.fromBytes2String(io.gunzip(io.readFileBytes(keysPath))))
+    }
+  }
+
+  // Write the subjects and the updated index.
   for(var i in this.aodocs) {
-    var output = io.writeFileStream(this.aFilename + "/" + i + ".gz")
-    __streamCodec.use([output], () => __streamCodec.gzipText(beautifier(this.aodocs[i].getAll()), output))
+    writeGzip(this.aFilename + "/" + i + ".gz", this.aodocs[i].getAll())
     odocskeys[i] = this.aodocs[i].getKeys()
   }
-  var output = io.writeFileStream(keysPath)
-  __streamCodec.use([output], () => __streamCodec.gzipText(beautifier(odocskeys), output))
+  writeGzip(keysPath, odocskeys)
 }
 
 /**

@@ -17,6 +17,7 @@ jobs:
          setOfflineHelp(true)
          results = searchHelp("index", __, ["index"])
          c.assertEqual(results.length > 0, true, "Offline oDoc missing index.")
+         c.assertEqual(results[0].format, "markdown", "Offline oDoc index must retain its Markdown format.")
        }
 
    - name: oDoc::MemoryAndSearch
