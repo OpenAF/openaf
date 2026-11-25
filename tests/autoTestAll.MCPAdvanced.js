@@ -44,6 +44,34 @@
     } finally { c.destroy() }
   }
 
+  exports.testSkillDiscovery = function() {
+    // Serve enough skills to exercise the client's pagination and direct resource lookup.
+    ow.loadServer()
+    var mcp = ow.server.mcp, port = findRandomOpenPort()
+    var sources = Array.from({ length: 21 }, (_, i) => {
+      var name = "fixture-" + i
+      return { name: name, files: { "SKILL.md": "---\nname: " + name + "\ndescription: A test skill.\n---\n", "references/checklist.md": "Check the fixture." } }
+    })
+    var catalog = mcp.createSkillCatalog(sources)
+    var description = mcp.withSkills({ serverInfo: { name: "Skills fixture", version: "1" } }, catalog)
+    var methods = Object.assign({ "server/discover": () => mcp.discoverResult(description) }, catalog.methods)
+    var server = ow.server.httpd.start(port, "127.0.0.1")
+    try {
+      ow.server.httpd.route(server, { "/mcp": req =>
+        ow.server.httpd.replyJSONRPC(server, req, methods, () => {}, () => {}, { modern: true }) })
+      var client = $mcp({ url: "http://127.0.0.1:" + port + "/mcp", protocolVersion: "auto" })
+      try {
+        client.initialize()
+        check(client.listSkills().skills.length, 21, "Client collects all skill pages")
+        var skill = client.getSkill("skill://fixture-20/SKILL.md").skill
+        check(skill.frontmatter.name, "fixture-20", "Direct lookup by SKILL.md URI")
+        check(skill.resources.length, 2, "Complete skill manifest")
+        var result = client.readResource("skill://fixture-20/references/checklist.md")
+        check(result.contents[0].text, "Check the fixture.", "Client retrieves supporting file")
+      } finally { client.destroy() }
+    } finally { ow.server.httpd.stop(server) }
+  }
+
   exports.testBidirectionalStdio = function() {
     var c = peer(), updates = $atomic(0)
     c.onSamplingRequest(p => ({ role: "assistant", model: "fixture", content: { type: "text", text: c.exec("nested", {}).value } }))

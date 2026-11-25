@@ -11501,6 +11501,11 @@ const $mcp = function(aOptions) {
 		if (!_r._initialized) throw new Error("MCP client not initialized. Call initialize() first.")
 		if (!isMap(_r._capabilities.resources)) throw new Error("MCP server does not advertise resources")
 	}
+	const _requireSkills = () => {
+		_requireResources()
+		if (!isMap(_r._capabilities.extensions) || !isMap(_r._capabilities.extensions["io.modelcontextprotocol/skills"]))
+			throw new Error("MCP server does not advertise skills")
+	}
 	const _resourceURI = uri => {
 		uri = _$(uri, "uri").isString().$_()
 		if (!(new java.net.URI(uri)).isAbsolute()) throw new Error("MCP resource URI must be absolute")
@@ -11731,6 +11736,20 @@ const $mcp = function(aOptions) {
 		 * </odoc>
 		 */
 		listResources: () => { _requireResources(); return _listPages("resources/list", "resources") },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.listSkills() : Map</key>
+		 * Collects skill entries from a server that advertises the Skills extension.
+		 * </odoc>
+		 */
+		listSkills: () => { _requireSkills(); return _listPages("skills/list", "skills") },
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.getSkill(uri) : Map</key>
+		 * Retrieves skill metadata by its SKILL.md resource URI. Use readResource to fetch files.
+		 * </odoc>
+		 */
+		getSkill: uri => { _requireSkills(); return _execWithAuth("skills/get", { uri: _resourceURI(uri) }) },
 		/**
 		 * <odoc format="markdown">
 		 * <key>$mcp.listResourceTemplates() : Map</key>

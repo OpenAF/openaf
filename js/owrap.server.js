@@ -1716,6 +1716,8 @@ OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
         }
     } catch (e) {
         if (isNotification) return null
+        var skillError = ow.server.mcp.skillError(e, id)
+        if (isDef(skillError)) return skillError
         return {
             jsonrpc: "2.0",
             id: id,
@@ -1859,9 +1861,10 @@ OpenWrap.server.prototype.mcp = {
     wrapResult: function(aBody, anEra, opts) {
         if (anEra != "modern" || !isMap(aBody)) return aBody
         opts = isMap(opts) ? opts : {}
-        var _res = merge({ resultType: "complete" }, aBody)
+        // Keep nested protocol payloads opaque when adding top-level result fields.
+        var _res = Object.assign({ resultType: "complete" }, aBody)
         if (opts.isList === true) {
-            _res = merge({
+            _res = Object.assign({
                 ttlMs     : isNumber(opts.ttlMs) ? opts.ttlMs : 0,
                 cacheScope: isString(opts.cacheScope) ? opts.cacheScope : "private"
             }, _res)
@@ -1888,6 +1891,256 @@ OpenWrap.server.prototype.mcp = {
             serverInfo      : initData.serverInfo || {}
         }
     }
+}
+
+OpenWrap.server.prototype.mcp.skillsExtension = "io.modelcontextprotocol/skills"
+OpenWrap.server.prototype.mcp.skillFileLimit = 16 * 1024 * 1024
+
+// Convert skill-handler failures into JSON-RPC errors without exposing storage details.
+OpenWrap.server.prototype.mcp.SkillError = function(code, message) {
+  this.code = code
+  this.message = message
+}
+OpenWrap.server.prototype.mcp.skillError = function(error, id) {
+  if (error instanceof ow.server.mcp.SkillError) {
+    return { jsonrpc: "2.0", id: id, error: { code: error.code, message: error.message } }
+  }
+}
+
+// Read a bounded stream and always close it, including on a short or failed read.
+OpenWrap.server.prototype.mcp.readSkillBytes = function(stream, limit) {
+  try {
+    var bytes = stream.readNBytes(limit + 1)
+    if (bytes.length > limit) throw new Error("Skill exceeds the byte limit")
+    return bytes
+  } finally {
+    stream.close()
+  }
+}
+
+// Parse frontmatter with the safe YAML schema and preserve its JSON fields.
+OpenWrap.server.prototype.mcp.parseSkillFrontmatter = function(bytes, name) {
+  var decoder = java.nio.charset.StandardCharsets.UTF_8.newDecoder()
+  var text = String(decoder.decode(java.nio.ByteBuffer.wrap(bytes)))
+  var header = text.match(/^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/)
+  if (!header) throw new Error("Missing YAML frontmatter for skill " + name)
+  loadJSYAML()
+  return jsyaml.load(header[1], { schema: jsyaml.JSON_SCHEMA })
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.server.mcp.createSkillCatalog(sources, baseDir) : Map</key>
+ * Builds a Skills over MCP catalog from directories, inline files or providers.
+ * A provider supplies a catalog array or function and a read function taking
+ * `{ skill, path, ref }`. Catalog files supply path, size and SHA-256 digest.
+ * Read functions return UTF-8 text or `{ bytes, mimeType }`.
+ * </odoc>
+ */
+OpenWrap.server.prototype.mcp.createSkillCatalog = function(sources, baseDir) {
+  _$(sources, "skills").isArray().$_()
+  if (sources.length == 0) return
+  var maxBytes = ow.server.mcp.skillFileLimit, maxFiles = 512
+  var entries = Object.create(null), files = Object.create(null), dynamic = Object.create(null)
+  var Files = java.nio.file.Files, Paths = java.nio.file.Paths
+  var utf8 = java.nio.charset.StandardCharsets.UTF_8
+  var noFollow = java.nio.file.LinkOption.NOFOLLOW_LINKS
+
+  // Validate frontmatter and encode relative paths as canonical resource URIs.
+  var skillText = bytes => String(utf8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)))
+  var frontmatter = (bytes, name) => checkFrontmatter(ow.server.mcp.parseSkillFrontmatter(bytes, name), name)
+  var checkFrontmatter = (meta, name) => {
+    if (!isMap(meta) || meta.name !== name || !isString(meta.description) ||
+        meta.description.trim().length == 0 || meta.description.length > 1024)
+      throw new Error("Invalid frontmatter for skill " + name)
+    return JSON.parse(JSON.stringify(meta))
+  }
+  var sameMetadata = (a, b) => {
+    if (a === b) return true
+    if ((isArray(a) && isArray(b)) || (isMap(a) && isMap(b))) {
+      var keys = Object.keys(a)
+      return keys.length === Object.keys(b).length && keys.every(key =>
+        Object.prototype.hasOwnProperty.call(b, key) && sameMetadata(a[key], b[key]))
+    }
+    return false
+  }
+  var pathParts = path => {
+    if (!isString(path) || /[\\\x00-\x1f\x7f]/.test(path)) throw new Error("Invalid skill path")
+    var parts = path.split("/")
+    if (parts.some(part => part == "" || part == "." || part == "..")) throw new Error("Invalid skill path")
+    return parts
+  }
+  var uriFor = (name, path) => "skill://" + name + "/" + pathParts(path).map(encodeURIComponent).join("/")
+  var validName = name => isString(name) && name.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)
+  var digestOf = bytes => "sha256:" + sha256(bytes)
+  var toFile = (value, path) => {
+    var bytes = isString(value) ? af.fromString2Bytes(value, "UTF-8") : isMap(value) ? value.bytes : __
+    if (!isByteArray(bytes)) throw new Error("Expected skill text or bytes")
+    var mime = isMap(value) ? value.mimeType : __
+    if (isDef(mime) && !isString(mime)) throw new Error("Invalid skill MIME type")
+    if (isUnDef(mime)) mime = /\.md$/i.test(path) ? "text/markdown" :
+      isString(value) ? "text/plain" : ow.server.httpd.getMimeType(path)
+    return { bytes: bytes, mimeType: mime }
+  }
+
+  // Build manifests for inline and directory sources from the same bytes used for reads.
+  var staticSource = (name, paths, read) => {
+    var data = Object.create(null), size = 0, meta
+    if (!validName(name) || paths.length > maxFiles) throw new Error("Invalid skill name or file count")
+    var manifest = paths.sort().map(path => {
+      pathParts(path)
+      var file = toFile(read(path, maxBytes - size), path)
+      size += file.bytes.length
+      if (size > maxBytes) throw new Error("Skill exceeds the byte limit")
+      data[path] = file
+      if (path === "SKILL.md") meta = frontmatter(file.bytes, name)
+      return { path: path, size: file.bytes.length, digest: digestOf(file.bytes) }
+    })
+    return { catalog: [{ name: name, frontmatter: meta, files: manifest }], read: request => data[request.path] }
+  }
+  var directorySource = source => {
+    var root = Paths.get(source)
+    if (!root.isAbsolute()) root = Paths.get(isString(baseDir) ? baseDir : ".").resolve(root)
+    root = root.toAbsolutePath().normalize()
+    if (!Files.isDirectory(root, noFollow)) throw new Error("Expected a skill directory: " + root)
+    var paths = [], walk = Files.walk(root)
+    try {
+      var iter = walk.iterator()
+      while (iter.hasNext()) {
+        var file = iter.next()
+        if (Files.isDirectory(file, noFollow)) continue
+        if (!Files.isRegularFile(file, noFollow)) throw new Error("Expected a regular skill file: " + file)
+        paths.push(String(root.relativize(file)).split(String(java.io.File.separator)).join("/"))
+        if (paths.length > maxFiles) throw new Error("Skill exceeds the file limit")
+      }
+    } finally {
+      walk.close()
+    }
+    return staticSource(String(root.getFileName()), paths, (path, remaining) => {
+      return { bytes: ow.server.mcp.readSkillBytes(Files.newInputStream(root.resolve(path), noFollow), remaining) }
+    })
+  }
+
+  // Index only registered paths. Storage refs stay private to their provider.
+  sources.forEach(source => {
+    if (isString(source)) source = directorySource(source)
+    else if (isMap(source) && isMap(source.files)) {
+      var inline = source
+      source = staticSource(inline.name, Object.keys(inline.files), path => inline.files[path])
+    }
+    if (!isMap(source) || !isFunction(source.read)) throw new Error("Expected a skill directory, inline files or skill provider")
+    var catalog = isFunction(source.catalog) ? source.catalog({}) : source.catalog
+    _$(catalog, "skill catalog").isArray().$_()
+    catalog.forEach(item => {
+      if (!isMap(item) || !validName(item.name)) throw new Error("Invalid skill catalog name")
+      var uri = uriFor(item.name, "SKILL.md")
+      if (isDef(entries[uri])) throw new Error("Duplicate skill " + item.name)
+      var meta = checkFrontmatter(item.frontmatter, item.name), resources, total = 0
+      if (item.files === "dynamic") {
+        resources = "dynamic"
+        dynamic[item.name] = source.read
+      } else {
+        if (!isArray(item.files) || item.files.length > maxFiles) throw new Error("Invalid skill file manifest")
+        resources = item.files.map(file => {
+          if (!isMap(file) || !isNumber(file.size) || file.size < 0 || Math.floor(file.size) !== file.size ||
+              !isString(file.digest) || !/^sha256:[a-f0-9]{64}$/.test(file.digest)) throw new Error("Invalid skill file metadata")
+          total += file.size
+          if (total > maxBytes) throw new Error("Skill exceeds the byte limit")
+          var fileURI = uriFor(item.name, file.path)
+          if (isDef(files[fileURI])) throw new Error("Duplicate skill file " + file.path)
+          files[fileURI] = { skill: item.name, path: file.path, ref: file.ref, read: source.read, size: file.size, digest: file.digest }
+          return { uri: fileURI, digest: file.digest, size: file.size }
+        }).sort((a, b) => a.uri < b.uri ? -1 : a.uri > b.uri ? 1 : 0)
+        if (isUnDef(files[uri])) throw new Error("Missing SKILL.md for skill " + item.name)
+      }
+      entries[uri] = { uri: uri, frontmatter: meta, resources: resources }
+    })
+  })
+
+  // Page complete entries and return only public metadata over MCP.
+  var invalid = message => new ow.server.mcp.SkillError(-32602, message)
+  var internal = () => new ow.server.mcp.SkillError(-32603, "Could not read skill file")
+  var complete = body => ow.server.mcp.wrapResult(body, "modern", { isList: true })
+  var list = (items, field, params, pageSize) => {
+    var cursor = isMap(params) ? params.cursor : __
+    var index = 0
+    if (isDef(cursor)) {
+      if (!isString(cursor) || !/^[1-9][0-9]*$/.test(cursor) || Number(cursor) >= items.length)
+        throw invalid("Invalid cursor")
+      index = Number(cursor)
+    }
+    var result = {}
+    result[field] = items.slice(index, index + pageSize)
+    if (index + pageSize < items.length) result.nextCursor = String(index + pageSize)
+    return complete(result)
+  }
+  var skillList = Object.keys(entries).sort().map(uri => entries[uri])
+  var resourceList = Object.keys(files).sort().map(uri => ({ uri: uri, name: files[uri].path }))
+
+  var readFile = params => {
+    var uri = isMap(params) ? params.uri : __
+    if (!isString(uri)) throw invalid("Expected a skill file URI")
+    var file = files[uri]
+    if (isUnDef(file)) {
+      var match = uri.match(/^skill:\/\/([a-z0-9-]+)\/(.+)$/)
+      if (!match || !isFunction(dynamic[match[1]])) throw invalid("Unknown skill file")
+      var path
+      try {
+        path = match[2].split("/").map(decodeURIComponent).join("/")
+        if (uriFor(match[1], path) !== uri) throw new Error("Non-canonical URI")
+      } catch (e) {
+        throw invalid("Invalid skill file URI")
+      }
+      file = { skill: match[1], path: path, read: dynamic[match[1]] }
+    }
+    var request = { skill: file.skill, path: file.path }
+    if (isDef(file.ref)) request.ref = file.ref
+    var value
+    try {
+      value = file.read(request)
+    } catch (e) {
+      throw internal()
+    }
+    if (isUnDef(file.digest) && (isNull(value) || isUnDef(value))) throw invalid("Unknown skill file")
+    try {
+      var data = toFile(value, file.path), bytes = data.bytes
+      if (bytes.length > maxBytes || (isDef(file.digest) && (bytes.length !== file.size || digestOf(bytes) !== file.digest)))
+        throw new Error("Changed skill file")
+      var content = { uri: uri, mimeType: data.mimeType }
+      if (file.path === "SKILL.md" &&
+          !sameMetadata(frontmatter(bytes, file.skill), entries[uri].frontmatter))
+        throw new Error("Changed skill frontmatter")
+      if (/^(text\/|application\/(json|yaml|xml)(?:;|$))/i.test(data.mimeType)) {
+        try { content.text = skillText(bytes) } catch (e) {}
+      }
+      if (isUnDef(content.text)) content.blob = af.fromBytes2String(af.toBase64Bytes(bytes))
+      return complete({ contents: [content] })
+    } catch (e) {
+      throw internal()
+    }
+  }
+
+  return {
+    methods: {
+      "skills/list": params => list(skillList, "skills", params, 20),
+      "skills/get": params => {
+        var skill = isMap(params) && isString(params.uri) ? entries[params.uri] : __
+        if (isUnDef(skill)) throw invalid("Unknown skill")
+        return complete({ skill: skill })
+      },
+      "resources/list": params => list(resourceList, "resources", params, 100),
+      "resources/templates/list": () => complete({ resourceTemplates: [] }),
+      "resources/read": readFile
+    }
+  }
+}
+
+// Advertise the extension only for an endpoint with a configured catalog.
+OpenWrap.server.prototype.mcp.withSkills = function(description, catalog) {
+  if (isUnDef(catalog)) return description
+  var capabilities = { resources: {}, extensions: {} }
+  capabilities.extensions[ow.server.mcp.skillsExtension] = {}
+  return merge(description, { capabilities: capabilities })
 }
 
 /**
@@ -1985,6 +2238,8 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
             }
         }
     }, initData)
+    if (isDef(opts.skillCatalog) && !opts.modern) throw new Error("Skills require modern MCP")
+    initData = ow.server.mcp.withSkills(initData, opts.skillCatalog)
     io.pipeLn(line => {
         if (isUnDef(line) || String(line).trim() === "") return
         var _pline
@@ -2024,7 +2279,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
         // server's identity on every result per the spec's per-response protocol fields.
         var _wrap = (aBody, isList) => ow.server.mcp.wrapResult(aBody, _era, { isList: isList === true, serverInfo: initData.serverInfo })
 
-        var _res = ow.server.jsonRPC(_pline, merge({
+        var _methods = merge({
             // Only agree to a requested version this server supports (and that uses the initialize handshake);
             // otherwise answer with the server's own version so the client can decide (MCP lifecycle spec)
             initialize                 : params => (isMap(params) && isString(params.protocolVersion) &&
@@ -2098,7 +2353,11 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
             }*/
         }, opts.modern ? {
             "server/discover": () => ow.server.mcp.discoverResult(initData)
-        } : {}))
+        } : {})
+        if (isDef(opts.skillCatalog)) Object.keys(opts.skillCatalog.methods).forEach(method => {
+            _methods[method] = params => _wrap(opts.skillCatalog.methods[method](params))
+        })
+        var _res = ow.server.jsonRPC(_pline, _methods)
 
         // JSON-RPC notifications return null by design; don't emit a stray "null" line on stdio.
         if (isDef(_res) && !isNull(_res)) {
@@ -4471,6 +4730,8 @@ OpenWrap.server.prototype.httpd = {
                     id: reqObj.id
                 }, 200, "application/json", _respHeaders)
             } catch(e) {
+                var skillError = ow.server.mcp.skillError(e, reqObj.id)
+                if (isDef(skillError)) return ow.server.httpd.reply(skillError, 200, "application/json", _respHeaders)
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
