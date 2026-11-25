@@ -12,7 +12,7 @@ Generates a ODoc map where each key will be the identified odoc key and the valu
 
 Sources:
 
-- js/odoc.js:359
+- js/odoc.js:377
 
 <a id="api-odocsgen-genodocs-9803a6af"></a>
 
@@ -24,7 +24,7 @@ The main execution function. Will generate odoc structures for all the files pro
 
 Sources:
 
-- js/odoc.js:402
+- js/odoc.js:420
 
 <a id="api-odocsgen-getodoc-3b14b80f"></a>
 
@@ -36,7 +36,7 @@ Gets the current odoc maps per id.
 
 Sources:
 
-- js/odoc.js:415
+- js/odoc.js:433
 
 <a id="api-odocsgen-getodockeys-93fd16ec"></a>
 
@@ -48,5 +48,5 @@ Gets the current odocs keys per id.
 
 Sources:
 
-- js/odoc.js:429
+- js/odoc.js:447
 

@@ -2,6 +2,21 @@
 
 [Home](../../../index.md) / [All APIs](../../../all-apis.md) / [ow](../../index.md) / [ow.server](../index.md) / [ow.server.mcp](index.md)
 
+<a id="api-ow-server-mcp-createskillcatalog-c7bd6861"></a>
+
+## ow.server.mcp.createSkillCatalog
+
+### ow.server.mcp.createSkillCatalog(sources, baseDir) : Map
+
+Builds a Skills over MCP catalog from directories, inline files or providers.
+A provider supplies a catalog array or function and a read function taking
+`{ skill, path, ref }`. Catalog files supply path, size and SHA-256 digest.
+Read functions return UTF-8 text or `{ bytes, mimeType }`.
+
+Sources:
+
+- js/owrap.server.js:1932
+
 <a id="api-ow-server-mcp-discoverresult-e78d43db"></a>
 
 ## ow.server.mcp.discoverResult
@@ -12,7 +27,7 @@ Builds the mandatory server/discover response (modern era) advertising this serv
 
 Sources:
 
-- js/owrap.server.js:1876
+- js/owrap.server.js:1879
 
 <a id="api-ow-server-mcp-eraof-0403f521"></a>
 
@@ -24,7 +39,7 @@ Classifies a parsed JSON-RPC request as "modern" (carries a modern params.&#95;m
 
 Sources:
 
-- js/owrap.server.js:1805
+- js/owrap.server.js:1807
 
 <a id="api-ow-server-mcp-invalidparamserror-5d646fbc"></a>
 
@@ -36,7 +51,7 @@ Builds a JSON-RPC Invalid Params (-32602) error response, used when a modern-era
 
 Sources:
 
-- js/owrap.server.js:1837
+- js/owrap.server.js:1839
 
 <a id="api-ow-server-mcp-ismodern-21ec9d17"></a>
 
@@ -48,7 +63,7 @@ Returns true if aVersion is a protocol version string on or after the modern (st
 
 Sources:
 
-- js/owrap.server.js:1754
+- js/owrap.server.js:1756
 
 <a id="api-ow-server-mcp-metaclientcapabilities-4b843ffe"></a>
 
@@ -60,7 +75,7 @@ Extracts the per-request client capabilities from params.&#95;meta&#91;"io.model
 
 Sources:
 
-- js/owrap.server.js:1791
+- js/owrap.server.js:1793
 
 <a id="api-ow-server-mcp-metaprotocolversion-061c895a"></a>
 
@@ -72,7 +87,7 @@ Extracts the modern per-request protocol version from a parsed JSON-RPC request'
 
 Sources:
 
-- js/owrap.server.js:1777
+- js/owrap.server.js:1779
 
 <a id="api-ow-server-mcp-requestmeta-6de509e9"></a>
 
@@ -84,7 +99,7 @@ Returns the request's params.&#95;meta map (per the spec, &#95;meta is nested in
 
 Sources:
 
-- js/owrap.server.js:1765
+- js/owrap.server.js:1767
 
 <a id="api-ow-server-mcp-unsupportedversionerror-2edc1a52"></a>
 
@@ -96,7 +111,7 @@ Builds a JSON-RPC UnsupportedProtocolVersionError (-32022) response listing the 
 
 Sources:
 
-- js/owrap.server.js:1819
+- js/owrap.server.js:1821
 
 <a id="api-ow-server-mcp-wrapresult-a07ccfbf"></a>
 
@@ -108,5 +123,5 @@ Wraps a MCP result body per the negotiated era. Legacy eras ("legacy-initialize"
 
 Sources:
 
-- js/owrap.server.js:1850
+- js/owrap.server.js:1852
 

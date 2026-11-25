@@ -12,7 +12,7 @@ Sends best-effort notifications/cancelled. Does not roll back remote side effect
 
 Sources:
 
-- js/openaf.js:11815
+- js/openaf.js:11835
 
 <a id="api-mcp-continuerequest-c2909a8b"></a>
 
@@ -24,7 +24,7 @@ Explicitly continues one modern input_required round using registered handlers, 
 
 Sources:
 
-- js/openaf.js:11705
+- js/openaf.js:11711
 
 <a id="api-mcp-getagent-534579a8"></a>
 
@@ -48,7 +48,7 @@ print(agent);
 
 Sources:
 
-- js/openaf.js:11911
+- js/openaf.js:11931
 
 <a id="api-mcp-getappresource-2bebde8d"></a>
 
@@ -60,7 +60,7 @@ Reads a tool's ui:// App resource, retaining the complete envelope. Never evalua
 
 Sources:
 
-- js/openaf.js:11794
+- js/openaf.js:11814
 
 <a id="api-mcp-getcapabilities-81846c9e"></a>
 
@@ -72,7 +72,19 @@ Returns a copy of the negotiated server capabilities.
 
 Sources:
 
-- js/openaf.js:11587
+- js/openaf.js:11593
+
+<a id="api-mcp-getskill-e3334154"></a>
+
+## $mcp.getSkill
+
+### $mcp.getSkill(uri) : Map
+
+Retrieves skill metadata by its SKILL.md resource URI. Use readResource to fetch files.
+
+Sources:
+
+- js/openaf.js:11747
 
 <a id="api-mcp-gettoolui-798f8673"></a>
 
@@ -84,7 +96,7 @@ Returns a copy of a discovered tool's `_meta.ui` or undefined.
 
 Sources:
 
-- js/openaf.js:11782
+- js/openaf.js:11802
 
 <a id="api-mcp-hasapps-3e461f66"></a>
 
@@ -96,7 +108,7 @@ Reports whether discovered tools reference UI resources; does not imply a browse
 
 Sources:
 
-- js/openaf.js:11805
+- js/openaf.js:11825
 
 <a id="api-mcp-listagents-caaee617"></a>
 
@@ -119,7 +131,7 @@ print(agents.agents);
 
 Sources:
 
-- js/openaf.js:11886
+- js/openaf.js:11906
 
 <a id="api-mcp-listresourcetemplates-c772bb20"></a>
 
@@ -131,7 +143,7 @@ Collects resourceTemplates pages. URI template expansion is the caller's respons
 
 Sources:
 
-- js/openaf.js:11734
+- js/openaf.js:11754
 
 <a id="api-mcp-listresources-cc64d007"></a>
 
@@ -143,7 +155,19 @@ Collects resource pages with metadata. Requires advertised resources capability;
 
 Sources:
 
-- js/openaf.js:11727
+- js/openaf.js:11733
+
+<a id="api-mcp-listskills-a768bffc"></a>
+
+## $mcp.listSkills
+
+### $mcp.listSkills() : Map
+
+Collects skill entries from a server that advertises the Skills extension.
+
+Sources:
+
+- js/openaf.js:11740
 
 <a id="api-mcp-offnotification-09525da4"></a>
 
@@ -155,7 +179,7 @@ Removes the registered notification callback.
 
 Sources:
 
-- js/openaf.js:11644
+- js/openaf.js:11650
 
 <a id="api-mcp-offrequest-e18937bb"></a>
 
@@ -167,7 +191,7 @@ Removes the inbound handler and its optional capability from future requests.
 
 Sources:
 
-- js/openaf.js:11622
+- js/openaf.js:11628
 
 <a id="api-mcp-onelicitationrequest-3388ce92"></a>
 
@@ -179,7 +203,7 @@ Opts into elicitation; modes defaults to `{form:{}}`. URL mode requires version 
 
 Sources:
 
-- js/openaf.js:11666
+- js/openaf.js:11672
 
 <a id="api-mcp-onnotification-643d4b60"></a>
 
@@ -191,7 +215,7 @@ Registers one event callback `(params, message)` per method on a dedicated conne
 
 Sources:
 
-- js/openaf.js:11634
+- js/openaf.js:11640
 
 <a id="api-mcp-onrequest-5efb34ff"></a>
 
@@ -203,7 +227,7 @@ Registers a synchronous inbound handler `(params, request)` on a dedicated conne
 
 Sources:
 
-- js/openaf.js:11612
+- js/openaf.js:11618
 
 <a id="api-mcp-onsamplingrequest-c3286a68"></a>
 
@@ -215,7 +239,7 @@ Opts into basic sampling using a synchronous application handler. Register befor
 
 Sources:
 
-- js/openaf.js:11651
+- js/openaf.js:11657
 
 <a id="api-mcp-readresource-823b983c"></a>
 
@@ -227,7 +251,7 @@ Reads an absolute resource URI through MCP, retaining all text/blob contents, MI
 
 Sources:
 
-- js/openaf.js:11741
+- js/openaf.js:11761
 
 <a id="api-mcp-sendtoagent-0621e417"></a>
 
@@ -257,7 +281,7 @@ print(response.content[0].text);
 
 Sources:
 
-- js/openaf.js:11938
+- js/openaf.js:11958
 
 <a id="api-mcp-setroots-2294bc06"></a>
 
@@ -269,7 +293,7 @@ Sets explicit absolute file URI roots and registers roots/list. An empty array s
 
 Sources:
 
-- js/openaf.js:11684
+- js/openaf.js:11690
 
 <a id="api-mcp-startlistening-4a06a3e8"></a>
 
@@ -281,7 +305,7 @@ Opens one opt-in legacy HTTP GET event stream on an initialized dedicated client
 
 Sources:
 
-- js/openaf.js:11594
+- js/openaf.js:11600
 
 <a id="api-mcp-stoplistening-da0b8206"></a>
 
@@ -293,7 +317,7 @@ Closes the optional HTTP event stream; returns the client.
 
 Sources:
 
-- js/openaf.js:11605
+- js/openaf.js:11611
 
 <a id="api-mcp-subscriberesource-cbbf5f92"></a>
 
@@ -305,7 +329,7 @@ Subscribes on a dedicated legacy transport with resources.subscribe. Callback re
 
 Sources:
 
-- js/openaf.js:11748
+- js/openaf.js:11768
 
 <a id="api-mcp-togpttools-a770bc78"></a>
 
@@ -332,7 +356,7 @@ var response = gpt.prompt("Read the file /tmp/example.txt");
 
 Sources:
 
-- js/openaf.js:11989
+- js/openaf.js:12009
 
 <a id="api-mcp-unsubscriberesource-2c7cfa4c"></a>
 
@@ -344,5 +368,5 @@ Unsubscribes and removes its callback after a successful response.
 
 Sources:
 
-- js/openaf.js:11768
+- js/openaf.js:11788
 

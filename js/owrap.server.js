@@ -1716,8 +1716,8 @@ OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
         }
     } catch (e) {
         if (isNotification) return null
-        var skillError = ow.server.mcp.skillError(e, id)
-        if (isDef(skillError)) return skillError
+        var rpcError = ow.server.mcp.rpcError(e, id)
+        if (isDef(rpcError)) return rpcError
         return {
             jsonrpc: "2.0",
             id: id,
@@ -1896,14 +1896,17 @@ OpenWrap.server.prototype.mcp = {
 OpenWrap.server.prototype.mcp.skillsExtension = "io.modelcontextprotocol/skills"
 OpenWrap.server.prototype.mcp.skillFileLimit = 16 * 1024 * 1024
 
-// Convert skill-handler failures into JSON-RPC errors without exposing storage details.
-OpenWrap.server.prototype.mcp.SkillError = function(code, message) {
+// Serialize explicit protocol errors without exposing internal exception details.
+OpenWrap.server.prototype.mcp.RPCError = function(code, message, data) {
   this.code = code
   this.message = message
+  this.data = data
 }
-OpenWrap.server.prototype.mcp.skillError = function(error, id) {
-  if (error instanceof ow.server.mcp.SkillError) {
-    return { jsonrpc: "2.0", id: id, error: { code: error.code, message: error.message } }
+OpenWrap.server.prototype.mcp.rpcError = function(error, id) {
+  if (error instanceof ow.server.mcp.RPCError) {
+    var detail = { code: error.code, message: error.message }
+    if (isDef(error.data)) detail.data = error.data
+    return { jsonrpc: "2.0", id: id, error: detail }
   }
 }
 
@@ -2058,8 +2061,8 @@ OpenWrap.server.prototype.mcp.createSkillCatalog = function(sources, baseDir) {
   })
 
   // Page complete entries and return only public metadata over MCP.
-  var invalid = message => new ow.server.mcp.SkillError(-32602, message)
-  var internal = () => new ow.server.mcp.SkillError(-32603, "Could not read skill file")
+  var invalid = message => new ow.server.mcp.RPCError(-32602, message)
+  var internal = () => new ow.server.mcp.RPCError(-32603, "Could not read skill file")
   var complete = body => ow.server.mcp.wrapResult(body, "modern", { isList: true })
   var list = (items, field, params, pageSize) => {
     var cursor = isMap(params) ? params.cursor : __
@@ -2141,6 +2144,502 @@ OpenWrap.server.prototype.mcp.withSkills = function(description, catalog) {
   var capabilities = { resources: {}, extensions: {} }
   capabilities.extensions[ow.server.mcp.skillsExtension] = {}
   return merge(description, { capabilities: capabilities })
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.server.mcp.openWorkflows(definitions, options) : Map</key>
+ * Opens an endpoint's durable MCP Tasks and form continuation store. Definitions
+ * bind wire tool names to inline, managed or external callbacks. Close the returned
+ * runtime when the endpoint stops. Use a private state file per endpoint.
+ * </odoc>
+ */
+OpenWrap.server.prototype.mcp.openWorkflows = function(definitions, options) {
+  var mcp = ow.server.mcp, extension = "io.modelcontextprotocol/tasks"
+  var taskModes = Object.keys(definitions).some(name => definitions[name].mode !== "inline")
+  var maxWorkers = 4, maxQueue = 64, maxRecords = 1024
+  var ttl = 3600000, interval = 1000, deadline = 30000
+  var lock = new java.util.concurrent.locks.ReentrantLock()
+  var closed = false, running = Object.create(null), pending = Object.create(null), expires = Object.create(null)
+  var fail = (code, message, data) => { throw new mcp.RPCError(code, message, data) }
+  var invalid = message => fail(-32602, message)
+  var busy = () => fail(-32603, "MCP workflow capacity reached")
+  var terminal = status => ["completed", "failed", "cancelled"].indexOf(status) >= 0
+  var own = (obj, key) => isMap(obj) && Object.prototype.hasOwnProperty.call(obj, key)
+  var encode = value => JSON.stringify(value)
+  var copy = value => isUnDef(value) ? __ : JSON.parse(encode(value))
+  var canonical = value => {
+    if (isArray(value)) return "[" + value.map(canonical).join(",") + "]"
+    if (!isMap(value)) return encode(value)
+    return "{" + Object.keys(value).sort().map(key => encode(key) + ":" + canonical(value[key])).join(",") + "}"
+  }
+
+  // Open a private file and retain an exclusive store lock for the endpoint lifetime.
+  var file = new java.io.File(_$(options.file, "taskStore").isString().$_()).getCanonicalFile()
+  var path = file.toPath()
+  var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix")
+  if (posix && !file.exists()) {
+    java.nio.file.Files.createFile(path, java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+      java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")))
+  }
+  if (posix && String(java.nio.file.attribute.PosixFilePermissions.toString(java.nio.file.Files.getPosixFilePermissions(path))) !== "rw-------")
+    throw new Error("MCP taskStore must have permissions 0600")
+  var store = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled().fileName(String(path)).open()
+  var records = store.openMap("workflows"), metadata = store.openMap("metadata")
+  var atomic = fn => {
+    lock.lock()
+    try {
+      if (closed) fail(-32603, "MCP workflow store is closed")
+      return fn()
+    } finally {
+      lock.unlock()
+    }
+  }
+  var commit = () => {
+    try {
+      store.commit()
+      store.sync()
+    } catch (e) {
+      closed = true
+      try { store.closeImmediately() } catch (ignore) {}
+      fail(-32603, "MCP workflow state could not be committed")
+    }
+  }
+  var get = id => {
+    var raw = records.get(id)
+    return isNull(raw) ? __ : JSON.parse(String(raw))
+  }
+  var ids = () => af.fromJavaArray(records.keySet().toArray()).map(String)
+  var index = record => {
+    expires[record.id] = record.expires
+    if (isDef(record.phase)) pending[record.id] = { phase: record.phase, next: record.next || 0, created: record.created }
+    else delete pending[record.id]
+  }
+  var save = (id, record) => {
+    var text = encode(record)
+    if (text.length > 1024 * 1024) fail(-32603, "MCP workflow record exceeds the size limit")
+    records.put(id, text)
+    commit()
+    index(record)
+  }
+  var remove = id => {
+    records.remove(id)
+    commit()
+    delete pending[id]
+    delete expires[id]
+  }
+  var date = millis => new Date(millis).toISOString()
+  var publicTask = (record, type) => {
+    var result = { resultType: type, taskId: record.id, status: record.status, createdAt: date(record.created),
+                   lastUpdatedAt: date(record.updated), ttlMs: Math.max(0, record.expires - now()), pollIntervalMs: interval }
+    if (isDef(record.message)) result.statusMessage = record.message
+    if (type === "complete") {
+      if (record.status === "completed") result.result = record.result
+      if (record.status === "failed") result.error = record.error
+      if (record.status === "input_required") result.inputRequests = record.inputRequests
+    }
+    return result
+  }
+  var finish = (record, status, value) => {
+    record.status = status
+    record.updated = now()
+    record.expires = record.updated + ttl
+    delete record.phase
+    delete record.claim
+    delete record.inputRequests
+    delete record.inputResponses
+    delete record.state
+    delete record.arguments
+    delete record.ref
+    if (status === "completed") record.result = value
+    if (status === "failed") record.error = { code: -32603, message: value }
+  }
+
+  // A workflow form contains scalar or enumerated fields and at most one request per round.
+  ow.loadObj()
+  var formRequest = form => {
+    if (!isMap(form) || !isString(form.message) || !form.message.trim() || (isDef(form.mode) && form.mode !== "form"))
+      throw new Error("Expected an MCP elicitation form")
+    var schema = form.requestedSchema
+    if (!isMap(schema) || schema.type !== "object" || !isMap(schema.properties) ||
+        Object.keys(schema).some(key => ["type", "properties", "required", "additionalProperties", "$schema"].indexOf(key) < 0))
+      throw new Error("Expected a flat elicitation object schema")
+    var checkField = (field, arrayItem) => {
+      var allowed = ["type", "title", "description", "default", "enum", "enumNames", "minLength", "maxLength",
+                     "minimum", "maximum", "format", "items", "anyOf", "oneOf", "const", "minItems", "maxItems", "uniqueItems"]
+      if (!isMap(field) || Object.keys(field).some(key => allowed.indexOf(key) < 0)) return false
+      if (field.type === "array")
+        return !arrayItem && isMap(field.items) && checkField(field.items, true) &&
+          (isArray(field.items.enum) || isArray(field.items.anyOf) || isArray(field.items.oneOf))
+      var choices = field.oneOf || field.anyOf
+      if (isDef(choices) && (!isArray(choices) || choices.some(item =>
+        !isMap(item) || !isString(item.const) || Object.keys(item).some(key => key !== "const" && key !== "title")))) return false
+      return ["string", "number", "integer", "boolean"].indexOf(field.type) >= 0 ||
+        (isUnDef(field.type) && isArray(choices))
+    }
+    if (Object.keys(schema.properties).some(key => ["__proto__", "prototype", "constructor"].indexOf(key) >= 0 ||
+        !checkField(schema.properties[key], false)) || !ow.obj.schemaCheck(schema)) throw new Error("Invalid elicitation schema")
+    var requests = {}
+    requests[genUUID(true)] = { method: "elicitation/create",
+      params: { mode: "form", message: form.message, requestedSchema: copy(schema) } }
+    return requests
+  }
+  var formAnswers = (requests, supplied, strict) => {
+    if (!isMap(supplied)) invalid("Expected inputResponses")
+    var key = Object.keys(requests)[0]
+    if (!own(supplied, key)) {
+      if (strict) invalid("Missing elicitation answer")
+      return
+    }
+    var answer = supplied[key]
+    if (!isMap(answer) || ["accept", "decline", "cancel"].indexOf(answer.action) < 0) invalid("Invalid elicitation action")
+    if (answer.action === "accept") {
+      var schema = requests[key].params.requestedSchema
+      if (!isMap(answer.content) || Object.keys(answer.content).some(name => !own(schema.properties, name)) ||
+          (schema.required || []).some(name => !own(answer.content, name)))
+        invalid("Invalid elicitation content")
+      try { ow.obj.schemaValidate(schema, copy(answer.content)) }
+      catch (e) { invalid("Elicitation content does not match the schema") }
+    }
+    var result = {}
+    result[key] = { action: answer.action }
+    if (answer.action === "accept") result[key].content = copy(answer.content)
+    return result
+  }
+
+  // Run callbacks outside the store lock. Durable claims prevent automatic replay of a step.
+  var updateProgress = (id, message) => atomic(() => {
+    var record = get(id)
+    if (isDef(record) && record.status === "working" && isString(message)) {
+      record.message = message.substring(0, 1024)
+      record.updated = now()
+      save(id, record)
+    }
+  })
+  var callbackContext = record => ({
+    taskId: record.id,
+    ref: record.ref,
+    state: record.state,
+    inputResponses: record.inputResponses,
+    progress: message => updateProgress(record.id, message),
+    isCancelled: () => closed || atomic(() => {
+      var current = get(record.id)
+      return isUnDef(current) || current.status !== "working" || current.expires <= now() ||
+        (isDef(running[record.id]) && running[record.id] <= now())
+    })
+  })
+  var waitForInput = (record, output) => {
+    if (!definitions[record.tool].elicitation || (record.mode === "external" && !isFunction(definitions[record.tool].resume)))
+      throw new Error("MCP workflow has no form continuation")
+    record.inputRequests = formRequest(output.form)
+    record.state = copy(output.state)
+    record.status = "input_required"
+    delete record.inputResponses
+    delete record.phase
+  }
+  var validRef = ref => isDef(ref) && !isNull(ref) && encode(ref).length <= 16384
+  var applyOutput = (record, phase, output) => {
+    if (record.mode === "external" && phase === "start") {
+      if (!isMap(output) || !validRef(output.ref)) throw new Error("External start did not return a valid ref")
+      record.ref = copy(output.ref)
+      record.phase = "status"
+      record.next = now()
+      return
+    }
+    if (isMap(output) && output.status === "input_required") {
+      waitForInput(record, output)
+    } else if (record.mode === "external" && (isUnDef(output) || output.status === "working")) {
+      if (isMap(output) && isString(output.statusMessage)) record.message = output.statusMessage.substring(0, 1024)
+      record.phase = "status"
+      record.next = now() + interval
+      delete record.inputResponses
+      delete record.state
+    } else if (record.mode === "external" && isMap(output) && output.status === "cancelled") {
+      finish(record, "cancelled")
+    } else if (record.mode === "external" && isMap(output) && output.status === "failed" &&
+               isMap(output.error) && isNumber(output.error.code) && isString(output.error.message)) {
+      finish(record, "failed", output.error.message)
+      record.error.code = output.error.code
+    } else {
+      if (record.mode === "external" && isMap(output) && output.status === "completed") output = output.result
+      if (!isMap(output) || !isArray(output.content)) throw new Error("Expected a tool result")
+      finish(record, "completed", output)
+    }
+  }
+  var execute = (id, record, phase, callback) => {
+    var output, failed = false
+    try {
+      output = callback(copy(record.arguments || {}), callbackContext(record))
+    } catch (e) {
+      failed = true
+    } finally {
+      if (!closed) atomic(() => {
+        var timedOut = running[id] <= now()
+        delete running[id]
+        var current = get(id)
+        if (isUnDef(current) || current.claim !== record.claim) return
+        delete current.claim
+        if (phase === "cancel") {
+          delete current.phase
+          delete current.ref
+          delete current.arguments
+        } else if (current.status === "cancelled") {
+          if (phase === "start" && !failed && isMap(output) && validRef(output.ref) &&
+              isFunction(definitions[record.tool].cancel)) {
+            current.ref = copy(output.ref)
+            current.phase = "cancel"
+          }
+          if (isUnDef(current.phase)) delete current.arguments
+        } else {
+          current.updated = now()
+          try {
+            if (failed || timedOut) throw new Error("Callback failed")
+            applyOutput(current, phase, output)
+            if (encode(current).length > 1024 * 1024) throw new Error("Workflow result too large")
+          } catch (e) {
+            finish(current, "failed", "MCP workflow step failed")
+          }
+        }
+        save(id, current)
+      })
+    }
+  }
+  var recover = () => ids().forEach(id => {
+    var record = get(id)
+    if (record.expires <= now()) return remove(id)
+    index(record)
+    if (record.mode === "inline") return
+    if (!own(definitions, record.tool) || definitions[record.tool].mode !== record.mode) {
+      if (!terminal(record.status)) {
+        finish(record, "failed", "MCP workflow configuration changed")
+        save(id, record)
+      } else if (isDef(record.phase)) {
+        delete record.phase
+        delete record.claim
+        save(id, record)
+      }
+      return
+    }
+    if (isUnDef(record.claim)) return
+    if (record.status === "cancelled") {
+      delete record.phase
+      delete record.claim
+      delete record.ref
+      delete record.arguments
+    } else if (record.mode === "external" && isDef(record.ref)) {
+      // Reconcile with the external system without resending a possibly accepted answer.
+      record.phase = "status"
+      record.next = now()
+      delete record.claim
+      delete record.inputResponses
+      delete record.state
+    } else {
+      finish(record, "failed", "MCP workflow step was interrupted")
+    }
+    save(id, record)
+  })
+  var tick = () => {
+    if (closed) return
+    atomic(() => {
+      var time = now()
+      Object.keys(expires).forEach(id => {
+        if (expires[id] <= time && isUnDef(running[id])) remove(id)
+      })
+      Object.keys(pending).sort((a, b) => pending[a].created - pending[b].created).forEach(id => {
+        var queued = pending[id]
+        if (isDef(running[id])) {
+          if (running[id] <= time) {
+            var active = get(id)
+            if (active.mode === "external" && active.status === "working") {
+              finish(active, "failed", "External MCP workflow callback timed out")
+              save(id, active)
+            }
+          }
+          return
+        }
+        if (queued.next > time || Object.keys(running).length >= maxWorkers) return
+        var record = get(id), phase = record.phase, definition = definitions[record.tool], callback = definition[phase]
+        record.claim = genUUID(true)
+        save(id, record)
+        running[id] = record.mode === "external" ? now() + deadline : Infinity
+        $doV(() => execute(id, record, phase, callback))
+      })
+    })
+  }
+
+  // Bind requests to their endpoint and authenticated owner.
+  var authorize = owner => {
+    if (!isString(owner) || !owner.trim()) fail(-32001, "MCP workflow requires an authenticated principal")
+  }
+  var clientCaps = params => mcp.metaClientCapabilities({ params: params }) || {}
+  var hasTasks = caps => own(caps.extensions, extension) && isMap(caps.extensions[extension])
+  var hasForm = caps => isMap(caps.elicitation) &&
+    (Object.keys(caps.elicitation).length === 0 || isMap(caps.elicitation.form))
+  var requireCapability = required => fail(-32021, "Missing required client capability", { requiredCapabilities: required })
+  var capacity = () => {
+    if (records.size() >= maxRecords) busy()
+  }
+  var queueCapacity = () => {
+    if (Object.keys(pending).filter(id => isUnDef(running[id]) &&
+        (pending[id].phase === "start" || pending[id].phase === "resume")).length >= maxQueue) busy()
+  }
+  var safeArguments = (value, depth) => {
+    if (depth > 64) invalid("MCP tool arguments are too deeply nested")
+    if (isArray(value)) value.forEach(item => safeArguments(item, depth + 1))
+    if (isMap(value)) Object.keys(value).forEach(key => {
+      if (["__proto__", "constructor", "prototype"].indexOf(key) >= 0) invalid("Invalid MCP tool argument key")
+      safeArguments(value[key], depth + 1)
+    })
+  }
+  var call = (params, owner, fallback) => {
+    authorize(owner)
+    var definition = definitions[params.name], caps = clientCaps(params)
+    var modern = mcp.isModern(mcp.metaProtocolVersion({ params: params }))
+    var args = params.arguments || params.input || {}
+    if (!isMap(args)) invalid("Expected tool arguments")
+    safeArguments(args, 0)
+    if (definition.mode !== "inline" && (!modern || !hasTasks(caps))) {
+      if (definition.fallback === "sync" && !isDef(params.requestState) && !isDef(params.inputResponses)) {
+        var fallbackArgs = copy(args)
+        delete fallbackArgs.mcp
+        delete fallbackArgs.mcpResult
+        var fallbackParams = { name: params.name, arguments: fallbackArgs }
+        return fallback(fallbackParams)
+      }
+      var extensions = {}
+      extensions[extension] = {}
+      requireCapability({ extensions: extensions })
+    }
+    if (definition.elicitation && (!modern || !hasForm(caps))) requireCapability({ elicitation: { form: {} } })
+    if (definition.mode !== "inline") return atomic(() => {
+      if (isDef(params.requestState) || isDef(params.inputResponses)) invalid("Use tasks/update to answer a task form")
+      capacity()
+      queueCapacity()
+      var id = genUUID(true), time = now()
+      var record = { id: id, mode: definition.mode, owner: owner, tool: params.name, arguments: copy(args),
+                     status: "working", phase: "start", created: time, updated: time, expires: time + ttl }
+      save(id, record)
+      return publicTask(record, "task")
+    })
+
+    var ctx = {}, handler = definition.start
+    if (isDef(params.requestState) || isDef(params.inputResponses)) {
+      var token = params.requestState
+      ctx = atomic(() => {
+        var record = isString(token) ? get(token) : __
+        if (isUnDef(record) || record.mode !== "inline" || record.owner !== owner || record.tool !== params.name ||
+            record.expires <= now() || record.argumentDigest !== sha256(canonical(args))) invalid("Invalid workflow continuation")
+        var answers = formAnswers(record.inputRequests, params.inputResponses, true)
+        remove(token)
+        return { state: record.state, inputResponses: answers }
+      })
+      handler = definition.resume
+    }
+    var output = handler(copy(args), ctx)
+    if (!isMap(output) || output.status !== "input_required") return output
+    if (!definition.elicitation) fail(-32603, "Elicitation is disabled for this workflow")
+    return atomic(() => {
+      capacity()
+      var token = genUUID(true), inputRequests = formRequest(output.form)
+      save(token, { id: token, created: now(), mode: "inline", tool: params.name, owner: owner, expires: now() + ttl,
+                    argumentDigest: sha256(canonical(args)), inputRequests: inputRequests, state: copy(output.state) })
+      return { resultType: "input_required", requestState: token, inputRequests: inputRequests }
+    })
+  }
+  var task = (method, params, owner) => atomic(() => {
+    authorize(owner)
+    if (!mcp.isModern(mcp.metaProtocolVersion({ params: params }))) fail(-32601, "Method not found")
+    var record = isMap(params) && isString(params.taskId) ? get(params.taskId) : __
+    if (isUnDef(record) || record.mode === "inline" || record.owner !== owner || record.expires <= now())
+      invalid("Unknown MCP task")
+    if (method === "get") return publicTask(record, "complete")
+    if (method === "update" && record.status === "input_required") {
+      var answers = formAnswers(record.inputRequests, params.inputResponses, false)
+      if (isDef(answers)) {
+        queueCapacity()
+        record.inputResponses = answers
+        record.status = "working"
+        record.phase = "resume"
+        record.updated = now()
+        delete record.inputRequests
+        save(record.id, record)
+      }
+    }
+    if (method === "cancel" && !terminal(record.status)) {
+      var ref = record.ref, claim = record.claim, input = record.arguments
+      var cancelCallback = own(definitions, record.tool) && isFunction(definitions[record.tool].cancel)
+      finish(record, "cancelled")
+      if (isDef(claim)) record.claim = claim
+      if (cancelCallback && (isDef(ref) || isDef(claim))) {
+        record.arguments = input
+        if (isDef(ref)) {
+          record.ref = ref
+          record.phase = "cancel"
+        }
+      }
+      save(record.id, record)
+    }
+    return { resultType: "complete" }
+  })
+
+  // Start the scheduler only after recovery and release the file on teardown.
+  var scheduler
+  var close = () => {
+    if (isDef(scheduler)) scheduler.stop(false)
+    lock.lock()
+    try {
+      if (!closed) {
+        closed = true
+        store.close()
+      }
+    } finally {
+      lock.unlock()
+    }
+  }
+  try {
+    var namespace = metadata.get("endpoint")
+    if (!isNull(namespace) && String(namespace) !== options.namespace) throw new Error("MCP taskStore belongs to another endpoint")
+    metadata.put("endpoint", options.namespace)
+    commit()
+    recover()
+    plugin("Threads")
+    scheduler = new Threads()
+    scheduler.addScheduleThreadWithFixedDelay(tick, 100)
+    addOnOpenAFShutdown(close)
+  } catch (e) {
+    close()
+    throw e
+  }
+
+  return {
+    close: close,
+    describe: description => {
+      if (!taskModes) return description
+      var extensions = {}
+      extensions[extension] = {}
+      return merge(description, { capabilities: { extensions: extensions } })
+    },
+    bind: (methods, request, owner) => {
+      // Notifications cannot start work or consume a form answer.
+      var notifier = isUnDef(request.id) || isNull(request.id)
+      var supplied = isArray(request.params) ? request.params[0] : request.params
+      if (request.method === "tools/call" && isMap(supplied) && isString(supplied.name) && own(definitions, supplied.name)) {
+        var fallback = methods["tools/call"]
+        methods["tools/call"] = params => {
+          if (notifier) return
+          if (!isMap(request.params)) invalid("Expected named tool parameters")
+          return call(params, owner, fallback)
+        }
+      }
+      if (taskModes && ["tasks/get", "tasks/update", "tasks/cancel"].indexOf(request.method) >= 0)
+        methods[request.method] = params => {
+          if (notifier) return
+          if (!isMap(request.params)) invalid("Expected named task parameters")
+          return task(request.method.substring(6), params, owner)
+        }
+      return methods
+    }
+  }
 }
 
 /**
@@ -2352,11 +2851,20 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
                 return global.__a2a__.send(params.id, params.message, params.options || {}, params.context || {})
             }*/
         }, opts.modern ? {
-            "server/discover": () => ow.server.mcp.discoverResult(initData)
+            "server/discover": () => ow.server.mcp.discoverResult(isDef(opts.workflows) ? opts.workflows.describe(initData) : initData)
         } : {})
         if (isDef(opts.skillCatalog)) Object.keys(opts.skillCatalog.methods).forEach(method => {
             _methods[method] = params => _wrap(opts.skillCatalog.methods[method](params))
         })
+        if (opts.modern && isDef(opts.workflows)) {
+            var selected = _pline.method
+            var original = _methods[selected]
+            opts.workflows.bind(_methods, _pline, opts.workflowOwner)
+            if (isFunction(_methods[selected]) && _methods[selected] !== original) {
+                var workflow = _methods[selected]
+                _methods[selected] = params => _wrap(workflow(params))
+            }
+        }
         var _res = ow.server.jsonRPC(_pline, _methods)
 
         // JSON-RPC notifications return null by design; don't emit a stray "null" line on stdio.
@@ -4699,6 +5207,7 @@ OpenWrap.server.prototype.httpd = {
                 }
                 _respHeaders["MCP-Protocol-Version"] = _reqVersion
             }
+            if (opts.modern && isDef(opts.workflows)) opts.workflows.bind(mapOfFunctions, reqObj, opts.workflowOwner)
             // JSON-RPC notification (no id): the Streamable HTTP transport requires a bare
             // 202 Accepted with no body - HTTP 404 is reserved for an expired session
             if (isUnDef(reqObj.id) || isNull(reqObj.id)) {
@@ -4730,8 +5239,8 @@ OpenWrap.server.prototype.httpd = {
                     id: reqObj.id
                 }, 200, "application/json", _respHeaders)
             } catch(e) {
-                var skillError = ow.server.mcp.skillError(e, reqObj.id)
-                if (isDef(skillError)) return ow.server.httpd.reply(skillError, 200, "application/json", _respHeaders)
+                var rpcError = ow.server.mcp.rpcError(e, reqObj.id)
+                if (isDef(rpcError)) return ow.server.httpd.reply(rpcError, 200, "application/json", _respHeaders)
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",

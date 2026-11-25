@@ -390,7 +390,7 @@ Example: `af.fromJSONC('{"port":8080, // HTTP\n}', {allowTrailingComma:true})`.
 
 Sources:
 
-- js/openaf.js:13532
+- js/openaf.js:13552
 
 <a id="api-af-fromjava2js-430856a7"></a>
 
@@ -402,7 +402,7 @@ Tries to convert the provided Java object to a native javascript object
 
 Sources:
 
-- js/openaf.js:7071
+- js/openaf.js:7072
 
 <a id="api-af-fromjavamap-9ff8d92b"></a>
 
@@ -426,7 +426,7 @@ Tries to convert aMap into a similiar XML strucuture returned as string. Note th
 
 Sources:
 
-- js/openaf.js:14528
+- js/openaf.js:14548
 
 <a id="api-af-fromstring2bytes-ce6e043a"></a>
 
@@ -475,7 +475,7 @@ Tries to parse aTOML into a javascript object
 
 Sources:
 
-- js/openaf.js:13701
+- js/openaf.js:13721
 
 <a id="api-af-fromtoonjava-8f35360a"></a>
 
@@ -511,7 +511,7 @@ Tries to convert a XML object into a javascript object. Tag attributes will be i
 
 Sources:
 
-- js/openaf.js:14451
+- js/openaf.js:14471
 
 <a id="api-af-get2fatoken-66496fde"></a>
 
@@ -695,7 +695,7 @@ Returns aValue if it is defined or aDefault otherwise.
 
 Sources:
 
-- js/openaf.js:13737
+- js/openaf.js:13757
 
 <a id="api-af-p-0acd93a2"></a>
 
@@ -841,7 +841,7 @@ myOpen; // AF Class
 
 Sources:
 
-- js/openaf.js:13145
+- js/openaf.js:13165
 
 <a id="api-af-securerandom-5e705186"></a>
 
@@ -982,7 +982,7 @@ Original formatting and comments are not preserved. Output uses LF without trail
 
 Sources:
 
-- js/openaf.js:13609
+- js/openaf.js:13629
 
 <a id="api-af-totoml-e8f9d2d1"></a>
 
@@ -994,7 +994,7 @@ Tries to convert aObj into a TOML string.
 
 Sources:
 
-- js/openaf.js:13722
+- js/openaf.js:13742
 
 <a id="api-af-totoonjava-ac6d392a"></a>
 

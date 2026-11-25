@@ -33,7 +33,7 @@ Loads OpenWrap AI functionality.
 
 Sources:
 
-- js/openaf.js:7579
+- js/openaf.js:7580
 
 <a id="api-ow-loadch-ea3ebc02"></a>
 
@@ -45,7 +45,7 @@ Loads OpenWrap channels functionality.
 
 Sources:
 
-- js/openaf.js:7635
+- js/openaf.js:7636
 
 <a id="api-ow-loaddebug-54a2a1fe"></a>
 
@@ -57,7 +57,7 @@ Loads OpenWrap debug functionality.
 
 Sources:
 
-- js/openaf.js:7535
+- js/openaf.js:7536
 
 <a id="api-ow-loaddesktop-9782a614"></a>
 
@@ -69,7 +69,7 @@ Loads the optional provider-independent HTML desktop facade. JavaFX support is s
 
 Sources:
 
-- js/openaf.js:7666
+- js/openaf.js:7667
 
 <a id="api-ow-loaddev-15cf20aa"></a>
 
@@ -81,7 +81,7 @@ Loads OpenWrap dev functionality. Basically functions being tested.
 
 Sources:
 
-- js/openaf.js:7542
+- js/openaf.js:7543
 
 <a id="api-ow-loadformat-f995be3f"></a>
 
@@ -93,7 +93,7 @@ Loads OpenWrap format functionality. Basically functions to help with the format
 
 Sources:
 
-- js/openaf.js:7563
+- js/openaf.js:7564
 
 <a id="api-ow-loadinstrumentation-ea425915"></a>
 
@@ -105,7 +105,7 @@ Loads the opt-in generic instrumentation module. Loading does not enable capture
 
 Sources:
 
-- js/openaf.js:7601
+- js/openaf.js:7602
 
 <a id="api-ow-loadjava-1548a9a8"></a>
 
@@ -117,7 +117,7 @@ Loads OpenWrap Java functionality.
 
 Sources:
 
-- js/openaf.js:7658
+- js/openaf.js:7659
 
 <a id="api-ow-loadmetrics-6c2ad268"></a>
 
@@ -129,7 +129,7 @@ Loads OpenWrap Metrics functionality. Basically functions to wrap access to serv
 
 Sources:
 
-- js/openaf.js:7595
+- js/openaf.js:7596
 
 <a id="api-ow-loadnet-dfd7a18a"></a>
 
@@ -141,7 +141,7 @@ Loads OpenWrap net functionality. Basically functions for net.
 
 Sources:
 
-- js/openaf.js:7549
+- js/openaf.js:7550
 
 <a id="api-ow-loadobook-27b5e168"></a>
 
@@ -153,7 +153,7 @@ Loads OpenWrap oBook functionality.
 
 Sources:
 
-- js/openaf.js:7651
+- js/openaf.js:7652
 
 <a id="api-ow-loadojob-f77963b7"></a>
 
@@ -165,7 +165,7 @@ Loads OpenWrap oJob functionality.
 
 Sources:
 
-- js/openaf.js:7643
+- js/openaf.js:7644
 
 <a id="api-ow-loadobj-a0765cfa"></a>
 
@@ -177,7 +177,7 @@ Loads OpenWrap object functionality.
 
 Sources:
 
-- js/openaf.js:7627
+- js/openaf.js:7628
 
 <a id="api-ow-loadpython-f5f7d5ff"></a>
 
@@ -189,7 +189,7 @@ Loads OpenWrap Python functionality.
 
 Sources:
 
-- js/openaf.js:7611
+- js/openaf.js:7612
 
 <a id="api-ow-loadscreen-c411ad75"></a>
 
@@ -201,7 +201,7 @@ Loads the OpenWrap Screen TUI and terminal styling/layout library. Provides full
 
 Sources:
 
-- js/openaf.js:7680
+- js/openaf.js:7681
 
 <a id="api-ow-loadsec-f5b03943"></a>
 
@@ -213,7 +213,7 @@ Loads OpenWrap sec functionality. Basically functions for sec.
 
 Sources:
 
-- js/openaf.js:7556
+- js/openaf.js:7557
 
 <a id="api-ow-loadserver-8ef8ecc6"></a>
 
@@ -225,7 +225,7 @@ Loads OpenWrap Server functionality. Basically functions to wrap access to serve
 
 Sources:
 
-- js/openaf.js:7587
+- js/openaf.js:7588
 
 <a id="api-ow-loadtemplate-bb904b9c"></a>
 
@@ -237,7 +237,7 @@ Loads OpenWrap template functionality. Basically functions to wrap access to Han
 
 Sources:
 
-- js/openaf.js:7619
+- js/openaf.js:7620
 
 <a id="api-ow-loadtest-2cffd044"></a>
 
@@ -249,5 +249,5 @@ Loads OpenWrap test functionality. Basically functions to unit test other functi
 
 Sources:
 
-- js/openaf.js:7571
+- js/openaf.js:7572
 

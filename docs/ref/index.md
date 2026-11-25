@@ -47,4 +47,4 @@
 - [ow](ow/index.md)
 - [pods](pods/index.md)
 
-1910 APIs; 1921 entries from 238 source files.
+1913 APIs; 1924 entries from 238 source files.

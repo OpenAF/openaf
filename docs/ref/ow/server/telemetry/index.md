@@ -12,7 +12,7 @@ Setup recurrent execution of aSendFunc with the propose of sending ow.metrics fo
 
 Sources:
 
-- js/owrap.server.js:2392
+- js/owrap.server.js:2651
 
 <a id="api-ow-server-telemetry-passive-b5c10cb4"></a>
 
@@ -24,7 +24,7 @@ Setup a HTTPd server on aHTTPdOrPort (defaults to 7777) on the aURI (defaults to
 
 Sources:
 
-- js/owrap.server.js:2351
+- js/owrap.server.js:2610
 
 <a id="api-ow-server-telemetry-send2prometheus-512f90b8"></a>
 
@@ -36,7 +36,7 @@ Returns a function to be used with ow.server.telemetry.active to send metrics to
 
 Sources:
 
-- js/owrap.server.js:2437
+- js/owrap.server.js:2696
 
 <a id="api-ow-server-telemetry-send2nattrmon-6cdfa580"></a>
 
@@ -48,5 +48,5 @@ Returns a function to be used with ow.server.telemetry.active to send metrics to
 
 Sources:
 
-- js/owrap.server.js:2409
+- js/owrap.server.js:2668
 

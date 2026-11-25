@@ -10052,7 +10052,9 @@ const $jsonrpc = function (aOptions) {
 					if (isUnDef(_requestProtocol)) _requestProtocol = _mcpInfo.protocolVersion
 					if (isString(_requestProtocol) && _requestProtocol >= "2026-07-28" && isString(_req.method)) {
 						_restOptions.requestHeaders["Mcp-Method"] = _req.method
-						if (isString(aParams.name)) _restOptions.requestHeaders["Mcp-Name"] = aParams.name
+						if (["tasks/get", "tasks/update", "tasks/cancel"].indexOf(_req.method) >= 0 && isString(aParams.taskId))
+							_restOptions.requestHeaders["Mcp-Name"] = aParams.taskId
+						else if (isString(aParams.name)) _restOptions.requestHeaders["Mcp-Name"] = aParams.name
 					}
 					var _http = ow.loadObj().rest.connectionFactory()
 					try {
@@ -11110,8 +11112,15 @@ const $mcp = function(aOptions) {
       finally { _releaseCallback() }
     })
 
+	const _taskExtension = "io.modelcontextprotocol/tasks"
 	const _clientCapabilities = version => {
 		var caps = clone(aOptions.capabilities)
+		if (version >= "2026-07-28" && aOptions.tasks === true) {
+			if (!isMap(caps.extensions)) caps.extensions = {}
+			caps.extensions[_taskExtension] = {}
+		} else if (isMap(caps.extensions)) {
+			delete caps.extensions[_taskExtension]
+		}
 		if (version < "2025-06-18") delete caps.elicitation
 		else if (version < "2025-11-25" && isMap(caps.elicitation)) {
 			delete caps.elicitation.url
@@ -11501,6 +11510,22 @@ const $mcp = function(aOptions) {
 		if (!_r._initialized) throw new Error("MCP client not initialized. Call initialize() first.")
 		if (!isMap(_r._capabilities.resources)) throw new Error("MCP server does not advertise resources")
 	}
+	const _taskRequest = (method, taskId, responses) => {
+		if (!_r._initialized || _r._era !== "modern" || !isMap(_r._capabilities.extensions) ||
+		    !isMap(_r._capabilities.extensions[_taskExtension])) throw new Error("MCP server does not advertise modern Tasks")
+		var params = { taskId: _$(taskId, "taskId").isString().$_() }
+		if (isDef(responses)) params.inputResponses = _$(responses, "inputResponses").isMap().$_()
+		return _execWithAuth(method, params)
+	}
+	const _answerInputRequests = requests => {
+		var responses = Object.create(null)
+		Object.keys(requests || {}).forEach(key => {
+			var response = _jsonrpc.handleRequest(requests[key])
+			if (isDef(response.error)) throw new Error("MCP input request failed: " + response.error.message)
+			responses[key] = response.result
+		})
+		return responses
+	}
 	const _requireSkills = () => {
 		_requireResources()
 		if (!isMap(_r._capabilities.extensions) || !isMap(_r._capabilities.extensions["io.modelcontextprotocol/skills"]))
@@ -11706,6 +11731,38 @@ const $mcp = function(aOptions) {
 			if (_r._initialized && _r._era == "legacy") _execWithAuth("notifications/roots/list_changed", {}, true)
 			return _r
 		},
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.getTask(taskId) : Map</key>
+		 * Polls an MCP task. Pass tasks: true when constructing the client to opt into task creation.
+		 * </odoc>
+		 */
+		getTask: taskId => _taskRequest("tasks/get", taskId),
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.updateTask(taskId, inputResponses) : Map</key>
+		 * Sends answers keyed by the outstanding task input request IDs.
+		 * </odoc>
+		 */
+		updateTask: (taskId, inputResponses) => _taskRequest("tasks/update", taskId, _$(inputResponses).isMap().$_()),
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.cancelTask(taskId) : Map</key>
+		 * Requests cooperative cancellation of an MCP task.
+		 * </odoc>
+		 */
+		cancelTask: taskId => _taskRequest("tasks/cancel", taskId),
+		/**
+		 * <odoc format="markdown">
+		 * <key>$mcp.continueTask(task) : Map</key>
+		 * Explicitly invokes the registered handlers for a paused task, then sends their answers.
+		 * </odoc>
+		 */
+		continueTask: task => {
+			if (!isMap(task) || task.status !== "input_required" || !isMap(task.inputRequests))
+				throw new Error("Expected an MCP task waiting for input")
+			return _taskRequest("tasks/update", task.taskId, _answerInputRequests(task.inputRequests))
+		},
 		// Explicit MRTR retry only: callers supply the original method and params, never global lastRequest.
 		/**
 		 * <odoc format="markdown">
@@ -11716,13 +11773,8 @@ const $mcp = function(aOptions) {
 		continueRequest: (method, params, inputRequired) => {
 			if (_r._era != "modern" || !_r.isInputRequired(inputRequired)) throw new Error("Expected modern input_required result")
 			if (method == "tools/call" && _isToolBlacklisted(params.name)) throw new Error("MCP tool is blacklisted")
-			var next = clone(params || {}), responses = {}
-			Object.keys(inputRequired.inputRequests || {}).forEach(key => {
-				var response = _jsonrpc.handleRequest(inputRequired.inputRequests[key])
-				if (isDef(response.error)) throw new Error("MCP input request failed: " + response.error.message)
-				responses[key] = response.result
-			})
-			next.inputResponses = responses
+			var next = clone(params || {})
+			next.inputResponses = _answerInputRequests(inputRequired.inputRequests)
 			if (isDef(inputRequired.requestState)) next.requestState = inputRequired.requestState
 			if (method == "tools/call" && isFunction(aOptions.preFn)) aOptions.preFn(next.name, next.arguments)
 			var result = _execWithAuth(method, next)

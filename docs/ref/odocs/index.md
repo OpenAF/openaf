@@ -24,7 +24,7 @@ Returns the raw entry for a subject and key, loading missing subjects lazily and
 
 Sources:
 
-- js/odoc.js:313
+- js/odoc.js:331
 
 <a id="api-odocs-getodoc-df342701"></a>
 
@@ -36,7 +36,7 @@ Returns a currently loaded subject without loading it. Returns undefined if the 
 
 Sources:
 
-- js/odoc.js:333
+- js/odoc.js:351
 
 <a id="api-odocs-load-b5691e9a"></a>
 
@@ -48,7 +48,7 @@ Loads a local documentation index and optionally one subject. Uses the remembere
 
 Sources:
 
-- js/odoc.js:242
+- js/odoc.js:260
 
 <a id="api-odocs-loadfile-c58947bc"></a>
 
@@ -72,7 +72,7 @@ Loads web documentation from the configured URLs, trying the next URL on invalid
 
 Sources:
 
-- js/odoc.js:194
+- js/odoc.js:212
 
 <a id="api-odocs-save-f70e55ac"></a>
 
@@ -108,5 +108,5 @@ Returns id/key candidates across the selected subjects. Prefers case-sensitive e
 
 Sources:
 
-- js/odoc.js:279
+- js/odoc.js:297
 
