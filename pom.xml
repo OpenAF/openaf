@@ -345,7 +345,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.7.14</version>
+      <version>42.7.15</version>
     </dependency>
     <dependency>
       <groupId>org.snmp4j</groupId>
