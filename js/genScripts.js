@@ -157,20 +157,20 @@ function generateWinJobBat() {
 }
 
 function generateWinPyBat() {
-  var s;
+  var s
 
-  s = "@echo off\n\n";
+  s = "@echo off\n\n"
   s = s + "setlocal EnableExtensions DisableDelayedExpansion\n"
   s = s + "set thispath=%~dp0\n"
   s = s + "set DIR=%thispath:~0,-1%\n"
-  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
-  s = s + "set \"JAVA_HOME=" + javaHome + "\"\n";
-  s = s + "set \"OAF_DIR=" + classPath + "\"\n";
-  s = s + "\n";
-  s = s + "chcp 65001 > NUL\n";
-  s += "\"%JAVA_HOME%\\bin\\java\" %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar \"%OAF_DIR%\" --py %*\n";
-  s += "exit /b %ERRORLEVEL%\n";
-  return s;
+  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n"
+  s = s + "set \"JAVA_HOME=" + javaHome + "\"\n"
+  s = s + "set \"OAF_DIR=" + classPath + "\"\n"
+  s = s + "\n"
+  s = s + "chcp 65001 > NUL\n"
+  s += "\"%JAVA_HOME%\\bin\\java\" %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar \"%OAF_DIR%\" --py %*\n"
+  s += "exit /b %ERRORLEVEL%\n"
+  return s
 }
 
 function generateWinUpdateBat() {
@@ -206,8 +206,8 @@ function generateWinConsoleBat() {
   s = s + "\n";
   s = s + "chcp 65001 > NUL\n";
   //s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --console %*";
-  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --console %*";
-  return s;
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -jar %OAF_DIR% --console %*"
+  return s
 }
 
 // Returns a sh snippet that keeps a copy of the current terminal settings and
@@ -216,42 +216,42 @@ function generateWinConsoleBat() {
 // snapshot is unavailable, a launcher that changed the terminal falls back to
 // `stty sane` so it cannot leave the invoking shell unusable.
 function genUnixSttyRestore() {
-  var s;
+  var s
 
-  s  = "__oaf_stty=`stty -g 2>/dev/null </dev/tty`\n";
-  s += "__oaf_stty_changed=0\n";
-  s += "__oaf_stty_restore() {\n";
-  s += "  if [ -n \"$__oaf_stty\" ]; then\n";
-  s += "    stty \"$__oaf_stty\" 2>/dev/null </dev/tty\n";
-  s += "  elif [ \"$__oaf_stty_changed\" = 1 ]; then\n";
-  s += "    stty sane 2>/dev/null </dev/tty\n";
-  s += "  fi\n";
-  s += "}\n";
+  s  = "__oaf_stty=`stty -g 2>/dev/null </dev/tty`\n"
+  s += "__oaf_stty_changed=0\n"
+  s += "__oaf_stty_restore() {\n"
+  s += "  if [ -n \"$__oaf_stty\" ]; then\n"
+  s += "    stty \"$__oaf_stty\" 2>/dev/null </dev/tty\n"
+  s += "  elif [ \"$__oaf_stty_changed\" = 1 ]; then\n"
+  s += "    stty sane 2>/dev/null </dev/tty\n"
+  s += "  fi\n"
+  s += "}\n"
   // Signal 0 is the POSIX spelling for the shell-exit trap. Use it instead of
   // the common-but-non-portable EXIT alias because generated launchers use
   // /bin/sh.
-  s += "trap '__oaf_stty_restore' 0\n";
-  s += "trap '__oaf_stty_restore; exit 130' INT\n";
-  s += "trap '__oaf_stty_restore; exit 143' TERM\n";
-  s += "trap '__oaf_stty_restore; exit 129' HUP\n";
-  s += "trap '__oaf_stty_restore; exit 131' QUIT\n";
-  return s;
+  s += "trap '__oaf_stty_restore' 0\n"
+  s += "trap '__oaf_stty_restore; exit 130' INT\n"
+  s += "trap '__oaf_stty_restore; exit 143' TERM\n"
+  s += "trap '__oaf_stty_restore; exit 129' HUP\n"
+  s += "trap '__oaf_stty_restore; exit 131' QUIT\n"
+  return s
 }
 
 function generateUnixPyScript() {
-  var s;
+  var s
 
-  s = "#!" + shLocation + "\n";
+  s = "#!" + shLocation + "\n"
   s += "CDIR=`pwd`\n"
   s += "cd \"$(dirname \"$0\")\"\n"
   s += "DIR=`pwd`\n"
   s += "cd \"$CDIR\"\n"
   s += genUnixSttyRestore()
-  s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
-  s += "OAF_DIR=\"" + classPath + "\"\n";
-  if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
-  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar \"$OAF_DIR\" --py \"$@\"\n";
-  s += "exit $?\n";
+  s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n"
+  s += "OAF_DIR=\"" + classPath + "\"\n"
+  if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n"
+  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar \"$OAF_DIR\" --py \"$@\"\n"
+  s += "exit $?\n"
   return s;
 }
 
@@ -297,8 +297,8 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "cd \"$CDIR\"\n"
   s += genUnixSttyRestore()
   // isCon == "notty": only when stdin isn't the terminal (e.g. oafp reading typed input needs canonical mode for Ctrl-D/echo)
-  if (isCon == "notty") s += "if [ ! -t 0 ] && stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
-  else if (isCon) s += "if stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n";
+  if (isCon == "notty") s += "if [ ! -t 0 ] && stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n"
+  else if (isCon) s += "if stty -icanon min 1 -echo 2>/dev/null </dev/tty; then __oaf_stty_changed=1; fi\n"
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
@@ -327,11 +327,11 @@ fi
   }
   s += "\n";
   //s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -jar $OAF_DIR " + options + "\n";
-  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar $OAF_DIR " + options + "\n";
+  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar $OAF_DIR " + options + "\n"
   if (isDef(extraOptions) && isArray(extraOptions)) {
     extraOptions.forEach(r => {
       //s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -jar $OAF_DIR " + r + "\n";
-      s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar $OAF_DIR " + r + "\n";
+      s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -jar $OAF_DIR " + r + "\n"
     });
   }
   s += "EXITCODE=$?\n";
@@ -423,7 +423,7 @@ var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
 var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
-var winPyBat = generateWinPyBat();
+var winPyBat = generateWinPyBat()
 //var winConsolePSBat = generateWinConsolePSBat();
 
 var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript, unixOAFPScript
@@ -446,7 +446,7 @@ try {
   if (windows == 1) io.writeFileString(curDir + "\\oaf.bat", winBat);
   if (windows == 1) io.writeFileString(curDir + "\\opack.bat", winPackBat);
   if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
-  if (windows == 1) io.writeFileString(curDir + "\\pyoaf.bat", winPyBat);
+  if (windows == 1) io.writeFileString(curDir + "\\pyoaf.bat", winPyBat)
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\oafc.bat", winConsoleBat);
   if (windows == 1 && isUnDef(getOPackPath("oafproc")) ) io.writeFileString(curDir + "\\oafp.bat", generateWinOAFPBat())

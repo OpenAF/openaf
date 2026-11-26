@@ -7,47 +7,47 @@ jobs:
    # TOON tests
    # --------------
    - name: TOON::Init
-     exec: args.tests = require("autoTestAll.TOON.js");
+     exec: args.tests = require("autoTestAll.TOON.js")
 
    - name: TOON::Default engine round-trip
      from: TOON::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testToTOONDefaultEngine;
+     exec: args.func = args.tests.testToTOONDefaultEngine
 
    - name: TOON::Java engine round-trip
      from: TOON::Init
      to  : OpenAF Test
      deps:
        - TOON::Default engine round-trip
-     exec: args.func = args.tests.testToTOONJavaEngine;
+     exec: args.func = args.tests.testToTOONJavaEngine
 
    - name: TOON::Engines agree on tabular data
      from: TOON::Init
      to  : OpenAF Test
      deps:
        - TOON::Java engine round-trip
-     exec: args.func = args.tests.testTOONEnginesAgreeOnTabularData;
+     exec: args.func = args.tests.testTOONEnginesAgreeOnTabularData
 
    - name: TOON::Flag defaults
      from: TOON::Init
      to  : OpenAF Test
      deps:
        - TOON::Java engine round-trip
-     exec: args.func = args.tests.testTOONFlagDefaults;
+     exec: args.func = args.tests.testTOONFlagDefaults
 
    - name: TOON::Known empty array cross-engine limitation
      from: TOON::Init
      to  : OpenAF Test
      deps:
        - TOON::Java engine round-trip
-     exec: args.func = args.tests.testTOONKnownEmptyArrayCrossEngineLimitation;
+     exec: args.func = args.tests.testTOONKnownEmptyArrayCrossEngineLimitation
 
    - name: TOON::Large payload
      from: TOON::Init
      to  : OpenAF Test
      deps:
        - TOON::Java engine round-trip
-     exec: args.func = args.tests.testTOONLargePayload;
+     exec: args.func = args.tests.testTOONLargePayload
 
 todo:
    # TOON tests

@@ -69,23 +69,23 @@
         } catch(e) {
             res500 = ow.obj.rest.exceptionParse(e);
         }
-        ow.test.assert(res500.responseCode, 500, "Problem with obtaining and parsing the HTTP 500 code");
-    };
+        ow.test.assert(res500.responseCode, 500, "Problem with obtaining and parsing the HTTP 500 code")
+    }
 
     exports.testObjectEdgeCases = function() {
         ow.loadObj();
         [null, undefined, 0, false, "value"].forEach(value => {
-            var input = { a: value };
-            ow.test.assert(ow.obj.getPath(input, "a.b"), undefined, "Cannot traverse a scalar or absent parent");
-            ow.test.assert(ow.obj.getPath(input, "a"), value, "Terminal values are preserved");
-        });
-        ow.test.assert(ow.obj.getPath({ a: [] }, "a[2].b"), undefined, "Missing array elements do not throw");
-        var mapped = mapArray([{ a: null }, { a: { b: 2 } }], "a.b");
-        ow.test.assert(mapped.length, 2, "mapArray keeps missing entries");
-        ow.test.assert(isUnDef(mapped[0]), true, "mapArray tolerates missing parents");
-        ow.test.assert(mapped[1], 2, "mapArray keeps available values");
+            var input = { a: value }
+            ow.test.assert(ow.obj.getPath(input, "a.b"), undefined, "Cannot traverse a scalar or absent parent")
+            ow.test.assert(ow.obj.getPath(input, "a"), value, "Terminal values are preserved")
+        })
+        ow.test.assert(ow.obj.getPath({ a: [] }, "a[2].b"), undefined, "Missing array elements do not throw")
+        var mapped = mapArray([{ a: null }, { a: { b: 2 } }], "a.b")
+        ow.test.assert(mapped.length, 2, "mapArray keeps missing entries")
+        ow.test.assert(isUnDef(mapped[0]), true, "mapArray tolerates missing parents")
+        ow.test.assert(mapped[1], 2, "mapArray keeps available values")
 
-        var rows = [-2, -1.5, -1, 0, 1.2, 1.5, 1.8, 2, 10].map(n => ({ details: { n: n } }));
+        var rows = [-2, -1.5, -1, 0, 1.2, 1.5, 1.8, 2, 10].map(n => ({ details: { n: n } }))
         var cases = [
             [">=1.5", [1.5, 1.8, 2, 10]], [">1.5", [1.8, 2, 10]],
             ["<=-1.5", [-2, -1.5]], ["<-1.5", [-2]],
@@ -93,55 +93,55 @@
             [">=2", [2, 10]]
         ];
         [1, 2].forEach(threads => cases.forEach(test => {
-            var result = ow.obj.searchArray(rows, { "details.n": test[0] }, true, false, threads);
-            ow.test.assert(result.map(r => r.details.n).sort((a, b) => a - b), test[1], "Numeric comparison " + test[0]);
-        }));
-        var mixed = [{ n: "10" }, { n: "2" }, { n: null }, {}, { n: false }, { n: "" }, { n: " " }, { n: "bad" }];
-        ow.test.assert(ow.obj.searchArray(mixed, { n: ">2" }, true, false, 1), [{ n: "10" }], "Numeric strings compare numerically");
-        ow.test.assert(ow.obj.searchArray(mixed.slice(2), { n: "<=0" }, true, false, 1), [], "Missing and nonnumeric values are not zero");
-        ow.test.assert(ow.obj.searchArray([{ n: ">=1.5" }], { n: ">=1.5" }, false, false, 1), [{ n: ">=1.5" }], "Literal mode is unchanged");
-        ow.test.assert(ow.obj.searchArray([{ n: ">1x" }, { n: 2 }], { n: ">1x" }, true, false, 1), [{ n: ">1x" }], "Partial numeric patterns remain regexes");
-        ow.test.assert(ow.obj.searchArray([{ n: "HELLO" }], { n: "^hello$" }, true, true, 1), [{ n: "HELLO" }], "Case-insensitive regexes are unchanged");
-        ow.test.assert(searchArray([{ n: "HELLO" }, { n: "other" }], { n: "^hello$" }, true, true, 1), [{ n: "HELLO" }], "Global searchArray forwards every option");
+            var result = ow.obj.searchArray(rows, { "details.n": test[0] }, true, false, threads)
+            ow.test.assert(result.map(r => r.details.n).sort((a, b) => a - b), test[1], "Numeric comparison " + test[0])
+        }))
+        var mixed = [{ n: "10" }, { n: "2" }, { n: null }, {}, { n: false }, { n: "" }, { n: " " }, { n: "bad" }]
+        ow.test.assert(ow.obj.searchArray(mixed, { n: ">2" }, true, false, 1), [{ n: "10" }], "Numeric strings compare numerically")
+        ow.test.assert(ow.obj.searchArray(mixed.slice(2), { n: "<=0" }, true, false, 1), [], "Missing and nonnumeric values are not zero")
+        ow.test.assert(ow.obj.searchArray([{ n: ">=1.5" }], { n: ">=1.5" }, false, false, 1), [{ n: ">=1.5" }], "Literal mode is unchanged")
+        ow.test.assert(ow.obj.searchArray([{ n: ">1x" }, { n: 2 }], { n: ">1x" }, true, false, 1), [{ n: ">1x" }], "Partial numeric patterns remain regexes")
+        ow.test.assert(ow.obj.searchArray([{ n: "HELLO" }], { n: "^hello$" }, true, true, 1), [{ n: "HELLO" }], "Case-insensitive regexes are unchanged")
+        ow.test.assert(searchArray([{ n: "HELLO" }, { n: "other" }], { n: "^hello$" }, true, true, 1), [{ n: "HELLO" }], "Global searchArray forwards every option")
 
         var data = [{ id: 1, detail: { tags: ["a", "b"] } }, { id: 2 }];
         ["_", ".", "|", "[", "$&", "::", ""].forEach(separator => {
-            var column = "detail" + separator + "tags";
-            var expected = [{ id: 1 }, { id: 1 }, { id: 2 }];
-            expected[0][column] = "a"; expected[1][column] = "b"; expected[2][column] = "n/a";
-            ow.test.assert(ow.obj.flatten(data, separator, "n/a"), expected, "Nested scalar arrays and literal separator " + separator);
-        });
-        ow.test.assert(data, [{ id: 1, detail: { tags: ["a", "b"] } }, { id: 2 }], "Flatten preserves its input");
-        var previous = global._trav, hadTraversal = Object.prototype.hasOwnProperty.call(global, "_trav");
+            var column = "detail" + separator + "tags"
+            var expected = [{ id: 1 }, { id: 1 }, { id: 2 }]
+            expected[0][column] = "a"; expected[1][column] = "b"; expected[2][column] = "n/a"
+            ow.test.assert(ow.obj.flatten(data, separator, "n/a"), expected, "Nested scalar arrays and literal separator " + separator)
+        })
+        ow.test.assert(data, [{ id: 1, detail: { tags: ["a", "b"] } }, { id: 2 }], "Flatten preserves its input")
+        var previous = global._trav, hadTraversal = Object.prototype.hasOwnProperty.call(global, "_trav")
         try {
-            global._trav = "caller-owned";
-            ow.obj.flatten([{ id: 1 }]);
-            ow.test.assert(global._trav, "caller-owned", "Flatten does not overwrite global helpers");
+            global._trav = "caller-owned"
+            ow.obj.flatten([{ id: 1 }])
+            ow.test.assert(global._trav, "caller-owned", "Flatten does not overwrite global helpers")
         } finally {
-            if (hadTraversal) global._trav = previous; else delete global._trav;
+            if (hadTraversal) global._trav = previous; else delete global._trav
         }
-    };
+    }
 
     exports.testRESTClosesOwnedClientAfterFailure = function() {
-        var originalFactory = ow.obj.rest.connectionFactory;
-        var closeCount = 0;
+        var originalFactory = ow.obj.rest.connectionFactory
+        var closeCount = 0
         ow.obj.rest.connectionFactory = function() {
             return {
                 exec: function() { throw new Error("request failed"); },
                 getErrorResponse: function() { return {}; },
                 close: function() { closeCount++; }
-            };
-        };
+            }
+        }
 
         try {
             try {
-                ow.obj.rest.get("http://example.com");
+                ow.obj.rest.get("http://example.com")
             } catch(e) {}
-            ow.test.assert(closeCount, 1, "REST should close its owned HTTP client after a request failure");
+            ow.test.assert(closeCount, 1, "REST should close its owned HTTP client after a request failure")
         } finally {
-            ow.obj.rest.connectionFactory = originalFactory;
+            ow.obj.rest.connectionFactory = originalFactory
         }
-    };
+    }
 
     exports.testGetPath = function() {
         ow.loadObj();
@@ -206,9 +206,9 @@
         var ar = [ {a:1}, {a:2}, {a:3}];
         var res = ow.obj.fromArray2OrderedObj(ar);
 
-        ow.test.assert(res["0"], { a: 1 }, "Problem with first map element on array to ordered object");
-        ow.test.assert(res["2"], { a: 3 }, "Problem with last map element on array to ordered object");
-        ow.test.assert(res["1"], { a: 2 }, "Problem with middle map element on array to ordered object");
+        ow.test.assert(res["0"], { a: 1 }, "Problem with first map element on array to ordered object")
+        ow.test.assert(res["2"], { a: 3 }, "Problem with last map element on array to ordered object")
+        ow.test.assert(res["1"], { a: 2 }, "Problem with middle map element on array to ordered object")
     };
 
     exports.testOrdObj2Array = function() {
@@ -217,16 +217,16 @@
         var ar = { "1": { a:1}, "2": {a:2}, "3": {a:3}}
         var res = ow.obj.fromOrderedObj2Array(ar);
 
-        ow.test.assert(res[0], { a: 1 }, "Problem with first map element on array to ordered object");
-        ow.test.assert(res[2], { a: 3 }, "Problem with last map element on array to ordered object");
-        ow.test.assert(res[1], { a: 2 }, "Problem with middle map element on array to ordered object");
+        ow.test.assert(res[0], { a: 1 }, "Problem with first map element on array to ordered object")
+        ow.test.assert(res[2], { a: 3 }, "Problem with last map element on array to ordered object")
+        ow.test.assert(res[1], { a: 2 }, "Problem with middle map element on array to ordered object")
 
         ar = { "row_2": { a:3}, "row_1": {a:2}, "row_0": {a:1}};
         res = ow.obj.fromOrderedObj2Array(ar, (a,b) => { return Number(a.replace(/row_/,"")) - Number(b.replace(/row_/,"")) });
 
-        ow.test.assert(res[0], { a: 1 }, "Problem with first map element on array to ordered object with function");
-        ow.test.assert(res[2], { a: 3 }, "Problem with last map element on array to ordered object with function");
-        ow.test.assert(res[1], { a: 2 }, "Problem with middle map element on array to ordered object with function");
+        ow.test.assert(res[0], { a: 1 }, "Problem with first map element on array to ordered object with function")
+        ow.test.assert(res[2], { a: 3 }, "Problem with last map element on array to ordered object with function")
+        ow.test.assert(res[1], { a: 2 }, "Problem with middle map element on array to ordered object with function")
     };    
 
     exports.testSyncArray = function() {
@@ -334,87 +334,87 @@
     }
 
     exports.testObjPoolCapacity = function() {
-        ow.loadObj();
-        var created = 0, closed = 0;
-        var p = ow.obj.pool.create().setMax(1).setRetry(0);
-        p.setFactory(function() { return { id: ++created }; }, function() { closed++; });
+        ow.loadObj()
+        var created = 0, closed = 0
+        var p = ow.obj.pool.create().setMax(1).setRetry(0)
+        p.setFactory(function() { return { id: ++created }; }, function() { closed++; })
         try {
-            var obj = p.checkOut();
-            ow.test.assert(obj.id, 1, "A pool with max=1 must allow its first checkout");
-            var full = false;
+            var obj = p.checkOut()
+            ow.test.assert(obj.id, 1, "A pool with max=1 must allow its first checkout")
+            var full = false
             try { p.checkOut(); } catch (e) { full = true; }
-            ow.test.assert(full, true, "A full pool must reject another checkout");
-            p.checkIn(obj);
-            ow.test.assert(p.checkOut() === obj, true, "The last available slot must be reusable");
-            ow.test.assert(created, 1, "Checkout must not exceed maximum capacity");
+            ow.test.assert(full, true, "A full pool must reject another checkout")
+            p.checkIn(obj)
+            ow.test.assert(p.checkOut() === obj, true, "The last available slot must be reusable")
+            ow.test.assert(created, 1, "Checkout must not exceed maximum capacity")
         } finally { p.stop(); }
-        ow.test.assert(closed, 1, "Every created resource must be closed");
-    };
+        ow.test.assert(closed, 1, "Every created resource must be closed")
+    }
 
     exports.testObjPoolBatchGrowth = function() {
-        ow.loadObj();
-        var created = 0, closed = [];
-        var p = ow.obj.pool.create().setMax(2).setIncrementsOf(5).setRetry(0);
-        p.setFactory(function() { return { id: ++created }; }, function(obj) { closed.push(obj.id); });
+        ow.loadObj()
+        var created = 0, closed = []
+        var p = ow.obj.pool.create().setMax(2).setIncrementsOf(5).setRetry(0)
+        p.setFactory(function() { return { id: ++created }; }, function(obj) { closed.push(obj.id); })
         try {
-            var first = p.checkOut(), second = p.checkOut();
-            ow.test.assert(first.id, 1, "The first factory result must be checked out, not discarded");
-            ow.test.assert(first !== second, true, "Each checkout must own a distinct resource");
-            ow.test.assert(created, 2, "Batch growth must not create resources beyond max");
+            var first = p.checkOut(), second = p.checkOut()
+            ow.test.assert(first.id, 1, "The first factory result must be checked out, not discarded")
+            ow.test.assert(first !== second, true, "Each checkout must own a distinct resource")
+            ow.test.assert(created, 2, "Batch growth must not create resources beyond max")
         } finally { p.stop(); }
-        ow.test.assert(closed.sort(), [1, 2], "All created batch resources must be closed exactly once");
+        ow.test.assert(closed.sort(), [1, 2], "All created batch resources must be closed exactly once")
 
-        created = 0;
-        p = ow.obj.pool.create().setMin(3).setMax(4).setIncrementsOf(2);
-        p.setFactory(function() { return { id: ++created }; });
+        created = 0
+        p = ow.obj.pool.create().setMin(3).setMax(4).setIncrementsOf(2)
+        p.setFactory(function() { return { id: ++created }; })
         try {
-            p.start();
-            ow.test.assert(created, 4, "Startup must stop growing once the minimum is satisfied");
-            p.start();
-            ow.test.assert(created, 4, "Starting an initialized pool must not create more resources");
+            p.start()
+            ow.test.assert(created, 4, "Startup must stop growing once the minimum is satisfied")
+            p.start()
+            ow.test.assert(created, 4, "Starting an initialized pool must not create more resources")
         } finally { p.stop(); }
-    };
+    }
 
     exports.testObjPoolAddedAndFailedBatch = function() {
-        ow.loadObj();
-        var p = ow.obj.pool.create().setMax(1).setRetry(0);
-        var supplied = { id: 1 };
+        ow.loadObj()
+        var p = ow.obj.pool.create().setMax(1).setRetry(0)
+        var supplied = { id: 1 }
         try {
-            p.add(supplied);
-            ow.test.assert(p.checkOut() === supplied, true, "Objects added without inUse must be available");
+            p.add(supplied)
+            ow.test.assert(p.checkOut() === supplied, true, "Objects added without inUse must be available")
         } finally { p.stop(); }
 
-        var created = 0, closed = 0;
-        p = ow.obj.pool.create().setMax(3).setIncrementsOf(3).setRetry(0);
+        var created = 0, closed = 0
+        p = ow.obj.pool.create().setMax(3).setIncrementsOf(3).setRetry(0)
         p.setFactory(function() {
-            if (++created == 2) throw "batch factory failure";
-            return { id: created };
-        }, function() { closed++; });
+            if (++created == 2) throw "batch factory failure"
+            return { id: created }
+        }, function() { closed++; })
         try {
-            var error;
+            var error
             try { p.checkOut(); } catch (e) { error = String(e); }
-            ow.test.assert(error, "batch factory failure", "Factory errors must reach the caller");
-            ow.test.assert(p.checkOut().id, 1, "Failed batch growth must not strand the requested resource");
-            ow.test.assert(created, 2, "A surviving resource must be reused without another factory call");
+            ow.test.assert(error, "batch factory failure", "Factory errors must reach the caller")
+            ow.test.assert(p.checkOut().id, 1, "Failed batch growth must not strand the requested resource")
+            ow.test.assert(created, 2, "A surviving resource must be reused without another factory call")
         } finally { p.stop(); }
-        ow.test.assert(closed, 1, "The surviving resource must be closed exactly once");
-    };
+        ow.test.assert(closed, 1, "The surviving resource must be closed exactly once")
+    }
 
     exports.testObjPoolStopWithoutClose = function() {
-        ow.loadObj();
-        var p = ow.obj.pool.create();
-        p.setFactory(function() { return {}; });
-        var obj = p.checkOut();
-        p.checkIn(obj);
-        p.stop();
-        ow.test.assert(p.__pool.length, 0, "Stop must clear a pool without a close callback");
-        ow.test.assert(p.__currentSize, 0, "Stop must reset the pool size");
-        ow.test.assert(p.__currentFree, 0, "Stop must reset the free count");
-        p.stop();
+        ow.loadObj()
+        var p = ow.obj.pool.create()
+        p.setFactory(function() { return {}; })
+        var obj = p.checkOut()
+        p.checkIn(obj)
+        p.stop()
+        ow.test.assert(p.__pool.length, 0, "Stop must clear a pool without a close callback")
+        ow.test.assert(p.__currentSize, 0, "Stop must reset the pool size")
+        ow.test.assert(p.__currentFree, 0, "Stop must reset the free count")
+        p.stop()
         try {
-            ow.test.assert(p.checkOut() !== obj, true, "Restarted pool must create a fresh resource");
+            ow.test.assert(p.checkOut() !== obj, true, "Restarted pool must create a fresh resource")
         } finally { p.stop(); }
-    };
+    }
 
     exports.testObjPool = function() {
         ow.loadObj();
@@ -605,4 +605,4 @@
         ow.test.assert(isDef(ow.obj.flatMap(data)["IO.bufferSize"]), true, "Problem with ow.obj.flatMap")
         ow.test.assert(isDef(ow.obj.flatMap(data, "|")["IO|bufferSize"]), true, "Problem with ow.obj.flatMap with separator")
     }
-})();
+})()

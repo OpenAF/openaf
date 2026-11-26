@@ -174,12 +174,12 @@
 
     exports.testOAuthCallbackUsesServerHelper = function() {
         withOAuthMCPServer(function(ctx) {
-            var original = ow.server.httpd.oauth2, used = 0;
+            var original = ow.server.httpd.oauth2, used = 0
             ow.server.httpd.oauth2 = function(options) {
-                used++;
-                ow.test.assert(options.tokenStore, false, "MCP owns persistence without nested helper storage.");
-                return original.call(this, options);
-            };
+                used++
+                ow.test.assert(options.tokenStore, false, "MCP owns persistence without nested helper storage.")
+                return original.call(this, options)
+            }
             var config = {
                 type: "remote", url: ctx.resource,
                 auth: {
@@ -187,26 +187,26 @@
                     redirectURI: "http://127.0.0.1:" + findRandomOpenPort() + "/callback",
                     callback: true, disableOpenBrowser: true, loginTimeoutMs: 1000,
                     onAuthorizationURL: function(url) {
-                        var params = ow.server.rest.parseQuery(String(new java.net.URI(url).getRawQuery()));
-                        $rest().get(config.auth.redirectURI + "?state=" + params.state + "&code=callback-code");
+                        var params = ow.server.rest.parseQuery(String(new java.net.URI(url).getRawQuery()))
+                        $rest().get(config.auth.redirectURI + "?state=" + params.state + "&code=callback-code")
                     }
                 }
-            };
-            var client = $mcp(config);
-            try {
-                client.initialize();
-                ow.test.assert(client.callTool("ping", {}).content[0].text, "pong", "Callback-authenticated MCP tool call.");
-                ow.test.assert(used, 1, "MCP delegates callback login to server helper once.");
-                ow.test.assert(ctx.state.tokenRequests.length, 1, "One code exchange across initialization and tool call.");
-                ow.test.assert(ctx.state.tokenRequests[0].code, "callback-code", "Callback code exchanged.");
-                ow.test.assert(ctx.state.tokenRequests[0].resource, ctx.resource, "Discovered MCP resource passed to helper.");
-                ow.test.assert(ctx.state.mcpAuthHeaders.every(function(h) { return h === "Bearer token-1"; }), true, "MCP requests use received token.");
-            } finally {
-                client.destroy();
-                ow.server.httpd.oauth2 = original;
             }
-        });
-    };
+            var client = $mcp(config)
+            try {
+                client.initialize()
+                ow.test.assert(client.callTool("ping", {}).content[0].text, "pong", "Callback-authenticated MCP tool call.")
+                ow.test.assert(used, 1, "MCP delegates callback login to server helper once.")
+                ow.test.assert(ctx.state.tokenRequests.length, 1, "One code exchange across initialization and tool call.")
+                ow.test.assert(ctx.state.tokenRequests[0].code, "callback-code", "Callback code exchanged.")
+                ow.test.assert(ctx.state.tokenRequests[0].resource, ctx.resource, "Discovered MCP resource passed to helper.")
+                ow.test.assert(ctx.state.mcpAuthHeaders.every(function(h) { return h === "Bearer token-1"; }), true, "MCP requests use received token.")
+            } finally {
+                client.destroy()
+                ow.server.httpd.oauth2 = original
+            }
+        })
+    }
 
     exports.testOAuthAuthorizationCodeTokenExchange = function() {
         withOAuthMCPServer(function(ctx) {
@@ -258,171 +258,171 @@
                 var info = client.getClientInfo();
 
                 ow.test.assert(info.lastRequest.method, "initialize", "getClientInfo should include the last JSON-RPC method.");
-                ow.test.assert(info.lastRequest.params.protocolVersion, "2025-06-18", "getClientInfo should include initialize protocolVersion.");
+                ow.test.assert(info.lastRequest.params.protocolVersion, "2025-06-18", "getClientInfo should include initialize protocolVersion.")
                 ow.test.assert(info.lastRequest.params.clientInfo.name, "TestClient", "getClientInfo should include sent clientInfo.");
                 ow.test.assert(info.lastResponse.jsonrpc, "2.0", "getClientInfo should include raw JSON-RPC response envelope.");
                 ow.test.assert(info.lastResponse.result.serverInfo.name, "OAuth MCP", "getClientInfo should include JSON-RPC result data.");
                 ow.test.assert(info.session.mcpSessionId, "test-session-1", "getClientInfo should include captured MCP session id.");
-                ow.test.assert(info.initialize.protocolVersion, "2025-06-18", "getClientInfo should include initialize result data.");
+                ow.test.assert(info.initialize.protocolVersion, "2025-06-18", "getClientInfo should include initialize result data.")
             } finally {
-                client.destroy();
+                client.destroy()
             }
-        });
-    };
+        })
+    }
 
     exports.testRemoteMCPClosesRequestHTTPClients = function() {
         withOAuthMCPServer(function(ctx) {
-            var originalFactory = ow.obj.rest.connectionFactory;
-            var clients = [];
-            var client;
-            var destroyed = false;
+            var originalFactory = ow.obj.rest.connectionFactory
+            var clients = []
+            var client
+            var destroyed = false
 
             ow.obj.rest.connectionFactory = function() {
-                var http = originalFactory();
-                var originalClose = http.close;
+                var http = originalFactory()
+                var originalClose = http.close
                 http.close = function() {
-                    clients.push(http);
-                    return originalClose.apply(http, arguments);
-                };
-                return http;
-            };
+                    clients.push(http)
+                    return originalClose.apply(http, arguments)
+                }
+                return http
+            }
 
             try {
-                client = $mcp({ type: "remote", strict: false, url: ctx.resource });
-                client.initialize({ name: "TestClient", version: "9.9.9" });
-                client.destroy();
-                destroyed = true;
-                ow.test.assert(clients.length, 2, "Remote MCP should close both the request and session DELETE HTTP clients.");
+                client = $mcp({ type: "remote", strict: false, url: ctx.resource })
+                client.initialize({ name: "TestClient", version: "9.9.9" })
+                client.destroy()
+                destroyed = true
+                ow.test.assert(clients.length, 2, "Remote MCP should close both the request and session DELETE HTTP clients.")
             } finally {
-                ow.obj.rest.connectionFactory = originalFactory;
-                if (isDef(client) && !destroyed) client.destroy();
+                ow.obj.rest.connectionFactory = originalFactory
+                if (isDef(client) && !destroyed) client.destroy()
             }
-        });
-    };
+        })
+    }
 
     // Dual-era HTTP MCP server fixture: exercises the real ow.server.httpd.replyJSONRPC(..., {modern:true})
     // code path added for the 2026-07-28 protocol era, side-by-side with the legacy initialize handshake.
     var withDualEraMCPServer = function(testFn) {
-        ow.loadServer();
+        ow.loadServer()
 
-        var port = findRandomOpenPort();
-        var hs = ow.server.httpd.start(port, "127.0.0.1");
+        var port = findRandomOpenPort()
+        var hs = ow.server.httpd.start(port, "127.0.0.1")
         var description = {
             serverInfo: { name: "Dual-Era MCP", version: "1.0.0" },
             capabilities: { tools: { listChanged: false } }
-        };
+        }
         var rpcFns = {
             initialize: params => merge({ protocolVersion: "2025-06-18" }, description),
             "notifications/initialized": () => ({}),
             "tools/list": () => ({ tools: [{ name: "ping", description: "Ping tool", inputSchema: { type: "object", properties: {} } }] }),
             "tools/call": params => ({ content: [{ type: "text", text: "pong" }], isError: false }),
             "server/discover": () => ow.server.mcp.discoverResult(description)
-        };
+        }
 
-        var requests = [];
+        var requests = []
         ow.server.httpd.route(hs, {
             "/mcp": req => {
-                requests.push(req);
-                return ow.server.httpd.replyJSONRPC(hs, req, rpcFns, function() {}, function() {}, { modern: true, serverInfo: description.serverInfo });
+                requests.push(req)
+                return ow.server.httpd.replyJSONRPC(hs, req, rpcFns, function() {}, function() {}, { modern: true, serverInfo: description.serverInfo })
             }
-        });
+        })
 
         try {
-            testFn({ port: port, hs: hs, url: "http://127.0.0.1:" + port + "/mcp", fns: rpcFns, requests: requests });
+            testFn({ port: port, hs: hs, url: "http://127.0.0.1:" + port + "/mcp", fns: rpcFns, requests: requests })
         } finally {
-            ow.server.httpd.stop(hs);
+            ow.server.httpd.stop(hs)
         }
-    };
+    }
 
     exports.testMCPAutoClientNegotiatesModernEraWithDualEraServer = function() {
         withDualEraMCPServer(function(ctx) {
-            var client = $mcp({ type: "remote", strict: false, url: ctx.url, protocolVersion: "auto" });
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url, protocolVersion: "auto" })
             try {
-                client.initialize({ name: "TestClient", version: "9.9.9" });
-                ow.test.assert(client.getClientInfo().era, "modern", "protocolVersion:'auto' should negotiate the modern era against a dual-era server.");
+                client.initialize({ name: "TestClient", version: "9.9.9" })
+                ow.test.assert(client.getClientInfo().era, "modern", "protocolVersion:'auto' should negotiate the modern era against a dual-era server.")
 
-                var tools = client.listTools();
-                ow.test.assert(tools.tools[0].name, "ping", "Modern-era client should still list tools normally.");
-                ow.test.assert(tools.resultType, "complete", "Modern-era tools/list result should carry resultType.");
-                ow.test.assert(isNumber(tools.ttlMs), true, "Modern-era tools/list result should carry ttlMs (CacheableResult).");
-                ow.test.assert(isString(tools.cacheScope), true, "Modern-era tools/list result should carry cacheScope (CacheableResult).");
+                var tools = client.listTools()
+                ow.test.assert(tools.tools[0].name, "ping", "Modern-era client should still list tools normally.")
+                ow.test.assert(tools.resultType, "complete", "Modern-era tools/list result should carry resultType.")
+                ow.test.assert(isNumber(tools.ttlMs), true, "Modern-era tools/list result should carry ttlMs (CacheableResult).")
+                ow.test.assert(isString(tools.cacheScope), true, "Modern-era tools/list result should carry cacheScope (CacheableResult).")
 
-                var res = client.callTool("ping", {});
-                ow.test.assert(res.content[0].text, "pong", "Modern-era callTool should still work.");
-                ow.test.assert(res.resultType, "complete", "Modern-era tools/call result should carry resultType.");
+                var res = client.callTool("ping", {})
+                ow.test.assert(res.content[0].text, "pong", "Modern-era callTool should still work.")
+                ow.test.assert(res.resultType, "complete", "Modern-era tools/call result should carry resultType.")
             } finally {
-                client.destroy();
+                client.destroy()
             }
-        });
-    };
+        })
+    }
 
     exports.testMCPAutoClientFallsBackToLegacyServer = function() {
         withOAuthMCPServer(function(ctx) {
             // This fixture server (see withOAuthMCPServer above) has no server/discover method and answers
             // initialize with a fixed 2025-06-18, i.e. exactly the legacy-only server this task must not regress.
-            var client = $mcp({ type: "remote", strict: false, url: ctx.resource, protocolVersion: "auto" });
+            var client = $mcp({ type: "remote", strict: false, url: ctx.resource, protocolVersion: "auto" })
             try {
-                client.initialize({ name: "TestClient", version: "9.9.9" });
-                ow.test.assert(client.getClientInfo().era, "legacy", "protocolVersion:'auto' should fall back to the legacy era against a legacy-only server.");
+                client.initialize({ name: "TestClient", version: "9.9.9" })
+                ow.test.assert(client.getClientInfo().era, "legacy", "protocolVersion:'auto' should fall back to the legacy era against a legacy-only server.")
 
-                var tools = client.listTools();
-                ow.test.assert(tools.tools[0].name, "ping", "Legacy fallback should still list tools normally.");
-                ow.test.assert(isUnDef(tools.resultType), true, "Legacy-era results must stay unwrapped (no resultType) -- zero behavior change.");
+                var tools = client.listTools()
+                ow.test.assert(tools.tools[0].name, "ping", "Legacy fallback should still list tools normally.")
+                ow.test.assert(isUnDef(tools.resultType), true, "Legacy-era results must stay unwrapped (no resultType) -- zero behavior change.")
             } finally {
-                client.destroy();
+                client.destroy()
             }
-        });
-    };
+        })
+    }
 
     exports.testMCPLegacyClientUnaffectedByDualEraServer = function() {
         withDualEraMCPServer(function(ctx) {
             // A plain (non-"auto") client is the overwhelming majority case today: it must behave identically
             // whether or not the server it talks to has opted into modern-era support.
-            var client = $mcp({ type: "remote", strict: false, url: ctx.url });
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url })
             try {
-                client.initialize({ name: "TestClient", version: "9.9.9" });
-                ow.test.assert(client.getClientInfo().era, "legacy", "Default client should stay on the legacy era even against a dual-era server.");
+                client.initialize({ name: "TestClient", version: "9.9.9" })
+                ow.test.assert(client.getClientInfo().era, "legacy", "Default client should stay on the legacy era even against a dual-era server.")
 
-                var tools = client.listTools();
-                ow.test.assert(tools.tools[0].name, "ping", "Legacy client should list tools normally against a dual-era server.");
-                ow.test.assert(isUnDef(tools.resultType), true, "Legacy client's result must stay unwrapped against a dual-era server.");
+                var tools = client.listTools()
+                ow.test.assert(tools.tools[0].name, "ping", "Legacy client should list tools normally against a dual-era server.")
+                ow.test.assert(isUnDef(tools.resultType), true, "Legacy client's result must stay unwrapped against a dual-era server.")
             } finally {
-                client.destroy();
+                client.destroy()
             }
-        });
-    };
+        })
+    }
 
     exports.testMCPModernServerRejectsUnsupportedProtocolVersion = function() {
         withDualEraMCPServer(function(ctx) {
-            var client = $mcp({ type: "remote", strict: false, url: ctx.url });
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url })
             try {
                 var res = client.exec("tools/list", {
                     _meta: {
                         "io.modelcontextprotocol/protocolVersion": "1900-01-01",
                         "io.modelcontextprotocol/clientCapabilities": {}
                     }
-                });
-                ow.test.assert(isMap(res.error), true, "An unsupported modern protocol version should return a JSON-RPC error.");
-                ow.test.assert(res.error.code, -32022, "Unsupported protocol version should use the reserved -32022 error code.");
-                ow.test.assert(res.error.data.requested, "1900-01-01", "UnsupportedProtocolVersionError should echo the requested version.");
-                ow.test.assert(res.error.data.supported.indexOf("2026-07-28") >= 0, true, "UnsupportedProtocolVersionError should list this server's supported versions.");
+                })
+                ow.test.assert(isMap(res.error), true, "An unsupported modern protocol version should return a JSON-RPC error.")
+                ow.test.assert(res.error.code, -32022, "Unsupported protocol version should use the reserved -32022 error code.")
+                ow.test.assert(res.error.data.requested, "1900-01-01", "UnsupportedProtocolVersionError should echo the requested version.")
+                ow.test.assert(res.error.data.supported.indexOf("2026-07-28") >= 0, true, "UnsupportedProtocolVersionError should list this server's supported versions.")
             } finally {
-                client.destroy();
+                client.destroy()
             }
-        });
-    };
+        })
+    }
 
     exports.testMCPServerDiscoverIsProbeableWithoutClientCapabilities = function() {
         withDualEraMCPServer(function(ctx) {
             // A client probing era support (per spec) may call server/discover before it knows what capabilities
             // to declare; server/discover must not itself require io.modelcontextprotocol/clientCapabilities.
-            var client = $mcp({ type: "remote", strict: false, url: ctx.url });
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url })
             try {
                 var res = client.exec("server/discover", {
                     _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" }
-                });
-                ow.test.assert(isDef(res.error), false, "A bare server/discover probe (no clientCapabilities yet) must not be rejected.");
-                ow.test.assert(res.protocolVersions.indexOf("2026-07-28") >= 0, true, "server/discover should advertise the modern protocol version.");
+                })
+                ow.test.assert(isDef(res.error), false, "A bare server/discover probe (no clientCapabilities yet) must not be rejected.")
+                ow.test.assert(res.protocolVersions.indexOf("2026-07-28") >= 0, true, "server/discover should advertise the modern protocol version.")
             } finally {
                 client.destroy();
             }
@@ -491,138 +491,138 @@
     var withListClient = function(fn) {
         // Replace only the dummy server's list handlers after initialization, exercising the real
         // client pagination/auth dispatch without thousands of HTTP requests in the limit test.
-        var options = { type: "dummy", blacklist: ["hidden"], options: { fns: {} } };
-        var client = $mcp(options);
+        var options = { type: "dummy", blacklist: ["hidden"], options: { fns: {} } }
+        var client = $mcp(options)
         try {
-            client.initialize();
-            fn(client, options.options.fns);
+            client.initialize()
+            fn(client, options.options.fns)
         } finally {
-            client.destroy();
+            client.destroy()
         }
-    };
+    }
 
     exports.testMCPListMetadataAndPagination = function() {
         withListClient(function(client, fns) {
             ["tools", "prompts"].forEach(function(field) {
-                var call = () => field == "tools" ? client.listTools() : client.listPrompts();
-                var first = { resultType: "complete", ttlMs: 60000, cacheScope: "public", _meta: { server: "test" }, extension: "retained" };
-                first[field] = [{ name: "one" }, { name: "hidden" }];
-                fns[field + "/list"] = () => first;
-                var single = call();
-                ow.test.assert(single.resultType, "complete", "List lost resultType");
-                ow.test.assert(single.ttlMs, 60000, "Single-page lifetime changed");
-                ow.test.assert(single.cacheScope, "public", "List lost scope");
-                ow.test.assert(single._meta, first._meta, "List lost metadata");
-                ow.test.assert(single.extension, "retained", "List lost extension fields");
-                ow.test.assert(single[field].length, field == "tools" ? 1 : 2, "Tool filtering changed");
-                ow.test.assert(first[field].length, 2, "Client mutated the server's response");
+                var call = () => field == "tools" ? client.listTools() : client.listPrompts()
+                var first = { resultType: "complete", ttlMs: 60000, cacheScope: "public", _meta: { server: "test" }, extension: "retained" }
+                first[field] = [{ name: "one" }, { name: "hidden" }]
+                fns[field + "/list"] = () => first
+                var single = call()
+                ow.test.assert(single.resultType, "complete", "List lost resultType")
+                ow.test.assert(single.ttlMs, 60000, "Single-page lifetime changed")
+                ow.test.assert(single.cacheScope, "public", "List lost scope")
+                ow.test.assert(single._meta, first._meta, "List lost metadata")
+                ow.test.assert(single.extension, "retained", "List lost extension fields")
+                ow.test.assert(single[field].length, field == "tools" ? 1 : 2, "Tool filtering changed")
+                ow.test.assert(first[field].length, 2, "Client mutated the server's response")
 
-                var scopes = ["public", "public"], ttls = [60000, 30000], calls;
+                var scopes = ["public", "public"], ttls = [60000, 30000], calls
                 fns[field + "/list"] = function(params) {
-                    var index = isDef(params.cursor) ? 1 : 0;
-                    calls.push(params.cursor);
-                    var page = { resultType: "complete", ttlMs: ttls[index], cacheScope: scopes[index], _meta: { server: "test" } };
-                    page[field] = [{ name: index == 0 ? "one" : "two" }];
-                    if (index == 0) page.nextCursor = "second";
-                    return page;
-                };
-                calls = [];
-                var pages = call();
-                ow.test.assert(calls.length, 2, "Pagination sent wrong number of requests");
-                ow.test.assert(isUnDef(calls[0]), true, "First list request sent a cursor");
-                ow.test.assert(calls[1], "second", "Pagination sent wrong cursor");
-                ow.test.assert(pages[field].map(v => v.name), ["one", "two"], "Pagination lost order or items");
-                ow.test.assert(isUnDef(pages.nextCursor), true, "Completed list retained a cursor");
-                ow.test.assert(pages.ttlMs > 0 && pages.ttlMs <= 30000, true, "Aggregate extended cache validity");
-                ow.test.assert(pages.cacheScope, "public", "Matching scopes changed");
-                ow.test.assert(pages._meta, { server: "test" }, "Paged list lost metadata");
-                scopes[1] = "private"; calls = [];
-                var privatePages = call();
-                ow.test.assert(privatePages.cacheScope, "private", "Aggregate widened cache scope");
-                ow.test.assert(privatePages.ttlMs, 0, "Conflicting scopes must disable aggregate caching");
-                scopes[1] = "public"; ttls[1] = __; calls = [];
-                ow.test.assert(call().ttlMs, 0, "Missing page lifetime allowed aggregate caching");
-                var legacyCalls = 0;
+                    var index = isDef(params.cursor) ? 1 : 0
+                    calls.push(params.cursor)
+                    var page = { resultType: "complete", ttlMs: ttls[index], cacheScope: scopes[index], _meta: { server: "test" } }
+                    page[field] = [{ name: index == 0 ? "one" : "two" }]
+                    if (index == 0) page.nextCursor = "second"
+                    return page
+                }
+                calls = []
+                var pages = call()
+                ow.test.assert(calls.length, 2, "Pagination sent wrong number of requests")
+                ow.test.assert(isUnDef(calls[0]), true, "First list request sent a cursor")
+                ow.test.assert(calls[1], "second", "Pagination sent wrong cursor")
+                ow.test.assert(pages[field].map(v => v.name), ["one", "two"], "Pagination lost order or items")
+                ow.test.assert(isUnDef(pages.nextCursor), true, "Completed list retained a cursor")
+                ow.test.assert(pages.ttlMs > 0 && pages.ttlMs <= 30000, true, "Aggregate extended cache validity")
+                ow.test.assert(pages.cacheScope, "public", "Matching scopes changed")
+                ow.test.assert(pages._meta, { server: "test" }, "Paged list lost metadata")
+                scopes[1] = "private"; calls = []
+                var privatePages = call()
+                ow.test.assert(privatePages.cacheScope, "private", "Aggregate widened cache scope")
+                ow.test.assert(privatePages.ttlMs, 0, "Conflicting scopes must disable aggregate caching")
+                scopes[1] = "public"; ttls[1] = __; calls = []
+                ow.test.assert(call().ttlMs, 0, "Missing page lifetime allowed aggregate caching")
+                var legacyCalls = 0
                 fns[field + "/list"] = function(params) {
-                    var page = {}; page[field] = [{ name: String(++legacyCalls) }];
-                    if (legacyCalls == 1) page.nextCursor = "second";
-                    return page;
-                };
-                var legacy = call();
-                ow.test.assert(Object.keys(legacy), [field], "Legacy pagination gained modern metadata");
-                ow.test.assert(legacy[field].length, 2, "Legacy pagination changed");
-            });
-        });
-    };
+                    var page = {}; page[field] = [{ name: String(++legacyCalls) }]
+                    if (legacyCalls == 1) page.nextCursor = "second"
+                    return page
+                }
+                var legacy = call()
+                ow.test.assert(Object.keys(legacy), [field], "Legacy pagination gained modern metadata")
+                ow.test.assert(legacy[field].length, 2, "Legacy pagination changed")
+            })
+        })
+    }
 
     exports.testMCPListUnsuccessfulPages = function() {
         withListClient(function(client, fns) {
             ["tools", "prompts"].forEach(function(field) {
-                var call = () => field == "tools" ? client.listTools() : client.listPrompts();
+                var call = () => field == "tools" ? client.listTools() : client.listPrompts()
                 var responses = [
                     { error: { code: -32603, message: "list failed" }, _meta: { trace: "error" } },
                     { resultType: "input_required", requests: [{ method: "elicitation/create" }], _meta: { trace: "input" } },
                     { unexpected: "malformed list" }
-                ];
+                ]
                 responses.forEach(function(response) {
                     [0, 1].forEach(function(priorPages) {
-                        var calls = 0;
+                        var calls = 0
                         fns[field + "/list"] = function(params) {
                             if (calls++ < priorPages) {
-                                var first = { nextCursor: "second" }; first[field] = [{ name: "partial" }]; return first;
+                                var first = { nextCursor: "second" }; first[field] = [{ name: "partial" }]; return first
                             }
-                            return response;
-                        };
-                        ow.test.assert(call(), response, "Unsuccessful page became a successful empty/partial list");
-                        ow.test.assert(calls, priorPages + 1, "Client kept dispatching after unsuccessful response");
-                    });
-                });
-            });
-        });
-    };
+                            return response
+                        }
+                        ow.test.assert(call(), response, "Unsuccessful page became a successful empty/partial list")
+                        ow.test.assert(calls, priorPages + 1, "Client kept dispatching after unsuccessful response")
+                    })
+                })
+            })
+        })
+    }
 
     exports.testMCPListPageLimit = function() {
         withListClient(function(client, fns) {
             ["tools", "prompts"].forEach(function(field) {
-                var calls = 0;
+                var calls = 0
                 fns[field + "/list"] = function(params) {
-                    ow.test.assert(params.cursor, calls == 0 ? __ : String(calls), "Wrong cursor at page limit");
-                    var page = { nextCursor: String(++calls) }; page[field] = [{ name: String(calls) }]; return page;
-                };
-                var result = field == "tools" ? client.listTools() : client.listPrompts();
-                ow.test.assert(calls, 1000, "Client exceeded its existing page limit");
-                ow.test.assert(result[field].length, 1000, "Page limit lost collected items");
-                ow.test.assert(result.nextCursor, "1000", "Page limit silently discarded continuation");
-            });
-        });
-    };
+                    ow.test.assert(params.cursor, calls == 0 ? __ : String(calls), "Wrong cursor at page limit")
+                    var page = { nextCursor: String(++calls) }; page[field] = [{ name: String(calls) }]; return page
+                }
+                var result = field == "tools" ? client.listTools() : client.listPrompts()
+                ow.test.assert(calls, 1000, "Client exceeded its existing page limit")
+                ow.test.assert(result[field].length, 1000, "Page limit lost collected items")
+                ow.test.assert(result.nextCursor, "1000", "Page limit silently discarded continuation")
+            })
+        })
+    }
 
 
     exports.testMCPAuthenticatedModernPagination = function() {
         withDualEraMCPServer(function(ctx) {
-            var seen = [];
+            var seen = []
             ctx.fns["tools/list"] = function(params) {
-                seen.push(params);
-                return isDef(params.cursor) ? { tools: [{ name: "second" }] } : { tools: [{ name: "first" }], nextCursor: "second" };
-            };
-            var client = $mcp({ type: "remote", strict: false, url: ctx.url, protocolVersion: "auto", auth: { type: "bearer", token: "fixture-token" } });
-            try {
-                client.initialize();
-                ctx.requests.length = 0;
-                var result = client.listTools();
-                ow.test.assert(result.tools.map(v => v.name), ["first", "second"], "Authenticated pagination lost items");
-                ow.test.assert(result.resultType, "complete", "Authenticated pagination lost modern metadata");
-                ow.test.assert(ctx.requests.length, 2, "Unexpected number of list HTTP requests");
-                ctx.requests.forEach(req => ow.test.assert(req.header.authorization, "Bearer fixture-token", "Page bypassed authenticated transport"));
-                seen.forEach(params => {
-                    ow.test.assert(params._meta["io.modelcontextprotocol/protocolVersion"], "2026-07-28", "Page lost negotiated protocol");
-                    ow.test.assert(isMap(params._meta["io.modelcontextprotocol/clientCapabilities"]), true, "Page lost client capabilities");
-                });
-            } finally {
-                client.destroy();
+                seen.push(params)
+                return isDef(params.cursor) ? { tools: [{ name: "second" }] } : { tools: [{ name: "first" }], nextCursor: "second" }
             }
-        });
-    };
+            var client = $mcp({ type: "remote", strict: false, url: ctx.url, protocolVersion: "auto", auth: { type: "bearer", token: "fixture-token" } })
+            try {
+                client.initialize()
+                ctx.requests.length = 0
+                var result = client.listTools()
+                ow.test.assert(result.tools.map(v => v.name), ["first", "second"], "Authenticated pagination lost items")
+                ow.test.assert(result.resultType, "complete", "Authenticated pagination lost modern metadata")
+                ow.test.assert(ctx.requests.length, 2, "Unexpected number of list HTTP requests")
+                ctx.requests.forEach(req => ow.test.assert(req.header.authorization, "Bearer fixture-token", "Page bypassed authenticated transport"))
+                seen.forEach(params => {
+                    ow.test.assert(params._meta["io.modelcontextprotocol/protocolVersion"], "2026-07-28", "Page lost negotiated protocol")
+                    ow.test.assert(isMap(params._meta["io.modelcontextprotocol/clientCapabilities"]), true, "Page lost client capabilities")
+                })
+            } finally {
+                client.destroy()
+            }
+        })
+    }
 
 
     exports.testJSONRPCStdioConcurrentExec = function() {
@@ -655,20 +655,20 @@
         } finally {
             c.destroy()
         }
-    };
+    }
 
     exports.testOAuthRejectsInsecureEndpointsAndIssuerMismatch = function() {
-        ow.loadServer();
+        ow.loadServer()
         var mk = function(extra) {
             return ow.server.httpd.oauth2(merge({ authURL: "http://auth.example.com/authorize", tokenURL: "http://auth.example.com/token",
-                clientId: "c", redirectURI: "http://127.0.0.1:12345/cb", tokenStore: false, interactive: false }, extra || {}));
-        };
-        var err;
+                clientId: "c", redirectURI: "http://127.0.0.1:12345/cb", tokenStore: false, interactive: false }, extra || {}))
+        }
+        var err
         try { mk().getAuthStatus(); } catch(e) { err = String(e); }
-        ow.test.assert(isDef(err) && err.indexOf("HTTPS") >= 0, true, "Remote plain-HTTP OAuth endpoints should be rejected: " + err);
-        err = __;
+        ow.test.assert(isDef(err) && err.indexOf("HTTPS") >= 0, true, "Remote plain-HTTP OAuth endpoints should be rejected: " + err)
+        err = __
         try { mk({ allowHTTP: true }).getAuthStatus(); } catch(e) { err = String(e); }
-        ow.test.assert(isUnDef(err) || err.indexOf("HTTPS") < 0, true, "allowHTTP should allow plain-HTTP OAuth endpoints: " + err);
+        ow.test.assert(isUnDef(err) || err.indexOf("HTTPS") < 0, true, "allowHTTP should allow plain-HTTP OAuth endpoints: " + err)
 
         withOAuthMCPServer(function(ctx) {
             var client = $mcp({
@@ -682,44 +682,44 @@
                     authorizationServer: "http://127.0.0.1:" + ctx.port + "/other",
                     authorizationServerMetadataURL: "http://127.0.0.1:" + ctx.port + "/.well-known/oauth-authorization-server/as"
                 }
-            });
-            var ierr;
+            })
+            var ierr
             try { client.initialize(); } catch(e) { ierr = String(e); } finally { client.destroy(); }
-            ow.test.assert(isDef(ierr) && ierr.indexOf("issuer") >= 0, true, "Mismatched OAuth metadata issuer should be rejected: " + ierr);
-            ow.test.assert(ctx.state.tokenRequests.length, 0, "No token request should be sent to an unverified issuer");
-        });
-    };
+            ow.test.assert(isDef(ierr) && ierr.indexOf("issuer") >= 0, true, "Mismatched OAuth metadata issuer should be rejected: " + ierr)
+            ow.test.assert(ctx.state.tokenRequests.length, 0, "No token request should be sent to an unverified issuer")
+        })
+    }
 
     exports.testMCPAutoClientLegacyOnlyDiscoverError = function() {
-        ow.loadServer();
-        var port = findRandomOpenPort(), methods = [];
-        var hs = ow.server.httpd.start(port, "127.0.0.1");
+        ow.loadServer()
+        var port = findRandomOpenPort(), methods = []
+        var hs = ow.server.httpd.start(port, "127.0.0.1")
         ow.server.httpd.route(hs, {
             "/mcp": function(req) {
-                var body = (isDef(req.files) && isDef(req.files.postData)) ? req.files.postData : req.data;
-                var rpc = jsonParse(body);
-                methods.push(rpc.method);
-                if (isUnDef(rpc.id) || isNull(rpc.id)) return ow.server.httpd.reply("", 204, "text/plain", {});
+                var body = (isDef(req.files) && isDef(req.files.postData)) ? req.files.postData : req.data
+                var rpc = jsonParse(body)
+                methods.push(rpc.method)
+                if (isUnDef(rpc.id) || isNull(rpc.id)) return ow.server.httpd.reply("", 204, "text/plain", {})
                 if (rpc.method == "server/discover") return ow.server.httpd.reply({ jsonrpc: "2.0", id: rpc.id,
-                    error: { code: -32022, message: "Unsupported protocol version", data: { supported: ["2024-11-05", "2025-06-18"] } } }, 200, "application/json", {});
-                var result = {};
-                if (rpc.method == "initialize") result = { protocolVersion: "2025-06-18", capabilities: {}, serverInfo: { name: "Legacy", version: "1" } };
-                if (rpc.method == "tools/list") result = { tools: [ { name: "ping", description: "p", inputSchema: { type: "object", properties: {} } } ] };
-                return ow.server.httpd.reply({ jsonrpc: "2.0", id: rpc.id, result: result }, 200, "application/json", {});
+                    error: { code: -32022, message: "Unsupported protocol version", data: { supported: ["2024-11-05", "2025-06-18"] } } }, 200, "application/json", {})
+                var result = {}
+                if (rpc.method == "initialize") result = { protocolVersion: "2025-06-18", capabilities: {}, serverInfo: { name: "Legacy", version: "1" } }
+                if (rpc.method == "tools/list") result = { tools: [ { name: "ping", description: "p", inputSchema: { type: "object", properties: {} } } ] }
+                return ow.server.httpd.reply({ jsonrpc: "2.0", id: rpc.id, result: result }, 200, "application/json", {})
             }
-        });
+        })
         try {
-            var client = $mcp({ type: "remote", strict: false, url: "http://127.0.0.1:" + port + "/mcp", protocolVersion: "auto" });
+            var client = $mcp({ type: "remote", strict: false, url: "http://127.0.0.1:" + port + "/mcp", protocolVersion: "auto" })
             try {
-                client.initialize({ name: "TestClient", version: "9.9.9" });
-                ow.test.assert(client.getClientInfo().era, "legacy", "A server listing only legacy versions must use the legacy era");
-                ow.test.assert(methods.indexOf("initialize") >= 0, true, "Legacy fallback must perform the initialize handshake");
-                ow.test.assert(client.listTools().tools[0].name, "ping", "Legacy fallback should list tools");
+                client.initialize({ name: "TestClient", version: "9.9.9" })
+                ow.test.assert(client.getClientInfo().era, "legacy", "A server listing only legacy versions must use the legacy era")
+                ow.test.assert(methods.indexOf("initialize") >= 0, true, "Legacy fallback must perform the initialize handshake")
+                ow.test.assert(client.listTools().tools[0].name, "ping", "Legacy fallback should list tools")
             } finally {
-                client.destroy();
+                client.destroy()
             }
         } finally {
-            ow.server.httpd.stop(hs);
+            ow.server.httpd.stop(hs)
         }
-    };
+    }
 })();

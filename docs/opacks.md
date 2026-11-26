@@ -127,6 +127,8 @@ Invoke it as `openaf --opack <verb> [args...] [options]` (packaged distributions
 - `-justcopy` — copy files without registering in the DB or checking versions (used internally by `oJob-common`'s packaging job, see §5).
 - `update` also adds: `-all` (update every installed package), `-noerase` (don't delete the old version's files before installing the new one), `-erasefolder` (do remove the old version's install folder — the "keep folder" behavior is the default).
 
+Named updates, including `opack update -all`, install from the repository source selected by the catalog. A same-named installed folder beneath the current directory does not override that source. The standalone regression can be run from the checkout root with `java -jar openaf.jar -f tests/opack-update-source.js`.
+
 ### Integrity checks
 
 Installation copies every listed file into a private temporary directory and checks that exact snapshot before either incoming install hook or any destination write. Every non-description payload needs a matching `filesHash` value unless `-noverify` is explicitly used. Missing files, failed reads, missing/malformed hashes and mismatches abort the package without reporting success or registering it. Updates defer erasing the old package until the incoming snapshot passes. JSON/YAML descriptions are written from the parsed manifest used for the operation rather than fetched again.
@@ -136,6 +138,8 @@ The package generator now includes nested package-description files in the hash 
 Legacy 40-digit SHA-1 values remain accepted, including LF/CRLF text compatibility; bare carriage returns in legacy-hashed text are rejected because they can change code semantics without changing that normalized hash. New manifests can provide raw 64-digit SHA-256 or `sha256:<digest>` values, verified against exact bytes. This does not authenticate the publisher or protect an attacker-modified manifest.
 
 Only verified staged files are promoted. Unrelated destination files are retained and affected files are backed up for restoration on promotion/hook failure. Rollback failures are reported; arbitrary hook side effects and interruption are not transactional. Staging needs temporary disk space for the payload and backups. Copy-only installs still verify by default, and `-noverify` remains an explicit integrity bypass. The standalone regression can be run from the checkout root with `java -jar openaf.jar -f tests/opack-integrity.js`.
+
+Remote ZIP-based packages are streamed directly into private staging for install, update, and info. The same download supplies the manifest and payload, and staging is removed when the package operation ends. Remote entries default to a 128 MiB expanded limit, and each root manifest is limited to 4 MiB. The remaining archive quotas keep their standard defaults. JVM `openaf.archive.maxEntryBytes` settings take precedence over `__flags.ARCHIVE.maxEntryBytes`, followed by the remote default. See [ZIP decompression limits](./plugins/ZIP.md#decompression-limits). Run the constrained-heap HTTP regression with `python3 tests/opack-streaming.py openaf.jar`.
 
 ### 3.2 Examples
 

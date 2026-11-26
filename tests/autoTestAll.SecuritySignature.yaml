@@ -5,12 +5,12 @@ include:
 
 jobs:
   - name: SecuritySignature::Init
-    exec: args.tests = require("autoTestAll.SecuritySignature.js");
+    exec: args.tests = require("autoTestAll.SecuritySignature.js")
 
   - name: SecuritySignature::Strict policy
     from: SecuritySignature::Init
     to  : OpenAF Test
-    exec: args.func = args.tests.testUnsupportedStrictSignaturePolicy;
+    exec: args.func = args.tests.testUnsupportedStrictSignaturePolicy
 
 todo:
   - SecuritySignature::Init

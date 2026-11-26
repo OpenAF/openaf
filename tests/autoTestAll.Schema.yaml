@@ -1,40 +1,60 @@
 include:
 - autoTestAll.common.yaml
+
 jobs:
+
+# Schema::Init
 - name: Schema::Init
-  exec: args.tests = require("autoTestAll.Schema.js");
+  exec: args.tests = require("autoTestAll.Schema.js")
+
+# Schema::Helpers
 - name: Schema::Helpers
   from: Schema::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testHelpers;
+  exec: args.func = args.tests.testHelpers
+
+# Schema::Defaults and data
 - name: Schema::Defaults and data
   from: Schema::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDefaultsAndData;
+  exec: args.func = args.tests.testDefaultsAndData
+
+# Schema::Registry and cache
 - name: Schema::Registry and cache
   from: Schema::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testRegistryAndCache;
+  exec: args.func = args.tests.testRegistryAndCache
+
+# Schema::Draft routing
 - name: Schema::Draft routing
   from: Schema::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testDrafts;
+  exec: args.func = args.tests.testDrafts
+
+# Schema::Formats and generator
 - name: Schema::Formats and generator
   from: Schema::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testFormatsAndGenerator;
+  exec: args.func = args.tests.testFormatsAndGenerator
+
+# Schema::Configuration
 - name: Schema::Configuration
   from: Schema::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testConfiguration;
+  exec: args.func = args.tests.testConfiguration
+
+# Schema::Source and native loading
 - name: Schema::Source and native loading
   from: Schema::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testSourceAndNative;
+  exec: args.func = args.tests.testSourceAndNative
+
+# Schema::Sigil helpers
 - name: Schema::Sigil helpers
   from: Schema::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testSigil;
+  exec: args.func = args.tests.testSigil
+
 todo:
 - Schema::Helpers
 - Schema::Defaults and data

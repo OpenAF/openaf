@@ -8,52 +8,52 @@ jobs:
    # --------------
    - name: Compile::Init
      exec: |
-       args.tests = require("autoTestAll.Compile.js");
+       args.tests = require("autoTestAll.Compile.js")
 
    - name: Compile::loadCompiled round-trip
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testLoadCompiledRoundTrip;
+     exec: args.func = args.tests.testLoadCompiledRoundTrip
 
    - name: Compile::loadCompiled large script
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testLoadCompiledLargeScript;
+     exec: args.func = args.tests.testLoadCompiledLargeScript
 
    - name: Compile::requireCompiled round-trip
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testRequireCompiledRoundTrip;
+     exec: args.func = args.tests.testRequireCompiledRoundTrip
 
    - name: Compile::loadCompiled stale recompile
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testLoadCompiledStaleRecompile;
+     exec: args.func = args.tests.testLoadCompiledStaleRecompile
 
    - name: Compile::loadCompiled purges stale layout
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testLoadCompiledPurgesStaleLayout;
+     exec: args.func = args.tests.testLoadCompiledPurgesStaleLayout
 
    - name: Compile::loadCompiled recursion depth
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testLoadCompiledRecursionDepth;
+     exec: args.func = args.tests.testLoadCompiledRecursionDepth
 
    - name: Compile::partitioned compilation
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testPartitionedCompilation;
+     exec: args.func = args.tests.testPartitionedCompilation
 
    - name: Compile::failure preserves jar
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testCompilationFailurePreservesJar;
+     exec: args.func = args.tests.testCompilationFailurePreservesJar
 
    - name: Compile::partition size retry
      from: Compile::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testPartitionSizeRetry;
+     exec: args.func = args.tests.testPartitionSizeRetry
 
 todo:
    # Compile tests

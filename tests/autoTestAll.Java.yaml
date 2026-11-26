@@ -24,7 +24,7 @@ jobs:
    - name: Java::OOM
      from: Java::Init
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.OOM.js").testOOM;
+     exec: args.func = require("autoTestAll.OOM.js").testOOM
 
    - name: Java::HPROFIndex
      from: Java::Init
@@ -34,37 +34,37 @@ jobs:
    - name: Java::HSPerf
      from: Java::Init
      to: OpenAF Test
-     exec: args.func = require("autoTestAll.HSPerf.js").testHSPerf;
+     exec: args.func = require("autoTestAll.HSPerf.js").testHSPerf
 
    - name: Java::JavaMaven
      from: Java::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testJavaMaven;
+     exec: args.func = args.tests.testJavaMaven
 
    - name: Java::JavaJMX
      from: Java::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testJavaJMX;
+     exec: args.func = args.tests.testJavaJMX
 
    - name: Java::JavaIMAP
      from: Java::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testJavaIMAP;
+     exec: args.func = args.tests.testJavaIMAP
 
    - name: Java::JavaClassVersion
      from: Java::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testJavaClassVersion;
+     exec: args.func = args.tests.testJavaClassVersion
 
    - name: Java::JavaJsonMemComm
      from: Java::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testJavaJsonMemComm;
+     exec: args.func = args.tests.testJavaJsonMemComm
 
    - name: Java::JavaSSL
      from: Java::Init
      to: OpenAF Test
-     exec: args.func = args.tests.testJavaSSL;
+     exec: args.func = args.tests.testJavaSSL
 
 todo:
    - Java::OOM

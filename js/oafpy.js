@@ -1,8 +1,8 @@
 // Generates a Python 2/3 compatible oaf.py module.
-ow.loadFormat();
-var openafExec = getOpenAFPath() + (ow.format.isWindows() ? "oaf.bat" : "oaf");
-var command = [openafExec, "-c", "ow.loadPython().startServer(__,__,__,true);print(ow.python.initCode(false,true)+'\\n----');while(ow.python.running) sleep(1000,true);"];
-var encoded = String(java.util.Base64.getEncoder().encodeToString(af.fromString2Bytes(stringify(command, __, ""), "UTF-8")));
+ow.loadFormat()
+var openafExec = getOpenAFPath() + (ow.format.isWindows() ? "oaf.bat" : "oaf")
+var command = [openafExec, "-c", "ow.loadPython().startServer(__,__,__,true);print(ow.python.initCode(false,true)+'\\n----');while(ow.python.running) sleep(1000,true);"]
+var encoded = String(java.util.Base64.getEncoder().encodeToString(af.fromString2Bytes(stringify(command, __, ""), "UTF-8")))
 print(`# Store as oaf.py, then: from oaf import _, _d, _oaf, _g, _s
 import subprocess, atexit, threading, json, base64, os, signal, sys, time
 try:
@@ -91,4 +91,4 @@ try:
 except BaseException:
     on_exit()
     raise
-`);
+`)

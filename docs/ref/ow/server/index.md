@@ -30,7 +30,7 @@ Creates an agent registry for Agent-to-Agent (A2A) messaging over MCP. Agents ca
 
 Sources:
 
-- js/owrap.server.js:2116
+- js/owrap.server.js:2375
 
 <a id="api-ow-server-authappcheck-eb0fc909"></a>
 
@@ -148,7 +148,7 @@ To provide another custom `aListImplementation` it should contain the following 
 
 Sources:
 
-- js/owrap.server.js:2468
+- js/owrap.server.js:2727
 
 <a id="api-ow-server-clusterchspeersimpl-492946a3"></a>
 
@@ -179,7 +179,7 @@ There are several implementation options:
 
 Sources:
 
-- js/owrap.server.js:2785
+- js/owrap.server.js:3044
 
 <a id="api-ow-server-daemon-dd1a6506"></a>
 
@@ -262,7 +262,7 @@ Shared Model Context Protocol version negotiation helpers used by ow.server.mcpS
 
 Sources:
 
-- js/owrap.server.js:1732
+- js/owrap.server.js:1734
 
 <a id="api-ow-server-mcpstdio-3c6f4175"></a>
 
@@ -330,7 +330,7 @@ Example usage:
 
 Sources:
 
-- js/owrap.server.js:1894
+- js/owrap.server.js:2147
 
 <a id="api-ow-server-processarguments-e580913c"></a>
 

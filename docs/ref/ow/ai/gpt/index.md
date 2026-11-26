@@ -16,7 +16,7 @@ Adds aPrompt (a string or an array of strings) with aRole (defaults to "develope
 
 Sources:
 
-- js/owrap.ai.js:5047
+- js/owrap.ai.js:5003
 
 <a id="api-ow-ai-gpt-addprompt-1acaaa15"></a>
 
@@ -28,7 +28,7 @@ Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") t
 
 Sources:
 
-- js/owrap.ai.js:5013
+- js/owrap.ai.js:4969
 
 <a id="api-ow-ai-gpt-addsystemprompt-0807dda0"></a>
 
@@ -40,7 +40,7 @@ Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") t
 
 Sources:
 
-- js/owrap.ai.js:5035
+- js/owrap.ai.js:4991
 
 <a id="api-ow-ai-gpt-adduserprompt-6a4ede38"></a>
 
@@ -52,7 +52,7 @@ Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") t
 
 Sources:
 
-- js/owrap.ai.js:5024
+- js/owrap.ai.js:4980
 
 <a id="api-ow-ai-gpt-booleanprompt-cc28a915"></a>
 
@@ -64,7 +64,7 @@ Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults t
 
 Sources:
 
-- js/owrap.ai.js:5118
+- js/owrap.ai.js:5074
 
 <a id="api-ow-ai-gpt-cleanprompt-2ec7e344"></a>
 
@@ -76,7 +76,7 @@ Cleans the current conversation.
 
 Sources:
 
-- js/owrap.ai.js:5058
+- js/owrap.ai.js:5014
 
 <a id="api-ow-ai-gpt-codeprompt-bfec5465"></a>
 
@@ -88,7 +88,7 @@ Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults t
 
 Sources:
 
-- js/owrap.ai.js:5232
+- js/owrap.ai.js:5188
 
 <a id="api-ow-ai-gpt-decide-91793844"></a>
 
@@ -100,7 +100,7 @@ Evaluates text/JSON state with named choice, boolean and ordinal score questions
 
 Sources:
 
-- js/owrap.ai.js:4596
+- js/owrap.ai.js:4552
 
 <a id="api-ow-ai-gpt-decidewithstats-2b4325bf"></a>
 
@@ -112,7 +112,7 @@ Returns &#123; response, stats &#125; from one execution with request-scoped usa
 
 Sources:
 
-- js/owrap.ai.js:4617
+- js/owrap.ai.js:4573
 
 <a id="api-ow-ai-gpt-exportconversation-467de988"></a>
 
@@ -124,7 +124,7 @@ Exports the current conversation as a portable, provider-neutral format array. E
 
 Sources:
 
-- js/owrap.ai.js:4835
+- js/owrap.ai.js:4791
 
 <a id="api-ow-ai-gpt-getcapabilities-8527cdef"></a>
 
@@ -136,7 +136,7 @@ Returns implemented decision strategies, verified contracts and model availabili
 
 Sources:
 
-- js/owrap.ai.js:4517
+- js/owrap.ai.js:4473
 
 <a id="api-ow-ai-gpt-getconversation-80a52903"></a>
 
@@ -148,7 +148,7 @@ Returns the current conversation.
 
 Sources:
 
-- js/owrap.ai.js:4814
+- js/owrap.ai.js:4770
 
 <a id="api-ow-ai-gpt-getlaststats-1ab797f6"></a>
 
@@ -160,7 +160,7 @@ Returns the latest usage statistics reported by the underlying GPT model for the
 
 Sources:
 
-- js/owrap.ai.js:4627
+- js/owrap.ai.js:4583
 
 <a id="api-ow-ai-gpt-importconversation-667514a5"></a>
 
@@ -172,7 +172,7 @@ Imports a portable conversation previously exported via exportConversation() int
 
 Sources:
 
-- js/owrap.ai.js:4851
+- js/owrap.ai.js:4807
 
 <a id="api-ow-ai-gpt-jsonprompt-ebb1a64d"></a>
 
@@ -184,7 +184,7 @@ Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults t
 
 Sources:
 
-- js/owrap.ai.js:5069
+- js/owrap.ai.js:5025
 
 <a id="api-ow-ai-gpt-jsonpromptwithstats-dc0f663c"></a>
 
@@ -196,7 +196,7 @@ Executes jsonPrompt and returns the parsed response together with any reported s
 
 Sources:
 
-- js/owrap.ai.js:5082
+- js/owrap.ai.js:5038
 
 <a id="api-ow-ai-gpt-jsonpromptwithstatsraw-7e7f34f9"></a>
 
@@ -208,7 +208,7 @@ Executes jsonPrompt and returns the raw response, parsed response, and statistic
 
 Sources:
 
-- js/owrap.ai.js:5096
+- js/owrap.ai.js:5052
 
 <a id="api-ow-ai-gpt-jsonschemaprompt-f7aed9fe"></a>
 
@@ -233,7 +233,7 @@ Only supported by the `openai` provider. Throws if the underlying provider does 
 
 Sources:
 
-- js/owrap.ai.js:4908
+- js/owrap.ai.js:4864
 
 <a id="api-ow-ai-gpt-jsonschemapromptwithstats-be5d1447"></a>
 
@@ -247,7 +247,7 @@ aResponseSchema should be a map with: name (string), description (string), schem
 
 Sources:
 
-- js/owrap.ai.js:4961
+- js/owrap.ai.js:4917
 
 <a id="api-ow-ai-gpt-parsecode-c724137e"></a>
 
@@ -259,7 +259,7 @@ Tries to parse anAnswer and return the code between &#92;&#96;&#96;&#96; and &#9
 
 Sources:
 
-- js/owrap.ai.js:5195
+- js/owrap.ai.js:5151
 
 <a id="api-ow-ai-gpt-pathprompt-d8a47eed"></a>
 
@@ -271,7 +271,7 @@ Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults t
 
 Sources:
 
-- js/owrap.ai.js:5181
+- js/owrap.ai.js:5137
 
 <a id="api-ow-ai-gpt-prompt-898b2b69"></a>
 
@@ -283,7 +283,7 @@ Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults t
 
 Sources:
 
-- js/owrap.ai.js:4681
+- js/owrap.ai.js:4637
 
 <a id="api-ow-ai-gpt-promptimage-dcc49481"></a>
 
@@ -295,7 +295,7 @@ Tries to prompt aPrompt (a string or an array of strings) with aImage (a file pa
 
 Sources:
 
-- js/owrap.ai.js:4804
+- js/owrap.ai.js:4760
 
 <a id="api-ow-ai-gpt-promptimggen-16163182"></a>
 
@@ -307,7 +307,7 @@ Tries to prompt aPrompt (a string or an array of strings), aModel (defaults to t
 
 Sources:
 
-- js/owrap.ai.js:4975
+- js/owrap.ai.js:4931
 
 <a id="api-ow-ai-gpt-promptstream-5e5cc7a0"></a>
 
@@ -319,7 +319,7 @@ Executes a streaming prompt, calling aOnDelta for each streamed chunk, and retur
 
 Sources:
 
-- js/owrap.ai.js:4692
+- js/owrap.ai.js:4648
 
 <a id="api-ow-ai-gpt-promptstreamjson-9b659828"></a>
 
@@ -331,7 +331,7 @@ Executes a streaming JSON prompt and returns the parsed JSON response.
 
 Sources:
 
-- js/owrap.ai.js:4748
+- js/owrap.ai.js:4704
 
 <a id="api-ow-ai-gpt-promptstreamjsonwithstats-300ac9eb"></a>
 
@@ -343,7 +343,7 @@ Executes a streaming JSON prompt and returns the parsed response with statistics
 
 Sources:
 
-- js/owrap.ai.js:4762
+- js/owrap.ai.js:4718
 
 <a id="api-ow-ai-gpt-promptstreamjsonwithstatsraw-0a0f9d18"></a>
 
@@ -355,7 +355,7 @@ Executes a streaming JSON prompt and returns the raw response, parsed response, 
 
 Sources:
 
-- js/owrap.ai.js:4777
+- js/owrap.ai.js:4733
 
 <a id="api-ow-ai-gpt-promptstreamwithstats-b57d45ae"></a>
 
@@ -367,7 +367,7 @@ Executes a streaming prompt and returns a map with the aggregated response and s
 
 Sources:
 
-- js/owrap.ai.js:4722
+- js/owrap.ai.js:4678
 
 <a id="api-ow-ai-gpt-promptwithstats-f4137da4"></a>
 
@@ -379,7 +379,7 @@ Executes prompt and returns a map with the model response and any reported stati
 
 Sources:
 
-- js/owrap.ai.js:4792
+- js/owrap.ai.js:4748
 
 <a id="api-ow-ai-gpt-rawdecide-fef7e1cd"></a>
 
@@ -391,7 +391,7 @@ Returns &#123; contractVersion, provider, model, strategy, raw &#125; from one e
 
 Sources:
 
-- js/owrap.ai.js:4607
+- js/owrap.ai.js:4563
 
 <a id="api-ow-ai-gpt-rawimggen-bafe1e42"></a>
 
@@ -403,7 +403,7 @@ Tries to generate an image based on aPrompt (a string or an array of strings) wi
 
 Sources:
 
-- js/owrap.ai.js:5002
+- js/owrap.ai.js:4958
 
 <a id="api-ow-ai-gpt-rawprompt-e56edcf4"></a>
 
@@ -415,7 +415,7 @@ Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults t
 
 Sources:
 
-- js/owrap.ai.js:4877
+- js/owrap.ai.js:4833
 
 <a id="api-ow-ai-gpt-rawpromptstream-43e3f4e1"></a>
 
@@ -427,7 +427,7 @@ Executes a streaming prompt and returns the raw streaming payloads together with
 
 Sources:
 
-- js/owrap.ai.js:4704
+- js/owrap.ai.js:4660
 
 <a id="api-ow-ai-gpt-rawpromptstreamwithstats-0dc2d52b"></a>
 
@@ -439,7 +439,7 @@ Executes a streaming prompt and returns the raw streaming payloads, aggregated r
 
 Sources:
 
-- js/owrap.ai.js:4735
+- js/owrap.ai.js:4691
 
 <a id="api-ow-ai-gpt-rawpromptwithstats-ec01c96a"></a>
 
@@ -451,7 +451,7 @@ Executes rawPrompt and returns the raw response together with any reported stati
 
 Sources:
 
-- js/owrap.ai.js:4888
+- js/owrap.ai.js:4844
 
 <a id="api-ow-ai-gpt-setconversation-361017fe"></a>
 
@@ -463,7 +463,7 @@ Sets the current conversation to aConversation.
 
 Sources:
 
-- js/owrap.ai.js:4824
+- js/owrap.ai.js:4780
 
 <a id="api-ow-ai-gpt-setdebugch-94047317"></a>
 
@@ -475,7 +475,7 @@ Sets the debug channel name to aChName. When defined, creates an OpenAF channel 
 
 Sources:
 
-- js/owrap.ai.js:4866
+- js/owrap.ai.js:4822
 
 <a id="api-ow-ai-gpt-setinstructions-9bf64dd9"></a>
 
@@ -487,7 +487,7 @@ Sets the instructions for the current conversation. aType can be a string (e.g. 
 
 Sources:
 
-- js/owrap.ai.js:5142
+- js/owrap.ai.js:5098
 
 <a id="api-ow-ai-gpt-settool-3f8dbffa"></a>
 
@@ -499,7 +499,7 @@ Sets a tool with aName, aDesc (description), aParams (a json schema) and aFn (a 
 
 Sources:
 
-- js/owrap.ai.js:5131
+- js/owrap.ai.js:5087
 
 <a id="api-ow-ai-gpt-sqlprompt-91efb48e"></a>
 
@@ -511,5 +511,5 @@ Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults t
 
 Sources:
 
-- js/owrap.ai.js:5166
+- js/owrap.ai.js:5122
 

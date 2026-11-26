@@ -8,14 +8,18 @@ help:
     desc: Status to select (default active)
   - name: output
     desc: Optional output JSON file; overwritten if present
+
 ojob:
   sequential: true
   shareArgs: true
   logToConsole: false
   catch: |
-    printErr("filter-records: " + exception);
-    exit(1);
+    printErr("filter-records: " + exception)
+    exit(1)
+
 jobs:
+
+# Read
 - name: Read
   check:
     in:
@@ -24,7 +28,9 @@ jobs:
     out:
       records: isArray
   exec: |
-    args.records = io.readFileJSON(args.input);
+    args.records = io.readFileJSON(args.input)
+
+# Filter
 - name: Filter
   check:
     in:
@@ -33,11 +39,14 @@ jobs:
     out:
       result: isArray
   exec: |
-    args.result = $from(args.records).equals("status", args.status).select();
+    args.result = $from(args.records).equals("status", args.status).select()
+
+# Write
 - name: Write
   exec: |
-    if (isDef(args.output)) io.writeFileJSON(_$(args.output).isString().$_(), args.result);
-    print(stringify(args.result, __, ""));
+    if (isDef(args.output)) io.writeFileJSON(_$(args.output).isString().$_(), args.result)
+    print(stringify(args.result, __, ""))
+
 todo:
 - Read
 - Filter

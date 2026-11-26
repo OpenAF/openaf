@@ -1,26 +1,38 @@
 ojob:
   sequential: true
   logToConsole: false
+
 jobs:
+
+# Produce
 - name: Produce
   each: [Print record]
   typeArgs:
     eachThreads: 1
   exec: |
-    $get("skill.records").records.forEach(function(record) { each(record); });
+    $get("skill.records").records.forEach(function(record) { each(record); })
+
+# Print record
 - name: Print record
   exec: |
-    print("record: " + args.id);
+    print("record: " + args.id)
+
+# Empty
 - name: Empty
   exec: |
-    print("no records");
+    print("no records")
+
 todo:
+
+# ojob set
 - name: ojob set
   args:
     __key: skill.records
     __path: payload
     payload:
       records: [{ id: 1 }, { id: 2 }]
+
+# ojob if
 - name: ojob if
   args:
     __condition: '$get("skill.records").records.length > 0'

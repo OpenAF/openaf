@@ -35,6 +35,46 @@
         }
     }
 
+    exports.testArchiveLimitFlags = function() {
+        // Set up a fixture and save the active configuration.
+        plugin("ZIP")
+        var key = "openaf.archive.maxEntryBytes"
+        var previousProperty = java.lang.System.getProperty(key)
+        var previousFlags = __flags.ARCHIVE
+        var zip = new ZIP()
+        try {
+            zip.putFile("data.txt", af.fromString2Bytes("x".repeat(128)))
+            var bytes = zip.generate()
+            java.lang.System.clearProperty(key)
+
+            // Check runtime changes and the JVM override.
+            __flags.ARCHIVE = { maxEntryBytes: 16 }
+            var failure = ""
+            try { zip.load(bytes) } catch(e) { failure = String(e) }
+            ow.test.assert(failure.indexOf("Archive quota exceeded: expanded entry bytes") >= 0, true, "ZIP load ignored the runtime quota")
+            __flags.ARCHIVE.maxEntryBytes = 128
+            zip.load(bytes)
+            ow.test.assert(zip.getFile("data.txt").length, 128, "Updated runtime quota did not apply")
+            java.lang.System.setProperty(key, "16")
+            failure = ""
+            try { zip.load(bytes) } catch(e) { failure = String(e) }
+            ow.test.assert(failure.indexOf("Archive quota exceeded: expanded entry bytes") >= 0, true, "JVM quota did not override the runtime quota")
+
+            // Reject malformed flag values.
+            java.lang.System.clearProperty(key)
+            __flags.ARCHIVE.maxEntryBytes = 128.5
+            failure = ""
+            try { zip.load(bytes) } catch(e) { failure = String(e) }
+            ow.test.assert(failure.indexOf("__flags.ARCHIVE.maxEntryBytes must be a positive safe integer") >= 0, true, "Fractional archive flag was accepted")
+        } finally {
+            // Restore the configuration for subsequent tests.
+            __flags.ARCHIVE = previousFlags
+            if (isNull(previousProperty)) java.lang.System.clearProperty(key)
+            else java.lang.System.setProperty(key, previousProperty)
+            zip.close()
+        }
+    }
+
     exports.testZIP = function() {
         plugin("ZIP");
 
@@ -68,45 +108,45 @@
     };
 
     exports.testZIPReadOwnership = function() {
-        plugin("ZIP");
-        var path = io.createTempFile("zip-ownership-", ".zip");
-        var emptyPath = io.createTempFile("zip-empty-", ".zip");
-        var zip = new ZIP(), streams = [];
+        plugin("ZIP")
+        var path = io.createTempFile("zip-ownership-", ".zip")
+        var emptyPath = io.createTempFile("zip-empty-", ".zip")
+        var zip = new ZIP(), streams = []
         try {
-            io.writeFileBytes(emptyPath, zip.generate());
-            ow.test.assert(zip.streamGetFile(emptyPath, "missing"), null, "Empty archive byte lookup failed");
-            ow.test.assert(zip.streamGetFileStream(emptyPath, "missing"), null, "Empty archive stream lookup failed");
-            ow.test.assert(zip.getFile("missing"), null, "Empty in-memory lookup failed");
-            zip.putFile("a.txt", "abcdef");
-            zip.putFile("b.txt", "uvwxyz");
-            io.writeFileBytes(path, zip.generate());
-            zip.loadFile(path);
-            ow.test.assert(zip.getFile("missing"), null, "Missing loaded entry should return null");
-            ow.test.assert(zip.streamGetFile(path, "missing"), null, "Missing byte entry should return null");
-            ow.test.assert(zip.streamGetFileStream(path, "missing"), null, "Missing stream entry should return null");
-            var a = zip.streamGetFileStream(path, "a.txt"); streams.push(a);
-            ow.test.assert(a.read(), 97, "First stream read failed");
-            var b = zip.streamGetFileStream(path, "b.txt"); streams.push(b);
-            ow.test.assert(b.read(), 117, "Second stream read failed");
-            ow.test.assert(af.fromBytes2String(zip.streamGetFile(path, "a.txt")), "abcdef", "Interleaved byte read failed");
-            ow.test.assert(af.fromBytes2String(zip.getFile("b.txt")), "uvwxyz", "Byte read invalidated loaded archive");
-            ow.test.assert(a.read(), 98, "Opening another stream invalidated the first");
-            a.close(); a.close();
-            ow.test.assert(b.read(), 118, "Closing one stream invalidated another");
-            var c = zip.streamGetFileStream(path, "a.txt"); streams.push(c);
+            io.writeFileBytes(emptyPath, zip.generate())
+            ow.test.assert(zip.streamGetFile(emptyPath, "missing"), null, "Empty archive byte lookup failed")
+            ow.test.assert(zip.streamGetFileStream(emptyPath, "missing"), null, "Empty archive stream lookup failed")
+            ow.test.assert(zip.getFile("missing"), null, "Empty in-memory lookup failed")
+            zip.putFile("a.txt", "abcdef")
+            zip.putFile("b.txt", "uvwxyz")
+            io.writeFileBytes(path, zip.generate())
+            zip.loadFile(path)
+            ow.test.assert(zip.getFile("missing"), null, "Missing loaded entry should return null")
+            ow.test.assert(zip.streamGetFile(path, "missing"), null, "Missing byte entry should return null")
+            ow.test.assert(zip.streamGetFileStream(path, "missing"), null, "Missing stream entry should return null")
+            var a = zip.streamGetFileStream(path, "a.txt"); streams.push(a)
+            ow.test.assert(a.read(), 97, "First stream read failed")
+            var b = zip.streamGetFileStream(path, "b.txt"); streams.push(b)
+            ow.test.assert(b.read(), 117, "Second stream read failed")
+            ow.test.assert(af.fromBytes2String(zip.streamGetFile(path, "a.txt")), "abcdef", "Interleaved byte read failed")
+            ow.test.assert(af.fromBytes2String(zip.getFile("b.txt")), "uvwxyz", "Byte read invalidated loaded archive")
+            ow.test.assert(a.read(), 98, "Opening another stream invalidated the first")
+            a.close(); a.close()
+            ow.test.assert(b.read(), 118, "Closing one stream invalidated another")
+            var c = zip.streamGetFileStream(path, "a.txt"); streams.push(c)
             zip.close();
             [b, c].forEach(stream => {
-                var failed = false;
+                var failed = false
                 try { stream.read(); } catch (e) { failed = true; }
-                ow.test.assert(failed, true, "ZIP.close did not release outstanding stream");
-            });
-            zip.close();
+                ow.test.assert(failed, true, "ZIP.close did not release outstanding stream")
+            })
+            zip.close()
         } finally {
-            streams.forEach(stream => { try { stream.close(); } catch (e) {} });
-            zip.close();
-            io.rm(path); io.rm(emptyPath);
+            streams.forEach(stream => { try { stream.close(); } catch (e) {} })
+            zip.close()
+            io.rm(path); io.rm(emptyPath)
         }
-    };
+    }
 
   exports.testZIPMetadataListing = function() {
     plugin('ZIP')
@@ -172,4 +212,4 @@
     }
   }
 
-})();
+})()

@@ -161,7 +161,7 @@ public class CSV extends ScriptableObject {
 	}
 
 	@JSFunction
-	public void toStream(Object aStream, Function func) throws IOException {
+    public void toStream(Object aStream, Function func) throws IOException {
 		if (aStream instanceof OutputStream) {
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter((OutputStream) aStream));
 
@@ -193,7 +193,7 @@ public class CSV extends ScriptableObject {
 	}
 
 	@JSFunction
-	public void fromStream(Object aStream, Function func) throws IOException {
+    public void fromStream(Object aStream, Function func) throws IOException {
 		if (aStream instanceof InputStream) {
 			boolean hasHeaders = false;
 			String[] headers = null;

@@ -21,9 +21,9 @@ public class SimpleLog {
 	public static enum logtype { INFO, ERROR, DEBUG };
 	public static logtype currentLogLevel = logtype.ERROR;
 	protected static boolean ready = false;
-	protected static Function nFunc = null; 
+    protected static Function nFunc = null;
 	
-	public static void setNFunc(Function fn) {
+    public static void setNFunc(Function fn) {
 		nFunc = fn;
 	}
 

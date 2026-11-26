@@ -23,11 +23,11 @@ var morehelp = "Please check http://openaf.io for more."
 	
 function printHelpText(entry) {
   if (entry.format == "markdown" && java.lang.System.console() != null && __initializeCon() && __conAnsi) {
-    ow.loadFormat();
-    ansiStart();
+    ow.loadFormat()
+    ansiStart()
     try { print(ow.format.withMD(entry.text)); } finally { ansiStop(); }
   } else {
-    print(entry.text);
+    print(entry.text)
   }
 }
 
@@ -44,12 +44,12 @@ if (__args.length >= 1 && term != 'undefined') {
 	if (h.length == 1) {
 		print(h[0].fullkey);
 		print(repeat(h[0].fullkey.length, '-'));
-		printHelpText(h[0]);
+		printHelpText(h[0])
 		print("");
 	} else {
 		if (h.length > 1) {
 			for(var i in h) {
-				print(h[i].key + " (" + h[i].id + ")");
+				print(h[i].key + " (" + h[i].id + ")")
 			}
 		} else {
 			print("Term '" + term + "' not found.");
@@ -59,7 +59,7 @@ if (__args.length >= 1 && term != 'undefined') {
 	}	
 } else {
 	var h = searchHelp("index", undefined, ['index']);
-	printHelpText(h[0]);
+	printHelpText(h[0])
 	print("");
 	print(morehelp);
 }

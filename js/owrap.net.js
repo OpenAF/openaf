@@ -556,39 +556,39 @@ OpenWrap.net.prototype.doh = function(aName, aType, aProvider, aCache, aCacheTim
  * </odoc>
  */
 OpenWrap.net.prototype.getDoH = function(aName, aType, aProvider) {
-	_$(aName, "aName").isString().$_();
-	aType = _$(aType, "aType").isString().default("a");
-	aProvider = _$(aProvider, "aProvider").isString().default(__flags.DOH_PROVIDER);
+	_$(aName, "aName").isString().$_()
+	aType = _$(aType, "aType").isString().default("a")
+	aProvider = _$(aProvider, "aProvider").isString().default(__flags.DOH_PROVIDER)
 
 	if (isString(aProvider) && aProvider.match(/^https?:\/\//i)) {
-		ow.loadObj();
-		var _name = aName.endsWith(".") ? aName : aName + ".";
+		ow.loadObj()
+		var _name = aName.endsWith(".") ? aName : aName + "."
 		var _record = Packages.org.xbill.DNS.Record.newRecord(
 			Packages.org.xbill.DNS.Name.fromString(_name),
 			Packages.org.xbill.DNS.Type.value(aType.toUpperCase()),
 			Packages.org.xbill.DNS.DClass.IN
-		);
-		var _query = Packages.org.xbill.DNS.Message.newQuery(_record).toWire();
+		)
+		var _query = Packages.org.xbill.DNS.Message.newQuery(_record).toWire()
 		var _dns = af.fromBytes2String(af.toBase64Bytes(_query))
-			.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-		var _url = aProvider + (aProvider.indexOf("?") >= 0 ? "&" : "?") + "dns=" + _dns;
-		var _http = new ow.obj.http();
-		var _res;
+			.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+		var _url = aProvider + (aProvider.indexOf("?") >= 0 ? "&" : "?") + "dns=" + _dns
+		var _http = new ow.obj.http()
+		var _res
 		try {
-			_res = _http.getBytes(_url, __, { accept: "application/dns-message" });
+			_res = _http.getBytes(_url, __, { accept: "application/dns-message" })
 		} finally {
 			try { _http.close(); } catch(e) {}
 		}
 
 		var _answer = new Packages.org.xbill.DNS.Message(_res.responseBytes)
-			.getSectionArray(Packages.org.xbill.DNS.Section.ANSWER);
+			.getSectionArray(Packages.org.xbill.DNS.Section.ANSWER)
 		if (_answer.length > 0) return _answer.map(_r => ({
 			name: String(_r.getName()),
 			type: _r.getType(),
 			TTL : _r.getTTL(),
 			data: String(_r.rdataToString())
-		}));
-		else return __;
+		}))
+		else return __
 	}
  
 	switch (aProvider) {

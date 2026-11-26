@@ -1,21 +1,21 @@
 // OpenWrap Screen TUI and rich terminal styling/layout library.
 OpenWrap.screen = function(options) {
-  ow.loadFormat();
-  this.__options = {};
-  this.configure(options || {});
-  return this;
-};
+  ow.loadFormat()
+  this.__options = {}
+  this.configure(options || {})
+  return this
+}
 
 /** <odoc>
  * <key>ow.screen.configure(aOptions) : ow.screen</key>
  * Configures default screen options (theme, colorMode, unicode, borderStyle, align, spacing, padding, etc.).
  * </odoc> */
 OpenWrap.screen.prototype.configure = function(options) {
-  if (!isMap(options)) return this;
-  var self = this;
-  Object.keys(options).forEach(function(k) { self.__options[k] = options[k]; });
-  return this;
-};
+  if (!isMap(options)) return this
+  var self = this
+  Object.keys(options).forEach(function(k) { self.__options[k] = options[k]; })
+  return this
+}
 
 /** <odoc>
  * <key>ow.screen.capabilities(aOptions) : Map</key>
@@ -23,29 +23,29 @@ OpenWrap.screen.prototype.configure = function(options) {
  * unicode support, width, and height. Respects NO_COLOR, FORCE_COLOR, COLORTERM, and TERM.
  * </odoc> */
 OpenWrap.screen.prototype.capabilities = function(options) {
-  var opts = isMap(options) ? options : {};
-  var term = String(getEnv("TERM") || "");
-  var ct = String(getEnv("COLORTERM") || "");
-  var tp = String(getEnv("TERM_PROGRAM") || "");
-  var lang = String(getEnv("LANG") || getEnv("LC_ALL") || "");
-  var mode = opts.colorMode || this.__options.colorMode || "auto";
+  var opts = isMap(options) ? options : {}
+  var term = String(getEnv("TERM") || "")
+  var ct = String(getEnv("COLORTERM") || "")
+  var tp = String(getEnv("TERM_PROGRAM") || "")
+  var lang = String(getEnv("LANG") || getEnv("LC_ALL") || "")
+  var mode = opts.colorMode || this.__options.colorMode || "auto"
   if (mode == "auto") {
-    var forceColor = String(getEnv("FORCE_COLOR") || "");
-    if (isDef(getEnv("NO_COLOR")) && String(getEnv("NO_COLOR")) !== "") mode = "none";
-    else if (forceColor == "3") mode = "truecolor";
-    else if (forceColor == "2") mode = "256";
-    else if (forceColor == "1") mode = "16";
-    else if (forceColor == "0") mode = "none";
-    else if (opts.ansi === false) mode = "none";
-    else if (/24bit|truecolor/i.test(ct) || /iTerm\.app|WezTerm|vscode|alacritty|kitty|ghostty/i.test(tp) || /direct|truecolor/i.test(term)) mode = "truecolor";
-    else if (/256color/i.test(term)) mode = "256";
-    else if (opts.ansi === true || (term && term != "dumb")) mode = "256";
-    else mode = "none";
+    var forceColor = String(getEnv("FORCE_COLOR") || "")
+    if (isDef(getEnv("NO_COLOR")) && String(getEnv("NO_COLOR")) !== "") mode = "none"
+    else if (forceColor == "3") mode = "truecolor"
+    else if (forceColor == "2") mode = "256"
+    else if (forceColor == "1") mode = "16"
+    else if (forceColor == "0") mode = "none"
+    else if (opts.ansi === false) mode = "none"
+    else if (/24bit|truecolor/i.test(ct) || /iTerm\.app|WezTerm|vscode|alacritty|kitty|ghostty/i.test(tp) || /direct|truecolor/i.test(term)) mode = "truecolor"
+    else if (/256color/i.test(term)) mode = "256"
+    else if (opts.ansi === true || (term && term != "dumb")) mode = "256"
+    else mode = "none"
   }
-  var depth = mode == "truecolor" ? 16777216 : mode == "256" ? 256 : mode == "16" ? 16 : 0;
-  var unicode = isBoolean(opts.unicode) ? opts.unicode : isBoolean(this.__options.unicode) ? this.__options.unicode : (lang.toUpperCase().indexOf("ASCII") < 0);
-  var w = Number(opts.width || this.__options.width || getEnv("COLUMNS") || 80);
-  var h = Number(opts.height || this.__options.height || getEnv("LINES") || 24);
+  var depth = mode == "truecolor" ? 16777216 : mode == "256" ? 256 : mode == "16" ? 16 : 0
+  var unicode = isBoolean(opts.unicode) ? opts.unicode : isBoolean(this.__options.unicode) ? this.__options.unicode : (lang.toUpperCase().indexOf("ASCII") < 0)
+  var w = Number(opts.width || this.__options.width || getEnv("COLUMNS") || 80)
+  var h = Number(opts.height || this.__options.height || getEnv("LINES") || 24)
   return {
     isTTY: java.lang.System.console() != null,
     ansi: mode != "none",
@@ -55,8 +55,8 @@ OpenWrap.screen.prototype.capabilities = function(options) {
     colorMode: mode,
     unicode: unicode,
     term: term
-  };
-};
+  }
+}
 
 ow.loadFormat()
 
@@ -85,57 +85,57 @@ OpenWrap.screen.prototype.colorSeq = function(spec, bg, mode) {
  * into a normalized style map.
  * </odoc> */
 OpenWrap.screen.prototype.parseStyle = function(style) {
-  var out = {};
-  if (isUnDef(style) || style === null) return out;
-  var self = this;
+  var out = {}
+  if (isUnDef(style) || style === null) return out
+  var self = this
   if (typeof style == "string") {
-    var tokens = [];
+    var tokens = []
     var tmp = style.replace(/(?:(?:fg_|bg_)?rgb|fg|bg|color)\([^)]*\)/gi, function(m) {
-      tokens.push(m);
-      return "__TOK_" + (tokens.length - 1) + "__";
-    });
+      tokens.push(m)
+      return "__TOK_" + (tokens.length - 1) + "__"
+    })
     tmp.split(",").forEach(function(part) {
-      var t = part.trim().replace(/__TOK_(\d+)__/g, function(_, i) { return tokens[Number(i)]; });
-      if (!t) return;
-      var u = t.toUpperCase();
-      if (u == "BOLD" || u == "INTENSITY_BOLD") out.bold = true;
-      else if (u == "DIM" || u == "FAINT" || u == "INTENSITY_FAINT") out.dim = true;
-      else if (u == "ITALIC") out.italic = true;
-      else if (u == "UNDERLINE") out.underline = true;
-      else if (u == "DOUBLE_UNDERLINE" || u == "UNDERLINE_DOUBLE") out.doubleUnderline = true;
-      else if (u == "BLINK" || u == "BLINK_SLOW" || u == "BLINK_FAST") out.blink = true;
-      else if (u == "REVERSE" || u == "INVERT" || u == "NEGATIVE_ON") out.reverse = true;
-      else if (u == "HIDDEN" || u == "CONCEAL_ON") out.hidden = true;
-      else if (u == "STRIKETHROUGH") out.strikethrough = true;
-      else if (u == "LEFT" || u == "CENTER" || u == "RIGHT") out.align = u.toLowerCase();
+      var t = part.trim().replace(/__TOK_(\d+)__/g, function(_, i) { return tokens[Number(i)]; })
+      if (!t) return
+      var u = t.toUpperCase()
+      if (u == "BOLD" || u == "INTENSITY_BOLD") out.bold = true
+      else if (u == "DIM" || u == "FAINT" || u == "INTENSITY_FAINT") out.dim = true
+      else if (u == "ITALIC") out.italic = true
+      else if (u == "UNDERLINE") out.underline = true
+      else if (u == "DOUBLE_UNDERLINE" || u == "UNDERLINE_DOUBLE") out.doubleUnderline = true
+      else if (u == "BLINK" || u == "BLINK_SLOW" || u == "BLINK_FAST") out.blink = true
+      else if (u == "REVERSE" || u == "INVERT" || u == "NEGATIVE_ON") out.reverse = true
+      else if (u == "HIDDEN" || u == "CONCEAL_ON") out.hidden = true
+      else if (u == "STRIKETHROUGH") out.strikethrough = true
+      else if (u == "LEFT" || u == "CENTER" || u == "RIGHT") out.align = u.toLowerCase()
       else if (/^BG(_|\()/i.test(t)) {
-        var bgc = self.parseColor(t);
-        if (bgc) out.bg = t;
+        var bgc = self.parseColor(t)
+        if (bgc) out.bg = t
       } else {
-        var fgc = self.parseColor(t);
-        if (fgc) out.fg = t;
+        var fgc = self.parseColor(t)
+        if (fgc) out.fg = t
       }
-    });
-    return out;
+    })
+    return out
   }
   if (isMap(style)) {
-    if (isDef(style.fg) && style.fg !== null && style.fg !== "") out.fg = style.fg;
-    else if (isDef(style.color) && style.color !== null && style.color !== "") out.fg = style.color;
-    if (isDef(style.bg) && style.bg !== null && style.bg !== "") out.bg = style.bg;
-    else if (isDef(style.background) && style.background !== null && style.background !== "") out.bg = style.background;
-    if (style.bold) out.bold = true;
-    if (style.dim || style.faint) out.dim = true;
-    if (style.italic) out.italic = true;
-    if (style.underline) out.underline = true;
-    if (style.doubleUnderline) out.doubleUnderline = true;
-    if (style.blink) out.blink = true;
-    if (style.reverse || style.invert) out.reverse = true;
-    if (style.hidden || style.conceal) out.hidden = true;
-    if (style.strikethrough || style.strike) out.strikethrough = true;
-    if (typeof style.align == "string" && ["left", "center", "right"].indexOf(style.align.toLowerCase()) >= 0) out.align = style.align.toLowerCase();
+    if (isDef(style.fg) && style.fg !== null && style.fg !== "") out.fg = style.fg
+    else if (isDef(style.color) && style.color !== null && style.color !== "") out.fg = style.color
+    if (isDef(style.bg) && style.bg !== null && style.bg !== "") out.bg = style.bg
+    else if (isDef(style.background) && style.background !== null && style.background !== "") out.bg = style.background
+    if (style.bold) out.bold = true
+    if (style.dim || style.faint) out.dim = true
+    if (style.italic) out.italic = true
+    if (style.underline) out.underline = true
+    if (style.doubleUnderline) out.doubleUnderline = true
+    if (style.blink) out.blink = true
+    if (style.reverse || style.invert) out.reverse = true
+    if (style.hidden || style.conceal) out.hidden = true
+    if (style.strikethrough || style.strike) out.strikethrough = true
+    if (typeof style.align == "string" && ["left", "center", "right"].indexOf(style.align.toLowerCase()) >= 0) out.align = style.align.toLowerCase()
   }
-  return out;
-};
+  return out
+}
 
 /** <odoc>
  * <key>ow.screen.sgr(aStyle, aColorMode) : String</key>
@@ -143,22 +143,22 @@ OpenWrap.screen.prototype.parseStyle = function(style) {
  * Returns "" if no attributes are active or colorMode is "none" (unless force is used).
  * </odoc> */
 OpenWrap.screen.prototype.sgr = function(style, colorMode) {
-  var mode = colorMode || this.capabilities().colorMode;
-  if (mode == "none") return "";
-  var st = this.parseStyle(style), codes = [];
-  if (st.bold) codes.push("1");
-  if (st.dim) codes.push("2");
-  if (st.italic) codes.push("3");
-  if (st.underline) codes.push("4");
-  if (st.blink) codes.push("5");
-  if (st.reverse) codes.push("7");
-  if (st.hidden) codes.push("8");
-  if (st.strikethrough) codes.push("9");
-  if (st.doubleUnderline) codes.push("21");
+  var mode = colorMode || this.capabilities().colorMode
+  if (mode == "none") return ""
+  var st = this.parseStyle(style), codes = []
+  if (st.bold) codes.push("1")
+  if (st.dim) codes.push("2")
+  if (st.italic) codes.push("3")
+  if (st.underline) codes.push("4")
+  if (st.blink) codes.push("5")
+  if (st.reverse) codes.push("7")
+  if (st.hidden) codes.push("8")
+  if (st.strikethrough) codes.push("9")
+  if (st.doubleUnderline) codes.push("21")
   if (isDef(st.fg)) { var f = this.colorSeq(st.fg, false, mode); if (f) codes.push(f); }
   if (isDef(st.bg)) { var b = this.colorSeq(st.bg, true, mode); if (b) codes.push(b); }
-  return codes.length > 0 ? "\x1b[" + codes.join(";") + "m" : "";
-};
+  return codes.length > 0 ? "\x1b[" + codes.join(";") + "m" : ""
+}
 
 /** <odoc>
  * <key>ow.screen.style(aText, aStyle, aOptions) : String</key>
@@ -167,36 +167,36 @@ OpenWrap.screen.prototype.sgr = function(style, colorMode) {
  * Preserves nested resets by re-applying the outer SGR sequence before continuing.
  * </odoc> */
 OpenWrap.screen.prototype.style = function(text, style, options) {
-  var str = isDef(text) && text !== null ? String(text) : "";
-  if (!str && (!isMap(options) || !options.padEmpty)) return "";
-  var opts = isMap(options) ? options : {};
-  var mode = opts.colorMode || (opts.force ? "truecolor" : this.capabilities(opts).colorMode);
-  var seq = this.sgr(style, mode);
-  if (!seq) return str;
-  var reset = "\x1b[0m";
-  var body = str.replace(/\x1b\[0?m/g, reset + seq);
-  return seq + body + (opts.noReset ? "" : reset);
-};
+  var str = isDef(text) && text !== null ? String(text) : ""
+  if (!str && (!isMap(options) || !options.padEmpty)) return ""
+  var opts = isMap(options) ? options : {}
+  var mode = opts.colorMode || (opts.force ? "truecolor" : this.capabilities(opts).colorMode)
+  var seq = this.sgr(style, mode)
+  if (!seq) return str
+  var reset = "\x1b[0m"
+  var body = str.replace(/\x1b\[0?m/g, reset + seq)
+  return seq + body + (opts.noReset ? "" : reset)
+}
 
 /** <odoc>
  * <key>ow.screen.stripAnsi(aText) : String</key>
  * Removes ANSI CSI and OSC escape sequences from aText.
  * </odoc> */
 OpenWrap.screen.prototype.stripAnsi = function(text) {
-  return String(isDef(text) && text !== null ? text : "").replace(/\x1b(?:\[[0-9;?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\x1b\\))/g, "");
-};
+  return String(isDef(text) && text !== null ? text : "").replace(/\x1b(?:\[[0-9;?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\x1b\\))/g, "")
+}
 
 /** <odoc>
  * <key>ow.screen.sanitize(aText, allowMultiline) : String</key>
  * Sanitizes untrusted application text by stripping ANSI/OSC escape sequences and C0/C1 control characters.
  * </odoc> */
 OpenWrap.screen.prototype.sanitize = function(text, allowMultiline) {
-  var s = String(isDef(text) && text !== null ? text : "");
+  var s = String(isDef(text) && text !== null ? text : "")
   // Strip OSC sequences and CSI sequences so untrusted strings cannot inject terminal escapes
-  s = s.replace(/\x1b\][^\u0007\u001b]*(?:\u0007|\x1b\\)/g, " ");
-  s = s.replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]/g, " ");
-  return s.replace(allowMultiline ? /[\x00-\x09\x0b-\x1f\x7f-\x9f]/g : /[\x00-\x1f\x7f-\x9f]/g, " ");
-};
+  s = s.replace(/\x1b\][^\u0007\u001b]*(?:\u0007|\x1b\\)/g, " ")
+  s = s.replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]/g, " ")
+  return s.replace(allowMultiline ? /[\x00-\x09\x0b-\x1f\x7f-\x9f]/g : /[\x00-\x1f\x7f-\x9f]/g, " ")
+}
 
 /** <odoc>
  * <key>ow.screen.graphemes(aText) : Array</key>
@@ -204,30 +204,30 @@ OpenWrap.screen.prototype.sanitize = function(text, allowMultiline) {
  * combining marks, skin-tone modifiers, variation selectors, keycaps, regional indicator flags, and ZWJ sequences).
  * </odoc> */
 OpenWrap.screen.prototype.graphemes = function(text) {
-  var str = String(isDef(text) && text !== null ? text : "");
-  var out = [], idx = 0;
+  var str = String(isDef(text) && text !== null ? text : "")
+  var out = [], idx = 0
   while (idx < str.length) {
-    var part = ow.format.string._nextWrapToken(str, idx);
+    var part = ow.format.string._nextWrapToken(str, idx)
     if (!part || part.next <= idx) {
-      var cp = str.codePointAt(idx);
-      var step = (isDef(cp) && cp > 0xFFFF) ? 2 : 1;
-      out.push(str.slice(idx, idx + step));
-      idx += step;
+      var cp = str.codePointAt(idx)
+      var step = (isDef(cp) && cp > 0xFFFF) ? 2 : 1
+      out.push(str.slice(idx, idx + step))
+      idx += step
     } else {
-      out.push(part.token);
-      idx = part.next;
+      out.push(part.token)
+      idx = part.next
     }
   }
-  return out;
-};
+  return out
+}
 
 /** <odoc>
  * <key>ow.screen.width(aText) : Number</key>
  * Returns the visible terminal column width of aText (ignoring ANSI sequences and counting wide CJK/emoji as 2 columns).
  * </odoc> */
 OpenWrap.screen.prototype.width = function(text) {
-  return visibleLength(String(isDef(text) && text !== null ? text : ""));
-};
+  return visibleLength(String(isDef(text) && text !== null ? text : ""))
+}
 
 /** <odoc>
  * <key>ow.screen.clip(aText, aWidth, aEllipsis) : String</key>
@@ -236,7 +236,7 @@ OpenWrap.screen.prototype.width = function(text) {
 OpenWrap.screen.prototype.clip = function(text, width, ellipsis) {
   return ow.format.string.ansiClip(String(isDef(text) && text !== null ? text : ""),
     Math.max(0, Number(width) || 0), isDef(ellipsis) ? String(ellipsis) : "")
-};
+}
 
 /** <odoc>
  * <key>ow.screen.alignLine(aText, aWidth, aAlign, aFillChar, aFillStyle) : String</key>
@@ -245,39 +245,39 @@ OpenWrap.screen.prototype.clip = function(text, width, ellipsis) {
  * Full UTF-8 wide characters and ANSI sequences are preserved accurately.
  * </odoc> */
 OpenWrap.screen.prototype.alignLine = function(text, width, align, fillChar, fillStyle, options) {
-  var maxW = Math.max(0, Number(width) || 0);
-  var clipped = this.clip(isDef(text) ? String(text) : "", maxW, "");
-  var vis = visibleLength(clipped);
-  var rem = Math.max(0, maxW - vis);
-  var ch = (typeof fillChar == "string" && fillChar.length > 0) ? this.graphemes(fillChar)[0] : " ";
-  var chW = Math.max(1, visibleLength(ch));
-  var mode = isMap(options) && options.colorMode ? options.colorMode : this.capabilities(options).colorMode;
-  var self = this;
+  var maxW = Math.max(0, Number(width) || 0)
+  var clipped = this.clip(isDef(text) ? String(text) : "", maxW, "")
+  var vis = visibleLength(clipped)
+  var rem = Math.max(0, maxW - vis)
+  var ch = (typeof fillChar == "string" && fillChar.length > 0) ? this.graphemes(fillChar)[0] : " "
+  var chW = Math.max(1, visibleLength(ch))
+  var mode = isMap(options) && options.colorMode ? options.colorMode : this.capabilities(options).colorMode
+  var self = this
   function pad(cols) {
-    if (cols <= 0) return "";
-    var count = Math.floor(cols / chW), extra = cols - count * chW;
-    var raw = repeat(count, ch) + (extra > 0 ? repeat(extra, " ") : "");
-    return fillStyle ? self.style(raw, fillStyle, { colorMode: mode }) : raw;
+    if (cols <= 0) return ""
+    var count = Math.floor(cols / chW), extra = cols - count * chW
+    var raw = repeat(count, ch) + (extra > 0 ? repeat(extra, " ") : "")
+    return fillStyle ? self.style(raw, fillStyle, { colorMode: mode }) : raw
   }
-  var al = String(align || this.__options.align || "left").toLowerCase();
-  if (al == "right") return pad(rem) + clipped;
+  var al = String(align || this.__options.align || "left").toLowerCase()
+  if (al == "right") return pad(rem) + clipped
   if (al == "center") {
-    var left = Math.floor(rem / 2), right = rem - left;
-    return pad(left) + clipped + pad(right);
+    var left = Math.floor(rem / 2), right = rem - left
+    return pad(left) + clipped + pad(right)
   }
-  return clipped + pad(rem);
-};
+  return clipped + pad(rem)
+}
 
 /** <odoc>
  * <key>ow.screen.align(aText, aWidth, aAlign, aFillChar, aFillStyle) : String</key>
  * Aligns multi-line text ("left", "center", or "right") to aWidth visible columns per line.
  * </odoc> */
 OpenWrap.screen.prototype.align = function(text, width, align, fillChar, fillStyle, options) {
-  var self = this;
+  var self = this
   return String(isDef(text) && text !== null ? text : "").split(/\r?\n/).map(function(line) {
-    return self.alignLine(line, width, align, fillChar, fillStyle, options);
-  }).join("\n");
-};
+    return self.alignLine(line, width, align, fillChar, fillStyle, options)
+  }).join("\n")
+}
 
 /** <odoc>
  * <key>ow.screen.wrap(aText, aWidth) : Array</key>
@@ -285,38 +285,38 @@ OpenWrap.screen.prototype.align = function(text, width, align, fillChar, fillSty
  * and returns an array of wrapped lines.
  * </odoc> */
 OpenWrap.screen.prototype.wrap = function(text, width) {
-  var w = Math.max(1, Number(width) || 80);
-  var raw = String(isDef(text) && text !== null ? text : "");
-  var lines = [];
-  var self = this;
+  var w = Math.max(1, Number(width) || 80)
+  var raw = String(isDef(text) && text !== null ? text : "")
+  var lines = []
+  var self = this
   raw.split(/\r?\n/).forEach(function(paragraph) {
     if (paragraph === "") { lines.push(""); return; }
     String(ow.format.string.wordWrap(paragraph, w)).split(/\r?\n/).forEach(function(l) {
       if (visibleLength(l) > w) {
         // Hard-wrap single unbreakable tokens wider than w
-        var cur = "", cw = 0, idx = 0;
+        var cur = "", cw = 0, idx = 0
         while (idx < l.length) {
-          var part = ow.format.string._nextWrapToken(l, idx);
-          if (!part || part.next <= idx) break;
+          var part = ow.format.string._nextWrapToken(l, idx)
+          if (!part || part.next <= idx) break
           if (/^\x1b\[/.test(part.token)) { cur += part.token; idx = part.next; continue; }
           if (cw + part.width > w && cw > 0) {
-            lines.push(cur);
-            cur = part.token;
-            cw = part.width;
+            lines.push(cur)
+            cur = part.token
+            cw = part.width
           } else {
-            cur += part.token;
-            cw += part.width;
+            cur += part.token
+            cw += part.width
           }
-          idx = part.next;
+          idx = part.next
         }
-        if (cur.length > 0 || cw > 0) lines.push(cur);
+        if (cur.length > 0 || cw > 0) lines.push(cur)
       } else {
-        lines.push(l);
+        lines.push(l)
       }
-    });
-  });
-  return lines.length > 0 ? lines : [""];
-};
+    })
+  })
+  return lines.length > 0 ? lines : [""]
+}
 
 /** <odoc>
  * <key>ow.screen.space(aLines, aOptions) : Array</key>
@@ -324,8 +324,8 @@ OpenWrap.screen.prototype.wrap = function(text, width) {
  * and item gap spacing to an array of lines or string.
  * </odoc> */
 OpenWrap.screen.prototype.space = function(lines, options) {
-  var opts = isMap(options) ? options : {};
-  var arr = Array.isArray(lines) ? lines.slice() : String(isDef(lines) ? lines : "").split(/\r?\n/);
+  var opts = isMap(options) ? options : {}
+  var arr = Array.isArray(lines) ? lines.slice() : String(isDef(lines) ? lines : "").split(/\r?\n/)
   function expandBox(v) {
     if (typeof v == "number" && isFinite(v)) { var n = Math.max(0, Math.round(v)); return { top: n, bottom: n, left: n, right: n }; }
     if (isMap(v)) return {
@@ -333,31 +333,31 @@ OpenWrap.screen.prototype.space = function(lines, options) {
       bottom: Math.max(0, Math.round(Number(v.bottom || v.y || 0))),
       left: Math.max(0, Math.round(Number(v.left || v.x || 0))),
       right: Math.max(0, Math.round(Number(v.right || v.x || 0)))
-    };
-    return { top: 0, bottom: 0, left: 0, right: 0 };
+    }
+    return { top: 0, bottom: 0, left: 0, right: 0 }
   }
-  var pad = expandBox(opts.padding), mar = expandBox(opts.margin);
-  var width = isNumber(opts.width) ? Math.max(1, Math.round(opts.width)) : arr.reduce(function(m, l) { return Math.max(m, visibleLength(l)); }, 0) + pad.left + pad.right + mar.left + mar.right;
-  var innerW = Math.max(0, width - mar.left - mar.right - pad.left - pad.right);
-  var align = opts.align || "left";
-  var bgStyle = opts.bgStyle || null;
-  var self = this;
-  var out = [];
-  var marL = repeat(mar.left, " "), marR = repeat(mar.right, " ");
-  var padL = bgStyle ? self.style(repeat(pad.left, " "), bgStyle, opts) : repeat(pad.left, " ");
-  var padR = bgStyle ? self.style(repeat(pad.right, " "), bgStyle, opts) : repeat(pad.right, " ");
-  var emptyInner = bgStyle ? self.style(repeat(innerW + pad.left + pad.right, " "), bgStyle, opts) : repeat(innerW + pad.left + pad.right, " ");
-  var emptyMargin = repeat(width, " ");
-  for (var mt = 0; mt < mar.top; mt++) out.push(emptyMargin);
-  for (var pt = 0; pt < pad.top; pt++) out.push(marL + emptyInner + marR);
+  var pad = expandBox(opts.padding), mar = expandBox(opts.margin)
+  var width = isNumber(opts.width) ? Math.max(1, Math.round(opts.width)) : arr.reduce(function(m, l) { return Math.max(m, visibleLength(l)); }, 0) + pad.left + pad.right + mar.left + mar.right
+  var innerW = Math.max(0, width - mar.left - mar.right - pad.left - pad.right)
+  var align = opts.align || "left"
+  var bgStyle = opts.bgStyle || null
+  var self = this
+  var out = []
+  var marL = repeat(mar.left, " "), marR = repeat(mar.right, " ")
+  var padL = bgStyle ? self.style(repeat(pad.left, " "), bgStyle, opts) : repeat(pad.left, " ")
+  var padR = bgStyle ? self.style(repeat(pad.right, " "), bgStyle, opts) : repeat(pad.right, " ")
+  var emptyInner = bgStyle ? self.style(repeat(innerW + pad.left + pad.right, " "), bgStyle, opts) : repeat(innerW + pad.left + pad.right, " ")
+  var emptyMargin = repeat(width, " ")
+  for (var mt = 0; mt < mar.top; mt++) out.push(emptyMargin)
+  for (var pt = 0; pt < pad.top; pt++) out.push(marL + emptyInner + marR)
   arr.forEach(function(l) {
-    var aligned = self.alignLine(l, innerW, align, " ", bgStyle, opts);
-    out.push(marL + padL + aligned + padR + marR);
-  });
-  for (var pb = 0; pb < pad.bottom; pb++) out.push(marL + emptyInner + marR);
-  for (var mb = 0; mb < mar.bottom; mb++) out.push(emptyMargin);
-  return out;
-};
+    var aligned = self.alignLine(l, innerW, align, " ", bgStyle, opts)
+    out.push(marL + padL + aligned + padR + marR)
+  })
+  for (var pb = 0; pb < pad.bottom; pb++) out.push(marL + emptyInner + marR)
+  for (var mb = 0; mb < mar.bottom; mb++) out.push(emptyMargin)
+  return out
+}
 
 OpenWrap.screen.__borders = {
   rounded: { tl: "╭", tr: "╮", bl: "╰", br: "╯", h: "─", v: "│", lt: "├", rt: "┤" },
@@ -367,7 +367,7 @@ OpenWrap.screen.__borders = {
   left:    { tl: "▊", tr: " ", bl: "▊", br: " ", h: " ", v: "▊", vr: " ", lt: "▊", rt: " " },
   ascii:   { tl: "+", tr: "+", bl: "+", br: "+", h: "-", v: "|", lt: "+", rt: "+" },
   none:    { tl: " ", tr: " ", bl: " ", br: " ", h: " ", v: " ", lt: " ", rt: " " }
-};
+}
 
 /** <odoc>
  * <key>ow.screen.borderChars(aStyle, aUnicode) : Map</key>
@@ -375,13 +375,13 @@ OpenWrap.screen.__borders = {
  * Automatically falls back to "ascii" when aUnicode is false.
  * </odoc> */
 OpenWrap.screen.prototype.borderChars = function(style, unicode) {
-  var st = String(style || this.__options.borderStyle || "rounded").toLowerCase();
+  var st = String(style || this.__options.borderStyle || "rounded").toLowerCase()
   if (unicode === false && st != "none") {
-    if (st == "left") return { tl: "|", tr: " ", bl: "|", br: " ", h: " ", v: "|", vr: " ", lt: "|", rt: " " };
-    st = "ascii";
+    if (st == "left") return { tl: "|", tr: " ", bl: "|", br: " ", h: " ", v: "|", vr: " ", lt: "|", rt: " " }
+    st = "ascii"
   }
-  return OpenWrap.screen.__borders[st] || OpenWrap.screen.__borders.rounded;
-};
+  return OpenWrap.screen.__borders[st] || OpenWrap.screen.__borders.rounded
+}
 
 /** <odoc>
  * <key>ow.screen.hr(aWidth, aOptions) : String</key>
@@ -389,24 +389,24 @@ OpenWrap.screen.prototype.borderChars = function(style, unicode) {
  * character, and style.
  * </odoc> */
 OpenWrap.screen.prototype.hr = function(width, options) {
-  var opts = isMap(options) ? options : {};
-  var caps = this.capabilities(opts);
-  var w = Math.max(1, Number(width || caps.width || 80));
-  var ch = opts.char ? this.graphemes(String(opts.char))[0] : (caps.unicode ? "─" : "-");
-  var lineStyle = opts.style || opts.lineStyle || "FAINT";
-  var label = isDef(opts.label) && String(opts.label).length > 0 ? " " + this.sanitize(opts.label, false) + " " : "";
+  var opts = isMap(options) ? options : {}
+  var caps = this.capabilities(opts)
+  var w = Math.max(1, Number(width || caps.width || 80))
+  var ch = opts.char ? this.graphemes(String(opts.char))[0] : (caps.unicode ? "─" : "-")
+  var lineStyle = opts.style || opts.lineStyle || "FAINT"
+  var label = isDef(opts.label) && String(opts.label).length > 0 ? " " + this.sanitize(opts.label, false) + " " : ""
   if (!label || visibleLength(label) >= w - 2) {
-    return this.style(this.alignLine(label, w, opts.align || "center", ch), lineStyle, { colorMode: caps.colorMode });
+    return this.style(this.alignLine(label, w, opts.align || "center", ch), lineStyle, { colorMode: caps.colorMode })
   }
-  var lw = visibleLength(label), rem = w - lw;
-  var align = String(opts.align || "center").toLowerCase();
-  var leftCols = align == "left" ? Math.min(2, rem) : align == "right" ? Math.max(0, rem - 2) : Math.floor(rem / 2);
-  var rightCols = Math.max(0, rem - leftCols);
-  var styledLabel = this.style(label, opts.labelStyle || opts.style || "BOLD", { colorMode: caps.colorMode });
+  var lw = visibleLength(label), rem = w - lw
+  var align = String(opts.align || "center").toLowerCase()
+  var leftCols = align == "left" ? Math.min(2, rem) : align == "right" ? Math.max(0, rem - 2) : Math.floor(rem / 2)
+  var rightCols = Math.max(0, rem - leftCols)
+  var styledLabel = this.style(label, opts.labelStyle || opts.style || "BOLD", { colorMode: caps.colorMode })
   return this.style(repeat(leftCols, ch), lineStyle, { colorMode: caps.colorMode }) +
          styledLabel +
-         this.style(repeat(rightCols, ch), lineStyle, { colorMode: caps.colorMode });
-};
+         this.style(repeat(rightCols, ch), lineStyle, { colorMode: caps.colorMode })
+}
 
 /** <odoc>
  * <key>ow.screen.box(aContent, aOptions) : String</key>
@@ -417,98 +417,98 @@ OpenWrap.screen.prototype.hr = function(width, options) {
  * titleStyle, style, bgStyle, shadow (boolean).
  * </odoc> */
 OpenWrap.screen.prototype.box = function(content, options) {
-  var opts = isMap(options) ? options : {};
-  var caps = this.capabilities(opts);
-  var bStyleName = String(opts.borderStyle || "rounded").toLowerCase();
-  var isLeftAccent = bStyleName == "left";
-  var hasShadow = Boolean(opts.shadow);
-  var bchars = this.borderChars(bStyleName, caps.unicode);
+  var opts = isMap(options) ? options : {}
+  var caps = this.capabilities(opts)
+  var bStyleName = String(opts.borderStyle || "rounded").toLowerCase()
+  var isLeftAccent = bStyleName == "left"
+  var hasShadow = Boolean(opts.shadow)
+  var bchars = this.borderChars(bStyleName, caps.unicode)
   var pad = typeof opts.padding == "number" ? { top: 0, bottom: 0, left: opts.padding, right: opts.padding } :
             isMap(opts.padding) ? { top: Number(opts.padding.top || 0), bottom: Number(opts.padding.bottom || 0), left: Number(opts.padding.left || 0), right: Number(opts.padding.right || 0) } :
-            { top: 0, bottom: 0, left: 1, right: 1 };
-  var rawLines = Array.isArray(content) ? content : String(isDef(content) ? content : "").split(/\r?\n/);
-  var totalW = Math.max(4, Number(opts.width || caps.width || 80));
-  var boxW = hasShadow && totalW >= 5 ? totalW - 1 : totalW;
-  var borderCols = isLeftAccent ? 1 : 2;
-  var innerW = Math.max(1, boxW - borderCols - pad.left - pad.right);
-  var self = this;
-  var wrapped = [];
+            { top: 0, bottom: 0, left: 1, right: 1 }
+  var rawLines = Array.isArray(content) ? content : String(isDef(content) ? content : "").split(/\r?\n/)
+  var totalW = Math.max(4, Number(opts.width || caps.width || 80))
+  var boxW = hasShadow && totalW >= 5 ? totalW - 1 : totalW
+  var borderCols = isLeftAccent ? 1 : 2
+  var innerW = Math.max(1, boxW - borderCols - pad.left - pad.right)
+  var self = this
+  var wrapped = []
   rawLines.forEach(function(l) {
-    self.wrap(l, innerW).forEach(function(wl) { wrapped.push(wl); });
-  });
-  var bStyle = opts.borderColor || opts.borderStyleSpec || "FAINT";
-  var tStyle = opts.titleStyle || "BOLD";
-  var cStyle = opts.style || opts.bgStyle || null;
-  var align = opts.align || "left";
-  var mode = caps.colorMode;
+    self.wrap(l, innerW).forEach(function(wl) { wrapped.push(wl); })
+  })
+  var bStyle = opts.borderColor || opts.borderStyleSpec || "FAINT"
+  var tStyle = opts.titleStyle || "BOLD"
+  var cStyle = opts.style || opts.bgStyle || null
+  var align = opts.align || "left"
+  var mode = caps.colorMode
 
   function buildEdge(leftCh, rightCh, fillCh, label, labelAlign, lStyle) {
-    var edgeW = boxW - 2;
-    if (!label) return self.style(leftCh + repeat(edgeW, fillCh) + rightCh, bStyle, { colorMode: mode });
-    var cleanLbl = " " + self.clip(self.sanitize(label, false), Math.max(1, edgeW - 2), "") + " ";
-    var lblW = visibleLength(cleanLbl);
-    var rem = Math.max(0, edgeW - lblW);
-    var al = String(labelAlign || "left").toLowerCase();
-    var lCols = al == "right" ? Math.max(0, rem - 1) : al == "center" ? Math.floor(rem / 2) : Math.min(1, rem);
-    var rCols = Math.max(0, rem - lCols);
+    var edgeW = boxW - 2
+    if (!label) return self.style(leftCh + repeat(edgeW, fillCh) + rightCh, bStyle, { colorMode: mode })
+    var cleanLbl = " " + self.clip(self.sanitize(label, false), Math.max(1, edgeW - 2), "") + " "
+    var lblW = visibleLength(cleanLbl)
+    var rem = Math.max(0, edgeW - lblW)
+    var al = String(labelAlign || "left").toLowerCase()
+    var lCols = al == "right" ? Math.max(0, rem - 1) : al == "center" ? Math.floor(rem / 2) : Math.min(1, rem)
+    var rCols = Math.max(0, rem - lCols)
     return self.style(leftCh + repeat(lCols, fillCh), bStyle, { colorMode: mode }) +
            self.style(cleanLbl, lStyle, { colorMode: mode }) +
-           self.style(repeat(rCols, fillCh) + rightCh, bStyle, { colorMode: mode });
+           self.style(repeat(rCols, fillCh) + rightCh, bStyle, { colorMode: mode })
   }
 
-  var out = [];
-  var vLeft = this.style(bchars.v, bStyle, { colorMode: mode });
-  var vRight = isLeftAccent ? "" : this.style(isDef(bchars.vr) ? bchars.vr : bchars.v, bStyle, { colorMode: mode });
-  var padL = repeat(pad.left, " "), padR = repeat(pad.right, " ");
+  var out = []
+  var vLeft = this.style(bchars.v, bStyle, { colorMode: mode })
+  var vRight = isLeftAccent ? "" : this.style(isDef(bchars.vr) ? bchars.vr : bchars.v, bStyle, { colorMode: mode })
+  var padL = repeat(pad.left, " "), padR = repeat(pad.right, " ")
 
   if (isLeftAccent) {
     if (opts.title) {
-      var cleanT = this.clip(this.sanitize(opts.title, false), innerW, "");
-      var tRow = padL + this.alignLine(this.style(cleanT, tStyle, { colorMode: mode }), innerW, opts.titleAlign || align, " ", null, { colorMode: mode }) + padR;
-      out.push(vLeft + (cStyle ? this.style(tRow, cStyle, { colorMode: mode }) : tRow));
+      var cleanT = this.clip(this.sanitize(opts.title, false), innerW, "")
+      var tRow = padL + this.alignLine(this.style(cleanT, tStyle, { colorMode: mode }), innerW, opts.titleAlign || align, " ", null, { colorMode: mode }) + padR
+      out.push(vLeft + (cStyle ? this.style(tRow, cStyle, { colorMode: mode }) : tRow))
     }
   } else {
-    out.push(buildEdge(bchars.tl, bchars.tr, bchars.h, opts.title, opts.titleAlign || "left", tStyle));
+    out.push(buildEdge(bchars.tl, bchars.tr, bchars.h, opts.title, opts.titleAlign || "left", tStyle))
   }
 
   for (var pt = 0; pt < pad.top; pt++) {
-    var emptyRow = padL + repeat(innerW, " ") + padR;
-    out.push(vLeft + (cStyle ? this.style(emptyRow, cStyle, { colorMode: mode }) : emptyRow) + vRight);
+    var emptyRow = padL + repeat(innerW, " ") + padR
+    out.push(vLeft + (cStyle ? this.style(emptyRow, cStyle, { colorMode: mode }) : emptyRow) + vRight)
   }
-  var chromeRows = (isLeftAccent ? (opts.title ? 1 : 0) + (opts.footer ? 1 : 0) : 2) + (hasShadow ? 1 : 0);
-  var targetRows = isNumber(opts.height) ? Math.max(1, opts.height - chromeRows - pad.top - pad.bottom) : wrapped.length;
+  var chromeRows = (isLeftAccent ? (opts.title ? 1 : 0) + (opts.footer ? 1 : 0) : 2) + (hasShadow ? 1 : 0)
+  var targetRows = isNumber(opts.height) ? Math.max(1, opts.height - chromeRows - pad.top - pad.bottom) : wrapped.length
   for (var i = 0; i < targetRows; i++) {
-    var line = i < wrapped.length ? wrapped[i] : "";
-    var aligned = padL + this.alignLine(line, innerW, align, " ", null, { colorMode: mode }) + padR;
-    out.push(vLeft + (cStyle ? this.style(aligned, cStyle, { colorMode: mode }) : aligned) + vRight);
+    var line = i < wrapped.length ? wrapped[i] : ""
+    var aligned = padL + this.alignLine(line, innerW, align, " ", null, { colorMode: mode }) + padR
+    out.push(vLeft + (cStyle ? this.style(aligned, cStyle, { colorMode: mode }) : aligned) + vRight)
   }
   for (var pb = 0; pb < pad.bottom; pb++) {
-    var emptyRowB = padL + repeat(innerW, " ") + padR;
-    out.push(vLeft + (cStyle ? this.style(emptyRowB, cStyle, { colorMode: mode }) : emptyRowB) + vRight);
+    var emptyRowB = padL + repeat(innerW, " ") + padR
+    out.push(vLeft + (cStyle ? this.style(emptyRowB, cStyle, { colorMode: mode }) : emptyRowB) + vRight)
   }
 
   if (isLeftAccent) {
     if (opts.footer) {
-      var cleanF = this.clip(this.sanitize(opts.footer, false), innerW, "");
-      var fRow = padL + this.alignLine(this.style(cleanF, opts.footerStyle || bStyle, { colorMode: mode }), innerW, opts.footerAlign || "right", " ", null, { colorMode: mode }) + padR;
-      out.push(vLeft + (cStyle ? this.style(fRow, cStyle, { colorMode: mode }) : fRow));
+      var cleanF = this.clip(this.sanitize(opts.footer, false), innerW, "")
+      var fRow = padL + this.alignLine(this.style(cleanF, opts.footerStyle || bStyle, { colorMode: mode }), innerW, opts.footerAlign || "right", " ", null, { colorMode: mode }) + padR
+      out.push(vLeft + (cStyle ? this.style(fRow, cStyle, { colorMode: mode }) : fRow))
     }
   } else {
-    out.push(buildEdge(bchars.bl, bchars.br, bchars.h, opts.footer, opts.footerAlign || "right", opts.footerStyle || bStyle));
+    out.push(buildEdge(bchars.bl, bchars.br, bchars.h, opts.footer, opts.footerAlign || "right", opts.footerStyle || bStyle))
   }
 
   if (hasShadow && totalW >= 5) {
-    var shStyle = opts.shadowStyle || "FAINT";
-    var shTop = this.style(" ", shStyle, { colorMode: mode });
-    var shSide = this.style(caps.unicode ? "█" : "#", shStyle, { colorMode: mode });
-    var shBot = " " + this.style(repeat(boxW, caps.unicode ? "▀" : "#"), shStyle, { colorMode: mode });
+    var shStyle = opts.shadowStyle || "FAINT"
+    var shTop = this.style(" ", shStyle, { colorMode: mode })
+    var shSide = this.style(caps.unicode ? "█" : "#", shStyle, { colorMode: mode })
+    var shBot = " " + this.style(repeat(boxW, caps.unicode ? "▀" : "#"), shStyle, { colorMode: mode })
     out = out.map(function(row, idx) {
-      return row + (idx === 0 ? shTop : shSide);
-    });
-    out.push(shBot);
+      return row + (idx === 0 ? shTop : shSide)
+    })
+    out.push(shBot)
   }
-  return out.join("\n");
-};
+  return out.join("\n")
+}
 
 OpenWrap.screen.__themes = {
   default: {
@@ -712,7 +712,7 @@ OpenWrap.screen.__themes = {
   monochrome: {
     truecolor: {}
   }
-};
+}
 
 /** <odoc>
  * <key>ow.screen.getTheme(aTheme, aColorMode, aOverrides) : Map</key>
@@ -720,19 +720,19 @@ OpenWrap.screen.__themes = {
  * or custom theme object and colorMode ("none", "16", "256", "truecolor").
  * </odoc> */
 OpenWrap.screen.prototype.getTheme = function(theme, colorMode, overrides) {
-  var mode = colorMode || this.capabilities().colorMode;
-  var name = typeof theme == "string" ? theme.toLowerCase() : (typeof this.__options.theme == "string" ? this.__options.theme.toLowerCase() : "default");
+  var mode = colorMode || this.capabilities().colorMode
+  var name = typeof theme == "string" ? theme.toLowerCase() : (typeof this.__options.theme == "string" ? this.__options.theme.toLowerCase() : "default")
   if (name == "monochrome" || mode == "none") {
-    return merge(clone(OpenWrap.screen.__themes.default.none), isMap(theme) ? theme : (isMap(overrides) ? overrides : {}));
+    return merge(clone(OpenWrap.screen.__themes.default.none), isMap(theme) ? theme : (isMap(overrides) ? overrides : {}))
   }
-  var family = OpenWrap.screen.__themes[name] || OpenWrap.screen.__themes.default;
-  var baseMode = family[mode] || family.truecolor || OpenWrap.screen.__themes.default[mode] || OpenWrap.screen.__themes.default["256"];
-  var merged = merge(clone(OpenWrap.screen.__themes.default[mode] || OpenWrap.screen.__themes.default["256"]), clone(baseMode));
-  if (isMap(this.__options.theme)) merged = merge(merged, this.__options.theme);
-  if (isMap(theme)) merged = merge(merged, theme);
-  if (isMap(overrides)) merged = merge(merged, overrides);
-  return merged;
-};
+  var family = OpenWrap.screen.__themes[name] || OpenWrap.screen.__themes.default
+  var baseMode = family[mode] || family.truecolor || OpenWrap.screen.__themes.default[mode] || OpenWrap.screen.__themes.default["256"]
+  var merged = merge(clone(OpenWrap.screen.__themes.default[mode] || OpenWrap.screen.__themes.default["256"]), clone(baseMode))
+  if (isMap(this.__options.theme)) merged = merge(merged, this.__options.theme)
+  if (isMap(theme)) merged = merge(merged, theme)
+  if (isMap(overrides)) merged = merge(merged, overrides)
+  return merged
+}
 
 /** <odoc>
  * <key>ow.screen.progress(aValue, aMax, aMin, aWidth, aOptions) : String</key>
@@ -742,51 +742,51 @@ OpenWrap.screen.prototype.getTheme = function(theme, colorMode, overrides) {
  * theme, filledStyle, emptyStyle, labelStyle, percentStyle.
  * </odoc> */
 OpenWrap.screen.prototype.progress = function(value, max, min, width, options) {
-  var opts = isMap(options) ? options : {};
-  var caps = this.capabilities(opts);
-  var th = this.getTheme(opts.theme, caps.colorMode);
-  var lo = isNumber(min) ? Number(min) : 0;
-  var hi = isNumber(max) ? Number(max) : 100;
-  var span = (hi - lo) || 1;
-  var val = Math.max(lo, Math.min(hi, Number(value) || 0));
-  var ratio = Math.max(0, Math.min(1, (val - lo) / span));
-  var pct = Math.round(ratio * 100);
-  var showPct = opts.showPercent !== false;
-  var suffix = showPct ? " " + ow.format.string.leftPad(String(pct), 3, " ") + "%" : "";
-  var prefix = isDef(opts.label) && String(opts.label).length > 0 ? this.sanitize(opts.label, false) + ": " : "";
-  var barStyle = String(opts.barStyle || "bracket").toLowerCase();
-  var hasBrackets = barStyle != "thin" && barStyle != "bar";
-  var totalW = Math.max(10, Number(width || caps.width || 40));
-  var barW = Math.max(4, totalW - visibleLength(prefix) - visibleLength(suffix) - (hasBrackets ? 2 : 0));
-  var filledStyle = isDef(opts.filledStyle) ? opts.filledStyle : th.progressFilled;
-  var emptyStyle = isDef(opts.emptyStyle) ? opts.emptyStyle : th.progressEmpty;
-  var fStr = "", eStr = "";
+  var opts = isMap(options) ? options : {}
+  var caps = this.capabilities(opts)
+  var th = this.getTheme(opts.theme, caps.colorMode)
+  var lo = isNumber(min) ? Number(min) : 0
+  var hi = isNumber(max) ? Number(max) : 100
+  var span = (hi - lo) || 1
+  var val = Math.max(lo, Math.min(hi, Number(value) || 0))
+  var ratio = Math.max(0, Math.min(1, (val - lo) / span))
+  var pct = Math.round(ratio * 100)
+  var showPct = opts.showPercent !== false
+  var suffix = showPct ? " " + ow.format.string.leftPad(String(pct), 3, " ") + "%" : ""
+  var prefix = isDef(opts.label) && String(opts.label).length > 0 ? this.sanitize(opts.label, false) + ": " : ""
+  var barStyle = String(opts.barStyle || "bracket").toLowerCase()
+  var hasBrackets = barStyle != "thin" && barStyle != "bar"
+  var totalW = Math.max(10, Number(width || caps.width || 40))
+  var barW = Math.max(4, totalW - visibleLength(prefix) - visibleLength(suffix) - (hasBrackets ? 2 : 0))
+  var filledStyle = isDef(opts.filledStyle) ? opts.filledStyle : th.progressFilled
+  var emptyStyle = isDef(opts.emptyStyle) ? opts.emptyStyle : th.progressEmpty
+  var fStr = "", eStr = ""
 
   if (barStyle == "thin") {
-    var fThin = Math.round(ratio * barW), eThin = Math.max(0, barW - fThin);
-    fStr = this.style(repeat(fThin, caps.unicode ? "━" : "="), filledStyle, { colorMode: caps.colorMode });
-    eStr = this.style(repeat(eThin, caps.unicode ? "─" : "-"), emptyStyle, { colorMode: caps.colorMode });
+    var fThin = Math.round(ratio * barW), eThin = Math.max(0, barW - fThin)
+    fStr = this.style(repeat(fThin, caps.unicode ? "━" : "="), filledStyle, { colorMode: caps.colorMode })
+    eStr = this.style(repeat(eThin, caps.unicode ? "─" : "-"), emptyStyle, { colorMode: caps.colorMode })
   } else if (caps.unicode && opts.smooth !== false) {
-    var subBlocks = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"];
-    var eighths = Math.round(ratio * barW * 8);
-    var fullCells = Math.floor(eighths / 8);
-    var remEighths = eighths - fullCells * 8;
-    var partChar = remEighths > 0 ? subBlocks[remEighths] : "";
-    var emptyCells = Math.max(0, barW - fullCells - (partChar ? 1 : 0));
-    fStr = this.style(repeat(fullCells, "█") + partChar, filledStyle, { colorMode: caps.colorMode });
-    eStr = this.style(repeat(emptyCells, "░"), emptyStyle, { colorMode: caps.colorMode });
+    var subBlocks = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"]
+    var eighths = Math.round(ratio * barW * 8)
+    var fullCells = Math.floor(eighths / 8)
+    var remEighths = eighths - fullCells * 8
+    var partChar = remEighths > 0 ? subBlocks[remEighths] : ""
+    var emptyCells = Math.max(0, barW - fullCells - (partChar ? 1 : 0))
+    fStr = this.style(repeat(fullCells, "█") + partChar, filledStyle, { colorMode: caps.colorMode })
+    eStr = this.style(repeat(emptyCells, "░"), emptyStyle, { colorMode: caps.colorMode })
   } else {
-    var filled = Math.round(ratio * barW), empty = Math.max(0, barW - filled);
-    var fChar = caps.unicode ? "█" : "#";
-    var eChar = caps.unicode ? "░" : "-";
-    fStr = this.style(repeat(filled, fChar), filledStyle, { colorMode: caps.colorMode });
-    eStr = this.style(repeat(empty, eChar), emptyStyle, { colorMode: caps.colorMode });
+    var filled = Math.round(ratio * barW), empty = Math.max(0, barW - filled)
+    var fChar = caps.unicode ? "█" : "#"
+    var eChar = caps.unicode ? "░" : "-"
+    fStr = this.style(repeat(filled, fChar), filledStyle, { colorMode: caps.colorMode })
+    eStr = this.style(repeat(empty, eChar), emptyStyle, { colorMode: caps.colorMode })
   }
 
-  var lblStr = prefix ? this.style(prefix, isDef(opts.labelStyle) ? opts.labelStyle : th.label, { colorMode: caps.colorMode }) : "";
-  var pctStr = suffix ? this.style(suffix, isDef(opts.percentStyle) ? opts.percentStyle : th.muted, { colorMode: caps.colorMode }) : "";
-  return lblStr + (hasBrackets ? "[" : "") + fStr + eStr + (hasBrackets ? "]" : "") + pctStr;
-};
+  var lblStr = prefix ? this.style(prefix, isDef(opts.labelStyle) ? opts.labelStyle : th.label, { colorMode: caps.colorMode }) : ""
+  var pctStr = suffix ? this.style(suffix, isDef(opts.percentStyle) ? opts.percentStyle : th.muted, { colorMode: caps.colorMode }) : ""
+  return lblStr + (hasBrackets ? "[" : "") + fStr + eStr + (hasBrackets ? "]" : "") + pctStr
+}
 
 /** <odoc>
  * <key>ow.screen.keybar(aBindings, aWidth, aOptions) : String</key>
@@ -794,43 +794,43 @@ OpenWrap.screen.prototype.progress = function(value, max, min, width, options) {
  * (or [key, label] pairs), styling keys as high-contrast badges and descriptions with the status bar style.
  * </odoc> */
 OpenWrap.screen.prototype.keybar = function(bindings, width, options) {
-  var opts = isMap(options) ? options : {};
-  var caps = this.capabilities(opts);
-  var th = this.getTheme(opts.theme, caps.colorMode);
-  var w = Math.max(1, Number(width || caps.width || 80));
-  var keyStyle = isDef(opts.keyStyle) ? opts.keyStyle : (th.keyPill || th.badge);
-  var labelStyle = isDef(opts.labelStyle) ? opts.labelStyle : (th.keyLabel || th.statusBar);
-  var barStyle = isDef(opts.style) ? opts.style : th.statusBar;
-  var sep = isDef(opts.sep) ? String(opts.sep) : "  ";
-  var self = this;
-  var list = Array.isArray(bindings) ? bindings : [];
+  var opts = isMap(options) ? options : {}
+  var caps = this.capabilities(opts)
+  var th = this.getTheme(opts.theme, caps.colorMode)
+  var w = Math.max(1, Number(width || caps.width || 80))
+  var keyStyle = isDef(opts.keyStyle) ? opts.keyStyle : (th.keyPill || th.badge)
+  var labelStyle = isDef(opts.labelStyle) ? opts.labelStyle : (th.keyLabel || th.statusBar)
+  var barStyle = isDef(opts.style) ? opts.style : th.statusBar
+  var sep = isDef(opts.sep) ? String(opts.sep) : "  "
+  var self = this
+  var list = Array.isArray(bindings) ? bindings : []
   var segments = list.map(function(b) {
-    var k = Array.isArray(b) ? b[0] : (isMap(b) ? b.key : "");
-    var l = Array.isArray(b) ? b[1] : (isMap(b) ? b.label : "");
-    var kClean = " " + self.sanitize(k, false) + " ";
-    var lClean = " " + self.sanitize(l, false);
+    var k = Array.isArray(b) ? b[0] : (isMap(b) ? b.key : "")
+    var l = Array.isArray(b) ? b[1] : (isMap(b) ? b.label : "")
+    var kClean = " " + self.sanitize(k, false) + " "
+    var lClean = " " + self.sanitize(l, false)
     return self.style(kClean, keyStyle, { colorMode: caps.colorMode }) +
-           self.style(lClean, labelStyle, { colorMode: caps.colorMode });
-  });
-  var joined = segments.join(self.style(sep, barStyle, { colorMode: caps.colorMode }));
-  return this.alignLine(joined, w, opts.align || "left", " ", barStyle, { colorMode: caps.colorMode });
-};
+           self.style(lClean, labelStyle, { colorMode: caps.colorMode })
+  })
+  var joined = segments.join(self.style(sep, barStyle, { colorMode: caps.colorMode }))
+  return this.alignLine(joined, w, opts.align || "left", " ", barStyle, { colorMode: caps.colorMode })
+}
 
 /** <odoc>
  * <key>ow.screen.run(aViewOrWindowOptions, aOnMessageFn, aDesktopOptions) : Object</key>
  * Convenience helper to launch an interactive TUI view session using ow.desktop({ provider: "tui" }).
  * </odoc> */
 OpenWrap.screen.prototype.run = function(viewOrWinOpts, onMessage, desktopOpts) {
-  ow.loadDesktop();
-  var dOpts = merge({ provider: "tui" }, isMap(desktopOpts) ? desktopOpts : {});
-  var d = new OpenWrap.desktop(dOpts);
-  var wOpts = (isMap(viewOrWinOpts) && isDef(viewOrWinOpts.view)) ? viewOrWinOpts : { title: (isMap(viewOrWinOpts) && viewOrWinOpts.title) || "OpenAF Screen", view: viewOrWinOpts };
-  var win = d.window(wOpts);
-  if (typeof onMessage == "function") win.on("message", function(e) { onMessage(e, win, d); });
-  win.show();
-  d.wait();
-  return win;
-};
+  ow.loadDesktop()
+  var dOpts = merge({ provider: "tui" }, isMap(desktopOpts) ? desktopOpts : {})
+  var d = new OpenWrap.desktop(dOpts)
+  var wOpts = (isMap(viewOrWinOpts) && isDef(viewOrWinOpts.view)) ? viewOrWinOpts : { title: (isMap(viewOrWinOpts) && viewOrWinOpts.title) || "OpenAF Screen", view: viewOrWinOpts }
+  var win = d.window(wOpts)
+  if (typeof onMessage == "function") win.on("message", function(e) { onMessage(e, win, d); })
+  win.show()
+  d.wait()
+  return win
+}
 
 /** <odoc format="markdown">
  * <key>ow.screen.interact(aOptions) : Map</key>

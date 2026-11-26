@@ -9,6 +9,12 @@ jobs:
      to: OpenAF Test
      exec: args.func = args.tests.testArchiveExtractionLimits
 
+   # Archive quota configuration
+   - name: ZIP::Archive quota flags
+     from: ZIP::Init
+     to  : OpenAF Test
+     exec: args.func = args.tests.testArchiveLimitFlags
+
    # ZIP tests
    # --------------
    - name: ZIP::Init
@@ -28,7 +34,7 @@ jobs:
    - name: ZIP::Read ownership and missing entries
      from: ZIP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testZIPReadOwnership;
+     exec: args.func = args.tests.testZIPReadOwnership
 
    - name: ZIP::Metadata listing and integrity contracts
      from: ZIP::Init
@@ -40,6 +46,7 @@ todo:
    # ------------
    - ZIP::Init
    - ZIP::Archive extraction quotas
+   - ZIP::Archive quota flags
    - ZIP::ZIP basic functionality
    - ZIP::ZIP streaming functionality
    - ZIP::Read ownership and missing entries

@@ -1,48 +1,72 @@
 include:
 - autoTestAll.common.yaml
+
 jobs:
+
+# Desktop::Init
 - name: Desktop::Init
-  exec: args.tests = require("autoTestAll.Desktop.js");
+  exec: args.tests = require("autoTestAll.Desktop.js")
+
+# Desktop::Lazy loading and registration
 - name: Desktop::Lazy loading and registration
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testLazyAndRegistration;
+  exec: args.func = args.tests.testLazyAndRegistration
+
+# Desktop::Provider selection and failure
 - name: Desktop::Provider selection and failure
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testSelectionAndFailure;
+  exec: args.func = args.tests.testSelectionAndFailure
+
+# Desktop::Window lifetime and ordering
 - name: Desktop::Window lifetime and ordering
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testWindowsAndOrdering;
+  exec: args.func = args.tests.testWindowsAndOrdering
+
+# Desktop::Validation and JSON
 - name: Desktop::Validation and JSON
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testValidationAndSerialization;
+  exec: args.func = args.tests.testValidationAndSerialization
+
+# Desktop::Callbacks and shutdown
 - name: Desktop::Callbacks and shutdown
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testCallbacksAndShutdown;
+  exec: args.func = args.tests.testCallbacksAndShutdown
+
+# Desktop::Restricted messaging and assets
 - name: Desktop::Restricted messaging and assets
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testMessagingAndAssets;
+  exec: args.func = args.tests.testMessagingAndAssets
+
+# Desktop::Process contract
 - name: Desktop::Process contract
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testProcessContract;
+  exec: args.func = args.tests.testProcessContract
+
+# Desktop::WebSocket security
 - name: Desktop::WebSocket security
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testWebSocketSecurity;
+  exec: args.func = args.tests.testWebSocketSecurity
+
+# Desktop::Handshake and frame limits
 - name: Desktop::Handshake and frame limits
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testHandshakeAndFrameLimits;
+  exec: args.func = args.tests.testHandshakeAndFrameLimits
+
+# Desktop::Rooted files
 - name: Desktop::Rooted files
   from: Desktop::Init
   to: OpenAF Test
-  exec: args.func = args.tests.testRootedFiles;
+  exec: args.func = args.tests.testRootedFiles
+
 todo:
 - Desktop::Lazy loading and registration
 - Desktop::Provider selection and failure

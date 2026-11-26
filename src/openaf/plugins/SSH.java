@@ -135,19 +135,19 @@ public class SSH extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>SSH.exec(aCommand, aStdIn, shouldOutputAlso, pty, outputMap, callbackFunc) : Object</key>
-	 * <![CDATA[
-	 * Executes a command over the SSH connection. You can optionally provide the input and indicate that it `shouldOutputAlso`
-	 * (boolean) to stdout and if you want to allocate a `pty` (boolean). The stderr will be stored in `__stderr` and also output
-	 * if `shouldOutputAlso` = true. If `outputMap` instead of the stdout string a map with stdout, stderr and exitcode will be returned.
-	 * A `callbackFunc` can be provided, if `shouldOutputAlso` is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
-	 * be available for the `outputMap` if true. Example:
-	 *
-	 * ```javascript
-	 * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Executes a command over the SSH connection. You can optionally provide the input and indicate that it `shouldOutputAlso`
+     * (boolean) to stdout and if you want to allocate a `pty` (boolean). The stderr will be stored in `__stderr` and also output
+     * if `shouldOutputAlso` = true. If `outputMap` instead of the stdout string a map with stdout, stderr and exitcode will be returned.
+     * A `callbackFunc` can be provided, if `shouldOutputAlso` is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
+     * be available for the `outputMap` if true. Example:
+     *
+     * ```javascript
+     * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -156,19 +156,19 @@ public class SSH extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>SSH.execSudo(aCommandWithSudo, aUser, aStdIn, shouldOutputAlso, pty, outputMap, callbackFunc) : Object</key>
-	 * <![CDATA[
-	 * Executes a command over the SSH connection using sudo to `aUser`. You can optionally provide the input and indicate that
-	 * it `shouldOutputAlso` (boolean) to stdout and if you want to allocate a `pty` (boolean). The stderr will be stored in
-	 * `__stderr` and also output if `shouldOutputAlso` = true. If `outputMap` instead of the stdout string a map with stdout, stderr and exitcode will be returned.
-	 * A `callbackFunc` can be provided, if `shouldOutputAlso` is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
-	 * be available for the `outputMap` if true. Example:
-	 *
-	 * ```javascript
-	 * ssh.execSudo("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Executes a command over the SSH connection using sudo to `aUser`. You can optionally provide the input and indicate that
+     * it `shouldOutputAlso` (boolean) to stdout and if you want to allocate a `pty` (boolean). The stderr will be stored in
+     * `__stderr` and also output if `shouldOutputAlso` = true. If `outputMap` instead of the stdout string a map with stdout, stderr and exitcode will be returned.
+     * A `callbackFunc` can be provided, if `shouldOutputAlso` is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
+     * be available for the `outputMap` if true. Example:
+     *
+     * ```javascript
+     * ssh.execSudo("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -1019,30 +1019,30 @@ public class SSH extends ScriptableObject {
 			return getSSHFile(remoteFile, localFile, false);
 	}
 
-	private static File resolveScpDownloadTarget(File directory, String peerName) throws IOException {
-		if (peerName == null || peerName.length() == 0 || peerName.equals(".") || peerName.equals("..") ||
-			peerName.indexOf('/') >= 0 || peerName.indexOf('\\') >= 0 ||
-			peerName.matches("^[A-Za-z]:.*")) {
-			throw new IOException("Invalid SCP file name");
-		}
+    private static File resolveScpDownloadTarget(File directory, String peerName) throws IOException {
+        if (peerName == null || peerName.length() == 0 || peerName.equals(".") || peerName.equals("..") ||
+            peerName.indexOf('/') >= 0 || peerName.indexOf('\\') >= 0 ||
+            peerName.matches("^[A-Za-z]:.*")) {
+            throw new IOException("Invalid SCP file name");
+        }
 
-		File root = directory.getCanonicalFile();
-		File target = new File(root, peerName).getCanonicalFile();
-		if (target.getParentFile() == null || !target.getParentFile().equals(root)) {
-			throw new IOException("SCP file name escapes the destination directory");
-		}
-		return target;
-	}
+        File root = directory.getCanonicalFile();
+        File target = new File(root, peerName).getCanonicalFile();
+        if (target.getParentFile() == null || !target.getParentFile().equals(root)) {
+            throw new IOException("SCP file name escapes the destination directory");
+        }
+        return target;
+    }
 	
 	public byte[] getSSHFile(String remoteFile, String localFile, boolean fileFlag) throws JSchException, IOException {
 		OutputStream fos = null;
 		byte[] res = null;
 		
 		try {
-		        File targetDirectory = null;
+                File targetDirectory = null;
 	        if (fileFlag)
 		        if(new File(localFile).isDirectory()) {
-		           targetDirectory = new File(localFile);
+                   targetDirectory = new File(localFile);
 		        }
 		      
 			// exec 'scp -f rfile' remotely
@@ -1099,7 +1099,7 @@ public class SSH extends ScriptableObject {
 
 				// read a content of lfile
 				if (fileFlag)
-					fos = new FileOutputStream(targetDirectory == null ? new File(localFile) : resolveScpDownloadTarget(targetDirectory, file));
+                    fos = new FileOutputStream(targetDirectory == null ? new File(localFile) : resolveScpDownloadTarget(targetDirectory, file));
 				else
 					fos = new ByteArrayOutputStream();
 				int foo;

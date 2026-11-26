@@ -94,13 +94,12 @@ ow.loadObj();
 
 var localDB;
 var remoteDB;
-var zipCache = {};
 var outputPath;
 var verb;
 var arg;
 var __remoteUser;
 var __remotePass;
-var __remoteCredentialScope;
+var __remoteCredentialScope
 
 // *********
 // FUNCTIONS
@@ -135,21 +134,77 @@ function showHelp() {
 	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE +")");
 }
 
-// Retrieve OPack file using HTTP
-function getHTTPOPack(aURL) {
-	if (!isUnDef(zipCache[aURL])) {
-		return zipCache[aURL];
-	}
-
-	log("Retrieving " + aURL);
+// Own the archive snapshot for a package operation, including update's nested install.
+function withPackageArchives(action, inherited) {
+	if (isDef(inherited)) return action(inherited)
+	var archives = Object.create(null)
 	try {
-		var http = execHTTPWithCred(aURL.replace(/ /g, "%20"), "GET", "", {}, true);
-		var opack = new ZIP(http);
-		zipCache[aURL] = opack;
-		return opack;
+		return action(archives)
+	} finally {
+		Object.keys(archives).forEach(url => removePackageStaging(archives[url].root))
+	}
+}
+
+function removePackageStaging(root) {
+	try { io.rm(root) } catch(e) { logErr("Cannot remove package staging directory: " + e) }
+}
+
+function isRemoteOPack(url) {
+	return /^https?:\/\//i.test(url) && /\.(opack|jar)$/i.test(url.split(/[?#]/, 1)[0])
+}
+
+// Stream a remote archive into private numbered files before interpreting the manifest.
+function getHTTPOPack(url, archives) {
+	if (isDef(archives[url])) return archives[url]
+	log("Retrieving " + url)
+	var root, input, zip
+	try {
+		// Give ZIP entries no control over temporary paths.
+		root = String(java.nio.file.Files.createTempDirectory("openaf-opack-stage-"))
+		var files = Object.create(null), paths = Object.create(null), index = 0
+		input = execHTTPWithCred(url.replace(/ /g, "%20"), "GET", "", {}, true, __, true)
+		zip = Packages.openaf.core.ArchiveLimits.opackZip(input)
+		try {
+			var entry
+			while ((entry = zip.getNextEntry()) != null) {
+				var name = String(entry.getName())
+				var normalized = resolvePackagePath(root, name)
+				if (name.split("/").indexOf("..") >= 0) throw "Unsafe package path: " + name
+				if (paths[normalized]) throw "Duplicate archive entry: " + name
+				paths[normalized] = true
+				if (entry.isDirectory()) continue
+
+				var target = root + "/entry-" + (++index)
+				if (name == PACKAGEJSON || name == PACKAGEYAML) zip.limitPackageManifest()
+				java.nio.file.Files.copy(zip, java.nio.file.Paths.get(target))
+				files[name] = target
+			}
+			zip.finish()
+		} finally {
+			zip.close()
+		}
+
+		// Select the manifest after the whole response has passed the archive limits.
+		var manifest
+		if (isDef(files[PACKAGEJSON])) {
+			try { manifest = fromJsonYaml(io.readFileString(files[PACKAGEJSON]).replace(/\n/g, "")) } catch(e) {}
+		}
+		if (!isMap(manifest) && isDef(files[PACKAGEYAML])) manifest = fromJsonYaml(io.readFileString(files[PACKAGEYAML]))
+		if (!isMap(manifest) || !isString(manifest.name) || manifest.name.length == 0 ||
+			/[\/\\:]/.test(manifest.name) || manifest.name == "." || manifest.name == "..") {
+			throw "Missing or invalid package manifest"
+		}
+		if (isUnDef(manifest.files)) manifest.files = Object.keys(files)
+		if (!isArray(manifest.files) || manifest.files.some(file => !isString(file))) throw "Invalid package file list"
+		manifest.__filelocation = "opackurl"
+		archives[url] = { root: root, files: files, manifest: manifest }
+		return archives[url]
 	} catch(e) {
-		logErr("Can't retrieve " + aURL + " (" + e.message + ")");
-		return;
+		if (isUnDef(zip) && isDef(input)) {
+			try { input.close() } catch(closeError) {}
+		}
+		if (isDef(root)) removePackageStaging(root)
+		logErr("Can't retrieve " + url + " (" + String(e) + ")")
 	}
 }
 
@@ -625,7 +680,19 @@ function listFilesWithHash(startPath, excludingList) {
 }
 
 // Verify a list of hash
-function verifyHashList(startPath, filesHash, localPaths) {
+function verifyHashList(startPath, filesHash, localPaths, archive) {
+	// Remote inspection uses the same files that supplied the parsed manifest.
+	if (isDef(archive)) {
+		var hashes = Object.create(null)
+		Object.keys(filesHash || {}).forEach(file => {
+			if (isUnDef(archive.files[file])) return
+			try {
+				verifyPackageHash(file, archive.files[file], filesHash[file])
+				hashes[file] = true
+			} catch(e) { hashes[file] = false }
+		})
+		return hashes
+	}
 	var results = {};
 	var location = "local";
 	var http;
@@ -635,16 +702,8 @@ function verifyHashList(startPath, filesHash, localPaths) {
 		location = "http";
 	}
 
-	if (startPath.match(/\.(opack)|(jar)$/)) {
-		if (location == "http") {
-			location = "opackhttp";
-			http = execHTTPWithCred(startPath.replace(/ /g, "%20"), "GET", "", {}, true);
-			zip = new ZIP(http);
-		} else {
-			location = "opack";
-			zip = new ZIP();
-			//zip.loadFile(startPath);
-		}
+	if (location == "local" && startPath.match(/\.(opack|jar)$/i)) {
+		location = "opack";
 	}
 
 	if (location == "http") {
@@ -662,23 +721,14 @@ function verifyHashList(startPath, filesHash, localPaths) {
 
 		switch(location) {
 		case "local": 
-			hash = generateHash(isDef(localPaths) && Object.prototype.hasOwnProperty.call(localPaths, file) ? localPaths[file] : startPath + "/" + file, filesHash[file]);
+			hash = generateHash(isDef(localPaths) && Object.prototype.hasOwnProperty.call(localPaths, file) ? localPaths[file] : startPath + "/" + file, filesHash[file])
 			break;
 		case "http":
-			hash = generateHash(http, filesHash[file]);
+			hash = generateHash(http, filesHash[file])
 			break;
 		case "opack":
-			if (location == "opack") 
-				hash = generateHash(zip.streamGetFile(file), filesHash[file]);
-			else
-				hash = generateHash(zip.getFile(file), filesHash[file]);
-			break;
-		case "opackhttp":
-			if (location == "opackhttp")
-				hash = generateHash(zip.streamGetFile(file), filesHash[file]);
-			else
-				hash = generateHash(zip.getFile(file), filesHash[file]);
-			break;
+			hash = generateHash(zip.streamGetFile(startPath, file), filesHash[file])
+			break
 		}
 
 		//if (location == 'local') ;
@@ -694,16 +744,20 @@ function verifyHashList(startPath, filesHash, localPaths) {
 }
 
 // Materialize one private snapshot; never fetch again after its integrity check.
-function stagePackageFiles(packag, pack, root, nohash, sources) {
+function stagePackageFiles(packag, pack, root, nohash, sources, archive) {
 	var targets = Object.create(null), seen = Object.create(null)
 	packag.files.forEach(file => {
 		var relative = packag.__filelocation == "local" ? localPackageRelativePath(pack, file) : String(file)
 		var target = resolvePackagePath(root, relative)
 		if (Object.prototype.hasOwnProperty.call(seen, target)) throw "Duplicate package target: " + file
 		seen[target] = true
-		targets[file] = target
+		if (isDef(archive) && file != PACKAGEJSON && file != PACKAGEYAML) {
+			if (isUnDef(archive.files[file])) throw "Missing archive entry: " + file
+			targets[file] = archive.files[file]
+		} else {
+			targets[file] = target
+		}
 	})
-	var remote = packag.__filelocation == "opackurl" ? getHTTPOPack(pack) : undefined
 	var copied = pForEach(packag.files, function(file) {
 		try {
 			var target = targets[file]
@@ -721,12 +775,7 @@ function stagePackageFiles(packag, pack, root, nohash, sources) {
 				case "url":
 					ioStreamCopy(io.writeFileStream(target), execHTTPWithCred(pack.replace(/ /g, "%20") + "/" + file.replace(/ /g, "%20"), "GET", "", {}, true, undefined, true))
 					break
-				case "opackurl":
-					if (isUnDef(remote)) throw "Missing remote archive"
-					var bytes = remote.getFile(file)
-					if (java.util.Objects.isNull(bytes)) throw "Missing archive entry: " + file
-					io.writeFileBytes(target, bytes)
-					break
+				case "opackurl": break // Payload already streamed into staging.
 				case "opacklocal":
 					var zip = new ZIP()
 					try {
@@ -746,32 +795,37 @@ function stagePackageFiles(packag, pack, root, nohash, sources) {
 	if (!nohash) packag.files.forEach(file => {
 		if (file == PACKAGEJSON || file == PACKAGEYAML) return
 		if (!isMap(packag.filesHash) || !Object.prototype.hasOwnProperty.call(packag.filesHash, file)) throw "Missing package hash: " + file
-		var expected = packag.filesHash[file], actual, input
-		if (!isString(expected)) throw "Invalid package hash: " + file
-		if (/^(sha256:)?[a-f0-9]{64}$/i.test(expected)) {
-			input = io.readFileStream(targets[file])
-			try { actual = String(sha256(input)) } finally { input.close() }
-			expected = expected.replace(/^sha256:/i, "")
-		} else if (/^[a-f0-9]{40}$/i.test(expected)) {
-			// Legacy text hashes normalize CRLF. Bare CR changes code semantics and is unsafe.
-			if (!io.isBinaryFile(targets[file])) {
-				var cr = false
-				input = io.readFileStream(targets[file])
-				try {
-					ioStreamReadBytes(input, bs => {
-						for (var i = 0; i < bs.length; i++) {
-							if (cr && bs[i] != 10) throw "Unverifiable bare CR in " + file
-							cr = bs[i] == 13
-						}
-					})
-					if (cr) throw "Unverifiable bare CR in " + file
-				} finally { input.close() }
-			}
-			actual = generateHash(targets[file])
-		} else throw "Unsupported package hash: " + file
-		if (String(actual).toLowerCase() != expected.toLowerCase()) throw "Package hash mismatch: " + file
+		verifyPackageHash(file, targets[file], packag.filesHash[file])
 	})
 	return targets
+}
+
+// Verify staged bytes using the manifest's SHA-256 or legacy SHA-1 format.
+function verifyPackageHash(file, path, expected) {
+	var actual, input
+	if (!isString(expected)) throw "Invalid package hash: " + file
+	if (/^(sha256:)?[a-f0-9]{64}$/i.test(expected)) {
+		input = io.readFileStream(path)
+		try { actual = String(sha256(input)) } finally { input.close() }
+		expected = expected.replace(/^sha256:/i, "")
+	} else if (/^[a-f0-9]{40}$/i.test(expected)) {
+		// Legacy text hashes normalize CRLF. Bare CR changes code semantics and is unsafe.
+		if (!io.isBinaryFile(path)) {
+			var cr = false
+			input = io.readFileStream(path)
+			try {
+				ioStreamReadBytes(input, bs => {
+					for (var i = 0; i < bs.length; i++) {
+						if (cr && bs[i] != 10) throw "Unverifiable bare CR in " + file
+						cr = bs[i] == 13
+					}
+				})
+				if (cr) throw "Unverifiable bare CR in " + file
+			} finally { input.close() }
+		}
+		actual = generateHash(path)
+	} else throw "Unsupported package hash: " + file
+	if (String(actual).toLowerCase() != expected.toLowerCase()) throw "Package hash mismatch: " + file
 }
 
 // Backup only affected files; unrelated content in custom installation directories is retained.
@@ -990,61 +1044,70 @@ function opackCredentialScope(aURL) {
 function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	var scope = opackCredentialScope(aURL)
 	var http = new ow.obj.http()
-	var res
+	var res, handedOff = false
 
+	// Streaming callers only need the error status. Do not buffer an error body.
+	if (returnStream) http.setThrowExceptions(false)
 	try {
-		res = http.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)
-		if (http.responseCode() == 401) throw "code: 401"
-	} catch(e) {
-		if (String(e).indexOf("code: 401") < 0) throw e
-		var user, pass, si
-		// Explicit -cred values bind once, to the first challenged protection space.
-		if (isDef(__remoteUser) && isDef(__remotePass)) {
-			if (isUnDef(__remoteCredentialScope)) __remoteCredentialScope = scope
-			if (__remoteCredentialScope == scope) {
-				user = __remoteUser
-				pass = __remotePass
-			}
-		}
 		try {
-			try { $sec(__, "opack").get("opack::") } catch(e1) { $sec(__, "opack").set("opack::", {}) }
-			// Legacy keys omit the scheme and cannot safely identify a protection space.
-			si = $sec(__, "opack").get("opack::" + scope)
-		} catch(ee) {}
-		if (isMap(si) && (isUnDef(user) || isUnDef(pass))) {
-			user = si.u
-			pass = si.p
+			res = http.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)
+		} catch(e) {
+			if (http.responseCode() != 401) throw e
 		}
-		if (isUnDef(user) || isUnDef(pass)) {
-			user = ask("Enter authentication user: ")
-			pass = ask("Enter authentication password: ", String.fromCharCode(0))
-		}
-		// Challenge authentication only; preemptive headers survive same-origin redirects.
-		http.login(Packages.openaf.AFCmdBase.afc.dIP(user), Packages.openaf.AFCmdBase.afc.dIP(pass), false, aURL)
-		var authenticator = http.client.authenticator()
-		http.client = http.client.newBuilder().authenticator({
-			authenticate: function(route, response) {
-				if (opackCredentialScope(String(response.request().url())) != scope) return null
-				return authenticator.authenticate(route, response)
-			}
-		}).addNetworkInterceptor({
-			intercept: function(chain) {
-				var request = chain.request()
-				if (opackCredentialScope(String(request.url())) != scope) {
-					request = request.newBuilder().removeHeader("Authorization").build()
+		if (http.responseCode() == 401) {
+			http.close()
+			var user, pass, si
+			// Explicit -cred values bind once, to the first challenged protection space.
+			if (isDef(__remoteUser) && isDef(__remotePass)) {
+				if (isUnDef(__remoteCredentialScope)) __remoteCredentialScope = scope
+				if (__remoteCredentialScope == scope) {
+					user = __remoteUser
+					pass = __remotePass
 				}
-				return chain.proceed(request)
 			}
-		}).build()
-		http.close()
-		res = http.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)
-		if (http.responseCode() == 200) {
-			try { $sec(__, "opack").set("opack::" + scope, { u: user, p: pass }) } catch(e2) {}
+			try {
+				try { $sec(__, "opack").get("opack::") } catch(e1) { $sec(__, "opack").set("opack::", {}) }
+				// Legacy keys omit the scheme and cannot safely identify a protection space.
+				si = $sec(__, "opack").get("opack::" + scope)
+			} catch(ee) {}
+			if (isMap(si) && (isUnDef(user) || isUnDef(pass))) {
+				user = si.u
+				pass = si.p
+			}
+			if (isUnDef(user) || isUnDef(pass)) {
+				user = ask("Enter authentication user: ")
+				pass = ask("Enter authentication password: ", String.fromCharCode(0))
+			}
+			// Challenge authentication only; preemptive headers survive same-origin redirects.
+			http.login(Packages.openaf.AFCmdBase.afc.dIP(user), Packages.openaf.AFCmdBase.afc.dIP(pass), false, aURL)
+			var authenticator = http.client.authenticator()
+			http.client = http.client.newBuilder().authenticator({
+				authenticate: function(route, response) {
+					if (opackCredentialScope(String(response.request().url())) != scope) return null
+					return authenticator.authenticate(route, response)
+				}
+			}).addNetworkInterceptor({
+				intercept: function(chain) {
+					var request = chain.request()
+					if (opackCredentialScope(String(request.url())) != scope) {
+						request = request.newBuilder().removeHeader("Authorization").build()
+					}
+					return chain.proceed(request)
+				}
+			}).build()
+			res = http.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)
+			if (http.responseCode() == 200) {
+				try { $sec(__, "opack").set("opack::" + scope, { u: user, p: pass }) } catch(e) {}
+			}
 		}
+		if (returnStream && http.responseCode() >= 400) {
+			throw "IOException Server returned HTTP response code: " + http.responseCode() + " for URL: " + aURL
+		}
+		handedOff = returnStream
+		return returnStream ? res : res.responseBytes
+	} finally {
+		if (!handedOff) http.close()
 	}
-
-	if (!returnStream) http.close()
-	return returnStream ? res : res.responseBytes
 }
 
 // Find OpenAF she-bang
@@ -1175,32 +1238,18 @@ function fromJsonYaml(aString) {
 // ----------------------------------------------------------
 
 
-function getPackage(packPath) {
+function getPackage(packPath, archives) {
 	var packag = {};
 
 	if (isUnDef(packPath)) return packag;
 
 	// determine if HTTP or local
 	if (packPath.match(/^http/i)) {
-		if (packPath.match(/\.(opack)|(jar)$/i)) {
-			// Remote OPack
-			var opack = getHTTPOPack(packPath);
-			if (isUnDef(opack)) return;
-
-			// There should be no \n usually associated with package.json scripts
-			try {
-				packag = fromJsonYaml(af.fromBytes2String(opack.getFile(PACKAGEJSON)).replace(/\n/g, "") + "");
-			} catch(e) {
-				packag = fromJsonYaml(af.fromBytes2String(opack.getFile(PACKAGEYAML)) + "");
-			}
-			if (isUnDef(packag.files)) {
-				packag.files = [];
-				var listOfFiles = opack.list();
-				for(let i in listOfFiles) {
-					packag.files.push(i);
-				}
-			}
-			packag.__filelocation = "opackurl";
+		if (isRemoteOPack(packPath)) {
+			// Metadata-only callers own a short-lived snapshot.
+			if (isUnDef(archives)) return withPackageArchives(scope => getPackage(packPath, scope))
+			var archive = getHTTPOPack(packPath, archives)
+			return isDef(archive) ? clone(archive.manifest) : __
 		} else {
 			// URL identified
 			try {
@@ -1276,9 +1325,14 @@ function getPackage(packPath) {
 
 // INFO
 function __opack_info(args) {
+	return withPackageArchives(archives => opackInfo(args, archives))
+}
+
+function opackInfo(args, archives) {
 	if(isUnDef(args[0]) || args[0] == "") return;
 
-	var packag = getPackage(args[0]);
+	var packag = getPackage(args[0], archives)
+	if (isUnDef(packag) && isRemoteOPack(args[0])) return
 	var remote = false;
 
 	if (isUnDef(packag) || isUnDef(packag["name"])) {
@@ -1300,7 +1354,7 @@ function __opack_info(args) {
 						return
 					}
 					_p = packFound.repository.path
-					packag = getPackage(_p)
+					packag = getPackage(_p, archives)
 					break
 				case "http":
 				default    :
@@ -1309,15 +1363,16 @@ function __opack_info(args) {
 						return
 					}
 					_p = packFound.repository.url
-					packag = getPackage(_p)
+					packag = getPackage(_p, archives)
 
 					// to be deprecated
 					if (isUnDef(packag) && !(isUnDef(packFound.repository.backupurl))) {
-						packag = getPackage(packFound.repository.backupurl)
+						packag = getPackage(packFound.repository.backupurl, archives)
 					}
 				}
 
-				args[0] = _p
+			if (isUnDef(packag) || isUnDef(packag.name)) return
+			args[0] = _p
 				packag.__filelocation = "remote";
 			}
 		} else {
@@ -1370,7 +1425,7 @@ function __opack_info(args) {
 	print( printTable(ideps) );
 
 	var hashResults, iFiles = [];
-	if(!remote) hashResults = verifyHashList(args[0], packag.filesHash);
+	if (!remote) hashResults = verifyHashList(args[0], packag.filesHash, __, archives[args[0]])
 	//print(ansiColor("bold", "FILES       :") + "\n");
 	for(let i in packag.files) {
 		var file = packag.files[i];
@@ -1455,14 +1510,14 @@ function checkVersion(packag, force) {
 		return 0
 	}
 	if (_c == 0) {
-		log(packag.name + ", version " + installedVersion + ", already installed in '" + findLocalDBTargetByName(packag.name) + "'.");
+		log(packag.name + ", version " + installedVersion + ", already installed in '" + findLocalDBTargetByName(packag.name) + "'.")
 		return 0
 	}
 	return 1
 }
 
 // INSTALL
-function install(args, beforeCommit, forceVersion) {
+function install(args, beforeCommit, forceVersion, inheritedArchives) {
 	if (isUnDef(args[0]) || args[0].length <= 0)
 		return;
 
@@ -1540,11 +1595,15 @@ function install(args, beforeCommit, forceVersion) {
 	packages = sortPackagesByDeps(packages)
 
 	// For each package found
-	packages.forEach(pack => {
+	packages.forEach(pack => withPackageArchives(archives => {
 		var _msg = "Getting package '" + pack + "'..."
 		log(ansiColor("FAINT",repeat(_msg.length, "-")))
 		log(_msg)
-		var packag = getPackage(pack)
+		var packag = getPackage(pack, archives)
+		if (isUnDef(packag)) {
+			_stats.failed++
+			return
+		}
 
 		// Verify remote repositories
 		if (isUnDef(packag.name) && packag.__filelocation != "opackurl") {
@@ -1563,8 +1622,8 @@ function install(args, beforeCommit, forceVersion) {
 						_stats.failed++
 						return
 					}
-					packag = getPackage(packFound.repository.path)
-					pack = packag.repository.path
+					pack = packFound.repository.path
+					packag = getPackage(pack, archives)
 					break
 				case "http":
 				default    :
@@ -1573,12 +1632,16 @@ function install(args, beforeCommit, forceVersion) {
 						_stats.failed++
 						return
 					}
-					packag = getPackage(packFound.repository.url)
-					pack = packag.repository.url
+					pack = packFound.repository.url
+					packag = getPackage(pack, archives)
 				}
 			}
 		}
 
+		if (isUnDef(packag) || isUnDef(packag.name)) {
+			_stats.failed++
+			return
+		}
 		var output
 		// If no output folder is defined
 		if (isUnDef(_output) && !forceOutput) {
@@ -1695,13 +1758,13 @@ function install(args, beforeCommit, forceVersion) {
 				_stats.failed++
 				return
 			}
-        var stagingRoot, transaction, updateErased = false
+        var archive = archives[pack], stagingRoot, transaction, updateErased = false
         try {
-            stagingRoot = String(java.nio.file.Files.createTempDirectory("openaf-opack-stage-"))
+            stagingRoot = isDef(archive) ? archive.root : String(java.nio.file.Files.createTempDirectory("openaf-opack-stage-"))
             var payloadRoot = stagingRoot + "/payload", backupRoot = stagingRoot + "/backup"
             mkdir(payloadRoot)
             mkdir(backupRoot)
-            var staged = stagePackageFiles(packag, pack, payloadRoot, nohash, packageSources)
+            var staged = stagePackageFiles(packag, pack, payloadRoot, nohash, packageSources, archive)
             var obsolete = [], obsoleteNames = Object.create(null)
             var finalPaths = packag.files.map(file => packageTargets[file])
             if (isDef(origPack) && isArray(origPack.files)) origPack.files.forEach(file => {
@@ -1742,11 +1805,9 @@ function install(args, beforeCommit, forceVersion) {
             }
             _stats.failed++
         } finally {
-            if (isDef(stagingRoot)) {
-                try { io.rm(stagingRoot) } catch(cleanupError) { logErr("Cannot remove package staging directory: " + cleanupError) }
-            }
+            if (isDef(stagingRoot) && isUnDef(archive)) removePackageStaging(stagingRoot)
         }
-	})
+	}, inheritedArchives))
 
 	log(ansiColor("FAINT",repeat(4, "-")))
 
@@ -1867,7 +1928,7 @@ function __opack_script(args, isDaemon, isJob) {
 		s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
 		s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
 		s = s + "\n";
-		s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -jar $OPENAF_DIR " + options + "\n";
+		s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -jar $OPENAF_DIR " + options + "\n"
 		s = s + "EXITCODE=$?\n";
 		s = s + "stty icanon echo 2>/dev/null\n";
 		s = s + "exit $EXITCODE\n";
@@ -1988,7 +2049,7 @@ function update(args) {
 	// Sort packages by dependencies
 	_packages = sortPackagesByDeps(_packages)
 
-	_packages.forEach(_pack => {
+	_packages.forEach(_pack => withPackageArchives(archives => {
 		// Check OpenAF
 		if (_pack.toUpperCase() == 'OPENAF') {
 			logErr("Please use 'openaf --update' to update OpenAF")
@@ -2000,20 +2061,28 @@ function update(args) {
 		var _msg = "Getting package '" + _pack + "'..."
 		log(ansiColor("FAINT",repeat(_msg.length, "-")))
 		log(_msg)
-		var packag = getPackage(_pack)
+		var packag = getPackage(_pack, archives)
+		if (isUnDef(packag) && isRemoteOPack(_pack)) {
+			_stats.failed++
+			return
+		}
 
 		// Get original installation path for update
 		var originalInstallPath
-		var origPackForUpdate = findLocalDBByName(_pack)
+		var origPackForUpdate = findLocalDBByName(isDef(archives[_pack]) ? packag.name : _pack)
 		if (isDef(origPackForUpdate) && isDef(origPackForUpdate.__target)) {
 			originalInstallPath = origPackForUpdate.__target
 			log("Found existing installation at: " + originalInstallPath)
 		}
 
+		// Resolve named packages through the catalog before selecting the install source
+		var updateSource = _pack, fromRepository = false
 		if (!isUnDef(packag) &&
 			(typeof packag.name == 'undefined' ||
-			packag.__filelocation == 'local'))
+			packag.__filelocation == 'local')) {
 			packag = getOPackRemoteDB()[$from(Object.keys(getOPackRemoteDB())).equals(_pack).at(0)]
+			fromRepository = true
+		}
 
 		// Verify version
 		if (!isUnDef(packag) &&
@@ -2025,9 +2094,7 @@ function update(args) {
 				return
 			}
 			if (_res > 0) {
-				if ((typeof packag.__filelocation !== 'undefined') &&
-					!(packag.__filelocation.match(/opack/))
-					) {
+				if (fromRepository) {
 					switch(packag.repository.type) {
 					case "path":
 						if (isUnDef(packag.repository.path)) {
@@ -2035,7 +2102,7 @@ function update(args) {
 							_stats.failed++
 							return
 						}
-						pack = packag.repository.path
+						updateSource = packag.repository.path
 						break
 					case "http":
 					default    :
@@ -2044,7 +2111,7 @@ function update(args) {
 							_stats.failed++
 							return
 						}
-						pack = packag.repository.url
+						updateSource = packag.repository.url
 					}
 				}
 				log("UPDATING -- " + packag.name + " version " + packag.version);
@@ -2063,7 +2130,7 @@ function update(args) {
 					installArgs.push("-d")
 					installArgs.push(originalInstallPath)
 				}
-				var otherStats = install(installArgs)
+				var otherStats = install(installArgs, __, __, archives)
 				if (isDef(otherStats)) {
 					_stats.updated += otherStats.installed
 					_stats.failed += otherStats.failed
@@ -2074,6 +2141,7 @@ function update(args) {
 			return
 		}
 
+        // Keep verification and erase hooks attached to the resolved update source
         var beforeInstallCommit
         if (ferase) beforeInstallCommit = function(oldPack) {
             if (isUnDef(oldPack)) return
@@ -2081,18 +2149,18 @@ function update(args) {
             _stats.erasedToUpdate += erased.erased
             if (erased.failed > 0) throw "Cannot erase previous package for update"
         }
-		var installArgs = [_pack]
+		var installArgs = [updateSource]
 		if (isDef(originalInstallPath)) {
 			installArgs.push("-d")
 			installArgs.push(originalInstallPath)
 		}
-		var otherStats = install(installArgs, beforeInstallCommit, force)
+		var otherStats = install(installArgs, beforeInstallCommit, force, archives)
 		if (isDef(otherStats)) {
 			_stats.updated += otherStats.installed
 			_stats.failed += otherStats.failed
 			_stats.notNeeded += otherStats.notNeeded
 		}
-	})
+	}))
 
 	log(ansiColor("FAINT",repeat(4, "-")))
 
@@ -2522,11 +2590,11 @@ function genpack(args) {
 	// .openaf_precompiled holds classes compiled for one specific OpenAF distribution+version
 	// (see js/openaf.js's __precompiledArtifact); shipping it inside an .opack would let a different
 	// version silently load/purge someone else's precompiled cache instead of just recompiling.
-	var excludeList = [ ".svn", ".git", ".openaf_precompiled" ];
+	var excludeList = [ ".svn", ".git", ".openaf_precompiled" ]
 	try { packag = getPackage(args[0]) } catch(e) {};
 
 	for(let i in args) {
-    	if (args[i] == "--includeSCM") excludeList = [ ".openaf_precompiled" ];
+        if (args[i] == "--includeSCM") excludeList = [ ".openaf_precompiled" ]
 	}
 	for(let i in args) {
     	if (args[i] == "--exclude") {

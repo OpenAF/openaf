@@ -12,7 +12,7 @@ Tries to execute aFunction providing a map with all of the cluster list host + p
 
 Sources:
 
-- js/owrap.server.js:2611
+- js/owrap.server.js:2870
 
 <a id="api-ow-server-cluster-any-bc21ca9d"></a>
 
@@ -24,7 +24,7 @@ Tries to execute aFunction providing a map with one of the cluster list host + p
 
 Sources:
 
-- js/owrap.server.js:2582
+- js/owrap.server.js:2841
 
 <a id="api-ow-server-cluster-canlock-99a1e92c"></a>
 
@@ -36,7 +36,7 @@ Sends messages to all other cluster nodes to reach quorum if can lock aLockName 
 
 Sources:
 
-- js/owrap.server.js:2657
+- js/owrap.server.js:2916
 
 <a id="api-ow-server-cluster-canunlock-15208c52"></a>
 
@@ -48,7 +48,7 @@ Sends messages to all other cluster nodes to reach quorum if can unlock aLockNam
 
 Sources:
 
-- js/owrap.server.js:2667
+- js/owrap.server.js:2926
 
 <a id="api-ow-server-cluster-checkin-4c33438e"></a>
 
@@ -60,7 +60,7 @@ Checks in the current cluster node.
 
 Sources:
 
-- js/owrap.server.js:2750
+- js/owrap.server.js:3009
 
 <a id="api-ow-server-cluster-checkout-4ea003f5"></a>
 
@@ -72,7 +72,7 @@ Checks out the current cluster node.
 
 Sources:
 
-- js/owrap.server.js:2767
+- js/owrap.server.js:3026
 
 <a id="api-ow-server-cluster-locks-f2d11a36"></a>
 
@@ -84,7 +84,7 @@ Returns the current cluster node ow.server.locks instance.
 
 Sources:
 
-- js/owrap.server.js:2677
+- js/owrap.server.js:2936
 
 <a id="api-ow-server-cluster-sendmsg-1e3f2ba0"></a>
 
@@ -96,7 +96,7 @@ Sends aMessageMap to a specific aHostMap (map composed of a host and a port) or 
 
 Sources:
 
-- js/owrap.server.js:2634
+- js/owrap.server.js:2893
 
 <a id="api-ow-server-cluster-sendtoothers-7f8806b7"></a>
 
@@ -108,7 +108,7 @@ Tries to send to another cluster node aData using aSendToOtherFn that receives, 
 
 Sources:
 
-- js/owrap.server.js:2556
+- js/owrap.server.js:2815
 
 <a id="api-ow-server-cluster-setmsghandler-24c6ec34"></a>
 
@@ -120,7 +120,7 @@ Sets aHandlerFunction to be called whenever the current node receives a message 
 
 Sources:
 
-- js/owrap.server.js:2646
+- js/owrap.server.js:2905
 
 <a id="api-ow-server-cluster-verify-2fe72b92"></a>
 
@@ -132,7 +132,7 @@ Verifies if all cluster nodes ports are reachable and updates the cluster file. 
 
 Sources:
 
-- js/owrap.server.js:2698
+- js/owrap.server.js:2957
 
 <a id="api-ow-server-cluster-whenunlocked-a0a4e196"></a>
 
@@ -144,5 +144,5 @@ A wrapper for ow.server.locks.lock that will try to lock aLockName after check i
 
 Sources:
 
-- js/owrap.server.js:2687
+- js/owrap.server.js:2946
 

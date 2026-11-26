@@ -12,7 +12,7 @@ Creates a ZIP object instance. If anArrayOfBytes is provided it will read it as 
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:103
+- src/openaf/plugins/ZIP.java:104
 
 <a id="api-zip-clean-992d53bc"></a>
 
@@ -24,7 +24,7 @@ Will clean all internal data regarding any previously ZIP contents handled by th
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:157
+- src/openaf/plugins/ZIP.java:153
 
 <a id="api-zip-close-92172289"></a>
 
@@ -36,7 +36,7 @@ Closes the loaded ZIP file and all outstanding entry streams associated with thi
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:168
+- src/openaf/plugins/ZIP.java:164
 
 <a id="api-zip-generate-ad8a166e"></a>
 
@@ -74,7 +74,7 @@ Will generate a ZIP into aFile given the provided options (a map where you can s
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:539
+- src/openaf/plugins/ZIP.java:541
 
 <a id="api-zip-getfile-fbce4fd5"></a>
 
@@ -86,7 +86,7 @@ Will uncompress the corresponding aFilename from the ZIP contents into an array 
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:194
+- src/openaf/plugins/ZIP.java:190
 
 <a id="api-zip-gunzip-13a7a359"></a>
 
@@ -98,7 +98,7 @@ Will gunzip/uncompress the provided anArrayOfBytes into the original anObject co
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:137
+- src/openaf/plugins/ZIP.java:138
 
 <a id="api-zip-gzip-f19a416f"></a>
 
@@ -110,7 +110,7 @@ Will gzip/compress the contents of the anObject into an array of bytes. To uncom
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:116
+- src/openaf/plugins/ZIP.java:117
 
 <a id="api-zip-list-5c7002fc"></a>
 
@@ -122,7 +122,7 @@ Will list all files and folders of the loaded ZIP contents into a Map with name,
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:606
+- src/openaf/plugins/ZIP.java:617
 
 <a id="api-zip-listmetadata-55a7de17"></a>
 
@@ -138,7 +138,7 @@ checks are needed. The loaded in-memory archive and outstanding entry streams ar
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:633
+- src/openaf/plugins/ZIP.java:645
 
 <a id="api-zip-load-53873a61"></a>
 
@@ -150,7 +150,7 @@ Loads anArrayOfBytes ZIP contents into the internal object structures.
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:582
+- src/openaf/plugins/ZIP.java:589
 
 <a id="api-zip-loadfile-b5313ebc"></a>
 
@@ -162,7 +162,7 @@ Will load a ZIP file aFilename into the ZIP object internal structure.
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:689
+- src/openaf/plugins/ZIP.java:703
 
 <a id="api-zip-putfile-1d68ca09"></a>
 
@@ -174,7 +174,7 @@ Will add anArrayOfBytes to the ZIP contents as aFilename.
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:214
+- src/openaf/plugins/ZIP.java:210
 
 <a id="api-zip-remove-f4a75b92"></a>
 
@@ -186,7 +186,7 @@ Will remove aFilename from the ZIP contents.
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:238
+- src/openaf/plugins/ZIP.java:234
 
 <a id="api-zip-streamcreate-191d04fe"></a>
 
@@ -222,7 +222,7 @@ Retrieves aName file from aFilePath zip file without loading the zip file conten
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:252
+- src/openaf/plugins/ZIP.java:248
 
 <a id="api-zip-streamgetfilestream-7c1e3a4a"></a>
 
@@ -234,7 +234,7 @@ Retrieves aName file from aFilePath zip file without loading the zip file conten
 
 Sources:
 
-- src/openaf/plugins/ZIP.java:270
+- src/openaf/plugins/ZIP.java:268
 
 <a id="api-zip-streamputfile-a702f283"></a>
 

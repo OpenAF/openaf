@@ -138,7 +138,7 @@ $cache("odoc")
 .fn(id => searchHelp("", __, id));
 
 var sHelp, pHelp = $do(() => {
-	sHelp = searchHelp("");
+	sHelp = searchHelp("")
 });
 // for(var i in paths) {
 // 	try {
@@ -224,25 +224,25 @@ ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, 
             var id = req.uri.replace(/^\/odoc\/*/g, "");
 
             if (id == "") {
-              if (isUnDef(sHelp)) $doWait(pHelp);
-              terms = sHelp;
+              if (isUnDef(sHelp)) $doWait(pHelp)
+              terms = sHelp
             } else {
-              terms = searchHelp(id).map(r => ({ id: r.id, key: r.key }));
+              terms = searchHelp(id).map(r => ({ id: r.id, key: r.key }))
             }
-            odoc.contents = templates("odoc", { id: id, terms: terms, uriPrefix: guiPrefix() });
+            odoc.contents = templates("odoc", { id: id, terms: terms, uriPrefix: guiPrefix() })
             return httpServer.replyOKHTML(templates("index", withGuiPage(odoc)));
         }catch(e) {logErr(e)}
     },
     "/odocKey": function(req) {
         try {
-          var matches = searchHelp(req.params.q, __, isDef(req.params.id) ? [req.params.id] : __);
+          var matches = searchHelp(req.params.q, __, isDef(req.params.id) ? [req.params.id] : __)
           if (matches.length == 1 && isString(matches[0].text)) {
-            return httpServer.replyOKJSON(stringify(matches[0]));
+            return httpServer.replyOKJSON(stringify(matches[0]))
           }
-          return httpServer.replyOKJSON(stringify({ error: matches.length ? "Ambiguous term" : "Term not found", matches: matches }));
+          return httpServer.replyOKJSON(stringify({ error: matches.length ? "Ambiguous term" : "Term not found", matches: matches }))
         } catch(e) {
-          logErr(e);
-          return httpServer.replyOKJSON(stringify({ error: "Unable to load documentation", matches: [] }));
+          logErr(e)
+          return httpServer.replyOKJSON(stringify({ error: "Unable to load documentation", matches: [] }))
         }
     },
     "/opack": function(req) {

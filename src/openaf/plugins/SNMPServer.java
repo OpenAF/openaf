@@ -64,7 +64,7 @@ public class SNMPServer extends ScriptableObject {
 	protected String address;
 	protected OctetString community;
 	protected SNMPAgent agent;
-	public static Map<String, Function> callbacks = new ConcurrentHashMap<String, Function>();
+    public static Map<String, Function> callbacks = new ConcurrentHashMap<String, Function>();
 	
 	
 	public static MOColumn[] getMOColumns() {
@@ -84,7 +84,7 @@ public class SNMPServer extends ScriptableObject {
 	 * @return
 	 */
 	public static Variable execFunc(String oid) {
-		Function func = callbacks.get(oid);
+        Function func = callbacks.get(oid);
 		
 		Object ret = null; 
 		if (func != null) {
@@ -297,7 +297,7 @@ public class SNMPServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void addOID(String oid, Function func) throws DuplicateRegistrationException {
+    public void addOID(String oid, Function func) throws DuplicateRegistrationException {
 		if (oid != null) {
 			agent.registerManagedObjects(new MOJSFunction(new OID(oid)));
 			setOID(oid, func);
@@ -311,7 +311,7 @@ public class SNMPServer extends ScriptableObject {
      * </odoc>
      */
 	@JSFunction
-	public void setOID(String oid, Function func) {
+    public void setOID(String oid, Function func) {
 		callbacks.put(oid, func);
 	}
 	

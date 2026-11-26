@@ -2,24 +2,24 @@
 // Copyright 2026 Nuno Aguiar
 
 OpenWrap.python = function() {
-  var interpreter = getEnv("OAF_PYTHON"), version = getEnv("OAF_PYTHON_VER");
-  this.python = isDef(interpreter) && interpreter != "null" ? interpreter : "python";
-  this.version = isDef(version) && version != "null" ? Number(version) : 3;
-  this.cServer = $atomic();
-  this.running = false;
-  this.mode = "embedded";
-  this.__lock = new java.util.concurrent.locks.ReentrantLock();
-  this.__clients = new java.util.concurrent.ConcurrentHashMap();
-  this.__standalone = new java.util.concurrent.ConcurrentHashMap();
-};
+  var interpreter = getEnv("OAF_PYTHON"), version = getEnv("OAF_PYTHON_VER")
+  this.python = isDef(interpreter) && interpreter != "null" ? interpreter : "python"
+  this.version = isDef(version) && version != "null" ? Number(version) : 3
+  this.cServer = $atomic()
+  this.running = false
+  this.mode = "embedded"
+  this.__lock = new java.util.concurrent.locks.ReentrantLock()
+  this.__clients = new java.util.concurrent.ConcurrentHashMap()
+  this.__standalone = new java.util.concurrent.ConcurrentHashMap()
+}
 
 // ASCII source literals containing UTF-8 JSON avoid a second layer of Python escapes.
 OpenWrap.python.prototype.__encode = function(value) {
-  return String(java.util.Base64.getEncoder().encodeToString(af.fromString2Bytes(stringify(value, __, ""), "UTF-8")));
-};
+  return String(java.util.Base64.getEncoder().encodeToString(af.fromString2Bytes(stringify(value, __, ""), "UTF-8")))
+}
 
 OpenWrap.python.prototype.initCode = function(includeCoding, embedToken) {
-  var code = includeCoding ? "# -*- coding: utf-8 -*-\n" : "";
+  var code = includeCoding ? "# -*- coding: utf-8 -*-\n" : ""
   code += `import json
 import socket
 import base64
@@ -41,7 +41,7 @@ def __oaf_run(encoded, namespace):
     result = namespace['__pm'] if payload['pm'] else builtins.dict((k, namespace[k]) for k in payload['output'])
     sys.stdout.write(payload['marker'] + json.dumps(result) + '\\n')
 
-`;
+`
   // The token is passed through the OAF_PY_TOKEN environment variable (not the command line/source, visible in ps)
   if (isDef(this.token)) code += `def _(expression):
     import socket, json, os
@@ -73,19 +73,19 @@ def _s(key, value):
     import json
     return _('$set(' + json.dumps(key) + ', ' + _d(value) + ')')
 
-`;
-  return code;
-};
+`
+  return code
+}
 
 // One UTF-8 request line; the response is delimited by EOF.
 OpenWrap.python.prototype.__request = function(request, timeout) {
-  var socket = new java.net.Socket();
+  var socket = new java.net.Socket()
   try {
-    socket.connect(new java.net.InetSocketAddress("127.0.0.1", this.sport), 1000);
-    socket.setSoTimeout(isDef(timeout) ? timeout : 1500000);
-    ioStreamWrite(socket.getOutputStream(), stringify(request, __, "") + "\n");
-    socket.getOutputStream().flush();
-    return jsonParse(String(af.fromInputStream2String(socket.getInputStream())));
+    socket.connect(new java.net.InetSocketAddress("127.0.0.1", this.sport), 1000)
+    socket.setSoTimeout(isDef(timeout) ? timeout : 1500000)
+    ioStreamWrite(socket.getOutputStream(), stringify(request, __, "") + "\n")
+    socket.getOutputStream().flush()
+    return jsonParse(String(af.fromInputStream2String(socket.getInputStream())))
   } finally { socket.close(); }
 };
 
@@ -155,7 +155,7 @@ class Server(socketserver.ThreadingTCPServer):
     daemon_threads = True
 server = Server(('127.0.0.1', ${this.sport}), Handler)
 server.serve_forever()
-`;
+`
 };
 
 /**
@@ -167,91 +167,91 @@ server.serve_forever()
  * </odoc>
  */
 OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn, isAlone) {
-  isAlone = _$(isAlone, "isAlone").isBoolean().default(false);
-  this.__lock.lock();
+  isAlone = _$(isAlone, "isAlone").isBoolean().default(false)
+  this.__lock.lock()
   try {
-    var mode = isAlone ? "standalone" : "embedded";
+    var mode = isAlone ? "standalone" : "embedded"
     if (this.running) {
-      if (this.mode != mode) throw "Python bridge already running in " + this.mode + " mode.";
+      if (this.mode != mode) throw "Python bridge already running in " + this.mode + " mode."
       if (isDef(this.__process) && !this.__process.isAlive()) {
-        this.stopServer(__, true);
-        throw "Python bridge process exited; start the bridge again.";
+        this.stopServer(__, true)
+        throw "Python bridge process exited; start the bridge again."
       }
-      this.cServer.inc();
-      return this.token;
+      this.cServer.inc()
+      return this.token
     }
-    if (this.version != 2 && this.version != 3) throw "Can't start python 2 or 3.";
-    this.mode = mode;
-    this.token = String(java.util.UUID.randomUUID());
-    aFn = _$(aFn).isFunction().default((t, e) => { if (t == "error") printErr(e); });
-    ow.loadServer();
-    ow.loadObj();
-    this.port = isDef(aPort) ? aPort : findRandomOpenPort();
+    if (this.version != 2 && this.version != 3) throw "Can't start python 2 or 3."
+    this.mode = mode
+    this.token = String(java.util.UUID.randomUUID())
+    aFn = _$(aFn).isFunction().default((t, e) => { if (t == "error") printErr(e); })
+    ow.loadServer()
+    ow.loadObj()
+    this.port = isDef(aPort) ? aPort : findRandomOpenPort()
     try {
       ow.server.socket.start(this.port, (clt) => {
-        this.__clients.put(clt, true);
+        this.__clients.put(clt, true)
         try {
-          clt.setSoTimeout(15000);
-          aFn("connect", clt.getInetAddress().getHostAddress());
-          var bytes = new java.io.ByteArrayOutputStream(), stream = clt.getInputStream(), b;
-          while ((b = stream.read()) != -1 && b != 10) bytes.write(b);
-          var line = b == 10 ? String(bytes.toString("UTF-8")) : null, result;
+          clt.setSoTimeout(15000)
+          aFn("connect", clt.getInetAddress().getHostAddress())
+          var bytes = new java.io.ByteArrayOutputStream(), stream = clt.getInputStream(), b
+          while ((b = stream.read()) != -1 && b != 10) bytes.write(b)
+          var line = b == 10 ? String(bytes.toString("UTF-8")) : null, result
           try {
-            if (line === null) throw "Truncated request";
-            var request = jsonParse(String(line));
-            if (!isMap(request) || request.t != this.token || !isString(request.e)) throw "Invalid or unauthorized request";
-            aFn("exec", request);
-            result = stringify(af.eval(request.e), __, "");
-            if (isUnDef(result)) result = "null";
+            if (line === null) throw "Truncated request"
+            var request = jsonParse(String(line))
+            if (!isMap(request) || request.t != this.token || !isString(request.e)) throw "Invalid or unauthorized request"
+            aFn("exec", request)
+            result = stringify(af.eval(request.e), __, "")
+            if (isUnDef(result)) result = "null"
           } catch(e) {
-            result = "__OAF__Exception: " + String(e);
+            result = "__OAF__Exception: " + String(e)
           }
-          ioStreamWrite(clt.getOutputStream(), result);
-          clt.getOutputStream().flush();
+          ioStreamWrite(clt.getOutputStream(), result)
+          clt.getOutputStream().flush()
         } catch(e) { aFn("error", e); }
         finally { this.__clients.remove(clt); clt.close(); }
-      }, __, "127.0.0.1");
-      this.server = true;
+      }, __, "127.0.0.1")
+      this.server = true
       if (!isAlone) {
-        this.sport = isDef(aSendPort) ? aSendPort : findRandomOpenPort();
-        this.__log = io.createTempFile("openaf-python-", ".log");
+        this.sport = isDef(aSendPort) ? aSendPort : findRandomOpenPort()
+        this.__log = io.createTempFile("openaf-python-", ".log")
         var command = new java.util.ArrayList();
-        [this.python, "-u", "-c", this.__serverCode()].forEach(v => command.add(String(v)));
+        [this.python, "-u", "-c", this.__serverCode()].forEach(v => command.add(String(v)))
         var pb = new java.lang.ProcessBuilder(command).redirectErrorStream(true)
-          .redirectOutput(new java.io.File(this.__log));
-        pb.environment().put("OAF_PY_TOKEN", String(this.token));
-        this.__process = pb.start();
-        var deadline = now() + 10000, ready = false;
+          .redirectOutput(new java.io.File(this.__log))
+        pb.environment().put("OAF_PY_TOKEN", String(this.token))
+        this.__process = pb.start()
+        var deadline = now() + 10000, ready = false
         while (now() < deadline) {
-          if (!this.__process.isAlive()) throw "Python startup failed: " + io.readFileString(this.__log);
+          if (!this.__process.isAlive()) throw "Python startup failed: " + io.readFileString(this.__log)
           try {
-            var reply = this.__request({ ping: true, t: this.token }, 300);
+            var reply = this.__request({ ping: true, t: this.token }, 300)
             if (reply.ready === true) { ready = true; break; }
           } catch(e) {}
-          sleep(50, true);
+          sleep(50, true)
         }
-        if (!ready) throw "Python startup timed out: " + io.readFileString(this.__log);
+        if (!ready) throw "Python startup timed out: " + io.readFileString(this.__log)
       }
-      this.running = true;
-      this.cServer.set(1);
+      this.running = true
+      this.cServer.set(1)
       if (!this.__shutdownRegistered) {
-        addOnOpenAFShutdown(() => { this.stopServer(__, true); });
-        this.__shutdownRegistered = true;
+        addOnOpenAFShutdown(() => { this.stopServer(__, true); })
+        this.__shutdownRegistered = true
       }
-      return this.token;
+      return this.token
     } finally {
-      if (!this.running) this.stopServer(__, true);
+      if (!this.running) this.stopServer(__, true)
     }
   } finally { this.__lock.unlock(); }
-};
+}
 
 // Implicit use acquires only the initial reference, including concurrent callers.
 OpenWrap.python.prototype.__ensureServer = function(standalone) {
-  this.__lock.lock();
+  this.__lock.lock()
   try {
-    if (!this.running) this.startServer(__, __, __, standalone);
+    if (!this.running) this.startServer(__, __, __, standalone)
     else if (this.mode != (standalone ? "standalone" : "embedded"))
-      throw "Python bridge already running in " + this.mode + " mode.";
+      throw "Python bridge already running in " + this.mode + " mode."
   } finally { this.__lock.unlock(); }
 };
 
@@ -263,41 +263,41 @@ OpenWrap.python.prototype.__ensureServer = function(standalone) {
  * </odoc>
  */
 OpenWrap.python.prototype.stopServer = function(aPort, force) {
-  this.__lock.lock();
+  this.__lock.lock()
   try {
-    if (!this.running && isUnDef(this.token)) return false;
+    if (!this.running && isUnDef(this.token)) return false
     if (!force && this.cServer.get() > 1) { this.cServer.dec(); return false; }
     try {
-      var children = this.__standalone.keySet().iterator();
+      var children = this.__standalone.keySet().iterator()
       while (children.hasNext()) {
-        var child = children.next();
-        child.destroyForcibly();
-        child.waitFor();
+        var child = children.next()
+        child.destroyForcibly()
+        child.waitFor()
       }
-      this.__standalone.clear();
+      this.__standalone.clear()
       if (isDef(this.__process)) {
-        this.__process.destroy();
+        this.__process.destroy()
         if (!this.__process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) {
-          this.__process.destroyForcibly();
-          this.__process.waitFor();
+          this.__process.destroyForcibly()
+          this.__process.waitFor()
         }
       }
     } finally {
       try {
-        var clients = this.__clients.keySet().iterator();
+        var clients = this.__clients.keySet().iterator()
         while (clients.hasNext()) { try { clients.next().close(); } catch(e) {} }
-        this.__clients.clear();
-        if (isDef(this.server)) ow.server.socket.stop(this.port);
+        this.__clients.clear()
+        if (isDef(this.server)) ow.server.socket.stop(this.port)
       }
       finally {
         if (isDef(this.__log)) io.rm(this.__log);
-        ["__process", "__log", "sport", "server", "port", "token"].forEach(k => { delete this[k]; });
-        this.running = false;
-        this.cServer.set(0);
-        this.mode = "embedded";
+        ["__process", "__log", "sport", "server", "port", "token"].forEach(k => { delete this[k]; })
+        this.running = false
+        this.cServer.set(0)
+        this.mode = "embedded"
       }
     }
-    return true;
+    return true
   } finally { this.__lock.unlock(); }
 };
 
@@ -309,20 +309,20 @@ OpenWrap.python.prototype.stopServer = function(aPort, force) {
  * </odoc>
  */
 OpenWrap.python.prototype.reset = function(noException, tryOthers) {
-  if (this.running) throw "Stop the Python bridge before resetting the interpreter.";
-  var candidates = tryOthers ? [this.python, "python3"] : [this.python], error;
+  if (this.running) throw "Stop the Python bridge before resetting the interpreter."
+  var candidates = tryOthers ? [this.python, "python3"] : [this.python], error
   for (var i = 0; i < candidates.length; i++) {
     try {
-      var result = $sh([candidates[i], "--version"]).get(0);
-      var match = (String(result.stdout) + "\n" + String(result.stderr)).match(/Python\s+([23])\./);
-      if (result.exitcode != 0 || !match) throw "Unrecognized Python version";
-      this.python = candidates[i];
-      this.version = Number(match[1]);
-      return;
+      var result = $sh([candidates[i], "--version"]).get(0)
+      var match = (String(result.stdout) + "\n" + String(result.stderr)).match(/Python\s+([23])\./)
+      if (result.exitcode != 0 || !match) throw "Unrecognized Python version"
+      this.python = candidates[i]
+      this.version = Number(match[1])
+      return
     } catch(e) { error = e; }
   }
-  this.version = -1;
-  if (!noException) throw "Can't find or determine python version (" + error + ")";
+  this.version = -1
+  if (!noException) throw "Can't find or determine python version (" + error + ")"
 };
 
 /**
@@ -332,9 +332,9 @@ OpenWrap.python.prototype.reset = function(noException, tryOthers) {
  * </odoc>
  */
 OpenWrap.python.prototype.setPython = function(aPython) {
-  if (this.running) throw "Stop the Python bridge before changing the interpreter.";
-  this.python = _$(aPython, "aPython").isString().$_();
-  this.reset();
+  if (this.running) throw "Stop the Python bridge before changing the interpreter."
+  this.python = _$(aPython, "aPython").isString().$_()
+  this.reset()
 };
 
 /**
@@ -343,54 +343,54 @@ OpenWrap.python.prototype.setPython = function(aPython) {
  * Returns the Python major version (2 or 3), or -1 after failed detection.
  * </odoc>
  */
-OpenWrap.python.prototype.getVersion = function() { return this.version; };
+OpenWrap.python.prototype.getVersion = function() { return this.version; }
 
 OpenWrap.python.prototype.__exec = function(code, input, output, pm, throwExceptions, shouldFork) {
-  _$(code, "python code").isString().$_();
-  input = _$(input, "input").isMap().default({});
-  output = _$(output, "output").isArray().default([]);
-  throwExceptions = _$(throwExceptions, "throwExceptions").isBoolean().default(false);
-  if (this.version < 0) throw "Appropriate Python version not found. Please setPython first.";
-  var keywords = "False None True and as assert async await break class continue def del elif else except exec finally for from global if import in is lambda nonlocal not or pass print raise return try while with yield".split(" ");
+  _$(code, "python code").isString().$_()
+  input = _$(input, "input").isMap().default({})
+  output = _$(output, "output").isArray().default([])
+  throwExceptions = _$(throwExceptions, "throwExceptions").isBoolean().default(false)
+  if (this.version < 0) throw "Appropriate Python version not found. Please setPython first."
+  var keywords = "False None True and as assert async await break class continue def del elif else except exec finally for from global if import in is lambda nonlocal not or pass print raise return try while with yield".split(" ")
   if (!pm) Object.keys(input).concat(output).forEach(k => {
     if (!isString(k) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k) || keywords.indexOf(k) >= 0 || k.indexOf("__oaf_") == 0)
-      throw "Invalid Python variable name: " + k;
-  });
-  var marker = "__OAF_RESULT_" + String(java.util.UUID.randomUUID()) + "__";
-  var payload = this.__encode({ code: code, input: pm ? { __pm: input } : input, output: output, pm: pm, marker: marker });
-  var source = "__oaf_run('" + payload + "', __oaf_namespace)\n", result, error, value;
+      throw "Invalid Python variable name: " + k
+  })
+  var marker = "__OAF_RESULT_" + String(java.util.UUID.randomUUID()) + "__"
+  var payload = this.__encode({ code: code, input: pm ? { __pm: input } : input, output: output, pm: pm, marker: marker })
+  var source = "__oaf_run('" + payload + "', __oaf_namespace)\n", result, error, value
   try {
     if (shouldFork || isUnDef(this.sport)) {
       // Keep code and JSON payloads out of the operating system's argv size limit.
-      var temporary = io.createTempFile("openaf-python-", ".py");
+      var temporary = io.createTempFile("openaf-python-", ".py")
       try {
-        io.writeFileString(temporary, this.initCode(true) + "import sys\nsys.path[0] = ''\nsys.argv[0] = '-c'\ndel __file__\n" + source);
-        var _sh = $sh([this.python, temporary]);
-        if (isDef(this.token)) _sh = _sh.envs({ OAF_PY_TOKEN: String(this.token) }, true);
-        result = _sh.get(0);
+        io.writeFileString(temporary, this.initCode(true) + "import sys\nsys.path[0] = ''\nsys.argv[0] = '-c'\ndel __file__\n" + source)
+        var _sh = $sh([this.python, temporary])
+        if (isDef(this.token)) _sh = _sh.envs({ OAF_PY_TOKEN: String(this.token) }, true)
+        result = _sh.get(0)
       } finally { io.rm(temporary); }
     } else {
-      ow.loadObj();
-      result = this.__request({ e: source, t: this.token });
+      ow.loadObj()
+      result = this.__request({ e: source, t: this.token })
     }
-    if (!isMap(result) || !isString(result.stdout) || !isString(result.stderr)) throw "Malformed Python bridge response";
-    var index = result.stdout.lastIndexOf(marker);
+    if (!isMap(result) || !isString(result.stdout) || !isString(result.stderr)) throw "Malformed Python bridge response"
+    var index = result.stdout.lastIndexOf(marker)
     if (index >= 0) {
-      if (index > 0) printnl(result.stdout.substring(0, index));
-      value = jsonParse(result.stdout.substring(index + marker.length));
-      if (!isMap(value)) throw "Malformed Python result";
+      if (index > 0) printnl(result.stdout.substring(0, index))
+      value = jsonParse(result.stdout.substring(index + marker.length))
+      if (!isMap(value)) throw "Malformed Python result"
     } else {
-      if (result.stdout.length) printnl(result.stdout);
-      error = "Missing Python result";
+      if (result.stdout.length) printnl(result.stdout)
+      error = "Missing Python result"
     }
-    if (result.stderr.length) error = result.stderr;
-    if (isDef(result.exitcode) && result.exitcode != 0) error = (error || "Python process failed") + " (exitcode " + result.exitcode + ")";
+    if (result.stderr.length) error = result.stderr
+    if (isDef(result.exitcode) && result.exitcode != 0) error = (error || "Python process failed") + " (exitcode " + result.exitcode + ")"
   } catch(e) { error = String(e); }
   if (isDef(error)) {
-    printErr(error);
-    if (throwExceptions) throw "python: " + error;
+    printErr(error)
+    if (throwExceptions) throw "python: " + error
   }
-  return value;
+  return value
 };
 
 /**
@@ -402,7 +402,7 @@ OpenWrap.python.prototype.__exec = function(code, input, output, pm, throwExcept
  * </odoc>
  */
 OpenWrap.python.prototype.execPM = function(code, input, throwExceptions, shouldFork) {
-  return this.__exec(code, input, [], true, throwExceptions, shouldFork);
+  return this.__exec(code, input, [], true, throwExceptions, shouldFork)
 };
 
 /**
@@ -415,7 +415,7 @@ OpenWrap.python.prototype.execPM = function(code, input, throwExceptions, should
  * </odoc>
  */
 OpenWrap.python.prototype.exec = function(code, input, output, throwExceptions, shouldFork) {
-  return this.__exec(code, input, output, false, throwExceptions, shouldFork);
+  return this.__exec(code, input, output, false, throwExceptions, shouldFork)
 };
 
 /**
@@ -428,17 +428,17 @@ OpenWrap.python.prototype.exec = function(code, input, output, throwExceptions, 
  * </odoc>
  */
 OpenWrap.python.prototype.execStandalone = function(codeOrFile, aInput, throwExceptions, aArgv) {
-  this.__ensureServer(true);
-  _$(codeOrFile, "aPythonCodeOrFile").isString().$_();
-  var argv = [];
-  if (isDef(aArgv)) argv = _$(aArgv, "aArgv").isArray().$_();
+  this.__ensureServer(true)
+  _$(codeOrFile, "aPythonCodeOrFile").isString().$_()
+  var argv = []
+  if (isDef(aArgv)) argv = _$(aArgv, "aArgv").isArray().$_()
   else {
-    var count = parseInt(getEnv("OAF_PY_ARGC"), 10);
-    for (var i = 0; i < count; i++) argv.push(getEnv("OAF_PY_ARG_" + i));
+    var count = parseInt(getEnv("OAF_PY_ARGC"), 10)
+    for (var i = 0; i < count; i++) argv.push(getEnv("OAF_PY_ARG_" + i))
   }
-  argv.forEach(v => { _$(v, "argv value").isString().$_(); });
-  var file = codeOrFile.indexOf("\n") < 0 && /\.py$/.test(codeOrFile) && io.fileExists(codeOrFile);
-  var payload = this.__encode({ file: file ? codeOrFile : null, code: file ? null : codeOrFile });
+  argv.forEach(v => { _$(v, "argv value").isString().$_(); })
+  var file = codeOrFile.indexOf("\n") < 0 && /\.py$/.test(codeOrFile) && io.fileExists(codeOrFile)
+  var payload = this.__encode({ file: file ? codeOrFile : null, code: file ? null : codeOrFile })
   var bootstrap = this.initCode(true) + `import os, sys
 __oaf_payload = json.loads(base64.b64decode('${payload}').decode('utf-8'))
 if __oaf_payload['file'] is not None:
@@ -453,29 +453,29 @@ else:
     __oaf_compiled = compile(__oaf_payload['code'], '<string>', 'exec')
 __name__ = '__main__'
 eval(__oaf_compiled, globals(), globals())
-`;
-  var temporary = io.createTempFile("oafpy", ".py"), child;
+`
+  var temporary = io.createTempFile("oafpy", ".py"), child
   try {
-    io.writeFileString(temporary, bootstrap);
+    io.writeFileString(temporary, bootstrap)
     var stderr = false, command = new java.util.ArrayList();
-    [this.python, temporary].concat(argv).forEach(v => command.add(String(v)));
+    [this.python, temporary].concat(argv).forEach(v => command.add(String(v)))
     var pb = new java.lang.ProcessBuilder(command)
-      .redirectInput(java.lang.ProcessBuilder.Redirect.INHERIT);
-    if (isDef(this.token)) pb.environment().put("OAF_PY_TOKEN", String(this.token));
-    child = pb.start();
-    this.__standalone.put(child, true);
+      .redirectInput(java.lang.ProcessBuilder.Redirect.INHERIT)
+    if (isDef(this.token)) pb.environment().put("OAF_PY_TOKEN", String(this.token))
+    child = pb.start()
+    this.__standalone.put(child, true)
     $doWait($doAll([
       $do(() => { child.getInputStream().transferTo(java.lang.System.out); java.lang.System.out.flush(); }),
       $do(() => { stderr = child.getErrorStream().transferTo(java.lang.System.err) > 0; java.lang.System.err.flush(); })
-    ]));
-    var result = { exitcode: Number(child.waitFor()), stdout: "", stderr: "" };
-    if (throwExceptions && (stderr || result.exitcode != 0)) throw "python: standalone execution failed (exitcode " + result.exitcode + ")";
-    return result;
+    ]))
+    var result = { exitcode: Number(child.waitFor()), stdout: "", stderr: "" }
+    if (throwExceptions && (stderr || result.exitcode != 0)) throw "python: standalone execution failed (exitcode " + result.exitcode + ")"
+    return result
   } finally {
     if (isDef(child)) {
       if (child.isAlive()) { child.destroyForcibly(); child.waitFor(); }
-      this.__standalone.remove(child);
+      this.__standalone.remove(child)
     }
-    io.rm(temporary);
+    io.rm(temporary)
   }
-};
+}

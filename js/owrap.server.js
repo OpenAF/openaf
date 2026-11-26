@@ -1279,7 +1279,7 @@ OpenWrap.server.prototype.locks = function(justInternal, aCh, aOptions) {
 			if (isString(justInternal) && justInternal == "cluster") {
 				$ch(this.name).create(1, "simple");
 			} else {
-				$ch(this.name).create(1, "ignite", aOptions);
+				$ch(this.name).create(1, "ignite", aOptions)
 			}
 		}
 	}
@@ -1314,19 +1314,19 @@ OpenWrap.server.prototype.locks.prototype.setRetries = function(aNumber) {
  * </odoc>
  */
 OpenWrap.server.prototype.locks.prototype.isLocked = function(aLockName) {
-	var channel = $ch(this.name), key = { lock: aLockName };
-	var r = channel.get(key);
+	var channel = $ch(this.name), key = { lock: aLockName }
+	var r = channel.get(key)
 	if (isUnDef(r)) {
 		// Never overwrite another node's newly acquired lock during initialization.
-		channel.getSet(function(current) { return isUnDef(current); }, key, { lock: aLockName, value: false });
-		r = channel.get(key);
+		channel.getSet(function(current) { return isUnDef(current); }, key, { lock: aLockName, value: false })
+		r = channel.get(key)
 	}
 	if (r.value == true && isDef(r.timeout) && !isNull(r.timeout) && nowUTC() >= r.timeout) {
 		// An extension or a new acquisition must not be released by a stale read.
 		channel.getSet(function(current) {
-			return isDef(current) && current.value === true && current.timeout === r.timeout && nowUTC() >= current.timeout;
-		}, key, { lock: aLockName, value: false });
-		r = channel.get(key);
+			return isDef(current) && current.value === true && current.timeout === r.timeout && nowUTC() >= current.timeout
+		}, key, { lock: aLockName, value: false })
+		r = channel.get(key)
 	}
 	return r;
 };
@@ -1716,6 +1716,8 @@ OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
         }
     } catch (e) {
         if (isNotification) return null
+        var rpcError = ow.server.mcp.rpcError(e, id)
+        if (isDef(rpcError)) return rpcError
         return {
             jsonrpc: "2.0",
             id: id,
@@ -1859,9 +1861,10 @@ OpenWrap.server.prototype.mcp = {
     wrapResult: function(aBody, anEra, opts) {
         if (anEra != "modern" || !isMap(aBody)) return aBody
         opts = isMap(opts) ? opts : {}
-        var _res = merge({ resultType: "complete" }, aBody)
+        // Keep nested protocol payloads opaque when adding top-level result fields.
+        var _res = Object.assign({ resultType: "complete" }, aBody)
         if (opts.isList === true) {
-            _res = merge({
+            _res = Object.assign({
                 ttlMs     : isNumber(opts.ttlMs) ? opts.ttlMs : 0,
                 cacheScope: isString(opts.cacheScope) ? opts.cacheScope : "private"
             }, _res)
@@ -1888,6 +1891,755 @@ OpenWrap.server.prototype.mcp = {
             serverInfo      : initData.serverInfo || {}
         }
     }
+}
+
+OpenWrap.server.prototype.mcp.skillsExtension = "io.modelcontextprotocol/skills"
+OpenWrap.server.prototype.mcp.skillFileLimit = 16 * 1024 * 1024
+
+// Serialize explicit protocol errors without exposing internal exception details.
+OpenWrap.server.prototype.mcp.RPCError = function(code, message, data) {
+  this.code = code
+  this.message = message
+  this.data = data
+}
+OpenWrap.server.prototype.mcp.rpcError = function(error, id) {
+  if (error instanceof ow.server.mcp.RPCError) {
+    var detail = { code: error.code, message: error.message }
+    if (isDef(error.data)) detail.data = error.data
+    return { jsonrpc: "2.0", id: id, error: detail }
+  }
+}
+
+// Read a bounded stream and always close it, including on a short or failed read.
+OpenWrap.server.prototype.mcp.readSkillBytes = function(stream, limit) {
+  try {
+    var bytes = stream.readNBytes(limit + 1)
+    if (bytes.length > limit) throw new Error("Skill exceeds the byte limit")
+    return bytes
+  } finally {
+    stream.close()
+  }
+}
+
+// Parse frontmatter with the safe YAML schema and preserve its JSON fields.
+OpenWrap.server.prototype.mcp.parseSkillFrontmatter = function(bytes, name) {
+  var decoder = java.nio.charset.StandardCharsets.UTF_8.newDecoder()
+  var text = String(decoder.decode(java.nio.ByteBuffer.wrap(bytes)))
+  var header = text.match(/^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/)
+  if (!header) throw new Error("Missing YAML frontmatter for skill " + name)
+  loadJSYAML()
+  return jsyaml.load(header[1], { schema: jsyaml.JSON_SCHEMA })
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.server.mcp.createSkillCatalog(sources, baseDir) : Map</key>
+ * Builds a Skills over MCP catalog from directories, inline files or providers.
+ * A provider supplies a catalog array or function and a read function taking
+ * `{ skill, path, ref }`. Catalog files supply path, size and SHA-256 digest.
+ * Read functions return UTF-8 text or `{ bytes, mimeType }`.
+ * </odoc>
+ */
+OpenWrap.server.prototype.mcp.createSkillCatalog = function(sources, baseDir) {
+  _$(sources, "skills").isArray().$_()
+  if (sources.length == 0) return
+  var maxBytes = ow.server.mcp.skillFileLimit, maxFiles = 512
+  var entries = Object.create(null), files = Object.create(null), dynamic = Object.create(null)
+  var Files = java.nio.file.Files, Paths = java.nio.file.Paths
+  var utf8 = java.nio.charset.StandardCharsets.UTF_8
+  var noFollow = java.nio.file.LinkOption.NOFOLLOW_LINKS
+
+  // Validate frontmatter and encode relative paths as canonical resource URIs.
+  var skillText = bytes => String(utf8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)))
+  var frontmatter = (bytes, name) => checkFrontmatter(ow.server.mcp.parseSkillFrontmatter(bytes, name), name)
+  var checkFrontmatter = (meta, name) => {
+    if (!isMap(meta) || meta.name !== name || !isString(meta.description) ||
+        meta.description.trim().length == 0 || meta.description.length > 1024)
+      throw new Error("Invalid frontmatter for skill " + name)
+    return JSON.parse(JSON.stringify(meta))
+  }
+  var sameMetadata = (a, b) => {
+    if (a === b) return true
+    if ((isArray(a) && isArray(b)) || (isMap(a) && isMap(b))) {
+      var keys = Object.keys(a)
+      return keys.length === Object.keys(b).length && keys.every(key =>
+        Object.prototype.hasOwnProperty.call(b, key) && sameMetadata(a[key], b[key]))
+    }
+    return false
+  }
+  var pathParts = path => {
+    if (!isString(path) || /[\\\x00-\x1f\x7f]/.test(path)) throw new Error("Invalid skill path")
+    var parts = path.split("/")
+    if (parts.some(part => part == "" || part == "." || part == "..")) throw new Error("Invalid skill path")
+    return parts
+  }
+  var uriFor = (name, path) => "skill://" + name + "/" + pathParts(path).map(encodeURIComponent).join("/")
+  var validName = name => isString(name) && name.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)
+  var digestOf = bytes => "sha256:" + sha256(bytes)
+  var toFile = (value, path) => {
+    var bytes = isString(value) ? af.fromString2Bytes(value, "UTF-8") : isMap(value) ? value.bytes : __
+    if (!isByteArray(bytes)) throw new Error("Expected skill text or bytes")
+    var mime = isMap(value) ? value.mimeType : __
+    if (isDef(mime) && !isString(mime)) throw new Error("Invalid skill MIME type")
+    if (isUnDef(mime)) mime = /\.md$/i.test(path) ? "text/markdown" :
+      isString(value) ? "text/plain" : ow.server.httpd.getMimeType(path)
+    return { bytes: bytes, mimeType: mime }
+  }
+
+  // Build manifests for inline and directory sources from the same bytes used for reads.
+  var staticSource = (name, paths, read) => {
+    var data = Object.create(null), size = 0, meta
+    if (!validName(name) || paths.length > maxFiles) throw new Error("Invalid skill name or file count")
+    var manifest = paths.sort().map(path => {
+      pathParts(path)
+      var file = toFile(read(path, maxBytes - size), path)
+      size += file.bytes.length
+      if (size > maxBytes) throw new Error("Skill exceeds the byte limit")
+      data[path] = file
+      if (path === "SKILL.md") meta = frontmatter(file.bytes, name)
+      return { path: path, size: file.bytes.length, digest: digestOf(file.bytes) }
+    })
+    return { catalog: [{ name: name, frontmatter: meta, files: manifest }], read: request => data[request.path] }
+  }
+  var directorySource = source => {
+    var root = Paths.get(source)
+    if (!root.isAbsolute()) root = Paths.get(isString(baseDir) ? baseDir : ".").resolve(root)
+    root = root.toAbsolutePath().normalize()
+    if (!Files.isDirectory(root, noFollow)) throw new Error("Expected a skill directory: " + root)
+    var paths = [], walk = Files.walk(root)
+    try {
+      var iter = walk.iterator()
+      while (iter.hasNext()) {
+        var file = iter.next()
+        if (Files.isDirectory(file, noFollow)) continue
+        if (!Files.isRegularFile(file, noFollow)) throw new Error("Expected a regular skill file: " + file)
+        paths.push(String(root.relativize(file)).split(String(java.io.File.separator)).join("/"))
+        if (paths.length > maxFiles) throw new Error("Skill exceeds the file limit")
+      }
+    } finally {
+      walk.close()
+    }
+    return staticSource(String(root.getFileName()), paths, (path, remaining) => {
+      return { bytes: ow.server.mcp.readSkillBytes(Files.newInputStream(root.resolve(path), noFollow), remaining) }
+    })
+  }
+
+  // Index only registered paths. Storage refs stay private to their provider.
+  sources.forEach(source => {
+    if (isString(source)) source = directorySource(source)
+    else if (isMap(source) && isMap(source.files)) {
+      var inline = source
+      source = staticSource(inline.name, Object.keys(inline.files), path => inline.files[path])
+    }
+    if (!isMap(source) || !isFunction(source.read)) throw new Error("Expected a skill directory, inline files or skill provider")
+    var catalog = isFunction(source.catalog) ? source.catalog({}) : source.catalog
+    _$(catalog, "skill catalog").isArray().$_()
+    catalog.forEach(item => {
+      if (!isMap(item) || !validName(item.name)) throw new Error("Invalid skill catalog name")
+      var uri = uriFor(item.name, "SKILL.md")
+      if (isDef(entries[uri])) throw new Error("Duplicate skill " + item.name)
+      var meta = checkFrontmatter(item.frontmatter, item.name), resources, total = 0
+      if (item.files === "dynamic") {
+        resources = "dynamic"
+        dynamic[item.name] = source.read
+      } else {
+        if (!isArray(item.files) || item.files.length > maxFiles) throw new Error("Invalid skill file manifest")
+        resources = item.files.map(file => {
+          if (!isMap(file) || !isNumber(file.size) || file.size < 0 || Math.floor(file.size) !== file.size ||
+              !isString(file.digest) || !/^sha256:[a-f0-9]{64}$/.test(file.digest)) throw new Error("Invalid skill file metadata")
+          total += file.size
+          if (total > maxBytes) throw new Error("Skill exceeds the byte limit")
+          var fileURI = uriFor(item.name, file.path)
+          if (isDef(files[fileURI])) throw new Error("Duplicate skill file " + file.path)
+          files[fileURI] = { skill: item.name, path: file.path, ref: file.ref, read: source.read, size: file.size, digest: file.digest }
+          return { uri: fileURI, digest: file.digest, size: file.size }
+        }).sort((a, b) => a.uri < b.uri ? -1 : a.uri > b.uri ? 1 : 0)
+        if (isUnDef(files[uri])) throw new Error("Missing SKILL.md for skill " + item.name)
+      }
+      entries[uri] = { uri: uri, frontmatter: meta, resources: resources }
+    })
+  })
+
+  // Page complete entries and return only public metadata over MCP.
+  var invalid = message => new ow.server.mcp.RPCError(-32602, message)
+  var internal = () => new ow.server.mcp.RPCError(-32603, "Could not read skill file")
+  var complete = body => ow.server.mcp.wrapResult(body, "modern", { isList: true })
+  var list = (items, field, params, pageSize) => {
+    var cursor = isMap(params) ? params.cursor : __
+    var index = 0
+    if (isDef(cursor)) {
+      if (!isString(cursor) || !/^[1-9][0-9]*$/.test(cursor) || Number(cursor) >= items.length)
+        throw invalid("Invalid cursor")
+      index = Number(cursor)
+    }
+    var result = {}
+    result[field] = items.slice(index, index + pageSize)
+    if (index + pageSize < items.length) result.nextCursor = String(index + pageSize)
+    return complete(result)
+  }
+  var skillList = Object.keys(entries).sort().map(uri => entries[uri])
+  var resourceList = Object.keys(files).sort().map(uri => ({ uri: uri, name: files[uri].path }))
+
+  var readFile = params => {
+    var uri = isMap(params) ? params.uri : __
+    if (!isString(uri)) throw invalid("Expected a skill file URI")
+    var file = files[uri]
+    if (isUnDef(file)) {
+      var match = uri.match(/^skill:\/\/([a-z0-9-]+)\/(.+)$/)
+      if (!match || !isFunction(dynamic[match[1]])) throw invalid("Unknown skill file")
+      var path
+      try {
+        path = match[2].split("/").map(decodeURIComponent).join("/")
+        if (uriFor(match[1], path) !== uri) throw new Error("Non-canonical URI")
+      } catch (e) {
+        throw invalid("Invalid skill file URI")
+      }
+      file = { skill: match[1], path: path, read: dynamic[match[1]] }
+    }
+    var request = { skill: file.skill, path: file.path }
+    if (isDef(file.ref)) request.ref = file.ref
+    var value
+    try {
+      value = file.read(request)
+    } catch (e) {
+      throw internal()
+    }
+    if (isUnDef(file.digest) && (isNull(value) || isUnDef(value))) throw invalid("Unknown skill file")
+    try {
+      var data = toFile(value, file.path), bytes = data.bytes
+      if (bytes.length > maxBytes || (isDef(file.digest) && (bytes.length !== file.size || digestOf(bytes) !== file.digest)))
+        throw new Error("Changed skill file")
+      var content = { uri: uri, mimeType: data.mimeType }
+      if (file.path === "SKILL.md" &&
+          !sameMetadata(frontmatter(bytes, file.skill), entries[uri].frontmatter))
+        throw new Error("Changed skill frontmatter")
+      if (/^(text\/|application\/(json|yaml|xml)(?:;|$))/i.test(data.mimeType)) {
+        try { content.text = skillText(bytes) } catch (e) {}
+      }
+      if (isUnDef(content.text)) content.blob = af.fromBytes2String(af.toBase64Bytes(bytes))
+      return complete({ contents: [content] })
+    } catch (e) {
+      throw internal()
+    }
+  }
+
+  return {
+    methods: {
+      "skills/list": params => list(skillList, "skills", params, 20),
+      "skills/get": params => {
+        var skill = isMap(params) && isString(params.uri) ? entries[params.uri] : __
+        if (isUnDef(skill)) throw invalid("Unknown skill")
+        return complete({ skill: skill })
+      },
+      "resources/list": params => list(resourceList, "resources", params, 100),
+      "resources/templates/list": () => complete({ resourceTemplates: [] }),
+      "resources/read": readFile
+    }
+  }
+}
+
+// Advertise the extension only for an endpoint with a configured catalog.
+OpenWrap.server.prototype.mcp.withSkills = function(description, catalog) {
+  if (isUnDef(catalog)) return description
+  var capabilities = { resources: {}, extensions: {} }
+  capabilities.extensions[ow.server.mcp.skillsExtension] = {}
+  return merge(description, { capabilities: capabilities })
+}
+
+/**
+ * <odoc format="markdown">
+ * <key>ow.server.mcp.openWorkflows(definitions, options) : Map</key>
+ * Opens an endpoint's durable MCP Tasks and form continuation store. Definitions
+ * bind wire tool names to inline, managed or external callbacks. Close the returned
+ * runtime when the endpoint stops. Use a private state file per endpoint.
+ * </odoc>
+ */
+OpenWrap.server.prototype.mcp.openWorkflows = function(definitions, options) {
+  var mcp = ow.server.mcp, extension = "io.modelcontextprotocol/tasks"
+  var taskModes = Object.keys(definitions).some(name => definitions[name].mode !== "inline")
+  var maxWorkers = 4, maxQueue = 64, maxRecords = 1024
+  var ttl = 3600000, interval = 1000, deadline = 30000
+  var lock = new java.util.concurrent.locks.ReentrantLock()
+  var closed = false, running = Object.create(null), pending = Object.create(null), expires = Object.create(null)
+  var fail = (code, message, data) => { throw new mcp.RPCError(code, message, data) }
+  var invalid = message => fail(-32602, message)
+  var busy = () => fail(-32603, "MCP workflow capacity reached")
+  var terminal = status => ["completed", "failed", "cancelled"].indexOf(status) >= 0
+  var own = (obj, key) => isMap(obj) && Object.prototype.hasOwnProperty.call(obj, key)
+  var encode = value => JSON.stringify(value)
+  var copy = value => isUnDef(value) ? __ : JSON.parse(encode(value))
+  var canonical = value => {
+    if (isArray(value)) return "[" + value.map(canonical).join(",") + "]"
+    if (!isMap(value)) return encode(value)
+    return "{" + Object.keys(value).sort().map(key => encode(key) + ":" + canonical(value[key])).join(",") + "}"
+  }
+
+  // Open a private file and retain an exclusive store lock for the endpoint lifetime.
+  var file = new java.io.File(_$(options.file, "taskStore").isString().$_()).getCanonicalFile()
+  var path = file.toPath()
+  var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix")
+  if (posix && !file.exists()) {
+    java.nio.file.Files.createFile(path, java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+      java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")))
+  }
+  if (posix && String(java.nio.file.attribute.PosixFilePermissions.toString(java.nio.file.Files.getPosixFilePermissions(path))) !== "rw-------")
+    throw new Error("MCP taskStore must have permissions 0600")
+  var store = Packages.org.h2.mvstore.MVStore.Builder().autoCommitDisabled().fileName(String(path)).open()
+  var records = store.openMap("workflows"), metadata = store.openMap("metadata")
+  var atomic = fn => {
+    lock.lock()
+    try {
+      if (closed) fail(-32603, "MCP workflow store is closed")
+      return fn()
+    } finally {
+      lock.unlock()
+    }
+  }
+  var commit = () => {
+    try {
+      store.commit()
+      store.sync()
+    } catch (e) {
+      closed = true
+      try { store.closeImmediately() } catch (ignore) {}
+      fail(-32603, "MCP workflow state could not be committed")
+    }
+  }
+  var get = id => {
+    var raw = records.get(id)
+    return isNull(raw) ? __ : JSON.parse(String(raw))
+  }
+  var ids = () => af.fromJavaArray(records.keySet().toArray()).map(String)
+  var index = record => {
+    expires[record.id] = record.expires
+    if (isDef(record.phase)) pending[record.id] = { phase: record.phase, next: record.next || 0, created: record.created }
+    else delete pending[record.id]
+  }
+  var save = (id, record) => {
+    var text = encode(record)
+    if (text.length > 1024 * 1024) fail(-32603, "MCP workflow record exceeds the size limit")
+    records.put(id, text)
+    commit()
+    index(record)
+  }
+  var remove = id => {
+    records.remove(id)
+    commit()
+    delete pending[id]
+    delete expires[id]
+  }
+  var date = millis => new Date(millis).toISOString()
+  var publicTask = (record, type) => {
+    var result = { resultType: type, taskId: record.id, status: record.status, createdAt: date(record.created),
+                   lastUpdatedAt: date(record.updated), ttlMs: Math.max(0, record.expires - now()), pollIntervalMs: interval }
+    if (isDef(record.message)) result.statusMessage = record.message
+    if (type === "complete") {
+      if (record.status === "completed") result.result = record.result
+      if (record.status === "failed") result.error = record.error
+      if (record.status === "input_required") result.inputRequests = record.inputRequests
+    }
+    return result
+  }
+  var finish = (record, status, value) => {
+    record.status = status
+    record.updated = now()
+    record.expires = record.updated + ttl
+    delete record.phase
+    delete record.claim
+    delete record.inputRequests
+    delete record.inputResponses
+    delete record.state
+    delete record.arguments
+    delete record.ref
+    if (status === "completed") record.result = value
+    if (status === "failed") record.error = { code: -32603, message: value }
+  }
+
+  // A workflow form contains scalar or enumerated fields and at most one request per round.
+  ow.loadObj()
+  var formRequest = form => {
+    if (!isMap(form) || !isString(form.message) || !form.message.trim() || (isDef(form.mode) && form.mode !== "form"))
+      throw new Error("Expected an MCP elicitation form")
+    var schema = form.requestedSchema
+    if (!isMap(schema) || schema.type !== "object" || !isMap(schema.properties) ||
+        Object.keys(schema).some(key => ["type", "properties", "required", "additionalProperties", "$schema"].indexOf(key) < 0))
+      throw new Error("Expected a flat elicitation object schema")
+    var checkField = (field, arrayItem) => {
+      var allowed = ["type", "title", "description", "default", "enum", "enumNames", "minLength", "maxLength",
+                     "minimum", "maximum", "format", "items", "anyOf", "oneOf", "const", "minItems", "maxItems", "uniqueItems"]
+      if (!isMap(field) || Object.keys(field).some(key => allowed.indexOf(key) < 0)) return false
+      if (field.type === "array")
+        return !arrayItem && isMap(field.items) && checkField(field.items, true) &&
+          (isArray(field.items.enum) || isArray(field.items.anyOf) || isArray(field.items.oneOf))
+      var choices = field.oneOf || field.anyOf
+      if (isDef(choices) && (!isArray(choices) || choices.some(item =>
+        !isMap(item) || !isString(item.const) || Object.keys(item).some(key => key !== "const" && key !== "title")))) return false
+      return ["string", "number", "integer", "boolean"].indexOf(field.type) >= 0 ||
+        (isUnDef(field.type) && isArray(choices))
+    }
+    if (Object.keys(schema.properties).some(key => ["__proto__", "prototype", "constructor"].indexOf(key) >= 0 ||
+        !checkField(schema.properties[key], false)) || !ow.obj.schemaCheck(schema)) throw new Error("Invalid elicitation schema")
+    var requests = {}
+    requests[genUUID(true)] = { method: "elicitation/create",
+      params: { mode: "form", message: form.message, requestedSchema: copy(schema) } }
+    return requests
+  }
+  var formAnswers = (requests, supplied, strict) => {
+    if (!isMap(supplied)) invalid("Expected inputResponses")
+    var key = Object.keys(requests)[0]
+    if (!own(supplied, key)) {
+      if (strict) invalid("Missing elicitation answer")
+      return
+    }
+    var answer = supplied[key]
+    if (!isMap(answer) || ["accept", "decline", "cancel"].indexOf(answer.action) < 0) invalid("Invalid elicitation action")
+    if (answer.action === "accept") {
+      var schema = requests[key].params.requestedSchema
+      if (!isMap(answer.content) || Object.keys(answer.content).some(name => !own(schema.properties, name)) ||
+          (schema.required || []).some(name => !own(answer.content, name)))
+        invalid("Invalid elicitation content")
+      try { ow.obj.schemaValidate(schema, copy(answer.content)) }
+      catch (e) { invalid("Elicitation content does not match the schema") }
+    }
+    var result = {}
+    result[key] = { action: answer.action }
+    if (answer.action === "accept") result[key].content = copy(answer.content)
+    return result
+  }
+
+  // Run callbacks outside the store lock. Durable claims prevent automatic replay of a step.
+  var updateProgress = (id, message) => atomic(() => {
+    var record = get(id)
+    if (isDef(record) && record.status === "working" && isString(message)) {
+      record.message = message.substring(0, 1024)
+      record.updated = now()
+      save(id, record)
+    }
+  })
+  var callbackContext = record => ({
+    taskId: record.id,
+    ref: record.ref,
+    state: record.state,
+    inputResponses: record.inputResponses,
+    progress: message => updateProgress(record.id, message),
+    isCancelled: () => closed || atomic(() => {
+      var current = get(record.id)
+      return isUnDef(current) || current.status !== "working" || current.expires <= now() ||
+        (isDef(running[record.id]) && running[record.id] <= now())
+    })
+  })
+  var waitForInput = (record, output) => {
+    if (!definitions[record.tool].elicitation || (record.mode === "external" && !isFunction(definitions[record.tool].resume)))
+      throw new Error("MCP workflow has no form continuation")
+    record.inputRequests = formRequest(output.form)
+    record.state = copy(output.state)
+    record.status = "input_required"
+    delete record.inputResponses
+    delete record.phase
+  }
+  var validRef = ref => isDef(ref) && !isNull(ref) && encode(ref).length <= 16384
+  var applyOutput = (record, phase, output) => {
+    if (record.mode === "external" && phase === "start") {
+      if (!isMap(output) || !validRef(output.ref)) throw new Error("External start did not return a valid ref")
+      record.ref = copy(output.ref)
+      record.phase = "status"
+      record.next = now()
+      return
+    }
+    if (isMap(output) && output.status === "input_required") {
+      waitForInput(record, output)
+    } else if (record.mode === "external" && (isUnDef(output) || output.status === "working")) {
+      if (isMap(output) && isString(output.statusMessage)) record.message = output.statusMessage.substring(0, 1024)
+      record.phase = "status"
+      record.next = now() + interval
+      delete record.inputResponses
+      delete record.state
+    } else if (record.mode === "external" && isMap(output) && output.status === "cancelled") {
+      finish(record, "cancelled")
+    } else if (record.mode === "external" && isMap(output) && output.status === "failed" &&
+               isMap(output.error) && isNumber(output.error.code) && isString(output.error.message)) {
+      finish(record, "failed", output.error.message)
+      record.error.code = output.error.code
+    } else {
+      if (record.mode === "external" && isMap(output) && output.status === "completed") output = output.result
+      if (!isMap(output) || !isArray(output.content)) throw new Error("Expected a tool result")
+      finish(record, "completed", output)
+    }
+  }
+  var execute = (id, record, phase, callback) => {
+    var output, failed = false
+    try {
+      output = callback(copy(record.arguments || {}), callbackContext(record))
+    } catch (e) {
+      failed = true
+    } finally {
+      if (!closed) atomic(() => {
+        var timedOut = running[id] <= now()
+        delete running[id]
+        var current = get(id)
+        if (isUnDef(current) || current.claim !== record.claim) return
+        delete current.claim
+        if (phase === "cancel") {
+          delete current.phase
+          delete current.ref
+          delete current.arguments
+        } else if (current.status === "cancelled") {
+          if (phase === "start" && !failed && isMap(output) && validRef(output.ref) &&
+              isFunction(definitions[record.tool].cancel)) {
+            current.ref = copy(output.ref)
+            current.phase = "cancel"
+          }
+          if (isUnDef(current.phase)) delete current.arguments
+        } else {
+          current.updated = now()
+          try {
+            if (failed || timedOut) throw new Error("Callback failed")
+            applyOutput(current, phase, output)
+            if (encode(current).length > 1024 * 1024) throw new Error("Workflow result too large")
+          } catch (e) {
+            finish(current, "failed", "MCP workflow step failed")
+          }
+        }
+        save(id, current)
+      })
+    }
+  }
+  var recover = () => ids().forEach(id => {
+    var record = get(id)
+    if (record.expires <= now()) return remove(id)
+    index(record)
+    if (record.mode === "inline") return
+    if (!own(definitions, record.tool) || definitions[record.tool].mode !== record.mode) {
+      if (!terminal(record.status)) {
+        finish(record, "failed", "MCP workflow configuration changed")
+        save(id, record)
+      } else if (isDef(record.phase)) {
+        delete record.phase
+        delete record.claim
+        save(id, record)
+      }
+      return
+    }
+    if (isUnDef(record.claim)) return
+    if (record.status === "cancelled") {
+      delete record.phase
+      delete record.claim
+      delete record.ref
+      delete record.arguments
+    } else if (record.mode === "external" && isDef(record.ref)) {
+      // Reconcile with the external system without resending a possibly accepted answer.
+      record.phase = "status"
+      record.next = now()
+      delete record.claim
+      delete record.inputResponses
+      delete record.state
+    } else {
+      finish(record, "failed", "MCP workflow step was interrupted")
+    }
+    save(id, record)
+  })
+  var tick = () => {
+    if (closed) return
+    atomic(() => {
+      var time = now()
+      Object.keys(expires).forEach(id => {
+        if (expires[id] <= time && isUnDef(running[id])) remove(id)
+      })
+      Object.keys(pending).sort((a, b) => pending[a].created - pending[b].created).forEach(id => {
+        var queued = pending[id]
+        if (isDef(running[id])) {
+          if (running[id] <= time) {
+            var active = get(id)
+            if (active.mode === "external" && active.status === "working") {
+              finish(active, "failed", "External MCP workflow callback timed out")
+              save(id, active)
+            }
+          }
+          return
+        }
+        if (queued.next > time || Object.keys(running).length >= maxWorkers) return
+        var record = get(id), phase = record.phase, definition = definitions[record.tool], callback = definition[phase]
+        record.claim = genUUID(true)
+        save(id, record)
+        running[id] = record.mode === "external" ? now() + deadline : Infinity
+        $doV(() => execute(id, record, phase, callback))
+      })
+    })
+  }
+
+  // Bind requests to their endpoint and authenticated owner.
+  var authorize = owner => {
+    if (!isString(owner) || !owner.trim()) fail(-32001, "MCP workflow requires an authenticated principal")
+  }
+  var clientCaps = params => mcp.metaClientCapabilities({ params: params }) || {}
+  var hasTasks = caps => own(caps.extensions, extension) && isMap(caps.extensions[extension])
+  var hasForm = caps => isMap(caps.elicitation) &&
+    (Object.keys(caps.elicitation).length === 0 || isMap(caps.elicitation.form))
+  var requireCapability = required => fail(-32021, "Missing required client capability", { requiredCapabilities: required })
+  var capacity = () => {
+    if (records.size() >= maxRecords) busy()
+  }
+  var queueCapacity = () => {
+    if (Object.keys(pending).filter(id => isUnDef(running[id]) &&
+        (pending[id].phase === "start" || pending[id].phase === "resume")).length >= maxQueue) busy()
+  }
+  var safeArguments = (value, depth) => {
+    if (depth > 64) invalid("MCP tool arguments are too deeply nested")
+    if (isArray(value)) value.forEach(item => safeArguments(item, depth + 1))
+    if (isMap(value)) Object.keys(value).forEach(key => {
+      if (["__proto__", "constructor", "prototype"].indexOf(key) >= 0) invalid("Invalid MCP tool argument key")
+      safeArguments(value[key], depth + 1)
+    })
+  }
+  var call = (params, owner, fallback) => {
+    authorize(owner)
+    var definition = definitions[params.name], caps = clientCaps(params)
+    var modern = mcp.isModern(mcp.metaProtocolVersion({ params: params }))
+    var args = params.arguments || params.input || {}
+    if (!isMap(args)) invalid("Expected tool arguments")
+    safeArguments(args, 0)
+    if (definition.mode !== "inline" && (!modern || !hasTasks(caps))) {
+      if (definition.fallback === "sync" && !isDef(params.requestState) && !isDef(params.inputResponses)) {
+        var fallbackArgs = copy(args)
+        delete fallbackArgs.mcp
+        delete fallbackArgs.mcpResult
+        var fallbackParams = { name: params.name, arguments: fallbackArgs }
+        return fallback(fallbackParams)
+      }
+      var extensions = {}
+      extensions[extension] = {}
+      requireCapability({ extensions: extensions })
+    }
+    if (definition.elicitation && (!modern || !hasForm(caps))) requireCapability({ elicitation: { form: {} } })
+    if (definition.mode !== "inline") return atomic(() => {
+      if (isDef(params.requestState) || isDef(params.inputResponses)) invalid("Use tasks/update to answer a task form")
+      capacity()
+      queueCapacity()
+      var id = genUUID(true), time = now()
+      var record = { id: id, mode: definition.mode, owner: owner, tool: params.name, arguments: copy(args),
+                     status: "working", phase: "start", created: time, updated: time, expires: time + ttl }
+      save(id, record)
+      return publicTask(record, "task")
+    })
+
+    var ctx = {}, handler = definition.start
+    if (isDef(params.requestState) || isDef(params.inputResponses)) {
+      var token = params.requestState
+      ctx = atomic(() => {
+        var record = isString(token) ? get(token) : __
+        if (isUnDef(record) || record.mode !== "inline" || record.owner !== owner || record.tool !== params.name ||
+            record.expires <= now() || record.argumentDigest !== sha256(canonical(args))) invalid("Invalid workflow continuation")
+        var answers = formAnswers(record.inputRequests, params.inputResponses, true)
+        remove(token)
+        return { state: record.state, inputResponses: answers }
+      })
+      handler = definition.resume
+    }
+    var output = handler(copy(args), ctx)
+    if (!isMap(output) || output.status !== "input_required") return output
+    if (!definition.elicitation) fail(-32603, "Elicitation is disabled for this workflow")
+    return atomic(() => {
+      capacity()
+      var token = genUUID(true), inputRequests = formRequest(output.form)
+      save(token, { id: token, created: now(), mode: "inline", tool: params.name, owner: owner, expires: now() + ttl,
+                    argumentDigest: sha256(canonical(args)), inputRequests: inputRequests, state: copy(output.state) })
+      return { resultType: "input_required", requestState: token, inputRequests: inputRequests }
+    })
+  }
+  var task = (method, params, owner) => atomic(() => {
+    authorize(owner)
+    if (!mcp.isModern(mcp.metaProtocolVersion({ params: params }))) fail(-32601, "Method not found")
+    var record = isMap(params) && isString(params.taskId) ? get(params.taskId) : __
+    if (isUnDef(record) || record.mode === "inline" || record.owner !== owner || record.expires <= now())
+      invalid("Unknown MCP task")
+    if (method === "get") return publicTask(record, "complete")
+    if (method === "update" && record.status === "input_required") {
+      var answers = formAnswers(record.inputRequests, params.inputResponses, false)
+      if (isDef(answers)) {
+        queueCapacity()
+        record.inputResponses = answers
+        record.status = "working"
+        record.phase = "resume"
+        record.updated = now()
+        delete record.inputRequests
+        save(record.id, record)
+      }
+    }
+    if (method === "cancel" && !terminal(record.status)) {
+      var ref = record.ref, claim = record.claim, input = record.arguments
+      var cancelCallback = own(definitions, record.tool) && isFunction(definitions[record.tool].cancel)
+      finish(record, "cancelled")
+      if (isDef(claim)) record.claim = claim
+      if (cancelCallback && (isDef(ref) || isDef(claim))) {
+        record.arguments = input
+        if (isDef(ref)) {
+          record.ref = ref
+          record.phase = "cancel"
+        }
+      }
+      save(record.id, record)
+    }
+    return { resultType: "complete" }
+  })
+
+  // Start the scheduler only after recovery and release the file on teardown.
+  var scheduler
+  var close = () => {
+    if (isDef(scheduler)) scheduler.stop(false)
+    lock.lock()
+    try {
+      if (!closed) {
+        closed = true
+        store.close()
+      }
+    } finally {
+      lock.unlock()
+    }
+  }
+  try {
+    var namespace = metadata.get("endpoint")
+    if (!isNull(namespace) && String(namespace) !== options.namespace) throw new Error("MCP taskStore belongs to another endpoint")
+    metadata.put("endpoint", options.namespace)
+    commit()
+    recover()
+    plugin("Threads")
+    scheduler = new Threads()
+    scheduler.addScheduleThreadWithFixedDelay(tick, 100)
+    addOnOpenAFShutdown(close)
+  } catch (e) {
+    close()
+    throw e
+  }
+
+  return {
+    close: close,
+    describe: description => {
+      if (!taskModes) return description
+      var extensions = {}
+      extensions[extension] = {}
+      return merge(description, { capabilities: { extensions: extensions } })
+    },
+    bind: (methods, request, owner) => {
+      // Notifications cannot start work or consume a form answer.
+      var notifier = isUnDef(request.id) || isNull(request.id)
+      var supplied = isArray(request.params) ? request.params[0] : request.params
+      if (request.method === "tools/call" && isMap(supplied) && isString(supplied.name) && own(definitions, supplied.name)) {
+        var fallback = methods["tools/call"]
+        methods["tools/call"] = params => {
+          if (notifier) return
+          if (!isMap(request.params)) invalid("Expected named tool parameters")
+          return call(params, owner, fallback)
+        }
+      }
+      if (taskModes && ["tasks/get", "tasks/update", "tasks/cancel"].indexOf(request.method) >= 0)
+        methods[request.method] = params => {
+          if (notifier) return
+          if (!isMap(request.params)) invalid("Expected named task parameters")
+          return task(request.method.substring(6), params, owner)
+        }
+      return methods
+    }
+  }
 }
 
 /**
@@ -1985,6 +2737,8 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
             }
         }
     }, initData)
+    if (isDef(opts.skillCatalog) && !opts.modern) throw new Error("Skills require modern MCP")
+    initData = ow.server.mcp.withSkills(initData, opts.skillCatalog)
     io.pipeLn(line => {
         if (isUnDef(line) || String(line).trim() === "") return
         var _pline
@@ -2024,7 +2778,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
         // server's identity on every result per the spec's per-response protocol fields.
         var _wrap = (aBody, isList) => ow.server.mcp.wrapResult(aBody, _era, { isList: isList === true, serverInfo: initData.serverInfo })
 
-        var _res = ow.server.jsonRPC(_pline, merge({
+        var _methods = merge({
             // Only agree to a requested version this server supports (and that uses the initialize handshake);
             // otherwise answer with the server's own version so the client can decide (MCP lifecycle spec)
             initialize                 : params => (isMap(params) && isString(params.protocolVersion) &&
@@ -2097,8 +2851,21 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF, opts)
                 return global.__a2a__.send(params.id, params.message, params.options || {}, params.context || {})
             }*/
         }, opts.modern ? {
-            "server/discover": () => ow.server.mcp.discoverResult(initData)
-        } : {}))
+            "server/discover": () => ow.server.mcp.discoverResult(isDef(opts.workflows) ? opts.workflows.describe(initData) : initData)
+        } : {})
+        if (isDef(opts.skillCatalog)) Object.keys(opts.skillCatalog.methods).forEach(method => {
+            _methods[method] = params => _wrap(opts.skillCatalog.methods[method](params))
+        })
+        if (opts.modern && isDef(opts.workflows)) {
+            var selected = _pline.method
+            var original = _methods[selected]
+            opts.workflows.bind(_methods, _pline, opts.workflowOwner)
+            if (isFunction(_methods[selected]) && _methods[selected] !== original) {
+                var workflow = _methods[selected]
+                _methods[selected] = params => _wrap(workflow(params))
+            }
+        }
+        var _res = ow.server.jsonRPC(_pline, _methods)
 
         // JSON-RPC notifications return null by design; don't emit a stray "null" line on stdio.
         if (isDef(_res) && !isNull(_res)) {
@@ -2362,7 +3129,7 @@ OpenWrap.server.prototype.telemetry = {
     passive: function(aHs, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp, openMetricsStrict) {
 		aHs  = _$(aHs, "server").default("7777");
 		useOpenMetrics = _$(useOpenMetrics, "useOpenMetrics").default(false);
-		openMetricsStrict = _$(openMetricsStrict, "openMetricsStrict").isBoolean().default(true);
+		openMetricsStrict = _$(openMetricsStrict, "openMetricsStrict").isBoolean().default(true)
 		aURI = _$(aURI, "uri").isString().default((useOpenMetrics ? "/metrics" : "/healthz"));
 
 		if (isNumber(aHs)) aHs = ow.server.httpd.start(aHs);
@@ -2370,20 +3137,20 @@ OpenWrap.server.prototype.telemetry = {
 
 		var r = {};
 		r[aURI] = (r, aH) => {
-			var params = r.params || {};
+			var params = r.params || {}
 			var om = useOpenMetrics
 			if (params.f == "json") om = false
 			if (params.f == "om")   om = true
 			
 			try {
-				var metrics = isDef(params.s) ? ow.metrics.getSome(params.s.split(",")) : ow.metrics.getAll();
-				if (!om) return ow.server.httpd.reply(metrics);
-				var text = ow.metrics.fromObj2OpenMetrics(metrics, openMetricsPrefix, openMetricsStrict ? __ : now(), openMetricsHelp, __, openMetricsStrict);
+				var metrics = isDef(params.s) ? ow.metrics.getSome(params.s.split(",")) : ow.metrics.getAll()
+				if (!om) return ow.server.httpd.reply(metrics)
+				var text = ow.metrics.fromObj2OpenMetrics(metrics, openMetricsPrefix, openMetricsStrict ? __ : now(), openMetricsHelp, __, openMetricsStrict)
 				return aHs.reply(text, openMetricsStrict ?
-					"application/openmetrics-text; version=1.0.0; charset=utf-8" : "text/plain; version=0.0.4; charset=utf-8", 200, {});
+					"application/openmetrics-text; version=1.0.0; charset=utf-8" : "text/plain; version=0.0.4; charset=utf-8", 200, {})
 			} catch(e) {
 				sprintErr(e);
-				return ow.server.httpd.reply("Unable to collect metrics\n", 500, "text/plain; charset=utf-8");
+				return ow.server.httpd.reply("Unable to collect metrics\n", 500, "text/plain; charset=utf-8")
 			}
 		};
 		ow.server.httpd.route(aHs, ow.server.httpd.mapWithExistingRoutes(aHs, r));
@@ -3270,9 +4037,9 @@ OpenWrap.server.prototype.httpd = {
     // NIO locks are process-wide; pair them with a JVM-local mutex and bound both waits.
     // Do not use $flock.tryLock: it can swallow exceptions thrown by its callback.
     var _withOAuthFileLock = (file, timeout, fn) => {
-        var result, deadline = now() + timeout;
+        var result, deadline = now() + timeout
         var acquired = $lock("mcp-oauth-file-" + file).tryLock(() => {
-            var handle, lock;
+            var handle, lock
             try {
                 try { handle = new java.io.RandomAccessFile(file, "rw"); }
                 catch(e) { throw new Error("OAuth credential storage lock failed"); }
@@ -3280,87 +4047,87 @@ OpenWrap.server.prototype.httpd = {
                     try { lock = handle.getChannel().tryLock(); }
                     catch(e) {
                         if (!(e.javaException instanceof java.nio.channels.OverlappingFileLockException)) {
-                            throw new Error("OAuth credential storage lock failed");
+                            throw new Error("OAuth credential storage lock failed")
                         }
                     }
-                    if (isDef(lock) && !isNull(lock)) break;
-                    if (now() >= deadline) throw new Error("OAuth credential storage lock timed out");
-                    sleep(Math.min(50, Math.max(1, deadline - now())), true);
+                    if (isDef(lock) && !isNull(lock)) break
+                    if (now() >= deadline) throw new Error("OAuth credential storage lock timed out")
+                    sleep(Math.min(50, Math.max(1, deadline - now())), true)
                 }
-                result = fn();
+                result = fn()
             } finally {
                 try { if (isDef(lock) && !isNull(lock)) lock.release(); }
                 finally { if (isDef(handle)) handle.close(); }
             }
-        }, timeout);
-        if (!acquired) throw new Error("OAuth credential storage lock timed out");
-        return result;
-    };
+        }, timeout)
+        if (!acquired) throw new Error("OAuth credential storage lock timed out")
+        return result
+    }
     var _createOAuthSecretFile = (file, content) => {
-        var path = new java.io.File(file).toPath();
-        var attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 0);
-        var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix");
+        var path = new java.io.File(file).toPath()
+        var attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 0)
+        var posix = java.nio.file.Files.getFileStore(path.getParent()).supportsFileAttributeView("posix")
         if (posix) {
-            attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 1);
+            attrs = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.nio.file.attribute.FileAttribute"), 1)
             attrs[0] = java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
-                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"))
         }
         if (!io.fileExists(file)) {
-            java.nio.file.Files.createFile(path, attrs);
-            io.writeFileString(file, content);
+            java.nio.file.Files.createFile(path, attrs)
+            io.writeFileString(file, content)
         } else if (posix) {
             java.nio.file.Files.setPosixFilePermissions(path,
-                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"))
         }
-    };
+    }
     var _secTokenStore = cfg => {
-        var repo = _$(cfg.repo, "auth.tokenStore.repo").isString().default(defaultRepo);
-        if (!/^[a-zA-Z0-9_-]+$/.test(repo) || repo == "system") throw new Error("OAuth tokenStore requires a file-backed SBucket repo name");
-        var file = _$(cfg.file, "auth.tokenStore.file").isString().default(__gHDir() + "/.openaf-sec-" + repo + ".yml");
-        file = String(new java.io.File(file).getCanonicalPath());
-        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000);
-        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive");
-        var sec;
+        var repo = _$(cfg.repo, "auth.tokenStore.repo").isString().default(defaultRepo)
+        if (!/^[a-zA-Z0-9_-]+$/.test(repo) || repo == "system") throw new Error("OAuth tokenStore requires a file-backed SBucket repo name")
+        var file = _$(cfg.file, "auth.tokenStore.file").isString().default(__gHDir() + "/.openaf-sec-" + repo + ".yml")
+        file = String(new java.io.File(file).getCanonicalPath())
+        var timeout = _$(cfg.lockTimeoutMs, "auth.tokenStore.lockTimeoutMs").isNumber().default(60000)
+        if (!isFinite(timeout) || timeout <= 0) throw new Error("OAuth tokenStore lockTimeoutMs must be positive")
+        var sec
         return {
             withLock: (key, fn) => _withOAuthFileLock(file + ".lock", timeout, () => {
                 // A private channel alias avoids closing or reusing the caller's $sec handle.
-                var alias = "mcp-oauth-" + sha256(file), mainSecret = cfg.mainSecret;
+                var alias = "mcp-oauth-" + sha256(file), mainSecret = cfg.mainSecret
                 try {
-                    ow.loadSec();
+                    ow.loadSec()
                     if (isUnDef(mainSecret)) {
-                        var mainFile = String(new java.io.File(__gHDir() + "/.openaf-sec").getCanonicalPath());
+                        var mainFile = String(new java.io.File(__gHDir() + "/.openaf-sec").getCanonicalPath())
                         _withOAuthFileLock(mainFile + ".lock", timeout, () => {
                             try {
-                                _createOAuthSecretFile(mainFile, af.encrypt(sha512(genUUID())));
-                                mainSecret = io.readFileString(mainFile);
-                                if (mainSecret.length == 0) throw new Error("Empty key file");
+                                _createOAuthSecretFile(mainFile, af.encrypt(sha512(genUUID())))
+                                mainSecret = io.readFileString(mainFile)
+                                if (mainSecret.length == 0) throw new Error("Empty key file")
                             } catch(e) { throw new Error("OAuth credential storage key initialization failed"); }
-                        });
+                        })
                     }
                     try {
-                        _createOAuthSecretFile(file, "{}\n");
-                        if (!isMap(io.readFileYAML(file))) throw new Error("Invalid repository");
-                        sec = $sec(alias, cfg.bucket, cfg.lockSecret, mainSecret, file);
+                        _createOAuthSecretFile(file, "{}\n")
+                        if (!isMap(io.readFileYAML(file))) throw new Error("Invalid repository")
+                        sec = $sec(alias, cfg.bucket, cfg.lockSecret, mainSecret, file)
                     } catch(e) { throw new Error("OAuth credential storage read failed"); }
-                    return fn();
+                    return fn()
                 } finally {
                     if (isDef(sec)) { sec.close(); sec = __; }
                 }
             }),
             load: key => {
                 // Determine absence structurally; never interpret a decryption error as a miss.
-                var bucket = isString(cfg.bucket) ? cfg.bucket : "default";
-                var raw = io.readFileYAML(file);
-                if (!isMap(raw) || Object.keys(raw).some(k => !isMap(raw[k]))) throw new Error("Invalid repository");
-                if (isUnDef(raw[bucket])) return __;
-                if (raw[bucket].sbucket !== bucket || !isString(raw[bucket].v)) throw new Error("Invalid encrypted bucket");
-                return sec.get(key);
+                var bucket = isString(cfg.bucket) ? cfg.bucket : "default"
+                var raw = io.readFileYAML(file)
+                if (!isMap(raw) || Object.keys(raw).some(k => !isMap(raw[k]))) throw new Error("Invalid repository")
+                if (isUnDef(raw[bucket])) return __
+                if (raw[bucket].sbucket !== bucket || !isString(raw[bucket].v)) throw new Error("Invalid encrypted bucket")
+                return sec.get(key)
             },
             save: (key, record) => sec.set(key, record),
             clear: key => sec.unset(key)
-        };
-    };
-    return _secTokenStore(cfg);
+        }
+    }
+    return _secTokenStore(cfg)
   },
 
   /**
@@ -3381,66 +4148,66 @@ OpenWrap.server.prototype.httpd = {
    * </odoc>
    */
   oauth2: function(aOptions) {
-    aOptions = _$(aOptions, "oauth2 options").isMap().$_();
-    var httpd = this, pending, token, refreshToken, tokenType = "Bearer", expiresAt = 0;
-    var storeFailed = false, store, storeKey, storeHasRecord = false;
-    var lockName = "httpd-oauth2-" + genUUID();
+    aOptions = _$(aOptions, "oauth2 options").isMap().$_()
+    var httpd = this, pending, token, refreshToken, tokenType = "Bearer", expiresAt = 0
+    var storeFailed = false, store, storeKey, storeHasRecord = false
+    var lockName = "httpd-oauth2-" + genUUID()
     // Retain the caller's options, like $mcp, so operator policy can change between attempts.
     var storeConfig = function() {
-      return isUnDef(aOptions.tokenStore) ? { type: "sec", repo: "oauth2" } : aOptions.tokenStore;
-    };
+      return isUnDef(aOptions.tokenStore) ? { type: "sec", repo: "oauth2" } : aOptions.tokenStore
+    }
     var positive = function(value, name, fallback) {
-      value = _$(value, name).isNumber().default(fallback);
-      if (!isFinite(value) || value <= 0) throw new Error("OAuth " + name + " must be positive");
-      return value;
-    };
+      value = _$(value, name).isNumber().default(fallback)
+      if (!isFinite(value) || value <= 0) throw new Error("OAuth " + name + " must be positive")
+      return value
+    }
     var validate = function() {
       ["authURL", "tokenURL", "clientId", "redirectURI"].forEach(function(name) {
-        _$(aOptions[name], "oauth2." + name).isString().$_();
-        if (!aOptions[name].length) throw new Error("OAuth " + name + " is required");
+        _$(aOptions[name], "oauth2." + name).isString().$_()
+        if (!aOptions[name].length) throw new Error("OAuth " + name + " is required")
       });
       ["authURL", "tokenURL"].forEach(function(name) {
-        var endpoint;
+        var endpoint
         try { endpoint = new java.net.URI(aOptions[name]); } catch(e) {}
         if (isUnDef(endpoint) || ["http", "https"].indexOf(String(endpoint.getScheme())) < 0 ||
             endpoint.getHost() === null || endpoint.getRawUserInfo() !== null || endpoint.getRawFragment() !== null) {
-          throw new Error("OAuth " + name + " requires an HTTP(S) endpoint");
+          throw new Error("OAuth " + name + " requires an HTTP(S) endpoint")
         }
         // Client secrets, codes, PKCE verifiers and refresh tokens must not travel in clear text to remote hosts
         if (String(endpoint.getScheme()) === "http" && aOptions.allowHTTP !== true &&
             ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(endpoint.getHost()).toLowerCase()) < 0) {
-          throw new Error("OAuth " + name + " requires an HTTPS endpoint (plain HTTP is only allowed for loopback hosts or with allowHTTP=true)");
+          throw new Error("OAuth " + name + " requires an HTTPS endpoint (plain HTTP is only allowed for loopback hosts or with allowHTTP=true)")
         }
-      });
+      })
       var method = aOptions.tokenEndpointAuthMethod
       if (isDef(method) && ["none", "client_secret_basic", "client_secret_post"].indexOf(method) < 0) throw new Error("Unsupported OAuth client authentication method")
       if ((method == "client_secret_basic" || method == "client_secret_post") && (!isString(aOptions.clientSecret) || !aOptions.clientSecret.length)) throw new Error("OAuth client authentication requires a client secret")
-      var uri;
+      var uri
       try { uri = new java.net.URI(aOptions.redirectURI); } catch(e) {}
       if (isUnDef(uri) || String(uri.getScheme()) !== "http" ||
           ["127.0.0.1", "localhost", "[::1]", "::1"].indexOf(String(uri.getHost())) < 0 ||
           uri.getPort() <= 0 || uri.getPort() > 65535 || uri.getRawQuery() !== null ||
           uri.getRawFragment() !== null || uri.getRawUserInfo() !== null) {
-        throw new Error("OAuth callback requires an HTTP loopback redirectURI with an explicit port and no query or fragment");
+        throw new Error("OAuth callback requires an HTTP loopback redirectURI with an explicit port and no query or fragment")
       }
-      positive(aOptions.loginTimeoutMs, "loginTimeoutMs", 300000);
-      positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000);
-      var window = _$(aOptions.refreshWindowMs, "refreshWindowMs").isNumber().default(30000);
-      if (!isFinite(window) || window < 0) throw new Error("OAuth refreshWindowMs must be non-negative");
-      var reservedAuth = ["response_type", "client_id", "redirect_uri", "state", "code_challenge", "code_challenge_method", "scope", "audience", "resource"];
+      positive(aOptions.loginTimeoutMs, "loginTimeoutMs", 300000)
+      positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000)
+      var window = _$(aOptions.refreshWindowMs, "refreshWindowMs").isNumber().default(30000)
+      if (!isFinite(window) || window < 0) throw new Error("OAuth refreshWindowMs must be non-negative")
+      var reservedAuth = ["response_type", "client_id", "redirect_uri", "state", "code_challenge", "code_challenge_method", "scope", "audience", "resource"]
       var reservedToken = ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "refresh_token", "scope", "audience", "resource"];
       [["extraAuthParams", reservedAuth], ["extraParams", reservedToken]].forEach(function(pair) {
         if (isDef(aOptions[pair[0]])) {
-          _$(aOptions[pair[0]], pair[0]).isMap().$_();
+          _$(aOptions[pair[0]], pair[0]).isMap().$_()
           if (pair[1].some(function(k) { return isDef(aOptions[pair[0]][k]); })) {
-            throw new Error("OAuth does not allow protocol field overrides in " + pair[0]);
+            throw new Error("OAuth does not allow protocol field overrides in " + pair[0])
           }
         }
-      });
-      return uri;
-    };
+      })
+      return uri
+    }
     var fingerprint = function(cfg) {
-      var scope = String(aOptions.scope || "").split(/\s+/).filter(function(s) { return s.length > 0; }).sort();
+      var scope = String(aOptions.scope || "").split(/\s+/).filter(function(s) { return s.length > 0; }).sort()
       return sha256(stringify(sortMapKeys({
         version: 1, clientId: aOptions.clientId, authURL: aOptions.authURL, tokenURL: aOptions.tokenURL,
         scope: scope.filter(function(s, i) { return i == 0 || s != scope[i - 1]; }),
@@ -3448,172 +4215,172 @@ OpenWrap.server.prototype.httpd = {
         redirectURI: aOptions.redirectURI, grantType: "authorization_code", profile: cfg.profile || cfg.key || "default",
         extraParams: sha256(stringify(sortMapKeys(aOptions.extraParams || {}, true), __, "")),
         extraAuthParams: sha256(stringify(sortMapKeys(aOptions.extraAuthParams || {}, true), __, ""))
-      }, true), __, ""));
-    };
+      }, true), __, ""))
+    }
     var status = function() {
       return { authenticated: isString(token) && expiresAt > now() && !storeFailed,
-        expiresAt: expiresAt, refreshable: isString(refreshToken), persistent: storeConfig() !== false };
-    };
-    var reset = function() { token = __; refreshToken = __; tokenType = "Bearer"; expiresAt = 0; };
+        expiresAt: expiresAt, refreshable: isString(refreshToken), persistent: storeConfig() !== false }
+    }
+    var reset = function() { token = __; refreshToken = __; tokenType = "Bearer"; expiresAt = 0; }
     var clear = function() {
-      reset();
+      reset()
       if (isDef(store) && storeHasRecord) {
         try { store.clear(storeKey); storeHasRecord = false; }
         catch(e) { storeFailed = true; throw new Error("OAuth credential storage delete failed"); }
       }
-    };
+    }
     var withStore = function(fn, clearing) {
-      var cfg = storeConfig(), result, timeout = 60000;
+      var cfg = storeConfig(), result, timeout = 60000
       if (cfg !== false) {
-        _$(cfg, "tokenStore").isMap().$_();
-        timeout = positive(cfg.lockTimeoutMs, "tokenStore.lockTimeoutMs", 60000);
+        _$(cfg, "tokenStore").isMap().$_()
+        timeout = positive(cfg.lockTimeoutMs, "tokenStore.lockTimeoutMs", 60000)
       }
       if (!$lock(lockName).tryLock(function() {
-        validate();
+        validate()
         if (cfg === false) { result = fn(); return; }
-        if (storeFailed && !clearing) throw new Error("OAuth credential storage failed; clearAuth or recreate the client before retrying");
-        if (isDef(cfg.profile)) _$(cfg.profile, "tokenStore.profile").isString().$_();
-        if (isDef(cfg.key)) _$(cfg.key, "tokenStore.key").isString().$_();
-        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type");
-        var fp = fingerprint(cfg), key = isString(cfg.key) ? cfg.key : "oauth2-v1-" + fp;
-        var adapter;
+        if (storeFailed && !clearing) throw new Error("OAuth credential storage failed; clearAuth or recreate the client before retrying")
+        if (isDef(cfg.profile)) _$(cfg.profile, "tokenStore.profile").isString().$_()
+        if (isDef(cfg.key)) _$(cfg.key, "tokenStore.key").isString().$_()
+        if (isDef(cfg.type) && cfg.type != "sec") throw new Error("Unsupported OAuth tokenStore type")
+        var fp = fingerprint(cfg), key = isString(cfg.key) ? cfg.key : "oauth2-v1-" + fp
+        var adapter
         if (cfg.type == "sec" || !["load", "save", "clear", "withLock"].some(function(k) { return isDef(cfg[k]); })) {
-          adapter = httpd.__oauth2SecTokenStore(cfg, "oauth2");
+          adapter = httpd.__oauth2SecTokenStore(cfg, "oauth2")
         } else {
-          ["load", "save", "clear", "withLock"].forEach(function(k) { _$(cfg[k], "tokenStore." + k).isFunction().$_(); });
-          adapter = cfg;
+          ["load", "save", "clear", "withLock"].forEach(function(k) { _$(cfg[k], "tokenStore." + k).isFunction().$_(); })
+          adapter = cfg
         }
-        var entered = 0, active = true, completed = false, callbackError;
+        var entered = 0, active = true, completed = false, callbackError
         try {
           adapter.withLock(key, function() {
-            entered++;
-            if (!active || entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously once");
+            entered++
+            if (!active || entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously once")
             try {
-              var record;
+              var record
               try { record = adapter.load(key); } catch(e) { throw new Error("OAuth credential storage read failed"); }
-              store = adapter; storeKey = key; storeHasRecord = isDef(record);
+              store = adapter; storeKey = key; storeHasRecord = isDef(record)
               if (!clearing && isDef(record)) {
                 if (!isMap(record) || record.version !== 1 || record.fingerprint !== fp) {
-                  throw new Error("OAuth credential profile configuration mismatch; use another profile or clearAuth()");
+                  throw new Error("OAuth credential profile configuration mismatch; use another profile or clearAuth()")
                 }
                 if (!isString(record.token) || !record.token.length || !isString(record.tokenType) ||
                     !(record.expiresAt === null || (isNumber(record.expiresAt) && isFinite(record.expiresAt))) ||
-                    (isDef(record.refreshToken) && !isString(record.refreshToken))) throw new Error("OAuth credential profile is invalid");
-                var sameUnknown = record.expiresAt === null && token === record.token && expiresAt == Number.MAX_SAFE_INTEGER;
-                token = record.token; tokenType = record.tokenType; refreshToken = record.refreshToken;
-                expiresAt = record.expiresAt === null ? (sameUnknown ? Number.MAX_SAFE_INTEGER : 0) : record.expiresAt;
-              } else if (!clearing) reset();
-              result = fn(fp); completed = true;
-              return result;
+                    (isDef(record.refreshToken) && !isString(record.refreshToken))) throw new Error("OAuth credential profile is invalid")
+                var sameUnknown = record.expiresAt === null && token === record.token && expiresAt == Number.MAX_SAFE_INTEGER
+                token = record.token; tokenType = record.tokenType; refreshToken = record.refreshToken
+                expiresAt = record.expiresAt === null ? (sameUnknown ? Number.MAX_SAFE_INTEGER : 0) : record.expiresAt
+              } else if (!clearing) reset()
+              result = fn(fp); completed = true
+              return result
             } catch(e) { callbackError = e; throw e; }
             finally { store = __; }
-          });
+          })
         } catch(e) {
-          if (isDef(callbackError)) throw callbackError;
-          throw new Error("OAuth credential storage lock failed or timed out");
+          if (isDef(callbackError)) throw callbackError
+          throw new Error("OAuth credential storage lock failed or timed out")
         } finally { active = false; }
-        if (isDef(callbackError)) throw callbackError;
-        if (entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback once");
-        if (!completed) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously");
-      }, timeout)) throw new Error("OAuth credential storage lock timed out");
-      return result;
-    };
+        if (isDef(callbackError)) throw callbackError
+        if (entered > 1) throw new Error("OAuth tokenStore withLock must invoke its callback once")
+        if (!completed) throw new Error("OAuth tokenStore withLock must invoke its callback synchronously")
+      }, timeout)) throw new Error("OAuth credential storage lock timed out")
+      return result
+    }
     var base64URL = function(bytes) {
-      return String(af.fromBytes2String(af.toBase64Bytes(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-    };
+      return String(af.fromBytes2String(af.toBase64Bytes(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")
+    }
     var oauthError = function(message, identifier) {
-      var error = new Error(message);
-      if (isString(identifier) && /^[a-zA-Z0-9_]+$/.test(identifier)) error.oauthError = identifier;
-      return error;
-    };
+      var error = new Error(message)
+      if (isString(identifier) && /^[a-zA-Z0-9_]+$/.test(identifier)) error.oauthError = identifier
+      return error
+    }
     var stop = function(attempt) {
       if (isDef(attempt) && isDef(attempt.server) && attempt.stopped.compareAndSet(false, true)) {
         // The callback handler signals the latch before its reply is written: give it a moment to reach
         // the browser before stopping the server (which interrupts handler threads)
-        if (isDef(attempt.result) && attempt.result.get() !== null) sleep(250, true);
-        httpd.stop(attempt.server);
+        if (isDef(attempt.result) && attempt.result.get() !== null) sleep(250, true)
+        httpd.stop(attempt.server)
       }
-    };
+    }
     var login = function() {
-      if (aOptions.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled");
-      var uri = validate(), host = String(uri.getHost()), path = String(uri.getPath()) || "/";
-      var random = new java.security.SecureRandom();
-      var verifierBytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 32);
-      var stateBytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 32);
-      random.nextBytes(verifierBytes); random.nextBytes(stateBytes);
-      var verifier = base64URL(verifierBytes), state = base64URL(stateBytes);
-      var params = merge({}, aOptions.extraAuthParams || {});
-      params.response_type = "code"; params.client_id = aOptions.clientId; params.redirect_uri = aOptions.redirectURI;
-      params.state = state; params.code_challenge_method = "S256";
+      if (aOptions.interactive === false) throw new Error("OAuth login required; interactive authentication is disabled")
+      var uri = validate(), host = String(uri.getHost()), path = String(uri.getPath()) || "/"
+      var random = new java.security.SecureRandom()
+      var verifierBytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 32)
+      var stateBytes = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 32)
+      random.nextBytes(verifierBytes); random.nextBytes(stateBytes)
+      var verifier = base64URL(verifierBytes), state = base64URL(stateBytes)
+      var params = merge({}, aOptions.extraAuthParams || {})
+      params.response_type = "code"; params.client_id = aOptions.clientId; params.redirect_uri = aOptions.redirectURI
+      params.state = state; params.code_challenge_method = "S256"
       params.code_challenge = base64URL(java.security.MessageDigest.getInstance("SHA-256").digest(af.fromString2Bytes(verifier)));
-      ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; });
+      ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; })
       var url = aOptions.authURL + (aOptions.authURL.indexOf("?") >= 0 ? "&" : "?") +
-        Object.keys(params).map(function(k) { return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]); }).join("&");
+        Object.keys(params).map(function(k) { return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]); }).join("&")
       var attempt = { latch: new java.util.concurrent.CountDownLatch(1),
-        result: new java.util.concurrent.atomic.AtomicReference(), stopped: new java.util.concurrent.atomic.AtomicBoolean(false) };
+        result: new java.util.concurrent.atomic.AtomicReference(), stopped: new java.util.concurrent.atomic.AtomicBoolean(false) }
       try {
         try {
           // start() reuses registered ports. This listener must be exclusively owned.
-          if (isDef(httpd.getHS(Number(uri.getPort())))) throw new Error("Port in use");
-          plugin("HTTPServer");
+          if (isDef(httpd.getHS(Number(uri.getPort())))) throw new Error("Port in use")
+          plugin("HTTPServer")
           if (isDef(aOptions.__callbackReservation)) {
             attempt.server = aOptions.__callbackReservation
             aOptions.__callbackReservation = __
             if (Number(attempt.server.getPort()) != Number(uri.getPort())) throw new Error("Callback reservation mismatch")
-          } else attempt.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java");
+          } else attempt.server = new HTTPd(Number(uri.getPort()), host == "localhost" ? "127.0.0.1" : host.replace(/^\[|\]$/g, ""), __, __, __, __, 30000, "java")
         } catch(e) { throw new Error("OAuth callback port unavailable"); }
-        pending = attempt;
-        var routes = {}, headers = { "Cache-Control": "no-store" };
+        pending = attempt
+        var routes = {}, headers = { "Cache-Control": "no-store" }
         routes[path] = function(req) {
-          var requestPath = isString(req.path) ? req.path : String(req.uri || "").split("?")[0];
-          if (requestPath !== path) return httpd.reply("Not found", 404, "text/plain", headers);
-          var query;
+          var requestPath = isString(req.path) ? req.path : String(req.uri || "").split("?")[0]
+          if (requestPath !== path) return httpd.reply("Not found", 404, "text/plain", headers)
+          var query
           try {
             // URI.query is already decoded by the Java backend; use the raw URI instead.
-            var raw = new java.net.URI(String(req.uri)).getRawQuery();
-            query = {};
+            var raw = new java.net.URI(String(req.uri)).getRawQuery()
+            query = {}
             if (raw !== null) String(raw).split("&").forEach(function(pair) {
-              var eq = pair.indexOf("="), k = decodeURIComponent((eq < 0 ? pair : pair.substring(0, eq)).replace(/\+/g, " "));
-              if (Object.prototype.hasOwnProperty.call(query, k)) throw new Error("Duplicate query parameter");
-              query[k] = decodeURIComponent((eq < 0 ? "" : pair.substring(eq + 1)).replace(/\+/g, " "));
-            });
+              var eq = pair.indexOf("="), k = decodeURIComponent((eq < 0 ? pair : pair.substring(0, eq)).replace(/\+/g, " "))
+              if (Object.prototype.hasOwnProperty.call(query, k)) throw new Error("Duplicate query parameter")
+              query[k] = decodeURIComponent((eq < 0 ? "" : pair.substring(eq + 1)).replace(/\+/g, " "))
+            })
           } catch(e) { return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers); }
           if (req.method !== "GET" || query.state !== state) {
-            return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers);
+            return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers)
           }
-          var value;
-          if (isString(query.error) && query.error.length) value = { error: "OAuth authorization denied" };
-          else if (isString(query.code) && query.code.length) value = { code: query.code };
-          else return httpd.reply("Missing OAuth code", 400, "text/plain", headers);
-          if (!attempt.result.compareAndSet(null, value)) return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers);
-          attempt.latch.countDown();
-          return httpd.reply("Sign-in received. You may close this window.", 200, "text/plain", headers);
-        };
+          var value
+          if (isString(query.error) && query.error.length) value = { error: "OAuth authorization denied" }
+          else if (isString(query.code) && query.code.length) value = { code: query.code }
+          else return httpd.reply("Missing OAuth code", 400, "text/plain", headers)
+          if (!attempt.result.compareAndSet(null, value)) return httpd.reply("Invalid OAuth callback", 400, "text/plain", headers)
+          attempt.latch.countDown()
+          return httpd.reply("Sign-in received. You may close this window.", 200, "text/plain", headers)
+        }
         // Java HTTPd keeps the query in req.uri; the default handler checks the exact decoded path too.
-        httpd.route(attempt.server, routes, routes[path]);
+        httpd.route(attempt.server, routes, routes[path])
         if (aOptions.disableOpenBrowser !== true) {
           try {
-            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().browse(new java.net.URI(url))
           } catch(ignoreBrowser) {}
         }
-        if (isFunction(aOptions.onAuthorizationURL)) aOptions.onAuthorizationURL(url);
+        if (isFunction(aOptions.onAuthorizationURL)) aOptions.onAuthorizationURL(url)
         if (!attempt.latch.await(positive(aOptions.loginTimeoutMs, "loginTimeoutMs", 300000), java.util.concurrent.TimeUnit.MILLISECONDS)) {
-          throw new Error("OAuth login timed out");
+          throw new Error("OAuth login timed out")
         }
-        var result = attempt.result.get();
-        if (isDef(result.error)) throw new Error(result.error);
-        return { grant_type: "authorization_code", code: result.code, redirect_uri: aOptions.redirectURI, code_verifier: verifier };
+        var result = attempt.result.get()
+        if (isDef(result.error)) throw new Error(result.error)
+        return { grant_type: "authorization_code", code: result.code, redirect_uri: aOptions.redirectURI, code_verifier: verifier }
       } finally { stop(attempt); if (pending === attempt) pending = __; }
-    };
+    }
     var exchange = function(params) {
-      params = merge(aOptions.extraParams || {}, params);
-      params.client_id = aOptions.clientId;
+      params = merge(aOptions.extraParams || {}, params)
+      params.client_id = aOptions.clientId
       if (isDef(aOptions.clientSecret) && ["none", "client_secret_basic"].indexOf(aOptions.tokenEndpointAuthMethod) < 0) params.client_secret = aOptions.clientSecret;
-      ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; });
-      var connection = ow.loadObj().rest.connectionFactory(), response, code;
+      ["scope", "resource", "audience"].forEach(function(k) { if (isDef(aOptions[k])) params[k] = aOptions[k]; })
+      var connection = ow.loadObj().rest.connectionFactory(), response, code
       try {
-        connection.setThrowExceptions(false);
-        var timeout = positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000);
+        connection.setThrowExceptions(false)
+        var timeout = positive(aOptions.tokenTimeoutMs, "tokenTimeoutMs", 60000)
         connection.client = connection.client.newBuilder().followRedirects(false).followSslRedirects(false)
           .callTimeout(timeout, java.util.concurrent.TimeUnit.MILLISECONDS).build()
         var tokenHeaders = {}
@@ -3622,57 +4389,57 @@ OpenWrap.server.prototype.httpd = {
           tokenHeaders.Authorization = "Basic " + af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(enc(aOptions.clientId) + ":" + enc(aOptions.clientSecret))))
         }
         response = $rest({ httpClient: connection, requestHeaders: tokenHeaders, urlEncode: true, timeout: timeout,
-          readTimeout: timeout, callTimeout: timeout }).post(aOptions.tokenURL, params);
-        code = connection.responseCode();
+          readTimeout: timeout, callTimeout: timeout }).post(aOptions.tokenURL, params)
+        code = connection.responseCode()
       } catch(e) { throw new Error("OAuth token request failed; check connectivity and provider configuration"); }
       finally { try { connection.close(); } catch(ignoreClose) {} }
       if (code < 200 || code >= 300 || !isMap(response) || !isString(response.access_token) || !response.access_token.length) {
-        throw oauthError("OAuth token request failed; provider did not return an access token", isMap(response) ? response.error : __);
+        throw oauthError("OAuth token request failed; provider did not return an access token", isMap(response) ? response.error : __)
       }
-      return response;
-    };
+      return response
+    }
     var authenticate = function(fp, retrying) {
       if (isString(token) && expiresAt > now() + _$(aOptions.refreshWindowMs).isNumber().default(30000)) {
-        var cached = { access_token: token, token_type: tokenType };
-        if (isString(refreshToken)) cached.refresh_token = refreshToken;
-        if (expiresAt != Number.MAX_SAFE_INTEGER) cached.expires_in = Math.max(0, Math.floor((expiresAt - now()) / 1000));
-        return cached;
+        var cached = { access_token: token, token_type: tokenType }
+        if (isString(refreshToken)) cached.refresh_token = refreshToken
+        if (expiresAt != Number.MAX_SAFE_INTEGER) cached.expires_in = Math.max(0, Math.floor((expiresAt - now()) / 1000))
+        return cached
       }
-      var refreshing = isString(refreshToken), response;
+      var refreshing = isString(refreshToken), response
       try { response = exchange(refreshing ? { grant_type: "refresh_token", refresh_token: refreshToken } : login()); }
       catch(e) {
         if (e.oauthError == "invalid_grant" || e.oauthError == "interaction_required") {
-          clear();
-          if (refreshing && e.oauthError == "invalid_grant" && !retrying) return authenticate(fp, true);
-          throw oauthError("OAuth login required; credentials expired or revoked", e.oauthError);
+          clear()
+          if (refreshing && e.oauthError == "invalid_grant" && !retrying) return authenticate(fp, true)
+          throw oauthError("OAuth login required; credentials expired or revoked", e.oauthError)
         }
-        throw e;
+        throw e
       }
-      token = response.access_token; tokenType = aOptions.tokenType || response.token_type || "Bearer";
-      if (isString(response.refresh_token) && response.refresh_token.length) refreshToken = response.refresh_token;
-      var lifetime = Number(response.expires_in);
-      expiresAt = isDef(response.expires_in) && response.expires_in !== null && isFinite(lifetime) && lifetime >= 0 ? now() + lifetime * 1000 : Number.MAX_SAFE_INTEGER;
+      token = response.access_token; tokenType = aOptions.tokenType || response.token_type || "Bearer"
+      if (isString(response.refresh_token) && response.refresh_token.length) refreshToken = response.refresh_token
+      var lifetime = Number(response.expires_in)
+      expiresAt = isDef(response.expires_in) && response.expires_in !== null && isFinite(lifetime) && lifetime >= 0 ? now() + lifetime * 1000 : Number.MAX_SAFE_INTEGER
       if (isDef(store)) {
         try {
           store.save(storeKey, { version: 1, fingerprint: fp, token: token, tokenType: tokenType,
-            expiresAt: expiresAt == Number.MAX_SAFE_INTEGER ? null : expiresAt, refreshToken: refreshToken });
-          storeHasRecord = true;
+            expiresAt: expiresAt == Number.MAX_SAFE_INTEGER ? null : expiresAt, refreshToken: refreshToken })
+          storeHasRecord = true
         } catch(e) { storeFailed = true; throw new Error("OAuth credential storage write failed; clearAuth or recreate the client before retrying"); }
       }
-      return response;
-    };
+      return response
+    }
     return {
       authenticate: function() { return withStore(function(fp) { return authenticate(fp, false); }); },
       getAuthStatus: function() { return withStore(status); },
       clearAuth: function() { return withStore(function() { clear(); storeFailed = false; return status(); }, true); },
       cancel: function() {
-        var attempt = pending;
+        var attempt = pending
         if (isDef(attempt)) {
-          attempt.result.compareAndSet(null, { error: "OAuth login cancelled" });
-          attempt.latch.countDown(); stop(attempt);
+          attempt.result.compareAndSet(null, { error: "OAuth login cancelled" })
+          attempt.latch.countDown(); stop(attempt)
         }
       }
-    };
+    }
   },
 
 	/**
@@ -3908,19 +4675,19 @@ OpenWrap.server.prototype.httpd = {
 						return parent.__defaultRoutes[aPort](req, aHTTPd);
 				}
 			} catch(e) {
-				if (ow.instrumentation && ow.instrumentation.isEnabled("http")) req.__openafInstrumentationError = true;
+				if (ow.instrumentation && ow.instrumentation.isEnabled("http")) req.__openafInstrumentationError = true
 				printErr("HTTPd route error: " + af.toSLON(req) + " | " + e)
 			}
-		};
+		}
         aHTTPd.add(aPath, function(req) {
-          var ins = ow.instrumentation;
-          if (!ins || !ins.isEnabled("http")) return __routeHandler(req);
-          var uri = String(req.uri || "").split("?")[0];
-          var inspection = ins._inspectionPaths || {};
-          if (Object.keys(inspection).some(function(k) { return k === aPort + ":" + uri || (k.indexOf(aPort + ":") === 0 && uri.indexOf(k.substring(String(aPort).length + 1) + "/") === 0); })) return ins.suppress(function() { return __routeHandler(req); });
-          var matched = Object.keys(parent.__routes[aPort] || {}).filter(function(p) { return uri === p || uri.indexOf(p + "/") === 0; }).sort(function(a,b) { return b.length - a.length; })[0] || "default";
-          return ins.httpHandler(__routeHandler, matched)(req);
-        });
+          var ins = ow.instrumentation
+          if (!ins || !ins.isEnabled("http")) return __routeHandler(req)
+          var uri = String(req.uri || "").split("?")[0]
+          var inspection = ins._inspectionPaths || {}
+          if (Object.keys(inspection).some(function(k) { return k === aPort + ":" + uri || (k.indexOf(aPort + ":") === 0 && uri.indexOf(k.substring(String(aPort).length + 1) + "/") === 0); })) return ins.suppress(function() { return __routeHandler(req); })
+          var matched = Object.keys(parent.__routes[aPort] || {}).filter(function(p) { return uri === p || uri.indexOf(p + "/") === 0; }).sort(function(a,b) { return b.length - a.length; })[0] || "default"
+          return ins.httpHandler(__routeHandler, matched)(req)
+        })
 		
 		aHTTPd.setDefault(aPath);
 	},
@@ -4100,20 +4867,20 @@ OpenWrap.server.prototype.httpd = {
 		if (isString(aBaseFilePath)) {
 			try {
 				// Determine the full canonical path
-				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile();
-				var basePath = baseFile.toPath();
+				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile()
+				var basePath = baseFile.toPath()
 				// Determine the full canonical path of the file to be served
 				var targetFile = (new java.io.File(baseFile,
-					(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalFile();
-				var furi = String(targetFile.getPath());
+					(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalFile()
+				var furi = String(targetFile.getPath())
 				
 				// If the file is a directory, try to find the documentRootArray
 				if (targetFile.equals(baseFile)) {
 					for(var i in documentRootArray) {
 						targetFile = (new java.io.File(baseFile,
-							(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalFile();
-						furi = String(targetFile.getPath());
-						if (targetFile.toPath().startsWith(basePath)) break;
+							(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalFile()
+						furi = String(targetFile.getPath())
+						if (targetFile.toPath().startsWith(basePath)) break
 					}
 				}
 			
@@ -4168,11 +4935,11 @@ OpenWrap.server.prototype.httpd = {
 		
 		if (isString(aBaseFilePath)) {
 			try {
-				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile();
-				var basePath = baseFile.toPath();
+				var baseFile = (new java.io.File(aBaseFilePath)).getCanonicalFile()
+				var basePath = baseFile.toPath()
 				var targetFile = (new java.io.File(baseFile,
-					(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile();
-				var furi = String(targetFile.getPath());
+					(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile()
+				var furi = String(targetFile.getPath())
 				
 				if (isUnDef(documentRootArray)) documentRootArray = [ "index.md" ];
 	
@@ -4180,15 +4947,15 @@ OpenWrap.server.prototype.httpd = {
 				if (io.fileExists(furi) && io.fileInfo(furi).isDirectory) {
 					for(var i in documentRootArray) {
 						targetFile = (new java.io.File(baseFile,
-							(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile();
-						furi = String(targetFile.getPath());
-						if (targetFile.toPath().startsWith(basePath)) break;
+							(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalFile()
+						furi = String(targetFile.getPath())
+						if (targetFile.toPath().startsWith(basePath)) break
 					}
 				}
 	
 				if (!(String(targetFile.getName()).match(/[^.]+\.[^.]+$/))) {
-					targetFile = (new java.io.File(furi + ".md")).getCanonicalFile();
-					furi = String(targetFile.getPath());
+					targetFile = (new java.io.File(furi + ".md")).getCanonicalFile()
+					furi = String(targetFile.getPath())
 				}
 	
 				if (targetFile.toPath().startsWith(basePath)) {
@@ -4313,7 +5080,21 @@ OpenWrap.server.prototype.httpd = {
 	replyBrowse: function(server, request, _options) {
 		try {
 			var _out = ""
-			var _lst = _options._fns.getList(request, _options)
+            var support = ow.server.httpd.browse.support
+            var relative = support ? support.relative(request.uri, _options.parentURI) : ""
+            if (_options._operation && relative.startsWith("@@/")) {
+                var target = Object.assign({}, request)
+                target.uri = _options.parentURI.replace(/\/$/, "") + "/" + String((request.params || {}).path || "").replace(/^\/+/, "")
+                return _options._operation(relative.substring(3), target, server, false)
+            }
+            if ((request.params || {})._browsePrefetch === "1" && (request.header || {})["x-openaf-browse-prefetch"] === "1") {
+                if (request.method != "GET") return { data: "", status: 405, header: { Allow: "GET" } }
+                if (_options.prefetch !== true || !isFunction(_options._fns.prefetch)) return { data: "", status: 404, header: {} }
+                var queued = _options._fns.prefetch(request, _options)
+                return { data: "", status: queued ? 202 : 204, header: { "Cache-Control": "private, no-store" } }
+            }
+            var _lst = _options.query && _options.query.enabled && (request.params || {}).q && isFunction(_options._fns.search)
+                ? _options._fns.search(request, _options) : _options._fns.getList(request, _options)
 			if (_lst.isList) {
 				_out = _options._fns.renderList(_lst, server, request, _options)
 				if (isMap(_out)) return _out
@@ -4326,10 +5107,12 @@ OpenWrap.server.prototype.httpd = {
 				}
 			}
 	
-			return server.replyOKHTML( String(_out) )
+			var reply = server.replyOKHTML(String(_out))
+            if (_options.query && _options.query.enabled) reply.header = Object.assign({}, reply.header, { Vary: "X-OpenAF-Browse-Fragment" })
+            return reply
 		} catch(e) {
 			$err(e)
-			return { data: "Internal error", mimetype: "text/plain", status: 500, header: {} }
+            return { data: "Browse request failed", mimetype: "text/plain", status: [400,403,404,405,501,503].indexOf(e.httpStatus) >= 0 ? e.httpStatus : 500, header: {} }
 		}
 	},
 
@@ -4424,6 +5207,7 @@ OpenWrap.server.prototype.httpd = {
                 }
                 _respHeaders["MCP-Protocol-Version"] = _reqVersion
             }
+            if (opts.modern && isDef(opts.workflows)) opts.workflows.bind(mapOfFunctions, reqObj, opts.workflowOwner)
             // JSON-RPC notification (no id): the Streamable HTTP transport requires a bare
             // 202 Accepted with no body - HTTP 404 is reserved for an expired session
             if (isUnDef(reqObj.id) || isNull(reqObj.id)) {
@@ -4455,6 +5239,8 @@ OpenWrap.server.prototype.httpd = {
                     id: reqObj.id
                 }, 200, "application/json", _respHeaders)
             } catch(e) {
+                var rpcError = ow.server.mcp.rpcError(e, reqObj.id)
+                if (isDef(rpcError)) return ow.server.httpd.reply(rpcError, 200, "application/json", _respHeaders)
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
@@ -4676,11 +5462,11 @@ OpenWrap.server.prototype.httpd = {
 		if (isUnDef(parent.oauth_realms)) parent.oauth_realms = {};
 
 		if (!Object.prototype.hasOwnProperty.call(parent.oauth_realms, aRealm)) {
-			Object.defineProperty(parent.oauth_realms, aRealm, { value: Object.create(null), writable: true, enumerable: true, configurable: true });
+			Object.defineProperty(parent.oauth_realms, aRealm, { value: Object.create(null), writable: true, enumerable: true, configurable: true })
 		}
-		var records = parent.oauth_realms[aRealm];
-		var ownRecord = key => isString(key) && Object.prototype.hasOwnProperty.call(records, key);
-		var hasToken = record => isMap(record) && Object.prototype.hasOwnProperty.call(record, "access_token") && isString(record.access_token) && record.access_token.length > 0;
+		var records = parent.oauth_realms[aRealm]
+		var ownRecord = key => isString(key) && Object.prototype.hasOwnProperty.call(records, key)
+		var hasToken = record => isMap(record) && Object.prototype.hasOwnProperty.call(record, "access_token") && isString(record.access_token) && record.access_token.length > 0
 		var shouldLogin = false, session = _getSession(aReq);
 
 		// Logout redirect endpoint
@@ -4722,7 +5508,7 @@ OpenWrap.server.prototype.httpd = {
 							return aFnReply(aReq);
 						}
 					} else {
-						shouldLogin = true;
+						shouldLogin = true
 					}
 				} else {
 					shouldLogin = true;
@@ -4738,7 +5524,7 @@ OpenWrap.server.prototype.httpd = {
 		// If no session exists yet but there is a state the oauth token is invoked
 		if (aReq.uri == aMapOptions.uriCallBack) {
 			//if (Object.keys(parent.oauth_realms[aRealm]).length == 0) parent.oauth_realms[aRealm] = "/";
-			if (!isMap(aReq.params) || !ownRecord(aReq.params.state) || !isString(records[aReq.params.state])) return ow.server.httpd.replyRedirect(aHTTPd, "/", {});
+			if (!isMap(aReq.params) || !ownRecord(aReq.params.state) || !isString(records[aReq.params.state])) return ow.server.httpd.replyRedirect(aHTTPd, "/", {})
 			if (ownRecord(aReq.params.state)) {
 				var target = parent.oauth_realms[aRealm][aReq.params.state];
 				var res = $rest({ urlEncode: true }).post(aMapOptions.oauthTokenURL, {
@@ -4750,7 +5536,7 @@ OpenWrap.server.prototype.httpd = {
 				});
 
 				delete parent.oauth_realms[aRealm][aReq.params.state];
-				if (!hasToken(res) || !isString(res.session_state) || res.session_state.length == 0) return ow.server.httpd.replyRedirect(aHTTPd, "/", {});
+				if (!hasToken(res) || !isString(res.session_state) || res.session_state.length == 0) return ow.server.httpd.replyRedirect(aHTTPd, "/", {})
 				var jwt = ow.server.jwt.decode(res.access_token);
 				parent.oauth_realms[aRealm][res.session_state] = merge(res, { x: (jwt.exp * 1000) });
 
@@ -5208,10 +5994,20 @@ OpenWrap.server.prototype.httpd.browse = {
 	 * - `default` (string) The default file to show (defaults to undefined)
 	 * - `logo` (string) The logo to show in the file browser (defaults to undefined)
 	 * - `footer` (string) The footer to show in the file browser (defaults to undefined)
+     * - `query.enabled` adds server sorting, pagination and bounded literal search.
+     * - `preview.formats` replaces viewers with an extension or `name:` allowlist; `{}` disables previews.
+     * - `preview.maxBytes` bounds formatted reads, preserving complete raw downloads.
+     * - `operations.enabled` reserves `@@/status`, `@@/freshness`, POST `@@/refresh`, and `@@/metrics`.
 	 * ]]>
 	 * </odoc>
 	 */
 	files: function(aURI, aOptions) {
+        if (!ow.server.httpd.browse.support) {
+            loadLib(getOpenAFJar() + "::js/owrap.server.browse.js")
+            return ow.server.httpd.browse.files(aURI, aOptions)
+        }
+		const arrow = ow.server.httpd.browse.support.arrow
+
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		aOptions.path = _$(aOptions.path, "options.path").isString().default(".")
@@ -5329,15 +6125,15 @@ OpenWrap.server.prototype.httpd.browse = {
 						content += "|\n"
 			  
 						if (puri != "/" && puri != "") {
-						  content += "| <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8598;</span> | __[..](<" + publicParentURI + puri.replace(/[^\/]+\/?$/, "") + ">)__ | | |\n"
+						  content += "| " + arrow("parent", true) + " | __[..](<" + publicParentURI + puri.replace(/[^\/]+\/?$/, "") + ">)__ | | |\n"
 						}
 			  
 						$from(lst.list).sort("-isDirectory", "values." + lst.key).select(r => {
 							content += "|"
 							if (r.isDirectory) {
-								content += " <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8600;</span> |"
+								content += " " + arrow("directory", true) + " |"
 							} else {
-								content += " <span style=\"font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"" + publicParentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + "?raw=true\" download=\"" + r.values[lst.key] + "\">&darr;</a></span> |"
+								content += " <a href=\"" + publicParentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + "?raw=true\" download=\"" + r.values[lst.key] + "\" aria-label=\"Download\">" + arrow("down") + "</a> |"
 							}
 							lst.fields.forEach((f, i) => {
 							  if (r.isDirectory) {
@@ -5379,13 +6175,11 @@ OpenWrap.server.prototype.httpd.browse = {
 					  }
 					}
 			  
-					if (obj.type == "asciidoc" && isDef(getOPackPath("Asciidoc"))) {
+					if (obj.type == "asciidoc" && isDef(getOPackPath("Asciidoc")) && (isDef(obj.stream) || isDef(obj.file))) {
 					  loadLib("asciidoc.js")
-					  if (isUnDef(obj.file) && isDef(obj.stream)) {
-						return  ow.server.httpd.replyAsciidoc(server, obj.stream)
-					  } else {
-						return ow.server.httpd.replyAsciidoc(server, obj.file)
-					  }
+					  const stream = new java.io.BufferedInputStream(isDef(obj.file) ? io.readFileStream(obj.file) : obj.stream)
+					  try { return ow.server.httpd.replyAsciidoc(server, stream) }
+					  finally { stream.close() }
 					}
 			  
 					if (isDef(obj.stream)) {
@@ -5438,7 +6232,7 @@ OpenWrap.server.prototype.httpd.browse = {
 					const logo = ow.server.httpd.withPrefix(server, (isString(options.logo) ? options.logo : "/fonts/openaf_small.png"))
 					var content
 					if (obj.type == "raw") {
-					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span></span></span>\n\n"
+					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\" aria-label=\"Back\">" + arrow("left") + "</a></span></span></span>\n\n"
 					  content += (options.useMDTemplate ? $t(String(obj.data), { request: request }) : String(obj.data))
 					  content += "\n\n"
 			  
@@ -5446,10 +6240,9 @@ OpenWrap.server.prototype.httpd.browse = {
 						content += "\n" + options.footer + "\n"
 					  }
 					} else {
-					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span><span onclick=\"downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; float: right; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\">&darr;</a></span></span></span>\n\n"
-					  content += "```" + obj.type + "\n"
-					  content += isMap(obj.data) ? stringify(obj.data) : String(obj.data)
-					  content += "\n```\n\n"
+					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\" aria-label=\"Back\">" + arrow("left") + "</a></span><span onclick=\"downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; float: right; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\" aria-label=\"Download\">" + arrow("down") + "</a></span></span></span>\n\n"
+					  content += "<div><pre><code class=\"language-" + ow.format.escapeHTML(obj.type) + "\">" +
+					    ow.format.escapeHTML(isMap(obj.data) ? stringify(obj.data) : String(obj.data)) + "</code></pre></div>\n\n"
 			  
 					  if (isDef(options.footer)) {
 						content += "\n" + options.footer + "\n"
@@ -5489,6 +6282,10 @@ OpenWrap.server.prototype.httpd.browse = {
 	 * </odoc>
 	 */
 	odoc: function(aURI, aOptions) {
+        if (!ow.server.httpd.browse.support) {
+            loadLib(getOpenAFJar() + "::js/owrap.server.browse.js")
+            return ow.server.httpd.browse.odoc(aURI, aOptions)
+        }
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		
@@ -5574,6 +6371,10 @@ OpenWrap.server.prototype.httpd.browse = {
 	 * </odoc>
 	 */
 	opacks: function(aURI, aOptions) {
+        if (!ow.server.httpd.browse.support) {
+            loadLib(getOpenAFJar() + "::js/owrap.server.browse.js")
+            return ow.server.httpd.browse.opacks(aURI, aOptions)
+        }
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		

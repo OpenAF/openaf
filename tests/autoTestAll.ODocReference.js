@@ -17,11 +17,23 @@
   function successful(result) { assert(result.exitcode, 0, 'Generation failed: ' + result.stdout + result.stderr) }
   function manifest(root) { return io.readFileJSON(root + '/wiki/.odoc-reference.json') }
   function page(root, key, kind) {
-    var suffix = '-' + sha256(key) + '.md'
-    var files = manifest(root).files.filter(function(file) { return file.indexOf((kind || 'api') + '-') === 0 && file.endsWith(suffix) })
-    assert(files.length, 1, 'Expected one page for ' + key)
-    return io.readFileString(root + '/wiki/' + files[0])
+    var files = manifest(root).files
+    var target
+    if (kind === 'category') {
+      var parts = key ? key.split('.') : ['globals']
+      var directory = parts.map(function(part) { return part.toLowerCase().replace(/[^a-z0-9_-]+/g, '-') }).join('/')
+      if (key === '' || key === 'Globals') directory = 'globals-' + sha256(key).slice(0, 8)
+      target = directory + '/index.md'
+    } else {
+      var index = io.readFileString(root + '/wiki/all-apis.md')
+      var links = /\]\(([^)#]+)#([^)]*)\)/g, match
+      var anchor = 'api-' + key.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).toLowerCase() + '-' + sha256(key).slice(0, 8)
+      while ((match = links.exec(index))) if (match[2] === anchor) target = match[1]
+    }
+    assert(files.indexOf(target) >= 0, true, 'Expected page for ' + key)
+    return io.readFileString(root + '/wiki/' + target)
   }
+
   function block(signature, text, markdown) {
     return '/**\n * <odoc' + (markdown ? ' format="' + markdown + '"' : '') + '>\n * <key>' + signature + '</key>\n' +
       (markdown ? ' * <![CDATA[\n' : '') + text.split('\n').map(function(line) { return ' * ' + line }).join('\n') + '\n' +
@@ -38,8 +50,14 @@
     files.forEach(function(file) { known[file] = true })
     files.forEach(function(file) {
       var text = io.readFileString(root + '/wiki/' + file), match
-      var links = /\]\(([^)]+\.md)\)/g
-      while ((match = links.exec(text))) assert(known[match[1]], true, 'Broken link in ' + file + ': ' + match[1])
+      var links = /\]\(([^)#]+\.md)(?:#([^)]*))?\)/g
+      while ((match = links.exec(text))) {
+        var source = java.nio.file.Paths.get(file)
+        var parent = source.getParent()
+        var resolved = String((parent === null ? java.nio.file.Paths.get(match[1]) : parent.resolve(match[1])).normalize()).replace(/\\/g, '/')
+        assert(known[resolved], true, 'Broken link in ' + file + ': ' + match[1])
+        if (match[2]) assert(io.readFileString(root + '/wiki/' + resolved).indexOf('<a id="' + match[2] + '"></a>') >= 0, true, 'Missing anchor: ' + match[2])
+      }
     })
   }
   exports.testWiki = function() {
@@ -67,17 +85,17 @@
       var run = page(root, 'ow.demo.run')
       assert(extracted['ow.demo.run'].t, md, 'Fixture must agree with the existing ODoc parser')
       assert(run.indexOf(extracted['ow.demo.run'].t) >= 0, true, 'Markdown, entities and CDATA must match ODocsGen')
-      assert((run.match(/## ow.demo.run/g) || []).length, 2, 'Distinct overloads must survive; identical bodies merge')
+      assert((run.match(/### ow.demo.run/g) || []).length, 2, 'Distinct overloads must survive; identical bodies merge')
       assert(run.indexOf('a.js:2') >= 0 && run.indexOf('B.java:2') >= 0, true, 'Merged entry must list both sources and opening lines')
       assert(page(root, '$ch').indexOf('A &#38; B\n\nNext line') >= 0, true, 'Legacy entities and line breaks must be rendered as text')
       assert(page(root, '', 'category') !== page(root, 'Globals', 'category'), true, 'Globals and literal Globals namespace must not collide')
-      assert(page(root, 'ow.demo', 'category').indexOf('[ow.demo.run]') >= 0, true, 'Category must link APIs')
+      assert(page(root, 'ow.demo', 'category').indexOf('## ow.demo.run') >= 0, true, 'Category must contain its APIs')
       assert(page(root, 'ow', 'category').indexOf('[ow.demo]') >= 0, true, 'Parent category must link children')
       assert(page(root, 'Thing').indexOf('[Globals]') >= 0, true, 'Constructor must appear under Globals')
       assert(page(root, 'edge.first').indexOf('One') >= 0, true, 'Split opening token must be found')
       var folded = {}
       m.files.forEach(function(file) {
-        assert(/^[a-z0-9_.-]+$/.test(file), true, 'Filesystem-safe filename')
+        assert(/^[a-z0-9_.\/-]+$/.test(file), true, 'Filesystem-safe filename')
         assert(Boolean(folded[file.toLowerCase()]), false, 'Case-insensitive filename collision')
         folded[file.toLowerCase()] = true
       })
@@ -127,7 +145,11 @@
       assert(result.stderr.indexOf('bad.js:1') >= 0, true, 'Diagnostics must identify source and line')
       assert(io.readFileString(root + '/wiki/index.md').indexOf('Incomplete reference') >= 0, true, 'Partial wiki must show a notice')
       io.writeFileString(root + '/wiki/notes.md', 'Keep my notes')
-      var stale = m.files.filter(function(file) { return file.indexOf('-' + sha256('recovered') + '.md') > 0 })[0]
+      var stale = 'removed/index.md'
+      io.writeFileString(root + '/source/removed.js', block('removed.entry()', 'Remove this namespace'))
+      // Keep the malformed sources so the intermediate manifest remains incomplete.
+      assert(generate(root, { maxBlockMB: 0.001 }).exitcode, 1, 'Intermediate generation remains incomplete')
+      io.rm(root + '/source/removed.js')
       io.rm(root + '/source/bad.js')
       io.rm(root + '/source/incomplete.java')
       successful(generate(root))
@@ -135,9 +157,10 @@
       assert(io.readFileString(root + '/wiki/notes.md'), 'Keep my notes', 'Refresh must preserve unrelated files')
       checkLinks(root)
       var before = snapshot(root)
-      var conflict = 'api-new-' + sha256('new') + '.md'
+      var conflict = 'fresh/index.md'
+      io.mkdir(root + '/wiki/fresh')
       io.writeFileString(root + '/wiki/' + conflict, 'Unowned content')
-      io.writeFileString(root + '/source/new.js', block('new()', 'New'))
+      io.writeFileString(root + '/source/new.js', block('fresh.run()', 'New'))
       result = generate(root)
       assert(result.exitcode, 1, 'Unowned conflict must fail')
       assert(snapshot(root), before, 'Conflict must leave previously generated files untouched')

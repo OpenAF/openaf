@@ -23,7 +23,7 @@ jobs:
    - name: MCP::OAuth callback uses server helper
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testOAuthCallbackUsesServerHelper;
+     exec: args.func = args.tests.testOAuthCallbackUsesServerHelper
 
    - name: MCP::OAuth authorization code token exchange includes resource and verifier
      from: MCP::Init
@@ -33,7 +33,7 @@ jobs:
    - name: MCP::Remote clients close request HTTP clients
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testRemoteMCPClosesRequestHTTPClients;
+     exec: args.func = args.tests.testRemoteMCPClosesRequestHTTPClients
 
    - name: MCP::oJob tplDesc renders all tool metadata strings
      from: MCP::Init
@@ -43,62 +43,62 @@ jobs:
    - name: MCP::auto client negotiates modern era with dual-era server
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPAutoClientNegotiatesModernEraWithDualEraServer;
+     exec: args.func = args.tests.testMCPAutoClientNegotiatesModernEraWithDualEraServer
 
    - name: MCP::auto client falls back to legacy server
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPAutoClientFallsBackToLegacyServer;
+     exec: args.func = args.tests.testMCPAutoClientFallsBackToLegacyServer
 
    - name: MCP::legacy client unaffected by dual-era server
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPLegacyClientUnaffectedByDualEraServer;
+     exec: args.func = args.tests.testMCPLegacyClientUnaffectedByDualEraServer
 
    - name: MCP::modern server rejects unsupported protocol version
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPModernServerRejectsUnsupportedProtocolVersion;
+     exec: args.func = args.tests.testMCPModernServerRejectsUnsupportedProtocolVersion
 
    - name: MCP::server discover is probeable without client capabilities
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPServerDiscoverIsProbeableWithoutClientCapabilities;
+     exec: args.func = args.tests.testMCPServerDiscoverIsProbeableWithoutClientCapabilities
 
    - name: MCP::List metadata and pagination
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPListMetadataAndPagination;
+     exec: args.func = args.tests.testMCPListMetadataAndPagination
 
    - name: MCP::Unsuccessful list pages
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPListUnsuccessfulPages;
+     exec: args.func = args.tests.testMCPListUnsuccessfulPages
 
    - name: MCP::List page limit
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPListPageLimit;
+     exec: args.func = args.tests.testMCPListPageLimit
 
    - name: MCP::Authenticated modern pagination
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPAuthenticatedModernPagination;
+     exec: args.func = args.tests.testMCPAuthenticatedModernPagination
 
    - name: MCP::JSON-RPC stdio concurrent exec
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testJSONRPCStdioConcurrentExec;
+     exec: args.func = args.tests.testJSONRPCStdioConcurrentExec
 
    - name: MCP::OAuth rejects insecure endpoints and issuer mismatch
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testOAuthRejectsInsecureEndpointsAndIssuerMismatch;
+     exec: args.func = args.tests.testOAuthRejectsInsecureEndpointsAndIssuerMismatch
 
    - name: MCP::auto client legacy-only discover error
      from: MCP::Init
      to  : OpenAF Test
-     exec: args.func = args.tests.testMCPAutoClientLegacyOnlyDiscoverError;
+     exec: args.func = args.tests.testMCPAutoClientLegacyOnlyDiscoverError
 
 todo:
    - MCP::OAuth discovery with client credentials

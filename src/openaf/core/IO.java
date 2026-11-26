@@ -406,9 +406,9 @@ public class IO extends ScriptableObject {
 	 */
 	protected static String removeLines(String lines, long numLines) {
 		for(long i = 0; i < numLines; i++) {
-			int newline = lines.indexOf("\n");
-			if (newline < 0) return "";
-			lines = lines.substring(newline + 1);
+            int newline = lines.indexOf("\n");
+            if (newline < 0) return "";
+            lines = lines.substring(newline + 1);
 		}
 		return lines;
 	}
@@ -712,19 +712,19 @@ public class IO extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>io.writeFileGzipStream(aFilename, shouldAppend) : JavaStream</key>
-	 * <![CDATA[
-	 * Creates and returns a JavaStream to write to a gzip `aFilename`. Optionally if `shouldAppend`=true
-	 * it will append to an existing file. For example:
-	 *
-	 * ```javascript
-	 * var stream = io.writeFileGzipStream("afile.txt.gz");
-	 * ioStreamWrite(stream, "Hello "); // you can also use ioStreamWriteBytes
-	 * ioStreamWrite(stream, "World!");
-	 * stream.close();
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Creates and returns a JavaStream to write to a gzip `aFilename`. Optionally if `shouldAppend`=true
+     * it will append to an existing file. For example:
+     *
+     * ```javascript
+     * var stream = io.writeFileGzipStream("afile.txt.gz");
+     * ioStreamWrite(stream, "Hello "); // you can also use ioStreamWriteBytes
+     * ioStreamWrite(stream, "World!");
+     * stream.close();
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -733,46 +733,46 @@ public class IO extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>io.readFileGzipStream(aFilename) : JavaStream</key>
-	 * <![CDATA[
-	 * Creates and returns a JavaStream to read from a gzip `aFilename`. For example:
-	 *
-	 * ```javascript
-	 * var stream = io.readFileGzipStream("afile.txt.gz");
-	 * ioStreamRead(stream, function(buffer) { // you can also use ioStreamReadBytes
-	 *    printnl(buffer);
-	 * });
-	 * stream.close();
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Creates and returns a JavaStream to read from a gzip `aFilename`. For example:
+     *
+     * ```javascript
+     * var stream = io.readFileGzipStream("afile.txt.gz");
+     * ioStreamRead(stream, function(buffer) { // you can also use ioStreamReadBytes
+     *    printnl(buffer);
+     * });
+     * stream.close();
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
 	public static Object readFileGzipStream(String filename) throws IOException {
-		java.io.InputStream input = FileUtils.openInputStream(new File(filename));
-		try {
-			return ArchiveLimits.gunzip(input);
-		} catch (IOException | RuntimeException | Error failure) {
-			try { input.close(); } catch (Throwable cleanup) { failure.addSuppressed(cleanup); }
-			throw failure;
-		}
+        java.io.InputStream input = FileUtils.openInputStream(new File(filename));
+        try {
+            return ArchiveLimits.gunzip(input);
+        } catch (IOException | RuntimeException | Error failure) {
+            try { input.close(); } catch (Throwable cleanup) { failure.addSuppressed(cleanup); }
+            throw failure;
+        }
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>io.writeFileStream(aFilename, shouldAppend) : JavaStream</key>
-	 * <![CDATA[
-	 * Creates and returns a JavaStream to write to `aFilename`. If `shouldAppend` = true the stream will
-	 * append to the existing file. For example:
-	 *
-	 * ```javascript
-	 * var stream = io.writeFileStream("afile.txt");
-	 * ioStreamWrite(stream, "Hello "); // you can also use ioStreamWriteBytes
-	 * ioStreamWrite(stream, "World!");
-	 * stream.close();
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Creates and returns a JavaStream to write to `aFilename`. If `shouldAppend` = true the stream will
+     * append to the existing file. For example:
+     *
+     * ```javascript
+     * var stream = io.writeFileStream("afile.txt");
+     * ioStreamWrite(stream, "Hello "); // you can also use ioStreamWriteBytes
+     * ioStreamWrite(stream, "World!");
+     * stream.close();
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -781,19 +781,19 @@ public class IO extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>io.readFileStream(aFilename) : JavaStream</key>
-	 * <![CDATA[
-	 * Creates and returns a JavaStream to read `aFilename`. For example:
-	 *
-	 * ```javascript
-	 * var stream = io.readFileStream("afile.txt");
-	 * ioStreamRead(stream, function(buffer) { // you can also use ioStreamReadBytes
-	 *    printnl(buffer);
-	 * });
-	 * stream.close();
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Creates and returns a JavaStream to read `aFilename`. For example:
+     *
+     * ```javascript
+     * var stream = io.readFileStream("afile.txt");
+     * ioStreamRead(stream, function(buffer) { // you can also use ioStreamReadBytes
+     *    printnl(buffer);
+     * });
+     * stream.close();
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -936,7 +936,7 @@ public class IO extends ScriptableObject {
 		}
 		//p.toFile().deleteOnExit();
 		IO I = this;
-		Threads.registerShutdownAction(new Runnable() {
+        Threads.registerShutdownAction(new Runnable() {
 			public void run() {
 				try {
 					I.rm(p.toFile().getAbsolutePath());
@@ -944,7 +944,7 @@ public class IO extends ScriptableObject {
 					System.err.println(e);
 				}
 			}
-		});
+        });
 		return p.toFile().getAbsolutePath();
 	}
 }

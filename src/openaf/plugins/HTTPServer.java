@@ -152,7 +152,7 @@ public class HTTPServer extends ScriptableObject {
 	protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
 	protected String id;
 	protected int serverport;
-	public static Map<String, Function> callbacks = new ConcurrentHashMap<String, Function>();
+    public static Map<String, Function> callbacks = new ConcurrentHashMap<String, Function>();
 
 	/**
 	 * 
@@ -165,13 +165,13 @@ public class HTTPServer extends ScriptableObject {
 	
 	public class HLog extends com.nwu.log.Log {
 		protected int port; 
-		protected Function callback = null;
+        protected Function callback = null;
 		
 		public HLog(int port, Object f) {
 			super(false);
 			this.port = port;
-			if (f != null && f instanceof Function)
-				this.callback = (Function) f;
+            if (f != null && f instanceof Function)
+                this.callback = (Function) f;
 		}
 		
 		protected void SimpleLoglog(SimpleLog.logtype type, String message, Exception e) {
@@ -270,13 +270,13 @@ public class HTTPServer extends ScriptableObject {
 	
 	public class HLog2 extends com.nwu2.log.Log {
 		protected int port; 
-		protected Function callback = null;
+        protected Function callback = null;
 		
 		public HLog2(int port, Object f) {
 			super(false);
 			this.port = port;
-			if (f != null && f instanceof Function)
-				this.callback = (Function) f;
+            if (f != null && f instanceof Function)
+                this.callback = (Function) f;
 		}
 		
 		protected void SimpleLoglog(SimpleLog.logtype type, String message, Exception e) {
@@ -374,65 +374,65 @@ public class HTTPServer extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout, aImpl)</key>
-	 * <![CDATA[
+     * <![CDATA[
 	 * Creates a HTTP server instance on the provided port and optionally on the identified local interface.
-	 * If the port provided is 0 or negative a random port will be assigned. To determine what this port is
+     * If the port provided is 0 or negative a random port will be assigned. To determine what this port is
 	 * you can use the function HTTPServer.getPort().
-	 * If `aImpl` = "java" is provided the Java built-in HttpServer implementation will be used.
-	 * If `keyStorePath` is defined, the corresponding SSL Key Store will be used (connections will be https) with
-	 * the provided `keyStorePassword`. Do note that the `keyStorePath` should be included in the OpenAF classpath.
-	 * The `logFunction`, if defined, will be called by the server whenever there is any logging to be performed
-	 * by the HTTPServer. This function will receive 3 arguments. Example:
-	 *
-	 * ```javascript
-	 * plugin("HTTPServer");
-	 * var s = new HTTPd(8091, void 0, void 0, void 0, function(aType, aMsg, anException) {
-	 *    if(aType.toString() != "DEBUG" && anException.getMessage() != "Broken pipe")
-	 *       logErr("Type: " + aType + " | Message: " + aMsg + anException.printStackTrace());
-	 * });
+     * If `aImpl` = "java" is provided the Java built-in HttpServer implementation will be used.
+     * If `keyStorePath` is defined, the corresponding SSL Key Store will be used (connections will be https) with
+     * the provided `keyStorePassword`. Do note that the `keyStorePath` should be included in the OpenAF classpath.
+     * The `logFunction`, if defined, will be called by the server whenever there is any logging to be performed
+     * by the HTTPServer. This function will receive 3 arguments. Example:
+     *
+     * ```javascript
+     * plugin("HTTPServer");
+     * var s = new HTTPd(8091, void 0, void 0, void 0, function(aType, aMsg, anException) {
+     *    if(aType.toString() != "DEBUG" && anException.getMessage() != "Broken pipe")
+     *       logErr("Type: " + aType + " | Message: " + aMsg + anException.printStackTrace());
+     * });
 	 * s.addEcho("/echo");
-	 * s.add("/stuff", function(req) {
-	 *    print(beautifier(req));
-	 *    return s.replyOKText("Stuff!!");
-	 * });
-	 * s.setDefault("/stuff");
-	 * ```
-	 *
-	 * To generate a SSL key store you can use Java's keytool:
-	 *
-	 * ```sh
-	 * keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks -storepass password -validity 360 -keysize 2048 -ext SAN=DNS:localhost,IP:127.0.0.1  -validity 9999
-	 * ```
-	 *
-	 * And then add keystore.jks to the openaf.jar and have `keyStorePath` = "/keystore.jks".
-	 *
-	 * To support websockets you need to build IWebSock object and provide a timeout. For example:
-	 *
-	 * ```javascript
-	 * plugin("HTTPServer");
-	 * var webSock = new Packages.com.nwu2.httpd.IWebSock({
-	 *    // onOpen callback
-	 *    oOpen: _ws => { log("Connection open") },
-	 *    // onClose callback
-	 *    oClose: (_ws, aCode, aReason, hasInitByRemote) => { log("Connection close: " + String(aReason)) },
-	 *    // onMessage callback
-	 *    oMessage: (_ws, aMessage) => { _ws.send(aMessage.getTextPayload()); },
-	 *    // onPong callback
-	 *    oPong: (_ws, aPong) => { },
-	 *    // onException callback
-	 *    oException: (_ws, anException) => { logErr(String(anException)); }
-	 * });
-	 * var s = new HTTPd(8091, "127.0.0.1", void 0, void 0, void 0, webSock, 30000); // 30 seconds timeout
-	 * s.addWS("/websocket");  // makes it available at ws://127.0.0.1:8091/websocket
-	 * ```
-	 * ]]>
+     * s.add("/stuff", function(req) {
+     *    print(beautifier(req));
+     *    return s.replyOKText("Stuff!!");
+     * });
+     * s.setDefault("/stuff");
+     * ```
+     *
+     * To generate a SSL key store you can use Java's keytool:
+     *
+     * ```sh
+     * keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks -storepass password -validity 360 -keysize 2048 -ext SAN=DNS:localhost,IP:127.0.0.1  -validity 9999
+     * ```
+     *
+     * And then add keystore.jks to the openaf.jar and have `keyStorePath` = "/keystore.jks".
+     *
+     * To support websockets you need to build IWebSock object and provide a timeout. For example:
+     *
+     * ```javascript
+     * plugin("HTTPServer");
+     * var webSock = new Packages.com.nwu2.httpd.IWebSock({
+     *    // onOpen callback
+     *    oOpen: _ws => { log("Connection open") },
+     *    // onClose callback
+     *    oClose: (_ws, aCode, aReason, hasInitByRemote) => { log("Connection close: " + String(aReason)) },
+     *    // onMessage callback
+     *    oMessage: (_ws, aMessage) => { _ws.send(aMessage.getTextPayload()); },
+     *    // onPong callback
+     *    oPong: (_ws, aPong) => { },
+     *    // onException callback
+     *    oException: (_ws, anException) => { logErr(String(anException)); }
+     * });
+     * var s = new HTTPd(8091, "127.0.0.1", void 0, void 0, void 0, webSock, 30000); // 30 seconds timeout
+     * s.addWS("/websocket");  // makes it available at ws://127.0.0.1:8091/websocket
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSConstructor
 	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout, String aImpl) throws IOException {
-		if (port <= 0 && (!"java".equals(aImpl) || (keyStorePath != null && !keyStorePath.equals("undefined")))) {
+        if (port <= 0 && (!"java".equals(aImpl) || (keyStorePath != null && !keyStorePath.equals("undefined")))) {
 			port = findRandomOpenPortOnAllLocalInterfaces();
 		}
 
@@ -455,7 +455,7 @@ public class HTTPServer extends ScriptableObject {
 		
 		if (USE_JAVA_HTTP_SERVER) {
 			// Use Java built-in HTTP server implementation
-			initializeJavaHttpServer(Math.max(0, port), host, keyStorePath, password, errorFunction);
+            initializeJavaHttpServer(Math.max(0, port), host, keyStorePath, password, errorFunction);
             port = serverport;
 		} else {
 			// Use existing NWU implementation
@@ -505,8 +505,8 @@ public class HTTPServer extends ScriptableObject {
 				sslContext.init(kmf.getKeyManagers(), null, null);
 				javaHttpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
 				
-				javaExecutor = newJavaExecutor();
-				javaHttpsServer.setExecutor(javaExecutor);
+                javaExecutor = newJavaExecutor();
+                javaHttpsServer.setExecutor(javaExecutor);
 				javaHttpsServer.start();
 				isSecure = true;
 				
@@ -519,8 +519,8 @@ public class HTTPServer extends ScriptableObject {
 			// HTTP server
 			javaHttpServer = HttpServer.create(address, 0);
             serverport = javaHttpServer.getAddress().getPort();
-			javaExecutor = newJavaExecutor();
-			javaHttpServer.setExecutor(javaExecutor);
+            javaExecutor = newJavaExecutor();
+            javaHttpServer.setExecutor(javaExecutor);
 			javaHttpServer.start();
 			isSecure = false;
 		}
@@ -821,21 +821,21 @@ public class HTTPServer extends ScriptableObject {
 	
 
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>HTTPd.add(aURI, aFunction)</key>
-	 * <![CDATA[
-	 * Adds a custom responder to the provided URI. Any call to the URI will trigger a call to
-	 * the provided function. The function will receive the request as an argument. For example:
-	 *
-	 * ```javascript
-	 * var hs = new HTTPd(1234);
-	 * hs.add("/example", function(req) { return hs.replyOKText(beautifier(req)); });
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Adds a custom responder to the provided URI. Any call to the URI will trigger a call to
+     * the provided function. The function will receive the request as an argument. For example:
+     *
+     * ```javascript
+     * var hs = new HTTPd(1234);
+     * hs.add("/example", function(req) { return hs.replyOKText(beautifier(req)); });
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
-	public void add(String auri, Function callback) {
+    public void add(String auri, Function callback) {
 		// Ensure URI starts with a slash
 		String uri = (!auri.startsWith("/")) ? "/" + auri : auri;
 
@@ -872,17 +872,17 @@ public class HTTPServer extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>HTTPd.setDefault(aURI)</key>
-	 * <![CDATA[
-	 * Sets the default URI to redirect all requests that don't have a responder associated. For example:
-	 *
-	 * ```javascript
-	 * var hs = new HTTPd(1234);
-	 * hs.addEcho("/echo");
-	 * hs.setDefault("/echo");
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Sets the default URI to redirect all requests that don't have a responder associated. For example:
+     *
+     * ```javascript
+     * var hs = new HTTPd(1234);
+     * hs.addEcho("/echo");
+     * hs.setDefault("/echo");
+     * ```
+     * ]]>
 	 * </odoc>
 	 */
 	@JSFunction
@@ -963,30 +963,30 @@ public class HTTPServer extends ScriptableObject {
 						relativePath = relativePath.substring(1);
 					}
 					
-					java.io.File root;
-					java.io.File file;
-					try {
-						root = new java.io.File(filepath).getCanonicalFile();
-						file = new java.io.File(root, relativePath);
-						if (!file.exists()) {
-							String response = "File not found";
-							exchange.sendResponseHeaders(404, response.length());
-							try (OutputStream os = exchange.getResponseBody()) {
-								os.write(response.getBytes(StandardCharsets.UTF_8));
-							}
-							return;
-						}
-						file = file.getCanonicalFile();
-					} catch (IOException | SecurityException e) {
-						String response = "File not found";
-						exchange.sendResponseHeaders(404, response.length());
-						try (OutputStream os = exchange.getResponseBody()) {
-							os.write(response.getBytes(StandardCharsets.UTF_8));
-						}
-						return;
-					}
+                    java.io.File root;
+                    java.io.File file;
+                    try {
+                        root = new java.io.File(filepath).getCanonicalFile();
+                        file = new java.io.File(root, relativePath);
+                        if (!file.exists()) {
+                            String response = "File not found";
+                            exchange.sendResponseHeaders(404, response.length());
+                            try (OutputStream os = exchange.getResponseBody()) {
+                                os.write(response.getBytes(StandardCharsets.UTF_8));
+                            }
+                            return;
+                        }
+                        file = file.getCanonicalFile();
+                    } catch (IOException | SecurityException e) {
+                        String response = "File not found";
+                        exchange.sendResponseHeaders(404, response.length());
+                        try (OutputStream os = exchange.getResponseBody()) {
+                            os.write(response.getBytes(StandardCharsets.UTF_8));
+                        }
+                        return;
+                    }
 					
-					if (!file.toPath().startsWith(root.toPath())) {
+                    if (!file.toPath().startsWith(root.toPath())) {
 						String response = "File not found";
 						exchange.sendResponseHeaders(404, response.length());
 						try (OutputStream os = exchange.getResponseBody()) {
@@ -1056,35 +1056,35 @@ public class HTTPServer extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc format="markdown">
+     * <odoc format="markdown">
 	 * <key>HTTPd.addXDTServer(aURI, aAuthFunction, aOpsBrokerFunction)</key>
-	 * <![CDATA[
-	 * Adds a WeDo XDT server responder to the provided URI with authentication provided by the `aAuthFunction`
-	 * and operations provided by the `aOpsBrokerFunction`. For example:
-	 *
-	 * ```javascript
-	 * var hs = new HTTPd(1234);
-	 * hs.addXDTServer('/xdt',
-	 *   function(auth) {
-	 *      if (auth.getUser() == 'adm' && auth.getPass() == 'Password1') {
-	 *         return true;
-	 *      } else {
-	 *      	 return false;
-	 *      }
-	 *   },
-	 *   function(sessionId, operation, paramIn, request) {
-	 *      switch(operation) {
-	 *         case "HelloWorld":
-	 *            return {"hello": "world!"};
-	 *         case "Ping":
-	 *            return paramIn;
-	 *         default:
-	 *            return paramIn;
-	 *      }
-	 *   }
-	 * );
-	 * ```
-	 * ]]>
+     * <![CDATA[
+     * Adds a WeDo XDT server responder to the provided URI with authentication provided by the `aAuthFunction`
+     * and operations provided by the `aOpsBrokerFunction`. For example:
+     *
+     * ```javascript
+     * var hs = new HTTPd(1234);
+     * hs.addXDTServer('/xdt',
+     *   function(auth) {
+     *      if (auth.getUser() == 'adm' && auth.getPass() == 'Password1') {
+     *         return true;
+     *      } else {
+     *      	 return false;
+     *      }
+     *   },
+     *   function(sessionId, operation, paramIn, request) {
+     *      switch(operation) {
+     *         case "HelloWorld":
+     *            return {"hello": "world!"};
+     *         case "Ping":
+     *            return paramIn;
+     *         default:
+     *            return paramIn;
+     *      }
+     *   }
+     * );
+     * ```
+     * ]]>
 	 * </odoc>
 	 * @throws ClassNotFoundException 
 	 * @throws SecurityException 
@@ -1094,7 +1094,7 @@ public class HTTPServer extends ScriptableObject {
 	 * @throws IllegalAccessException 
 	 */
 	@JSFunction
-	public void addXDTServer(String uri, Function authFunction, Function opsBroker) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+    public void addXDTServer(String uri, Function authFunction, Function opsBroker) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		if (USE_JAVA_HTTP_SERVER) {
 			throw new UnsupportedOperationException("XDT Server not implemented for Java HTTP server");
 		} else {
@@ -1103,8 +1103,8 @@ public class HTTPServer extends ScriptableObject {
 			
 			if (AFCmdBase.afcmd.equals("AFCmdWeDo")) {
 				Class<?> cl = Class.forName("openaf.plugins.HTTPd.XDTServerResponse");
-				cl.getDeclaredMethod("setAuthfunction", Function.class).invoke(this, authFunction);
-				cl.getDeclaredMethod("setOpsfunction", Function.class).invoke(this, opsBroker);
+                cl.getDeclaredMethod("setAuthfunction", Function.class).invoke(this, authFunction);
+                cl.getDeclaredMethod("setOpsfunction", Function.class).invoke(this, opsBroker);
 				
 				if (USE_NWU2)
 					httpd2.registerURIResponse(uri, cl, props);
@@ -1371,9 +1371,9 @@ public class HTTPServer extends ScriptableObject {
 	 * Custom HttpHandler implementation for Java HTTP server
 	 */
 	public class JavaHttpHandler implements HttpHandler {
-		private final Function callback;
+        private final Function callback;
 		
-		public JavaHttpHandler(String uri, Function callback, int port) {
+        public JavaHttpHandler(String uri, Function callback, int port) {
 			this.callback = callback;
 		}
 		
@@ -1399,21 +1399,21 @@ public class HTTPServer extends ScriptableObject {
             } catch (RequestBodyException failure) {
                 rejectRequestBody(exchange, failure);
 			} catch (Exception e) {
-				// Once streaming has started a second status line cannot be sent.
-				if (exchange.getResponseCode() < 0) {
-					byte[] response = ("Internal Server Error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
-					exchange.sendResponseHeaders(500, response.length);
-					try (OutputStream os = exchange.getResponseBody()) {
-						os.write(response);
-					}
-				} else {
-					exchange.close();
+                // Once streaming has started a second status line cannot be sent.
+                if (exchange.getResponseCode() < 0) {
+                    byte[] response = ("Internal Server Error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+                    exchange.sendResponseHeaders(500, response.length);
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(response);
+                    }
+                } else {
+                    exchange.close();
 				}
 				SimpleLog.log(logtype.ERROR, "Error handling request: " + e.getMessage(), e);
 			}
 		}
 		
-		private Object convertHttpExchangeToRequest(HttpExchange exchange) throws IOException {
+        private Object convertHttpExchangeToRequest(HttpExchange exchange) throws IOException {
 			Context cx = (Context) AFCmdBase.jse.enterContext();
 			Scriptable request = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 			AFCmdBase.jse.exitContext();
@@ -1487,28 +1487,28 @@ public class HTTPServer extends ScriptableObject {
 					// Handle stream
 					if (streamObj instanceof InputStream) {
 						try (InputStream is = (InputStream) streamObj) {
-							boolean noBody = "HEAD".equals(exchange.getRequestMethod()) || status < 200
-									|| status == 204 || status == 205 || status == 304;
-							String lengthHeader = exchange.getResponseHeaders().getFirst("Content-Length");
-							long length = lengthHeader == null ? -1 : Long.parseLong(lengthHeader);
-							if (length < -1) throw new IOException("Invalid response Content-Length");
-							exchange.sendResponseHeaders(status, noBody || length == 0 ? -1 : Math.max(0, length));
-							try (OutputStream os = exchange.getResponseBody()) {
-								if (!noBody && length != 0) {
-									byte[] buffer = new byte[8192];
-									long remaining = length;
-									while (remaining != 0) {
-										int count = is.read(buffer, 0, remaining < 0 ? buffer.length : (int) Math.min(buffer.length, remaining));
-										if (count < 0) break;
-										if (count == 0) continue;
-										os.write(buffer, 0, count);
-										os.flush();
-										if (remaining > 0) remaining -= count;
-									}
-								}
-							}
+                            boolean noBody = "HEAD".equals(exchange.getRequestMethod()) || status < 200
+                                    || status == 204 || status == 205 || status == 304;
+                            String lengthHeader = exchange.getResponseHeaders().getFirst("Content-Length");
+                            long length = lengthHeader == null ? -1 : Long.parseLong(lengthHeader);
+                            if (length < -1) throw new IOException("Invalid response Content-Length");
+                            exchange.sendResponseHeaders(status, noBody || length == 0 ? -1 : Math.max(0, length));
+                            try (OutputStream os = exchange.getResponseBody()) {
+                                if (!noBody && length != 0) {
+                                    byte[] buffer = new byte[8192];
+                                    long remaining = length;
+                                    while (remaining != 0) {
+                                        int count = is.read(buffer, 0, remaining < 0 ? buffer.length : (int) Math.min(buffer.length, remaining));
+                                        if (count < 0) break;
+                                        if (count == 0) continue;
+                                        os.write(buffer, 0, count);
+                                        os.flush();
+                                        if (remaining > 0) remaining -= count;
+                                    }
+                                }
+                            }
 						}
-						return;
+                        return;
 					}
 				} else if (dataObj != null && !(dataObj instanceof Undefined) && !(dataObj instanceof UniqueTag)) {
 					if (dataObj instanceof byte[]) {

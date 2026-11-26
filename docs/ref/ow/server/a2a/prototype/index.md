@@ -14,7 +14,7 @@ Throws an error if the agent is not found.
 
 Sources:
 
-- js/owrap.server.js:2222
+- js/owrap.server.js:2481
 
 <a id="api-ow-server-a2a-prototype-listagents-cf633105"></a>
 
@@ -28,7 +28,7 @@ Optionally filter agents using aFilterFn(agentMeta) which should return true to 
 
 Sources:
 
-- js/owrap.server.js:2205
+- js/owrap.server.js:2464
 
 <a id="api-ow-server-a2a-prototype-registeragent-6cc62f46"></a>
 
@@ -63,7 +63,7 @@ Registers an agent with the A2A registry.
 
 Sources:
 
-- js/owrap.server.js:2130
+- js/owrap.server.js:2389
 
 <a id="api-ow-server-a2a-prototype-send-7dff6c27"></a>
 
@@ -82,7 +82,7 @@ Returns MCP-style response: `{ content: [{ type: "text", text: "..." }], isError
 
 Sources:
 
-- js/owrap.server.js:2239
+- js/owrap.server.js:2498
 
 <a id="api-ow-server-a2a-prototype-unregisteragent-36256e3f"></a>
 
@@ -94,5 +94,5 @@ Removes an agent from the registry by ID.
 
 Sources:
 
-- js/owrap.server.js:2193
+- js/owrap.server.js:2452
 

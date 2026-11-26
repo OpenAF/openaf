@@ -15,14 +15,14 @@ var HELPSEPARATOR_ANSI = "─";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|tree|view|sql|esql|dsql|pin|multi|diff|reset|edit";
-var CONSOLECOMMANDS = RESERVEDWORDS.split("|");
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|tree|view|sql|esql|dsql|pin|multi|diff|reset|edit"
+var CONSOLECOMMANDS = RESERVEDWORDS.split("|")
 // Extensions can register command descriptions here. They are rendered in the
 // standard help panel, immediately before the generic script-command entry.
-global.CONSOLEHELP = {};
+global.CONSOLEHELP = {}
 var CONSOLESUBCOMMANDS = {
 	"edit": [ "last", "history" ]
-};
+}
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "print(\"Encrypted text: \" + askEncrypt(\"Enter text: \"));",
@@ -332,7 +332,7 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 				if (timeCommand) __timeResult = now() - __start;
 				if (res.results.length > 0) {
 					if (!descSQL) {
-						outputres = __consoleTable(res.results, returnOnly, __ansiflag && con.isAnsiSupported());
+						outputres = __consoleTable(res.results, returnOnly, __ansiflag && con.isAnsiSupported())
 					} /* else {
 						outputres = Object.keys(res.results[0]).join("\n");
 					}*/
@@ -586,36 +586,36 @@ function addAlias(aAssignment) {
 function __help(aTerm) {
 	var __ores = "", c = __consoleFormat.helpLine;
 	// the help frame uses 3 columns (side line + space + closing side line), so render markdown narrower
-	var __mdWidth = () => (__ansiflag && con.isAnsiSupported()) ? Math.max(1, con.getConsoleReader().getTerminal().getWidth() - 3) : __;
-	var __o = (s, nomd) => __ores += (nomd ? s : ow.format.withMD(s, __, __mdWidth()))+ "\n";
+	var __mdWidth = () => (__ansiflag && con.isAnsiSupported()) ? Math.max(1, con.getConsoleReader().getTerminal().getWidth() - 3) : __
+	var __o = (s, nomd) => __ores += (nomd ? s : ow.format.withMD(s, __, __mdWidth()))+ "\n"
 	if(isUnDef(aTerm) || aTerm.length <= 0) {
 		__o("__help__     Display this help text");
 		__o("__exit__     Exit this console");
 		__o("__time__     Turns on or off the timing of any script command provided (default off)");
 		__o("__output__   Turns on or off the output of commands (default on)");
 		__o("__beautify__ Turns on or off the beautify of output (default on)");
-		__o("__color__    Turns on or off the colorify of json output (default on if the terminal supports ANSI)");
+		__o("__color__    Turns on or off the colorify of json output (default on if the terminal supports ANSI)")
 		__o("__desc__     Provides a description of the available methods for a class (example 'desc AF')");
 		__o("__scope__    Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')");
-		__o("__alias__    Create an alias for an openaf-console command line, or list current aliases with no argument (example 'alias ola=print(\"hi\");')");
-		__o("__watch__    Turns on or off an execution before every console prompt; 'watch N cmd' live-refreshes cmd every N seconds until 'q' (example 'watch new Date();')");
-		__o("__pause__    Pauses the output of a command if bigger than the terminal height (default on)");
+		__o("__alias__    Create an alias for an openaf-console command line, or list current aliases with no argument (example 'alias ola=print(\"hi\");')")
+		__o("__watch__    Turns on or off an execution before every console prompt; 'watch N cmd' live-refreshes cmd every N seconds until 'q' (example 'watch new Date();')")
+		__o("__pause__    Pauses the output of a command if bigger than the terminal height (default on)")
 		__o("__sql__      Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')");
 		__o("__dsql__     Returns the list of columns produced by a SQL query over a db connection.");
 		__o("__esql__     Executes the SQL statement, over a db connection (example 'esql db update...')");
 		__o("__diff__     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
 		__o("__pin__      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
 		__o("__table__    Tries to show the command result array as an ascii table.");
-		__o("__tree__     Turns on or off a persistent tree view for map/array output, or shows a single result as a tree (default on)");
+		__o("__tree__     Turns on or off a persistent tree view for map/array output, or shows a single result as a tree (default on)")
 		__o("__view__     Tries to show the command result object as an ascii table.");
 		__o("__multi__    Turns on or off the entry of multiline expressions (default on)");
-		__o("__edit__     Compose a command in $EDITOR (or vi); use 'edit last' or 'edit history' to revise a previous command.");
+		__o("__edit__     Compose a command in $EDITOR (or vi); use 'edit last' or 'edit history' to revise a previous command.")
 		__o("__clear__    Tries to clear the screen.");
 		__o("__reset__    Resets the terminal in unix based consoles.")
 		__o("__purge__    Purge all the command history");
 		Object.keys(global.CONSOLEHELP).forEach(function(command) {
-			__o("__" + command + "__" + repeat(Math.max(1, 10 - command.length), " ") + global.CONSOLEHELP[command]);
-		});
+			__o("__" + command + "__" + repeat(Math.max(1, 10 - command.length), " ") + global.CONSOLEHELP[command])
+		})
 		__o("__[others]__ Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
 	} else {
 		var h;
@@ -629,18 +629,18 @@ function __help(aTerm) {
 		if (isArray(h)) {
 			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
 				if (__ansiflag && con.isAnsiSupported()) {
-					__o(ansiColor("BOLD", h[0].fullkey), true);
-					__o(ansiColor("BOLD", repeat(h[0].fullkey.length, HELPSEPARATOR_ANSI)), true);
-					__o(h[0].text, h[0].format != "markdown");
+					__o(ansiColor("BOLD", h[0].fullkey), true)
+					__o(ansiColor("BOLD", repeat(h[0].fullkey.length, HELPSEPARATOR_ANSI)), true)
+					__o(h[0].text, h[0].format != "markdown")
 				} else {
-					__o(h[0].fullkey, true);
-					__o(repeat(h[0].fullkey.length, HELPSEPARATOR), true);
+					__o(h[0].fullkey, true)
+					__o(repeat(h[0].fullkey.length, HELPSEPARATOR), true)
 					__o(h[0].text, true);
 				}
 			} else {
 				if (h.length > 1) {
 					for(var i in h) {
-						__o(h[i].key + " (" + h[i].id + ")", true);
+						__o(h[i].key + " (" + h[i].id + ")", true)
 					}
 				} else {
 					__o("Term '" + aTerm + "' not found.");
@@ -807,24 +807,24 @@ function __pause(aFlag) {
 
 // Keep console width/color and legacy rendering when no preference is configured.
 function __consoleTable(rows, count, color) {
-	var format = __defaultTableFormat();
-	if (isUnDef(format)) return printTable(rows, con.getConsoleReader().getTerminal().getWidth(), count, color, (isDef(__codepage) ? "utf" : __));
-	var oldAnsi = __conAnsi, oldCon = __con, oldFlag = __ansiColorFlag, oldConsole = __conConsole;
+	var format = __defaultTableFormat()
+	if (isUnDef(format)) return printTable(rows, con.getConsoleReader().getTerminal().getWidth(), count, color, (isDef(__codepage) ? "utf" : __))
+	var oldAnsi = __conAnsi, oldCon = __con, oldFlag = __ansiColorFlag, oldConsole = __conConsole
 	try {
-		__conAnsi = color;
-		__con = con.getConsoleReader();
-		return $output(rows, { __format: format, __width: con.getConsoleReader().getTerminal().getWidth() }, __, true);
+		__conAnsi = color
+		__con = con.getConsoleReader()
+		return $output(rows, { __format: format, __width: con.getConsoleReader().getTerminal().getWidth() }, __, true)
 	} finally {
-		__conAnsi = oldAnsi;
-		__con = oldCon;
-		__ansiColorFlag = oldFlag;
-		__conConsole = oldConsole;
+		__conAnsi = oldAnsi
+		__con = oldCon
+		__ansiColorFlag = oldFlag
+		__conConsole = oldConsole
 	}
 }
 
 function __consoleResult(obj) {
-	if (isDef(__defaultTableFormat()) && isArray(obj) && obj.length > 0 && obj.every(isMap)) return __consoleTable(obj, true, colorCommand);
-	return printTreeOrS(obj, __, { noansi: !colorCommand });
+	if (isDef(__defaultTableFormat()) && isArray(obj) && obj.length > 0 && obj.every(isMap)) return __consoleTable(obj, true, colorCommand)
+	return printTreeOrS(obj, __, { noansi: !colorCommand })
 }
 
 function __table(aCmd) {
@@ -832,10 +832,10 @@ function __table(aCmd) {
 	if (isArray(__res) && __res.length > 0 && isObject(__res[0]) && isObject(__res[__res.length -1])) {
 		var __pres = 0;
 		if (pauseCommand) {
-			var __lines = __consoleTable(__res, true, colorCommand).split(/\n/);
+			var __lines = __consoleTable(__res, true, colorCommand).split(/\n/)
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
-			__outputConsole(__consoleTable(__res, true, colorCommand));
+			__outputConsole(__consoleTable(__res, true, colorCommand))
 		}
 		return true;
 	} else {
@@ -888,63 +888,63 @@ function __multi(aCmd) {
 }
 
 function __parseEditorCommand(aCommand) {
-	if (!isString(aCommand) || aCommand.trim().length == 0) return [];
-	var parts = [], current = "", quote = "", escaped = false;
+	if (!isString(aCommand) || aCommand.trim().length == 0) return []
+	var parts = [], current = "", quote = "", escaped = false
 	for (var i = 0; i < aCommand.length; i++) {
-		var ch = aCommand.charAt(i);
+		var ch = aCommand.charAt(i)
 		if (escaped) {
-			current += ch;
-			escaped = false;
+			current += ch
+			escaped = false
 		} else if (ch == "\\") {
-			escaped = true;
+			escaped = true
 		} else if (quote.length > 0) {
-			if (ch == quote) quote = "";
-			else current += ch;
+			if (ch == quote) quote = ""
+			else current += ch
 		} else if (ch == "'" || ch == '"') {
-			quote = ch;
+			quote = ch
 		} else if (/\s/.test(ch)) {
 			if (current.length > 0) {
-				parts.push(current);
-				current = "";
+				parts.push(current)
+				current = ""
 			}
 		} else {
-			current += ch;
+			current += ch
 		}
 	}
-	if (escaped) current += "\\";
-	if (quote.length > 0) return [];
-	if (current.length > 0) parts.push(current);
-	return parts;
+	if (escaped) current += "\\"
+	if (quote.length > 0) return []
+	if (current.length > 0) parts.push(current)
+	return parts
 }
 
 function __edit(aInitialCommand) {
-	var editorCommand = isString(getEnv("EDITOR")) && getEnv("EDITOR").trim().length > 0 ? getEnv("EDITOR").trim() : "vi";
-	var editorArgs = __parseEditorCommand(editorCommand);
+	var editorCommand = isString(getEnv("EDITOR")) && getEnv("EDITOR").trim().length > 0 ? getEnv("EDITOR").trim() : "vi"
+	var editorArgs = __parseEditorCommand(editorCommand)
 	if (editorArgs.length == 0) {
-		__outputConsoleError("Invalid EDITOR command. Set EDITOR to a command with balanced quotes.");
-		return __;
+		__outputConsoleError("Invalid EDITOR command. Set EDITOR to a command with balanced quotes.")
+		return __
 	}
 
-	var editorFile = __;
+	var editorFile = __
 	try {
-		var originalCommand = isString(aInitialCommand) ? aInitialCommand : "";
-		editorFile = io.createTempFile("openaf-console-", ".js");
-		io.writeFileString(editorFile, originalCommand);
-		var command = new java.util.ArrayList();
-		editorArgs.forEach(function(arg) { command.add(arg); });
-		command.add(editorFile);
-		var exitCode = new java.lang.ProcessBuilder(command).inheritIO().start().waitFor();
+		var originalCommand = isString(aInitialCommand) ? aInitialCommand : ""
+		editorFile = io.createTempFile("openaf-console-", ".js")
+		io.writeFileString(editorFile, originalCommand)
+		var command = new java.util.ArrayList()
+		editorArgs.forEach(function(arg) { command.add(arg); })
+		command.add(editorFile)
+		var exitCode = new java.lang.ProcessBuilder(command).inheritIO().start().waitFor()
 		if (exitCode != 0) {
-			__outputConsoleError("Editor exited with status " + exitCode + ". Command cancelled.");
-			return __;
+			__outputConsoleError("Editor exited with status " + exitCode + ". Command cancelled.")
+			return __
 		}
-		var editedCommand = io.readFileString(editorFile);
+		var editedCommand = io.readFileString(editorFile)
 		// Vim's :q! exits successfully, but leaves the temporary file unchanged.
-		if (isString(editedCommand) && editedCommand == originalCommand) return __;
-		return isString(editedCommand) ? editedCommand : "";
+		if (isString(editedCommand) && editedCommand == originalCommand) return __
+		return isString(editedCommand) ? editedCommand : ""
 	} catch(e) {
-		__outputConsoleError("Unable to open editor '" + editorCommand + "': " + e);
-		return __;
+		__outputConsoleError("Unable to open editor '" + editorCommand + "': " + e)
+		return __
 	} finally {
 		if (isDef(editorFile)) {
 			try { io.rm(editorFile); } catch(ignoreEditorCleanup) {}
@@ -953,10 +953,10 @@ function __edit(aInitialCommand) {
 }
 
 function __addJLineHistory(aCommand) {
-	if (!isString(aCommand) || aCommand.trim().length == 0 || isUnDef(jLineFileHistory)) return;
+	if (!isString(aCommand) || aCommand.trim().length == 0 || isUnDef(jLineFileHistory)) return
 	try {
-		jLineFileHistory.add(aCommand.replace(/\r\n|\r|\n/g, "^J"));
-		jLineFileHistory.flush();
+		jLineFileHistory.add(aCommand.replace(/\r\n|\r|\n/g, "^J"))
+		jLineFileHistory.flush()
 	} catch(e) {
 		// The command remains executable even if its optional history entry cannot be saved.
 	}
@@ -964,41 +964,41 @@ function __addJLineHistory(aCommand) {
 
 function __chooseEditHistory() {
 	if (isUnDef(jLineFileHistory)) {
-		__outputConsoleError("Command history is not available yet.");
-		return __;
+		__outputConsoleError("Command history is not available yet.")
+		return __
 	}
 
-	var commands = [];
+	var commands = []
 	try {
-		var entries = jLineFileHistory.iterator();
+		var entries = jLineFileHistory.iterator()
 		while (entries.hasNext()) {
-			var command = String(entries.next().value());
-			if (command.trim().length > 0 && !command.match(/^edit(?: +|$)/)) commands.push(command);
+			var command = String(entries.next().value())
+			if (command.trim().length > 0 && !command.match(/^edit(?: +|$)/)) commands.push(command)
 		}
 	} catch(e) {
-		__outputConsoleError("Unable to read command history: " + e);
-		return __;
+		__outputConsoleError("Unable to read command history: " + e)
+		return __
 	}
 
-	commands.reverse();
+	commands.reverse()
 	if (commands.length == 0) {
-		__outputConsoleError("No previous command to edit.");
-		return __;
+		__outputConsoleError("No previous command to edit.")
+		return __
 	}
 
 	var choices = commands.map(function(command) {
-		return command.replace(/\r\n|\r|\n|\^J/g, ansiColor("FG(240)", " ↵ "));
-	}).concat(["🔙 Cancel"]);
+		return command.replace(/\r\n|\r|\n|\^J/g, ansiColor("FG(240)", " ↵ "))
+	}).concat(["🔙 Cancel"])
 	var selected = askChoose("Choose a command to edit: ", choices, Math.min(choices.length, 10), __, {
     console: con, ansi: con.isAnsiSupported() && __flags.ANSICOLOR_ASK,
     write: function(text, newline) {
-      var writer = con.getConsoleReader().getTerminal().unwrap().writer();
-      writer.print((isDef(text) ? String(text) : "") + (newline === false ? "" : "\n"));
-      writer.flush();
+      var writer = con.getConsoleReader().getTerminal().unwrap().writer()
+      writer.print((isDef(text) ? String(text) : "") + (newline === false ? "" : "\n"))
+      writer.flush()
     }
-  });
-	if (!isNumber(selected) || selected < 0 || selected >= commands.length) return __;
-	return commands[selected].replace(/\^J/g, "\n");
+  })
+	if (!isNumber(selected) || selected < 0 || selected >= commands.length) return __
+	return commands[selected].replace(/\^J/g, "\n")
 }
 
 function __view(aCmd, fromCommand, shouldClear) {
@@ -1076,22 +1076,22 @@ function __processCmdLine(aCommand, returnOnly) {
 				__help(aCommand.replace(/^help */, ""), false);
 			}
 			if (aCommand.match(/^edit(?: +|$)/)) {
-				internalCommand = true;
-				var editArg = aCommand.replace(/^edit */, "").trim();
+				internalCommand = true
+				var editArg = aCommand.replace(/^edit */, "").trim()
 				if (editArg != "" && editArg != "last" && editArg != "history") {
-					__outputConsoleError("Usage: edit [last|history]");
+					__outputConsoleError("Usage: edit [last|history]")
 				} else if (editArg == "last" && (!isString(lastCommand) || lastCommand.trim().length == 0)) {
-					__outputConsoleError("No previous command to edit.");
+					__outputConsoleError("No previous command to edit.")
 				} else {
-					var initialCommand = editArg == "last" ? lastCommand : (editArg == "history" ? __chooseEditHistory() : "");
-					var editedCommand = isDef(initialCommand) ? __edit(initialCommand) : __;
+					var initialCommand = editArg == "last" ? lastCommand : (editArg == "history" ? __chooseEditHistory() : "")
+					var editedCommand = isDef(initialCommand) ? __edit(initialCommand) : __
 					if (isDef(editedCommand) && editedCommand.trim().length > 0) {
-						lastCommand = editedCommand;
-						__addJLineHistory(editedCommand);
-						__outputConsole(ansiColor("FAINT,ITALIC", editedCommand));
-						if (!editedCommand.match(/\r?\n$/)) __outputConsole("\n");
-						__outputConsole(ansiColor("FG(240)", repeat(con.getConsoleReader().getTerminal().getWidth(), "╌") + "\n"));
-						return __processCmdLine(editedCommand, returnOnly);
+						lastCommand = editedCommand
+						__addJLineHistory(editedCommand)
+						__outputConsole(ansiColor("FAINT,ITALIC", editedCommand))
+						if (!editedCommand.match(/\r?\n$/)) __outputConsole("\n")
+						__outputConsole(ansiColor("FG(240)", repeat(con.getConsoleReader().getTerminal().getWidth(), "╌") + "\n"))
+						return __processCmdLine(editedCommand, returnOnly)
 					}
 				}
 			}
@@ -1437,7 +1437,7 @@ var pauseCommand = true;
 var watchCommand = false;
 var viewCommand = __ansiflag;
 var multiCommand = true;
-var lastCommand = __;
+var lastCommand = __
 var watchLine = "";
 var __previousAnsiFlag = __ansiflag;
 
@@ -1501,16 +1501,16 @@ initThread.addThread(function(uuid) {
 		new Packages.openaf.jline.OpenAFConsoleCompleter(function(buf, cursor, candidates) {
 			if (buf == null) return null;
 			var ret = -1;
-			var commandBuffer = buf.substr(0, cursor);
-			var commandMatch = commandBuffer.match(/^\s*([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]*)$/);
+			var commandBuffer = buf.substr(0, cursor)
+			var commandMatch = commandBuffer.match(/^\s*([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]*)$/)
 
 			if (commandMatch != null && isDef(CONSOLESUBCOMMANDS[commandMatch[1]])) {
-				ret = cursor - commandMatch[2].length;
+				ret = cursor - commandMatch[2].length
 				CONSOLESUBCOMMANDS[commandMatch[1]].forEach(function(subcommand) {
-					if (subcommand.indexOf(commandMatch[2]) == 0) candidates.add(subcommand);
-				});
+					if (subcommand.indexOf(commandMatch[2]) == 0) candidates.add(subcommand)
+				})
 			} else if (commandBuffer.match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/)) {
-				var tmpbuf = commandBuffer.match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/);
+				var tmpbuf = commandBuffer.match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/)
 				ret = cursor - tmpbuf[3].length;
 				tmpbuf[1] = tmpbuf[1].replace(/\.$/, "");
 				tmpbuf[3] = tmpbuf[3].replace(/\.$/, "");
@@ -1527,10 +1527,10 @@ initThread.addThread(function(uuid) {
 
 			} else {
 				if(commandBuffer.match(/[^a-zA-Z0-9_\[\]\(\)\"\']*[a-zA-Z0-9_\[\]\(\)\"\']+$/)) {
-					var tmpbuf = commandBuffer.match(/[^a-zA-Z0-9_\[\]\(\)\"\']*([a-zA-Z0-9_\[\]\(\)\"\']+)$/);
+					var tmpbuf = commandBuffer.match(/[^a-zA-Z0-9_\[\]\(\)\"\']*([a-zA-Z0-9_\[\]\(\)\"\']+)$/)
 					ret = cursor - tmpbuf[1].length;
 					try {
-						var tmpList = __scope(tmpbuf[1], true).concat(CONSOLECOMMANDS, Object.keys(__alias));
+						var tmpList = __scope(tmpbuf[1], true).concat(CONSOLECOMMANDS, Object.keys(__alias))
 						for(let elem in tmpList) {
 							if(tmpList[elem].indexOf(tmpbuf[1]) == 0) {							
 								candidates.add(tmpList[elem]);
@@ -1581,7 +1581,7 @@ if (__expr.length > 0) cmd = __expr;
 cmd = cmd.trim();
 
 while(cmd != "exit") {
-	if (cmd.length > 0 && !cmd.match(/^edit(?: +|$)/)) lastCommand = cmd;
+	if (cmd.length > 0 && !cmd.match(/^edit(?: +|$)/)) lastCommand = cmd
 	if (viewCommand) {
 		__view(cmd, false);
 	} else {
@@ -1627,7 +1627,7 @@ while(cmd != "exit") {
 				}
 			}
 		}, con).trim();
-		__addJLineHistory(cmd);
+		__addJLineHistory(cmd)
 	}
 	
 	if (cmd == "") {

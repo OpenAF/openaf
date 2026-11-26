@@ -2,9 +2,11 @@
 
 include:
   - autoTestAll.common.yaml
+
 jobs:
   - name: Threads::Cached pool lifecycle
     to: OpenAF Test
-    exec: args.func = require("autoTestAll.Threads.js").testCachedPoolLifecycle;
+    exec: args.func = require("autoTestAll.Threads.js").testCachedPoolLifecycle
+
 todo:
   - Threads::Cached pool lifecycle

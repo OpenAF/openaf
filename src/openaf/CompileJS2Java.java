@@ -78,28 +78,28 @@ public class CompileJS2Java {
 
     public static void main(String args[]) {
 		try {
-			String script = new String(Files.readAllBytes(Paths.get(args[1])), java.nio.charset.StandardCharsets.UTF_8);
-			CompilationMethod method = CompilationMethod.RHINO_LEGACY;
-			String path = args.length > 2 ? args[2] : null;
+            String script = new String(Files.readAllBytes(Paths.get(args[1])), java.nio.charset.StandardCharsets.UTF_8);
+            CompilationMethod method = CompilationMethod.RHINO_LEGACY;
+            String path = args.length > 2 ? args[2] : null;
 
-			// Parse optional compilation method flag (args[3])
-			if (args.length > 3 && args[3] != null && !args[3].isEmpty()) {
-				try {
-					method = CompilationMethod.valueOf(args[3].toUpperCase());
-				} catch (IllegalArgumentException e) {
-					System.err.println("Invalid compilation method: " + args[3]);
-					System.err.println("Valid options: DEFAULT, RHINO_1_9_0, RHINO_LEGACY");
-					System.err.println("Using RHINO_LEGACY method.");
-				}
-			}
+            // Parse optional compilation method flag (args[3])
+            if (args.length > 3 && args[3] != null && !args[3].isEmpty()) {
+                try {
+                    method = CompilationMethod.valueOf(args[3].toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Invalid compilation method: " + args[3]);
+                    System.err.println("Valid options: DEFAULT, RHINO_1_9_0, RHINO_LEGACY");
+                    System.err.println("Using RHINO_LEGACY method.");
+                }
+            }
 
-			compileToClasses(args[0], script, path, method);
+            compileToClasses(args[0], script, path, method);
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 			e.printStackTrace();
-			System.exit(1);
-		}
-	}
+            System.exit(1);
+        }
+    }
 
     /**
      * Compile JavaScript to Java classes using the default compilation method
@@ -118,44 +118,44 @@ public class CompileJS2Java {
      *        runtime callers must pass false so script stdout isn't polluted).
      */
     public static Object[] compileToBytes(String classfile, String script, CompilationMethod method, boolean verbose) {
-		long origSize = script.length();
-		script = splitLongStrings(script);
-		if (verbose && script.length() != origSize) {
-			System.out.println("Adjusted script size from " + origSize + " to " + script.length());
-		}
+        long origSize = script.length();
+        script = splitLongStrings(script);
+        if (verbose && script.length() != origSize) {
+            System.out.println("Adjusted script size from " + origSize + " to " + script.length());
+        }
 
 		CompilerEnvirons ce = new CompilerEnvirons();
-		ce.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
-		ce.setXmlAvailable(true);
+        ce.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
+        ce.setXmlAvailable(true);
 
-		// Avoid embedding debug info / the full source in the generated class to
-		// prevent ConstantPool "Too big string" for large scripts.
-		ce.setGenerateDebugInfo(false);
-		ce.setGeneratingSource(false);
+        // Avoid embedding debug info / the full source in the generated class to
+        // prevent ConstantPool "Too big string" for large scripts.
+        ce.setGenerateDebugInfo(false);
+        ce.setGeneratingSource(false);
 
-		// Optimization level is the same across methods; interpreted mode is
-		// incompatible with class file generation.
-		ce.setInterpretedMode(false);
+        // Optimization level is the same across methods; interpreted mode is
+        // incompatible with class file generation.
+        ce.setInterpretedMode(false);
 
 		ClassCompiler cc = new ClassCompiler(ce);
-		Object compiled[] = compileToClassFilesWithMethod(cc, script, classfile, 1, classfile, method);
+        Object compiled[] = compileToClassFilesWithMethod(cc, script, classfile, 1, classfile, method);
 
-		for (int j = 0; j != compiled.length; j += 2) {
-			String className = (String)compiled[j];
-			byte[] bytes = (byte[])(byte[])compiled[(j + 1)];
-			bytes = sanitizeMethodNames(bytes);
-			// Rhino 1.9.1's ClassCompiler under-reports max_locals only in the "<X>Main" descriptor
-			// builder (its initN() methods), causing a VerifyError ("Local variable table overflow")
-			// on load. Scope the floor to that class only: applying it to every class (as before)
-			// forces every compiled function body to reserve 1024 local-variable slots regardless of
-			// its real need, which inflates every JVM stack frame and cuts recursion depth by ~15-20x
-			// compared to interpreted code (measured: ~200 vs ~3000+ frames before StackOverflowError).
-			if (className.equals(classfile + "Main")) bytes = patchMaxLocals(bytes);
-			compiled[j + 1] = bytes;
-		}
+        for (int j = 0; j != compiled.length; j += 2) {
+            String className = (String)compiled[j];
+            byte[] bytes = (byte[])(byte[])compiled[(j + 1)];
+            bytes = sanitizeMethodNames(bytes);
+            // Rhino 1.9.1's ClassCompiler under-reports max_locals only in the "<X>Main" descriptor
+            // builder (its initN() methods), causing a VerifyError ("Local variable table overflow")
+            // on load. Scope the floor to that class only: applying it to every class (as before)
+            // forces every compiled function body to reserve 1024 local-variable slots regardless of
+            // its real need, which inflates every JVM stack frame and cuts recursion depth by ~15-20x
+            // compared to interpreted code (measured: ~200 vs ~3000+ frames before StackOverflowError).
+            if (className.equals(classfile + "Main")) bytes = patchMaxLocals(bytes);
+            compiled[j + 1] = bytes;
+        }
 
-		return compiled;
-	}
+        return compiled;
+    }
 
     /**
      * Compile JavaScript to Java classes using the specified compilation method, writing one loose
@@ -166,7 +166,7 @@ public class CompileJS2Java {
      * @param method The compilation method to use
      */
     public static void compileToClasses(String classfile, String script, String path, CompilationMethod method) throws IOException {
-		Object compiled[] = compileToBytes(classfile, script, method, true);
+        Object compiled[] = compileToBytes(classfile, script, method, true);
 		if (path == null || path.equals("undefined"))
 			path = "";
 		else
@@ -176,10 +176,10 @@ public class CompileJS2Java {
 			String className = (String)compiled[j];
 			byte[] bytes = (byte[])(byte[])compiled[(j + 1)];
 			File outfile = new File(path + className + ".class");
-			try (FileOutputStream os = new FileOutputStream(outfile)) {
-				os.write(bytes);
+            try (FileOutputStream os = new FileOutputStream(outfile)) {
+                os.write(bytes);
 			}
-		}
+        }
 	}
 
     /**

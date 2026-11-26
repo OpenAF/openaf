@@ -10,6 +10,11 @@ jobs:
     to: OpenAF Test
     exec: args.func = args.tests.testResourcesAndApps
 
+  - name: MCPAdvanced::SkillDiscovery
+    from: MCPAdvanced::Init
+    to  : OpenAF Test
+    exec: args.func = args.tests.testSkillDiscovery
+
   - name: MCPAdvanced::BidirectionalStdio
     from: MCPAdvanced::Init
     to: OpenAF Test
@@ -67,6 +72,7 @@ jobs:
 
 todo:
   - MCPAdvanced::ResourcesAndApps
+  - MCPAdvanced::SkillDiscovery
   - MCPAdvanced::BidirectionalStdio
   - MCPAdvanced::HTTPInboundAndSession
   - MCPAdvanced::ModernContinuationAndCapabilities
